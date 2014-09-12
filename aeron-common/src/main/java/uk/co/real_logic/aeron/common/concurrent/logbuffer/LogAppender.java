@@ -41,18 +41,19 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class LogAppender extends LogBuffer
 {
-    private final byte[] defaultHeader;
-    private final int maxMessageLength;
-    private final int maxFrameLength;
-    private final int headerLength;
-    private final int maxPayload;
-
     public enum AppendStatus
     {
         SUCCESS,
         TRIPPED,
         FAILURE,
     }
+
+    private final int headerLength;
+    private final byte[] defaultHeader;
+    private final int maxMessageLength;
+    private final int maxFrameLength;
+
+    private final int maxPayload;
 
     /**
      * Construct a view over a log buffer and state buffer for appending frames.

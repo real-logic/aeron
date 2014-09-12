@@ -181,7 +181,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         smBuffer.limit(frameLength);
 
         final int bytesSent = udpTransport.sendTo(smBuffer, controlAddress);
-        if (bytesSent < frameLength) // TODO should we not retry? no
+        if (bytesSent < frameLength)
         {
             logger.logIncompleteSend("sendStatusMessage", bytesSent, frameLength);
         }
@@ -215,7 +215,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakBuffer.limit(frameLength);
 
         final int bytesSent = udpTransport.sendTo(nakBuffer, controlAddress);
-        if (bytesSent < frameLength) // TODO should we not retry? no
+        if (bytesSent < frameLength)
         {
             logger.logIncompleteSend("sendNak", bytesSent, frameLength);
         }

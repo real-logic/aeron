@@ -26,7 +26,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Handling of dispatching data frames to {@link DriverConnection}s streams.
- * <p>
+ *
  * All methods should be called via {@link Receiver} thread
  */
 public class DataFrameDispatcher

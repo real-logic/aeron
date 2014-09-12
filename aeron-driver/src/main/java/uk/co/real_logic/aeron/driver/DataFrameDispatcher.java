@@ -58,7 +58,7 @@ public class DataFrameDispatcher
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.remove(streamId);
         if (null == connectionBySessionIdMap)
         {
-            throw new UnknownSubscriptionException("No connectionBySessionIdMap registered on " + streamId);
+            throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
         for (final DriverConnection connection : connectionBySessionIdMap.values())
@@ -76,7 +76,7 @@ public class DataFrameDispatcher
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
         if (null == connectionBySessionIdMap)
         {
-            throw new IllegalStateException("No connectionBySessionIdMap registered on " + streamId);
+            throw new IllegalStateException("No subscription registered on stream " + streamId);
         }
 
         connectionBySessionIdMap.put(sessionId, connection);

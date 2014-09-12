@@ -74,7 +74,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
 
     private int onReadDataFrames()
     {
-        int frameRead = 0;
+        int framesRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();
 
         if (null != srcAddress)
@@ -94,7 +94,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
                     {
                         case HDR_TYPE_PAD:
                         case HDR_TYPE_DATA:
-                            frameRead = dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
+                            framesRead = dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
                             break;
 
                         case HDR_TYPE_SETUP:
@@ -105,6 +105,6 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
             }
         }
 
-        return frameRead;
+        return framesRead;
     }
 }

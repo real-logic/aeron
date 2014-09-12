@@ -267,76 +267,76 @@ public final class UdpTransport implements AutoCloseable
 
     private int onReadDataFrames()
     {
+        int frameRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();
-        final int length = readByteBuffer.position();
 
-        if (null == srcAddress)
+        if (null != srcAddress)
         {
-            return 0;
+            final int length = readByteBuffer.position();
+            if (dataLossGenerator.shouldDropFrame(srcAddress, length))
+            {
+                logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+            }
+            else
+            {
+                logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+
+                if (isValidFrame(length))
+                {
+                    switch (header.headerType())
+                    {
+                        case HDR_TYPE_PAD:
+                        case HDR_TYPE_DATA:
+                            frameRead = dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
+                            break;
+
+                        case HDR_TYPE_SETUP:
+                            setupFrameHandler.onFrame(setupHeader, readBuffer, length, srcAddress);
+                            break;
+                    }
+                }
+            }
         }
 
-        if (dataLossGenerator.shouldDropFrame(srcAddress, length))
-        {
-            logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
-            return 0;
-        }
 
-        logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
-
-        if (!isValidFrame(length))
-        {
-            return 0;
-        }
-
-        switch (header.headerType())
-        {
-            case HDR_TYPE_PAD:
-            case HDR_TYPE_DATA:
-                return dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
-
-            case HDR_TYPE_SETUP:
-                setupFrameHandler.onFrame(setupHeader, readBuffer, length, srcAddress);
-                break;
-        }
-
-        return 0;
+        return frameRead;
     }
 
     private int onReadControlFrames()
     {
+        int framesRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();
-        final int length = readByteBuffer.position();
 
-        if (null == srcAddress)
+        if (null != srcAddress)
         {
-            return 0;
+            final int length = readByteBuffer.position();
+            if (controlLossGenerator.shouldDropFrame(srcAddress, length))
+            {
+                logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+            }
+            else
+            {
+                logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+
+                if (isValidFrame(length))
+                {
+                    switch (header.headerType())
+                    {
+                        case HDR_TYPE_NAK:
+                            nakFrameHandler.onFrame(nakHeader, readBuffer, length, srcAddress);
+                            framesRead = 1;
+                            break;
+
+                        case HDR_TYPE_SM:
+                            smFrameHandler.onFrame(statusMessage, readBuffer, length, srcAddress);
+                            framesRead = 1;
+                            break;
+                    }
+                }
+            }
         }
 
-        if (controlLossGenerator.shouldDropFrame(srcAddress, length))
-        {
-            logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
-            return 0;
-        }
-
-        logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
-
-        if (!isValidFrame(length))
-        {
-            return 0;
-        }
-
-        switch (header.headerType())
-        {
-            case HDR_TYPE_NAK:
-                nakFrameHandler.onFrame(nakHeader, readBuffer, length, srcAddress);
-                return 1;
-
-            case HDR_TYPE_SM:
-                smFrameHandler.onFrame(statusMessage, readBuffer, length, srcAddress);
-                return 1;
-        }
-
-        return 0;
+        return framesRead;
     }
 
     private InetSocketAddress receiveFrame()

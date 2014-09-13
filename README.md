@@ -64,14 +64,14 @@ Start up a media driver
 
     $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.driver.MediaDriver
 
-You can run the `ExamplePublisher` from a command line
-
-    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExamplePublisher
-
 You can run the `ExampleSubscriber` from a command line
 
     $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExampleSubscriber
     
+You can run the `ExamplePublisher` from a command line
+
+    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExamplePublisher
+
 You can run the `AeronStat` utility to read system counters from a command line
     
     $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.AeronStat

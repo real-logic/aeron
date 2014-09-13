@@ -369,30 +369,28 @@ public class DriverConnection implements AutoCloseable
      */
     public int sendPendingStatusMessages(final long now)
     {
-        // not able to send yet because not added to dispatcher, anything received will be dropped (in progress)
-        if (!statusMessagesEnabled)
+        int workCount = 0;
+        if (statusMessagesEnabled)
         {
-            return 0;
+            final long position = subscribersPosition();
+            final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
+            final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
+
+            if (0 == lastSmTimestamp || currentSmTermId != lastSmTermId ||
+                (position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
+            {
+                sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
+
+                // invert the work count logic. We want to appear to be less busy once we send an SM
+                workCount = 0;
+            }
+            else
+            {
+                workCount = 1;
+            }
         }
 
-        /* General approach is to check subscriber position and see if it has moved enough to warrant sending an SM.
-         * - send SM when termId has moved (i.e. buffer rotation)
-         * - send SM when subscriber position has moved more than the gain (min of term or window)
-         * - send SM when haven't sent an SM in status message timeout
-         */
-
-        final long position = subscribersPosition();
-        final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
-        final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
-
-        if (0 == lastSmTimestamp || currentSmTermId != lastSmTermId ||
-            (position - lastSmPosition) > currentGain || (lastSmTimestamp + statusMessageTimeout) < now)
-        {
-            return sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
-        }
-
-        // invert the work count logic. We want to appear to be less busy once we send an SM
-        return 1;
+        return workCount;
     }
     /**
      * Called from the {@link Receiver} thread once added to dispatcher
@@ -495,17 +493,15 @@ public class DriverConnection implements AutoCloseable
         return initialTermId;
     }
 
-    private int sendStatusMessage(
+    private void sendStatusMessage(
         final int termId, final int termOffset, final long position, final int windowSize, final long now)
     {
         statusMessageSender.send(termId, termOffset, windowSize);
 
-        systemCounters.statusMessagesSent().orderedIncrement();
         lastSmTermId = termId;
         lastSmTimestamp = now;
         lastSmPosition = position;
-
-        return 0;
+        systemCounters.statusMessagesSent().orderedIncrement();
     }
 
     private long position(final int currentTail)

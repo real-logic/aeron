@@ -72,6 +72,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         closed = true;
     }
 
+    public boolean isClosed()
+    {
+        return closed;
+    }
+
     public void registerForRead(final NioSelector nioSelector)
     {
         transport.registerForRead(nioSelector);
@@ -220,10 +225,4 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             logger.logIncompleteSend("sendNak", bytesSent, frameLength);
         }
     }
-
-    public boolean isClosed()
-    {
-        return closed;
-    }
-
 }

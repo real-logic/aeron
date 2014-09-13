@@ -278,20 +278,18 @@ public class DriverPublication implements AutoCloseable
         updateTimeOfLastSendOrSetup(clock.time());
     }
 
-    private boolean heartbeatCheck()
+    private void heartbeatCheck()
     {
         final long timeout =
             statusMessagesReceivedCount > 0 ?
                 Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS :
                 Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 
-        if (timeOfLastSendOrHeartbeat + timeout < clock.time())
+        final long now = clock.time();
+        if (now > (timeOfLastSendOrHeartbeat + timeout))
         {
-            sendSetupFrameOrHeartbeat();
-            return true;
+            sendSetupFrameOrHeartbeat(now);
         }
-
-        return false;
     }
 
     private ByteBuffer duplicateLogBuffer(final RawLog log)
@@ -353,7 +351,7 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private void sendSetupFrameOrHeartbeat()
+    private void sendSetupFrameOrHeartbeat(final long now)
     {
         if (0 == lastSentLength && 0 == lastSentTermOffset && initialTermId == lastSentTermId)
         {
@@ -367,11 +365,10 @@ public class DriverPublication implements AutoCloseable
             {
                 final LogScanner scanner = retransmitLogScanners[retransmitIndex];
                 scanner.seek(lastSentTermOffset);
-
                 scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
                 systemCounters.heartbeatsSent().orderedIncrement();
-                updateTimeOfLastSendOrSetup(clock.time());
+                updateTimeOfLastSendOrSetup(now);
             }
         }
     }

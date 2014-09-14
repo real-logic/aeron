@@ -55,12 +55,7 @@ package uk.co.real_logic.aeron.common;
  */
 public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
 {
-    private final double lambda;
-    private final double groupSize;
-    private final double maxBackoffT;
-    private final double gRtt;
     private final double calculatedN;
-
     private final double randMax;
     private final double baseX;
     private final double constantT;
@@ -77,10 +72,7 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
      */
     public OptimalMulticastDelayGenerator(final double maxBackoffT, final double groupSize, final double gRtt)
     {
-        this.lambda = Math.log(groupSize) + 1;
-        this.groupSize = groupSize;
-        this.maxBackoffT = maxBackoffT;
-        this.gRtt = gRtt;
+        final double lambda = Math.log(groupSize) + 1;
         this.calculatedN = Math.exp(1.2 * lambda / (2 * maxBackoffT / gRtt));
 
         // constant pieces of the calculation
@@ -105,7 +97,7 @@ public class OptimalMulticastDelayGenerator implements FeedbackDelayGenerator
      */
     public double generateNewOptimalDelay()
     {
-        double x = uniformRandom(randMax) + baseX;
+        final double x = uniformRandom(randMax) + baseX;
 
         return constantT * Math.log(x * factorT);
     }

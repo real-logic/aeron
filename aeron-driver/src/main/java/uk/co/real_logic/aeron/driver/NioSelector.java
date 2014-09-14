@@ -85,14 +85,18 @@ public class NioSelector implements AutoCloseable
     {
         try
         {
-            selector.selectNow();
+            int handledFrames = 0;
+            if (selector.selectNow() > 0)
+            {
+                handledFrames = handleSelectedKeys();
+            }
+
+            return handledFrames;
         }
         catch (final IOException ex)
         {
             throw new RuntimeException(ex);
         }
-
-        return handleSelectedKeys();
     }
 
     /**

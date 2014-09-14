@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.StandardSocketOptions;
@@ -60,13 +59,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
             datagramChannel = DatagramChannel.open();
             if (udpChannel.isMulticast())
             {
-                final InetAddress endPointAddress = endPointSocketAddress.getAddress();
-                final int endpointPort = endPointSocketAddress.getPort();
                 final NetworkInterface localInterface = udpChannel.localInterface();
 
                 datagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-                datagramChannel.bind(new InetSocketAddress(endpointPort));
-                datagramChannel.join(endPointAddress, localInterface);
+                datagramChannel.bind(new InetSocketAddress(endPointSocketAddress.getPort()));
+                datagramChannel.join(endPointSocketAddress.getAddress(), localInterface);
                 datagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
                 multicast = true;
             }

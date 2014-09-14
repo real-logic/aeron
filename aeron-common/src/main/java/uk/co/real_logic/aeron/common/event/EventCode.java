@@ -47,7 +47,8 @@ public enum EventCode
     ERROR_DELETING_FILE(19, EventCodec::dissectAsString),
     FRAME_OUT_INCOMPLETE_SEND(20, EventCodec::dissectAsString),
 
-    FLOW_CONTROL_OVERRUN(21, EventCodec::dissectAsString);
+    FLOW_CONTROL_OVERRUN(21, EventCodec::dissectAsString),
+    INVALID_VERSION(22, EventCodec::dissectAsCommand);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

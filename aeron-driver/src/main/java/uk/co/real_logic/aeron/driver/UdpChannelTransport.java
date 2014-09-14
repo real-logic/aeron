@@ -82,7 +82,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
             }
 
             datagramChannel.configureBlocking(false);
-
         }
         catch (final IOException ex)
         {
@@ -159,21 +158,22 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public abstract void registerForRead(final NioSelector nioSelector);
 
-    protected boolean isValidFrame(final int length)
+    protected boolean isFrameValid(final int length)
     {
+        boolean isFrameValid = true;
+
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)
         {
-            logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, header.frameLength());
-            return false;
+            logger.log(EventCode.INVALID_VERSION, readBuffer, 0, header.frameLength());
+            isFrameValid = false;
         }
-
-        if (length <= FrameDescriptor.BASE_HEADER_LENGTH)
+        else if (length <= FrameDescriptor.BASE_HEADER_LENGTH)
         {
             logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, length);
-            return false;
+            isFrameValid = false;
         }
 
-        return true;
+        return isFrameValid;
     }
 
     protected InetSocketAddress receiveFrame()

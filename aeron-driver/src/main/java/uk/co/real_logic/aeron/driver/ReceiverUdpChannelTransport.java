@@ -88,7 +88,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
             {
                 logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
 
-                if (isValidFrame(length))
+                if (isFrameValid(length))
                 {
                     switch (header.headerType())
                     {

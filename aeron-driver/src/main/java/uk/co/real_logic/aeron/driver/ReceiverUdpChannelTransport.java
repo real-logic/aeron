@@ -82,11 +82,11 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
             final int length = readByteBuffer.position();
             if (lossGenerator.shouldDropFrame(srcAddress, length))
             {
-                logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+                logger.log(EventCode.FRAME_IN_DROPPED, readByteBuffer, 0, length, srcAddress);
             }
             else
             {
-                logger.log(EventCode.FRAME_IN, readByteBuffer, 0, readByteBuffer.position(), srcAddress);
+                logger.log(EventCode.FRAME_IN, readByteBuffer, 0, length, srcAddress);
 
                 if (isFrameValid(length))
                 {

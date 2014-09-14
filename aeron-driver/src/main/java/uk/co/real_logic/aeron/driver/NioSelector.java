@@ -118,20 +118,16 @@ public class NioSelector implements AutoCloseable
     {
         int handledFrames = 0;
         final Set<SelectionKey> selectedKeys = selector.selectedKeys();
-
-        if (!selectedKeys.isEmpty())
+        final Iterator<SelectionKey> iter = selectedKeys.iterator();
+        while (iter.hasNext())
         {
-            final Iterator<SelectionKey> iter = selectedKeys.iterator();
-            while (iter.hasNext())
+            final SelectionKey key = iter.next();
+            if (key.isReadable())
             {
-                final SelectionKey key = iter.next();
-                if (key.isReadable())
-                {
-                    handledFrames += ((IntSupplier)key.attachment()).getAsInt();
-                }
-
-                iter.remove();
+                handledFrames += ((IntSupplier)key.attachment()).getAsInt();
             }
+
+            iter.remove();
         }
 
         return handledFrames;

@@ -48,11 +48,10 @@ public class LogAppender extends LogBuffer
         FAILURE,
     }
 
-    private final int headerLength;
     private final byte[] defaultHeader;
+    private final int headerLength;
     private final int maxMessageLength;
     private final int maxFrameLength;
-
     private final int maxPayload;
 
     /**
@@ -72,9 +71,9 @@ public class LogAppender extends LogBuffer
         checkMaxFrameLength(maxFrameLength);
 
         this.defaultHeader = defaultHeader;
+        this.headerLength = defaultHeader.length;
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity());
-        this.headerLength = defaultHeader.length;
         this.maxPayload = maxFrameLength - headerLength;
     }
 

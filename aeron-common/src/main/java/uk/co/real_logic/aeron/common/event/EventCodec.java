@@ -492,9 +492,9 @@ public class EventCodec
     {
         final String locations =
             IntStream.range(0, 6)
-                     .mapToObj((i) -> String.format("{%s, %d@%x}",
-                         command.location(i), command.bufferLength(i), command.bufferOffset(i)))
-                     .collect(Collectors.joining("\n    "));
+                 .mapToObj((i) -> String.format("{%s, %d@%x}",
+                     command.location(i), command.bufferLength(i), command.bufferOffset(i)))
+                 .collect(Collectors.joining("\n    "));
 
         return String.format("%s %x:%x:%x %x [%x]\n    %s",
             command.channel(),
@@ -509,19 +509,20 @@ public class EventCodec
     private static String dissect(final ConnectionReadyFlyweight command)
     {
         final String locations =
-                IntStream.range(0, 6)
-                        .mapToObj((i) -> String.format("{%s, %d@%x}",
-                                command.location(i), command.bufferLength(i), command.bufferOffset(i)))
-                        .collect(Collectors.joining("\n    "));
+            IntStream.range(0, 6)
+                .mapToObj((i) -> String.format("{%s, %d@%x}",
+                    command.location(i), command.bufferLength(i), command.bufferOffset(i)))
+                .collect(Collectors.joining("\n    "));
 
-        return String.format("%s %x:%x:%x %x [%x]\n    %s",
-                command.channel(),
-                command.sessionId(),
-                command.streamId(),
-                command.termId(),
-                command.positionIndicatorCount(),
-                command.correlationId(),
-                locations);
+        return String.format("%s %x:%x:%x %x %s [%x]\n    %s",
+            command.channel(),
+            command.sessionId(),
+            command.streamId(),
+            command.termId(),
+            command.positionIndicatorCount(),
+            command.sourceInfo(),
+            command.correlationId(),
+            locations);
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)

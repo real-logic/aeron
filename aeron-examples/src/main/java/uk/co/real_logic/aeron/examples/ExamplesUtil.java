@@ -162,16 +162,18 @@ public class ExamplesUtil
     /**
      * Print the information for a new connection to stdout.
      *
-     * @param channel   for the connection
-     * @param streamId  for the stream
-     * @param sessionId for the connection publication
+     * @param channel           for the connection
+     * @param streamId          for the stream
+     * @param sessionId         for the connection publication
+     * @param sourceInformation that is transport specific
      */
-    public static void printNewConnection(final String channel, final int streamId, final int sessionId)
+    public static void printNewConnection(
+        final String channel, final int streamId, final int sessionId, final String sourceInformation)
     {
         System.out.println(
             String.format(
-                "new connection on %s streamId %d sessionId %x",
-                channel, streamId, sessionId));
+                "new connection on %s streamId %d sessionId %x from %s",
+                channel, streamId, sessionId, sourceInformation));
     }
 
     /**

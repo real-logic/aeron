@@ -175,6 +175,6 @@ public class DataFrameDispatcher
 
         initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createConnection(
-                sessionId, streamId, termId, termOffset, termSize, controlAddress, channelEndpoint);
+                sessionId, streamId, termId, termOffset, termSize, controlAddress, srcAddress, channelEndpoint);
     }
 }

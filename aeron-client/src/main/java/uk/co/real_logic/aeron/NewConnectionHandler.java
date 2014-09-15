@@ -24,9 +24,10 @@ public interface NewConnectionHandler
     /**
      * Method called by Aeron to deliver notification of a new connected session.
      *
-     * @param channel for the source
-     * @param streamId for the source
-     * @param sessionId for the source
+     * @param channel           for the source
+     * @param streamId          for the source
+     * @param sessionId         for the source
+     * @param sourceInformation that is transport specific
      */
-    public void onNewConnection(String channel, int streamId, int sessionId);
+    public void onNewConnection(String channel, int streamId, int sessionId, String sourceInformation);
 }

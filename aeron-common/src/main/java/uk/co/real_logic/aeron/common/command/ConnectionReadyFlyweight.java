@@ -80,6 +80,8 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                          Location 5 Start                     |
  * +---------------------------------------------------------------+
+ * |                     Source Information Start                  |
+ * +---------------------------------------------------------------+
  * |                           Channel Start                       |
  * +---------------------------------------------------------------+
  * |                           Channel End                         |
@@ -131,7 +133,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
-    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
+    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (9 * SIZE_OF_INT);
     private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
 
     /**
@@ -140,10 +142,14 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
 
     /**
-     * The Channel sits at the end of the message, after the location strings for both the
-     * log and state buffers.
+     * The Source Information sits after the location strings, but before the Channel
      */
-    private static final int CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
+    public static final int SOURCE_INFORMATION_INDEX = PAYLOAD_BUFFER_COUNT;
+
+    /**
+     * The Channel sits after the source name and location strings for both the log and state buffers.
+     */
+    private static final int CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
 
     public int bufferOffset(final int index)
     {
@@ -353,6 +359,16 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         locationPointer(index + 1, start + length);
 
         return this;
+    }
+
+    public String sourceInfo()
+    {
+        return location(SOURCE_INFORMATION_INDEX);
+    }
+
+    public ConnectionReadyFlyweight sourceInfo(final String value)
+    {
+        return location(SOURCE_INFORMATION_INDEX, value);
     }
 
     public String channel()

@@ -253,7 +253,7 @@ class ClientConductor extends Agent implements DriverListener
 
                         if (null != newConnectionHandler)
                         {
-                            newConnectionHandler.onNewConnection(channel, streamId, sessionId);
+                            newConnectionHandler.onNewConnection(channel, streamId, sessionId, message.sourceInfo());
                         }
                     }
                 }

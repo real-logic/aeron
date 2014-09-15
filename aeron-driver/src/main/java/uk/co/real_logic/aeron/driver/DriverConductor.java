@@ -193,6 +193,7 @@ public class DriverConductor extends Agent
                 cmd.termOffset(),
                 cmd.termSize(),
                 cmd.controlAddress(),
+                cmd.srcAddress(),
                 cmd.channelEndpoint());
         }
         else if (obj instanceof ElicitSetupFromSourceCmd)
@@ -485,6 +486,7 @@ public class DriverConductor extends Agent
                     "subscriber", channel, connection.sessionId(), streamId);
                 final BufferPositionIndicator indicator = new BufferPositionIndicator(
                     countersBuffer, subscriberPositionCounterId, countersManager);
+                final String sourceInfo = generateSourceInfo(connection.sourceAddress());
                 connection.addSubscription(indicator);
                 subscription.addConnection(connection, indicator);
 
@@ -496,7 +498,8 @@ public class DriverConductor extends Agent
                     connection.completedPosition(),
                     connection.termBuffers(),
                     correlationId,
-                    Arrays.asList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)));
+                    Arrays.asList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
+                    sourceInfo);
             }
         }
     }
@@ -539,6 +542,7 @@ public class DriverConductor extends Agent
         final int initialTermOffset,
         final int termBufferSize,
         final InetSocketAddress controlAddress,
+        final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
@@ -566,6 +570,7 @@ public class DriverConductor extends Agent
 
         final int receiverCompletedCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
         final int receiverHwmCounterId = allocatePositionCounter("receive-hwm", channel, sessionId, streamId);
+        final String sourceInfo = generateSourceInfo(sourceAddress);
 
         clientProxy.onConnectionReady(
             channel,
@@ -575,7 +580,8 @@ public class DriverConductor extends Agent
             joiningPosition,
             termBuffers,
             correlationId,
-            subscriberPositions);
+            subscriberPositions,
+            sourceInfo);
 
         final GapScanner[] gapScanners = termBuffers
             .stream()
@@ -608,6 +614,7 @@ public class DriverConductor extends Agent
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
             systemCounters,
+            sourceAddress,
             logger);
 
         connections.add(connection);
@@ -836,6 +843,11 @@ public class DriverConductor extends Agent
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)
     {
         return countersManager.allocate(String.format("%s pos: %s %x %x", type, dirName, sessionId, streamId));
+    }
+
+    private String generateSourceInfo(final InetSocketAddress address)
+    {
+        return String.format("%s:%d", address.getAddress().getHostAddress(), address.getPort());
     }
 
     private static DriverSubscription removeSubscription(

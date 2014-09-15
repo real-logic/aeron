@@ -484,7 +484,7 @@ public class PubAndSubTest
 
         context.termBufferSize(termBufferSize);
         subscribingAeronContext.newConnectionHandler(
-            (c, streamId, sessionId) ->
+            (c, streamId, sessionId, info) ->
             {
                 if (2 == stage[0])
                 {

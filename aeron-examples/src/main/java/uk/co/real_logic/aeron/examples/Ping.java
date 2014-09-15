@@ -157,7 +157,8 @@ public class Ping
         while (numPongsReceived < numMessages);
     }
 
-    private static void newPongConnectionHandler(final String channel, final int streamId, final int sessionId)
+    private static void newPongConnectionHandler(
+        final String channel, final int streamId, final int sessionId, final String sourceInfo)
     {
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {

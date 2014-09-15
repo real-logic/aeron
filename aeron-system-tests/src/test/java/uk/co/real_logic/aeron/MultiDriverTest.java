@@ -141,7 +141,7 @@ public class MultiDriverTest
         final CountDownLatch newConnectionLatch = new CountDownLatch(1);
 
         aeronBContext.newConnectionHandler(
-            (channel, streamId, sessionId) ->
+            (channel, streamId, sessionId, info) ->
             {
                 newConnectionLatch.countDown();
             });

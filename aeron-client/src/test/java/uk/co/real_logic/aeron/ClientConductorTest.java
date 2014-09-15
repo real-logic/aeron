@@ -62,6 +62,8 @@ public class ClientConductorTest extends MockBufferUsage
     private static final int AWAIT_TIMEOUT = 100;
     private static final int MTU_LENGTH = 1280; // from CommonContext
 
+    private static final String SOURCE_NAME = "127.0.0.1:40789";
+
     private final PublicationReadyFlyweight publicationReady = new PublicationReadyFlyweight();
     private final ConnectionReadyFlyweight connectionReady = new ConnectionReadyFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
@@ -314,6 +316,7 @@ public class ClientConductorTest extends MockBufferUsage
                        .termId(termId);
 
         addBuffers(sessionId, connectionReady);
+        connectionReady.sourceInfo(SOURCE_NAME);
         connectionReady.channel(CHANNEL);
 
         connectionReady.positionIndicatorCount(1);

@@ -43,11 +43,12 @@ public class DriverConductorProxy
         final int termOffset,
         final int termSize,
         final InetSocketAddress controlAddress,
+        final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
         offerCommand(
             new CreateConnectionCmd(
-                sessionId, streamId, termId, termOffset, termSize, controlAddress, channelEndpoint));
+                sessionId, streamId, termId, termOffset, termSize, controlAddress, srcAddress, channelEndpoint));
     }
 
     public void elicitSetupFromSource(

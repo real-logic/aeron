@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
@@ -53,6 +54,7 @@ public class DriverConnection implements AutoCloseable
     private final PositionReporter completedPosition;
     private final PositionReporter hwmPosition;
     private final SystemCounters systemCounters;
+    private final InetSocketAddress sourceAddress;
     private final EventLogger logger;
 
     private final AtomicInteger activeTermId = new AtomicInteger();
@@ -98,6 +100,7 @@ public class DriverConnection implements AutoCloseable
         final PositionReporter hwmPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
+        final InetSocketAddress sourceAddress,
         final EventLogger logger)
     {
         this.channelEndpoint = channelEndpoint;
@@ -109,6 +112,7 @@ public class DriverConnection implements AutoCloseable
         this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
+        this.sourceAddress = sourceAddress;
         this.logger = logger;
         this.status = Status.ACTIVE;
         this.timeOfLastStatusChange = clock.time();
@@ -177,6 +181,16 @@ public class DriverConnection implements AutoCloseable
     public int streamId()
     {
         return streamId;
+    }
+
+    /**
+     * The address of the source associated with the connection.
+     *
+     * @return source address
+     */
+    public InetSocketAddress sourceAddress()
+    {
+        return sourceAddress;
     }
 
     /**

@@ -27,6 +27,7 @@ public class CreateConnectionCmd
     private final int termOffset;
     private final int termSize;
     private final InetSocketAddress controlAddress;
+    private final InetSocketAddress srcAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
 
     public CreateConnectionCmd(
@@ -36,6 +37,7 @@ public class CreateConnectionCmd
         final int termOffet,
         final int termSize,
         final InetSocketAddress controlAddress,
+        final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
         this.sessionId = sessionId;
@@ -44,6 +46,7 @@ public class CreateConnectionCmd
         this.termOffset = termOffet;
         this.termSize = termSize;
         this.controlAddress = controlAddress;
+        this.srcAddress = srcAddress;
         this.channelEndpoint = channelEndpoint;
     }
 
@@ -75,6 +78,11 @@ public class CreateConnectionCmd
     public InetSocketAddress controlAddress()
     {
         return controlAddress;
+    }
+
+    public InetSocketAddress srcAddress()
+    {
+        return srcAddress;
     }
 
     public ReceiveChannelEndpoint channelEndpoint()

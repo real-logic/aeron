@@ -845,9 +845,9 @@ public class DriverConductor extends Agent
         return countersManager.allocate(String.format("%s pos: %s %x %x", type, dirName, sessionId, streamId));
     }
 
-    private String generateSourceInfo(final InetSocketAddress address)
+    private static String generateSourceInfo(final InetSocketAddress address)
     {
-        return String.format("%s:%d", address.getAddress().getHostAddress(), address.getPort());
+        return String.format("%s:%d", address.getHostString(), address.getPort());
     }
 
     private static DriverSubscription removeSubscription(

@@ -29,3 +29,6 @@ build
 
 # Benchmark timings
 timings.log
+
+# JVM crash reports
+hs_err_pid*

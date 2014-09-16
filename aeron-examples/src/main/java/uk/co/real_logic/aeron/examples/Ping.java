@@ -87,12 +87,6 @@ public class Ping
                 sendMessages(pingPublication, WARMUP_NUMBER_OF_MESSAGES);
             }
 
-            if (0 < LINGER_TIMEOUT_MS)
-            {
-                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
-                Thread.sleep(LINGER_TIMEOUT_MS);
-            }
-
             warmup.get();
             HISTOGRAM.reset();
 
@@ -101,13 +95,7 @@ public class Ping
             final Future timedRun = executor.submit(() -> runSubscriber(pongSubscription, NUMBER_OF_MESSAGES));
             sendMessages(pingPublication, NUMBER_OF_MESSAGES);
 
-            System.out.println("Done streaming.");
-
-            if (0 < LINGER_TIMEOUT_MS)
-            {
-                System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
-                Thread.sleep(LINGER_TIMEOUT_MS);
-            }
+            System.out.println("Done pinging.");
 
             timedRun.get();
         }

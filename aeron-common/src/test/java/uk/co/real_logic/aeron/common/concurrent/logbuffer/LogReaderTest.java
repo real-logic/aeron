@@ -22,24 +22,25 @@ import org.mockito.Mockito;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader.Header;
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class LogReaderTest
 {
     private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
-    private static final int HEADER_LENGTH = BASE_HEADER_LENGTH;
+    private static final int HEADER_LENGTH = LogReader.HEADER_LENGTH;
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
-    private final LogReader.FrameHandler handler = Mockito.mock(LogReader.FrameHandler.class);
+    private final LogReader.DataHandler handler = Mockito.mock(LogReader.DataHandler.class);
 
     private LogReader logReader;
 
@@ -76,7 +77,7 @@ public class LogReaderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
-        verify(handler).onFrame(logBuffer, 0, frameLength);
+        verify(handler).onData(eq(logBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -103,7 +104,7 @@ public class LogReaderTest
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(0));
 
         verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
-        verify(handler, never()).onFrame(any(), anyInt(), anyInt());
+        verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
     }
 
     @Test
@@ -122,7 +123,7 @@ public class LogReaderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
         inOrder.verify(stateBuffer, times(1)).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
-        inOrder.verify(handler).onFrame(logBuffer, 0, frameLength);
+        inOrder.verify(handler).onData(eq(logBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -142,10 +143,10 @@ public class LogReaderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
         inOrder.verify(stateBuffer, times(1)).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
-        inOrder.verify(handler).onFrame(logBuffer, 0, frameLength);
+        inOrder.verify(handler).onData(eq(logBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
 
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(alignedFrameLength));
-        inOrder.verify(handler).onFrame(logBuffer, alignedFrameLength, frameLength);
+        inOrder.verify(handler).onData(eq(logBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -164,10 +165,10 @@ public class LogReaderTest
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(1));
         assertTrue(logReader.isComplete());
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
+        final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
         inOrder.verify(stateBuffer, atLeastOnce()).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(startOfMessage));
-        verify(handler).onFrame(logBuffer, startOfMessage, frameLength);
+        inOrder.verify(handler).onData(eq(logBuffer), eq(startOfMessage + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -189,6 +190,6 @@ public class LogReaderTest
         final InOrder inOrder = inOrder(logBuffer, stateBuffer);
         inOrder.verify(stateBuffer, atLeastOnce()).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(startOfMessage));
-        verify(handler, never()).onFrame(any(), anyInt(), anyInt());
+        verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
     }
 }

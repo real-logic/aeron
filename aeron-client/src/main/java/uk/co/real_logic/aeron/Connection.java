@@ -15,27 +15,21 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.WORD_ALIGNMENT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.flagsOffset;
 
 /**
  * A Connection from a publisher to a subscriber.
  */
 class Connection
 {
-    public static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
-
     private final LogReader[] logReaders;
     private final int sessionId;
     private final long correlationId;
@@ -115,11 +109,9 @@ class Connection
         return messagesRead;
     }
 
-    private void onFrame(final AtomicBuffer buffer, final int offset, final int length)
+    private void onFrame(final AtomicBuffer buffer, final int offset, final int length, final LogReader.Header header)
     {
-        final byte flags = buffer.getByte(flagsOffset(offset));
-
-        dataHandler.onData(buffer, offset + HEADER_LENGTH, length - HEADER_LENGTH, sessionId, flags);
+        dataHandler.onData(buffer, offset, length, header.sessionId(), header.flags());
     }
 
     public void close()

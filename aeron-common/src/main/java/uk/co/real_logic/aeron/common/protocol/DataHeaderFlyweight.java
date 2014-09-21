@@ -51,11 +51,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
             0, 0, 0, 0
         };
 
-    private static final int TERM_OFFSET_FIELD_OFFSET = 8;
-    private static final int SESSION_ID_FIELD_OFFSET = 12;
-    private static final int STREAM_ID_FIELD_OFFSET = 16;
-    private static final int TERM_ID_FIELD_OFFSET = 20;
-    private static final int DATA_OFFSET = 24;
+    public static final int TERM_OFFSET_FIELD_OFFSET = 8;
+    public static final int SESSION_ID_FIELD_OFFSET = 12;
+    public static final int STREAM_ID_FIELD_OFFSET = 16;
+    public static final int TERM_ID_FIELD_OFFSET = 20;
+    public static final int DATA_OFFSET = 24;
 
     /**
      * return session id field

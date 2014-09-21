@@ -37,8 +37,6 @@ import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.RegisterReceiveChannelEndpointCmd;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -72,7 +70,7 @@ public class ReceiverTest
     private static final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 45679);
 
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
-    private static final PositionIndicator[] POSITION_INDICATORS = { POSITION_INDICATOR };
+    private static final PositionIndicator[] POSITION_INDICATORS = {POSITION_INDICATOR};
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
     private final NioSelector mockNioSelector = mock(NioSelector.class);
@@ -180,7 +178,7 @@ public class ReceiverTest
             termBuffers,
             mockLossHandler,
             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                POSITION_INDICATORS,
+            POSITION_INDICATORS,
             mockCompletedReceivedPosition,
             mockHighestReceivedPosition,
             clock,
@@ -252,7 +250,7 @@ public class ReceiverTest
                         termBuffers,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATORS,
+                        POSITION_INDICATORS,
                         mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
@@ -269,15 +267,14 @@ public class ReceiverTest
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[ACTIVE_INDEX].read(
-            (buffer, offset, length) ->
+            (buffer, offset, length, header) ->
             {
-                dataHeader.wrap(buffer, offset);
-                assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(dataHeader.termId(), is(TERM_ID));
-                assertThat(dataHeader.streamId(), is(STREAM_ID));
-                assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                assertThat(dataHeader.termOffset(), is(0));
-                assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+                assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.streamId(), is(STREAM_ID));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.termOffset(), is(0));
+                assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
             Integer.MAX_VALUE);
 
@@ -302,25 +299,25 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
-                        new DriverConnection(
-                            receiveChannelEndpoint,
-                            CORRELATION_ID,
-                            SESSION_ID,
-                            STREAM_ID,
-                            TERM_ID,
-                            INITIAL_TERM_OFFSET,
-                            INITIAL_WINDOW_SIZE,
-                            STATUS_MESSAGE_TIMEOUT,
-                            termBuffers,
-                            mockLossHandler,
-                            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                                POSITION_INDICATORS,
-                            mockCompletedReceivedPosition,
-                            mockHighestReceivedPosition,
-                            clock,
-                            mockSystemCounters,
-                            sourceAddress,
-                            mockLogger));
+                    new DriverConnection(
+                        receiveChannelEndpoint,
+                        CORRELATION_ID,
+                        SESSION_ID,
+                        STREAM_ID,
+                        TERM_ID,
+                        INITIAL_TERM_OFFSET,
+                        INITIAL_WINDOW_SIZE,
+                        STATUS_MESSAGE_TIMEOUT,
+                        termBuffers,
+                        mockLossHandler,
+                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
+                        POSITION_INDICATORS,
+                        mockCompletedReceivedPosition,
+                        mockHighestReceivedPosition,
+                        clock,
+                        mockSystemCounters,
+                        sourceAddress,
+                        mockLogger));
             });
 
         assertThat(messagesRead, is(1));
@@ -334,15 +331,14 @@ public class ReceiverTest
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[ACTIVE_INDEX].read(
-            (buffer, offset, length) ->
+            (buffer, offset, length, header) ->
             {
-                dataHeader.wrap(buffer, offset);
-                assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(dataHeader.termId(), is(TERM_ID));
-                assertThat(dataHeader.streamId(), is(STREAM_ID));
-                assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                assertThat(dataHeader.termOffset(), is(0));
-                assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+                assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.streamId(), is(STREAM_ID));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.termOffset(), is(0));
+                assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
             Integer.MAX_VALUE);
 
@@ -379,7 +375,7 @@ public class ReceiverTest
                         termBuffers,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATORS,
+                        POSITION_INDICATORS,
                         mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
@@ -399,15 +395,14 @@ public class ReceiverTest
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[ACTIVE_INDEX].read(
-            (buffer, offset, length) ->
+            (buffer, offset, length, header) ->
             {
-                dataHeader.wrap(buffer, offset);
-                assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(dataHeader.termId(), is(TERM_ID));
-                assertThat(dataHeader.streamId(), is(STREAM_ID));
-                assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                assertThat(dataHeader.termOffset(), is(0));
-                assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+                assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.streamId(), is(STREAM_ID));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.termOffset(), is(0));
+                assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
             Integer.MAX_VALUE);
 
@@ -452,7 +447,7 @@ public class ReceiverTest
                         termBuffers,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
-                            POSITION_INDICATORS,
+                        POSITION_INDICATORS,
                         mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
@@ -479,17 +474,16 @@ public class ReceiverTest
         logReaders[ACTIVE_INDEX].seek(initialTermOffset);
 
         messagesRead = logReaders[ACTIVE_INDEX].read(
-                (buffer, offset, length) ->
-                {
-                    dataHeader.wrap(buffer, offset);
-                    assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                    assertThat(dataHeader.termId(), is(TERM_ID));
-                    assertThat(dataHeader.streamId(), is(STREAM_ID));
-                    assertThat(dataHeader.sessionId(), is(SESSION_ID));
-                    assertThat(dataHeader.termOffset(), is(initialTermOffset));
-                    assertThat(dataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
-                },
-                Integer.MAX_VALUE);
+            (buffer, offset, length, header) ->
+            {
+                assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
+                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.streamId(), is(STREAM_ID));
+                assertThat(header.sessionId(), is(SESSION_ID));
+                assertThat(header.termOffset(), is(initialTermOffset));
+                assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
+            },
+            Integer.MAX_VALUE);
 
         assertThat(messagesRead, is(1));
     }

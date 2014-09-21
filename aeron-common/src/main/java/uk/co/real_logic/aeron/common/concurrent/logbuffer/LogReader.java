@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.nio.ByteOrder;
 
@@ -32,19 +33,81 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 public class LogReader extends LogBuffer
 {
     /**
+     * The actual length of the header must be aligned to a {@link FrameDescriptor#WORD_ALIGNMENT} boundary.
+     */
+    public static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
+
+    /**
+     * Represents the header of the data frame for accessing fields.
+     */
+    public static class Header
+    {
+        private final AtomicBuffer logBuffer;
+        private int offset = 0;
+
+        protected Header(final AtomicBuffer logBuffer)
+        {
+            this.logBuffer = logBuffer;
+        }
+
+        protected Header offset(final int offset)
+        {
+            this.offset = offset;
+            return this;
+        }
+
+        public int frameLength()
+        {
+            return logBuffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
+        }
+
+        public int sessionId()
+        {
+            return logBuffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET);
+        }
+
+        public int streamId()
+        {
+            return logBuffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET);
+        }
+
+        public int termId()
+        {
+            return logBuffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET);
+        }
+
+        public int termOffset()
+        {
+            return logBuffer.getInt(offset + DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET);
+        }
+
+        public int type()
+        {
+            return frameType(logBuffer, offset);
+        }
+
+        public byte flags()
+        {
+            return logBuffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET);
+        }
+    }
+
+    /**
      * Handler for reading data that is coming from a log buffer.
      */
     @FunctionalInterface
-    public interface FrameHandler
+    public interface DataHandler
     {
-        void onFrame(AtomicBuffer buffer, int offset, int length);
+        void onData(AtomicBuffer buffer, int offset, int length, Header header);
     }
 
+    private final Header header;
     private int offset = 0;
 
     public LogReader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
         super(logBuffer, stateBuffer);
+        header = new Header(logBuffer);
     }
 
     /**
@@ -74,29 +137,34 @@ public class LogReader extends LogBuffer
      * Reads data from the log buffer.
      *
      * @param handler the handler for data that has been read
-     * @param framesCountLimit the number of frames read.
+     * @param framesLimit limit the number of frames read.
      * @return the number of frames read
      */
-    public int read(final FrameHandler handler, final int framesCountLimit)
+    public int read(final DataHandler handler, final int framesLimit)
     {
         int framesCounter = 0;
         final int tail = tailVolatile();
         final AtomicBuffer logBuffer = logBuffer();
+        final Header header = this.header;
+        int offset = this.offset;
 
-        while (tail > offset && framesCounter < framesCountLimit)
+        while (tail > offset && framesCounter < framesLimit)
         {
             final int frameLength = waitForFrameLength(logBuffer, offset);
             try
             {
                 if (frameType(logBuffer, offset) != PADDING_FRAME_TYPE)
                 {
+                    header.offset(offset);
+                    handler.onData(logBuffer, offset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
+
                     ++framesCounter;
-                    handler.onFrame(logBuffer, offset, frameLength);
                 }
             }
             finally
             {
                 offset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
+                this.offset = offset;
             }
         }
 

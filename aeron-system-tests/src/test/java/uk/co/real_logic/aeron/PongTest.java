@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -132,13 +133,13 @@ public class PongTest
 
         verify(pongHandler).onData(
             anyObject(),
-            eq(DataHeaderFlyweight.HEADER_LENGTH),
+            eq(LogReader.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),
             anyInt(),
             eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
     }
 
-    public void pingHandler(AtomicBuffer buffer, int offset, int length, int sessionId, byte flags)
+    public void pingHandler(final AtomicBuffer buffer, final int offset, final int length, final int sessionId, final byte flags)
     {
         // echoes back the ping
         assertTrue(pongPublication.offer(buffer, offset, length));

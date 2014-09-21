@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 
@@ -13,9 +14,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.Connection.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader.FrameHandler;
 
 public class SubscriptionTest
 {
@@ -28,14 +27,16 @@ public class SubscriptionTest
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
     private static final long CONNECTION_CORRELATION_ID = 101;
     private static final int READ_BUFFER_CAPACITY = 1024;
-    public static final byte FLAGS = (byte) 0;
+    public static final byte FLAGS = (byte)FrameDescriptor.UNFRAGMENTED;
     public static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
+    public static final int HEADER_LENGTH = LogReader.HEADER_LENGTH;
 
     private final ByteBuffer readBuffer = ByteBuffer.allocate(READ_BUFFER_CAPACITY);
     private final AtomicBuffer atomicReadBuffer = new AtomicBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final PositionReporter reporter = mock(PositionReporter.class);
     private final DataHandler dataHandler = mock(DataHandler.class);
+    private final LogReader.Header header = mock(LogReader.Header.class);
 
     private Subscription subscription;
     private LogReader[] readers;
@@ -44,6 +45,9 @@ public class SubscriptionTest
     @Before
     public void setUp()
     {
+        when(header.flags()).thenReturn(FLAGS);
+        when(header.sessionId()).thenReturn(SESSION_ID_1);
+
         readers = new LogReader[BUFFER_COUNT];
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
@@ -83,8 +87,9 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
-                FrameHandler handler = (FrameHandler) invocation.getArguments()[0];
-                handler.onFrame(atomicReadBuffer, 0, READ_BUFFER_CAPACITY);
+                LogReader.DataHandler handler = (LogReader.DataHandler)invocation.getArguments()[0];
+                handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
+
                 return 1;
             });
 
@@ -101,8 +106,9 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
-                FrameHandler handler = (FrameHandler) invocation.getArguments()[0];
-                handler.onFrame(atomicReadBuffer, 0, READ_BUFFER_CAPACITY);
+                LogReader.DataHandler handler = (LogReader.DataHandler)invocation.getArguments()[0];
+                handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
+
                 return 1;
             });
 

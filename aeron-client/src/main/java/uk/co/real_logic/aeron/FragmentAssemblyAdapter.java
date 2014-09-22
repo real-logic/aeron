@@ -128,9 +128,9 @@ public class FragmentAssemblyAdapter implements LogReader.DataHandler
 
         public Header reset(final LogReader.Header base, final int msgLength)
         {
-            this.buffer = base.buffer();
-            this.offset = base.offset();
-            this.frameLength = msgLength + LogReader.HEADER_LENGTH;
+            buffer(base.buffer());
+            offset(base.offset());
+            frameLength = msgLength + LogReader.HEADER_LENGTH;
 
             return this;
         }
@@ -147,7 +147,7 @@ public class FragmentAssemblyAdapter implements LogReader.DataHandler
 
         public int termOffset()
         {
-            return offset - (frameLength - super.frameLength());
+            return offset() - (frameLength - super.frameLength());
         }
     }
 }

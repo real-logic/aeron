@@ -136,19 +136,19 @@ public class LogReader extends LogBuffer
      */
     public static class Header
     {
-        protected AtomicBuffer buffer;
-        protected int offset = 0;
+        private AtomicBuffer buffer;
+        private int offset = 0;
 
-        protected Header()
+        public Header()
         {
         }
 
-        protected Header(final AtomicBuffer logBuffer)
+        public Header(final AtomicBuffer logBuffer)
         {
             this.buffer = logBuffer;
         }
 
-        protected void offset(final int offset)
+        public void offset(final int offset)
         {
             this.offset = offset;
         }
@@ -161,6 +161,11 @@ public class LogReader extends LogBuffer
         public AtomicBuffer buffer()
         {
             return buffer;
+        }
+
+        public void buffer(final AtomicBuffer buffer)
+        {
+            this.buffer = buffer;
         }
 
         public int frameLength()
@@ -190,7 +195,7 @@ public class LogReader extends LogBuffer
 
         public int type()
         {
-            return frameType(buffer, offset);
+            return buffer.getShort(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
         }
 
         public byte flags()

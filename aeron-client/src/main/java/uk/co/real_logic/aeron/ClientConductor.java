@@ -150,7 +150,8 @@ class ClientConductor extends Agent implements DriverListener
         awaitOperationSucceeded();
     }
 
-    public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
+    public synchronized Subscription addSubscription(
+        final String channel, final int streamId, final LogReader.DataHandler handler)
     {
         verifyDriverActive();
 

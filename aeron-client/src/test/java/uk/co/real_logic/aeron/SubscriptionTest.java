@@ -35,7 +35,7 @@ public class SubscriptionTest
     private final AtomicBuffer atomicReadBuffer = new AtomicBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final PositionReporter reporter = mock(PositionReporter.class);
-    private final DataHandler dataHandler = mock(DataHandler.class);
+    private final LogReader.DataHandler dataHandler = mock(LogReader.DataHandler.class);
     private final LogReader.Header header = mock(LogReader.Header.class);
 
     private Subscription subscription;
@@ -94,7 +94,11 @@ public class SubscriptionTest
             });
 
         assertThat(subscription.poll(FRAGMENT_COUNT_LIMIT), is(1));
-        verify(dataHandler).onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, SESSION_ID_1, FLAGS);
+        verify(dataHandler).onData(
+            eq(atomicReadBuffer),
+            eq(HEADER_LENGTH),
+            eq(READ_BUFFER_CAPACITY - HEADER_LENGTH),
+            any(LogReader.Header.class));
     }
 
     @Test

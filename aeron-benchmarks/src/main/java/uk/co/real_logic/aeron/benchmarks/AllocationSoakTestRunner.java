@@ -16,11 +16,11 @@
 package uk.co.real_logic.aeron.benchmarks;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
@@ -46,7 +46,7 @@ public class AllocationSoakTestRunner
         BenchmarkUtil.useSharedMemoryOnLinux();
 
         final RateReporter reporter = new RateReporter(SECONDS.toNanos(1), AllocationSoakTestRunner::printRateOnPause);
-        final DataHandler handler = (buffer, offset, length, sessionId, flags) -> reporter.onMessage(1, length);
+        final LogReader.DataHandler handler = (buffer, offset, length, header) -> reporter.onMessage(1, length);
 
         try (final MediaDriver driver = MediaDriver.launch();
              final Aeron publishingClient = Aeron.connect(new Aeron.Context());

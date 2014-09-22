@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -58,8 +59,8 @@ public class Pong
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
              final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID,
-                 new FragmentAssemblyAdapter((buffer, offset, length, sessionId, flags) ->
-                     pingHandler(pongPublication, buffer, offset, length, sessionId, flags))))
+                 new FragmentAssemblyAdapter((buffer, offset, length, header) ->
+                     pingHandler(pongPublication, buffer, offset, length, header))))
         {
             while (running.get())
             {
@@ -78,8 +79,7 @@ public class Pong
         final AtomicBuffer buffer,
         final int offset,
         final int length,
-        final int sessionId,
-        final byte flags)
+        final LogReader.Header header)
     {
         while (!pongPublication.offer(buffer, offset, length))
         {

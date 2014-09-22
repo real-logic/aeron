@@ -21,15 +21,12 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -54,7 +51,7 @@ public class PongTest
     private Publication pongPublication;
 
     private AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
-    private DataHandler pongHandler = mock(DataHandler.class);
+    private LogReader.DataHandler pongHandler = mock(LogReader.DataHandler.class);
 
     @Before
     public void setup() throws Exception
@@ -132,14 +129,13 @@ public class PongTest
             TimeUnit.MILLISECONDS.toNanos(900));
 
         verify(pongHandler).onData(
-            anyObject(),
+            any(AtomicBuffer.class),
             eq(LogReader.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),
-            anyInt(),
-            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+            any(LogReader.Header.class));
     }
 
-    public void pingHandler(final AtomicBuffer buffer, final int offset, final int length, final int sessionId, final byte flags)
+    public void pingHandler(final AtomicBuffer buffer, final int offset, final int length, final LogReader.Header header)
     {
         // echoes back the ping
         assertTrue(pongPublication.offer(buffer, offset, length));

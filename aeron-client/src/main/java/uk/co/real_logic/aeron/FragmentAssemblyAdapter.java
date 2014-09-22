@@ -18,13 +18,14 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.BufferBuilder;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 
 import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
- * {@link DataHandler} that sits in a chain-of-responsibilities pattern that re-assembles fragmented messages
+ * {@link LogReader.DataHandler} that sits in a chain-of-responsibilities pattern that re-assembles fragmented messages
  * so that next handler in the chain only sees unfragmented messages.
  *
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
@@ -35,18 +36,19 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  * When sessions go inactive {@see InactiveConnectionHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
-public class FragmentAssemblyAdapter implements DataHandler
+public class FragmentAssemblyAdapter implements LogReader.DataHandler
 {
-    private final DataHandler delegate;
+    private final LogReader.DataHandler delegate;
+    private final Header cachedHeader = new Header();
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
-    private Supplier<BufferBuilder> builderSupplier;
+    private final Supplier<BufferBuilder> builderSupplier;
 
     /**
      * Construct an adapter to reassembly message fragments and delegate on only whole messages.
      *
      * @param delegate onto which whole messages are forwarded.
      */
-    public FragmentAssemblyAdapter(final DataHandler delegate)
+    public FragmentAssemblyAdapter(final LogReader.DataHandler delegate)
     {
         this(delegate, BufferBuilder.INITIAL_CAPACITY);
     }
@@ -57,34 +59,43 @@ public class FragmentAssemblyAdapter implements DataHandler
      * @param delegate onto which whole messages are forwarded.
      * @param initialBufferSize to be used for each session.
      */
-    public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferSize)
+    public FragmentAssemblyAdapter(final LogReader.DataHandler delegate, final int initialBufferSize)
     {
         this.delegate = delegate;
         builderSupplier = () -> new BufferBuilder(initialBufferSize);
     }
 
-    public void onData(final AtomicBuffer buffer, final int offset, final int length, final int sessionId, final byte flags)
+    public void onData(final AtomicBuffer buffer, final int offset, final int length, final LogReader.Header header)
     {
+        final byte flags = header.flags();
+
         if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
         {
-            delegate.onData(buffer, offset, length, sessionId, flags);
-        }
-        else if ((flags & BEGIN_FRAG) == BEGIN_FRAG)
-        {
-            final BufferBuilder builder = builderBySessionIdMap.getOrDefault(sessionId, builderSupplier);
-            builder.reset().append(buffer, offset, length);
-        }
-        else if ((flags & END_FRAG) == END_FRAG)
-        {
-            final BufferBuilder builder = getExistingBuilder(sessionId);
-            builder.append(buffer, offset, length);
-            delegate.onData(builder.buffer(), 0, builder.limit(), sessionId, (byte)(flags | UNFRAGMENTED));
-            builder.reset();
+            delegate.onData(buffer, offset, length, header);
         }
         else
         {
-            final BufferBuilder builder = getExistingBuilder(sessionId);
-            builder.append(buffer, offset, length);
+            final int sessionId = header.sessionId();
+
+            if ((flags & BEGIN_FRAG) == BEGIN_FRAG)
+            {
+                final BufferBuilder builder = builderBySessionIdMap.getOrDefault(sessionId, builderSupplier);
+                builder.reset().append(buffer, offset, length);
+            }
+            else if ((flags & END_FRAG) == END_FRAG)
+            {
+                final BufferBuilder builder = getExistingBuilder(sessionId);
+                builder.append(buffer, offset, length);
+
+                final int msgLength = builder.limit();
+                delegate.onData(builder.buffer(), 0, msgLength, cachedHeader.reset(header, msgLength));
+                builder.reset();
+            }
+            else
+            {
+                final BufferBuilder builder = getExistingBuilder(sessionId);
+                builder.append(buffer, offset, length);
+            }
         }
     }
 
@@ -109,5 +120,34 @@ public class FragmentAssemblyAdapter implements DataHandler
         }
 
         return builder;
+    }
+
+    private static class Header extends LogReader.Header
+    {
+        private int frameLength;
+
+        public Header reset(final LogReader.Header base, final int msgLength)
+        {
+            this.buffer = base.buffer();
+            this.offset = base.offset();
+            this.frameLength = msgLength + LogReader.HEADER_LENGTH;
+
+            return this;
+        }
+
+        public int frameLength()
+        {
+            return frameLength;
+        }
+
+        public byte flags()
+        {
+            return (byte)(super.flags() | UNFRAGMENTED);
+        }
+
+        public int termOffset()
+        {
+            return offset - (frameLength - super.frameLength());
+        }
     }
 }

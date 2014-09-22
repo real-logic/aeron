@@ -20,6 +20,7 @@ import org.junit.After;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -27,9 +28,7 @@ import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -63,8 +62,8 @@ public class MultiDriverTest
     private Subscription subscriptionB;
 
     private AtomicBuffer buffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
-    private DataHandler dataHandlerA = mock(DataHandler.class);
-    private DataHandler dataHandlerB = mock(DataHandler.class);
+    private LogReader.DataHandler dataHandlerA = mock(LogReader.DataHandler.class);
+    private LogReader.DataHandler dataHandlerB = mock(LogReader.DataHandler.class);
 
     private void launch()
     {
@@ -140,11 +139,7 @@ public class MultiDriverTest
         final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
         final CountDownLatch newConnectionLatch = new CountDownLatch(1);
 
-        aeronBContext.newConnectionHandler(
-            (channel, streamId, sessionId, info) ->
-            {
-                newConnectionLatch.countDown();
-            });
+        aeronBContext.newConnectionHandler((channel, streamId, sessionId, info) -> newConnectionLatch.countDown());
 
         launch();
 
@@ -206,17 +201,15 @@ public class MultiDriverTest
         }
 
         verify(dataHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onData(
-            anyObject(),
+            any(AtomicBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
-            eq(SESSION_ID),
-            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+            any(LogReader.Header.class));
 
         verify(dataHandlerB, times(numMessagesToSendPostJoin)).onData(
-            anyObject(),
+            any(AtomicBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
-            eq(SESSION_ID),
-            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+            any(LogReader.Header.class));
     }
 }

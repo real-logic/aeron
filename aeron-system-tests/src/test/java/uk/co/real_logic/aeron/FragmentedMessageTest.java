@@ -23,6 +23,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -45,7 +46,7 @@ public class FragmentedMessageTest
     private static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
-    private final DataHandler mockDataHandler = mock(DataHandler.class);
+    private final LogReader.DataHandler mockDataHandler = mock(LogReader.DataHandler.class);
 
     @Theory
     @Test(timeout = 10000)
@@ -84,16 +85,19 @@ public class FragmentedMessageTest
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 
-            final ArgumentCaptor<AtomicBuffer> argument = ArgumentCaptor.forClass(AtomicBuffer.class);
+            final ArgumentCaptor<AtomicBuffer> bufferArg = ArgumentCaptor.forClass(AtomicBuffer.class);
+            final ArgumentCaptor<LogReader.Header> headerArg = ArgumentCaptor.forClass(LogReader.Header.class);
 
             verify(mockDataHandler, times(1)).onData(
-                argument.capture(), eq(offset), eq(srcBuffer.capacity()), anyInt(), eq(FrameDescriptor.UNFRAGMENTED));
+                bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());
 
-            final AtomicBuffer capturedBuffer = argument.getValue();
+            final AtomicBuffer capturedBuffer = bufferArg.getValue();
             for (int i = 0; i < srcBuffer.capacity(); i++)
             {
                 assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));
             }
+
+            assertThat(headerArg.getValue().flags(), is(FrameDescriptor.UNFRAGMENTED));
         }
     }
 }

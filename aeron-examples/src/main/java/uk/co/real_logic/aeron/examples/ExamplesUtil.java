@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.examples;
 
-import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 
 import java.util.concurrent.TimeUnit;
@@ -89,14 +89,14 @@ public class ExamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized {@link uk.co.real_logic.aeron.DataHandler} that prints to stdout
+     * Return a reusable, parameterized {@link LogReader.DataHandler} that prints to stdout
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static DataHandler printStringMessage(final int streamId)
+    public static LogReader.DataHandler printStringMessage(final int streamId)
     {
-        return (buffer, offset, length, sessionId, flags) ->
+        return (buffer, offset, length, header) ->
         {
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
@@ -104,20 +104,20 @@ public class ExamplesUtil
             System.out.println(
                 String.format(
                     "message to stream %d from session %x (%d@%d) <<%s>>",
-                    streamId, sessionId, length, offset, new String(data)));
+                    streamId, header.sessionId(), length, offset, new String(data)));
         };
     }
 
     /**
-     * Return a reusable, parameteried {@link uk.co.real_logic.aeron.DataHandler} that calls into a
+     * Return a reusable, parameteried {@link LogReader.DataHandler} that calls into a
      * {@link RateReporter}.
      *
      * @param reporter for the rate
-     * @return {@link uk.co.real_logic.aeron.DataHandler} that records the rate information
+     * @return {@link LogReader.DataHandler} that records the rate information
      */
-    public static DataHandler rateReporterHandler(final RateReporter reporter)
+    public static LogReader.DataHandler rateReporterHandler(final RateReporter reporter)
     {
-        return (buffer, offset, length, sessionId, flags) -> reporter.onMessage(1, length);
+        return (buffer, offset, length, header) -> reporter.onMessage(1, length);
     }
 
     /**

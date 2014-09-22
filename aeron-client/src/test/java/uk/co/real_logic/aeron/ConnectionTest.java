@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -63,7 +63,7 @@ public class ConnectionTest
         TermHelper.calculatePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final DataHandler mockDataHandler = mock(DataHandler.class);
+    private final LogReader.DataHandler mockDataHandler = mock(LogReader.DataHandler.class);
     private final PositionReporter mockPositionReporter = mock(PositionReporter.class);
 
     private LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
@@ -106,8 +106,10 @@ public class ConnectionTest
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-            anyObject(), eq(DataHeaderFlyweight.HEADER_LENGTH), eq(DATA.length), eq(SESSION_ID),
-            eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+            any(AtomicBuffer.class),
+            eq(DataHeaderFlyweight.HEADER_LENGTH),
+            eq(DATA.length),
+            any(LogReader.Header.class));
 
         InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(ZERO_INITIAL_POSITION);
@@ -132,8 +134,10 @@ public class ConnectionTest
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-                anyObject(), eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH), eq(DATA.length), eq(SESSION_ID),
-                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                any(AtomicBuffer.class),
+                eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
+                eq(DATA.length),
+                any(LogReader.Header.class));
 
         InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(initialPosition);
@@ -160,8 +164,10 @@ public class ConnectionTest
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-                anyObject(), eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH), eq(DATA.length), eq(SESSION_ID),
-                eq((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
+                any(AtomicBuffer.class),
+                eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
+                eq(DATA.length),
+                any(LogReader.Header.class));
 
         InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(initialPosition);

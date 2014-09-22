@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Real Logic Ltd.
+ * Copyright 2014 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,62 +35,7 @@ public class LogReader extends LogBuffer
     /**
      * The actual length of the header must be aligned to a {@link FrameDescriptor#WORD_ALIGNMENT} boundary.
      */
-    public static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, WORD_ALIGNMENT);
-
-    /**
-     * Represents the header of the data frame for accessing fields.
-     */
-    public static class Header
-    {
-        private final AtomicBuffer logBuffer;
-        private int offset = 0;
-
-        protected Header(final AtomicBuffer logBuffer)
-        {
-            this.logBuffer = logBuffer;
-        }
-
-        protected Header offset(final int offset)
-        {
-            this.offset = offset;
-            return this;
-        }
-
-        public int frameLength()
-        {
-            return logBuffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
-        }
-
-        public int sessionId()
-        {
-            return logBuffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET);
-        }
-
-        public int streamId()
-        {
-            return logBuffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET);
-        }
-
-        public int termId()
-        {
-            return logBuffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET);
-        }
-
-        public int termOffset()
-        {
-            return logBuffer.getInt(offset + DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET);
-        }
-
-        public int type()
-        {
-            return frameType(logBuffer, offset);
-        }
-
-        public byte flags()
-        {
-            return logBuffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET);
-        }
-    }
+    public static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, FRAME_ALIGNMENT);
 
     /**
      * Handler for reading data that is coming from a log buffer.
@@ -184,5 +129,73 @@ public class LogReader extends LogBuffer
     private static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
     {
         return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+    }
+
+    /**
+     * Represents the header of the data frame for accessing meta data fields.
+     */
+    public static class Header
+    {
+        protected AtomicBuffer buffer;
+        protected int offset = 0;
+
+        protected Header()
+        {
+        }
+
+        protected Header(final AtomicBuffer logBuffer)
+        {
+            this.buffer = logBuffer;
+        }
+
+        protected void offset(final int offset)
+        {
+            this.offset = offset;
+        }
+
+        public int offset()
+        {
+            return offset;
+        }
+
+        public AtomicBuffer buffer()
+        {
+            return buffer;
+        }
+
+        public int frameLength()
+        {
+            return buffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
+        }
+
+        public int sessionId()
+        {
+            return buffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET);
+        }
+
+        public int streamId()
+        {
+            return buffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET);
+        }
+
+        public int termId()
+        {
+            return buffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET);
+        }
+
+        public int termOffset()
+        {
+            return offset;
+        }
+
+        public int type()
+        {
+            return frameType(buffer, offset);
+        }
+
+        public byte flags()
+        {
+            return buffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET);
+        }
     }
 }

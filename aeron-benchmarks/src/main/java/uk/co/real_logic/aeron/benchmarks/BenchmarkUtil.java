@@ -1,11 +1,11 @@
 package uk.co.real_logic.aeron.benchmarks;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,8 +46,8 @@ public class BenchmarkUtil
         {
             final AtomicInteger receivedCount = new AtomicInteger(0);
 
-            final DataHandler handler =
-                (buffer, offset, length, sessionId, flags) ->
+            final LogReader.DataHandler handler =
+                (buffer, offset, length, header) ->
                 {
                     final int expectedValue = receivedCount.get();
                     final int value = buffer.getInt(offset, nativeOrder());

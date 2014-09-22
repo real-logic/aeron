@@ -16,10 +16,10 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.DataHandler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -51,7 +51,7 @@ public class ExampleSubscriber
 
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final DataHandler dataHandler = printStringMessage(STREAM_ID);
+        final LogReader.DataHandler dataHandler = printStringMessage(STREAM_ID);
         try (final Aeron aeron = Aeron.connect(ctx);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {

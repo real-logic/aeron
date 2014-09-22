@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -26,14 +25,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 
 /**
- * A Connection from a publisher to a subscriber.
+ * A Connection from a publisher to a subscriber within a given session.
  */
 class Connection
 {
     private final LogReader[] logReaders;
     private final int sessionId;
     private final long correlationId;
-    private final DataHandler dataHandler;
+    private final LogReader.DataHandler dataHandler;
     private final PositionReporter subscriberPosition;
     private final ManagedBuffer[] managedBuffers;
     private final AtomicInteger activeTermId;
@@ -48,7 +47,7 @@ class Connection
         final int initialTermId,
         final long initialPosition,
         final long correlationId,
-        final DataHandler dataHandler,
+        final LogReader.DataHandler dataHandler,
         final PositionReporter subscriberPosition,
         final ManagedBuffer[] managedBuffers)
     {
@@ -99,7 +98,7 @@ class Connection
             logReader.seek(0);
         }
 
-        final int messagesRead = logReader.read(this::onFrame, fragmentCountLimit);
+        final int messagesRead = logReader.read(dataHandler, fragmentCountLimit);
         if (messagesRead > 0)
         {
             final long position = calculatePosition(activeTermId, logReader.offset(), positionBitsToShift, initialTermId);
@@ -107,11 +106,6 @@ class Connection
         }
 
         return messagesRead;
-    }
-
-    private void onFrame(final AtomicBuffer buffer, final int offset, final int length, final LogReader.Header header)
-    {
-        dataHandler.onData(buffer, offset, length, header.sessionId(), header.flags());
     }
 
     public void close()

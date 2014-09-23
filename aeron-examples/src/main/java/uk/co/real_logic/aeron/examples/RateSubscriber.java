@@ -42,6 +42,8 @@ public class RateSubscriber
 
     public static void main(final String[] args) throws Exception
     {
+        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
+
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
@@ -50,8 +52,6 @@ public class RateSubscriber
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(ExamplesUtil::printNewConnection)
             .inactiveConnectionHandler(ExamplesUtil::printInactiveConnection);
-
-        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);

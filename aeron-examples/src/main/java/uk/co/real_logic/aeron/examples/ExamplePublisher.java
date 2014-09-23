@@ -39,13 +39,12 @@ public class ExamplePublisher
 
     public static void main(final String[] args) throws Exception
     {
+        System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
+
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-
         final Aeron.Context ctx = new Aeron.Context();
-
-        System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))

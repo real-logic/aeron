@@ -121,8 +121,7 @@ public class Ping
         }
     }
 
-    private static void pongHandler(
-        final AtomicBuffer buffer, final int offset, final int length, final Header header)
+    private static void pongHandler(final AtomicBuffer buffer, final int offset, final int length, final Header header)
     {
         final long pingTimestamp = buffer.getLong(offset);
         final long rttNs = System.nanoTime() - pingTimestamp;

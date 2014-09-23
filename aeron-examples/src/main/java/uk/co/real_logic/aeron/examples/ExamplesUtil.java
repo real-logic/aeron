@@ -89,7 +89,7 @@ public class ExamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that prints to stdout
+     * Return a reusable, parameterized {@link DataHandler} that prints to stdout
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
@@ -109,11 +109,11 @@ public class ExamplesUtil
     }
 
     /**
-     * Return a reusable, parameteried {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that calls into a
+     * Return a reusable, parameteried {@link DataHandler} that calls into a
      * {@link RateReporter}.
      *
      * @param reporter for the rate
-     * @return {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that records the rate information
+     * @return {@link DataHandler} that records the rate information
      */
     public static DataHandler rateReporterHandler(final RateReporter reporter)
     {

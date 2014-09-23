@@ -38,6 +38,8 @@ public class ExampleSubscriber
 
     public static void main(final String[] args) throws Exception
     {
+        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
+
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
@@ -46,12 +48,11 @@ public class ExampleSubscriber
             .newConnectionHandler(ExamplesUtil::printNewConnection)
             .inactiveConnectionHandler(ExamplesUtil::printInactiveConnection);
 
+        final DataHandler dataHandler = printStringMessage(STREAM_ID);
+
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
-        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
-
-        final DataHandler dataHandler = printStringMessage(STREAM_ID);
         try (final Aeron aeron = Aeron.connect(ctx);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {

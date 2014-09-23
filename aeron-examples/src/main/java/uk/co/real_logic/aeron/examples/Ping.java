@@ -99,7 +99,7 @@ public class Ping
             timedRun.get();
         }
 
-        System.out.println("Done playing... Histogram of RTT latencies in microseconds.");
+        System.out.println("Done playing...\nHistogram of RTT latencies in microseconds.");
 
         HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
 

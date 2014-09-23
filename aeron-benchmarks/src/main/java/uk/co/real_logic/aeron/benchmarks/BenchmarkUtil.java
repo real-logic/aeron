@@ -5,7 +5,7 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -46,7 +46,7 @@ public class BenchmarkUtil
         {
             final AtomicInteger receivedCount = new AtomicInteger(0);
 
-            final LogReader.DataHandler handler =
+            final DataHandler handler =
                 (buffer, offset, length, header) ->
                 {
                     final int expectedValue = receivedCount.get();

@@ -241,6 +241,18 @@ public class FrameDescriptor
     }
 
     /**
+     * Read the type of of the frame from header.
+     *
+     * @param logBuffer   containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @return the value of the frame type header.
+     */
+    public static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
+    {
+        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+    }
+
+    /**
      * Check that a given offset is at the correct {@link FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
      *
      * @param offset to be checked.

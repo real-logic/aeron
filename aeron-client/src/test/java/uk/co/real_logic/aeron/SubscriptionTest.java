@@ -4,7 +4,9 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 
@@ -29,14 +31,14 @@ public class SubscriptionTest
     private static final int READ_BUFFER_CAPACITY = 1024;
     public static final byte FLAGS = (byte)FrameDescriptor.UNFRAGMENTED;
     public static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
-    public static final int HEADER_LENGTH = LogReader.HEADER_LENGTH;
+    public static final int HEADER_LENGTH = Header.LENGTH;
 
     private final ByteBuffer readBuffer = ByteBuffer.allocate(READ_BUFFER_CAPACITY);
     private final AtomicBuffer atomicReadBuffer = new AtomicBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final PositionReporter reporter = mock(PositionReporter.class);
-    private final LogReader.DataHandler dataHandler = mock(LogReader.DataHandler.class);
-    private final LogReader.Header header = mock(LogReader.Header.class);
+    private final DataHandler dataHandler = mock(DataHandler.class);
+    private final Header header = mock(Header.class);
 
     private Subscription subscription;
     private LogReader[] readers;
@@ -87,7 +89,7 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
-                LogReader.DataHandler handler = (LogReader.DataHandler)invocation.getArguments()[0];
+                DataHandler handler = (DataHandler)invocation.getArguments()[0];
                 handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
@@ -98,7 +100,7 @@ public class SubscriptionTest
             eq(atomicReadBuffer),
             eq(HEADER_LENGTH),
             eq(READ_BUFFER_CAPACITY - HEADER_LENGTH),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Test
@@ -110,7 +112,7 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
-                LogReader.DataHandler handler = (LogReader.DataHandler)invocation.getArguments()[0];
+                DataHandler handler = (DataHandler)invocation.getArguments()[0];
                 handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;

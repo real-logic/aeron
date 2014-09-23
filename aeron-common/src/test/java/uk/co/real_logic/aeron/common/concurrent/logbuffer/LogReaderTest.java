@@ -29,18 +29,18 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader.Header;
+
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class LogReaderTest
 {
     private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
-    private static final int HEADER_LENGTH = LogReader.HEADER_LENGTH;
+    private static final int HEADER_LENGTH = Header.LENGTH;
 
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
     private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
-    private final LogReader.DataHandler handler = Mockito.mock(LogReader.DataHandler.class);
+    private final DataHandler handler = Mockito.mock(DataHandler.class);
 
     private LogReader logReader;
 

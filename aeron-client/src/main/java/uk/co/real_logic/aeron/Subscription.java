@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicArray;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 
@@ -30,14 +31,14 @@ public class Subscription implements AutoCloseable
     private final int streamId;
     private final long registrationId;
     private final AtomicArray<Connection> connections = new AtomicArray<>();
-    private final LogReader.DataHandler dataHandler;
+    private final DataHandler dataHandler;
     private final ClientConductor clientConductor;
 
     private int roundRobinIndex = 0;
 
     public Subscription(
         final ClientConductor conductor,
-        final LogReader.DataHandler dataHandler,
+        final DataHandler dataHandler,
         final String channel,
         final int streamId,
         final long registrationId)
@@ -79,7 +80,7 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Read waiting data and deliver to {@link LogReader.DataHandler}s.
+     * Read waiting data and deliver to {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler}s.
      *
      * Each fragment read will be a whole message if it is under MTU size. If larger than MTU side then it will come
      * as a series of fragments ordered withing a session.

@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.ExecutorService;
@@ -54,7 +54,7 @@ public class RateSubscriber
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExamplesUtil::printRate);
-        final LogReader.DataHandler rateReporterHandler = rateReporterHandler(reporter);
+        final DataHandler rateReporterHandler = rateReporterHandler(reporter);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(

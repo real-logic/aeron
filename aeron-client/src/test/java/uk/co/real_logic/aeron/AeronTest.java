@@ -25,9 +25,9 @@ import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescrip
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
@@ -58,14 +58,14 @@ public class AeronTest extends MockBufferUsage
     private static final int PACKET_VALUE = 37;
     private static final int SEND_BUFFER_CAPACITY = 1024;
     private static final int SCRATCH_BUFFER_CAPACITY = 1024;
-    private static final LogReader.DataHandler NULL_DATA_HANDLER = (buffer, offset, length, header) -> {};
+    private static final DataHandler NULL_DATA_HANDLER = (buffer, offset, length, header) -> {};
 
     private static final int RING_BUFFER_SZ = (16 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     private static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int FRAME_COUNT_LIMIT = Integer.MAX_VALUE;
 
-    private LogReader.DataHandler channel1Handler = NULL_DATA_HANDLER;
+    private DataHandler channel1Handler = NULL_DATA_HANDLER;
 
     private final PublicationReadyFlyweight newBufferMessage = new PublicationReadyFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
@@ -177,7 +177,7 @@ public class AeronTest extends MockBufferUsage
         assertThat(subscription.poll(FRAME_COUNT_LIMIT), is(5));
     }
 
-    private LogReader.DataHandler eitherSessionAssertingHandler()
+    private DataHandler eitherSessionAssertingHandler()
     {
         return (buffer, offset, length, header) ->
         {
@@ -186,7 +186,7 @@ public class AeronTest extends MockBufferUsage
         };
     }
 
-    private LogReader.DataHandler sessionAssertingHandler()
+    private DataHandler sessionAssertingHandler()
     {
         return (buffer, offset, length, header) ->
         {

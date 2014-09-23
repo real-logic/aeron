@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -32,7 +33,7 @@ class Connection
     private final LogReader[] logReaders;
     private final int sessionId;
     private final long correlationId;
-    private final LogReader.DataHandler dataHandler;
+    private final DataHandler dataHandler;
     private final PositionReporter subscriberPosition;
     private final ManagedBuffer[] managedBuffers;
     private final AtomicInteger activeTermId;
@@ -47,7 +48,7 @@ class Connection
         final int initialTermId,
         final long initialPosition,
         final long correlationId,
-        final LogReader.DataHandler dataHandler,
+        final DataHandler dataHandler,
         final PositionReporter subscriberPosition,
         final ManagedBuffer[] managedBuffers)
     {

@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
@@ -173,7 +173,7 @@ public final class Aeron implements AutoCloseable
      * @param handler  to be called back for each message received.
      * @return the {@link Subscription} for the channel and streamId pair.
      */
-    public Subscription addSubscription(final String channel, final int streamId, final LogReader.DataHandler handler)
+    public Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
     {
         return conductor.addSubscription(channel, streamId, handler);
     }

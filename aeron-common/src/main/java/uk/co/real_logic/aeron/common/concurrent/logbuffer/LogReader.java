@@ -17,9 +17,6 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-
-import java.nio.ByteOrder;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
@@ -32,20 +29,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class LogReader extends LogBuffer
 {
-    /**
-     * The actual length of the header must be aligned to a {@link FrameDescriptor#WORD_ALIGNMENT} boundary.
-     */
-    public static final int HEADER_LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, FRAME_ALIGNMENT);
-
-    /**
-     * Handler for reading data that is coming from a log buffer.
-     */
-    @FunctionalInterface
-    public interface DataHandler
-    {
-        void onData(AtomicBuffer buffer, int offset, int length, Header header);
-    }
-
     private final Header header;
     private int offset = 0;
 
@@ -101,7 +84,7 @@ public class LogReader extends LogBuffer
                 if (frameType(logBuffer, offset) != PADDING_FRAME_TYPE)
                 {
                     header.offset(offset);
-                    handler.onData(logBuffer, offset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
+                    handler.onData(logBuffer, offset + Header.LENGTH, frameLength - Header.LENGTH, header);
 
                     ++framesCounter;
                 }
@@ -124,83 +107,5 @@ public class LogReader extends LogBuffer
     public boolean isComplete()
     {
         return offset >= capacity();
-    }
-
-    private static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
-    {
-        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
-    }
-
-    /**
-     * Represents the header of the data frame for accessing meta data fields.
-     */
-    public static class Header
-    {
-        private AtomicBuffer buffer;
-        private int offset = 0;
-
-        public Header()
-        {
-        }
-
-        public Header(final AtomicBuffer logBuffer)
-        {
-            this.buffer = logBuffer;
-        }
-
-        public void offset(final int offset)
-        {
-            this.offset = offset;
-        }
-
-        public int offset()
-        {
-            return offset;
-        }
-
-        public AtomicBuffer buffer()
-        {
-            return buffer;
-        }
-
-        public void buffer(final AtomicBuffer buffer)
-        {
-            this.buffer = buffer;
-        }
-
-        public int frameLength()
-        {
-            return buffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET);
-        }
-
-        public int sessionId()
-        {
-            return buffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET);
-        }
-
-        public int streamId()
-        {
-            return buffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET);
-        }
-
-        public int termId()
-        {
-            return buffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET);
-        }
-
-        public int termOffset()
-        {
-            return offset;
-        }
-
-        public int type()
-        {
-            return buffer.getShort(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
-        }
-
-        public byte flags()
-        {
-            return buffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET);
-        }
     }
 }

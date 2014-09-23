@@ -4,8 +4,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+
+import java.nio.ByteOrder;
 
 import static org.junit.Assert.assertTrue;
 import static org.hamcrest.CoreMatchers.is;
@@ -18,9 +21,9 @@ public class FragmentAssemblyAdapterTest
 {
     private static final int SESSION_ID = 777;
 
-    private final LogReader.DataHandler delegateDataHandler = mock(LogReader.DataHandler.class);
+    private final DataHandler delegateDataHandler = mock(DataHandler.class);
     private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
-    private final LogReader.Header header = mock(LogReader.Header.class);
+    private final Header header = mock(Header.class);
     private final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(delegateDataHandler);
 
     @Before
@@ -28,7 +31,7 @@ public class FragmentAssemblyAdapterTest
     {
         when(header.sessionId()).thenReturn(SESSION_ID);
         when(header.buffer()).thenReturn(logBuffer);
-        when(logBuffer.getInt(anyInt())).thenReturn(SESSION_ID);
+        when(logBuffer.getInt(anyInt(), any(ByteOrder.class))).thenReturn(SESSION_ID);
     }
 
     @Test
@@ -61,7 +64,7 @@ public class FragmentAssemblyAdapterTest
         adapter.onData(srcBuffer, length, length, header);
 
         final ArgumentCaptor<AtomicBuffer> bufferArg = ArgumentCaptor.forClass(AtomicBuffer.class);
-        final ArgumentCaptor<LogReader.Header> headerArg = ArgumentCaptor.forClass(LogReader.Header.class);
+        final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
         verify(delegateDataHandler, times(1)).onData(
             bufferArg.capture(), eq(offset), eq(length * 2), headerArg.capture());
@@ -72,7 +75,7 @@ public class FragmentAssemblyAdapterTest
             assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));
         }
 
-        final LogReader.Header capturedHeader = headerArg.getValue();
+        final Header capturedHeader = headerArg.getValue();
         assertThat(capturedHeader.sessionId(), is(SESSION_ID));
         assertThat(capturedHeader.flags(), is(FrameDescriptor.UNFRAGMENTED));
     }
@@ -100,7 +103,7 @@ public class FragmentAssemblyAdapterTest
         adapter.onData(srcBuffer, offset + (length * 3), length, header);
 
         final ArgumentCaptor<AtomicBuffer> bufferArg = ArgumentCaptor.forClass(AtomicBuffer.class);
-        final ArgumentCaptor<LogReader.Header> headerArg = ArgumentCaptor.forClass(LogReader.Header.class);
+        final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
         verify(delegateDataHandler, times(1)).onData(
             bufferArg.capture(), eq(offset), eq(length * 4), headerArg.capture());
@@ -111,7 +114,7 @@ public class FragmentAssemblyAdapterTest
             assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));
         }
 
-        final LogReader.Header capturedHeader = headerArg.getValue();
+        final Header capturedHeader = headerArg.getValue();
         assertThat(capturedHeader.sessionId(), is(SESSION_ID));
         assertThat(capturedHeader.flags(), is(FrameDescriptor.UNFRAGMENTED));
     }

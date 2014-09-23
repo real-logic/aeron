@@ -18,14 +18,15 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.BufferBuilder;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 
 import java.util.function.Supplier;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
- * {@link LogReader.DataHandler} that sits in a chain-of-responsibilities pattern that re-assembles fragmented messages
+ * {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that sits in a chain-of-responsibilities pattern that re-assembles fragmented messages
  * so that next handler in the chain only sees unfragmented messages.
  *
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
@@ -36,10 +37,10 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  * When sessions go inactive {@see InactiveConnectionHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
-public class FragmentAssemblyAdapter implements LogReader.DataHandler
+public class FragmentAssemblyAdapter implements DataHandler
 {
-    private final LogReader.DataHandler delegate;
-    private final Header cachedHeader = new Header();
+    private final DataHandler delegate;
+    private final AssemblyHeader assemblyHeader = new AssemblyHeader();
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
     private final Supplier<BufferBuilder> builderSupplier;
 
@@ -48,7 +49,7 @@ public class FragmentAssemblyAdapter implements LogReader.DataHandler
      *
      * @param delegate onto which whole messages are forwarded.
      */
-    public FragmentAssemblyAdapter(final LogReader.DataHandler delegate)
+    public FragmentAssemblyAdapter(final DataHandler delegate)
     {
         this(delegate, BufferBuilder.INITIAL_CAPACITY);
     }
@@ -59,13 +60,13 @@ public class FragmentAssemblyAdapter implements LogReader.DataHandler
      * @param delegate onto which whole messages are forwarded.
      * @param initialBufferSize to be used for each session.
      */
-    public FragmentAssemblyAdapter(final LogReader.DataHandler delegate, final int initialBufferSize)
+    public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferSize)
     {
         this.delegate = delegate;
         builderSupplier = () -> new BufferBuilder(initialBufferSize);
     }
 
-    public void onData(final AtomicBuffer buffer, final int offset, final int length, final LogReader.Header header)
+    public void onData(final AtomicBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
 
@@ -88,7 +89,7 @@ public class FragmentAssemblyAdapter implements LogReader.DataHandler
                 builder.append(buffer, offset, length);
 
                 final int msgLength = builder.limit();
-                delegate.onData(builder.buffer(), 0, msgLength, cachedHeader.reset(header, msgLength));
+                delegate.onData(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
                 builder.reset();
             }
             else
@@ -122,15 +123,15 @@ public class FragmentAssemblyAdapter implements LogReader.DataHandler
         return builder;
     }
 
-    private static class Header extends LogReader.Header
+    private static class AssemblyHeader extends Header
     {
         private int frameLength;
 
-        public Header reset(final LogReader.Header base, final int msgLength)
+        public AssemblyHeader reset(final Header base, final int msgLength)
         {
             buffer(base.buffer());
             offset(base.offset());
-            frameLength = msgLength + LogReader.HEADER_LENGTH;
+            frameLength = msgLength + Header.LENGTH;
 
             return this;
         }

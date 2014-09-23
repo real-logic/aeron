@@ -22,13 +22,13 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -46,7 +46,7 @@ public class FragmentedMessageTest
     private static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
-    private final LogReader.DataHandler mockDataHandler = mock(LogReader.DataHandler.class);
+    private final DataHandler mockDataHandler = mock(DataHandler.class);
 
     @Theory
     @Test(timeout = 10000)
@@ -86,7 +86,7 @@ public class FragmentedMessageTest
             while (numFragments < expectedFragmentsBecauseOfHeader);
 
             final ArgumentCaptor<AtomicBuffer> bufferArg = ArgumentCaptor.forClass(AtomicBuffer.class);
-            final ArgumentCaptor<LogReader.Header> headerArg = ArgumentCaptor.forClass(LogReader.Header.class);
+            final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
             verify(mockDataHandler, times(1)).onData(
                 bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());

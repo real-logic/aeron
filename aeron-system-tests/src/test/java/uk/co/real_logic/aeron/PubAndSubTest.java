@@ -23,7 +23,8 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -60,7 +61,7 @@ public class PubAndSubTest
     private Publication publication;
 
     private AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
-    private LogReader.DataHandler dataHandler = mock(LogReader.DataHandler.class);
+    private DataHandler dataHandler = mock(DataHandler.class);
 
     private void launch(final String channel) throws Exception
     {
@@ -123,7 +124,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -162,7 +163,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -203,7 +204,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -249,7 +250,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -309,7 +310,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -353,7 +354,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -402,7 +403,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -460,7 +461,7 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 
     @Theory
@@ -535,6 +536,6 @@ public class PubAndSubTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(messageLength),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 }

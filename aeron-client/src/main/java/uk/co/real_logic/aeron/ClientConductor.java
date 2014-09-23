@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -151,7 +152,7 @@ class ClientConductor extends Agent implements DriverListener
     }
 
     public synchronized Subscription addSubscription(
-        final String channel, final int streamId, final LogReader.DataHandler handler)
+        final String channel, final int streamId, final DataHandler handler)
     {
         verifyDriverActive();
 

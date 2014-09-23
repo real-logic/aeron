@@ -21,10 +21,7 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -63,7 +60,7 @@ public class ConnectionTest
         TermHelper.calculatePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final LogReader.DataHandler mockDataHandler = mock(LogReader.DataHandler.class);
+    private final DataHandler mockDataHandler = mock(DataHandler.class);
     private final PositionReporter mockPositionReporter = mock(PositionReporter.class);
 
     private LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
@@ -109,7 +106,7 @@ public class ConnectionTest
             any(AtomicBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
-            any(LogReader.Header.class));
+            any(Header.class));
 
         InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(ZERO_INITIAL_POSITION);
@@ -137,7 +134,7 @@ public class ConnectionTest
                 any(AtomicBuffer.class),
                 eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
                 eq(DATA.length),
-                any(LogReader.Header.class));
+                any(Header.class));
 
         InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(initialPosition);
@@ -167,7 +164,7 @@ public class ConnectionTest
                 any(AtomicBuffer.class),
                 eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
                 eq(DATA.length),
-                any(LogReader.Header.class));
+                any(Header.class));
 
         InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(initialPosition);

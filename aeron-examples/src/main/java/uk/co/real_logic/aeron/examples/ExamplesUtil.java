@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 
 import java.util.concurrent.TimeUnit;
@@ -89,12 +89,12 @@ public class ExamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized {@link LogReader.DataHandler} that prints to stdout
+     * Return a reusable, parameterized {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that prints to stdout
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static LogReader.DataHandler printStringMessage(final int streamId)
+    public static DataHandler printStringMessage(final int streamId)
     {
         return (buffer, offset, length, header) ->
         {
@@ -109,13 +109,13 @@ public class ExamplesUtil
     }
 
     /**
-     * Return a reusable, parameteried {@link LogReader.DataHandler} that calls into a
+     * Return a reusable, parameteried {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that calls into a
      * {@link RateReporter}.
      *
      * @param reporter for the rate
-     * @return {@link LogReader.DataHandler} that records the rate information
+     * @return {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that records the rate information
      */
-    public static LogReader.DataHandler rateReporterHandler(final RateReporter reporter)
+    public static DataHandler rateReporterHandler(final RateReporter reporter)
     {
         return (buffer, offset, length, header) -> reporter.onMessage(1, length);
     }

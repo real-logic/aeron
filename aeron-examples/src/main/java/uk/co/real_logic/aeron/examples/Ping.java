@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
@@ -122,7 +122,7 @@ public class Ping
     }
 
     private static void pongHandler(
-        final AtomicBuffer buffer, final int offset, final int length, final LogReader.Header header)
+        final AtomicBuffer buffer, final int offset, final int length, final Header header)
     {
         final long pingTimestamp = buffer.getLong(offset);
         final long rttNs = System.nanoTime() - pingTimestamp;

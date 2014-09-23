@@ -20,7 +20,8 @@ import org.junit.After;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -62,8 +63,8 @@ public class MultiDriverTest
     private Subscription subscriptionB;
 
     private AtomicBuffer buffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
-    private LogReader.DataHandler dataHandlerA = mock(LogReader.DataHandler.class);
-    private LogReader.DataHandler dataHandlerB = mock(LogReader.DataHandler.class);
+    private DataHandler dataHandlerA = mock(DataHandler.class);
+    private DataHandler dataHandlerB = mock(DataHandler.class);
 
     private void launch()
     {
@@ -204,12 +205,12 @@ public class MultiDriverTest
             any(AtomicBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
-            any(LogReader.Header.class));
+            any(Header.class));
 
         verify(dataHandlerB, times(numMessagesToSendPostJoin)).onData(
             any(AtomicBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
-            any(LogReader.Header.class));
+            any(Header.class));
     }
 }

@@ -32,6 +32,12 @@ public class LogReader extends LogBuffer
     private final Header header;
     private int offset = 0;
 
+    /**
+     * Construct a reader for a log and associated state buffer.
+     *
+     * @param logBuffer containing the data frames.
+     * @param stateBuffer containing the state data for the log.
+     */
     public LogReader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
     {
         super(logBuffer, stateBuffer);

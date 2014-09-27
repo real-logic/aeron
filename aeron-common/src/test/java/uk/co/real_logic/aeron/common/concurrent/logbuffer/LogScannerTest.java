@@ -84,7 +84,6 @@ public class LogScannerTest
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
         inOrder.verify(handler).onAvailable(logBuffer, frameOffset, alignedFrameLength);
@@ -110,7 +109,6 @@ public class LogScannerTest
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
         inOrder.verify(handler, never()).onAvailable(any(), anyInt(), anyInt());
@@ -139,7 +137,6 @@ public class LogScannerTest
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
 
@@ -173,7 +170,6 @@ public class LogScannerTest
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
 
@@ -206,7 +202,6 @@ public class LogScannerTest
         assertFalse(scanner.isComplete());
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(stateBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
         inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
 

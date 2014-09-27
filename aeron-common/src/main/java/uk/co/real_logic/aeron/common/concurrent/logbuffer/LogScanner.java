@@ -105,40 +105,43 @@ public class LogScanner extends LogBuffer
 
         if (!isComplete())
         {
-            final int tail = tailVolatile();
+            final int capacity = capacity();
             final int offset = this.offset;
             final AtomicBuffer logBuffer = logBuffer();
 
-            if (tail > offset)
+            int padding = 0;
+
+            do
             {
-                int padding = 0;
-
-                do
+                final int frameLength = frameLength(logBuffer, offset + length);
+                if (0 == frameLength)
                 {
-                    int alignedFrameLength = align(waitForFrameLength(logBuffer, offset + length), FRAME_ALIGNMENT);
-
-                    if (PADDING_FRAME_TYPE == frameType(logBuffer, offset + length))
-                    {
-                        padding = alignedFrameLength - alignedHeaderLength;
-                        alignedFrameLength = alignedHeaderLength;
-                    }
-
-                    length += alignedFrameLength;
-
-                    if (length > mtuLength)
-                    {
-                        length -= alignedFrameLength;
-                        padding = 0;
-                        break;
-                    }
+                    break;
                 }
-                while ((offset + length + padding) < tail);
 
-                if (length > 0)
+                int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+
+                if (PADDING_FRAME_TYPE == frameType(logBuffer, offset + length))
                 {
-                    this.offset += (length + padding);
-                    handler.onAvailable(logBuffer, offset, length);
+                    padding = alignedFrameLength - alignedHeaderLength;
+                    alignedFrameLength = alignedHeaderLength;
                 }
+
+                length += alignedFrameLength;
+
+                if (length > mtuLength)
+                {
+                    length -= alignedFrameLength;
+                    padding = 0;
+                    break;
+                }
+            }
+            while ((offset + length + padding) < capacity);
+
+            if (length > 0)
+            {
+                this.offset += (length + padding);
+                handler.onAvailable(logBuffer, offset, length);
             }
         }
 
@@ -153,13 +156,25 @@ public class LogScanner extends LogBuffer
      */
     public void seek(final int offset)
     {
-        final int tail = tailVolatile();
-        if (offset < 0 || offset > tail)
+        final int capacity = capacity();
+        if (offset < 0 || offset > capacity)
         {
-            throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d", offset, tail));
+            throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d", offset, capacity));
         }
 
         this.offset = offset;
+    }
+
+    public static int frameLength(final AtomicBuffer logBuffer, final int frameOffset)
+    {
+        int frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
+
+        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
+        {
+            frameLength = Integer.reverseBytes(frameLength);
+        }
+
+        return frameLength;
     }
 
     private static int frameType(final AtomicBuffer logBuffer, final int frameOffset)

@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
-import java.nio.ByteOrder;
-
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
@@ -163,22 +161,5 @@ public class LogScanner extends LogBuffer
         }
 
         this.offset = offset;
-    }
-
-    public static int frameLength(final AtomicBuffer logBuffer, final int frameOffset)
-    {
-        int frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
-
-        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
-        {
-            frameLength = Integer.reverseBytes(frameLength);
-        }
-
-        return frameLength;
-    }
-
-    private static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
-    {
-        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
 }

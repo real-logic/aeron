@@ -253,6 +253,25 @@ public class FrameDescriptor
     }
 
     /**
+     * Get the length of a frame from the header.
+     *
+     * @param logBuffer   containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @return the value for the frame length.
+     */
+    public static int frameLength(final AtomicBuffer logBuffer, final int frameOffset)
+    {
+        int frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
+
+        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
+        {
+            frameLength = Integer.reverseBytes(frameLength);
+        }
+
+        return frameLength;
+    }
+
+    /**
      * Check that a given offset is at the correct {@link FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
      *
      * @param offset to be checked.

@@ -55,6 +55,16 @@ public class LogRebuilder extends LogBuffer
     }
 
     /**
+     * Is the rebuild of this log complete?
+     *
+     * @return true if it is complete otherwise false.
+     */
+    public boolean isComplete()
+    {
+        return stateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
+    }
+
+    /**
      * Insert a packet of frames into the log at the appropriate offset as indicated by the term offset header.
      *
      * The tail and high-water-mark will be updated as appropriate. Data can be consumed up to the the tail. The
@@ -71,35 +81,35 @@ public class LogRebuilder extends LogBuffer
 
         if (termOffset >= tail)
         {
+            final int lengthOffset = lengthOffset(srcOffset);
+            final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
+            packet.putInt(lengthOffset, 0, LITTLE_ENDIAN);
+
             final AtomicBuffer logBuffer = logBuffer();
             logBuffer.putBytes(termOffset, packet, srcOffset, length);
+            FrameDescriptor.frameLengthOrdered(logBuffer, termOffset, frameLength);
 
-            final int capacity = capacity();
-            int alignedFrameLength;
-            while ((tail < capacity) && (alignedFrameLength = alignedFrameLength(logBuffer, tail)) != 0)
-            {
-                tail += alignedFrameLength;
-            }
-
-            final AtomicBuffer stateBuffer = stateBuffer();
-            putTailOrdered(stateBuffer, tail);
-
-            final int endOfFrame = termOffset + length;
-            if (endOfFrame > highWaterMark())
-            {
-                putHighWaterMark(stateBuffer, endOfFrame);
-            }
+            updateCompetitionStatus(logBuffer, termOffset, length, tail);
         }
     }
 
-    /**
-     * Is the rebuild of this log complete?
-     *
-     * @return true if it is complete otherwise false.
-     */
-    public boolean isComplete()
+    private void updateCompetitionStatus(final AtomicBuffer logBuffer, final int termOffset, final int length, int tail)
     {
-        return stateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
+        final int capacity = capacity();
+        int alignedFrameLength;
+        while ((tail < capacity) && (alignedFrameLength = alignedFrameLength(logBuffer, tail)) != 0)
+        {
+            tail += alignedFrameLength;
+        }
+
+        final AtomicBuffer stateBuffer = stateBuffer();
+        putTailOrdered(stateBuffer, tail);
+
+        final int endOfFrame = termOffset + length;
+        if (endOfFrame > highWaterMark())
+        {
+            putHighWaterMark(stateBuffer, endOfFrame);
+        }
     }
 
     private static int alignedFrameLength(final AtomicBuffer logBuffer, final int tail)

@@ -111,7 +111,7 @@ public class LogScanner extends LogBuffer
 
             do
             {
-                final int frameLength = frameLength(logBuffer, offset + length);
+                final int frameLength = frameLengthVolatile(logBuffer, offset + length);
                 if (0 == frameLength)
                 {
                     break;
@@ -157,7 +157,7 @@ public class LogScanner extends LogBuffer
         final int capacity = capacity();
         if (offset < 0 || offset > capacity)
         {
-            throw new IllegalStateException(String.format("Invalid offset %d: range is 0 - %d", offset, capacity));
+            throw new IndexOutOfBoundsException(String.format("Invalid offset %d: range is 0 - %d", offset, capacity));
         }
 
         this.offset = offset;

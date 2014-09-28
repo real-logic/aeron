@@ -20,7 +20,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.checkOffset;
 
 /**
  * A log buffer reader.
@@ -61,7 +60,12 @@ public class LogReader extends LogBuffer
      */
     public void seek(final int offset)
     {
-        checkOffset(offset, tailVolatile());
+        final int capacity = capacity();
+        if (offset < 0 || offset > capacity)
+        {
+            throw new IndexOutOfBoundsException(String.format("Invalid offset %d: range is 0 - %d", offset, capacity));
+        }
+
         checkOffsetAlignment(offset);
 
         this.offset = offset;
@@ -71,20 +75,25 @@ public class LogReader extends LogBuffer
      * Reads data from the log buffer.
      *
      * @param handler the handler for data that has been read
-     * @param framesLimit limit the number of frames read.
+     * @param framesCountLimit limit the number of frames read.
      * @return the number of frames read
      */
-    public int read(final DataHandler handler, final int framesLimit)
+    public int read(final DataHandler handler, final int framesCountLimit)
     {
         int framesCounter = 0;
-        final int tail = tailVolatile();
+        final int capacity = capacity();
         final AtomicBuffer logBuffer = logBuffer();
         final Header header = this.header;
         int offset = this.offset;
 
-        while (tail > offset && framesCounter < framesLimit)
+        while (offset < capacity && framesCounter < framesCountLimit)
         {
-            final int frameLength = waitForFrameLength(logBuffer, offset);
+            final int frameLength = frameLengthVolatile(logBuffer, offset);
+            if (0 == frameLength)
+            {
+                break;
+            }
+
             try
             {
                 if (frameType(logBuffer, offset) != PADDING_FRAME_TYPE)

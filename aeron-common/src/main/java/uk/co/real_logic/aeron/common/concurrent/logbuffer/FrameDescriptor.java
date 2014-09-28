@@ -162,17 +162,6 @@ public class FrameDescriptor
     }
 
     /**
-     * The buffer offset at which the version field begins.
-     *
-     * @param frameOffset at which the frame begins.
-     * @return the offset at which the version field begins.
-     */
-    public static int versionOffset(final int frameOffset)
-    {
-        return frameOffset + VERSION_OFFSET;
-    }
-
-    /**
      * The buffer offset at which the flags field begins.
      *
      * @param frameOffset at which the frame begins.
@@ -217,30 +206,6 @@ public class FrameDescriptor
     }
 
     /**
-     * Busy spin on a frame length header until it is non zero and return value.
-     *
-     * @param logBuffer   containing the frame.
-     * @param frameOffset at which a frame begins.
-     * @return the value of the frame length header.
-     */
-    public static int waitForFrameLength(final AtomicBuffer logBuffer, final int frameOffset)
-    {
-        int frameLength;
-        do
-        {
-            frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
-        }
-        while (0 == frameLength);
-
-        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
-        {
-            frameLength = Integer.reverseBytes(frameLength);
-        }
-
-        return frameLength;
-    }
-
-    /**
      * Read the type of of the frame from header.
      *
      * @param logBuffer   containing the frame.
@@ -253,13 +218,13 @@ public class FrameDescriptor
     }
 
     /**
-     * Get the length of a frame from the header.
+     * Get the length of a frame from the header as a volatile read.
      *
      * @param logBuffer   containing the frame.
      * @param frameOffset at which a frame begins.
      * @return the value for the frame length.
      */
-    public static int frameLength(final AtomicBuffer logBuffer, final int frameOffset)
+    public static int frameLengthVolatile(final AtomicBuffer logBuffer, final int frameOffset)
     {
         int frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
 
@@ -283,5 +248,22 @@ public class FrameDescriptor
         {
             throw new IllegalArgumentException("Cannot seek to an offset that isn't a multiple of " + FRAME_ALIGNMENT);
         }
+    }
+
+    /**
+     * Write the length header for a frame in a memory ordered fashion.
+     *
+     * @param logBuffer   containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @param frameLength field to be set for the frame.
+     */
+    public static void frameLengthOrdered(final AtomicBuffer logBuffer, final int frameOffset, int frameLength)
+    {
+        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
+        {
+            frameLength = Integer.reverseBytes(frameLength);
+        }
+
+        logBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
     }
 }

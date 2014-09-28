@@ -127,16 +127,16 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Check that the offset is is not greater than the tail.
+     * Check that the offset is is not greater than the capacity.
      *
-     * @param offset to check.
-     * @param tail   current value fo the tail.
+     * @param offset    to check.
+     * @param capacity  current value for the capacity.
      */
-    public static void checkOffset(final int offset, final int tail)
+    public static void checkOffset(final int offset, final int capacity)
     {
-        if (offset > tail)
+        if (offset > capacity)
         {
-            throw new IllegalStateException("Cannot seek to " + offset + ", the tail is only " + tail);
+            throw new IllegalStateException("Cannot seek to " + offset + ", the capacity is " + capacity);
         }
     }
 }

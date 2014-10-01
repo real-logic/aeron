@@ -81,10 +81,10 @@ public class LogReader extends LogBuffer
     public int read(final DataHandler handler, final int framesCountLimit)
     {
         int framesCounter = 0;
+        int offset = this.offset;
         final int capacity = capacity();
         final AtomicBuffer logBuffer = logBuffer();
         final Header header = this.header;
-        int offset = this.offset;
 
         while (offset < capacity && framesCounter < framesCountLimit)
         {

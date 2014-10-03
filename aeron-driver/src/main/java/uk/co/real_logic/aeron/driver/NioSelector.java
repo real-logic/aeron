@@ -30,18 +30,42 @@ import java.util.function.IntSupplier;
  */
 public class NioSelector implements AutoCloseable
 {
-    // TODO: move to Configuration
-    public static final String DISABLE_KEYSET_OPTIMIZATION_PROP_NAME = "aeron.disable.nio.keyset.optimization";
-    public static final boolean DISABLE_KEYSET_OPTIMIZATION = Boolean.getBoolean(DISABLE_KEYSET_OPTIMIZATION_PROP_NAME);
+    private static final Field SELECTED_KEYS_FIELD;
+    private static final Field PUBLIC_SELECTED_KEYS_FIELD;
 
-    private final IntSupplier handleSelectedKeysFunc;
+    static
+    {
+        Field selectKeysField = null;
+        Field publicSelectKeysField = null;
+
+        try
+        {
+            final Class<?> selectorImplClass =
+                Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
+
+            if (selectorImplClass.isAssignableFrom(Selector.class))
+            {
+                selectKeysField = selectorImplClass.getDeclaredField("selectedKeys");
+                selectKeysField.setAccessible(true);
+
+                publicSelectKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
+                publicSelectKeysField.setAccessible(true);
+            }
+        }
+        catch (final Exception ignore)
+        {
+        }
+
+        SELECTED_KEYS_FIELD = selectKeysField;
+        PUBLIC_SELECTED_KEYS_FIELD = publicSelectKeysField;
+    }
+
     private final Selector selector;
     private final NioSelectedKeySet selectedKeySet;
 
     public NioSelector()
     {
         NioSelectedKeySet tmpSet = null;
-        IntSupplier selectedKeysFunc = this::handleSelectedKeys;
 
         try
         {
@@ -55,37 +79,22 @@ public class NioSelector implements AutoCloseable
         /*
          * netty's way of optimizing the terrible NIO HashSet handling for selected keys
          */
-        if (!DISABLE_KEYSET_OPTIMIZATION)
+        if (null != PUBLIC_SELECTED_KEYS_FIELD)
         {
             try
             {
-                final Class<?> selectorImplClass =
-                    Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
+                tmpSet = new NioSelectedKeySet();
 
-                if (selectorImplClass.isAssignableFrom(selector.getClass()))
-                {
-                    tmpSet = new NioSelectedKeySet();
-
-                    final Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
-                    final Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
-
-                    selectedKeysField.setAccessible(true);
-                    publicSelectedKeysField.setAccessible(true);
-
-                    selectedKeysField.set(selector, tmpSet);
-                    publicSelectedKeysField.set(selector, tmpSet);
-
-                    selectedKeysFunc = this::handleSelectedKeysOptimized;
-                }
+                SELECTED_KEYS_FIELD.set(selector, tmpSet);
+                PUBLIC_SELECTED_KEYS_FIELD.set(selector, tmpSet);
             }
-            catch (final Exception ex)
+            catch (final Exception ignore)
             {
                 tmpSet = null;
             }
         }
 
         selectedKeySet = tmpSet;
-        handleSelectedKeysFunc = selectedKeysFunc;
     }
 
     /**
@@ -133,7 +142,14 @@ public class NioSelector implements AutoCloseable
             int handledFrames = 0;
             if (selector.selectNow() > 0)
             {
-                handledFrames = handleSelectedKeysFunc.getAsInt();
+                if (null != PUBLIC_SELECTED_KEYS_FIELD)
+                {
+                    handledFrames = handleSelectedKeysOptimized();
+                }
+                else
+                {
+                    handledFrames = handleSelectedKeys();
+                }
             }
 
             return handledFrames;

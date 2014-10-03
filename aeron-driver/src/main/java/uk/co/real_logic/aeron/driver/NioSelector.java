@@ -63,6 +63,9 @@ public class NioSelector implements AutoCloseable
     private final Selector selector;
     private final NioSelectedKeySet selectedKeySet;
 
+    /**
+     * Construct a selector
+     */
     public NioSelector()
     {
         NioSelectedKeySet tmpSet = null;

@@ -35,27 +35,42 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
     private SelectionKey[] keys;
     private int size;
 
+    /**
+     * Construct a key set with default capacity
+     */
     public NioSelectedKeySet()
     {
         this(INITIAL_CAPACITY);
     }
 
+    /**
+     * Construct a key set with the given capacity.
+     *
+     * @param initialCapacity for the key set
+     */
     public NioSelectedKeySet(final int initialCapacity)
     {
         size = 0;
         keys = new SelectionKey[BitUtil.findNextPositivePowerOfTwo(initialCapacity)];
     }
 
+    /** {@inheritDoc} */
     public int size()
     {
         return size;
     }
 
+    /**
+     * Capacity of the current set
+     *
+     * @return capacity of the set
+     */
     public int capacity()
     {
         return keys.length;
     }
 
+    /** {@inheritDoc} */
     public boolean add(final SelectionKey selectionKey)
     {
         if (null == selectionKey)
@@ -68,16 +83,24 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
         return true;
     }
 
+    /** {@inheritDoc} */
     public boolean remove(final Object o)
     {
         return false;
     }
 
+    /** {@inheritDoc} */
     public boolean contains(final Object o)
     {
         return false;
     }
 
+    /**
+     * Iterate over the key set and apply the given function.
+     *
+     * @param function to apply to each {@link java.nio.channels.SelectionKey}
+     * @return number of handled frames
+     */
     public int forEach(final ToIntFunction<SelectionKey> function)
     {
         int handledFrames = 0;
@@ -93,6 +116,7 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
         return handledFrames;
     }
 
+    /** {@inheritDoc} */
     public Iterator<SelectionKey> iterator()
     {
         throw new UnsupportedOperationException();

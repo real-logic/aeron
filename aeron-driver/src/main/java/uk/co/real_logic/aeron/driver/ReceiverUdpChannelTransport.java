@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetSocketAddress;
+import java.util.function.IntSupplier;
 
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
 
@@ -37,6 +38,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
 
     private final DataFrameHandler dataFrameHandler;
     private final SetupFrameHandler setupFrameHandler;
+    private final IntSupplier readDataFramesFunc;
 
     /**
      * Construct a transport for use with receiving and processing data frames
@@ -57,6 +59,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
 
         this.dataFrameHandler = dataFrameHandler;
         this.setupFrameHandler = setupFrameHandler;
+        this.readDataFramesFunc = this::onReadDataFrames;
 
         dataHeader.wrap(readBuffer, 0);
         setupHeader.wrap(readBuffer, 0);
@@ -69,7 +72,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
      */
     public void registerForRead(final NioSelector nioSelector)
     {
-        registeredKey = nioSelector.registerForRead(datagramChannel, this::onReadDataFrames);
+        registeredKey = nioSelector.registerForRead(datagramChannel, readDataFramesFunc);
     }
 
     private int onReadDataFrames()

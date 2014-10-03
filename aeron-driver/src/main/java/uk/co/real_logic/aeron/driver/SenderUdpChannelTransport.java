@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
+import java.util.function.IntSupplier;
 
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
 
@@ -38,6 +39,7 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
 
     private final StatusMessageFrameHandler smFrameHandler;
     private final NakFrameHandler nakFrameHandler;
+    private final IntSupplier onReadControlFramesFunc;
 
     /**
      * Construct a transport for use with receiving and processing control frames
@@ -61,6 +63,7 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
 
         this.smFrameHandler = smFrameHandler;
         this.nakFrameHandler = nakFrameHandler;
+        this.onReadControlFramesFunc = this::onReadControlFrames;
 
         nakHeader.wrap(readBuffer, 0);
         statusMessage.wrap(readBuffer, 0);
@@ -68,7 +71,7 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
 
     public void registerForRead(final NioSelector nioSelector)
     {
-        registeredKey = nioSelector.registerForRead(datagramChannel, this::onReadControlFrames);
+        registeredKey = nioSelector.registerForRead(datagramChannel, onReadControlFramesFunc);
     }
 
     private int onReadControlFrames()

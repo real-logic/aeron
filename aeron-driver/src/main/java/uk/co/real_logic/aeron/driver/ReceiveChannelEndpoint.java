@@ -40,6 +40,9 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
+    private final DataFrameHandler onDataFrameFunc;
+    private final SetupFrameHandler onSetupFrameFunc;
+
     private volatile boolean closed = false;
 
     public ReceiveChannelEndpoint(
@@ -50,9 +53,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     {
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
+        onDataFrameFunc = this::onDataFrame;
+        onSetupFrameFunc = this::onSetupFrame;
 
         this.logger = logger;
-        this.transport = new ReceiverUdpChannelTransport(udpChannel, this::onDataFrame, this::onSetupFrame, logger, lossGenerator);
+        this.transport = new ReceiverUdpChannelTransport(udpChannel, onDataFrameFunc, onSetupFrameFunc, logger, lossGenerator);
         this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
     }
 

@@ -43,7 +43,8 @@ public class NioSelector implements AutoCloseable
             final Class<?> selectorImplClass =
                 Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
 
-            if (selectorImplClass.isAssignableFrom(Selector.class))
+            // grab a selector. This must be the same type we will grab in the constructor.
+            if (selectorImplClass.isAssignableFrom(Selector.open().getClass()))
             {
                 selectKeysField = selectorImplClass.getDeclaredField("selectedKeys");
                 selectKeysField.setAccessible(true);

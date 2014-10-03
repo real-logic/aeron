@@ -59,15 +59,15 @@ public class NioSelector implements AutoCloseable
         {
             try
             {
-                Class<?> selectorImplClass =
+                final Class<?> selectorImplClass =
                     Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
 
                 if (selectorImplClass.isAssignableFrom(selector.getClass()))
                 {
                     tmpSet = new NioSelectedKeySet();
 
-                    Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
-                    Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
+                    final Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
+                    final Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
 
                     selectedKeysField.setAccessible(true);
                     publicSelectedKeysField.setAccessible(true);
@@ -180,17 +180,18 @@ public class NioSelector implements AutoCloseable
 
     private static int handleKey(final SelectionKey key)
     {
+        int value = 0;
+
         if (key.isReadable())
         {
-            return ((IntSupplier)key.attachment()).getAsInt();
+            value = ((IntSupplier)key.attachment()).getAsInt();
         }
 
-        return 0;
+        return value;
     }
 
     private int handleSelectedKeysOptimized()
     {
-        // lambda doesn't close over state and shouldn't allocate
         return selectedKeySet.forEach(NioSelector::handleKey);
     }
 }

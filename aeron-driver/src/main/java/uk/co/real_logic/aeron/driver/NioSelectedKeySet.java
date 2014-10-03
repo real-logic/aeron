@@ -35,7 +35,6 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
     private SelectionKey[] keys;
     private int size;
 
-
     public NioSelectedKeySet()
     {
         this(INITIAL_CAPACITY);
@@ -82,6 +81,7 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
     public int forEach(final ToIntFunction<SelectionKey> function)
     {
         int handledFrames = 0;
+        final SelectionKey[] keys = this.keys;
 
         for (int i = size - 1; i >= 0; i--)
         {
@@ -89,6 +89,7 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
         }
 
         size = 0;
+
         return handledFrames;
     }
 
@@ -109,9 +110,7 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
         if (requiredCapacity > keys.length)
         {
             final int newCapacity = BitUtil.findNextPositivePowerOfTwo(requiredCapacity);
-            final SelectionKey[] newKeys = Arrays.copyOf(keys, newCapacity);
-
-            keys = newKeys;
+            keys = Arrays.copyOf(keys, newCapacity);
         }
     }
 }

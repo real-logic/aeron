@@ -60,19 +60,34 @@ public class ExamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized event loop that calls {@link Thread#yield()} when no messages are received
+     * Return a reusable, parameterized event loop that calls a default idler when no messages are received
      *
-     * @param limit passed to {@link Subscription#poll(int)}
+     * @param limit        passed to {@link Subscription#poll(int)}
+     * @param running      indication for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
     {
+        final IdleStrategy idleStrategy = new BackoffIdleStrategy(
+            100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+
+        return subscriberLoop(limit, running, idleStrategy);
+    }
+
+    /**
+     * Return a reusable, parameterized event loop that calls and idler when no messages are received
+     *
+     * @param limit        passed to {@link Subscription#poll(int)}
+     * @param running      indication for loop
+     * @param idleStrategy to use for loop
+     * @return loop function
+     */
+    public static Consumer<Subscription> subscriberLoop(
+        final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
+    {
         return
             (subscription) ->
             {
-                final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
-
                 try
                 {
                     while (running.get())

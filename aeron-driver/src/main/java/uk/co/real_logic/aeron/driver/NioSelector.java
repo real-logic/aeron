@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
@@ -29,10 +30,19 @@ import java.util.function.IntSupplier;
  */
 public class NioSelector implements AutoCloseable
 {
-    private Selector selector;
+    // TODO: move to Configuration
+    public static final String DISABLE_KEYSET_OPTIMIZATION_PROP_NAME = "aeron.disable.nio.keyset.optimization";
+    public static final boolean DISABLE_KEYSET_OPTIMIZATION = Boolean.getBoolean(DISABLE_KEYSET_OPTIMIZATION_PROP_NAME);
+
+    private final IntSupplier handleSelectedKeysFunc;
+    private final Selector selector;
+    private final NioSelectedKeySet selectedKeySet;
 
     public NioSelector()
     {
+        NioSelectedKeySet tmpSet = null;
+        IntSupplier selectedKeysFunc = this::handleSelectedKeys;
+
         try
         {
             this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
@@ -41,6 +51,41 @@ public class NioSelector implements AutoCloseable
         {
             throw new RuntimeException(ex);
         }
+
+        /*
+         * netty's way of optimizing the terrible NIO HashSet handling for selected keys
+         */
+        if (!DISABLE_KEYSET_OPTIMIZATION)
+        {
+            try
+            {
+                Class<?> selectorImplClass =
+                    Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
+
+                if (selectorImplClass.isAssignableFrom(selector.getClass()))
+                {
+                    tmpSet = new NioSelectedKeySet();
+
+                    Field selectedKeysField = selectorImplClass.getDeclaredField("selectedKeys");
+                    Field publicSelectedKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
+
+                    selectedKeysField.setAccessible(true);
+                    publicSelectedKeysField.setAccessible(true);
+
+                    selectedKeysField.set(selector, tmpSet);
+                    publicSelectedKeysField.set(selector, tmpSet);
+
+                    selectedKeysFunc = this::handleSelectedKeysOptimized;
+                }
+            }
+            catch (final Exception ex)
+            {
+                tmpSet = null;
+            }
+        }
+
+        selectedKeySet = tmpSet;
+        handleSelectedKeysFunc = selectedKeysFunc;
     }
 
     /**
@@ -88,7 +133,7 @@ public class NioSelector implements AutoCloseable
             int handledFrames = 0;
             if (selector.selectNow() > 0)
             {
-                handledFrames = handleSelectedKeys();
+                handledFrames = handleSelectedKeysFunc.getAsInt();
             }
 
             return handledFrames;
@@ -131,5 +176,21 @@ public class NioSelector implements AutoCloseable
         }
 
         return handledFrames;
+    }
+
+    private static int handleKey(final SelectionKey key)
+    {
+        if (key.isReadable())
+        {
+            return ((IntSupplier)key.attachment()).getAsInt();
+        }
+
+        return 0;
+    }
+
+    private int handleSelectedKeysOptimized()
+    {
+        // lambda doesn't close over state and shouldn't allocate
+        return selectedKeySet.forEach(NioSelector::handleKey);
     }
 }

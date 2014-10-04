@@ -75,11 +75,6 @@ public class LogBufferDescriptor
     public static final int MIN_LOG_SIZE = 64 * 1024; // TODO: make a sensible default
 
     /**
-     * Padding frame type to indicate end of the log is not in use.
-     */
-    public static final int PADDING_FRAME_TYPE = 0;
-
-    /**
      * Check that log buffer is the correct size and alignment.
      *
      * @param buffer to be checked.
@@ -123,20 +118,6 @@ public class LogBufferDescriptor
                 STATE_BUFFER_LENGTH,
                 capacity);
             throw new IllegalStateException(s);
-        }
-    }
-
-    /**
-     * Check that the offset is is not greater than the capacity.
-     *
-     * @param offset    to check.
-     * @param capacity  current value for the capacity.
-     */
-    public static void checkOffset(final int offset, final int capacity)
-    {
-        if (offset > capacity)
-        {
-            throw new IllegalStateException("Cannot seek to " + offset + ", the capacity is " + capacity);
         }
     }
 }

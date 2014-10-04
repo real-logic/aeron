@@ -105,6 +105,11 @@ public class FrameDescriptor
     public static final int TERM_OFFSET = 8;
 
     /**
+     * Padding frame type to indicate end of the log is not in use.
+     */
+    public static final int PADDING_FRAME_TYPE = 0;
+
+    /**
      * Calculate the maximum supported message length for a buffer of given capacity.
      *
      * @param capacity of the log buffer.
@@ -215,6 +220,18 @@ public class FrameDescriptor
     public static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
     {
         return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+    }
+
+    /**
+     * Is the frame starting at the frameOffset a padding frame at the end of a buffer?
+     *
+     * @param logBuffer   containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @return true if the frame is a padding frame otherwise false.
+     */
+    public static boolean isPaddingFrame(final AtomicBuffer logBuffer, final int frameOffset)
+    {
+        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) == PADDING_FRAME_TYPE;
     }
 
     /**

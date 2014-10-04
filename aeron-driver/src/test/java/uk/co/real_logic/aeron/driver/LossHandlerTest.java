@@ -449,7 +449,7 @@ public class LossHandlerTest
                   .sessionId(SESSION_ID)
                   .termOffset(offset)
                   .frameLength(LOG_BUFFER_SIZE - offset)
-                  .headerType(LogBufferDescriptor.PADDING_FRAME_TYPE)
+                  .headerType(FrameDescriptor.PADDING_FRAME_TYPE)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 

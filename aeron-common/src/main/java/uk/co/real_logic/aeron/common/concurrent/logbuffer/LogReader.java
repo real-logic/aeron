@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
 
 /**
  * A log buffer reader.
@@ -96,7 +95,7 @@ public class LogReader extends LogBuffer
 
             try
             {
-                if (frameType(logBuffer, offset) != PADDING_FRAME_TYPE)
+                if (!isPaddingFrame(logBuffer, offset))
                 {
                     header.offset(offset);
                     handler.onData(logBuffer, offset + Header.LENGTH, frameLength - Header.LENGTH, header);

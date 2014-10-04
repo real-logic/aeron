@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PADDING_FRAME_TYPE;
 
 /**
  * Scans a log buffer reading MTU (Maximum Transmission Unit) ranges of messages
@@ -119,7 +118,7 @@ public class LogScanner extends LogBuffer
 
                 int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
-                if (PADDING_FRAME_TYPE == frameType(logBuffer, offset + length))
+                if (isPaddingFrame(logBuffer, offset + length))
                 {
                     padding = alignedFrameLength - alignedHeaderLength;
                     alignedFrameLength = alignedHeaderLength;

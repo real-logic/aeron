@@ -160,23 +160,28 @@ public class Publication implements AutoCloseable
      */
     public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
     {
+        boolean offerSucceeded = false;
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (isWithinLimit(currentTail))
+        if (isWithinFlowControlLimit(currentTail))
         {
             switch (logAppender.append(buffer, offset, length))
             {
                 case SUCCESS:
-                    return true;
+                    offerSucceeded = true;
+                    break;
 
                 case TRIPPED:
                     nextTerm();
-                    return offer(buffer, offset, length);
+                    break;
+
+                case FAILURE:
+                    break;
             }
         }
 
-        return false;
+        return offerSucceeded;
     }
 
     private void closeBuffers()
@@ -206,7 +211,7 @@ public class Publication implements AutoCloseable
         logAppenders[previousIndex].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
     }
 
-    private boolean isWithinLimit(final int currentTail)
+    private boolean isWithinFlowControlLimit(final int currentTail)
     {
         return position(currentTail) < limit.position();
     }

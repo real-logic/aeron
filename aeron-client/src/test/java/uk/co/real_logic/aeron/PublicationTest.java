@@ -96,6 +96,7 @@ public class PublicationTest
         when(appenders[termIdToBufferIndex(TERM_ID_1)].tailVolatile()).thenReturn(MIN_LOG_SIZE - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
+        assertFalse(publication.offer(atomicSendBuffer));
         assertTrue(publication.offer(atomicSendBuffer));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);

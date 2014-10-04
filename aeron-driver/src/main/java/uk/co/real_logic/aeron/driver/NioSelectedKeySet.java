@@ -33,7 +33,7 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
     private static final int INITIAL_CAPACITY = 16;
 
     private SelectionKey[] keys;
-    private int size;
+    private int size = 0;
 
     /**
      * Construct a key set with default capacity
@@ -50,7 +50,6 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
      */
     public NioSelectedKeySet(final int initialCapacity)
     {
-        size = 0;
         keys = new SelectionKey[BitUtil.findNextPositivePowerOfTwo(initialCapacity)];
     }
 
@@ -80,6 +79,7 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
 
         ensureCapacity(size + 1);
         keys[size++] = selectionKey;
+
         return true;
     }
 
@@ -126,8 +126,7 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
     {
         if (requiredCapacity < 0)
         {
-            final String s =
-                String.format("Insufficient capacity: length=%d required=%d", keys.length, requiredCapacity);
+            final String s = String.format("Insufficient capacity: length=%d required=%d", keys.length, requiredCapacity);
             throw new IllegalStateException(s);
         }
 

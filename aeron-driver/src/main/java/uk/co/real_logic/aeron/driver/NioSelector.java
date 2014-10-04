@@ -40,16 +40,14 @@ public class NioSelector implements AutoCloseable
 
         try
         {
-            final Class<?> selectorImplClass =
-                Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
+            final Class<?> clazz = Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
 
-            // grab a selector. This must be the same type we will grab in the constructor.
-            if (selectorImplClass.isAssignableFrom(Selector.open().getClass()))
+            if (clazz.isAssignableFrom(Selector.open().getClass()))
             {
-                selectKeysField = selectorImplClass.getDeclaredField("selectedKeys");
+                selectKeysField = clazz.getDeclaredField("selectedKeys");
                 selectKeysField.setAccessible(true);
 
-                publicSelectKeysField = selectorImplClass.getDeclaredField("publicSelectedKeys");
+                publicSelectKeysField = clazz.getDeclaredField("publicSelectedKeys");
                 publicSelectKeysField.setAccessible(true);
             }
         }
@@ -80,9 +78,6 @@ public class NioSelector implements AutoCloseable
             throw new RuntimeException(ex);
         }
 
-        /*
-         * netty's way of optimizing the terrible NIO HashSet handling for selected keys
-         */
         if (null != PUBLIC_SELECTED_KEYS_FIELD)
         {
             try

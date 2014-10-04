@@ -137,23 +137,24 @@ public class NioSelector implements AutoCloseable
     }
 
     /**
-     * Explicit event loop processing as poll
+     * Explicit event loop processing as a poll
+     *
+     * @return the number of frames processed.
      */
     public int processKeys()
     {
         try
         {
-            int handledFrames = 0;
-            if (selector.selectNow() > 0)
+            selector.selectNow();
+
+            int handledFrames;
+            if (null != PUBLIC_SELECTED_KEYS_FIELD)
             {
-                if (null != PUBLIC_SELECTED_KEYS_FIELD)
-                {
-                    handledFrames = handleSelectedKeysOptimized();
-                }
-                else
-                {
-                    handledFrames = handleSelectedKeys();
-                }
+                handledFrames = selectedKeySet.forEach(NioSelector::handleKey);
+            }
+            else
+            {
+                handledFrames = handleSelectedKeys();
             }
 
             return handledFrames;
@@ -184,6 +185,7 @@ public class NioSelector implements AutoCloseable
         int handledFrames = 0;
         final Set<SelectionKey> selectedKeys = selector.selectedKeys();
         final Iterator<SelectionKey> iter = selectedKeys.iterator();
+
         while (iter.hasNext())
         {
             final SelectionKey key = iter.next();
@@ -208,10 +210,5 @@ public class NioSelector implements AutoCloseable
         }
 
         return value;
-    }
-
-    private int handleSelectedKeysOptimized()
-    {
-        return selectedKeySet.forEach(NioSelector::handleKey);
     }
 }

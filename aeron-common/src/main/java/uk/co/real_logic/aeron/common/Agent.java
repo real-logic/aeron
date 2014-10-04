@@ -30,6 +30,7 @@ public abstract class Agent implements Runnable, AutoCloseable
     private final Consumer<Exception> exceptionHandler;
     private final AtomicCounter exceptionCounter;
     private volatile CountDownLatch latch;
+    private volatile Thread thread;
 
     private volatile boolean running;
 
@@ -40,9 +41,7 @@ public abstract class Agent implements Runnable, AutoCloseable
      * @param exceptionCounter for reporting how many exceptions have been seen.
      */
     public Agent(
-            final IdleStrategy idleStrategy,
-            final Consumer<Exception> exceptionHandler,
-            final AtomicCounter exceptionCounter)
+        final IdleStrategy idleStrategy, final Consumer<Exception> exceptionHandler, final AtomicCounter exceptionCounter)
     {
         this.idleStrategy = idleStrategy;
         this.exceptionHandler = exceptionHandler;
@@ -68,9 +67,9 @@ public abstract class Agent implements Runnable, AutoCloseable
     {
         running = true;
         latch = new CountDownLatch(1);
-        final Thread thread = Thread.currentThread();
+        thread = Thread.currentThread();
 
-        while (running && !thread.isInterrupted())
+        while (running)
         {
             try
             {
@@ -93,6 +92,7 @@ public abstract class Agent implements Runnable, AutoCloseable
         }
 
         latch.countDown();
+        thread = null;
     }
 
     /**
@@ -101,6 +101,10 @@ public abstract class Agent implements Runnable, AutoCloseable
     public final void close()
     {
         running = false;
+        if (null != thread)
+        {
+            thread.interrupt();
+        }
 
         if (null != latch)
         {

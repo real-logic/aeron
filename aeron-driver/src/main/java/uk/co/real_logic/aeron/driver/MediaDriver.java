@@ -64,11 +64,6 @@ public class MediaDriver implements AutoCloseable
     private final EventReader eventReader;
     private final Context ctx;
 
-    private Thread conductorThread;
-    private Thread senderThread;
-    private Thread receiverThread;
-    private Thread eventReaderThread;
-
     /**
      * Start Media Driver as a stand-alone process.
      *
@@ -146,14 +141,14 @@ public class MediaDriver implements AutoCloseable
     {
         try
         {
-            shutdown(senderThread, sender);
-            shutdown(receiverThread, receiver);
-            shutdown(conductorThread, conductor);
+            sender.close();
+            receiver.close();
+            conductor.close();
 
             freeSocketsForReuseOnWindows();
             ctx.close();
 
-            shutdown(eventReaderThread, eventReader);
+            eventReader.close();
             deleteDirectories();
         }
         catch (final Exception ex)
@@ -170,17 +165,10 @@ public class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        conductorThread = new Thread(conductor);
-        startThread(conductorThread, "aeron-driver-conductor");
-
-        senderThread = new Thread(sender);
-        startThread(senderThread, "aeron-sender");
-
-        receiverThread = new Thread(receiver);
-        startThread(receiverThread, "aeron-receiver");
-
-        eventReaderThread = new Thread(eventReader);
-        startThread(eventReaderThread, "aeron-event-reader");
+        startThread(new Thread(conductor), "aeron-driver-conductor");
+        startThread(new Thread(sender), "aeron-sender");
+        startThread(new Thread(receiver), "aeron-receiver");
+        startThread(new Thread(eventReader), "aeron-event-reader");
 
         return this;
     }
@@ -215,12 +203,6 @@ public class MediaDriver implements AutoCloseable
             IoUtil.delete(dataDirectory, false);
             IoUtil.delete(countersDirectory, false);
         }
-    }
-
-    private void shutdown(final Thread thread, final Agent agent)
-    {
-        thread.interrupt();
-        agent.close();
     }
 
     public static class Context extends CommonContext

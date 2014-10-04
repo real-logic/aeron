@@ -37,16 +37,17 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
  */
 public final class Aeron implements AutoCloseable
 {
-    public static final Consumer<Exception> DEFAULT_ERROR_HANDLER = (throwable) ->
-    {
-        throwable.printStackTrace();
-        if (throwable instanceof DriverTimeoutException)
+    public static final Consumer<Exception> DEFAULT_ERROR_HANDLER =
+        (throwable) ->
         {
-            System.err.printf(
-                "\n***\n*** Timeout from the Media Driver - is it currently running? Exiting.\n***\n");
-            System.exit(-1);
-        }
-    };
+            throwable.printStackTrace();
+            if (throwable instanceof DriverTimeoutException)
+            {
+                System.err.printf(
+                    "\n***\n*** Timeout from the Media Driver - is it currently running? Exiting.\n***\n");
+                System.exit(-1);
+            }
+        };
 
     private static final long IDLE_MAX_SPINS = 0;
     private static final long IDLE_MAX_YIELDS = 0;
@@ -61,8 +62,6 @@ public final class Aeron implements AutoCloseable
 
     private final ClientConductor conductor;
     private final Context ctx;
-
-    private Thread conductorThread;
 
     Aeron(final Context ctx)
     {
@@ -89,7 +88,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Create an Aeron instance and connect to the media driver.
-     *
+     * <p>
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.
      *
      * @param ctx for configuration of the client.
@@ -102,7 +101,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Create an Aeron instance and connect to the media driver.
-     *
+     * <p>
      * Threads for interacting with the media driver are run via the the provided {@link Executor}.
      *
      * @param ctx      for configuration of the client.
@@ -120,22 +119,16 @@ public final class Aeron implements AutoCloseable
     public void close()
     {
         conductor.close();
-        if (null != conductorThread)
-        {
-            conductorThread.interrupt();
-            conductorThread = null;
-        }
-
         ctx.close();
     }
 
     /**
      * Add a {@link Publication} for publishing messages to subscribers.
-     *
+     * <p>
      * A session id will be generated for this publication.
      *
-     * @param channel   for receiving the messages known to the media layer.
-     * @param streamId  within the channel scope.
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
      * @return the new Publication.
      */
     public Publication addPublication(final String channel, final int streamId)
@@ -145,7 +138,7 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Add a {@link Publication} for publishing messages to subscribers.
-     *
+     * <p>
      * If the sessionId is 0, then a random one will be generated.
      *
      * @param channel   for receiving the messages known to the media layer.
@@ -188,9 +181,9 @@ public final class Aeron implements AutoCloseable
 
     private Aeron start()
     {
-        conductorThread = new Thread(conductor);
-        conductorThread.setName("aeron-client-conductor");
-        conductorThread.start();
+        final Thread thread = new Thread(conductor);
+        thread.setName("aeron-client-conductor");
+        thread.start();
 
         return this;
     }
@@ -273,8 +266,7 @@ public final class Aeron implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                System.err.printf(
-                    "\n***\n*** Failed to connect to the Media Driver - is it currently running?\n***\n");
+                System.err.printf("\n***\n*** Failed to connect to the Media Driver - is it currently running?\n***\n");
 
                 throw new IllegalStateException("Could not initialise communication buffers", ex);
             }

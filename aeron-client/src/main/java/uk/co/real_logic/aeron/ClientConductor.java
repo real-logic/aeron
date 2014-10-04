@@ -114,7 +114,7 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized Publication addPublication(final String channel, final int streamId, final int sessionId)
     {
-        verifyDriverActive();
+        verifyDriverIsActive();
 
         Publication publication = publicationMap.get(channel, sessionId, streamId);
 
@@ -143,7 +143,7 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releasePublication(final Publication publication)
     {
-        verifyDriverActive();
+        verifyDriverIsActive();
 
         activeCorrelationId = driverProxy.removePublication(publication.registrationId());
         publicationMap.remove(publication.channel(), publication.sessionId(), publication.streamId());
@@ -154,7 +154,7 @@ class ClientConductor extends Agent implements DriverListener
     public synchronized Subscription addSubscription(
         final String channel, final int streamId, final DataHandler handler)
     {
-        verifyDriverActive();
+        verifyDriverIsActive();
 
         final Subscription subscription;
         synchronized (activeSubscriptions)
@@ -171,7 +171,7 @@ class ClientConductor extends Agent implements DriverListener
 
     public synchronized void releaseSubscription(final Subscription subscription)
     {
-        verifyDriverActive();
+        verifyDriverIsActive();
 
         activeSubscriptions.remove(subscription);
         activeCorrelationId = driverProxy.removeSubscription(subscription.registrationId());
@@ -374,7 +374,7 @@ class ClientConductor extends Agent implements DriverListener
         }
     }
 
-    private void verifyDriverActive()
+    private void verifyDriverIsActive()
     {
         if (!driverActive)
         {

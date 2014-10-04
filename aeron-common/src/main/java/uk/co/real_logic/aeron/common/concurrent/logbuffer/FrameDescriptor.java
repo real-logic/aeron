@@ -151,6 +151,20 @@ public class FrameDescriptor
     }
 
     /**
+     * Check that a given offset is at the correct {@link FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
+     *
+     * @param offset to be checked.
+     * @throws IllegalArgumentException if the offset is not on a frame alignment boundary.
+     */
+    public static void checkOffsetAlignment(final int offset)
+    {
+        if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
+        {
+            throw new IllegalArgumentException("Cannot seek to an offset that isn't a multiple of " + FRAME_ALIGNMENT);
+        }
+    }
+
+    /**
      * Check the max frame length is a multiple of {@link #FRAME_ALIGNMENT}
      *
      * @param length to be applied to all logged frames.
@@ -253,20 +267,6 @@ public class FrameDescriptor
         }
 
         return frameLength;
-    }
-
-    /**
-     * Check that a given offset is at the correct {@link FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
-     *
-     * @param offset to be checked.
-     * @throws IllegalArgumentException if the offset is not on a frame alignment boundary.
-     */
-    public static void checkOffsetAlignment(final int offset)
-    {
-        if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
-        {
-            throw new IllegalArgumentException("Cannot seek to an offset that isn't a multiple of " + FRAME_ALIGNMENT);
-        }
     }
 
     /**

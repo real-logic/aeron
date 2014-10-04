@@ -29,7 +29,7 @@ import java.net.InetSocketAddress;
  *
  * All methods should be called via {@link Receiver} thread
  */
-public class DataFrameDispatcher
+public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
 {
     private static final Integer PENDING_SETUP_FRAME = 1;
     private static final Integer INIT_IN_PROGRESS = 2;
@@ -107,7 +107,7 @@ public class DataFrameDispatcher
         }
     }
 
-    public int onDataFrame(
+    public int onFrame(
         final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
@@ -132,7 +132,7 @@ public class DataFrameDispatcher
         return 0;
     }
 
-    public void onSetupFrame(
+    public void onFrame(
         final SetupFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();

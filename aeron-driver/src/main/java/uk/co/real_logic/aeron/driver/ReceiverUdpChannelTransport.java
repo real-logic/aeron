@@ -31,14 +31,13 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
  *
  * Holds DatagramChannel, read Buffer, etc.
  */
-public final class ReceiverUdpChannelTransport extends UdpChannelTransport
+public final class ReceiverUdpChannelTransport extends UdpChannelTransport implements IntSupplier
 {
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private final DataFrameHandler dataFrameHandler;
     private final SetupFrameHandler setupFrameHandler;
-    private final IntSupplier readDataFramesFunc;
 
     /**
      * Construct a transport for use with receiving and processing data frames
@@ -59,7 +58,6 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
 
         this.dataFrameHandler = dataFrameHandler;
         this.setupFrameHandler = setupFrameHandler;
-        this.readDataFramesFunc = this::onReadDataFrames;
 
         dataHeader.wrap(readBuffer, 0);
         setupHeader.wrap(readBuffer, 0);
@@ -72,10 +70,20 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
      */
     public void registerForRead(final NioSelector nioSelector)
     {
-        registeredKey = nioSelector.registerForRead(datagramChannel, readDataFramesFunc);
+        registeredKey = nioSelector.registerForRead(datagramChannel, this);
     }
 
-    private int onReadDataFrames()
+    /**
+     * Implementation of {@link IntSupplier#getAsInt()} to be used as callback for processing frames.
+     *
+     * @return the number of frames processed.
+     */
+    public int getAsInt()
+    {
+        return receiveDataFrames();
+    }
+
+    private int receiveDataFrames()
     {
         int framesRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();

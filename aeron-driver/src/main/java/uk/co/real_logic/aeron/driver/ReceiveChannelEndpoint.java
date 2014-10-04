@@ -54,7 +54,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         this.logger = logger;
         this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
         this.transport = new ReceiverUdpChannelTransport(
-            udpChannel, dispatcher::onDataFrame, dispatcher::onSetupFrame, logger, lossGenerator);
+            udpChannel, dispatcher, dispatcher, logger, lossGenerator);
     }
 
     public UdpChannelTransport transport()
@@ -130,13 +130,13 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     public int onDataFrame(
         final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
-        return dispatcher.onDataFrame(header, buffer, length, srcAddress);
+        return dispatcher.onFrame(header, buffer, length, srcAddress);
     }
 
     public void onSetupFrame(
         final SetupFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
-        dispatcher.onSetupFrame(header, buffer, length, srcAddress);
+        dispatcher.onFrame(header, buffer, length, srcAddress);
     }
 
     public StatusMessageSender composeStatusMessageSender(

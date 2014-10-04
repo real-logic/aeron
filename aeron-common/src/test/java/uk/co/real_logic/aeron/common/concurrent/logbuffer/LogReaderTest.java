@@ -21,7 +21,6 @@ import org.mockito.InOrder;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -68,7 +67,7 @@ public class LogReaderTest
         final int frameLength = HEADER_LENGTH + msgLength;
 
         when(logBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(0), LITTLE_ENDIAN)).thenReturn((short)HDR_TYPE_DATA);
+        when(logBuffer.getShort(typeOffset(0))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(1));
 
@@ -108,7 +107,7 @@ public class LogReaderTest
 
         when(logBuffer.getIntVolatile(anyInt())).thenReturn(frameLength);
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getShort(anyInt(), any())).thenReturn((short)HDR_TYPE_DATA);
+        when(logBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler, 1), is(1));
 
@@ -127,7 +126,7 @@ public class LogReaderTest
 
         when(logBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
         when(logBuffer.getIntVolatile(lengthOffset(alignedFrameLength))).thenReturn(frameLength);
-        when(logBuffer.getShort(anyInt(), any())).thenReturn((short)HDR_TYPE_DATA);
+        when(logBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(2));
 
@@ -148,7 +147,7 @@ public class LogReaderTest
         final int startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
 
         when(logBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(startOfMessage), LITTLE_ENDIAN)).thenReturn((short)HDR_TYPE_DATA);
+        when(logBuffer.getShort(typeOffset(startOfMessage))).thenReturn((short)HDR_TYPE_DATA);
 
         logReader.seek(startOfMessage);
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(1));
@@ -168,7 +167,7 @@ public class LogReaderTest
         final int startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
 
         when(logBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(startOfMessage), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
+        when(logBuffer.getShort(typeOffset(startOfMessage))).thenReturn((short)PADDING_FRAME_TYPE);
 
         logReader.seek(startOfMessage);
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(0));

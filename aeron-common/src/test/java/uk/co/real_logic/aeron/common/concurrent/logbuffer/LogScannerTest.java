@@ -21,7 +21,6 @@ import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import static java.lang.Integer.valueOf;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.*;
@@ -77,7 +76,7 @@ public class LogScannerTest
             .thenReturn(alignedFrameLength);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
@@ -85,7 +84,7 @@ public class LogScannerTest
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
         inOrder.verify(handler).onAvailable(logBuffer, frameOffset, alignedFrameLength);
     }
 
@@ -102,7 +101,7 @@ public class LogScannerTest
             .thenReturn(alignedFrameLength);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, maxLength), is(0));
@@ -110,7 +109,7 @@ public class LogScannerTest
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
         inOrder.verify(handler, never()).onAvailable(any(), anyInt(), anyInt());
     }
 
@@ -126,11 +125,11 @@ public class LogScannerTest
             .thenReturn(alignedFrameLength * 2);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
@@ -138,11 +137,11 @@ public class LogScannerTest
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += alignedFrameLength;
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
 
         inOrder.verify(handler).onAvailable(logBuffer, 0, alignedFrameLength * 2);
     }
@@ -159,11 +158,11 @@ public class LogScannerTest
             .thenReturn(frameOneLength + frameTwoLength);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
             .thenReturn(frameTwoLength);
-        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
@@ -171,11 +170,11 @@ public class LogScannerTest
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += frameOneLength;
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
 
         inOrder.verify(handler).onAvailable(logBuffer, 0, frameOneLength + frameTwoLength);
     }
@@ -191,11 +190,11 @@ public class LogScannerTest
             .thenReturn(frameOneLength + frameTwoLength);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
             .thenReturn(frameTwoLength);
-        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
@@ -203,11 +202,11 @@ public class LogScannerTest
 
         final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += frameOneLength;
         inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset), LITTLE_ENDIAN);
+        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
 
         inOrder.verify(handler).onAvailable(logBuffer, 0, frameOneLength);
     }
@@ -222,7 +221,7 @@ public class LogScannerTest
             .thenReturn(LOG_BUFFER_CAPACITY);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         scanner.seek(frameOffset);
@@ -244,11 +243,11 @@ public class LogScannerTest
             .thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
         when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
             .thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
             .thenReturn((short)PADDING_FRAME_TYPE);
 
         scanner.seek(frameOffset);
@@ -271,11 +270,11 @@ public class LogScannerTest
             .thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
         when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
         when(logBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
             .thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength), LITTLE_ENDIAN))
+        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
             .thenReturn((short)PADDING_FRAME_TYPE);
 
         scanner.seek(frameOffset);

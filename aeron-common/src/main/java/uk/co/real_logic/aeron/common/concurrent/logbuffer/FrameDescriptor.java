@@ -247,7 +247,7 @@ public class FrameDescriptor
      */
     public static boolean isPaddingFrame(final AtomicBuffer logBuffer, final int frameOffset)
     {
-        return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) == PADDING_FRAME_TYPE;
+        return logBuffer.getShort(typeOffset(frameOffset)) == PADDING_FRAME_TYPE;
     }
 
     /**

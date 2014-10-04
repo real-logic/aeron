@@ -18,9 +18,8 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameLengthVolatile;
 
 /**
  * Scans for gaps in the sequence of bytes in a replicated term buffer between the tail and the
@@ -113,8 +112,8 @@ public class GapScanner extends LogBuffer
         return handler.onGap(logBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
     }
 
-    private static int alignedFrameLength(final AtomicBuffer logBuffer, final int cursor)
+    private static int alignedFrameLength(final AtomicBuffer logBuffer, final int offset)
     {
-        return BitUtil.align(logBuffer.getInt(lengthOffset(cursor), LITTLE_ENDIAN), FRAME_ALIGNMENT);
+        return BitUtil.align(frameLengthVolatile(logBuffer, offset), FRAME_ALIGNMENT);
     }
 }

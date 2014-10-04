@@ -17,9 +17,6 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
-import java.nio.ByteOrder;
-
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
@@ -164,9 +161,9 @@ public class LogAppender extends LogBuffer
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
         logBuffer.putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
 
-        putFlags(logBuffer, frameOffset, UNFRAGMENTED);
-        putTermOffset(logBuffer, frameOffset, frameOffset);
-        putLengthOrdered(logBuffer, frameOffset, frameLength);
+        frameFlags(logBuffer, frameOffset, UNFRAGMENTED);
+        frameTermOffset(logBuffer, frameOffset, frameOffset);
+        frameLengthOrdered(logBuffer, frameOffset, frameLength);
 
         return AppendStatus.SUCCESS;
     }
@@ -216,9 +213,9 @@ public class LogAppender extends LogBuffer
                 flags |= END_FRAG;
             }
 
-            putFlags(logBuffer, frameOffset, flags);
-            putTermOffset(logBuffer, frameOffset, frameOffset);
-            putLengthOrdered(logBuffer, frameOffset, frameLength);
+            frameFlags(logBuffer, frameOffset, flags);
+            frameTermOffset(logBuffer, frameOffset, frameOffset);
+            frameLengthOrdered(logBuffer, frameOffset, frameLength);
 
             flags = 0;
             frameOffset += alignedLength;
@@ -238,35 +235,10 @@ public class LogAppender extends LogBuffer
     {
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
-        putFrameType(logBuffer, frameOffset, PADDING_FRAME_TYPE);
-        putFlags(logBuffer, frameOffset, UNFRAGMENTED);
-        putTermOffset(logBuffer, frameOffset, frameOffset);
-        putLengthOrdered(logBuffer, frameOffset, capacity() - frameOffset);
-    }
-
-    private static void putFrameType(final AtomicBuffer logBuffer, final int frameOffset, final int type)
-    {
-        logBuffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
-    }
-
-    private static void putFlags(final AtomicBuffer logBuffer, final int frameOffset, final byte flags)
-    {
-        logBuffer.putByte(flagsOffset(frameOffset), flags);
-    }
-
-    private static void putTermOffset(final AtomicBuffer logBuffer, final int frameOffset, final int termOffset)
-    {
-        logBuffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
-    }
-
-    private static void putLengthOrdered(final AtomicBuffer logBuffer, final int frameOffset, int frameLength)
-    {
-        if (LITTLE_ENDIAN != ByteOrder.nativeOrder())
-        {
-            frameLength = Integer.reverseBytes(frameLength);
-        }
-
-        logBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
+        frameType(logBuffer, frameOffset, PADDING_FRAME_TYPE);
+        frameFlags(logBuffer, frameOffset, UNFRAGMENTED);
+        frameTermOffset(logBuffer, frameOffset, frameOffset);
+        frameLengthOrdered(logBuffer, frameOffset, capacity() - frameOffset);
     }
 
     private int getTailAndAdd(final int delta)

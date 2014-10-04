@@ -20,6 +20,8 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
 import java.nio.ByteOrder;
 
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+
 /**
  * Description of the structure for message framing in a log buffer.
  *
@@ -282,5 +284,41 @@ public class FrameDescriptor
         }
 
         logBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
+    }
+
+    /**
+     * Write the type field for a frame.
+     *
+     * @param logBuffer   containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @param type        type value for the frame.
+     */
+    public static void frameType(final AtomicBuffer logBuffer, final int frameOffset, final int type)
+    {
+        logBuffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Write the flags field for a frame.
+     *
+     * @param logBuffer   containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @param flags       value for the frame.
+     */
+    public static void frameFlags(final AtomicBuffer logBuffer, final int frameOffset, final byte flags)
+    {
+        logBuffer.putByte(flagsOffset(frameOffset), flags);
+    }
+
+    /**
+     * Write the term offset field for a frame.
+     *
+     * @param logBuffer   containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @param termOffset  value for the frame.
+     */
+    public static void frameTermOffset(final AtomicBuffer logBuffer, final int frameOffset, final int termOffset)
+    {
+        logBuffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
     }
 }

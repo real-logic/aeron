@@ -20,7 +20,6 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -82,7 +81,7 @@ public class GapScannerTest
 
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(0);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
-        when(logBuffer.getInt(lengthOffset(frameOffset), LITTLE_ENDIAN)).thenReturn(FRAME_ALIGNMENT);
+        when(logBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(FRAME_ALIGNMENT);
 
         assertThat(scanner.scan(gapHandler), is(1));
 
@@ -101,11 +100,11 @@ public class GapScannerTest
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
-        when(logBuffer.getInt(lengthOffset(tail - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(tail - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
-        when(logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(tail)))
             .thenReturn(0);
-        when(logBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
 
         assertThat(scanner.scan(gapHandler), is(1));
@@ -125,11 +124,11 @@ public class GapScannerTest
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
-        when(logBuffer.getInt(lengthOffset(tail - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(tail - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
-        when(logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(tail)))
             .thenReturn(0);
-        when(logBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
 
         assertThat(scanner.scan(gapHandler), is(1));
@@ -149,15 +148,15 @@ public class GapScannerTest
         when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
         when(stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
-        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(0)))
             .thenReturn(FRAME_ALIGNMENT);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(FRAME_ALIGNMENT)))
             .thenReturn(0);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 2), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(FRAME_ALIGNMENT * 2)))
             .thenReturn(FRAME_ALIGNMENT);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 3), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(FRAME_ALIGNMENT * 3)))
             .thenReturn(0);
-        when(logBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 5), LITTLE_ENDIAN))
+        when(logBuffer.getIntVolatile(lengthOffset(FRAME_ALIGNMENT * 5)))
             .thenReturn(FRAME_ALIGNMENT);
         when(gapHandler.onGap(logBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT)).thenReturn(true);
 

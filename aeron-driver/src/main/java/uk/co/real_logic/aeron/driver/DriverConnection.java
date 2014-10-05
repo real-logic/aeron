@@ -448,13 +448,13 @@ public class DriverConnection implements AutoCloseable
     public void removeSubscription(final PositionIndicator subscriberPosition)
     {
         final PositionIndicator[] oldPositions = subscriberPositions;
-        final PositionIndicator[] newPositions = new PositionIndicator[oldPositions.length - 1];
-        for (int i = 0, j = 0; i < oldPositions.length; i++)
+        final int length = oldPositions.length;
+        final PositionIndicator[] newPositions = new PositionIndicator[length - 1];
+        for (int i = 0, j = 0; i < length; i++)
         {
             if (oldPositions[i] != subscriberPosition)
             {
-                newPositions[j] = oldPositions[i];
-                j++;
+                newPositions[j++] = oldPositions[i];
             }
         }
 
@@ -472,8 +472,10 @@ public class DriverConnection implements AutoCloseable
         final PositionIndicator[] oldPositions = subscriberPositions;
         final int length = oldPositions.length;
         final PositionIndicator[] newPositions = new PositionIndicator[length + 1];
+
         System.arraycopy(oldPositions, 0, newPositions, 0, length);
         newPositions[length] = subscriberPosition;
+
         subscriberPositions = newPositions;
     }
 

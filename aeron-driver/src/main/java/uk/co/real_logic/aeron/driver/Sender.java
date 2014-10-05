@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
-import java.util.ArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -30,11 +29,13 @@ import java.util.function.Consumer;
  */
 public class Sender extends Agent
 {
+    private static final DriverPublication[] EMPTY_DRIVER_PUBLICATIONS = new DriverPublication[0];
+
     private final Consumer<Object> processConductorCommandsFunc = this::processConductorCommands;
-    private final ArrayList<DriverPublication> publications = new ArrayList<>();
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
     private final AtomicCounter totalBytesSent;
 
+    private DriverPublication[] publications = EMPTY_DRIVER_PUBLICATIONS;
     private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.Context ctx)
@@ -58,23 +59,23 @@ public class Sender extends Agent
     private int doSend()
     {
         int bytesSent = 0;
-        final ArrayList<DriverPublication> publications = this.publications;
-        final int arrayLength = publications.size();
+        final DriverPublication[] publications = this.publications;
+        final int length = publications.length;
 
         roundRobinIndex++;
-        if (publications.size() <= roundRobinIndex)
+        if (length <= roundRobinIndex)
         {
             roundRobinIndex = 0;
         }
 
-        if (arrayLength > 0)
+        if (length > 0)
         {
             int i = roundRobinIndex;
             do
             {
-                bytesSent += publications.get(i).send();
+                bytesSent += publications[i].send();
 
-                if (++i == arrayLength)
+                if (++i == length)
                 {
                     i = 0;
                 }
@@ -87,6 +88,35 @@ public class Sender extends Agent
         return bytesSent;
     }
 
+    private void addPublication(final DriverPublication publication)
+    {
+        final DriverPublication[] oldPublications = publications;
+        final int length = oldPublications.length;
+        final DriverPublication[] newPublications = new DriverPublication[length + 1];
+
+        System.arraycopy(oldPublications, 0, newPublications, 0, length);
+        newPublications[length] = publication;
+
+        publications = newPublications;
+    }
+
+    private void removePublication(final DriverPublication publication)
+    {
+        final DriverPublication[] oldPublications = publications;
+        final int length = oldPublications.length;
+        final DriverPublication[] newPublications = new DriverPublication[length - 1];
+        for (int i = 0, j = 0; i < length; i++)
+        {
+            if (oldPublications[i] != publication)
+            {
+                newPublications[j++] = oldPublications[i];
+            }
+        }
+
+        publications = newPublications;
+        publication.close();
+    }
+
     private void processConductorCommands(final Object obj)
     {
         if (obj instanceof RetransmitPublicationCmd)
@@ -97,13 +127,12 @@ public class Sender extends Agent
         if (obj instanceof NewPublicationCmd)
         {
             final NewPublicationCmd cmd = (NewPublicationCmd)obj;
-            publications.add(cmd.publication());
+            addPublication(cmd.publication());
         }
         else if (obj instanceof ClosePublicationCmd)
         {
             final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
-            publications.remove(cmd.publication());
-            cmd.publication().close();
+            removePublication(cmd.publication());
         }
     }
 }

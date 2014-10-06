@@ -295,6 +295,22 @@ public class Configuration
     public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
     /**
+     * {@link SenderFlowControl} to be employed for unicast channels.
+     */
+    public static final String SENDER_UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
+        "aeron.sender.unicast.flow.control.strategy";
+    public static final String SENDER_UNICAST_FLOW_CONTROL_STRATEGY = getProperty(
+        SENDER_UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastSenderFlowControl");
+
+    /**
+     * {@link SenderFlowControl} to be employed for multicast channels.
+     */
+    public static final String SENDER_MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
+        "aeron.sender.multicast.flow.control.strategy";
+    public static final String SENDER_MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
+        SENDER_MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastSenderFlowControl");
+
+    /**
      * How far ahead the receiver can get from the subscriber position.
      *
      * @param termCapacity to be used when {@link #SUBSCRIPTION_TERM_WINDOW_SZ} is not set.
@@ -365,6 +381,30 @@ public class Configuration
                 {
                     throw new RuntimeException(ex);
                 }
+        }
+    }
+
+    public static SenderFlowControl unicastSenderFlowControlStrategy()
+    {
+        try
+        {
+            return (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    public static SenderFlowControl multicastSenderFlowControlStrategy()
+    {
+        try
+        {
+            return (SenderFlowControl)Class.forName(SENDER_MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
+        }
+        catch (final Exception ex)
+        {
+            throw new RuntimeException(ex);
         }
     }
 

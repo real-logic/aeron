@@ -94,8 +94,8 @@ public class MediaDriver implements AutoCloseable
 
         ensureDirectoriesAreRecreated();
 
-        ctx.unicastSenderFlowControl(UnicastSenderFlowControl::new)
-            .multicastSenderFlowControl(UnicastSenderFlowControl::new)
+        ctx.unicastSenderFlowControl(Configuration::unicastSenderFlowControlStrategy)
+            .multicastSenderFlowControl(Configuration::multicastSenderFlowControlStrategy)
             .conductorTimerWheel(Configuration.newConductorTimerWheel())
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))

@@ -78,6 +78,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_SZ);
             }
 
+            if (0 != Configuration.SOCKET_SNDBUF_SZ)
+            {
+                datagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_SZ);
+            }
+
             datagramChannel.configureBlocking(false);
         }
         catch (final IOException ex)

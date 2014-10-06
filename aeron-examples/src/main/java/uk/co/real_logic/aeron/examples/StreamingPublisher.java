@@ -17,7 +17,9 @@ package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
@@ -41,6 +43,7 @@ public class StreamingPublisher
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     private static volatile boolean PRINTING_ACTIVE = true;
 
@@ -75,7 +78,7 @@ public class StreamingPublisher
 
                     while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
                     {
-                        Thread.yield();
+                        OFFER_IDLE_STRATEGY.idle(0);
                     }
 
                     reporter.onMessage(1, ATOMIC_BUFFER.capacity());
@@ -105,9 +108,9 @@ public class StreamingPublisher
     {
         if (PRINTING_ACTIVE)
         {
-            System.out.println(String.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
-                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
+            System.out.format(
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
+                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024));
         }
     }
 }

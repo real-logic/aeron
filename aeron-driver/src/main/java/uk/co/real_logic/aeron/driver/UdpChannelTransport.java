@@ -34,8 +34,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
 {
     protected final DatagramChannel datagramChannel;
     protected final UdpChannel udpChannel;
-    protected final ByteBuffer readByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
-    protected final AtomicBuffer readBuffer = new AtomicBuffer(readByteBuffer);
+    protected final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
+    protected final AtomicBuffer readBuffer = new AtomicBuffer(receiveByteBuffer);
     protected final HeaderFlyweight header = new HeaderFlyweight();
     protected final EventLogger logger;
     protected final boolean multicast;
@@ -187,7 +187,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int receiveBufferCapacity()
     {
-        return readByteBuffer.capacity();
+        return receiveByteBuffer.capacity();
     }
 
     protected boolean isFrameValid(final int length)
@@ -210,11 +210,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
     protected InetSocketAddress receiveFrame()
     {
-        readByteBuffer.clear();
+        receiveByteBuffer.clear();
 
         try
         {
-            return (InetSocketAddress)datagramChannel.receive(readByteBuffer);
+            return (InetSocketAddress)datagramChannel.receive(receiveByteBuffer);
         }
         catch (final Exception ex)
         {

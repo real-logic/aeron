@@ -375,6 +375,8 @@ public class DriverConductor extends Agent
                 Configuration.createLossGenerator(controlLossRate, controlLossSeed),
                 systemCounters);
 
+            channelEndpoint.validateMtuLength(mtuLength);
+
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
         }
 
@@ -546,6 +548,9 @@ public class DriverConductor extends Agent
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
+        // window size is static at the moment. This needs to change to max once it is adjustable.
+        channelEndpoint.validateWindowSizeMax(initialWindowSize);
+
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();
         final long correlationId = generateCreationCorrelationId();

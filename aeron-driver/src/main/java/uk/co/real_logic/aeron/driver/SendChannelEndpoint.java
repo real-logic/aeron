@@ -20,8 +20,10 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
 /**
@@ -66,6 +68,17 @@ public class SendChannelEndpoint implements AutoCloseable
     public UdpChannel udpChannel()
     {
         return udpChannel;
+    }
+
+    public void validateMtuLength(final int mtuLength)
+    {
+        final int soSndbuf = transport.getOption(StandardSocketOptions.SO_SNDBUF);
+
+        if (mtuLength > soSndbuf)
+        {
+            throw new ConfigurationException(
+                String.format("MTU greater than socket SO_SNDBUF: mtuLength=%d, SO_SNDBUF=%d", mtuLength, soSndbuf));
+        }
     }
 
     public DriverPublication getPublication(final int sessionId, final int streamId)

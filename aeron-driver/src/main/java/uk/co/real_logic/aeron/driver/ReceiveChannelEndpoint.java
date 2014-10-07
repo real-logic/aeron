@@ -20,8 +20,10 @@ import uk.co.real_logic.aeron.common.collections.MutableInteger;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
 /**
@@ -157,6 +159,18 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
+    }
+
+    public void validateWindowSizeMax(final int windowSizeMax)
+    {
+        final int soRcvbuf = transport.getOption(StandardSocketOptions.SO_RCVBUF);
+
+        if (windowSizeMax > soRcvbuf)
+        {
+            throw new ConfigurationException(
+                String.format("Max Window Size greater than socket SO_RCVBUF: windowSizeMac=%d, SO_RCVBUF=%d",
+                    windowSizeMax, soRcvbuf));
+        }
     }
 
     private void sendStatusMessage(

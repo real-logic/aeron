@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -159,6 +160,25 @@ public abstract class UdpChannelTransport implements AutoCloseable
      * @param nioSelector to register read with
      */
     public abstract void registerForRead(final NioSelector nioSelector);
+
+    /**
+     * Return socket option value
+     *
+     * @param name of the socket option
+     * @param <T>  type of option
+     * @return     option value
+     */
+    public <T> T getOption(final SocketOption<T> name)
+    {
+        try
+        {
+            return datagramChannel.getOption(name);
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(ex);
+        }
+    }
 
     protected boolean isFrameValid(final int length)
     {

@@ -180,6 +180,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
     }
 
+    /**
+     * Return the capacity of the {@link ByteBuffer} used for reception
+     *
+     * @return capacity of receiving byte buffer
+     */
+    public int receiveBufferCapacity()
+    {
+        return readByteBuffer.capacity();
+    }
+
     protected boolean isFrameValid(final int length)
     {
         boolean isFrameValid = true;

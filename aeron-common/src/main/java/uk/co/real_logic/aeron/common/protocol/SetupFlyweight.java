@@ -26,13 +26,14 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class SetupFlyweight extends HeaderFlyweight
 {
     /** Size of the Setup Header */
-    public static final int HEADER_LENGTH = 28;
+    public static final int HEADER_LENGTH = 32;
 
     private static final int TERM_OFFSET_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;
     private static final int STREAM_ID_FIELD_OFFSET = 16;
     private static final int TERM_ID_FIELD_OFFSET = 20;
     private static final int TERM_SIZE_FIELD_OFFSET = 24;
+    private static final int MTU_LENGTH_FIELD_OFFSET = 28;
 
     /**
      * return term offset field
@@ -143,6 +144,29 @@ public class SetupFlyweight extends HeaderFlyweight
     public SetupFlyweight termSize(final int termSize)
     {
         atomicBuffer().putInt(offset() + TERM_SIZE_FIELD_OFFSET, termSize, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * Return MTU length field
+     *
+     * @return MTU length field value
+     */
+    public int mtuLength()
+    {
+        return atomicBuffer().getInt(offset() + MTU_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Set MTU length field
+     *
+     * @param mtuLength field value
+     * @return flyweight
+     */
+    public SetupFlyweight mtuLength(final int mtuLength)
+    {
+        atomicBuffer().putInt(offset() + MTU_LENGTH_FIELD_OFFSET, mtuLength, LITTLE_ENDIAN);
 
         return this;
     }

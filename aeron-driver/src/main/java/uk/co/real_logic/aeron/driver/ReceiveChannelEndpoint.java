@@ -173,6 +173,27 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         }
     }
 
+    public void validateSenderMtuLength(final int senderMtuLength)
+    {
+        final int soRcvbuf = transport.getOption(StandardSocketOptions.SO_RCVBUF);
+
+        if (senderMtuLength > soRcvbuf)
+        {
+            throw new ConfigurationException(
+                String.format("Sender MTU greater than socket SO_RCVBUF: senderMtuLength=%d, SO_RCVBUF=%d",
+                    senderMtuLength, soRcvbuf));
+        }
+
+        final int capacity = transport.receiveBufferCapacity();
+
+        if (senderMtuLength > capacity)
+        {
+            throw new ConfigurationException(
+                String.format("Sender MTU greater than receive buffer capacity: senderMtuLength=%d, capacity=%d",
+                    senderMtuLength, capacity));
+        }
+    }
+
     private void sendStatusMessage(
         final InetSocketAddress controlAddress,
         final int sessionId,

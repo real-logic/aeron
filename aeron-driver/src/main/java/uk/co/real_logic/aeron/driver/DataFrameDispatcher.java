@@ -146,7 +146,8 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
 
             if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {
-                createConnection(srcAddress, streamId, sessionId, termId, header.termOffset(), header.termSize());
+                createConnection(
+                    srcAddress, streamId, sessionId, termId, header.termOffset(), header.termSize(), header.mtuLength());
             }
         }
     }
@@ -167,7 +168,8 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
         final int sessionId,
         final int termId,
         final int termOffset,
-        final int termSize)
+        final int termSize,
+        final int mtuLength)
     {
         final UdpChannelTransport transport = channelEndpoint.transport();
         final InetSocketAddress controlAddress =
@@ -175,6 +177,6 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
 
         initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createConnection(
-                sessionId, streamId, termId, termOffset, termSize, controlAddress, srcAddress, channelEndpoint);
+            sessionId, streamId, termId, termOffset, termSize, mtuLength, controlAddress, srcAddress, channelEndpoint);
     }
 }

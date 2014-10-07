@@ -26,6 +26,7 @@ public class CreateConnectionCmd
     private final int termId;
     private final int termOffset;
     private final int termSize;
+    private final int senderMtuLength;
     private final InetSocketAddress controlAddress;
     private final InetSocketAddress srcAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -36,6 +37,7 @@ public class CreateConnectionCmd
         final int termId,
         final int termOffet,
         final int termSize,
+        final int senderMtuLength,
         final InetSocketAddress controlAddress,
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -45,6 +47,7 @@ public class CreateConnectionCmd
         this.termId = termId;
         this.termOffset = termOffet;
         this.termSize = termSize;
+        this.senderMtuLength = senderMtuLength;
         this.controlAddress = controlAddress;
         this.srcAddress = srcAddress;
         this.channelEndpoint = channelEndpoint;
@@ -73,6 +76,11 @@ public class CreateConnectionCmd
     public int termSize()
     {
         return termSize;
+    }
+
+    public int senderMtuLength()
+    {
+        return senderMtuLength;
     }
 
     public InetSocketAddress controlAddress()

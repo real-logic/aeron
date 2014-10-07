@@ -193,6 +193,7 @@ public class DriverConductor extends Agent
                 cmd.termId(),
                 cmd.termOffset(),
                 cmd.termSize(),
+                cmd.senderMtuLength(),
                 cmd.controlAddress(),
                 cmd.srcAddress(),
                 cmd.channelEndpoint());
@@ -544,10 +545,12 @@ public class DriverConductor extends Agent
         final int initialTermId,
         final int initialTermOffset,
         final int termBufferSize,
+        final int senderMtuLength,
         final InetSocketAddress controlAddress,
         final InetSocketAddress sourceAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
+        channelEndpoint.validateSenderMtuLength(senderMtuLength);
         // window size is static at the moment. This needs to change to max once it is adjustable.
         channelEndpoint.validateWindowSizeMax(initialWindowSize);
 

@@ -437,6 +437,7 @@ public class DriverPublication implements AutoCloseable
                    .termId(activeTermId)
                    .termOffset(0)
                    .termSize(termCapacity)
+                   .mtuLength(mtuLength)
                    .frameLength(SetupFlyweight.HEADER_LENGTH)
                    .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
                    .flags((byte)0)

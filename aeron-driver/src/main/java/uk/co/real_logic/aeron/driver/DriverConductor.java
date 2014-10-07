@@ -33,7 +33,8 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.driver.cmd.*;
+import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
@@ -405,7 +406,6 @@ public class DriverConductor extends Agent
                 DataHeaderFlyweight.HEADER_LENGTH,
                 mtuLength,
                 senderFlowControl.initialPositionLimit(initialTermId, capacity),
-                logger,
                 systemCounters);
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(

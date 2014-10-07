@@ -20,8 +20,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
-
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
@@ -62,7 +60,6 @@ public class DriverPublication implements AutoCloseable
     private final TermBuffers termBuffers;
     private final int positionBitsToShift;
     private final int initialTermId;
-    private final EventLogger logger;
     private final SystemCounters systemCounters;
     private final int termWindowSize;
     private final int termCapacity;
@@ -99,13 +96,11 @@ public class DriverPublication implements AutoCloseable
         final int headerLength,
         final int mtuLength,
         final long initialPositionLimit,
-        final EventLogger logger,
         final SystemCounters systemCounters)
     {
         this.id = id;
         this.channelEndpoint = channelEndpoint;
         this.termBuffers = termBuffers;
-        this.logger = logger;
         this.systemCounters = systemCounters;
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.clock = clock;
@@ -333,7 +328,7 @@ public class DriverPublication implements AutoCloseable
         final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
         if (setupHeader.frameLength() != bytesSent)
         {
-            logger.logIncompleteSend("sendSetupFrame", bytesSent, setupHeader.frameLength());
+            systemCounters.setupFrameShortSends().orderedIncrement();
         }
 
         updateTimeOfLastSendOrSetup(now);
@@ -397,7 +392,7 @@ public class DriverPublication implements AutoCloseable
         final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
         if (length != bytesSent)
         {
-            logger.logIncompleteSend("onSendTransmissionUnit", bytesSent, length);
+            systemCounters.dataFrameShortSends().orderedIncrement();
         }
 
         lastSentTermId = activeTermId;
@@ -415,7 +410,7 @@ public class DriverPublication implements AutoCloseable
         final int bytesSent = channelEndpoint.sendTo(termRetransmitBuffer, dstAddress);
         if (bytesSent != length)
         {
-            logger.logIncompleteSend("onSendTransmit", bytesSent, length);
+            systemCounters.dataFrameShortSends().orderedIncrement();
         }
     }
 

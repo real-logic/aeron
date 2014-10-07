@@ -346,7 +346,7 @@ public class DriverConnection implements AutoCloseable
 
             if (currentRebuilder.isComplete())
             {
-                activeIndex = hwmIndex = prepareForRotation();
+                activeIndex = hwmIndex = rotateTermBuffers();
                 this.activeTermId.lazySet(activeTermId + 1);
             }
         }
@@ -354,7 +354,7 @@ public class DriverConnection implements AutoCloseable
         {
             if (termId != hwmTermId)
             {
-                hwmIndex = prepareForRotation();
+                hwmIndex = rotateTermBuffers();
                 hwmTermId = termId;
             }
 
@@ -558,7 +558,7 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlOverRun;
     }
 
-    private int prepareForRotation()
+    private int rotateTermBuffers()
     {
         final int nextIndex = TermHelper.rotateNext(activeIndex);
         final LogRebuilder rebuilder = rebuilders[nextIndex];
@@ -575,7 +575,6 @@ public class DriverConnection implements AutoCloseable
 
         return nextIndex;
     }
-
 
     private long subscribersPosition()
     {

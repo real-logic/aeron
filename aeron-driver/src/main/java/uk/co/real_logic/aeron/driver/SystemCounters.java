@@ -36,6 +36,8 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter subscriptionCleaningLate;
     private final AtomicCounter invalidPackets;
     private final AtomicCounter driverExceptions;
+    private final AtomicCounter dataFrameShortSends;
+    private final AtomicCounter setupFrameShortSends;
 
     public SystemCounters(final CountersManager countersManager)
     {
@@ -55,6 +57,8 @@ public class SystemCounters implements AutoCloseable
         subscriptionCleaningLate = countersManager.newCounter("Term cleaning late");
         invalidPackets = countersManager.newCounter("Invalid packets");
         driverExceptions = countersManager.newCounter("Driver Exceptions");
+        dataFrameShortSends = countersManager.newCounter("Data Frame short sends");
+        setupFrameShortSends = countersManager.newCounter("Setup Frame short sends");
     }
 
     public void close()
@@ -155,5 +159,15 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter driverExceptions()
     {
         return driverExceptions;
+    }
+
+    public AtomicCounter dataFrameShortSends()
+    {
+        return dataFrameShortSends;
+    }
+
+    public AtomicCounter setupFrameShortSends()
+    {
+        return setupFrameShortSends;
     }
 }

@@ -133,7 +133,6 @@ public class SenderTest
             HEADER.length,
             MAX_FRAME_LENGTH,
             spySenderFlowControl.initialPositionLimit(INITIAL_TERM_ID, (int)LOG_BUFFER_SIZE),
-            mockLogger,
             mockSystemCounters);
 
         senderCommandQueue.offer(new NewPublicationCmd(publication));

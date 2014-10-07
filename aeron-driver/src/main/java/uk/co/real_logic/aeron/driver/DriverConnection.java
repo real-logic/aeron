@@ -26,7 +26,6 @@ import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -57,8 +56,8 @@ public class DriverConnection implements AutoCloseable
     private final InetSocketAddress sourceAddress;
     private final EventLogger logger;
 
-    private final AtomicInteger activeTermId = new AtomicInteger();
     private final AtomicLong timeOfLastFrame = new AtomicLong();
+    private int activeTermId;
     private int activeIndex;
     private int hwmTermId;
     private int hwmIndex;
@@ -117,7 +116,7 @@ public class DriverConnection implements AutoCloseable
         this.timeOfLastStatusChange = clock.time();
 
         this.clock = clock;
-        activeTermId.lazySet(initialTermId);
+        activeTermId = initialTermId;
         timeOfLastFrame.lazySet(clock.time());
         this.hwmIndex = this.activeIndex = termIdToBufferIndex(initialTermId);
         this.hwmTermId = initialTermId;
@@ -322,10 +321,10 @@ public class DriverConnection implements AutoCloseable
     {
         int bytesInserted = 0;
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-        final int activeTermId = this.activeTermId.get();
+        final int activeTermId = this.activeTermId;
 
         final long packetPosition = calculatePosition(termId, termOffset);
-        final long currentPosition = position(currentRebuilder.tail());
+        final long currentPosition = calculatePosition(activeTermId, currentRebuilder.tail());
         final long proposedPosition = packetPosition + length;
 
         if (isHeartbeat(currentPosition, proposedPosition) ||
@@ -347,7 +346,7 @@ public class DriverConnection implements AutoCloseable
             if (currentRebuilder.isComplete())
             {
                 activeIndex = hwmIndex = rotateTermBuffers();
-                this.activeTermId.lazySet(activeTermId + 1);
+                this.activeTermId = activeTermId + 1;
             }
         }
         else if (termId == (activeTermId + 1))
@@ -510,11 +509,6 @@ public class DriverConnection implements AutoCloseable
         systemCounters.statusMessagesSent().orderedIncrement();
     }
 
-    private long position(final int currentTail)
-    {
-        return calculatePosition(activeTermId.get(), currentTail);
-    }
-
     private long calculatePosition(final int termId, final int tail)
     {
         return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialTermId);
@@ -579,6 +573,7 @@ public class DriverConnection implements AutoCloseable
     private long subscribersPosition()
     {
         long position = Long.MAX_VALUE;
+
         for (final PositionIndicator indicator : subscriberPositions)
         {
             position = Math.min(position, indicator.position());

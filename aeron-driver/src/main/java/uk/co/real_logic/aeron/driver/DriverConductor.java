@@ -463,7 +463,8 @@ public class DriverConductor extends Agent
         if (null == channelEndpoint)
         {
             final LossGenerator lossGenerator = Configuration.createLossGenerator(dataLossRate, dataLossSeed);
-            channelEndpoint = new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger, lossGenerator);
+            channelEndpoint =
+                new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger, systemCounters, lossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerMediaEndpoint(channelEndpoint);

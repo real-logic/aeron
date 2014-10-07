@@ -31,7 +31,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 {
     private final UdpChannelTransport transport;
     private final DataFrameDispatcher dispatcher;
-    private final EventLogger logger;
+    private final SystemCounters systemCounters;
 
     private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
@@ -46,12 +46,13 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final UdpChannel udpChannel,
         final DriverConductorProxy conductorProxy,
         final EventLogger logger,
+        final SystemCounters systemCounters,
         final LossGenerator lossGenerator)
     {
         smHeader.wrap(smBuffer, 0);
         nakHeader.wrap(nakBuffer, 0);
 
-        this.logger = logger;
+        this.systemCounters = systemCounters;
         this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
         this.transport = new ReceiverUdpChannelTransport(
             udpChannel, dispatcher, dispatcher, logger, lossGenerator);
@@ -165,7 +166,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int termId,
         final int termOffset,
         final int window,
-        final short flags) // TODO: why not just a byte? because it is unsigned
+        final short flags)
     {
         if (closed)
         {
@@ -189,7 +190,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int bytesSent = transport.sendTo(smBuffer, controlAddress);
         if (bytesSent < frameLength)
         {
-            logger.logIncompleteSend("sendStatusMessage", bytesSent, frameLength);
+            systemCounters.smFrameShortSends().orderedIncrement();
         }
     }
 
@@ -223,7 +224,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int bytesSent = transport.sendTo(nakBuffer, controlAddress);
         if (bytesSent < frameLength)
         {
-            logger.logIncompleteSend("sendNak", bytesSent, frameLength);
+            systemCounters.nakFrameShortSends().orderedIncrement();
         }
     }
 }

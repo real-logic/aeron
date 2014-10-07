@@ -337,7 +337,7 @@ public class DriverPublication implements AutoCloseable
             logger.logIncompleteSend("sendSetupFrame", bytesSent, setupHeader.frameLength());
         }
 
-        updateTimeOfLastSendOrSetup(now);
+        timeOfLastSendOrHeartbeat = now;
     }
 
     private void setupFrameCheck(final long now)
@@ -404,7 +404,7 @@ public class DriverPublication implements AutoCloseable
         lastSentTermId = activeTermId;
         lastSentTermOffset = offset;
         lastSentLength = length;
-        updateTimeOfLastSendOrSetup(clock.time());
+        timeOfLastSendOrHeartbeat = clock.time();
     }
 
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
@@ -431,7 +431,7 @@ public class DriverPublication implements AutoCloseable
             scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
             systemCounters.heartbeatsSent().orderedIncrement();
-            updateTimeOfLastSendOrSetup(now);
+            timeOfLastSendOrHeartbeat = now;
         }
     }
 
@@ -451,10 +451,5 @@ public class DriverPublication implements AutoCloseable
     private long positionForActiveTerm(final int termOffset)
     {
         return TermHelper.calculatePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
-    }
-
-    private void updateTimeOfLastSendOrSetup(final long time)
-    {
-        timeOfLastSendOrHeartbeat = time;
     }
 }

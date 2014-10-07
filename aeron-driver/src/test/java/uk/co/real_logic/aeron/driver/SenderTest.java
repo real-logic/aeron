@@ -186,7 +186,7 @@ public class SenderTest
     @Test
     public void shouldNotSendSetupFrameAfterReceivingStatusMessage() throws Exception
     {
-        currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
         publication.updatePositionLimitFromStatusMessage(spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
         sender.doWork();

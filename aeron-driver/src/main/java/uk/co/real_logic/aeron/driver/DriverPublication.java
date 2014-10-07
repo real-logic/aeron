@@ -165,14 +165,14 @@ public class DriverPublication implements AutoCloseable
         {
             if (shouldSendSetupFrame)
             {
-                sendSetupFrame();
+                setupFrameCheck(clock.time());
             }
 
             bytesSent = sendData();
 
             if (0 == bytesSent)
             {
-                heartbeatCheck();
+                heartbeatCheck(clock.time());
             }
         }
 
@@ -322,7 +322,7 @@ public class DriverPublication implements AutoCloseable
         return bytesSent;
     }
 
-    private void sendSetupFrame()
+    private void sendSetupFrame(final long now)
     {
         setupHeader.termId(activeTermId);
         setupHeader.termOffset(lastSentTermOffset + lastSentLength);
@@ -336,19 +336,25 @@ public class DriverPublication implements AutoCloseable
             logger.logIncompleteSend("sendSetupFrame", bytesSent, setupHeader.frameLength());
         }
 
-        shouldSendSetupFrame = false;
-        updateTimeOfLastSendOrSetup(clock.time());
+        updateTimeOfLastSendOrSetup(now);
     }
 
-    private void heartbeatCheck()
+    private void setupFrameCheck(final long now)
     {
-        final long timeout =
-            statusMessagesReceivedCount > 0 ?
-                Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS :
-                Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
+        if (0 != lastSentLength || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
+        {
+            sendSetupFrame(now);
+        }
 
-        final long now = clock.time();
-        if (now > (timeOfLastSendOrHeartbeat + timeout))
+        if (statusMessagesReceivedCount > 0)
+        {
+            shouldSendSetupFrame = false;
+        }
+    }
+
+    private void heartbeatCheck(final long now)
+    {
+        if (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             sendHeartbeat(now);
         }

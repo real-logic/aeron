@@ -63,8 +63,8 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport impleme
         this.smFrameHandler = smFrameHandler;
         this.nakFrameHandler = nakFrameHandler;
 
-        nakHeader.wrap(readBuffer, 0);
-        statusMessage.wrap(readBuffer, 0);
+        nakHeader.wrap(receiveBuffer, 0);
+        statusMessage.wrap(receiveBuffer, 0);
     }
 
     /**
@@ -108,12 +108,12 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport impleme
                     switch (header.headerType())
                     {
                         case HDR_TYPE_NAK:
-                            nakFrameHandler.onFrame(nakHeader, readBuffer, length, srcAddress);
+                            nakFrameHandler.onFrame(nakHeader, receiveBuffer, length, srcAddress);
                             framesRead = 1;
                             break;
 
                         case HDR_TYPE_SM:
-                            smFrameHandler.onFrame(statusMessage, readBuffer, length, srcAddress);
+                            smFrameHandler.onFrame(statusMessage, receiveBuffer, length, srcAddress);
                             framesRead = 1;
                             break;
                     }

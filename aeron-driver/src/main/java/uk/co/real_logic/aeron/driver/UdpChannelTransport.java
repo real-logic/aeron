@@ -35,7 +35,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected final DatagramChannel datagramChannel;
     protected final UdpChannel udpChannel;
     protected final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
-    protected final AtomicBuffer readBuffer = new AtomicBuffer(receiveByteBuffer);
+    protected final AtomicBuffer receiveBuffer = new AtomicBuffer(receiveByteBuffer);
     protected final HeaderFlyweight header = new HeaderFlyweight();
     protected final EventLogger logger;
     protected final boolean multicast;
@@ -53,7 +53,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         this.lossGenerator = lossGenerator;
         this.logger = logger;
 
-        header.wrap(readBuffer, 0);
+        header.wrap(receiveBuffer, 0);
 
         try
         {
@@ -196,12 +196,12 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
         if (header.version() != HeaderFlyweight.CURRENT_VERSION)
         {
-            logger.log(EventCode.INVALID_VERSION, readBuffer, 0, header.frameLength());
+            logger.log(EventCode.INVALID_VERSION, receiveBuffer, 0, header.frameLength());
             isFrameValid = false;
         }
         else if (length <= FrameDescriptor.BASE_HEADER_LENGTH)
         {
-            logger.log(EventCode.MALFORMED_FRAME_LENGTH, readBuffer, 0, length);
+            logger.log(EventCode.MALFORMED_FRAME_LENGTH, receiveBuffer, 0, length);
             isFrameValid = false;
         }
 

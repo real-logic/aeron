@@ -59,8 +59,8 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport imple
         this.dataFrameHandler = dataFrameHandler;
         this.setupFrameHandler = setupFrameHandler;
 
-        dataHeader.wrap(readBuffer, 0);
-        setupHeader.wrap(readBuffer, 0);
+        dataHeader.wrap(receiveBuffer, 0);
+        setupHeader.wrap(receiveBuffer, 0);
     }
 
     /**
@@ -105,11 +105,11 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport imple
                     {
                         case HDR_TYPE_PAD:
                         case HDR_TYPE_DATA:
-                            framesRead = dataFrameHandler.onFrame(dataHeader, readBuffer, length, srcAddress);
+                            framesRead = dataFrameHandler.onFrame(dataHeader, receiveBuffer, length, srcAddress);
                             break;
 
                         case HDR_TYPE_SETUP:
-                            setupFrameHandler.onFrame(setupHeader, readBuffer, length, srcAddress);
+                            setupFrameHandler.onFrame(setupHeader, receiveBuffer, length, srcAddress);
                             break;
                     }
                 }

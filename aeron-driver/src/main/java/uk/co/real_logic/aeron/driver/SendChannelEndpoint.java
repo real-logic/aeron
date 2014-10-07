@@ -118,7 +118,7 @@ public class SendChannelEndpoint implements AutoCloseable
         {
             if (StatusMessageFlyweight.SEND_SETUP_FLAG == (header.flags() & StatusMessageFlyweight.SEND_SETUP_FLAG))
             {
-                assembly.publication.sendSetupFrame();
+                assembly.publication.triggerSendSetupFrame();
             }
             else
             {

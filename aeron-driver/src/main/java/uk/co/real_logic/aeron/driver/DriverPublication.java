@@ -54,14 +54,12 @@ public class DriverPublication implements AutoCloseable
     private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final LogScanner[] retransmitLogScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
-
-    private final AtomicLong positionLimit;
-    private final SendChannelEndpoint channelEndpoint;
-    private final TermBuffers termBuffers;
-    private final PositionReporter publisherLimitReporter;
-
     private final SetupFlyweight setupHeader = new SetupFlyweight();
 
+    private final AtomicLong senderLimit;
+    private final PositionReporter publisherLimit;
+    private final SendChannelEndpoint channelEndpoint;
+    private final TermBuffers termBuffers;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final EventLogger logger;
@@ -73,6 +71,7 @@ public class DriverPublication implements AutoCloseable
     private final AvailabilityHandler sendTransmissionUnitFunc;
     private final AvailabilityHandler onSendRetransmitFunc;
 
+    private volatile boolean shouldSendSetupFrame = true;
     private volatile boolean isActive = true;
     private int activeTermId;
     private int activeIndex = 0;
@@ -93,7 +92,7 @@ public class DriverPublication implements AutoCloseable
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
         final TermBuffers termBuffers,
-        final PositionReporter publisherLimitReporter,
+        final PositionReporter publisherLimit,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -110,7 +109,7 @@ public class DriverPublication implements AutoCloseable
         this.systemCounters = systemCounters;
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.clock = clock;
-        this.publisherLimitReporter = publisherLimitReporter;
+        this.publisherLimit = publisherLimit;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.headerLength = headerLength;
@@ -126,7 +125,7 @@ public class DriverPublication implements AutoCloseable
         }
 
         termCapacity = logScanners[0].capacity();
-        positionLimit = new AtomicLong(initialPositionLimit);
+        senderLimit = new AtomicLong(initialPositionLimit);
         activeTermId = initialTermId;
 
         timeOfLastSendOrHeartbeat = clock.time();
@@ -134,7 +133,7 @@ public class DriverPublication implements AutoCloseable
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
         termWindowSize = Configuration.publicationTermWindowSize(termCapacity);
-        publisherLimitReporter.position(termWindowSize);
+        publisherLimit.position(termWindowSize);
 
         sendTransmissionUnitFunc = this::onSendTransmissionUnit;
         onSendRetransmitFunc = this::onSendRetransmit;
@@ -155,7 +154,7 @@ public class DriverPublication implements AutoCloseable
     public void close()
     {
         termBuffers.close();
-        publisherLimitReporter.close();
+        publisherLimit.close();
     }
 
     public int send()
@@ -164,25 +163,12 @@ public class DriverPublication implements AutoCloseable
 
         if (isActive)
         {
-            final int availableWindow = (int)(positionLimit.get() - lastSentPosition);
-            final int scanLimit = Math.min(availableWindow, mtuLength);
-
-            LogScanner scanner = logScanners[activeIndex];
-            scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
-
-            if (scanner.isComplete())
+            if (shouldSendSetupFrame)
             {
-                activeIndex = TermHelper.rotateNext(activeIndex);
-                activeTermId++;
-                scanner = logScanners[activeIndex];
-                scanner.seek(0);
+                sendSetupFrame();
             }
 
-            final long position = positionForActiveTerm(scanner.offset());
-            bytesSent = (int)(position - lastSentPosition);
-
-            lastSentPosition = position;
-            publisherLimitReporter.position(position + termWindowSize);
+            bytesSent = sendData();
 
             if (0 == bytesSent)
             {
@@ -211,7 +197,7 @@ public class DriverPublication implements AutoCloseable
     public void updatePositionLimitFromStatusMessage(final long limit)
     {
         statusMessagesReceivedCount++;
-        positionLimit.lazySet(limit);
+        senderLimit.lazySet(limit);
     }
 
     /**
@@ -259,7 +245,84 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    public void sendSetupFrame()
+    public void triggerSendSetupFrame()
+    {
+        shouldSendSetupFrame = true;
+    }
+
+    public int decRef()
+    {
+        return --refCount;
+    }
+
+    public int incRef()
+    {
+        final int i = ++refCount;
+
+        if (i == 1)
+        {
+            timeOfFlush = 0;
+            isActive = true;
+        }
+
+        return i;
+    }
+
+    public boolean isUnreferencedAndFlushed(final long now)
+    {
+        final boolean isFlushed = refCount == 0 && logScanners[activeIndex].remaining() == 0;
+
+        if (isFlushed && isActive)
+        {
+            timeOfFlush = now;
+            isActive = false;
+        }
+
+        return isFlushed;
+    }
+
+    public int initialTermId()
+    {
+        return initialTermId;
+    }
+
+    public TermBuffers termBuffers()
+    {
+        return termBuffers;
+    }
+
+    public int publisherLimitCounterId()
+    {
+        return publisherLimit.id();
+    }
+
+    private int sendData()
+    {
+        final int bytesSent;
+        final int availableWindow = (int)(senderLimit.get() - lastSentPosition);
+        final int scanLimit = Math.min(availableWindow, mtuLength);
+
+        LogScanner scanner = logScanners[activeIndex];
+        scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
+
+        if (scanner.isComplete())
+        {
+            activeIndex = TermHelper.rotateNext(activeIndex);
+            activeTermId++;
+            scanner = logScanners[activeIndex];
+            scanner.seek(0);
+        }
+
+        final long position = positionForActiveTerm(scanner.offset());
+        bytesSent = (int)(position - lastSentPosition);
+
+        lastSentPosition = position;
+        publisherLimit.position(position + termWindowSize);
+
+        return bytesSent;
+    }
+
+    private void sendSetupFrame()
     {
         setupHeader.termId(activeTermId);
         setupHeader.termOffset(lastSentTermOffset + lastSentLength);
@@ -273,6 +336,7 @@ public class DriverPublication implements AutoCloseable
             logger.logIncompleteSend("sendSetupFrame", bytesSent, setupHeader.frameLength());
         }
 
+        shouldSendSetupFrame = false;
         updateTimeOfLastSendOrSetup(clock.time());
     }
 
@@ -286,7 +350,7 @@ public class DriverPublication implements AutoCloseable
         final long now = clock.time();
         if (now > (timeOfLastSendOrHeartbeat + timeout))
         {
-            sendSetupFrameOrHeartbeat(now);
+            sendHeartbeat(now);
         }
     }
 
@@ -349,25 +413,18 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private void sendSetupFrameOrHeartbeat(final long now)
+    private void sendHeartbeat(final long now)
     {
-        if (0 == lastSentLength && 0 == lastSentTermOffset && initialTermId == lastSentTermId)
-        {
-            sendSetupFrame();
-        }
-        else
-        {
-            retransmitIndex = determineIndexByTermId(lastSentTermId);
+        retransmitIndex = determineIndexByTermId(lastSentTermId);
 
-            if (-1 != retransmitIndex)
-            {
-                final LogScanner scanner = retransmitLogScanners[retransmitIndex];
-                scanner.seek(lastSentTermOffset);
-                scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
+        if (-1 != retransmitIndex)
+        {
+            final LogScanner scanner = retransmitLogScanners[retransmitIndex];
+            scanner.seek(lastSentTermOffset);
+            scanner.scanNext(onSendRetransmitFunc, Math.min(lastSentLength, mtuLength));
 
-                systemCounters.heartbeatsSent().orderedIncrement();
-                updateTimeOfLastSendOrSetup(now);
-            }
+            systemCounters.heartbeatsSent().orderedIncrement();
+            updateTimeOfLastSendOrSetup(now);
         }
     }
 
@@ -392,51 +449,5 @@ public class DriverPublication implements AutoCloseable
     private void updateTimeOfLastSendOrSetup(final long time)
     {
         timeOfLastSendOrHeartbeat = time;
-    }
-
-    public int decRef()
-    {
-        return --refCount;
-    }
-
-    public int incRef()
-    {
-        final int i = ++refCount;
-
-        if (i == 1)
-        {
-            timeOfFlush = 0;
-            isActive = true;
-        }
-
-        return i;
-    }
-
-    public boolean isUnreferencedAndFlushed(final long now)
-    {
-        final boolean isFlushed = refCount == 0 && logScanners[activeIndex].remaining() == 0;
-
-        if (isFlushed && isActive)
-        {
-            timeOfFlush = now;
-            isActive = false;
-        }
-
-        return isFlushed;
-    }
-
-    public int initialTermId()
-    {
-        return initialTermId;
-    }
-
-    public TermBuffers termBuffers()
-    {
-        return termBuffers;
-    }
-
-    public int publisherLimitCounterId()
-    {
-        return publisherLimitReporter.id();
     }
 }

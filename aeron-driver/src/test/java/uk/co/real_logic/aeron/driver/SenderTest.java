@@ -116,10 +116,10 @@ public class SenderTest
                 .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger));
 
-        logAppenders =
-            termBuffers.stream()
-                       .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(), HEADER, MAX_FRAME_LENGTH))
-                       .toArray(LogAppender[]::new);
+        logAppenders = termBuffers
+            .stream()
+            .map((log) -> new LogAppender(log.logBuffer(), log.stateBuffer(), HEADER, MAX_FRAME_LENGTH))
+            .toArray(LogAppender[]::new);
 
         publication = new DriverPublication(
             PUBLICATION_ID,
@@ -188,8 +188,7 @@ public class SenderTest
     {
         currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
 
-        publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));

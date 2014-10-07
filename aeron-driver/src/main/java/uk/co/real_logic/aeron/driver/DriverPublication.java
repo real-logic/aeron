@@ -48,11 +48,12 @@ public class DriverPublication implements AutoCloseable
     private final int headerLength;
     private final int mtuLength;
 
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
+
     private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final LogScanner[] retransmitLogScanners = new LogScanner[TermHelper.BUFFER_COUNT];
     private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
-    private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private final AtomicLong senderLimit;
     private final PositionReporter publisherLimit;

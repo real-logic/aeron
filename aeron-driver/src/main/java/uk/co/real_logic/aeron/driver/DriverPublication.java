@@ -30,7 +30,6 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
@@ -48,7 +47,6 @@ public class DriverPublication implements AutoCloseable
     private final NanoClock clock;
     private final int sessionId;
     private final int streamId;
-    private final AtomicInteger activeTermId;
     private final int headerLength;
     private final int mtuLength;
 
@@ -76,6 +74,7 @@ public class DriverPublication implements AutoCloseable
     private final AvailabilityHandler onSendRetransmitFunc;
 
     private volatile boolean isActive = true;
+    private int activeTermId;
     private int activeIndex = 0;
     private int retransmitIndex = 0;
     private int statusMessagesReceivedCount = 0;
@@ -128,7 +127,7 @@ public class DriverPublication implements AutoCloseable
 
         termCapacity = logScanners[0].capacity();
         positionLimit = new AtomicLong(initialPositionLimit);
-        activeTermId = new AtomicInteger(initialTermId);
+        activeTermId = initialTermId;
 
         timeOfLastSendOrHeartbeat = clock.time();
 
@@ -174,7 +173,7 @@ public class DriverPublication implements AutoCloseable
             if (scanner.isComplete())
             {
                 activeIndex = TermHelper.rotateNext(activeIndex);
-                activeTermId.lazySet(activeTermId.get() + 1);
+                activeTermId++;
                 scanner = logScanners[activeIndex];
                 scanner.seek(0);
             }
@@ -262,14 +261,13 @@ public class DriverPublication implements AutoCloseable
 
     public void sendSetupFrame()
     {
-        setupHeader.termId(activeTermId.get());
+        setupHeader.termId(activeTermId);
         setupHeader.termOffset(lastSentTermOffset + lastSentLength);
 
         setupFrameBuffer.limit(setupHeader.frameLength());
         setupFrameBuffer.position(0);
 
         final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
-
         if (setupHeader.frameLength() != bytesSent)
         {
             logger.logIncompleteSend("sendSetupFrame", bytesSent, setupHeader.frameLength());
@@ -307,7 +305,7 @@ public class DriverPublication implements AutoCloseable
 
     private int determineIndexByTermId(final int termId)
     {
-        final int activeTermId = this.activeTermId.get();
+        final int activeTermId = this.activeTermId;
         if (termId == activeTermId)
         {
             return activeIndex;
@@ -332,10 +330,10 @@ public class DriverPublication implements AutoCloseable
             logger.logIncompleteSend("onSendTransmissionUnit", bytesSent, length);
         }
 
-        updateTimeOfLastSendOrSetup(clock.time());
-        lastSentTermId = activeTermId.get();
+        lastSentTermId = activeTermId;
         lastSentTermOffset = offset;
         lastSentLength = length;
+        updateTimeOfLastSendOrSetup(clock.time());
     }
 
     private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
@@ -377,7 +375,7 @@ public class DriverPublication implements AutoCloseable
     {
         setupHeader.sessionId(sessionId)
                    .streamId(streamId)
-                   .termId(activeTermId.get())
+                   .termId(activeTermId)
                    .termOffset(0)
                    .termSize(termCapacity)
                    .frameLength(SetupFlyweight.HEADER_LENGTH)
@@ -388,7 +386,7 @@ public class DriverPublication implements AutoCloseable
 
     private long positionForActiveTerm(final int termOffset)
     {
-        return TermHelper.calculatePosition(activeTermId.get(), termOffset, positionBitsToShift, initialTermId);
+        return TermHelper.calculatePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
     }
 
     private void updateTimeOfLastSendOrSetup(final long time)

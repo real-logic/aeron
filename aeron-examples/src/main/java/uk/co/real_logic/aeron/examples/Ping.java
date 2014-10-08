@@ -58,7 +58,6 @@ public class Ping
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-        final ExecutorService executor = Executors.newSingleThreadExecutor();
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(Ping::newPongConnectionHandler);
 
@@ -97,7 +96,6 @@ public class Ping
 
         HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
 
-        executor.shutdown();
         CloseHelper.quietClose(driver);
     }
 

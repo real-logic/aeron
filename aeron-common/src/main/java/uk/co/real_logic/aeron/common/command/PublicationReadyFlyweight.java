@@ -43,6 +43,8 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                   Position Indicator Offset                   |
  * +---------------------------------------------------------------+
+ * |                           MTU Length                          |
+ * +---------------------------------------------------------------+
  * |                          File Offset 0                        |
  * +---------------------------------------------------------------+
  * |                          File Offset 1                        |
@@ -112,7 +114,8 @@ public class PublicationReadyFlyweight extends Flyweight implements ReadyFlyweig
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
+    private static final int MTU_LENGTH_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
+    private static final int FILE_OFFSETS_FIELDS_OFFSET = MTU_LENGTH_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
@@ -254,9 +257,32 @@ public class PublicationReadyFlyweight extends Flyweight implements ReadyFlyweig
      * @param positionCounterId field value
      * @return flyweight
      */
-    public ReadyFlyweight positionCounterId(final int positionCounterId)
+    public PublicationReadyFlyweight positionCounterId(final int positionCounterId)
     {
         atomicBuffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * return mtu length field
+     *
+     * @return mtu length field
+     */
+    public int mtuLength()
+    {
+        return atomicBuffer().getInt(offset() + MTU_LENGTH_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set mtu length field
+     *
+     * @param mtuLength field value
+     * @return flyweight
+     */
+    public PublicationReadyFlyweight mtuLength(final int mtuLength)
+    {
+        atomicBuffer().putInt(offset() + MTU_LENGTH_OFFSET, mtuLength, LITTLE_ENDIAN);
 
         return this;
     }
@@ -288,7 +314,7 @@ public class PublicationReadyFlyweight extends Flyweight implements ReadyFlyweig
         return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
     }
 
-    private ReadyFlyweight locationPointer(final int index, final int value)
+    private PublicationReadyFlyweight locationPointer(final int index, final int value)
     {
         return relativeIntField(index, value, LOCATION_POINTER_FIELDS_OFFSET);
     }
@@ -320,7 +346,7 @@ public class PublicationReadyFlyweight extends Flyweight implements ReadyFlyweig
         return location(CHANNEL_INDEX);
     }
 
-    public ReadyFlyweight channel(final String value)
+    public PublicationReadyFlyweight channel(final String value)
     {
         return location(CHANNEL_INDEX, value);
     }

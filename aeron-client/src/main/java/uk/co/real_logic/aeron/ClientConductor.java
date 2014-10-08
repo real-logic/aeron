@@ -61,7 +61,6 @@ class ClientConductor extends Agent implements DriverListener
 
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
-    private final int mtuLength;
 
     private long activeCorrelationId = -1; // Guarded by this
     private Publication addedPublication; // Guarded by this
@@ -82,8 +81,7 @@ class ClientConductor extends Agent implements DriverListener
         final Consumer<Exception> errorHandler,
         final NewConnectionHandler newConnectionHandler,
         final InactiveConnectionHandler inactiveConnectionHandler,
-        final long driverTimeoutMs,
-        final int mtuLength)
+        final long driverTimeoutMs)
     {
         super(idleStrategy, errorHandler, null);
 
@@ -96,7 +94,6 @@ class ClientConductor extends Agent implements DriverListener
         this.inactiveConnectionHandler = inactiveConnectionHandler;
         this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = TimeUnit.MILLISECONDS.toNanos(driverTimeoutMs);
-        this.mtuLength = mtuLength;
 
         this.driverListenerAdapter = new DriverListenerAdapter(broadcastReceiver, this);
         this.keepaliveTimer = timerWheel.newTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onKeepalive);
@@ -180,13 +177,14 @@ class ClientConductor extends Agent implements DriverListener
     }
 
     public void onNewPublication(
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final int termId,
-        final int limitPositionIndicatorOffset,
-        final ReadyFlyweight message,
-        final long correlationId)
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final int termId,
+            final int limitPositionIndicatorOffset,
+            final ReadyFlyweight message,
+            final long correlationId,
+            final int mtuLength)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];

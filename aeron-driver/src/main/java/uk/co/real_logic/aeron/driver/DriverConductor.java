@@ -443,7 +443,8 @@ public class DriverConductor extends Agent
             publication.initialTermId(),
             publication.termBuffers(),
             correlationId,
-            publication.publisherLimitCounterId());
+            publication.publisherLimitCounterId(),
+            mtuLength);
     }
 
     private void onRemovePublication(final long registrationId, final long correlationId)

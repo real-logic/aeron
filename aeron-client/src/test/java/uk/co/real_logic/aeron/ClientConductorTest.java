@@ -61,7 +61,6 @@ public class ClientConductorTest extends MockBufferUsage
     private static final long CORRELATION_ID_2 = 2002;
 
     private static final int AWAIT_TIMEOUT = 100;
-    private static final int MTU_LENGTH = 1280; // from CommonContext
 
     private static final String SOURCE_NAME = "127.0.0.1:40789";
 
@@ -112,8 +111,7 @@ public class ClientConductorTest extends MockBufferUsage
             mockClientErrorHandler,
             null,
             mockInactiveConnectionHandler,
-            AWAIT_TIMEOUT,
-            MTU_LENGTH);
+            AWAIT_TIMEOUT);
 
         publicationReady.wrap(atomicSendBuffer, 0);
         connectionReady.wrap(atomicSendBuffer, 0);

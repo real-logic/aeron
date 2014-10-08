@@ -20,7 +20,6 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import java.io.File;
 
 import static java.lang.Boolean.getBoolean;
-import static java.lang.Integer.getInteger;
 import static java.lang.System.getProperty;
 
 /**
@@ -56,10 +55,6 @@ public class CommonContext implements AutoCloseable
     /** Default directory for conductor buffers */
     public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + COUNTERS_DIR_NAME;
 
-    /** Length of the maximum transport unit of the media driver's protocol */
-    private static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
-    private static final int MTU_LENGTH_DEFAULT = 4096;
-
     /** Name of the default multicast interface */
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
 
@@ -75,7 +70,6 @@ public class CommonContext implements AutoCloseable
     private String dataDirName;
     private String adminDirName;
     private String countersDirName;
-    private int mtuLength;
     private boolean dirsDeleteOnExit;
     private File toDriverFile;
     private File toClientsFile;
@@ -99,7 +93,6 @@ public class CommonContext implements AutoCloseable
             countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, aeronDir + File.separator + COUNTERS_DIR_NAME));
         }
 
-        mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
     }
 
@@ -130,17 +123,6 @@ public class CommonContext implements AutoCloseable
     public CommonContext countersDirName(final String countersDirName)
     {
         this.countersDirName = countersDirName;
-        return this;
-    }
-
-    public int mtuLength()
-    {
-        return mtuLength;
-    }
-
-    public CommonContext mtuLength(final int mtuLength)
-    {
-        this.mtuLength = mtuLength;
         return this;
     }
 

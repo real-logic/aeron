@@ -310,6 +310,10 @@ public class Configuration
     public static final String SENDER_MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
         SENDER_MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastSenderFlowControl");
 
+    /** Length of the maximum transport unit of the media driver's protocol */
+    public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
+    public static final int MTU_LENGTH_DEFAULT = 4096;
+
     /**
      * How far ahead the receiver can get from the subscriber position.
      *

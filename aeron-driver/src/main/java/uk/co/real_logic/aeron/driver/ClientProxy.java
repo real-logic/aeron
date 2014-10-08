@@ -110,20 +110,23 @@ public class ClientProxy
     }
 
     public void onPublicationReady(
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final int termId,
-        final TermBuffers termBuffers,
-        final long correlationId,
-        final int positionCounterId)
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final int termId,
+            final TermBuffers termBuffers,
+            final long correlationId,
+            final int positionCounterId,
+            final int mtuLength)
     {
         publicationReady.wrap(tmpBuffer, 0);
         publicationReady.sessionId(sessionId)
                         .streamId(streamId)
                         .correlationId(correlationId)
                         .termId(termId)
-                        .positionCounterId(positionCounterId);
+                        .positionCounterId(positionCounterId)
+                        .mtuLength(mtuLength);
+
         termBuffers.appendBufferLocationsTo(publicationReady);
         publicationReady.channel(channel);
 

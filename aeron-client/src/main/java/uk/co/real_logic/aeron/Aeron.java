@@ -80,8 +80,7 @@ public final class Aeron implements AutoCloseable
             ctx.errorHandler,
             ctx.newConnectionHandler,
             ctx.inactiveConnectionHandler,
-            ctx.mediaDriverTimeout(),
-            ctx.mtuLength());
+            ctx.mediaDriverTimeout());
 
         this.ctx = ctx;
     }

@@ -32,8 +32,11 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import static java.lang.Integer.getInteger;
 import static uk.co.real_logic.aeron.common.IoUtil.deleteIfExists;
 import static uk.co.real_logic.aeron.common.IoUtil.mapNewFile;
+import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
+import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_PROP_NAME;
 
 /**
  * Main class for JVM-based media driver
@@ -243,6 +246,7 @@ public class MediaDriver implements AutoCloseable
         private long eventCodes;
         private double dataLossRate;
         private double controlLossRate;
+        private int mtuLength;
 
         private boolean warnIfDirectoriesExist;
         private EventLogger eventLogger;
@@ -271,6 +275,8 @@ public class MediaDriver implements AutoCloseable
             try
             {
                 super.conclude();
+
+                mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
 
                 if (null == eventLogger)
                 {
@@ -722,6 +728,17 @@ public class MediaDriver implements AutoCloseable
         public long controlLossSeed()
         {
             return controlLossSeed;
+        }
+
+        public int mtuLength()
+        {
+            return mtuLength;
+        }
+
+        public CommonContext mtuLength(final int mtuLength)
+        {
+            this.mtuLength = mtuLength;
+            return this;
         }
 
         public SystemCounters systemCounters()

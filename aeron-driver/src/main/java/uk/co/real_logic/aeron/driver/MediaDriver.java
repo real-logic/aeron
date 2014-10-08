@@ -543,12 +543,6 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context eventCodes(final long eventCodes)
-        {
-            this.eventCodes = eventCodes;
-            return this;
-        }
-
         public Context eventBufferSize(final int size)
         {
             this.eventBufferSize = size;

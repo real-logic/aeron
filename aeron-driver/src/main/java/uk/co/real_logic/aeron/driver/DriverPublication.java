@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.NanoClock;
@@ -303,7 +304,7 @@ public class DriverPublication implements AutoCloseable
 
         if (scanner.isComplete())
         {
-            activeIndex = TermHelper.rotateNext(activeIndex);
+            activeIndex = BitUtil.next(activeIndex, TermHelper.BUFFER_COUNT);
             activeTermId++;
             scanner = logScanners[activeIndex];
             scanner.seek(0);

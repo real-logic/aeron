@@ -168,7 +168,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         if (windowSizeMax > soRcvbuf)
         {
             throw new ConfigurationException(
-                String.format("Max Window Size greater than socket SO_RCVBUF: windowSizeMac=%d, SO_RCVBUF=%d",
+                String.format("Max Window Size greater than socket SO_RCVBUF: windowSizeMax=%d, SO_RCVBUF=%d",
                     windowSizeMax, soRcvbuf));
         }
     }

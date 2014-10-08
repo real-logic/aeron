@@ -232,7 +232,7 @@ public class Configuration
     /**
      * 0 means use OS default.
      */
-    public static final int SOCKET_RCVBUF_SZ_DEFAULT = 0;
+    public static final int SOCKET_RCVBUF_SZ_DEFAULT = 128 * 1024;
     public static final int SOCKET_RCVBUF_SZ = getInteger(SOCKET_RCVBUF_SZ_PROP_NAME, SOCKET_RCVBUF_SZ_DEFAULT);
 
     /**

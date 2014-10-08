@@ -96,9 +96,10 @@ public class LogRebuilder extends LogBuffer
     private void updateCompetitionStatus(final AtomicBuffer logBuffer, final int termOffset, final int length, int tail)
     {
         final int capacity = capacity();
-        int alignedFrameLength;
-        while ((tail < capacity) && (alignedFrameLength = alignedFrameLength(logBuffer, tail)) != 0)
+        int frameLength;
+        while ((tail < capacity) && (frameLength = logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)) != 0)
         {
+            final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
             tail += alignedFrameLength;
         }
 
@@ -110,11 +111,6 @@ public class LogRebuilder extends LogBuffer
         {
             putHighWaterMark(stateBuffer, endOfFrame);
         }
-    }
-
-    private static int alignedFrameLength(final AtomicBuffer logBuffer, final int tail)
-    {
-        return BitUtil.align(logBuffer.getInt(lengthOffset(tail), ByteOrder.LITTLE_ENDIAN), FRAME_ALIGNMENT);
     }
 
     private static void putTailOrdered(final AtomicBuffer stateBuffer, final int tail)

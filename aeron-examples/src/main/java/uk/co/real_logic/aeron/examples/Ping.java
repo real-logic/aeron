@@ -20,7 +20,9 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -102,6 +104,8 @@ public class Ping
     private static void sendPingAndReceivePong(
         final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
     {
+        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
+
         for (int i = 0; i < numMessages; i++)
         {
             do
@@ -112,7 +116,7 @@ public class Ping
 
             while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
             {
-                ;
+                idleStrategy.idle(0);
             }
         }
     }

@@ -16,17 +16,20 @@
 package uk.co.real_logic.aeron.examples;
 
 import org.HdrHistogram.Histogram;
-import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
-import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.*;
-import java.util.concurrent.locks.LockSupport;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Ping component of Ping-Pong.
@@ -50,8 +53,6 @@ public class Ping
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
 
-    private static int numPongsReceived;
-
     public static void main(final String[] args) throws Exception
     {
         ExamplesUtil.useSharedMemoryOnLinux();
@@ -71,9 +72,6 @@ public class Ping
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
              final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
         {
-            final int totalWarmupMessages = WARMUP_NUMBER_OF_MESSAGES * WARMUP_NUMBER_OF_ITERATIONS;
-            final Future warmup = executor.submit(() -> runSubscriber(pongSubscription, totalWarmupMessages));
-
             System.out.println("Waiting for new connection from Pong...");
 
             PONG_CONNECTION_LATCH.await();
@@ -83,20 +81,16 @@ public class Ping
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
-                sendMessages(pingPublication, WARMUP_NUMBER_OF_MESSAGES);
+                sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
             }
 
-            warmup.get();
             HISTOGRAM.reset();
 
             System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-            final Future timedRun = executor.submit(() -> runSubscriber(pongSubscription, NUMBER_OF_MESSAGES));
-            sendMessages(pingPublication, NUMBER_OF_MESSAGES);
+            sendPingAndReceivePong(pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
 
             System.out.println("Done pinging.");
-
-            timedRun.get();
         }
 
         System.out.println("Done playing...\nHistogram of RTT latencies in microseconds.");
@@ -107,7 +101,8 @@ public class Ping
         CloseHelper.quietClose(driver);
     }
 
-    private static void sendMessages(final Publication pingPublication, final int numMessages)
+    private static void sendPingAndReceivePong(
+        final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
     {
         for (int i = 0; i < numMessages; i++)
         {
@@ -117,7 +112,10 @@ public class Ping
             }
             while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
 
-            LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1));
+            while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+            {
+                ;
+            }
         }
     }
 
@@ -127,20 +125,6 @@ public class Ping
         final long rttNs = System.nanoTime() - pingTimestamp;
 
         HISTOGRAM.recordValue(rttNs);
-        numPongsReceived++;
-    }
-
-    private static void runSubscriber(final Subscription pongSubscription, final int numMessages)
-    {
-        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
-
-        numPongsReceived = 0;
-        do
-        {
-            final int fragmentsRead = pongSubscription.poll(FRAGMENT_COUNT_LIMIT);
-            idleStrategy.idle(fragmentsRead);
-        }
-        while (numPongsReceived < numMessages);
     }
 
     private static void newPongConnectionHandler(

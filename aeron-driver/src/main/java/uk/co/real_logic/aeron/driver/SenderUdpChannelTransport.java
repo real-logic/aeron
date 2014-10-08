@@ -84,11 +84,6 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport impleme
      */
     public int getAsInt()
     {
-        return receiveControlFrames();
-    }
-
-    private int receiveControlFrames()
-    {
         int framesRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();
 

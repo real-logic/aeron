@@ -80,11 +80,6 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport imple
      */
     public int getAsInt()
     {
-        return receiveDataFrames();
-    }
-
-    private int receiveDataFrames()
-    {
         int framesRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();
 

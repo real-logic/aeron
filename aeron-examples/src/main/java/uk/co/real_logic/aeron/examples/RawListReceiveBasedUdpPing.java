@@ -1,4 +1,4 @@
-package uk.co.real_logic.aeron.examples.receive;
+package uk.co.real_logic.aeron.examples;
 
 import org.HdrHistogram.Histogram;
 
@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
@@ -17,7 +19,7 @@ import static uk.co.real_logic.aeron.examples.RawUdpPong.setup;
  *
  * @see RawReceiveBasedUdpPong
  */
-public class RawReceiveBasedUdpPing
+public class RawListReceiveBasedUdpPing
 {
 
     private static final int MESSAGE_SIZE = SIZE_OF_LONG + SIZE_OF_LONG;
@@ -27,7 +29,7 @@ public class RawReceiveBasedUdpPing
 
     public static void main(String[] args) throws IOException
     {
-        new RawReceiveBasedUdpPing().run();
+        new RawListReceiveBasedUdpPing().run();
     }
 
     private void run() throws IOException
@@ -42,18 +44,24 @@ public class RawReceiveBasedUdpPing
         setup(receiveChannel);
         receiveChannel.bind(new InetSocketAddress("localhost", PONG_PORT));
 
+        List<DatagramChannel> receiveChannels = new ArrayList<>();
+        receiveChannels.add(receiveChannel);
+
         DatagramChannel sendChannel = DatagramChannel.open();
         setup(sendChannel);
 
+        List<DatagramChannel> sendChannels = new ArrayList<>();
+        sendChannels.add(sendChannel);
+
         while (true)
         {
-            oneIteration(histogram, sendAddress, buffer, receiveChannel, sendChannel);
+            oneIteration(histogram, sendAddress, buffer, receiveChannels, sendChannels);
         }
     }
 
     private void oneIteration(
             final Histogram histogram, final InetSocketAddress sendAddress, final ByteBuffer buffer,
-            final DatagramChannel receiveChannel, final DatagramChannel sendChannel)
+            final List<DatagramChannel> receiveChannels, final List<DatagramChannel> sendChannels)
         throws IOException
     {
         for (int sequenceNumber = 0; sequenceNumber < 10_000; sequenceNumber++)
@@ -65,24 +73,30 @@ public class RawReceiveBasedUdpPing
             buffer.putLong(timestamp);
             buffer.flip();
 
-            int sent = sendChannel.send(buffer, sendAddress);
-            validateDataAmount(sent);
-
-
-            buffer.clear();
-            while (receiveChannel.receive(buffer) == null)
+            for (int i = 0; i < sendChannels.size(); i++)
             {
-                ;
+                int sent = sendChannels.get(i).send(buffer, sendAddress);
+                validateDataAmount(sent);
             }
 
-            long receivedSequenceNumber = buffer.getLong(0);
-            if (receivedSequenceNumber != sequenceNumber)
+            for (int i = 0; i < receiveChannels.size(); i++)
             {
-                throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
-            }
+                DatagramChannel receiveChannel = receiveChannels.get(i);
+                buffer.clear();
+                while (receiveChannel.receive(buffer) == null)
+                {
+                    ;
+                }
 
-            long duration = System.nanoTime() - timestamp;
-            histogram.recordValue(duration);
+                long receivedSequenceNumber = buffer.getLong(0);
+                if (receivedSequenceNumber != sequenceNumber)
+                {
+                    throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
+                }
+
+                long duration = System.nanoTime() - timestamp;
+                histogram.recordValue(duration);
+            }
         }
 
         histogram.outputPercentileDistribution(System.out, 1000.0);

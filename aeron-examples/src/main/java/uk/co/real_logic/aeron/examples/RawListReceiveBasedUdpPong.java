@@ -1,4 +1,4 @@
-package uk.co.real_logic.aeron.examples.receive;
+package uk.co.real_logic.aeron.examples;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -10,12 +10,11 @@ import java.util.List;
 
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
-import static uk.co.real_logic.aeron.examples.RawUdpPong.setup;
 
 /**
  * Benchmark used to calculate latency of underlying system.
  *
- * @see uk.co.real_logic.aeron.examples.receive.RawReceiveBasedUdpPing
+ * @see RawReceiveBasedUdpPing
  */
 public class RawListReceiveBasedUdpPong
 {

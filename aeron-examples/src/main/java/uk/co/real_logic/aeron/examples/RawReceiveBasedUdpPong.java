@@ -1,4 +1,4 @@
-package uk.co.real_logic.aeron.examples.receive;
+package uk.co.real_logic.aeron.examples;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;

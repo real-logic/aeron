@@ -9,9 +9,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 import java.util.function.ToIntFunction;
 
 import static java.nio.channels.SelectionKey.OP_READ;
@@ -31,7 +29,8 @@ public class RawUdpPing implements ToIntFunction<SelectionKey>
 
     public static final int PONG_PORT = 40123;
     public static final int PING_PORT = 40124;
-    private static final InetSocketAddress sendAddress = new InetSocketAddress("localhost", PING_PORT);
+
+    private static final InetSocketAddress SEND_ADDRESS = new InetSocketAddress("localhost", PING_PORT);
 
 
     public static void main(String[] args) throws IOException
@@ -61,7 +60,7 @@ public class RawUdpPing implements ToIntFunction<SelectionKey>
 
         while (true)
         {
-            oneIteration(histogram, sendAddress, buffer, sendChannel, selector, keySet);
+            oneIteration(histogram, SEND_ADDRESS, buffer, sendChannel, selector, keySet);
         }
     }
 

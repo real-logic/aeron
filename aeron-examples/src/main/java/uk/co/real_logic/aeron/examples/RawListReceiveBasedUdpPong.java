@@ -36,14 +36,14 @@ public class RawListReceiveBasedUdpPong
         ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
 
         DatagramChannel receiveChannel = DatagramChannel.open();
-        setup(receiveChannel);
+        init(receiveChannel);
         receiveChannel.bind(new InetSocketAddress("localhost", PING_PORT));
 
         List<DatagramChannel> receiveChannels = new ArrayList<>();
         receiveChannels.add(receiveChannel);
 
         DatagramChannel sendChannel = DatagramChannel.open();
-        setup(sendChannel);
+        init(sendChannel);
 
         List<DatagramChannel> sendChannels = new ArrayList<>();
         sendChannels.add(sendChannel);
@@ -78,7 +78,7 @@ public class RawListReceiveBasedUdpPong
         }
     }
 
-    public static void setup(final DatagramChannel channel) throws IOException
+    public static void init(final DatagramChannel channel) throws IOException
     {
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);

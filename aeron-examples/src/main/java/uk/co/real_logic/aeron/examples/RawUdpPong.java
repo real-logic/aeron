@@ -1,6 +1,9 @@
 package uk.co.real_logic.aeron.examples;
 
+import uk.co.real_logic.aeron.driver.NioSelectedKeySet;
+
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
@@ -8,6 +11,9 @@ import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.util.Iterator;
+import java.util.function.Consumer;
+import java.util.function.IntFunction;
+import java.util.function.ToIntFunction;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
@@ -45,21 +51,14 @@ public class RawUdpPong
         setup(sendChannel);
 
         Selector selector = Selector.open();
+        NioSelectedKeySet keySet = keySet(selector);
+
         receiveChannel.register(selector, OP_READ, this);
 
-
-        while (true)
+        ToIntFunction<SelectionKey> handler = key ->
         {
-            while (selector.selectNow() == 0)
+            try
             {
-                ;
-            }
-
-            Iterator<SelectionKey> it = selector.selectedKeys().iterator();
-            while (it.hasNext())
-            {
-                it.next();
-
                 buffer.clear();
                 receiveChannel.receive(buffer);
 
@@ -73,9 +72,23 @@ public class RawUdpPong
 
                 int sent = sendChannel.send(buffer, sendAddress);
                 validateDataAmount(sent);
-
-                it.remove();
             }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
+
+            return 1;
+        };
+
+        while (true)
+        {
+            while (selector.selectNow() == 0)
+            {
+                ;
+            }
+
+            keySet.forEach(handler);
         }
     }
 
@@ -85,12 +98,63 @@ public class RawUdpPong
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
     }
 
-    private void validateDataAmount(final int amount)
+    public static void validateDataAmount(final int amount)
     {
         if (amount != MESSAGE_SIZE)
         {
             throw new IllegalStateException();
         }
+    }
+
+    private static final Field SELECTED_KEYS_FIELD;
+    private static final Field PUBLIC_SELECTED_KEYS_FIELD;
+
+    static
+    {
+        Field selectKeysField = null;
+        Field publicSelectKeysField = null;
+
+        try
+        {
+            final Class<?> clazz = Class.forName("sun.nio.ch.SelectorImpl", false, ClassLoader.getSystemClassLoader());
+
+            if (clazz.isAssignableFrom(Selector.open().getClass()))
+            {
+                selectKeysField = clazz.getDeclaredField("selectedKeys");
+                selectKeysField.setAccessible(true);
+
+                publicSelectKeysField = clazz.getDeclaredField("publicSelectedKeys");
+                publicSelectKeysField.setAccessible(true);
+            }
+        }
+        catch (final Exception ignore)
+        {
+        }
+
+        SELECTED_KEYS_FIELD = selectKeysField;
+        PUBLIC_SELECTED_KEYS_FIELD = publicSelectKeysField;
+    }
+
+    public static NioSelectedKeySet keySet(final Selector selector)
+    {
+        NioSelectedKeySet tmpSet = null;
+
+        if (null != PUBLIC_SELECTED_KEYS_FIELD)
+        {
+            try
+            {
+                tmpSet = new NioSelectedKeySet();
+
+                SELECTED_KEYS_FIELD.set(selector, tmpSet);
+                PUBLIC_SELECTED_KEYS_FIELD.set(selector, tmpSet);
+            }
+            catch (final Exception ignore)
+            {
+                tmpSet = null;
+            }
+        }
+
+        return tmpSet;
     }
 
 }

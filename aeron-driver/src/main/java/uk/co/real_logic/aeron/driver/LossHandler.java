@@ -197,6 +197,16 @@ public class LossHandler
         return TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
     }
 
+    /**
+     * Return whether timer is running and there is outstanding loss being handled or not.
+     *
+     * @return is timer running and therefore outstanding loss is present
+     */
+    public boolean isActive()
+    {
+        return timer.isActive();
+    }
+
     private void suppressNak()
     {
         scheduleTimer();

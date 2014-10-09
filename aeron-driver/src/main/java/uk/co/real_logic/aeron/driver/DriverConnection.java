@@ -81,8 +81,6 @@ public class DriverConnection implements AutoCloseable
     private volatile boolean statusMessagesEnabled = false;
     private volatile boolean scanForGapsEnabled = true;
 
-    private volatile boolean possibleGapDetected = false;
-
     public DriverConnection(
         final ReceiveChannelEndpoint channelEndpoint,
         final long correlationId,
@@ -294,7 +292,7 @@ public class DriverConnection implements AutoCloseable
      */
     public int scanForGaps()
     {
-        if (scanForGapsEnabled && (possibleGapDetected || lossHandler.isActive()))
+        if (scanForGapsEnabled)
         {
             return lossHandler.scan();
         }
@@ -328,9 +326,6 @@ public class DriverConnection implements AutoCloseable
         final long packetPosition = calculatePosition(termId, termOffset);
         final long currentPosition = calculatePosition(activeTermId, currentRebuilder.tail());
         final long proposedPosition = packetPosition + length;
-
-        // if the current position wouldn't advance, then we have a possible gap.
-        possibleGapDetected = packetPosition != currentPosition;
 
         if (isHeartbeat(currentPosition, proposedPosition) ||
             isFlowControlUnderRun(packetPosition, currentPosition) ||

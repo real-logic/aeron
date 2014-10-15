@@ -112,7 +112,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        logger.log(EventCode.FRAME_OUT, buffer, buffer.position(), buffer.remaining(), remoteAddress);
+        logger.log(EventCode.FRAME_OUT, buffer, remoteAddress);
 
         try
         {

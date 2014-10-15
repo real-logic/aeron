@@ -70,12 +70,31 @@ public class EventLogger
     }
 
     public void log(
-        final EventCode code, final ByteBuffer buffer, final int offset, final int length, final InetSocketAddress dstAddress)
+        final EventCode code,
+        final ByteBuffer buffer,
+        final int offset,
+        final int length,
+        final InetSocketAddress dstAddress)
     {
         if (isEnabled(code, enabledEventCodes))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
+
+            ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
+
+    public void log(
+        final EventCode code,
+        final ByteBuffer buffer,
+        final InetSocketAddress dstAddress)
+    {
+        if (isEnabled(code, enabledEventCodes))
+        {
+            final AtomicBuffer encodedBuffer = encodingBuffer.get();
+            final int encodedLength =
+                EventCodec.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
         }

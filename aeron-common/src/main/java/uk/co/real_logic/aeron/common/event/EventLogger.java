@@ -33,6 +33,8 @@ public class EventLogger
     private static final ThreadLocal<AtomicBuffer> encodingBuffer = ThreadLocal.withInitial(
         () -> new AtomicBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
+    private static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledEventCodes();
+
     /**
      *  The index in the stack trace of the method that called logException().
      *
@@ -42,25 +44,22 @@ public class EventLogger
     private static final int INVOKING_METHOD_INDEX = 2;
 
     private final ManyToOneRingBuffer ringBuffer;
-    private final long enabledEventCodes;
 
-    public EventLogger(final ByteBuffer buffer, final long enabledEventCodes)
+    public EventLogger(final ByteBuffer buffer)
     {
         if (null != buffer)
         {
             this.ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
-            this.enabledEventCodes = enabledEventCodes;
         }
         else
         {
             this.ringBuffer = null;
-            this.enabledEventCodes = 0;
         }
     }
 
     public void log(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
     {
-        if (isEnabled(code, enabledEventCodes))
+        if (isEnabled(code, ENABLED_EVENT_CODES))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length);
@@ -76,7 +75,7 @@ public class EventLogger
         final int length,
         final InetSocketAddress dstAddress)
     {
-        if (isEnabled(code, enabledEventCodes))
+        if (isEnabled(code, ENABLED_EVENT_CODES))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
@@ -90,7 +89,7 @@ public class EventLogger
         final ByteBuffer buffer,
         final InetSocketAddress dstAddress)
     {
-        if (isEnabled(code, enabledEventCodes))
+        if (isEnabled(code, ENABLED_EVENT_CODES))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength =
@@ -102,7 +101,7 @@ public class EventLogger
 
     public void log(final EventCode code, final File file)
     {
-        if (isEnabled(code, enabledEventCodes))
+        if (isEnabled(code, ENABLED_EVENT_CODES))
         {
             logString(code, file.toString());
         }
@@ -110,7 +109,7 @@ public class EventLogger
 
     public void logIncompleteSend(final CharSequence type, final int sent, final int expected)
     {
-        if (isEnabled(EventCode.FRAME_OUT_INCOMPLETE_SEND, enabledEventCodes))
+        if (isEnabled(EventCode.FRAME_OUT_INCOMPLETE_SEND, ENABLED_EVENT_CODES))
         {
             logString(EventCode.FRAME_OUT_INCOMPLETE_SEND, String.format("%s %d/%d", type, sent, expected));
         }
@@ -118,7 +117,7 @@ public class EventLogger
 
     public void logPublicationRemoval(final CharSequence uri, final int sessionId, final int streamId)
     {
-        if (isEnabled(EventCode.REMOVE_PUBLICATION_CLEANUP, enabledEventCodes))
+        if (isEnabled(EventCode.REMOVE_PUBLICATION_CLEANUP, ENABLED_EVENT_CODES))
         {
             logString(EventCode.REMOVE_PUBLICATION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
         }
@@ -126,7 +125,7 @@ public class EventLogger
 
     public void logSubscriptionRemoval(final CharSequence uri, final int streamId, final long id)
     {
-        if (isEnabled(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, enabledEventCodes))
+        if (isEnabled(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, ENABLED_EVENT_CODES))
         {
             logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, String.format("%s %x %d", uri, streamId, id));
         }
@@ -134,7 +133,7 @@ public class EventLogger
 
     public void logConnectionRemoval(final CharSequence uri, final int sessionId, final int streamId)
     {
-        if (isEnabled(EventCode.REMOVE_CONNECTION_CLEANUP, enabledEventCodes))
+        if (isEnabled(EventCode.REMOVE_CONNECTION_CLEANUP, ENABLED_EVENT_CODES))
         {
             logString(EventCode.REMOVE_CONNECTION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
         }
@@ -142,7 +141,7 @@ public class EventLogger
 
     public void logOverRun(final long proposedPos, final long subscriberPos, final long windowSize)
     {
-        if (isEnabled(EventCode.FLOW_CONTROL_OVERRUN, enabledEventCodes))
+        if (isEnabled(EventCode.FLOW_CONTROL_OVERRUN, ENABLED_EVENT_CODES))
         {
             logString(EventCode.FLOW_CONTROL_OVERRUN, String.format("%x > %x + %d", proposedPos, subscriberPos, windowSize));
         }
@@ -150,7 +149,7 @@ public class EventLogger
 
     public void logInvocation()
     {
-        if (isEnabled(INVOCATION, enabledEventCodes))
+        if (isEnabled(INVOCATION, ENABLED_EVENT_CODES))
         {
             final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
@@ -163,7 +162,7 @@ public class EventLogger
 
     public void logException(final Exception ex)
     {
-        if (isEnabled(EXCEPTION, enabledEventCodes))
+        if (isEnabled(EXCEPTION, ENABLED_EVENT_CODES))
         {
             final AtomicBuffer encodedBuffer = encodingBuffer.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, ex);

@@ -243,7 +243,6 @@ public class MediaDriver implements AutoCloseable
         private long statusMessageTimeout;
         private long dataLossSeed;
         private long controlLossSeed;
-        private long eventCodes;
         private double dataLossRate;
         private double controlLossRate;
         private int mtuLength;
@@ -265,7 +264,6 @@ public class MediaDriver implements AutoCloseable
 
             eventConsumer = System.out::println;
             eventBufferSize = EventConfiguration.bufferSize();
-            eventCodes = EventConfiguration.getEnabledEventCodes();
 
             warnIfDirectoriesExist = true;
         }
@@ -285,7 +283,7 @@ public class MediaDriver implements AutoCloseable
                         eventByteBuffer = ByteBuffer.allocateDirect(eventBufferSize);
                     }
 
-                    eventLogger = new EventLogger(eventByteBuffer, eventCodes);
+                    eventLogger = new EventLogger(eventByteBuffer);
                 }
 
                 receiverNioSelector(new NioSelector());

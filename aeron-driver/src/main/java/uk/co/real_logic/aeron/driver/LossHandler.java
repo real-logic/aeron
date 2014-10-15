@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
@@ -35,7 +36,7 @@ public class LossHandler
 {
     private final GapScanner[] scanners;
     private final TimerWheel wheel;
-    private final SystemCounters systemCounters;
+    private final AtomicCounter naksSent;
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
@@ -73,7 +74,7 @@ public class LossHandler
     {
         this.scanners = scanners;
         this.wheel = wheel;
-        this.systemCounters = systemCounters;
+        this.naksSent = systemCounters.naksSent();
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
@@ -197,16 +198,6 @@ public class LossHandler
         return TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
     }
 
-    /**
-     * Return whether timer is running and there is outstanding loss being handled or not.
-     *
-     * @return is timer running and therefore outstanding loss is present
-     */
-    public boolean isActive()
-    {
-        return timer.isActive();
-    }
-
     private void suppressNak()
     {
         scheduleTimer();
@@ -238,7 +229,7 @@ public class LossHandler
 
     private void sendNakMessage()
     {
-        systemCounters.naksSent().orderedIncrement();
+        naksSent.orderedIncrement();
         nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 

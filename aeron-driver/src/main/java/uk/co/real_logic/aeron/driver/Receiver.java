@@ -92,7 +92,7 @@ public class Receiver extends Agent
         final int workCount = commandQueue.drain(onConductorCommandFunc);
         final int bytesReceived = nioSelector.processKeys();
 
-        totalBytesReceived.setOrdered(totalBytesReceived.get() + bytesReceived);
+        totalBytesReceived.addOrdered(bytesReceived);
 
         return workCount + bytesReceived;
     }

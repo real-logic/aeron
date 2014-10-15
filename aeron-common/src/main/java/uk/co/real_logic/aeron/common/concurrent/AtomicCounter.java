@@ -32,7 +32,7 @@ public class AtomicCounter implements AutoCloseable
      */
     public void orderedIncrement()
     {
-        buffer.putLongOrdered(offset, buffer.getLongVolatile(offset) + 1);
+        buffer.addLongOrdered(offset, 1);
     }
 
     /**
@@ -53,6 +53,16 @@ public class AtomicCounter implements AutoCloseable
     public void setOrdered(final long value)
     {
         buffer.putLongOrdered(offset, value);
+    }
+
+    /**
+     * Add an increment to the counter with ordered store semantics.
+     *
+     * @param increment to be added with ordered store semantics.
+     */
+    public void addOrdered(final long increment)
+    {
+        buffer.addLongOrdered(offset, increment);
     }
 
     /**

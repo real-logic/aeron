@@ -328,7 +328,7 @@ public class AtomicBuffer
     }
 
     /**
-     * Put a value to a given index with ordered semantics.
+     * Put a value to a given index with ordered store semantics.
      *
      * @param index in bytes for where to put.
      * @param value for at a given index
@@ -338,6 +338,22 @@ public class AtomicBuffer
         boundsCheck(index, SIZE_OF_LONG);
 
         UNSAFE.putOrderedLong(byteArray, addressOffset + index, value);
+    }
+
+    /**
+     * Add a value to a given index with ordered store semantics. Use a negative increment to decrement.
+     *
+     * @param index     in bytes for where to put.
+     * @param increment by which the value at the index will be adjusted.
+     */
+    public void addLongOrdered(final int index, final long increment)
+    {
+        boundsCheck(index, SIZE_OF_LONG);
+
+        final long offset = addressOffset + index;
+        final byte[] byteArray = this.byteArray;
+        final long value = UNSAFE.getLong(byteArray, offset);
+        UNSAFE.putOrderedLong(byteArray, offset, value + increment);
     }
 
     /**
@@ -489,6 +505,22 @@ public class AtomicBuffer
         boundsCheck(index, SIZE_OF_INT);
 
         UNSAFE.putOrderedInt(byteArray, addressOffset + index, value);
+    }
+
+    /**
+     * Add a value to a given index with ordered store semantics. Use a negative increment to decrement.
+     *
+     * @param index     in bytes for where to put.
+     * @param increment by which the value at the index will be adjusted.
+     */
+    public void addIntOrdered(final int index, final int increment)
+    {
+        boundsCheck(index, SIZE_OF_INT);
+
+        final long offset = addressOffset + index;
+        final byte[] byteArray = this.byteArray;
+        final int value = UNSAFE.getInt(byteArray, offset);
+        UNSAFE.putOrderedInt(byteArray, offset, value + increment);
     }
 
     /**

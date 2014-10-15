@@ -155,6 +155,19 @@ public class AtomicBufferTest
     }
 
     @Theory
+    public void shouldAddLongOrderedToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        final long initialValue = Integer.MAX_VALUE + 7L;
+        final long increment = 9L;
+        buffer.putLongOrdered(INDEX, initialValue);
+        buffer.addLongOrdered(INDEX, increment);
+
+        assertThat(duplicateBuffer.getLong(INDEX), is(initialValue + increment));
+    }
+
+    @Theory
     public void shouldCompareAndSetLongToNativeBuffer(final AtomicBuffer buffer)
     {
         final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
@@ -262,6 +275,19 @@ public class AtomicBufferTest
         buffer.putIntOrdered(INDEX, INT_VALUE);
 
         assertThat(duplicateBuffer.getInt(INDEX), is(INT_VALUE));
+    }
+
+    @Theory
+    public void shouldAddIntOrderedToNativeBuffer(final AtomicBuffer buffer)
+    {
+        final ByteBuffer duplicateBuffer = buffer.duplicateByteBuffer().order(ByteOrder.nativeOrder());
+
+        final int initialValue = 7;
+        final int increment = 9;
+        buffer.putIntOrdered(INDEX, initialValue);
+        buffer.addIntOrdered(INDEX, increment);
+
+        assertThat(duplicateBuffer.getInt(INDEX), is(initialValue + increment));
     }
 
     @Theory

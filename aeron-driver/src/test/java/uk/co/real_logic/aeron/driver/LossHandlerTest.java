@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
@@ -82,6 +81,8 @@ public class LossHandlerTest
 
     public LossHandlerTest()
     {
+        when(mockSystemCounters.naksSent()).thenReturn(mock(AtomicCounter.class));
+
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
@@ -99,15 +100,9 @@ public class LossHandlerTest
         nakMessageSender = mock(NakMessageSender.class);
 
         final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
-        handler =
-            new LossHandler(scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
+        handler = new LossHandler(
+            scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
         dataHeader.wrap(rcvBuffer, 0);
-    }
-
-    @Before
-    public void setUp()
-    {
-        when(mockSystemCounters.naksSent()).thenReturn(mock(AtomicCounter.class));
     }
 
     @Test

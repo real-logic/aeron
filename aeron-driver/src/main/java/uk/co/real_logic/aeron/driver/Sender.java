@@ -83,7 +83,7 @@ public class Sender extends Agent
             while (i != roundRobinIndex);
         }
 
-        totalBytesSent.setOrdered(totalBytesSent.get() + bytesSent);
+        totalBytesSent.addOrdered(bytesSent);
 
         return bytesSent;
     }

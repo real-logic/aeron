@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 
@@ -42,7 +43,7 @@ public class RetransmitHandler
     private final TimerWheel timerWheel;
     private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
     private final Long2ObjectHashMap<RetransmitAction> activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
-    private final SystemCounters systemCounters;
+    private final AtomicCounter invalidPackets;
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
     private final RetransmitSender retransmitSender;
@@ -68,7 +69,7 @@ public class RetransmitHandler
         final int capacity)
     {
         this.timerWheel = timerWheel;
-        this.systemCounters = systemCounters;
+        this.invalidPackets = systemCounters.invalidPackets();
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
         this.retransmitSender = retransmitSender;
@@ -158,7 +159,7 @@ public class RetransmitHandler
 
         if (isInvalid)
         {
-            systemCounters.invalidPackets().orderedIncrement();
+            invalidPackets.orderedIncrement();
         }
 
         return isInvalid;

@@ -64,7 +64,6 @@ public class MediaDriver implements AutoCloseable
     private final Receiver receiver;
     private final Sender sender;
     private final DriverConductor conductor;
-    private final EventReader eventReader;
     private final Context ctx;
 
     /**
@@ -104,12 +103,6 @@ public class MediaDriver implements AutoCloseable
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .conclude();
-
-        eventReader = new EventReader(
-            ctx.eventByteBuffer(),
-            Configuration.eventReaderIdleStrategy(),
-            ctx.systemCounters().driverExceptions(),
-            ctx.eventConsumer());
 
         conductor = new DriverConductor(ctx);
         sender = new Sender(ctx);
@@ -151,7 +144,6 @@ public class MediaDriver implements AutoCloseable
             freeSocketsForReuseOnWindows();
             ctx.close();
 
-            eventReader.close();
             deleteDirectories();
         }
         catch (final Exception ex)
@@ -171,7 +163,6 @@ public class MediaDriver implements AutoCloseable
         startThread(new Thread(conductor), "aeron-driver-conductor");
         startThread(new Thread(sender), "aeron-sender");
         startThread(new Thread(receiver), "aeron-receiver");
-        startThread(new Thread(eventReader), "aeron-event-reader");
 
         return this;
     }
@@ -227,12 +218,12 @@ public class MediaDriver implements AutoCloseable
         private IdleStrategy receiverIdleStrategy;
         private ClientProxy clientProxy;
         private RingBuffer toDriverCommands;
+        private RingBuffer toEventReader;
 
         private MappedByteBuffer toClientsBuffer;
         private MappedByteBuffer toDriverBuffer;
         private MappedByteBuffer counterLabelsByteBuffer;
         private MappedByteBuffer counterValuesByteBuffer;
-        private ByteBuffer eventByteBuffer;
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
@@ -276,15 +267,14 @@ public class MediaDriver implements AutoCloseable
 
                 mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
 
+                final ByteBuffer eventByteBuffer = ByteBuffer.allocate(eventBufferSize);
+
                 if (null == eventLogger)
                 {
-                    if (null == eventByteBuffer)
-                    {
-                        eventByteBuffer = ByteBuffer.allocateDirect(eventBufferSize);
-                    }
-
                     eventLogger = new EventLogger(eventByteBuffer);
                 }
+
+                toEventReader(new ManyToOneRingBuffer(new AtomicBuffer(eventByteBuffer)));
 
                 receiverNioSelector(new NioSelector());
                 conductorNioSelector(new NioSelector());
@@ -533,9 +523,9 @@ public class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context eventByteBuffer(final ByteBuffer buffer)
+        public Context toEventReader(final RingBuffer toEventReader)
         {
-            this.eventByteBuffer = buffer;
+            this.toEventReader = toEventReader;
             return this;
         }
 
@@ -746,9 +736,9 @@ public class MediaDriver implements AutoCloseable
             return eventBufferSize;
         }
 
-        public ByteBuffer eventByteBuffer()
+        public RingBuffer toEventReader()
         {
-            return eventByteBuffer;
+            return toEventReader;
         }
 
         public void close()

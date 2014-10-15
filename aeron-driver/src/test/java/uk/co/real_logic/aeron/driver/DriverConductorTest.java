@@ -30,6 +30,7 @@ import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
@@ -71,10 +72,14 @@ public class DriverConductorTest
     private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(
         Configuration.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
 
+    private final ByteBuffer toEventBuffer = ByteBuffer.allocate(
+        EventConfiguration.BUFFER_SIZE_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
+
     private final NioSelector nioSelector = mock(NioSelector.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
 
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
+    private final RingBuffer toEventReader = new ManyToOneRingBuffer(new AtomicBuffer(toEventBuffer));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
@@ -126,6 +131,7 @@ public class DriverConductorTest
             .termBuffersFactory(mockTermBuffersFactory)
             .countersManager(countersManager);
 
+        ctx.toEventReader(toEventReader);
         ctx.toDriverCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
         ctx.countersBuffer(counterBuffer);

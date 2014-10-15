@@ -23,8 +23,10 @@ import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
+import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
@@ -81,6 +83,7 @@ public class DriverConductor extends Agent
     private final NioSelector nioSelector;
     private final TermBuffersFactory termBuffersFactory;
     private final RingBuffer toDriverCommands;
+    private final RingBuffer toEventReader;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final TimerWheel timerWheel;
@@ -115,6 +118,7 @@ public class DriverConductor extends Agent
     private final SystemCounters systemCounters;
     private final Consumer<Object> onReceiverCommandFunc;
     private final MessageHandler onClientCommandFunc;
+    private final MessageHandler onEventFunc;
     private final NanoClock clock;
 
     public DriverConductor(final Context ctx)
@@ -137,9 +141,11 @@ public class DriverConductor extends Agent
 
         timerWheel = ctx.conductorTimerWheel();
         this.clock = timerWheel.clock();
-        checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
+        checkTimeoutTimer =
+            timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
 
         toDriverCommands = ctx.toDriverCommands();
+        toEventReader = ctx.toEventReader();
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
         logger = ctx.eventLogger();
@@ -152,6 +158,9 @@ public class DriverConductor extends Agent
 
         onReceiverCommandFunc = this::onReceiverCommand;
         onClientCommandFunc = this::onClientCommand;
+        onEventFunc =
+            (typeId, buffer, offset, length) ->
+                ctx.eventConsumer().accept(EventCode.get(typeId).decode(buffer, offset, length));
 
         final AtomicBuffer buffer = toDriverCommands.buffer();
         publicationMessage.wrap(buffer, 0);
@@ -211,6 +220,7 @@ public class DriverConductor extends Agent
         workCount += nioSelector.processKeys();
         workCount += toDriverCommands.read(onClientCommandFunc);
         workCount += commandQueue.drain(onReceiverCommandFunc);
+        workCount += toEventReader.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
         workCount += processTimers();
 
         final ArrayList<DriverConnection> connections = this.connections;

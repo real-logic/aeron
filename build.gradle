@@ -40,6 +40,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:0.8'
+        classpath 'com.puppycrawl.tools:checkstyle:5.8'
     }
 }
 

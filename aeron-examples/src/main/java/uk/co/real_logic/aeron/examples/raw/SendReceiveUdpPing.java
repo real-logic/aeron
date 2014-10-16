@@ -38,11 +38,6 @@ public class SendReceiveUdpPing
 {
     public static void main(final String[] args) throws IOException
     {
-        new SendReceiveUdpPing().run();
-    }
-
-    private void run() throws IOException
-    {
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
         final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PING_PORT);
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
@@ -67,7 +62,7 @@ public class SendReceiveUdpPing
         }
     }
 
-    private void measureRoundTrip(
+    private static void measureRoundTrip(
         final Histogram histogram,
         final InetSocketAddress sendAddress,
         final ByteBuffer buffer,

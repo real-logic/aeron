@@ -35,11 +35,6 @@ public class ReceiveSendUdpPong
 {
     public static void main(final String[] args) throws IOException
     {
-        new ReceiveSendUdpPong().run();
-    }
-
-    private void run() throws IOException
-    {
         final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PONG_PORT);
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
         final DatagramChannel receiveChannel = DatagramChannel.open();

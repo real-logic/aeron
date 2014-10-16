@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
-import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;

@@ -27,6 +27,7 @@ import java.net.NetworkInterface;
 import java.net.SocketOption;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
@@ -218,15 +219,23 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
     protected InetSocketAddress receiveFrame()
     {
+        InetSocketAddress address = null;
+
         receiveByteBuffer.clear();
 
         try
         {
-            return (InetSocketAddress)datagramChannel.receive(receiveByteBuffer);
+            address = (InetSocketAddress)datagramChannel.receive(receiveByteBuffer);
+        }
+        catch (final ClosedByInterruptException ignored)
+        {
+            // do nothing
         }
         catch (final Exception ex)
         {
             throw new RuntimeException(ex);
         }
+
+        return address;
     }
 }

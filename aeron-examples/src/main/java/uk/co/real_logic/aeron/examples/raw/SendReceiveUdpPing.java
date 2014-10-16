@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.examples.raw;
 
 import org.HdrHistogram.Histogram;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 
 import java.io.IOException;

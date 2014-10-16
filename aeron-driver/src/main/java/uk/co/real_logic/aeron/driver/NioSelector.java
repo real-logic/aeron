@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.BitUtil;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.ClosedChannelException;
@@ -31,6 +33,7 @@ import java.util.Set;
 public class NioSelector implements AutoCloseable
 {
     private static final int ITERATION_THRESHOLD = 5;
+    private static final int INITIAL_TRANSPORT_LIST_CAPACITY = BitUtil.findNextPositivePowerOfTwo(ITERATION_THRESHOLD);
     private static final Field SELECTED_KEYS_FIELD;
     private static final Field PUBLIC_SELECTED_KEYS_FIELD;
 
@@ -62,7 +65,7 @@ public class NioSelector implements AutoCloseable
 
     private final Selector selector;
     private final NioSelectedKeySet selectedKeySet;
-    private final ArrayList<UdpChannelTransport> transportList = new ArrayList<>(8);
+    private final ArrayList<UdpChannelTransport> transportList = new ArrayList<>(INITIAL_TRANSPORT_LIST_CAPACITY);
 
     /**
      * Construct a selector
@@ -164,7 +167,6 @@ public class NioSelector implements AutoCloseable
             }
             else
             {
-
                 selector.selectNow();
 
                 if (null != PUBLIC_SELECTED_KEYS_FIELD)

@@ -38,14 +38,25 @@ public class SendReceiveUdpPing
 {
     public static void main(final String[] args) throws IOException
     {
+        int numChannels = 1;
+        if (1 == args.length)
+        {
+            numChannels = Integer.parseInt(args[0]);
+        }
+
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PING_PORT);
+
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
 
-        final DatagramChannel receiveChannel = DatagramChannel.open();
-        setup(receiveChannel);
-        receiveChannel.bind(new InetSocketAddress("localhost", Common.PONG_PORT));
+        final DatagramChannel[] receiveChannels = new DatagramChannel[numChannels];
+        for (int i = 0; i < receiveChannels.length; i++)
+        {
+            receiveChannels[i] = DatagramChannel.open();
+            setup(receiveChannels[i]);
+            receiveChannels[i].bind(new InetSocketAddress("localhost", Common.PONG_PORT + i));
+        }
 
+        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PING_PORT);
         final DatagramChannel sendChannel = DatagramChannel.open();
         setup(sendChannel);
 
@@ -54,7 +65,7 @@ public class SendReceiveUdpPing
 
         while (running.get())
         {
-            measureRoundTrip(histogram, sendAddress, buffer, receiveChannel, sendChannel, running);
+            measureRoundTrip(histogram, sendAddress, buffer, receiveChannels, sendChannel, running);
 
             histogram.reset();
             System.gc();
@@ -66,7 +77,7 @@ public class SendReceiveUdpPing
         final Histogram histogram,
         final InetSocketAddress sendAddress,
         final ByteBuffer buffer,
-        final DatagramChannel receiveChannel,
+        final DatagramChannel[] receiveChannels,
         final DatagramChannel sendChannel,
         final AtomicBoolean running)
         throws IOException
@@ -83,11 +94,21 @@ public class SendReceiveUdpPing
             sendChannel.send(buffer, sendAddress);
 
             buffer.clear();
-            while (receiveChannel.receive(buffer) == null)
+            boolean available = false;
+            while (!available)
             {
                 if (!running.get())
                 {
                     return;
+                }
+
+                for (int i = receiveChannels.length - 1; i >=0; i--)
+                {
+                    if (null != receiveChannels[i].receive(buffer))
+                    {
+                        available = true;
+                        break;
+                    }
                 }
             }
 

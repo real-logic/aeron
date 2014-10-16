@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
+import static uk.co.real_logic.aeron.examples.raw.Common.setup;
 
 /**
  * Benchmark used to calculate latency of underlying system.
@@ -35,13 +36,23 @@ public class ReceiveSendUdpPong
 {
     public static void main(final String[] args) throws IOException
     {
-        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PONG_PORT);
+        int numChannels = 1;
+        if (1 == args.length)
+        {
+            numChannels = Integer.parseInt(args[0]);
+        }
+
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
-        final DatagramChannel receiveChannel = DatagramChannel.open();
 
-        Common.setup(receiveChannel);
-        receiveChannel.bind(new InetSocketAddress("localhost", Common.PING_PORT));
+        final DatagramChannel[] receiveChannels = new DatagramChannel[numChannels];
+        for (int i = 0; i < receiveChannels.length; i++)
+        {
+            receiveChannels[i] = DatagramChannel.open();
+            setup(receiveChannels[i]);
+            receiveChannels[i].bind(new InetSocketAddress("localhost", Common.PING_PORT + i));
+        }
 
+        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PONG_PORT);
         final DatagramChannel sendChannel = DatagramChannel.open();
         Common.setup(sendChannel);
 
@@ -51,11 +62,22 @@ public class ReceiveSendUdpPong
         while (true)
         {
             buffer.clear();
-            while (receiveChannel.receive(buffer) == null)
+
+            boolean available = false;
+            while (!available)
             {
                 if (!running.get())
                 {
                     return;
+                }
+
+                for (int i = receiveChannels.length - 1; i >=0; i--)
+                {
+                    if (null != receiveChannels[i].receive(buffer))
+                    {
+                        available = true;
+                        break;
+                    }
                 }
             }
 

@@ -384,6 +384,7 @@ public class DriverConductor extends Agent
                 logger,
                 Configuration.createLossGenerator(controlLossRate, controlLossSeed),
                 systemCounters);
+            nioSelector.selectNowWithoutProcessing();
 
             channelEndpoint.validateMtuLength(mtuLength);
 
@@ -692,6 +693,7 @@ public class DriverConductor extends Agent
                 {
                     sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                     channelEndpoint.close();
+                    nioSelector.selectNowWithoutProcessing();
                 }
             }
         }

@@ -121,6 +121,7 @@ public class Receiver extends Agent
     private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.registerForRead(nioSelector);
+        nioSelector.selectNowWithoutProcessing();
     }
 
     private void onRemovePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
@@ -131,6 +132,7 @@ public class Receiver extends Agent
     private void onCloseMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
+        nioSelector.selectNowWithoutProcessing();
     }
 
     private void onCloseSubscription(final DriverSubscription subscription)

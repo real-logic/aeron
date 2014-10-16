@@ -96,6 +96,24 @@ public class NioSelectedKeySet extends AbstractSet<SelectionKey>
     }
 
     /**
+     * Return selected keys.
+     *
+     * @return selected keys
+     */
+    public SelectionKey[] keys()
+    {
+        return keys;
+    }
+
+    /**
+     * Reset for next iteration.
+     */
+    public void reset()
+    {
+        size = 0;
+    }
+
+    /**
      * Iterate over the key set and apply the given function.
      *
      * @param function to apply to each {@link java.nio.channels.SelectionKey}

@@ -142,10 +142,22 @@ public class NioSelector implements AutoCloseable
         {
             selector.selectNow();
 
-            int handledFrames;
+            int handledFrames = 0;
             if (null != PUBLIC_SELECTED_KEYS_FIELD)
             {
-                handledFrames = selectedKeySet.forEach(NioSelector::handleKey);
+                final SelectionKey[] keys = selectedKeySet.keys();
+
+                for (int i = selectedKeySet.size() - 1; i >= 0; i--)
+                {
+                    final SelectionKey key = keys[i];
+
+                    if (key.isReadable())
+                    {
+                        handledFrames += ((IntSupplier)key.attachment()).getAsInt();
+                    }
+                }
+
+                selectedKeySet.reset();
             }
             else
             {
@@ -193,17 +205,5 @@ public class NioSelector implements AutoCloseable
         }
 
         return handledFrames;
-    }
-
-    private static int handleKey(final SelectionKey key)
-    {
-        int value = 0;
-
-        if (key.isReadable())
-        {
-            value = ((IntSupplier)key.attachment()).getAsInt();
-        }
-
-        return value;
     }
 }

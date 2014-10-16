@@ -21,15 +21,16 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.function.IntSupplier;
 
 /**
  * Encapsulation of NIO Selector logic for integration into Receiver Thread and Conductor Thread
  */
 public class NioSelector implements AutoCloseable
 {
+    private static final int ITERATION_THRESHOLD = 5;
     private static final Field SELECTED_KEYS_FIELD;
     private static final Field PUBLIC_SELECTED_KEYS_FIELD;
 
@@ -61,6 +62,7 @@ public class NioSelector implements AutoCloseable
 
     private final Selector selector;
     private final NioSelectedKeySet selectedKeySet;
+    private final ArrayList<UdpChannelTransport> transportList = new ArrayList<>(8);
 
     /**
      * Construct a selector
@@ -100,19 +102,25 @@ public class NioSelector implements AutoCloseable
      * Register channel for read.
      *
      * @param channel to select for read
-     * @param obj to associate with read
+     * @param udpChannelTransport to associate with read
      * @return SelectionKey for registration for cancel
      */
-    public SelectionKey registerForRead(final SelectableChannel channel, final IntSupplier obj)
+    public SelectionKey registerForRead(final SelectableChannel channel, final UdpChannelTransport udpChannelTransport)
     {
         try
         {
-            return channel.register(selector, SelectionKey.OP_READ, obj);
+            transportList.add(udpChannelTransport);
+            return channel.register(selector, SelectionKey.OP_READ, udpChannelTransport);
         }
         catch (final ClosedChannelException ex)
         {
             throw new RuntimeException(ex);
         }
+    }
+
+    public void cancelRead(final UdpChannelTransport udpChannelTransport)
+    {
+        transportList.remove(udpChannelTransport);
     }
 
     /**
@@ -140,9 +148,20 @@ public class NioSelector implements AutoCloseable
     {
         try
         {
+            int handledFrames = 0;
+
+            if (transportList.size() <= ITERATION_THRESHOLD)
+            {
+                for (int i = transportList.size() - 1; i >= 0; i--)
+                {
+                    handledFrames += transportList.get(i).attemptReceive();
+                }
+
+                return handledFrames;
+            }
+
             selector.selectNow();
 
-            int handledFrames = 0;
             if (null != PUBLIC_SELECTED_KEYS_FIELD)
             {
                 final SelectionKey[] keys = selectedKeySet.keys();
@@ -153,7 +172,7 @@ public class NioSelector implements AutoCloseable
 
                     if (key.isReadable())
                     {
-                        handledFrames += ((IntSupplier)key.attachment()).getAsInt();
+                        handledFrames += ((UdpChannelTransport)key.attachment()).attemptReceive();
                     }
                 }
 
@@ -198,7 +217,7 @@ public class NioSelector implements AutoCloseable
             final SelectionKey key = iter.next();
             if (key.isReadable())
             {
-                handledFrames += ((IntSupplier)key.attachment()).getAsInt();
+                handledFrames += ((UdpChannelTransport)key.attachment()).attemptReceive();
             }
 
             iter.remove();

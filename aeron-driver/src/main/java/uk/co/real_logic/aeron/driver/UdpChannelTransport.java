@@ -197,6 +197,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveByteBuffer.capacity();
     }
 
+    /**
+     * Attempt to receive waiting data.
+     *
+     * @return number of handled frames.
+     */
     public abstract int attemptReceive();
 
     protected boolean isFrameValid(final int length)

@@ -118,6 +118,11 @@ public class NioSelector implements AutoCloseable
         }
     }
 
+    /**
+     * Cancel previous registration.
+     *
+     * @param udpChannelTransport to cancel read for
+     */
     public void cancelRead(final UdpChannelTransport udpChannelTransport)
     {
         transportList.remove(udpChannelTransport);

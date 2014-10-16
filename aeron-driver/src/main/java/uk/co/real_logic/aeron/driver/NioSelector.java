@@ -204,6 +204,10 @@ public class NioSelector implements AutoCloseable
         try
         {
             selector.selectNow();
+            if (null != selectedKeySet)
+            {
+                selectedKeySet.reset();
+            }
         }
         catch (final IOException ex)
         {

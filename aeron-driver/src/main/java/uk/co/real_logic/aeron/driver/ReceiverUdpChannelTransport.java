@@ -31,7 +31,7 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
  *
  * Holds DatagramChannel, read Buffer, etc.
  */
-public final class ReceiverUdpChannelTransport extends UdpChannelTransport implements IntSupplier
+public final class ReceiverUdpChannelTransport extends UdpChannelTransport
 {
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
@@ -70,6 +70,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport imple
      */
     public void registerForRead(final NioSelector nioSelector)
     {
+        registeredNioSelector = nioSelector;
         registeredKey = nioSelector.registerForRead(datagramChannel, this);
     }
 
@@ -78,7 +79,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport imple
      *
      * @return the number of frames processed.
      */
-    public int getAsInt()
+    public int attemptReceive()
     {
         int framesRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();

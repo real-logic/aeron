@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
  *
  * Holds DatagramChannel, read Buffer, etc.
  */
-public final class SenderUdpChannelTransport extends UdpChannelTransport implements IntSupplier
+public final class SenderUdpChannelTransport extends UdpChannelTransport
 {
     private final NakFlyweight nakHeader = new NakFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
@@ -74,6 +74,7 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport impleme
      */
     public void registerForRead(final NioSelector nioSelector)
     {
+        registeredNioSelector = nioSelector;
         registeredKey = nioSelector.registerForRead(datagramChannel, this);
     }
 
@@ -82,7 +83,7 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport impleme
      *
      * @return the number of frames processed.
      */
-    public int getAsInt()
+    public int attemptReceive()
     {
         int framesRead = 0;
         final InetSocketAddress srcAddress = receiveFrame();

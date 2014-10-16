@@ -41,6 +41,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected final boolean multicast;
     protected final LossGenerator lossGenerator;
     protected SelectionKey registeredKey;
+    protected NioSelector registeredNioSelector;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -136,6 +137,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 registeredKey.cancel();
             }
 
+            if (null != registeredNioSelector)
+            {
+                registeredNioSelector.cancelRead(this);
+            }
+
             datagramChannel.close();
         }
         catch (final Exception ex)
@@ -189,6 +195,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
     {
         return receiveByteBuffer.capacity();
     }
+
+    public abstract int attemptReceive();
 
     protected boolean isFrameValid(final int length)
     {

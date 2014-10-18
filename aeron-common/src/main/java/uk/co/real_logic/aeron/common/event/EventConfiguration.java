@@ -87,7 +87,7 @@ public class EventConfiguration
      */
     public static final int EVENT_READER_FRAME_LIMIT = 10;
 
-    private static Pattern COMMA = Pattern.compile(",");
+    private static final Pattern COMMA = Pattern.compile(",");
 
     public static long getEnabledEventCodes()
     {

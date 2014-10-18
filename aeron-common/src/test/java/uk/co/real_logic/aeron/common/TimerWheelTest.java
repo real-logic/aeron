@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;

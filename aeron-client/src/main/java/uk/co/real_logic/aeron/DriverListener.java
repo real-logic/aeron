@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 
 /**

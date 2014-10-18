@@ -31,7 +31,7 @@ import static java.net.InetAddress.getByAddress;
  * udp://[interface[:port]@]ip:port
  * </code>
  */
-public class UdpChannel
+public final class UdpChannel
 {
     private static final int LAST_MULTICAST_DIGIT = 3;
     private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = NetworkUtil.determineDefaultMulticastInterface();
@@ -225,8 +225,14 @@ public class UdpChannel
 
     public boolean equals(final Object o)
     {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+        {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass())
+        {
+            return false;
+        }
 
         final UdpChannel that = (UdpChannel)o;
 

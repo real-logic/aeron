@@ -27,7 +27,7 @@ public class FragmentAssemblyAdapterTest
     private final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(delegateDataHandler);
 
     @Before
-    public void setup()
+    public void setUp()
     {
         when(header.sessionId()).thenReturn(SESSION_ID);
         when(header.buffer()).thenReturn(logBuffer);

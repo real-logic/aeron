@@ -29,5 +29,5 @@ public interface NewConnectionHandler
      * @param sessionId         for the source
      * @param sourceInformation that is transport specific
      */
-    public void onNewConnection(String channel, int streamId, int sessionId, String sourceInformation);
+    void onNewConnection(String channel, int streamId, int sessionId, String sourceInformation);
 }

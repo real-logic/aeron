@@ -55,11 +55,11 @@ public class SendSelectReceiveUdpPing
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
 
         final DatagramChannel receiveChannel = DatagramChannel.open();
-        Common.setup(receiveChannel);
+        Common.setUp(receiveChannel);
         receiveChannel.bind(new InetSocketAddress("localhost", Common.PONG_PORT));
 
         final DatagramChannel sendChannel = DatagramChannel.open();
-        Common.setup(sendChannel);
+        Common.setUp(sendChannel);
 
         final Selector selector = Selector.open();
 

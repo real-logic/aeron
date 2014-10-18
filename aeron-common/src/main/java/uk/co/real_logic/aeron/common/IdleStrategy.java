@@ -26,5 +26,5 @@ public interface IdleStrategy
      *
      * @param workCount performed in last duty cycle.
      */
-    public void idle(int workCount);
+    void idle(int workCount);
 }

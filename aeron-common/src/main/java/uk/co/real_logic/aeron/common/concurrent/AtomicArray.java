@@ -286,7 +286,7 @@ public class AtomicArray<T> implements Collection<T>
         return new ArrayIterator<>(arrayRef.get());
     }
 
-    private final static class ArrayIterator<T> implements Iterator<T>
+    private static final class ArrayIterator<T> implements Iterator<T>
     {
         private final T[] array;
         private int index;

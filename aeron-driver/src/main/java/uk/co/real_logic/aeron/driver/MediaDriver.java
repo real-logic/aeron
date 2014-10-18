@@ -15,14 +15,19 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.CommonContext;
+import uk.co.real_logic.aeron.common.IdleStrategy;
+import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.CountersManager;
+import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.event.EventReader;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 
 import java.io.File;
@@ -55,7 +60,7 @@ import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_PROP_NAME;
  * driver and the client.</li>
  * </ul>
  */
-public class MediaDriver implements AutoCloseable
+public final class MediaDriver implements AutoCloseable
 {
     private final File adminDirectory;
     private final File dataDirectory;

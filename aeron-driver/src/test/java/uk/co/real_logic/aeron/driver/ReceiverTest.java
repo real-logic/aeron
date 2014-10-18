@@ -67,7 +67,7 @@ public class ReceiverTest
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final int INITIAL_WINDOW_SIZE = Configuration.INITIAL_WINDOW_SIZE_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
-    private static final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 45679);
+    private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
     private static final PositionIndicator[] POSITION_INDICATORS = {POSITION_INDICATOR};
@@ -183,7 +183,7 @@ public class ReceiverTest
             mockHighestReceivedPosition,
             clock,
             mockSystemCounters,
-            sourceAddress,
+                SOURCE_ADDRESS,
             mockLogger);
 
         final int messagesRead = toConductorQueue.drain(
@@ -255,7 +255,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        sourceAddress,
+                            SOURCE_ADDRESS,
                         mockLogger));
             });
 
@@ -316,7 +316,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        sourceAddress,
+                            SOURCE_ADDRESS,
                         mockLogger));
             });
 
@@ -380,7 +380,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        sourceAddress,
+                            SOURCE_ADDRESS,
                         mockLogger));
             });
 
@@ -452,7 +452,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        sourceAddress,
+                            SOURCE_ADDRESS,
                         mockLogger));
             });
 

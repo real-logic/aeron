@@ -59,7 +59,7 @@ public class Common
         PUBLIC_SELECTED_KEYS_FIELD = publicSelectKeysField;
     }
 
-    public static void setup(final DatagramChannel channel) throws IOException
+    public static void setUp(final DatagramChannel channel) throws IOException
     {
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);

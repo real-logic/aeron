@@ -55,7 +55,7 @@ public class BitUtil
 
     private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
 
-    private final static ThreadLocal<MessageDigest> MESSAGE_DIGEST =
+    private static final ThreadLocal<MessageDigest> MESSAGE_DIGEST =
         new ThreadLocal<MessageDigest>()
         {
             protected MessageDigest initialValue()

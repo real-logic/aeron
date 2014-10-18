@@ -34,32 +34,32 @@ import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
  */
 public class EventCodec
 {
-    private final static ThreadLocal<HeaderFlyweight> headerFlyweight =
+    private static final ThreadLocal<HeaderFlyweight> HEADER_FLYWEIGHT =
         ThreadLocal.withInitial(HeaderFlyweight::new);
-    private final static ThreadLocal<DataHeaderFlyweight> dataHeader =
+    private static final ThreadLocal<DataHeaderFlyweight> DATA_HEADER =
         ThreadLocal.withInitial(DataHeaderFlyweight::new);
-    private final static ThreadLocal<StatusMessageFlyweight> smHeader =
+    private static final ThreadLocal<StatusMessageFlyweight> SM_HEADER =
         ThreadLocal.withInitial(StatusMessageFlyweight::new);
-    private final static ThreadLocal<NakFlyweight> nakHeader =
+    private static final ThreadLocal<NakFlyweight> NAK_HEADER =
         ThreadLocal.withInitial(NakFlyweight::new);
-    private final static ThreadLocal<SetupFlyweight> setupHeader =
+    private static final ThreadLocal<SetupFlyweight> SETUP_HEADER =
         ThreadLocal.withInitial(SetupFlyweight::new);
 
-    private final static ThreadLocal<PublicationMessageFlyweight> pubMessage =
+    private static final ThreadLocal<PublicationMessageFlyweight> PUB_MESSAGE =
         ThreadLocal.withInitial(PublicationMessageFlyweight::new);
-    private final static ThreadLocal<SubscriptionMessageFlyweight> subMessage =
+    private static final ThreadLocal<SubscriptionMessageFlyweight> SUB_MESSAGE =
         ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
-    private final static ThreadLocal<PublicationReadyFlyweight> publicationReady =
+    private static final ThreadLocal<PublicationReadyFlyweight> PUBLICATION_READY =
         ThreadLocal.withInitial(PublicationReadyFlyweight::new);
-    private final static ThreadLocal<ConnectionReadyFlyweight> connectionReady =
+    private static final ThreadLocal<ConnectionReadyFlyweight> CONNECTION_READY =
             ThreadLocal.withInitial(ConnectionReadyFlyweight::new);
-    private final static ThreadLocal<CorrelatedMessageFlyweight> correlatedMsg =
+    private static final ThreadLocal<CorrelatedMessageFlyweight> CORRELATED_MSG =
         ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
-    private final static ThreadLocal<ConnectionMessageFlyweight> connectionMsg =
+    private static final ThreadLocal<ConnectionMessageFlyweight> CONNECTION_MSG =
         ThreadLocal.withInitial(ConnectionMessageFlyweight::new);
 
-    private final static int LOG_HEADER_LENGTH = 16;
-    private final static int SOCKET_ADDRESS_MAX_LENGTH = 24;
+    private static final int LOG_HEADER_LENGTH = 16;
+    private static final int SOCKET_ADDRESS_MAX_LENGTH = 24;
     public static final int STACK_DEPTH = 5;
 
     public static int encode(
@@ -154,7 +154,7 @@ public class EventCodec
     public static String dissectAsFrame(final EventCode code, final AtomicBuffer buffer, final int offset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
-        final HeaderFlyweight frame = headerFlyweight.get();
+        final HeaderFlyweight frame = HEADER_FLYWEIGHT.get();
         int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
 
         builder.append(": ");
@@ -168,25 +168,25 @@ public class EventCodec
         {
             case HeaderFlyweight.HDR_TYPE_PAD:
             case HeaderFlyweight.HDR_TYPE_DATA:
-                final DataHeaderFlyweight dataFrame = dataHeader.get();
+                final DataHeaderFlyweight dataFrame = DATA_HEADER.get();
                 dataFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(dataFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SM:
-                final StatusMessageFlyweight smFrame = smHeader.get();
+                final StatusMessageFlyweight smFrame = SM_HEADER.get();
                 smFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(smFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_NAK:
-                final NakFlyweight nakFrame = nakHeader.get();
+                final NakFlyweight nakFrame = NAK_HEADER.get();
                 nakFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(nakFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SETUP:
-                final SetupFlyweight setupFrame = setupHeader.get();
+                final SetupFlyweight setupFrame = SETUP_HEADER.get();
                 setupFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(setupFrame));
                 break;
@@ -210,39 +210,39 @@ public class EventCodec
         {
             case CMD_IN_ADD_PUBLICATION:
             case CMD_IN_REMOVE_PUBLICATION:
-                final PublicationMessageFlyweight pubCommand = pubMessage.get();
+                final PublicationMessageFlyweight pubCommand = PUB_MESSAGE.get();
                 pubCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(pubCommand));
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
-                final SubscriptionMessageFlyweight subCommand = subMessage.get();
+                final SubscriptionMessageFlyweight subCommand = SUB_MESSAGE.get();
                 subCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(subCommand));
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
-                final PublicationReadyFlyweight newBuffer = publicationReady.get();
+                final PublicationReadyFlyweight newBuffer = PUBLICATION_READY.get();
                 newBuffer.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(newBuffer));
                 break;
 
             case CMD_OUT_CONNECTION_READY:
-                final ConnectionReadyFlyweight connectionReadyCommand = connectionReady.get();
+                final ConnectionReadyFlyweight connectionReadyCommand = CONNECTION_READY.get();
                 connectionReadyCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(connectionReadyCommand));
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
             case CMD_IN_KEEPALIVE_CLIENT:
-                final CorrelatedMessageFlyweight correlatedCmd = correlatedMsg.get();
+                final CorrelatedMessageFlyweight correlatedCmd = CORRELATED_MSG.get();
                 correlatedCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(correlatedCmd));
                 break;
 
             case CMD_OUT_ON_INACTIVE_CONNECTION:
-                final ConnectionMessageFlyweight connectionCmd = connectionMsg.get();
+                final ConnectionMessageFlyweight connectionCmd = CONNECTION_MSG.get();
                 connectionCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(connectionCmd));
                 break;

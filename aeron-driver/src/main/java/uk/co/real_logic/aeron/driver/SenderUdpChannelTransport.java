@@ -23,7 +23,8 @@ import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import java.net.InetSocketAddress;
 import java.util.function.IntSupplier;
 
-import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
+import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_NAK;
+import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM;
 
 /**
  * Transport abstraction for UDP sources and receivers.

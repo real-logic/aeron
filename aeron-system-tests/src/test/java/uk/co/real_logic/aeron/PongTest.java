@@ -55,7 +55,7 @@ public class PongTest
     private DataHandler pongHandler = mock(DataHandler.class);
 
     @Before
-    public void setup() throws Exception
+    public void setUp() throws Exception
     {
         context.dirsDeleteOnExit(true);
 

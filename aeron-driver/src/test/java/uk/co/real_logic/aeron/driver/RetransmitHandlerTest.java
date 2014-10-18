@@ -50,9 +50,9 @@ public class RetransmitHandlerTest
     private static final int STREAM_ID = 0x5400E;
     private static final int TERM_ID = 0x7F003355;
 
-    private static final FeedbackDelayGenerator delayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(20);
-    private static final FeedbackDelayGenerator zeroDelayGenerator = () -> TimeUnit.MILLISECONDS.toNanos(0);
-    private static final FeedbackDelayGenerator lingerGenerator = () -> TimeUnit.MILLISECONDS.toNanos(40);
+    private static final FeedbackDelayGenerator DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(20);
+    private static final FeedbackDelayGenerator ZERO_DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(0);
+    private static final FeedbackDelayGenerator LINGER_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(40);
 
     private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
     private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
@@ -77,13 +77,15 @@ public class RetransmitHandlerTest
     private final SystemCounters systemCounters = mock(SystemCounters.class);
 
     private RetransmitHandler handler = new RetransmitHandler(
-        wheel, systemCounters, delayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
+        wheel, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
 
     @DataPoint
-    public static final BiConsumer<RetransmitHandlerTest, Integer> senderAddDataFrame = (h, i) -> h.addSentDataFrame();
+    public static final BiConsumer<RetransmitHandlerTest, Integer> SENDER_ADD_DATA_FRAME =
+        (h, i) -> h.addSentDataFrame();
 
     @DataPoint
-    public static final BiConsumer<RetransmitHandlerTest, Integer> receiverAddDataFrame = (h, i) -> h.addReceivedDataFrame(i);
+    public static final BiConsumer<RetransmitHandlerTest, Integer> RECEIVER_ADD_DATA_FRAME =
+        (h, i) -> h.addReceivedDataFrame(i);
 
     @Theory
     public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
@@ -211,7 +213,8 @@ public class RetransmitHandlerTest
 
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
-        return new RetransmitHandler(wheel, systemCounters, zeroDelayGenerator, lingerGenerator, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
+        return new RetransmitHandler(
+            wheel, systemCounters, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, LOG_BUFFER_SIZE);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)

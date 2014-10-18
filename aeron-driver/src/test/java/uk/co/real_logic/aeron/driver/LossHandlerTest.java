@@ -61,10 +61,10 @@ public class LossHandlerTest
     private static final int TERM_ID = 0xEE81D;
     private static final int INITIAL_TERM_OFFSET = 0;
 
-    private static final StaticDelayGenerator delayGenerator = new StaticDelayGenerator(
+    private static final StaticDelayGenerator DELAY_GENERATOR = new StaticDelayGenerator(
         TimeUnit.MILLISECONDS.toNanos(20), false);
 
-    private static final StaticDelayGenerator delayGeneratorWithImmediate = new StaticDelayGenerator(
+    private static final StaticDelayGenerator DELAY_GENERATOR_WITH_IMMEDIATE = new StaticDelayGenerator(
         TimeUnit.MILLISECONDS.toNanos(20), true);
 
     private final LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
@@ -101,7 +101,7 @@ public class LossHandlerTest
 
         final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
         handler = new LossHandler(
-            scanners, wheel, delayGenerator, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
+            scanners, wheel, DELAY_GENERATOR, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -407,13 +407,13 @@ public class LossHandlerTest
     private LossHandler getLossHandlerWithImmediate()
     {
         return new LossHandler(
-            scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
+            scanners, wheel, DELAY_GENERATOR_WITH_IMMEDIATE, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
     }
 
     private LossHandler getLossHandlerWithImmediateAndTermOffset(final int initialTermOffset)
     {
         return new LossHandler(
-            scanners, wheel, delayGeneratorWithImmediate, nakMessageSender, TERM_ID, initialTermOffset, mockSystemCounters);
+            scanners, wheel, DELAY_GENERATOR_WITH_IMMEDIATE, nakMessageSender, TERM_ID, initialTermOffset, mockSystemCounters);
     }
 
     private void insertDataFrame(final int offset)

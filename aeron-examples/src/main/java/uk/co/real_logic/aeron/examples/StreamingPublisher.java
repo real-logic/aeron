@@ -45,7 +45,7 @@ public class StreamingPublisher
     private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
-    private static volatile boolean PRINTING_ACTIVE = true;
+    private static volatile boolean printingActive = true;
 
     public static void main(final String[] args) throws Exception
     {
@@ -66,7 +66,7 @@ public class StreamingPublisher
 
             do
             {
-                PRINTING_ACTIVE = true;
+                printingActive = true;
 
                 System.out.format(
                     "\nStreaming %,d messages of size %d bytes to %s on stream Id %d\n",
@@ -92,7 +92,7 @@ public class StreamingPublisher
                     Thread.sleep(LINGER_TIMEOUT_MS);
                 }
 
-                PRINTING_ACTIVE = false;
+                printingActive = false;
             }
             while (barrier.await());
 
@@ -106,7 +106,7 @@ public class StreamingPublisher
     public static void printRate(
         final double messagesPerSec, final double bytesPerSec, final long totalMessages, final long totalBytes)
     {
-        if (PRINTING_ACTIVE)
+        if (printingActive)
         {
             System.out.format(
                 "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",

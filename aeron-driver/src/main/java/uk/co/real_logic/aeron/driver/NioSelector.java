@@ -15,17 +15,12 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.BitUtil;
-
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Set;
 
 /**
  * Encapsulation of NIO Selector logic for integration into Receiver Thread and Conductor Thread
@@ -33,7 +28,6 @@ import java.util.Set;
 public class NioSelector implements AutoCloseable
 {
     private static final int ITERATION_THRESHOLD = 5;
-    private static final int INITIAL_TRANSPORT_LIST_CAPACITY = BitUtil.findNextPositivePowerOfTwo(ITERATION_THRESHOLD);
     private static final Field SELECTED_KEYS_FIELD;
     private static final Field PUBLIC_SELECTED_KEYS_FIELD;
 
@@ -55,8 +49,9 @@ public class NioSelector implements AutoCloseable
                 publicSelectKeysField.setAccessible(true);
             }
         }
-        catch (final Exception ignore)
+        catch (final Exception ex)
         {
+            throw new RuntimeException(ex);
         }
 
         SELECTED_KEYS_FIELD = selectKeysField;
@@ -65,7 +60,7 @@ public class NioSelector implements AutoCloseable
 
     private final Selector selector;
     private final NioSelectedKeySet selectedKeySet;
-    private final ArrayList<UdpChannelTransport> transportList = new ArrayList<>(INITIAL_TRANSPORT_LIST_CAPACITY);
+    private UdpChannelTransport[] transports = new UdpChannelTransport[0];
 
     /**
      * Construct a selector
@@ -105,15 +100,16 @@ public class NioSelector implements AutoCloseable
      * Register channel for read.
      *
      * @param channel to select for read
-     * @param udpChannelTransport to associate with read
+     * @param transport to associate with read
      * @return SelectionKey for registration for cancel
      */
-    public SelectionKey registerForRead(final SelectableChannel channel, final UdpChannelTransport udpChannelTransport)
+    public SelectionKey registerForRead(final SelectableChannel channel, final UdpChannelTransport transport)
     {
         try
         {
-            transportList.add(udpChannelTransport);
-            return channel.register(selector, SelectionKey.OP_READ, udpChannelTransport);
+            addTransport(transport);
+
+            return channel.register(selector, SelectionKey.OP_READ, transport);
         }
         catch (final ClosedChannelException ex)
         {
@@ -124,11 +120,11 @@ public class NioSelector implements AutoCloseable
     /**
      * Cancel previous registration.
      *
-     * @param udpChannelTransport to cancel read for
+     * @param transport to cancel read for
      */
-    public void cancelRead(final UdpChannelTransport udpChannelTransport)
+    public void cancelRead(final UdpChannelTransport transport)
     {
-        transportList.remove(udpChannelTransport);
+        removeTransport(transport);
     }
 
     /**
@@ -158,34 +154,29 @@ public class NioSelector implements AutoCloseable
         {
             int handledFrames = 0;
 
-            if (transportList.size() <= ITERATION_THRESHOLD)
+            final UdpChannelTransport[] transports = this.transports;
+            final int numTransports = transports.length;
+            if (numTransports <= ITERATION_THRESHOLD)
             {
-                for (int i = transportList.size() - 1; i >= 0; i--)
+                for (int i = numTransports - 1; i >= 0; i--)
                 {
-                    handledFrames += transportList.get(i).attemptReceive();
+                    handledFrames += transports[i].attemptReceive();
                 }
             }
             else
             {
                 selector.selectNow();
 
-                if (null != PUBLIC_SELECTED_KEYS_FIELD)
+                final SelectionKey[] keys = selectedKeySet.keys();
+
+                for (int i = selectedKeySet.size() - 1; i >= 0; i--)
                 {
-                    final SelectionKey[] keys = selectedKeySet.keys();
+                    final SelectionKey key = keys[i];
 
-                    for (int i = selectedKeySet.size() - 1; i >= 0; i--)
-                    {
-                        final SelectionKey key = keys[i];
-
-                        handledFrames += ((UdpChannelTransport) key.attachment()).attemptReceive();
-                    }
-
-                    selectedKeySet.reset();
+                    handledFrames += ((UdpChannelTransport) key.attachment()).attemptReceive();
                 }
-                else
-                {
-                    handledFrames = handleSelectedKeys();
-                }
+
+                selectedKeySet.reset();
             }
 
             return handledFrames;
@@ -215,23 +206,31 @@ public class NioSelector implements AutoCloseable
         }
     }
 
-    private int handleSelectedKeys()
+    private void addTransport(final UdpChannelTransport transport)
     {
-        int handledFrames = 0;
-        final Set<SelectionKey> selectedKeys = selector.selectedKeys();
-        final Iterator<SelectionKey> iter = selectedKeys.iterator();
+        final UdpChannelTransport[] oldTransports = transports;
+        final int length = oldTransports.length;
+        final UdpChannelTransport[] newTransports = new UdpChannelTransport[length + 1];
 
-        while (iter.hasNext())
+        System.arraycopy(oldTransports, 0, newTransports, 0, length);
+        newTransports[length] = transport;
+
+        transports = newTransports;
+    }
+
+    private void removeTransport(final UdpChannelTransport transport)
+    {
+        final UdpChannelTransport[] oldTransports = transports;
+        final int length = oldTransports.length;
+        final UdpChannelTransport[] newTransports = new UdpChannelTransport[length - 1];
+        for (int i = 0, j = 0; i < length; i++)
         {
-            final SelectionKey key = iter.next();
-            if (key.isReadable())
+            if (oldTransports[i] != transport)
             {
-                handledFrames += ((UdpChannelTransport)key.attachment()).attemptReceive();
+                newTransports[j++] = oldTransports[i];
             }
-
-            iter.remove();
         }
 
-        return handledFrames;
+        transports = newTransports;
     }
 }

@@ -21,7 +21,6 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 
 import java.net.InetSocketAddress;
-import java.util.function.IntSupplier;
 
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
 
@@ -76,7 +75,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
     }
 
     /**
-     * Implementation of {@link IntSupplier#getAsInt()} to be used as callback for processing frames.
+     * Callback for processing frames.
      *
      * @return the number of frames processed.
      */

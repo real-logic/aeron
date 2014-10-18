@@ -171,9 +171,7 @@ public class NioSelector implements AutoCloseable
 
                 for (int i = selectedKeySet.size() - 1; i >= 0; i--)
                 {
-                    final SelectionKey key = keys[i];
-
-                    handledFrames += ((UdpChannelTransport) key.attachment()).attemptReceive();
+                    handledFrames += ((UdpChannelTransport)keys[i].attachment()).attemptReceive();
                 }
 
                 selectedKeySet.reset();

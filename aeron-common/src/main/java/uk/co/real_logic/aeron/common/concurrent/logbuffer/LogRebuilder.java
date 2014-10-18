@@ -75,7 +75,7 @@ public class LogRebuilder extends LogBuffer
     public void insert(final AtomicBuffer packet, final int srcOffset, final int length)
     {
         final int termOffset = packet.getInt(termOffsetOffset(srcOffset), LITTLE_ENDIAN);
-        int tail = tail();
+        final int tail = tail();
 
         if (termOffset >= tail)
         {

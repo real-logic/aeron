@@ -89,7 +89,7 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
-                DataHandler handler = (DataHandler)invocation.getArguments()[0];
+                final DataHandler handler = (DataHandler)invocation.getArguments()[0];
                 handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
@@ -112,7 +112,7 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
             (invocation) ->
             {
-                DataHandler handler = (DataHandler)invocation.getArguments()[0];
+                final DataHandler handler = (DataHandler)invocation.getArguments()[0];
                 handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;

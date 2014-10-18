@@ -127,13 +127,13 @@ public class AtomicArray<T> implements Collection<T>
     public int doAction(int fromIndex, final ToIntFunction<? super T> action)
     {
         final T[] array = arrayRef.get();
-
-        if (array.length == 0)
+        final int length = array.length;
+        if (length == 0)
         {
             return 0;
         }
 
-        fromIndex = adjustForOverrun(fromIndex, array.length);
+        fromIndex = adjustForOverrun(fromIndex, length);
 
         int actionCount = 0;
         int i = fromIndex;
@@ -141,7 +141,7 @@ public class AtomicArray<T> implements Collection<T>
         {
             actionCount += action.applyAsInt(array[i]);
 
-            if (++i == array.length)
+            if (++i == length)
             {
                 i = 0;
             }
@@ -165,13 +165,13 @@ public class AtomicArray<T> implements Collection<T>
     public int doLimitedAction(int fromIndex, final int actionCountLimit, final ToIntLimitedFunction<? super T> action)
     {
         final T[] array = arrayRef.get();
-
-        if (array.length == 0)
+        final int length = array.length;
+        if (length == 0)
         {
             return 0;
         }
 
-        fromIndex = adjustForOverrun(fromIndex, array.length);
+        fromIndex = adjustForOverrun(fromIndex, length);
 
         int actionCount = 0;
         int i = fromIndex;
@@ -184,7 +184,7 @@ public class AtomicArray<T> implements Collection<T>
 
             actionCount += action.apply(array[i], actionCountLimit - actionCount);
 
-            if (++i == array.length)
+            if (++i == length)
             {
                 i = 0;
             }
@@ -198,7 +198,6 @@ public class AtomicArray<T> implements Collection<T>
      * Add given element to the array atomically.
      *
      * @param element to be added
-     * @throws NullPointerException if the element is null
      */
     public boolean add(final T element)
     {
@@ -243,7 +242,7 @@ public class AtomicArray<T> implements Collection<T>
 
         if (oldArray.length == 1)
         {
-            T element = oldArray[0];
+            final T element = oldArray[0];
             if (predicate.test(element))
             {
                 arrayRef(EMPTY_ARRAY);

@@ -136,7 +136,7 @@ public class DriverConductorTest
         ctx.clientProxy(mockClientProxy);
         ctx.countersBuffer(counterBuffer);
 
-        SystemCounters mockSystemCounters = mock(SystemCounters.class);
+        final SystemCounters mockSystemCounters = mock(SystemCounters.class);
         ctx.systemCounters(mockSystemCounters);
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
 

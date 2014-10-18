@@ -99,7 +99,7 @@ public class ConnectionTest
 
         insertDataFrame(offsetOfFrame(0));
 
-        int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
@@ -108,7 +108,7 @@ public class ConnectionTest
             eq(DATA.length),
             any(Header.class));
 
-        InOrder inOrder = Mockito.inOrder(mockPositionReporter);
+        final InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(ZERO_INITIAL_POSITION);
         inOrder.verify(mockPositionReporter).position(ZERO_INITIAL_POSITION + ALIGNED_FRAME_LENGTH);
     }
@@ -127,16 +127,16 @@ public class ConnectionTest
 
         insertDataFrame(offsetOfFrame(initialMessageIndex));
 
-        int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-                any(AtomicBuffer.class),
-                eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
-                eq(DATA.length),
-                any(Header.class));
+            any(AtomicBuffer.class),
+            eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
+            eq(DATA.length),
+            any(Header.class));
 
-        InOrder inOrder = Mockito.inOrder(mockPositionReporter);
+        final InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(initialPosition);
         inOrder.verify(mockPositionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
     }
@@ -148,7 +148,7 @@ public class ConnectionTest
         final int initialMessageIndex = 5;
         final int initialTermOffset = offsetOfFrame(initialMessageIndex);
         final long initialPosition =
-                TermHelper.calculatePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+            TermHelper.calculatePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
         activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
         rebuilders[activeIndex].tail(initialTermOffset);
@@ -157,16 +157,16 @@ public class ConnectionTest
 
         insertDataFrame(offsetOfFrame(initialMessageIndex));
 
-        int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-                any(AtomicBuffer.class),
-                eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
-                eq(DATA.length),
-                any(Header.class));
+            any(AtomicBuffer.class),
+            eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
+            eq(DATA.length),
+            any(Header.class));
 
-        InOrder inOrder = Mockito.inOrder(mockPositionReporter);
+        final InOrder inOrder = Mockito.inOrder(mockPositionReporter);
         inOrder.verify(mockPositionReporter).position(initialPosition);
         inOrder.verify(mockPositionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
     }

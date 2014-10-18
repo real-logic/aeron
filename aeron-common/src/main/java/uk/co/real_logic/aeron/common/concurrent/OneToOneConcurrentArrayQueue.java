@@ -95,16 +95,15 @@ public class OneToOneConcurrentArrayQueue<E>
         }
     }
 
-    private final int capacity;
     private final long mask;
     private final E[] buffer;
 
     @SuppressWarnings("unchecked")
-    public OneToOneConcurrentArrayQueue(final int capacity)
+    public OneToOneConcurrentArrayQueue(final int requestedCapacity)
     {
-        this.capacity = BitUtil.findNextPositivePowerOfTwo(capacity);
-        mask = this.capacity - 1;
-        buffer = (E[])new Object[this.capacity];
+        final int capacity = BitUtil.findNextPositivePowerOfTwo(requestedCapacity);
+        mask = capacity - 1;
+        buffer = (E[])new Object[capacity];
     }
 
     public boolean add(final E e)
@@ -125,7 +124,7 @@ public class OneToOneConcurrentArrayQueue<E>
         }
 
         final Object[] buffer = this.buffer;
-        long currentTail = tail;
+        final long currentTail = tail;
         final long offset = sequenceToOffset(currentTail);
 
         if (null == UNSAFE.getObjectVolatile(buffer, offset))
@@ -207,16 +206,20 @@ public class OneToOneConcurrentArrayQueue<E>
 
     public int size()
     {
-        int size;
+        long currentHeadBefore;
+        long currentTail;
+        long currentHeadAfter = head;
+
         do
         {
-            final long currentHead = head;
-            final long currentTail = tail;
-            size = (int)(currentTail - currentHead);
-        }
-        while (size > capacity);
+            currentHeadBefore = currentHeadAfter;
+            currentTail = tail;
+            currentHeadAfter = head;
 
-        return size;
+        }
+        while (currentHeadAfter != currentHeadBefore);
+
+        return (int)(currentTail - currentHeadAfter);
     }
 
     public boolean isEmpty()

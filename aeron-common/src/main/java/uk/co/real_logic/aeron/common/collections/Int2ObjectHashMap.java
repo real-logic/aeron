@@ -460,7 +460,7 @@ public class Int2ObjectHashMap<V>
 
     private int hash(final int key)
     {
-        int hash = (key << 1) - (key << 8);
+        final int hash = (key << 1) - (key << 8);
         return hash & mask;
     }
 
@@ -704,7 +704,7 @@ public class Int2ObjectHashMap<V>
             requireNonNull(value);
 
             final int pos = getPosition();
-            Object oldValue = values[pos];
+            final Object oldValue = values[pos];
             values[pos] = value;
 
             return (V)oldValue;

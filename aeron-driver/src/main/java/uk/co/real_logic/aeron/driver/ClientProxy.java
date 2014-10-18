@@ -97,8 +97,9 @@ public class ClientProxy
         connectionReady.sourceInfo(sourceInfo);
         connectionReady.channel(channel);
 
-        connectionReady.positionIndicatorCount(subscriberPositions.size());
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        final int size = subscriberPositions.size();
+        connectionReady.positionIndicatorCount(size);
+        for (int i = 0; i < size; i++)
         {
             final SubscriberPosition position = subscriberPositions.get(i);
             connectionReady.positionIndicatorCounterId(i, position.positionCounterId());
@@ -110,14 +111,14 @@ public class ClientProxy
     }
 
     public void onPublicationReady(
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final int termId,
-            final TermBuffers termBuffers,
-            final long correlationId,
-            final int positionCounterId,
-            final int mtuLength)
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int termId,
+        final TermBuffers termBuffers,
+        final long correlationId,
+        final int positionCounterId,
+        final int mtuLength)
     {
         publicationReady.wrap(tmpBuffer, 0);
         publicationReady.sessionId(sessionId)

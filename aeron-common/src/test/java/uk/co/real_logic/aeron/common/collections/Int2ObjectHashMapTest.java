@@ -92,7 +92,7 @@ public class Int2ObjectHashMapTest
         map.put(key, value);
 
         final int collisionKey = key + map.getCapacity();
-        String collisionValue = Integer.toString(collisionKey);
+        final String collisionValue = Integer.toString(collisionKey);
         map.put(collisionKey, collisionValue);
 
         assertThat(map.get(key), is(value));
@@ -201,7 +201,7 @@ public class Int2ObjectHashMapTest
 
         for (int i = 0; i < 11; i++)
         {
-            String value = Integer.toString(i);
+            final String value = Integer.toString(i);
             intToObjectMap.put(i, value);
             initialSet.add(value);
         }
@@ -223,7 +223,7 @@ public class Int2ObjectHashMapTest
 
         for (int i = 0; i < 11; i++)
         {
-            String value = Integer.toString(i);
+            final String value = Integer.toString(i);
             intToObjectMap.put(i, value);
             initialSet.add(valueOf(i));
         }

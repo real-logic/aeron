@@ -204,7 +204,7 @@ public class Long2ObjectHashMapTest
 
         for (int i = 0; i < 11; i++)
         {
-            String value = Long.toString(i);
+            final String value = Long.toString(i);
             longToObjectMap.put(i, value);
             initialSet.add(value);
         }
@@ -221,7 +221,7 @@ public class Long2ObjectHashMapTest
 
         for (int i = 0; i < 11; i++)
         {
-            String value = Long.toString(i);
+            final String value = Long.toString(i);
             longToObjectMap.put(i, value);
             initialSet.add(valueOf(i));
         }

@@ -180,7 +180,7 @@ public class LossHandlerTest
         handler.scan();
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(80));
 
-        InOrder inOrder = inOrder(nakMessageSender);
+        final InOrder inOrder = inOrder(nakMessageSender);
         inOrder.verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(1), gapLength());
         inOrder.verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(3), gapLength());
         inOrder.verify(nakMessageSender, never()).send(TERM_ID, offsetOfMessage(5), gapLength());

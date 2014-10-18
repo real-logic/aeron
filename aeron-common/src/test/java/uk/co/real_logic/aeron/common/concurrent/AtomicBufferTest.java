@@ -551,7 +551,7 @@ public class AtomicBufferTest
         buffer.getBytes(INDEX, dstBuffer, testBytes.length);
 
         dstBuffer.flip();
-        byte[] result = new byte[testBytes.length];
+        final byte[] result = new byte[testBytes.length];
         dstBuffer.get(result);
 
         assertThat(result, is(testBytes));
@@ -566,13 +566,13 @@ public class AtomicBufferTest
         duplicateBuffer.position(INDEX);
         duplicateBuffer.put(testBytes);
 
-        final ByteBuffer dstBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length))
-                                                            .slice();
+        final ByteBuffer dstBuffer =
+            ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length)).slice();
 
         buffer.getBytes(INDEX, dstBuffer, testBytes.length);
 
         dstBuffer.flip();
-        byte[] result = new byte[testBytes.length];
+        final byte[] result = new byte[testBytes.length];
         dstBuffer.get(result);
 
         assertThat(result, is(testBytes));
@@ -632,8 +632,7 @@ public class AtomicBufferTest
     public void shouldPutBytesToBufferFromSlice(final AtomicBuffer buffer)
     {
         final byte[] testBytes = "Hello World".getBytes();
-        final ByteBuffer srcBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length))
-                                                            .slice();
+        final ByteBuffer srcBuffer = ((ByteBuffer)ByteBuffer.allocate(testBytes.length * 2).position(testBytes.length)).slice();
         srcBuffer.put(testBytes).flip();
 
         buffer.putBytes(INDEX, srcBuffer, testBytes.length);

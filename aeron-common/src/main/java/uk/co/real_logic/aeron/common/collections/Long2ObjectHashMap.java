@@ -705,7 +705,7 @@ public class Long2ObjectHashMap<V>
             requireNonNull(value);
 
             final int pos = getPosition();
-            Object oldValue = values[pos];
+            final Object oldValue = values[pos];
             values[pos] = value;
 
             return (V)oldValue;

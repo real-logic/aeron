@@ -129,7 +129,7 @@ public class RetransmitHandlerTest
         handler.onNak(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        InOrder inOrder = inOrder(retransmitSender);
+        final InOrder inOrder = inOrder(retransmitSender);
         inOrder.verify(retransmitSender).send(TERM_ID, offsetOfMessage(0), ALIGNED_FRAME_LENGTH);
         inOrder.verify(retransmitSender).send(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
     }

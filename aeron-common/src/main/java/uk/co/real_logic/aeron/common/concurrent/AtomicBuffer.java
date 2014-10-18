@@ -582,7 +582,7 @@ public class AtomicBuffer
 
         if (NATIVE_BYTE_ORDER != byteOrder)
         {
-            long bits = UNSAFE.getLong(byteArray, addressOffset + index);
+            final long bits = UNSAFE.getLong(byteArray, addressOffset + index);
             return Double.longBitsToDouble(Long.reverseBytes(bits));
         }
         else
@@ -604,7 +604,7 @@ public class AtomicBuffer
 
         if (NATIVE_BYTE_ORDER != byteOrder)
         {
-            long bits = Long.reverseBytes(Double.doubleToRawLongBits(value));
+            final long bits = Long.reverseBytes(Double.doubleToRawLongBits(value));
             UNSAFE.putLong(byteArray, addressOffset + index, bits);
         }
         else
@@ -654,7 +654,7 @@ public class AtomicBuffer
 
         if (NATIVE_BYTE_ORDER != byteOrder)
         {
-            int bits = UNSAFE.getInt(byteArray, addressOffset + index);
+            final int bits = UNSAFE.getInt(byteArray, addressOffset + index);
             return Float.intBitsToFloat(Integer.reverseBytes(bits));
         }
         else
@@ -676,7 +676,7 @@ public class AtomicBuffer
 
         if (NATIVE_BYTE_ORDER != byteOrder)
         {
-            int bits = Integer.reverseBytes(Float.floatToRawIntBits(value));
+            final int bits = Integer.reverseBytes(Float.floatToRawIntBits(value));
             UNSAFE.putLong(byteArray, addressOffset + index, bits);
         }
         else

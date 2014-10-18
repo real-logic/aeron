@@ -52,7 +52,7 @@ public class PublicationTest
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             appenders[i] = mock(LogAppender.class);
-            byte[] header = new byte[DataHeaderFlyweight.HEADER_LENGTH];
+            final byte[] header = new byte[DataHeaderFlyweight.HEADER_LENGTH];
             headers[i] = header;
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
             when(appenders[i].defaultHeader()).thenReturn(header);

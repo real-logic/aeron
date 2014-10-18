@@ -72,8 +72,8 @@ public class LogRebuilderTest
     public void shouldInsertIntoEmptyBuffer()
     {
         final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(256));
-        int srcOffset = 0;
-        int length = 256;
+        final int srcOffset = 0;
+        final int length = 256;
 
         when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 

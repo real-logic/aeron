@@ -169,7 +169,7 @@ public class FlyweightTest
     {
         encodePublication.wrap(aBuff, 0);
 
-        String example = "abcç̀漢字仮名交じり文";
+        final String example = "abcç̀漢字仮名交じり文";
         encodePublication.channel(example);
 
         decodePublication.wrap(aBuff, 0);
@@ -219,7 +219,7 @@ public class FlyweightTest
     @Test
     public void shouldReadAndWriteErrorHeaderWithErrorStringCorrectly()
     {
-        String errorString = "this is an error";
+        final String errorString = "this is an error";
         final ByteBuffer originalBuffer = ByteBuffer.allocateDirect(256);
         final AtomicBuffer originalAtomicBuffer = new AtomicBuffer(originalBuffer);
 
@@ -236,9 +236,7 @@ public class FlyweightTest
         encodeError.version((short)1);
         encodeError.flags((short)0);
         encodeError.headerType(HeaderFlyweight.HDR_TYPE_ERR);
-        encodeError.frameLength(encodeDataHeader.frameLength() +
-                                    ErrorFlyweight.HEADER_LENGTH +
-                                    errorString.length());
+        encodeError.frameLength(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH + errorString.length());
         encodeError.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
         encodeError.errorMessage(errorString.getBytes());
 
@@ -246,9 +244,8 @@ public class FlyweightTest
         assertThat(decodeError.version(), is((short)1));
         assertThat(decodeError.flags(), is((short)0));
         assertThat(decodeError.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
-        assertThat(decodeError.frameLength(), is(encodeDataHeader.frameLength() +
-                                                     ErrorFlyweight.HEADER_LENGTH +
-                                                     errorString.length()));
+        assertThat(decodeError.frameLength(),
+                   is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH + errorString.length()));
 
         decodeDataHeader.wrap(aBuff, decodeError.offendingHeaderOffset());
         assertThat(decodeDataHeader.version(), is((short)1));

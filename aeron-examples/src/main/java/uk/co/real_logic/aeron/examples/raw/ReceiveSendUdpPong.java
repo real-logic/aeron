@@ -71,7 +71,7 @@ public class ReceiveSendUdpPong
                     return;
                 }
 
-                for (int i = receiveChannels.length - 1; i >=0; i--)
+                for (int i = receiveChannels.length - 1; i >= 0; i--)
                 {
                     if (null != receiveChannels[i].receive(buffer))
                     {

@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
 import uk.co.real_logic.aeron.common.CloseHelper;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -83,18 +84,20 @@ public class Ping
                 sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
             }
 
-            HISTOGRAM.reset();
+            final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
-            System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
+            do
+            {
+                HISTOGRAM.reset();
+                System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-            sendPingAndReceivePong(pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
+                sendPingAndReceivePong(pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
 
-            System.out.println("Done pinging.");
+                System.out.println("Histogram of RTT latencies in microseconds.");
+                HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
+            }
+            while (barrier.await());
         }
-
-        System.out.println("Done playing...\nHistogram of RTT latencies in microseconds.");
-
-        HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
 
         CloseHelper.quietClose(driver);
     }

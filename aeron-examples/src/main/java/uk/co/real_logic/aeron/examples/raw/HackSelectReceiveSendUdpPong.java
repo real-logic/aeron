@@ -49,11 +49,11 @@ public class HackSelectReceiveSendUdpPong
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
 
         final DatagramChannel receiveChannel = DatagramChannel.open();
-        Common.setUp(receiveChannel);
+        Common.init(receiveChannel);
         receiveChannel.bind(new InetSocketAddress("localhost", Common.PING_PORT));
 
         final DatagramChannel sendChannel = DatagramChannel.open();
-        Common.setUp(sendChannel);
+        Common.init(sendChannel);
 
         final Selector selector = Selector.open();
         final NioSelectedKeySet keySet = Common.keySet(selector);

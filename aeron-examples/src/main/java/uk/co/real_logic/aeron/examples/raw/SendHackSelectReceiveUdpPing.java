@@ -56,11 +56,11 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
     private void run() throws IOException
     {
         receiveChannel = DatagramChannel.open();
-        Common.setUp(receiveChannel);
+        Common.init(receiveChannel);
         receiveChannel.bind(new InetSocketAddress("localhost", Common.PONG_PORT));
 
         final DatagramChannel sendChannel = DatagramChannel.open();
-        Common.setUp(sendChannel);
+        Common.init(sendChannel);
 
         final Selector selector = Selector.open();
         receiveChannel.register(selector, OP_READ, this);

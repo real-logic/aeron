@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
-import static uk.co.real_logic.aeron.examples.raw.Common.setUp;
+import static uk.co.real_logic.aeron.examples.raw.Common.init;
 
 /**
  * Benchmark used to calculate latency of underlying system.
@@ -52,13 +52,13 @@ public class SendReceiveUdpPing
         for (int i = 0; i < receiveChannels.length; i++)
         {
             receiveChannels[i] = DatagramChannel.open();
-            setUp(receiveChannels[i]);
+            init(receiveChannels[i]);
             receiveChannels[i].bind(new InetSocketAddress("localhost", Common.PONG_PORT + i));
         }
 
         final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PING_PORT);
         final DatagramChannel sendChannel = DatagramChannel.open();
-        setUp(sendChannel);
+        init(sendChannel);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));

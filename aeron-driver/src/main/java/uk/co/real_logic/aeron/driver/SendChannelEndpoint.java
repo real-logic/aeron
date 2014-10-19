@@ -38,7 +38,7 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel,
-        final NioSelector nioSelector,
+        final TransportPoller transportPoller,
         final EventLogger logger,
         final LossGenerator lossGenerator,
         final SystemCounters systemCounters)
@@ -46,7 +46,7 @@ public class SendChannelEndpoint implements AutoCloseable
         this.systemCounters = systemCounters;
         this.transport = new SenderUdpChannelTransport(
             udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);
-        this.transport.registerForRead(nioSelector);
+        this.transport.registerForRead(transportPoller);
         this.udpChannel = udpChannel;
     }
 

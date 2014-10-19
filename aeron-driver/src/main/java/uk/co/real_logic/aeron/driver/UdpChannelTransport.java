@@ -43,7 +43,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final LossGenerator lossGenerator;
 
     private SelectionKey registeredKey;
-    private NioSelector registeredNioSelector;
+    private TransportPoller registeredTransportPoller;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -102,14 +102,14 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Register this transport for reading from a {@link NioSelector}.
+     * Register this transport for reading from a {@link TransportPoller}.
      *
-     * @param nioSelector to register read with
+     * @param transportPoller to register read with
      */
-    public void registerForRead(final NioSelector nioSelector)
+    public void registerForRead(final TransportPoller transportPoller)
     {
-        registeredNioSelector = nioSelector;
-        registeredKey = nioSelector.registerForRead(datagramChannel, this);
+        registeredTransportPoller = transportPoller;
+        registeredKey = transportPoller.registerForRead(datagramChannel, this);
     }
 
     /**
@@ -155,9 +155,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 registeredKey.cancel();
             }
 
-            if (null != registeredNioSelector)
+            if (null != registeredTransportPoller)
             {
-                registeredNioSelector.cancelRead(this);
+                registeredTransportPoller.cancelRead(this);
             }
 
             datagramChannel.close();
@@ -214,10 +214,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
      *
      * @return number of handled frames.
      */
-    public int attemptReceive()
+    public int pollFrames()
     {
         int framesRead = 0;
-        final InetSocketAddress srcAddress = receiveFrame();
+        final InetSocketAddress srcAddress = receive();
 
         if (null != srcAddress)
         {
@@ -258,7 +258,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return isFrameValid;
     }
 
-    private InetSocketAddress receiveFrame()
+    private InetSocketAddress receive()
     {
         InetSocketAddress address = null;
         receiveByteBuffer.clear();

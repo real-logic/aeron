@@ -79,7 +79,7 @@ public class DriverConductor extends Agent
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
     private final DriverConductorProxy conductorProxy;
-    private final NioSelector nioSelector;
+    private final TransportPoller transportPoller;
     private final TermBuffersFactory termBuffersFactory;
     private final RingBuffer toDriverCommands;
     private final RingBuffer toEventReader;
@@ -128,7 +128,7 @@ public class DriverConductor extends Agent
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();
         this.termBuffersFactory = ctx.termBuffersFactory();
-        this.nioSelector = ctx.conductorNioSelector();
+        this.transportPoller = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowSize = ctx.initialWindowSize();
         this.capacity = ctx.termBufferSize();
@@ -216,7 +216,7 @@ public class DriverConductor extends Agent
     {
         int workCount = 0;
 
-        workCount += nioSelector.processKeys();
+        workCount += transportPoller.pollTransports();
         workCount += toDriverCommands.read(onClientCommandFunc);
         workCount += commandQueue.drain(onReceiverCommandFunc);
         workCount += toEventReader.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
@@ -380,11 +380,11 @@ public class DriverConductor extends Agent
         {
             channelEndpoint = new SendChannelEndpoint(
                 udpChannel,
-                nioSelector,
+                transportPoller,
                 logger,
                 Configuration.createLossGenerator(controlLossRate, controlLossSeed),
                 systemCounters);
-            nioSelector.selectNowWithoutProcessing();
+            transportPoller.selectNowWithoutProcessing();
 
             channelEndpoint.validateMtuLength(mtuLength);
 
@@ -693,7 +693,7 @@ public class DriverConductor extends Agent
                 {
                     sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
                     channelEndpoint.close();
-                    nioSelector.selectNowWithoutProcessing();
+                    transportPoller.selectNowWithoutProcessing();
                 }
             }
         }

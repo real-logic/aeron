@@ -25,7 +25,7 @@ import java.nio.channels.Selector;
 /**
  * Encapsulation of NIO Selector logic for integration into Receiver Thread and Conductor Thread
  */
-public class NioSelector implements AutoCloseable
+public class TransportPoller implements AutoCloseable
 {
     private static final int ITERATION_THRESHOLD = 5;
     private static final Field SELECTED_KEYS_FIELD;
@@ -65,7 +65,7 @@ public class NioSelector implements AutoCloseable
     /**
      * Construct a selector
      */
-    public NioSelector()
+    public TransportPoller()
     {
         try
         {
@@ -134,7 +134,7 @@ public class NioSelector implements AutoCloseable
      *
      * @return the number of frames processed.
      */
-    public int processKeys()
+    public int pollTransports()
     {
         try
         {
@@ -146,7 +146,7 @@ public class NioSelector implements AutoCloseable
             {
                 for (int i = numTransports - 1; i >= 0; i--)
                 {
-                    handledFrames += transports[i].attemptReceive();
+                    handledFrames += transports[i].pollFrames();
                 }
             }
             else
@@ -156,7 +156,7 @@ public class NioSelector implements AutoCloseable
                 final SelectionKey[] keys = selectedKeySet.keys();
                 for (int i = selectedKeySet.size() - 1; i >= 0; i--)
                 {
-                    handledFrames += ((UdpChannelTransport)keys[i].attachment()).attemptReceive();
+                    handledFrames += ((UdpChannelTransport)keys[i].attachment()).pollFrames();
                 }
 
                 selectedKeySet.reset();

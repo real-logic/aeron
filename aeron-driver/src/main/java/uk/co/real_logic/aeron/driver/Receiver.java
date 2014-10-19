@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  */
 public class Receiver extends Agent
 {
-    private final NioSelector nioSelector;
+    private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
     private final Consumer<Object> onConductorCommandFunc;
     private final AtomicCounter totalBytesReceived;
@@ -36,7 +36,7 @@ public class Receiver extends Agent
     {
         super(ctx.receiverIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
 
-        this.nioSelector = ctx.receiverNioSelector();
+        this.transportPoller = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
         this.totalBytesReceived = ctx.systemCounters().bytesReceived();
 
@@ -90,7 +90,7 @@ public class Receiver extends Agent
     public int doWork() throws Exception
     {
         final int workCount = commandQueue.drain(onConductorCommandFunc);
-        final int bytesReceived = nioSelector.processKeys();
+        final int bytesReceived = transportPoller.pollTransports();
 
         totalBytesReceived.addOrdered(bytesReceived);
 
@@ -120,8 +120,8 @@ public class Receiver extends Agent
 
     private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        channelEndpoint.registerForRead(nioSelector);
-        nioSelector.selectNowWithoutProcessing();
+        channelEndpoint.registerForRead(transportPoller);
+        transportPoller.selectNowWithoutProcessing();
     }
 
     private void onRemovePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
@@ -132,7 +132,7 @@ public class Receiver extends Agent
     private void onCloseMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
-        nioSelector.selectNowWithoutProcessing();
+        transportPoller.selectNowWithoutProcessing();
     }
 
     private void onCloseSubscription(final DriverSubscription subscription)

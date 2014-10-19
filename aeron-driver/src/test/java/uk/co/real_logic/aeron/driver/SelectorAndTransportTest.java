@@ -63,7 +63,7 @@ public class SelectorAndTransportTest
     private final NakFrameHandler mockNakFrameHandler = mock(NakFrameHandler.class);
     private final StatusMessageFrameHandler mockStatusMessageFrameHandler = mock(StatusMessageFrameHandler.class);
 
-    private NioSelector nioSelector;
+    private TransportPoller transportPoller;
     private SenderUdpChannelTransport senderTransport;
     private ReceiverUdpChannelTransport receiverTransport;
 
@@ -75,18 +75,18 @@ public class SelectorAndTransportTest
             if (null != senderTransport)
             {
                 senderTransport.close();
-                processLoop(nioSelector, 5);
+                processLoop(transportPoller, 5);
             }
 
             if (null != receiverTransport)
             {
                 receiverTransport.close();
-                processLoop(nioSelector, 5);
+                processLoop(transportPoller, 5);
             }
 
-            if (null != nioSelector)
+            if (null != transportPoller)
             {
-                nioSelector.close();
+                transportPoller.close();
             }
         }
         catch (final Exception ex)
@@ -98,16 +98,16 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTeardown() throws Exception
     {
-        nioSelector = new NioSelector();
+        transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        receiverTransport.registerForRead(nioSelector);
-        senderTransport.registerForRead(nioSelector);
+        receiverTransport.registerForRead(transportPoller);
+        senderTransport.registerForRead(transportPoller);
 
-        processLoop(nioSelector, 5);
+        processLoop(transportPoller, 5);
     }
 
     @Test(timeout = 1000)
@@ -130,14 +130,14 @@ public class SelectorAndTransportTest
                 return length;
             };
 
-        nioSelector = new NioSelector();
+        transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        receiverTransport.registerForRead(nioSelector);
-        senderTransport.registerForRead(nioSelector);
+        receiverTransport.registerForRead(transportPoller);
+        senderTransport.registerForRead(transportPoller);
 
         encodeDataHeader.wrap(buffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -149,11 +149,11 @@ public class SelectorAndTransportTest
                         .termId(TERM_ID);
         byteBuffer.position(0).limit(FRAME_LENGTH);
 
-        processLoop(nioSelector, 5);
+        processLoop(transportPoller, 5);
         senderTransport.sendTo(byteBuffer, srcRemoteAddress);
         while (dataHeadersReceived.get() < 1)
         {
-            processLoop(nioSelector, 1);
+            processLoop(transportPoller, 1);
         }
 
         assertThat(dataHeadersReceived.get(), is(1));
@@ -180,14 +180,14 @@ public class SelectorAndTransportTest
                 return length;
             };
 
-        nioSelector = new NioSelector();
+        transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        receiverTransport.registerForRead(nioSelector);
-        senderTransport.registerForRead(nioSelector);
+        receiverTransport.registerForRead(transportPoller);
+        senderTransport.registerForRead(transportPoller);
 
         encodeDataHeader.wrap(buffer, 0);
         encodeDataHeader.version(HeaderFlyweight.CURRENT_VERSION)
@@ -209,11 +209,11 @@ public class SelectorAndTransportTest
 
         byteBuffer.position(0).limit(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
 
-        processLoop(nioSelector, 5);
+        processLoop(transportPoller, 5);
         senderTransport.sendTo(byteBuffer, srcRemoteAddress);
         while (dataHeadersReceived.get() < 1)
         {
-            processLoop(nioSelector, 1);
+            processLoop(transportPoller, 1);
         }
 
         assertThat(dataHeadersReceived.get(), is(1));
@@ -231,14 +231,14 @@ public class SelectorAndTransportTest
                 controlHeadersReceived.incrementAndGet();
             };
 
-        nioSelector = new NioSelector();
+        transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, statusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
-        receiverTransport.registerForRead(nioSelector);
-        senderTransport.registerForRead(nioSelector);
+        receiverTransport.registerForRead(transportPoller);
+        senderTransport.registerForRead(transportPoller);
 
         statusMessage.wrap(buffer, 0);
         statusMessage.streamId(STREAM_ID)
@@ -252,21 +252,21 @@ public class SelectorAndTransportTest
                      .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
         byteBuffer.position(0).limit(statusMessage.frameLength());
 
-        processLoop(nioSelector, 5);
+        processLoop(transportPoller, 5);
         receiverTransport.sendTo(byteBuffer, rcvRemoteAddress);
         while (controlHeadersReceived.get() < 1)
         {
-            processLoop(nioSelector, 1);
+            processLoop(transportPoller, 1);
         }
 
         assertThat(controlHeadersReceived.get(), is(1));
     }
 
-    private void processLoop(final NioSelector nioSelector, final int iterations) throws Exception
+    private void processLoop(final TransportPoller transportPoller, final int iterations) throws Exception
     {
         for (int i = 0; i < iterations; i++)
         {
-            nioSelector.processKeys();
+            transportPoller.pollTransports();
         }
     }
 }

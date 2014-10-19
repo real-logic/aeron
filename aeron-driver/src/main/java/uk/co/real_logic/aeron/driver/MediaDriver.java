@@ -207,8 +207,8 @@ public final class MediaDriver implements AutoCloseable
     public static class Context extends CommonContext
     {
         private TermBuffersFactory termBuffersFactory;
-        private NioSelector receiverNioSelector;
-        private NioSelector conductorNioSelector;
+        private TransportPoller receiverTransportPoller;
+        private TransportPoller conductorTransportPoller;
         private Supplier<SenderFlowControl> unicastSenderFlowControl;
         private Supplier<SenderFlowControl> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
@@ -281,8 +281,8 @@ public final class MediaDriver implements AutoCloseable
 
                 toEventReader(new ManyToOneRingBuffer(new AtomicBuffer(eventByteBuffer)));
 
-                receiverNioSelector(new NioSelector());
-                conductorNioSelector(new NioSelector());
+                receiverNioSelector(new TransportPoller());
+                conductorNioSelector(new TransportPoller());
 
                 Configuration.validateTermBufferSize(termBufferSize());
                 Configuration.validateInitialWindowSize(initialWindowSize(), mtuLength());
@@ -390,15 +390,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context receiverNioSelector(final NioSelector nioSelector)
+        public Context receiverNioSelector(final TransportPoller transportPoller)
         {
-            this.receiverNioSelector = nioSelector;
+            this.receiverTransportPoller = transportPoller;
             return this;
         }
 
-        public Context conductorNioSelector(final NioSelector nioSelector)
+        public Context conductorNioSelector(final TransportPoller transportPoller)
         {
-            this.conductorNioSelector = nioSelector;
+            this.conductorTransportPoller = transportPoller;
             return this;
         }
 
@@ -580,14 +580,14 @@ public final class MediaDriver implements AutoCloseable
             return termBuffersFactory;
         }
 
-        public NioSelector receiverNioSelector()
+        public TransportPoller receiverNioSelector()
         {
-            return receiverNioSelector;
+            return receiverTransportPoller;
         }
 
-        public NioSelector conductorNioSelector()
+        public TransportPoller conductorNioSelector()
         {
-            return conductorNioSelector;
+            return conductorTransportPoller;
         }
 
         public Supplier<SenderFlowControl> unicastSenderFlowControl()

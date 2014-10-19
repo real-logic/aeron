@@ -73,7 +73,7 @@ public class ReceiverTest
     private static final PositionIndicator[] POSITION_INDICATORS = {POSITION_INDICATOR};
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
-    private final NioSelector mockNioSelector = mock(NioSelector.class);
+    private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
     private final PositionReporter mockCompletedReceivedPosition = mock(PositionReporter.class);
@@ -117,8 +117,8 @@ public class ReceiverTest
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .receiverNioSelector(mockNioSelector)
-            .conductorNioSelector(mockNioSelector)
+            .receiverNioSelector(mockTransportPoller)
+            .conductorNioSelector(mockTransportPoller)
             .termBuffersFactory(mockTermBuffersFactory)
             .conductorTimerWheel(timerWheel)
             .systemCounters(mockSystemCounters)

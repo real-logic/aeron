@@ -75,7 +75,7 @@ public class DriverConductorTest
     private final ByteBuffer toEventBuffer = ByteBuffer.allocate(
         EventConfiguration.BUFFER_SIZE_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
 
-    private final NioSelector nioSelector = mock(NioSelector.class);
+    private final TransportPoller transportPoller = mock(TransportPoller.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
 
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
@@ -120,8 +120,8 @@ public class DriverConductorTest
         final CountersManager countersManager = new CountersManager(new AtomicBuffer(new byte[BUFFER_SIZE]), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .receiverNioSelector(nioSelector)
-            .conductorNioSelector(nioSelector)
+            .receiverNioSelector(transportPoller)
+            .conductorNioSelector(transportPoller)
             .unicastSenderFlowControl(UnicastSenderFlowControl::new)
             .multicastSenderFlowControl(DefaultMulticastSenderFlowControl::new)
             .conductorTimerWheel(wheel)

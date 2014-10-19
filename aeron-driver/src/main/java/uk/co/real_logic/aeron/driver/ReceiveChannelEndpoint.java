@@ -81,9 +81,9 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return closed;
     }
 
-    public void registerForRead(final NioSelector nioSelector)
+    public void registerForRead(final TransportPoller transportPoller)
     {
-        transport.registerForRead(nioSelector);
+        transport.registerForRead(transportPoller);
     }
 
     public DataFrameDispatcher dispatcher()
@@ -203,29 +203,27 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int window,
         final short flags)
     {
-        if (closed)
+        if (!closed)
         {
-            return;
-        }
+            smHeader.sessionId(sessionId)
+                    .streamId(streamId)
+                    .termId(termId)
+                    .completedTermOffset(termOffset)
+                    .receiverWindowSize(window)
+                    .headerType(HeaderFlyweight.HDR_TYPE_SM)
+                    .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
+                    .flags(flags)
+                    .version(HeaderFlyweight.CURRENT_VERSION);
 
-        smHeader.sessionId(sessionId)
-                .streamId(streamId)
-                .termId(termId)
-                .completedTermOffset(termOffset)
-                .receiverWindowSize(window)
-                .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                .flags(flags)
-                .version(HeaderFlyweight.CURRENT_VERSION);
+            final int frameLength = smHeader.frameLength();
+            smBuffer.position(0);
+            smBuffer.limit(frameLength);
 
-        final int frameLength = smHeader.frameLength();
-        smBuffer.position(0);
-        smBuffer.limit(frameLength);
-
-        final int bytesSent = transport.sendTo(smBuffer, controlAddress);
-        if (bytesSent < frameLength)
-        {
-            systemCounters.smFrameShortSends().orderedIncrement();
+            final int bytesSent = transport.sendTo(smBuffer, controlAddress);
+            if (bytesSent < frameLength)
+            {
+                systemCounters.smFrameShortSends().orderedIncrement();
+            }
         }
     }
 
@@ -237,29 +235,27 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int termOffset,
         final int length)
     {
-        if (closed)
+        if (!closed)
         {
-            return;
-        }
+            nakHeader.streamId(streamId)
+                     .sessionId(sessionId)
+                     .termId(termId)
+                     .termOffset(termOffset)
+                     .length(length)
+                     .frameLength(NakFlyweight.HEADER_LENGTH)
+                     .headerType(HeaderFlyweight.HDR_TYPE_NAK)
+                     .flags((byte)0)
+                     .version(HeaderFlyweight.CURRENT_VERSION);
 
-        nakHeader.streamId(streamId)
-                 .sessionId(sessionId)
-                 .termId(termId)
-                 .termOffset(termOffset)
-                 .length(length)
-                 .frameLength(NakFlyweight.HEADER_LENGTH)
-                 .headerType(HeaderFlyweight.HDR_TYPE_NAK)
-                 .flags((byte)0)
-                 .version(HeaderFlyweight.CURRENT_VERSION);
+            final int frameLength = nakHeader.frameLength();
+            nakBuffer.position(0);
+            nakBuffer.limit(frameLength);
 
-        final int frameLength = nakHeader.frameLength();
-        nakBuffer.position(0);
-        nakBuffer.limit(frameLength);
-
-        final int bytesSent = transport.sendTo(nakBuffer, controlAddress);
-        if (bytesSent < frameLength)
-        {
-            systemCounters.nakFrameShortSends().orderedIncrement();
+            final int bytesSent = transport.sendTo(nakBuffer, controlAddress);
+            if (bytesSent < frameLength)
+            {
+                systemCounters.nakFrameShortSends().orderedIncrement();
+            }
         }
     }
 }

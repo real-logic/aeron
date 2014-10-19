@@ -55,9 +55,8 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakHeader.wrap(nakBuffer, 0);
 
         this.systemCounters = systemCounters;
-        this.dispatcher = new DataFrameDispatcher(conductorProxy, this);
-        this.transport = new ReceiverUdpChannelTransport(
-            udpChannel, dispatcher, dispatcher, logger, lossGenerator);
+        dispatcher = new DataFrameDispatcher(conductorProxy, this);
+        transport = new ReceiverUdpChannelTransport(udpChannel, dispatcher, dispatcher, logger, lossGenerator);
     }
 
     public UdpChannelTransport transport()
@@ -155,8 +154,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 
-    public void sendSetupElicitingStatusMessage(
-            final InetSocketAddress controlAddress, final int sessionId, final int streamId)
+    public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
     }

@@ -67,33 +67,19 @@ public class NioSelector implements AutoCloseable
      */
     public NioSelector()
     {
-        NioSelectedKeySet tmpSet = null;
-
         try
         {
-            this.selector = Selector.open(); // yes, SelectorProvider, blah, blah
+            selector = Selector.open(); // yes, SelectorProvider, blah, blah
+
+            selectedKeySet = new NioSelectedKeySet();
+
+            SELECTED_KEYS_FIELD.set(selector, selectedKeySet);
+            PUBLIC_SELECTED_KEYS_FIELD.set(selector, selectedKeySet);
         }
-        catch (final IOException ex)
+        catch (final Exception ex)
         {
             throw new RuntimeException(ex);
         }
-
-        if (null != PUBLIC_SELECTED_KEYS_FIELD)
-        {
-            try
-            {
-                tmpSet = new NioSelectedKeySet();
-
-                SELECTED_KEYS_FIELD.set(selector, tmpSet);
-                PUBLIC_SELECTED_KEYS_FIELD.set(selector, tmpSet);
-            }
-            catch (final Exception ignore)
-            {
-                tmpSet = null;
-            }
-        }
-
-        selectedKeySet = tmpSet;
     }
 
     /**
@@ -168,7 +154,6 @@ public class NioSelector implements AutoCloseable
                 selector.selectNow();
 
                 final SelectionKey[] keys = selectedKeySet.keys();
-
                 for (int i = selectedKeySet.size() - 1; i >= 0; i--)
                 {
                     handledFrames += ((UdpChannelTransport)keys[i].attachment()).attemptReceive();
@@ -193,10 +178,7 @@ public class NioSelector implements AutoCloseable
         try
         {
             selector.selectNow();
-            if (null != selectedKeySet)
-            {
-                selectedKeySet.reset();
-            }
+            selectedKeySet.reset();
         }
         catch (final IOException ex)
         {

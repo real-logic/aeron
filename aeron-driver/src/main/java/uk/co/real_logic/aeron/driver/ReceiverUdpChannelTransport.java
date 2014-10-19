@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
 
 /**
- * Transport abstraction for UDP sources and receivers.
+ * Transport abstraction for UDP send and receive from the media
  *
  * We don't conflate the processing logic, or we at least try not to, into this object.
  *
@@ -61,17 +61,6 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
 
         dataHeader.wrap(receiveBuffer, 0);
         setupHeader.wrap(receiveBuffer, 0);
-    }
-
-    /**
-     * Register transport with {@link NioSelector} for reading from the channel
-     *
-     * @param nioSelector to register read with
-     */
-    public void registerForRead(final NioSelector nioSelector)
-    {
-        registeredNioSelector = nioSelector;
-        registeredKey = nioSelector.registerForRead(datagramChannel, this);
     }
 
     /**

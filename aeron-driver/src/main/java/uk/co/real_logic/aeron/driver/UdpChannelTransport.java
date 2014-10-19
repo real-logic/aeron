@@ -41,8 +41,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected final EventLogger logger;
     protected final boolean multicast;
     protected final LossGenerator lossGenerator;
-    protected SelectionKey registeredKey;
-    protected NioSelector registeredNioSelector;
+
+    private SelectionKey registeredKey;
+    private NioSelector registeredNioSelector;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -93,6 +94,17 @@ public abstract class UdpChannelTransport implements AutoCloseable
             throw new RuntimeException(
                 String.format("channel \"%s\" : %s", udpChannel.originalUriString(), ex.toString()), ex);
         }
+    }
+
+    /**
+     * Register this transport for reading from a {@link NioSelector}.
+     *
+     * @param nioSelector to register read with
+     */
+    public void registerForRead(final NioSelector nioSelector)
+    {
+        registeredNioSelector = nioSelector;
+        registeredKey = nioSelector.registerForRead(datagramChannel, this);
     }
 
     /**
@@ -162,13 +174,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Register transport with {@link uk.co.real_logic.aeron.driver.NioSelector} for reading from the channel
-     *
-     * @param nioSelector to register read with
-     */
-    public abstract void registerForRead(final NioSelector nioSelector);
-
-    /**
      * Return socket option value
      *
      * @param name of the socket option
@@ -225,7 +230,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected InetSocketAddress receiveFrame()
     {
         InetSocketAddress address = null;
-
         receiveByteBuffer.clear();
 
         try

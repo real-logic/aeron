@@ -26,7 +26,7 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_NA
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM;
 
 /**
- * Transport abstraction for UDP sources and receivers.
+ * Transport abstraction for UDP send and receive from the media
  *
  * We don't conflate the processing logic, or we at least try not to, into this object.
  *
@@ -65,17 +65,6 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
 
         nakHeader.wrap(receiveBuffer, 0);
         statusMessage.wrap(receiveBuffer, 0);
-    }
-
-    /**
-     * Register this transport for reading from a {@link NioSelector}.
-     *
-     * @param nioSelector to register read with
-     */
-    public void registerForRead(final NioSelector nioSelector)
-    {
-        registeredNioSelector = nioSelector;
-        registeredKey = nioSelector.registerForRead(datagramChannel, this);
     }
 
     /**

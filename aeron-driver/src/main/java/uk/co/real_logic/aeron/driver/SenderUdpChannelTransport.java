@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
@@ -63,47 +64,25 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
         this.smFrameHandler = smFrameHandler;
         this.nakFrameHandler = nakFrameHandler;
 
-        nakHeader.wrap(receiveBuffer, 0);
-        statusMessage.wrap(receiveBuffer, 0);
+        nakHeader.wrap(receiveBuffer(), 0);
+        statusMessage.wrap(receiveBuffer(), 0);
     }
 
-    /**
-     * Callback for processing frames.
-     *
-     * @return the number of frames processed.
-     */
-    public int attemptReceive()
+    public int dispatch(
+        final int headerType, final AtomicBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
-        final InetSocketAddress srcAddress = receiveFrame();
-
-        if (null != srcAddress)
+        switch (headerType)
         {
-            final int length = receiveByteBuffer.position();
-            if (lossGenerator.shouldDropFrame(srcAddress, length))
-            {
-                logger.log(EventCode.FRAME_IN_DROPPED, receiveByteBuffer, 0, length, srcAddress);
-            }
-            else
-            {
-                logger.log(EventCode.FRAME_IN, receiveByteBuffer, 0, length, srcAddress);
+            case HDR_TYPE_NAK:
+                nakFrameHandler.onFrame(nakHeader, receiveBuffer, length, srcAddress);
+                framesRead = 1;
+                break;
 
-                if (isFrameValid(length))
-                {
-                    switch (header.headerType())
-                    {
-                        case HDR_TYPE_NAK:
-                            nakFrameHandler.onFrame(nakHeader, receiveBuffer, length, srcAddress);
-                            framesRead = 1;
-                            break;
-
-                        case HDR_TYPE_SM:
-                            smFrameHandler.onFrame(statusMessage, receiveBuffer, length, srcAddress);
-                            framesRead = 1;
-                            break;
-                    }
-                }
-            }
+            case HDR_TYPE_SM:
+                smFrameHandler.onFrame(statusMessage, receiveBuffer, length, srcAddress);
+                framesRead = 1;
+                break;
         }
 
         return framesRead;

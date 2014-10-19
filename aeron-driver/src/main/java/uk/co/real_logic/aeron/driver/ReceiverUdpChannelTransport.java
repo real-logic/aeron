@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
@@ -59,46 +59,24 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
         this.dataFrameHandler = dataFrameHandler;
         this.setupFrameHandler = setupFrameHandler;
 
-        dataHeader.wrap(receiveBuffer, 0);
-        setupHeader.wrap(receiveBuffer, 0);
+        dataHeader.wrap(receiveBuffer(), 0);
+        setupHeader.wrap(receiveBuffer(), 0);
     }
 
-    /**
-     * Callback for processing frames.
-     *
-     * @return the number of frames processed.
-     */
-    public int attemptReceive()
+    public int dispatch(
+        final int headerType, final AtomicBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
-        final InetSocketAddress srcAddress = receiveFrame();
-
-        if (null != srcAddress)
+        switch (headerType)
         {
-            final int length = receiveByteBuffer.position();
-            if (lossGenerator.shouldDropFrame(srcAddress, length))
-            {
-                logger.log(EventCode.FRAME_IN_DROPPED, receiveByteBuffer, 0, length, srcAddress);
-            }
-            else
-            {
-                logger.log(EventCode.FRAME_IN, receiveByteBuffer, 0, length, srcAddress);
+            case HDR_TYPE_PAD:
+            case HDR_TYPE_DATA:
+                framesRead = dataFrameHandler.onFrame(dataHeader, receiveBuffer, length, srcAddress);
+                break;
 
-                if (isFrameValid(length))
-                {
-                    switch (header.headerType())
-                    {
-                        case HDR_TYPE_PAD:
-                        case HDR_TYPE_DATA:
-                            framesRead = dataFrameHandler.onFrame(dataHeader, receiveBuffer, length, srcAddress);
-                            break;
-
-                        case HDR_TYPE_SETUP:
-                            setupFrameHandler.onFrame(setupHeader, receiveBuffer, length, srcAddress);
-                            break;
-                    }
-                }
-            }
+            case HDR_TYPE_SETUP:
+                setupFrameHandler.onFrame(setupHeader, receiveBuffer, length, srcAddress);
+                break;
         }
 
         return framesRead;

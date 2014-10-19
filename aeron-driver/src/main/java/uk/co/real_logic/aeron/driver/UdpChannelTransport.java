@@ -33,14 +33,14 @@ import java.nio.channels.SelectionKey;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
-    protected final DatagramChannel datagramChannel;
-    protected final UdpChannel udpChannel;
-    protected final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
-    protected final AtomicBuffer receiveBuffer = new AtomicBuffer(receiveByteBuffer);
-    protected final HeaderFlyweight header = new HeaderFlyweight();
-    protected final EventLogger logger;
-    protected final boolean multicast;
-    protected final LossGenerator lossGenerator;
+    private final DatagramChannel datagramChannel;
+    private final UdpChannel udpChannel;
+    private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
+    private final AtomicBuffer receiveBuffer = new AtomicBuffer(receiveByteBuffer);
+    private final HeaderFlyweight header = new HeaderFlyweight();
+    private final EventLogger logger;
+    private final boolean multicast;
+    private final LossGenerator lossGenerator;
 
     private SelectionKey registeredKey;
     private NioSelector registeredNioSelector;
@@ -94,6 +94,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
             throw new RuntimeException(
                 String.format("channel \"%s\" : %s", udpChannel.originalUriString(), ex.toString()), ex);
         }
+    }
+
+    protected AtomicBuffer receiveBuffer()
+    {
+        return receiveBuffer;
     }
 
     /**
@@ -202,14 +207,40 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveByteBuffer.capacity();
     }
 
+    public abstract int dispatch(int headerType, AtomicBuffer receiveBuffer, int length, InetSocketAddress srcAddress);
+
     /**
      * Attempt to receive waiting data.
      *
      * @return number of handled frames.
      */
-    public abstract int attemptReceive();
+    public int attemptReceive()
+    {
+        int framesRead = 0;
+        final InetSocketAddress srcAddress = receiveFrame();
 
-    protected boolean isFrameValid(final int length)
+        if (null != srcAddress)
+        {
+            final int length = receiveByteBuffer.position();
+            if (lossGenerator.shouldDropFrame(srcAddress, length))
+            {
+                logger.log(EventCode.FRAME_IN_DROPPED, receiveByteBuffer, 0, length, srcAddress);
+            }
+            else
+            {
+                logger.log(EventCode.FRAME_IN, receiveByteBuffer, 0, length, srcAddress);
+
+                if (isValidFrame(receiveBuffer, length))
+                {
+                    framesRead = dispatch(header.headerType(), receiveBuffer, length, srcAddress);
+                }
+            }
+        }
+
+        return framesRead;
+    }
+
+    private boolean isValidFrame(final AtomicBuffer receiveBuffer, final int length)
     {
         boolean isFrameValid = true;
 
@@ -227,7 +258,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return isFrameValid;
     }
 
-    protected InetSocketAddress receiveFrame()
+    private InetSocketAddress receiveFrame()
     {
         InetSocketAddress address = null;
         receiveByteBuffer.clear();

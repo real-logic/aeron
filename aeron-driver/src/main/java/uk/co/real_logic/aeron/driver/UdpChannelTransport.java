@@ -77,14 +77,30 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 multicast = false;
             }
 
-            if (0 != Configuration.SOCKET_RCVBUF_SZ)
-            {
-                datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_SZ);
-            }
-
             if (0 != Configuration.SOCKET_SNDBUF_SZ)
             {
                 datagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_SZ);
+                final int soSendbuf = datagramChannel.getOption(StandardSocketOptions.SO_SNDBUF);
+
+                if (soSendbuf != Configuration.SOCKET_SNDBUF_SZ)
+                {
+                    throw new IllegalStateException(
+                        String.format("Failed to set SO_SNDBUF: attempted=%d, actual=%d",
+                                      Configuration.SOCKET_SNDBUF_SZ, soSendbuf));
+                }
+            }
+
+            if (0 != Configuration.SOCKET_RCVBUF_SZ)
+            {
+                datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_SZ);
+                final int soRcvbuf = datagramChannel.getOption(StandardSocketOptions.SO_RCVBUF);
+
+                if (soRcvbuf != Configuration.SOCKET_RCVBUF_SZ)
+                {
+                    throw new IllegalStateException(
+                        String.format("Failed to set SO_RCVBUF: attempted=%d, actual=%d",
+                                      Configuration.SOCKET_RCVBUF_SZ, soRcvbuf));
+                }
             }
 
             datagramChannel.configureBlocking(false);

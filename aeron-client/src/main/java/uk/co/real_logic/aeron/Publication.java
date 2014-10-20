@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.common.DirectBuffer;
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -145,7 +145,7 @@ public class Publication implements AutoCloseable
      * @param buffer containing message.
      * @return true if buffer is sent otherwise false.
      */
-    public boolean offer(final AtomicBuffer buffer)
+    public boolean offer(final DirectBuffer buffer)
     {
         return offer(buffer, 0, buffer.capacity());
     }
@@ -158,7 +158,7 @@ public class Publication implements AutoCloseable
      * @param length in bytes of the encoded message.
      * @return true if the message can be published otherwise false.
      */
-    public boolean offer(final AtomicBuffer buffer, final int offset, final int length)
+    public boolean offer(final DirectBuffer buffer, final int offset, final int length)
     {
         boolean offerSucceeded = false;
         final LogAppender logAppender = logAppenders[activeIndex];

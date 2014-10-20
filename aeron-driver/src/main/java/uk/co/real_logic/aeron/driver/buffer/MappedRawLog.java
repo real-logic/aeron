@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 
@@ -44,8 +44,8 @@ class MappedRawLog implements RawLog
     private final MappedByteBuffer mappedLogBuffer;
     private final MappedByteBuffer mappedStateBuffer;
 
-    private final AtomicBuffer logBuffer;
-    private final AtomicBuffer stateBuffer;
+    private final UnsafeBuffer logBuffer;
+    private final UnsafeBuffer stateBuffer;
 
     private final EventLogger logger;
 
@@ -67,16 +67,16 @@ class MappedRawLog implements RawLog
         this.mappedStateBuffer = stateBuffer;
         this.logger = logger;
 
-        this.stateBuffer = new AtomicBuffer(stateBuffer);
-        this.logBuffer = new AtomicBuffer(logBuffer);
+        this.stateBuffer = new UnsafeBuffer(stateBuffer);
+        this.logBuffer = new UnsafeBuffer(logBuffer);
     }
 
-    public AtomicBuffer logBuffer()
+    public UnsafeBuffer logBuffer()
     {
         return logBuffer;
     }
 
-    public AtomicBuffer stateBuffer()
+    public UnsafeBuffer stateBuffer()
     {
         return stateBuffer;
     }

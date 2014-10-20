@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -31,12 +31,12 @@ public class Flyweight
 {
     private static final byte[] EMPTY_BUFFER = new byte[0];
 
-    private final AtomicBuffer atomicBuffer = new AtomicBuffer(EMPTY_BUFFER);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(EMPTY_BUFFER);
     private int offset;
 
     public Flyweight wrap(final byte[] buffer)
     {
-        atomicBuffer.wrap(buffer);
+        unsafeBuffer.wrap(buffer);
         offset = 0;
 
         return this;
@@ -49,23 +49,23 @@ public class Flyweight
 
     public Flyweight wrap(final ByteBuffer buffer, final int offset)
     {
-        atomicBuffer.wrap(buffer);
+        unsafeBuffer.wrap(buffer);
         this.offset = offset;
 
         return this;
     }
 
-    public Flyweight wrap(final AtomicBuffer buffer, final int offset)
+    public Flyweight wrap(final UnsafeBuffer buffer, final int offset)
     {
-        atomicBuffer.wrap(buffer);
+        unsafeBuffer.wrap(buffer);
         this.offset = offset;
 
         return this;
     }
 
-    public AtomicBuffer atomicBuffer()
+    public UnsafeBuffer atomicBuffer()
     {
-        return atomicBuffer;
+        return unsafeBuffer;
     }
 
     public int offset()
@@ -80,54 +80,54 @@ public class Flyweight
 
     protected void copyFlyweight(final Flyweight srcFlyweight, final int index, final int length)
     {
-        atomicBuffer.putBytes(index, srcFlyweight.atomicBuffer, srcFlyweight.offset, length);
+        unsafeBuffer.putBytes(index, srcFlyweight.unsafeBuffer, srcFlyweight.offset, length);
     }
 
     protected boolean uint8GetChoice(final int offset, final int bitIndex)
     {
-        return 0 != (atomicBuffer.getByte(offset) & (1 << bitIndex));
+        return 0 != (unsafeBuffer.getByte(offset) & (1 << bitIndex));
     }
 
     protected void uint8PutChoice(final int offset, final int bitIndex, final boolean switchOn)
     {
-        byte bits = atomicBuffer.getByte(offset);
+        byte bits = unsafeBuffer.getByte(offset);
         bits = (byte)((switchOn ? bits | (1 << bitIndex) : bits & ~(1 << bitIndex)));
-        atomicBuffer.putByte(offset, bits);
+        unsafeBuffer.putByte(offset, bits);
     }
 
     protected short uint8Get(final int offset)
     {
-        return (short)(atomicBuffer.getByte(offset) & 0xFF);
+        return (short)(unsafeBuffer.getByte(offset) & 0xFF);
     }
 
     protected void uint8Put(final int offset, final short value)
     {
-        atomicBuffer.putByte(offset, (byte)value);
+        unsafeBuffer.putByte(offset, (byte)value);
     }
 
     protected int uint16Get(final int offset, final ByteOrder byteOrder)
     {
-        return atomicBuffer.getShort(offset, byteOrder) & 0xFFFF;
+        return unsafeBuffer.getShort(offset, byteOrder) & 0xFFFF;
     }
 
     protected void uint16Put(final int offset, final int value, final ByteOrder byteOrder)
     {
-        atomicBuffer.putShort(offset, (short)value, byteOrder);
+        unsafeBuffer.putShort(offset, (short)value, byteOrder);
     }
 
     protected long uint32Get(final int offset, final ByteOrder byteOrder)
     {
-        return atomicBuffer.getInt(offset, byteOrder) & 0xFFFF_FFFFL;
+        return unsafeBuffer.getInt(offset, byteOrder) & 0xFFFF_FFFFL;
     }
 
     protected void uint32Put(final int offset, final long value, final ByteOrder byteOrder)
     {
-        atomicBuffer.putInt(offset, (int)value, byteOrder);
+        unsafeBuffer.putInt(offset, (int)value, byteOrder);
     }
 
     protected long[] uint32ArrayGet(final int offset, final ByteOrder byteOrder)
     {
-        final int length = atomicBuffer.getInt(offset);
+        final int length = unsafeBuffer.getInt(offset);
         final long[] values = new long[length];
         int location = offset + SIZE_OF_INT;
 
@@ -143,7 +143,7 @@ public class Flyweight
     protected int uint32ArrayPut(final int offset, final long[] values, final ByteOrder byteOrder)
     {
         final int length = values.length;
-        atomicBuffer.putInt(offset, length, byteOrder);
+        unsafeBuffer.putInt(offset, length, byteOrder);
         int location = offset + SIZE_OF_INT;
 
         for (final long value : values)
@@ -157,11 +157,11 @@ public class Flyweight
 
     public String stringGet(final int offset, final ByteOrder byteOrder)
     {
-        return atomicBuffer.getStringUtf8(offset, byteOrder);
+        return unsafeBuffer.getStringUtf8(offset, byteOrder);
     }
 
     public int stringPut(final int offset, final String value, final ByteOrder byteOrder)
     {
-        return atomicBuffer.putStringUtf8(offset, value, byteOrder);
+        return unsafeBuffer.putStringUtf8(offset, value, byteOrder);
     }
 }

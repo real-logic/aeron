@@ -20,10 +20,8 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
-import uk.co.real_logic.aeron.common.CloseHelper;
-import uk.co.real_logic.aeron.common.IdleStrategy;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -50,7 +48,7 @@ public class Ping
     private static final int FRAGMENT_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    private static final AtomicBuffer ATOMIC_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
 
@@ -122,7 +120,7 @@ public class Ping
         }
     }
 
-    private static void pongHandler(final AtomicBuffer buffer, final int offset, final int length, final Header header)
+    private static void pongHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final long pingTimestamp = buffer.getLong(offset);
         final long rttNs = System.nanoTime() - pingTimestamp;

@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
@@ -56,7 +56,7 @@ class DriverListenerAdapter implements MessageHandler
         return broadcastReceiver.receive(this);
     }
 
-    public void onMessage(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
+    public void onMessage(final int msgTypeId, final UnsafeBuffer buffer, final int index, final int length)
     {
         switch (msgTypeId)
         {
@@ -76,8 +76,8 @@ class DriverListenerAdapter implements MessageHandler
                     final int mtuLength = publicationReady.mtuLength();
 
                     listener.onNewPublication(
-                            channel, streamId, sessionId, termId, positionCounterId, publicationReady,
-                            activeCorrelationId, mtuLength);
+                        channel, streamId, sessionId, termId, positionCounterId, mtuLength, publicationReady, correlationId);
+
                 }
                 break;
             }
@@ -93,8 +93,7 @@ class DriverListenerAdapter implements MessageHandler
                 final long joiningPosition = connectionReady.joiningPosition();
                 final long correlationId = connectionReady.correlationId();
 
-                listener.onNewConnection(
-                        channel, streamId, sessionId, termId, joiningPosition, connectionReady, correlationId);
+                listener.onNewConnection(channel, streamId, sessionId, termId, joiningPosition, connectionReady, correlationId);
                 break;
             }
 
@@ -126,7 +125,7 @@ class DriverListenerAdapter implements MessageHandler
     }
 
     private void onError(
-        final AtomicBuffer buffer, final int index, final DriverListener listener, final long activeCorrelationId)
+        final UnsafeBuffer buffer, final int index, final DriverListener listener, final long activeCorrelationId)
     {
         errorHeader.wrap(buffer, index);
         final ErrorCode errorCode = errorHeader.errorCode();
@@ -136,7 +135,7 @@ class DriverListenerAdapter implements MessageHandler
         }
     }
 
-    private long correlationId(final AtomicBuffer buffer, final int offset)
+    private long correlationId(final UnsafeBuffer buffer, final int offset)
     {
         correlatedMessage.wrap(buffer, offset);
 

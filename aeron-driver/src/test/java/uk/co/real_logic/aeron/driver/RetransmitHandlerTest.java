@@ -22,7 +22,7 @@ import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -54,14 +54,14 @@ public class RetransmitHandlerTest
     private static final FeedbackDelayGenerator ZERO_DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(0);
     private static final FeedbackDelayGenerator LINGER_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(40);
 
-    private final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-    private final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
+    private final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
+    private final UnsafeBuffer stateBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
 
     private final LogAppender logAppender = new LogAppender(
         logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, 1024);
     private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
 
-    private final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
+    private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
 
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 

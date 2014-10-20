@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.common.concurrent.ringbuffer;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 
 import java.nio.ByteBuffer;
@@ -32,8 +32,8 @@ public class ManyToOneRingBufferConcurrentTest
     private static final int MSG_TYPE_ID = 7;
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect((16 * 1024) + TRAILER_LENGTH);
-    private final AtomicBuffer atomicBuffer = new AtomicBuffer(byteBuffer);
-    private final RingBuffer ringBuffer = new ManyToOneRingBuffer(atomicBuffer);
+    private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
+    private final RingBuffer ringBuffer = new ManyToOneRingBuffer(unsafeBuffer);
 
     @Test
     public void shouldProvideCorrelationIds() throws Exception
@@ -139,7 +139,7 @@ public class ManyToOneRingBufferConcurrentTest
 
             final int length = BitUtil.SIZE_OF_INT * 2;
             final int repsValueOffset = BitUtil.SIZE_OF_INT;
-            final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
             srcBuffer.putInt(0, producerId);
 

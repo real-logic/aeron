@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static java.lang.Integer.valueOf;
 import static org.hamcrest.CoreMatchers.is;
@@ -37,8 +37,8 @@ public class LogScannerTest
     private static final int MTU_LENGTH = 1024;
     private static final int HEADER_LENGTH = 32;
 
-    private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
-    private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
+    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer stateBuffer = mock(UnsafeBuffer.class);
     private final LogScanner.AvailabilityHandler handler = mock(LogScanner.AvailabilityHandler.class);
 
     private LogScanner scanner;

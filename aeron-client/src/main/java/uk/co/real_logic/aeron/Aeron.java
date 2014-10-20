@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
@@ -230,26 +230,26 @@ public final class Aeron implements AutoCloseable
                 if (null == toClientBuffer)
                 {
                     defaultToClientBuffer = mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
-                    final BroadcastReceiver receiver = new BroadcastReceiver(new AtomicBuffer(defaultToClientBuffer));
+                    final BroadcastReceiver receiver = new BroadcastReceiver(new UnsafeBuffer(defaultToClientBuffer));
                     toClientBuffer = new CopyBroadcastReceiver(receiver);
                 }
 
                 if (null == toDriverBuffer)
                 {
                     defaultToDriverBuffer = mapExistingFile(toDriverFile(), TO_DRIVER_FILE);
-                    toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(defaultToDriverBuffer));
+                    toDriverBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(defaultToDriverBuffer));
                 }
 
                 if (counterLabelsBuffer() == null)
                 {
                     defaultCounterLabelsBuffer = mapExistingFile(new File(countersDirName(), LABELS_FILE), LABELS_FILE);
-                    counterLabelsBuffer(new AtomicBuffer(defaultCounterLabelsBuffer));
+                    counterLabelsBuffer(new UnsafeBuffer(defaultCounterLabelsBuffer));
                 }
 
                 if (countersBuffer() == null)
                 {
                     defaultCounterValuesBuffer = mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
-                    countersBuffer(new AtomicBuffer(defaultCounterValuesBuffer));
+                    countersBuffer(new UnsafeBuffer(defaultCounterValuesBuffer));
                 }
 
                 if (null == bufferManager)

@@ -3,7 +3,7 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -23,10 +23,10 @@ public class MockBufferUsage
     protected static final int SESSION_ID_1 = 13;
     protected static final int SESSION_ID_2 = 15;
 
-    protected AtomicBuffer[] logBuffersSession1 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
-    protected AtomicBuffer[] logBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
-    protected AtomicBuffer[] stateBuffersSession1 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
-    protected AtomicBuffer[] stateBuffersSession2 = new AtomicBuffer[TermHelper.BUFFER_COUNT];
+    protected UnsafeBuffer[] logBuffersSession1 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
+    protected UnsafeBuffer[] logBuffersSession2 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
+    protected UnsafeBuffer[] stateBuffersSession1 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
+    protected UnsafeBuffer[] stateBuffersSession2 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
     protected LogAppender[] appendersSession1 = new LogAppender[TermHelper.BUFFER_COUNT];
     protected LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
     protected BufferManager mockBufferUsage = mock(BufferManager.class);
@@ -36,10 +36,10 @@ public class MockBufferUsage
     {
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
-            logBuffersSession1[i] = new AtomicBuffer(new byte[LOG_BUFFER_SZ]);
-            stateBuffersSession1[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
-            logBuffersSession2[i] = new AtomicBuffer(new byte[LOG_BUFFER_SZ]);
-            stateBuffersSession2[i] = new AtomicBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
+            logBuffersSession1[i] = new UnsafeBuffer(new byte[LOG_BUFFER_SZ]);
+            stateBuffersSession1[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
+            logBuffersSession2[i] = new UnsafeBuffer(new byte[LOG_BUFFER_SZ]);
+            stateBuffersSession2[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
 
             when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(logBuffersSession1[i]));
@@ -59,7 +59,7 @@ public class MockBufferUsage
         }
     }
 
-    public Answer<ManagedBuffer> answer(final AtomicBuffer buffer)
+    public Answer<ManagedBuffer> answer(final UnsafeBuffer buffer)
     {
         return (invocation) ->
         {

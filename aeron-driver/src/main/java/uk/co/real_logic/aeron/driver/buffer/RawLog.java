@@ -15,14 +15,14 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 /**
  * Encapsulates the pair of buffers used to hold a term of publication/subscription
  */
 public interface RawLog extends AutoCloseable
 {
-    AtomicBuffer logBuffer();
+    UnsafeBuffer logBuffer();
 
-    AtomicBuffer stateBuffer();
+    UnsafeBuffer stateBuffer();
 }

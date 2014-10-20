@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
@@ -37,7 +37,7 @@ public class LogRebuilder extends LogBuffer
      * @param logBuffer containing the sequence of frames.
      * @param stateBuffer containing the state of the rebuild process.
      */
-    public LogRebuilder(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
+    public LogRebuilder(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
     {
         super(logBuffer, stateBuffer);
     }
@@ -72,7 +72,7 @@ public class LogRebuilder extends LogBuffer
      * @param srcOffset in the packet at which the frames begin.
      * @param length of the sequence of frames in bytes.
      */
-    public void insert(final AtomicBuffer packet, final int srcOffset, final int length)
+    public void insert(final UnsafeBuffer packet, final int srcOffset, final int length)
     {
         final int termOffset = packet.getInt(termOffsetOffset(srcOffset), LITTLE_ENDIAN);
         final int tail = tail();
@@ -83,7 +83,7 @@ public class LogRebuilder extends LogBuffer
             final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
             packet.putInt(lengthOffset, 0, LITTLE_ENDIAN);
 
-            final AtomicBuffer logBuffer = logBuffer();
+            final UnsafeBuffer logBuffer = logBuffer();
             logBuffer.putBytes(termOffset, packet, srcOffset, length);
             FrameDescriptor.frameLengthOrdered(logBuffer, termOffset, frameLength);
 
@@ -91,7 +91,7 @@ public class LogRebuilder extends LogBuffer
         }
     }
 
-    private void updateCompetitionStatus(final AtomicBuffer logBuffer, final int termOffset, final int length, int tail)
+    private void updateCompetitionStatus(final UnsafeBuffer logBuffer, final int termOffset, final int length, int tail)
     {
         final int capacity = capacity();
         int frameLength;
@@ -101,7 +101,7 @@ public class LogRebuilder extends LogBuffer
             tail += alignedFrameLength;
         }
 
-        final AtomicBuffer stateBuffer = stateBuffer();
+        final UnsafeBuffer stateBuffer = stateBuffer();
         putTailOrdered(stateBuffer, tail);
 
         final int endOfFrame = termOffset + length;
@@ -111,12 +111,12 @@ public class LogRebuilder extends LogBuffer
         }
     }
 
-    private static void putTailOrdered(final AtomicBuffer stateBuffer, final int tail)
+    private static void putTailOrdered(final UnsafeBuffer stateBuffer, final int tail)
     {
         stateBuffer.putIntOrdered(TAIL_COUNTER_OFFSET, tail);
     }
 
-    private static void putHighWaterMark(final AtomicBuffer stateBuffer, final int highWaterMark)
+    private static void putHighWaterMark(final UnsafeBuffer stateBuffer, final int highWaterMark)
     {
         stateBuffer.putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
     }

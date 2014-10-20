@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 
 import java.net.InetSocketAddress;
@@ -31,5 +31,5 @@ public interface SetupFrameHandler
      * @param length of the Frame (may be longer than the header frame length)
      * @param srcAddress of the Frame
      */
-    void onFrame(SetupFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
+    void onFrame(SetupFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
 }

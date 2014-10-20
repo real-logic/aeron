@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.nio.ByteOrder;
@@ -33,7 +33,7 @@ public class Header
      */
     public static final int LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, FRAME_ALIGNMENT);
 
-    private AtomicBuffer buffer;
+    private UnsafeBuffer buffer;
     private int offset = 0;
 
     /**
@@ -48,7 +48,7 @@ public class Header
      *
      * @param logBuffer for the log.
      */
-    public Header(final AtomicBuffer logBuffer)
+    public Header(final UnsafeBuffer logBuffer)
     {
         this.buffer = logBuffer;
     }
@@ -74,21 +74,21 @@ public class Header
     }
 
     /**
-     * The {@link AtomicBuffer} containing the header.
+     * The {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
      *
-     * @return {@link AtomicBuffer} containing the header.
+     * @return {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
      */
-    public AtomicBuffer buffer()
+    public UnsafeBuffer buffer()
     {
         return buffer;
     }
 
     /**
-     * The {@link AtomicBuffer} containing the header.
+     * The {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
      *
-     * @param buffer {@link AtomicBuffer} containing the header.
+     * @param buffer {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
      */
-    public void buffer(final AtomicBuffer buffer)
+    public void buffer(final UnsafeBuffer buffer)
     {
         this.buffer = buffer;
     }

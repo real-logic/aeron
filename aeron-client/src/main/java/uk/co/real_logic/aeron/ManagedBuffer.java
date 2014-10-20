@@ -1,10 +1,10 @@
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 interface ManagedBuffer extends AutoCloseable
 {
-    AtomicBuffer buffer();
+    UnsafeBuffer buffer();
 
     void close();
 }

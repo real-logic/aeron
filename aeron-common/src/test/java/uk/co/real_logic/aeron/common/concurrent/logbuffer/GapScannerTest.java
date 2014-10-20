@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -32,8 +32,8 @@ public class GapScannerTest
     private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
 
-    private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
-    private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
+    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer stateBuffer = mock(UnsafeBuffer.class);
     private final GapScanner.GapHandler gapHandler = mock(GapScanner.GapHandler.class);
 
     private GapScanner scanner;
@@ -42,6 +42,7 @@ public class GapScannerTest
     public void setUp()
     {
         when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
+        when(stateBuffer.capacity()).thenReturn(STATE_BUFFER_CAPACITY);
 
         scanner = new GapScanner(logBuffer, stateBuffer);
     }

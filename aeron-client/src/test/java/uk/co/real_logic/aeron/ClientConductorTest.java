@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
@@ -69,13 +69,13 @@ public class ClientConductorTest extends MockBufferUsage
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
-    private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
+    private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
 
-    private final AtomicBuffer toClientBuffer = new AtomicBuffer(new byte[BROADCAST_BUFFER_SZ]);
+    private final UnsafeBuffer toClientBuffer = new UnsafeBuffer(new byte[BROADCAST_BUFFER_SZ]);
     private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
-    private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private final TimerWheel timerWheel = mock(TimerWheel.class);
     private final IdleStrategy idleStrategy = mock(IdleStrategy.class);

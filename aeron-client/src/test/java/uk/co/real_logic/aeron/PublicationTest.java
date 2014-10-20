@@ -4,7 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationMode;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -31,7 +31,7 @@ public class PublicationTest
     private static final int SEND_BUFFER_CAPACITY = 1024;
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
-    private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
+    private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
     private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
     private Publication publication;

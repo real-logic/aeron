@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.net.InetSocketAddress;
@@ -32,5 +32,5 @@ public interface DataFrameHandler
      * @param srcAddress of the Frame
      * @return the number of bytes received.
      */
-    int onFrame(DataHeaderFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
+    int onFrame(DataHeaderFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
 }

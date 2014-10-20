@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.collections.MutableInteger;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.*;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
@@ -130,13 +130,13 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     }
 
     public int onDataFrame(
-        final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         return dispatcher.onFrame(header, buffer, length, srcAddress);
     }
 
     public void onSetupFrame(
-        final SetupFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final SetupFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         dispatcher.onFrame(header, buffer, length, srcAddress);
     }

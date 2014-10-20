@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -38,7 +38,7 @@ import static uk.co.real_logic.aeron.benchmarks.BenchmarkUtil.subscriberLoop;
 public class AllocationSoakTestRunner
 {
     private static final int CAPACITY = 256;
-    private static final AtomicBuffer PUBLISHING_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(CAPACITY));
+    private static final UnsafeBuffer PUBLISHING_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(CAPACITY));
     private static final int FRAME_COUNT_LIMIT = 10;
 
     public static void main(String[] args) throws Exception

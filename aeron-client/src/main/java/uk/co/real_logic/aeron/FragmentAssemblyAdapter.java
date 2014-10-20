@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.BufferBuilder;
+import uk.co.real_logic.aeron.common.DirectBuffer;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 
@@ -66,7 +66,7 @@ public class FragmentAssemblyAdapter implements DataHandler
         builderSupplier = () -> new BufferBuilder(initialBufferSize);
     }
 
-    public void onData(final AtomicBuffer buffer, final int offset, final int length, final Header header)
+    public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
 

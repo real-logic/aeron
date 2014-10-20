@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.util.Arrays;
 
@@ -26,7 +26,7 @@ public class BufferBuilder
 {
     public static final int INITIAL_CAPACITY = 4096;
 
-    private final AtomicBuffer atomicBuffer;
+    private final MutableDirectBuffer mutableDirectBuffer;
 
     private byte[] buffer;
     private int limit = 0;
@@ -49,7 +49,7 @@ public class BufferBuilder
     {
         capacity = BitUtil.findNextPositivePowerOfTwo(initialCapacity);
         buffer = new byte[capacity];
-        atomicBuffer = new AtomicBuffer(buffer);
+        mutableDirectBuffer = new UnsafeBuffer(buffer);
     }
 
     /**
@@ -73,13 +73,13 @@ public class BufferBuilder
     }
 
     /**
-     * The {@link AtomicBuffer} that encapsulates the internal buffer.
+     * The {@link MutableDirectBuffer} that encapsulates the internal buffer.
      *
-     * @return the {@link AtomicBuffer} that encapsulates the internal buffer.
+     * @return the {@link MutableDirectBuffer} that encapsulates the internal buffer.
      */
-    public AtomicBuffer buffer()
+    public MutableDirectBuffer buffer()
     {
-        return atomicBuffer;
+        return mutableDirectBuffer;
     }
 
     /**
@@ -102,7 +102,7 @@ public class BufferBuilder
     {
         capacity = Math.max(INITIAL_CAPACITY, BitUtil.findNextPositivePowerOfTwo(limit));
         buffer = Arrays.copyOf(buffer, capacity);
-        atomicBuffer.wrap(buffer);
+        mutableDirectBuffer.wrap(buffer);
 
         return this;
     }
@@ -115,7 +115,7 @@ public class BufferBuilder
      * @param length in bytes to copy from the source buffer.
      * @return the builder for fluent API usage.
      */
-    public BufferBuilder append(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    public BufferBuilder append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         ensureCapacity(length);
 
@@ -142,7 +142,7 @@ public class BufferBuilder
 
             capacity = newCapacity;
             buffer = newBuffer;
-            atomicBuffer.wrap(newBuffer);
+            mutableDirectBuffer.wrap(newBuffer);
         }
     }
 

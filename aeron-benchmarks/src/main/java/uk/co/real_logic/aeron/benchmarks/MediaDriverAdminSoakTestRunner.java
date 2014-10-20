@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.benchmarks;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
@@ -34,7 +34,7 @@ import java.nio.ByteBuffer;
  */
 public class MediaDriverAdminSoakTestRunner
 {
-    private static final AtomicBuffer PUBLISHING_BUFFER = new AtomicBuffer(ByteBuffer.allocateDirect(256));
+    private static final UnsafeBuffer PUBLISHING_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(final String[] args) throws Exception
     {

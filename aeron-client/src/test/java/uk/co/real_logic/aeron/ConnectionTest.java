@@ -20,7 +20,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -74,9 +74,9 @@ public class ConnectionTest
     {
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
-            final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-            final AtomicBuffer stateBuffer =
-                new AtomicBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+            final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
+            final UnsafeBuffer stateBuffer =
+                new UnsafeBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
             rebuilders[i] = new LogRebuilder(logBuffer, stateBuffer);
             readers[i] = new LogReader(logBuffer, stateBuffer);
@@ -88,7 +88,7 @@ public class ConnectionTest
         }
 
         activeIndex = TermHelper.termIdToBufferIndex(INITIAL_TERM_ID);
-        final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[ALIGNED_FRAME_LENGTH]);
+        final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -103,7 +103,7 @@ public class ConnectionTest
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-            any(AtomicBuffer.class),
+            any(UnsafeBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
             any(Header.class));
@@ -131,7 +131,7 @@ public class ConnectionTest
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-            any(AtomicBuffer.class),
+            any(UnsafeBuffer.class),
             eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
             any(Header.class));
@@ -161,7 +161,7 @@ public class ConnectionTest
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
-            any(AtomicBuffer.class),
+            any(UnsafeBuffer.class),
             eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
             any(Header.class));

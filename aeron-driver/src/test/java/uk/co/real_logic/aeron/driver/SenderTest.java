@@ -20,9 +20,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
-import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
-import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -199,7 +198,7 @@ public class SenderTest
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
-        final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
@@ -225,7 +224,7 @@ public class SenderTest
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
-        final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
@@ -263,7 +262,7 @@ public class SenderTest
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
-        final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
@@ -297,7 +296,7 @@ public class SenderTest
     @Test
     public void shouldNotSendUntilStatusMessageReceived() throws Exception
     {
-        final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
 
@@ -325,7 +324,7 @@ public class SenderTest
     @Test
     public void shouldNotBeAbleToSendAfterUsingUpYourWindow() throws Exception
     {
-        final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         publication.updatePositionLimitFromStatusMessage(
@@ -358,7 +357,7 @@ public class SenderTest
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
-        final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
@@ -376,7 +375,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
-        dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
     }
@@ -387,7 +386,7 @@ public class SenderTest
         publication.updatePositionLimitFromStatusMessage(
             spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
-        final AtomicBuffer buffer = new AtomicBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
@@ -403,7 +402,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
-        dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
 
@@ -414,7 +413,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
-        dataHeader.wrap(new AtomicBuffer(receivedFrames.remove()), 0);
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
     }

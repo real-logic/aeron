@@ -19,7 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.Configuration;
@@ -69,13 +69,13 @@ public class TermBuffersFactoryTest
         termBuffers.stream().forEach(
             (rawLog) ->
             {
-                final AtomicBuffer log = rawLog.logBuffer();
+                final UnsafeBuffer log = rawLog.logBuffer();
 
                 assertThat(log.capacity(), is(TERM_BUFFER_SZ));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte(TERM_BUFFER_SZ - 1), is((byte)0));
 
-                final AtomicBuffer state = rawLog.stateBuffer();
+                final UnsafeBuffer state = rawLog.stateBuffer();
 
                 assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
@@ -95,13 +95,13 @@ public class TermBuffersFactoryTest
         termBuffers.stream().forEach(
             (rawLog) ->
             {
-                final AtomicBuffer log = rawLog.logBuffer();
+                final UnsafeBuffer log = rawLog.logBuffer();
 
                 assertThat(log.capacity(), is(maxConnectionTermBufferSize));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte(maxConnectionTermBufferSize - 1), is((byte)0));
 
-                final AtomicBuffer state = rawLog.stateBuffer();
+                final UnsafeBuffer state = rawLog.stateBuffer();
 
                 assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));

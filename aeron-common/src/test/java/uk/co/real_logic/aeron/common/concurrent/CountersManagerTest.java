@@ -34,8 +34,8 @@ public class CountersManagerTest
 {
     private static final int NUMBER_OF_COUNTERS = 4;
 
-    private AtomicBuffer labelsBuffer = new AtomicBuffer(allocate(NUMBER_OF_COUNTERS * CountersManager.LABEL_SIZE));
-    private AtomicBuffer counterBuffer = new AtomicBuffer(allocate(NUMBER_OF_COUNTERS * CountersManager.COUNTER_SIZE));
+    private UnsafeBuffer labelsBuffer = new UnsafeBuffer(allocate(NUMBER_OF_COUNTERS * CountersManager.LABEL_SIZE));
+    private UnsafeBuffer counterBuffer = new UnsafeBuffer(allocate(NUMBER_OF_COUNTERS * CountersManager.COUNTER_SIZE));
     private CountersManager manager = new CountersManager(labelsBuffer, counterBuffer);
     private CountersManager otherManager = new CountersManager(labelsBuffer, counterBuffer);
 

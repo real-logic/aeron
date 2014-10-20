@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
@@ -35,7 +35,7 @@ public class LogScanner extends LogBuffer
     @FunctionalInterface
     public interface AvailabilityHandler
     {
-        void onAvailable(AtomicBuffer buffer, int offset, int length);
+        void onAvailable(UnsafeBuffer buffer, int offset, int length);
     }
 
     private final int alignedHeaderLength;
@@ -50,7 +50,7 @@ public class LogScanner extends LogBuffer
      * @param stateBuffer containing the state variables indicating the tail progress.
      * @param headerLength of frame before payload begins.
      */
-    public LogScanner(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer, final int headerLength)
+    public LogScanner(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer, final int headerLength)
     {
         super(logBuffer, stateBuffer);
 
@@ -104,7 +104,7 @@ public class LogScanner extends LogBuffer
         {
             final int capacity = capacity();
             final int offset = this.offset;
-            final AtomicBuffer logBuffer = logBuffer();
+            final UnsafeBuffer logBuffer = logBuffer();
 
             int padding = 0;
 

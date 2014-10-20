@@ -1,6 +1,6 @@
 package uk.co.real_logic.aeron.common.concurrent.broadcast;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 
 /**
@@ -11,7 +11,7 @@ public class CopyBroadcastReceiver
     private static final int SCRATCH_BUFFER_SIZE = 4096;
 
     private final BroadcastReceiver receiver;
-    private final AtomicBuffer scratchBuffer;
+    private final UnsafeBuffer scratchBuffer;
 
     /**
      * Wrap a {@link BroadcastReceiver} to simplify the API for receiving messages.
@@ -21,7 +21,7 @@ public class CopyBroadcastReceiver
     public CopyBroadcastReceiver(final BroadcastReceiver receiver)
     {
         this.receiver = receiver;
-        scratchBuffer = new AtomicBuffer(new byte[SCRATCH_BUFFER_SIZE]);
+        scratchBuffer = new UnsafeBuffer(new byte[SCRATCH_BUFFER_SIZE]);
 
         while (receiver.receiveNext())
         {

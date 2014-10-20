@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 
 import java.net.InetSocketAddress;
@@ -31,5 +31,5 @@ public interface NakFrameHandler
      * @param length of the Frame (may be longer than the header frame length)
      * @param srcAddress of the Frame
      */
-    void onFrame(NakFlyweight header, AtomicBuffer buffer, int length, InetSocketAddress srcAddress);
+    void onFrame(NakFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
 }

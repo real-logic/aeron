@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.BitUtil;
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
@@ -139,7 +139,7 @@ public class DriverPublication implements AutoCloseable
         lastSentTermOffset = 0;
         lastSentLength = 0;
 
-        setupHeader.wrap(new AtomicBuffer(setupFrameBuffer), 0);
+        setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
         constructSetupFrame();
     }
 
@@ -385,7 +385,7 @@ public class DriverPublication implements AutoCloseable
         return -1;
     }
 
-    private void onSendTransmissionUnit(final AtomicBuffer buffer, final int offset, final int length)
+    private void onSendTransmissionUnit(final UnsafeBuffer buffer, final int offset, final int length)
     {
         final ByteBuffer sendBuffer = sendBuffers[activeIndex];
         sendBuffer.limit(offset + length);
@@ -403,7 +403,7 @@ public class DriverPublication implements AutoCloseable
         timeOfLastSendOrHeartbeat = clock.time();
     }
 
-    private void onSendRetransmit(final AtomicBuffer buffer, final int offset, final int length)
+    private void onSendRetransmit(final UnsafeBuffer buffer, final int offset, final int length)
     {
         final ByteBuffer termRetransmitBuffer = sendBuffers[retransmitIndex];
         termRetransmitBuffer.limit(offset + length);

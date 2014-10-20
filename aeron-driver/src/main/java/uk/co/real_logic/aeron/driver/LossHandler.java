@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
@@ -203,7 +203,7 @@ public class LossHandler
         scheduleTimer();
     }
 
-    private boolean onGap(final AtomicBuffer buffer, final int offset, final int length)
+    private boolean onGap(final UnsafeBuffer buffer, final int offset, final int length)
     {
         scannedGap.reset(activeTermId, offset, length);
 

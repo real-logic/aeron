@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
@@ -36,7 +36,7 @@ public class LogReader extends LogBuffer
      * @param logBuffer containing the data frames.
      * @param stateBuffer containing the state data for the log.
      */
-    public LogReader(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
+    public LogReader(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
     {
         super(logBuffer, stateBuffer);
         header = new Header(logBuffer);
@@ -82,7 +82,7 @@ public class LogReader extends LogBuffer
         int framesCounter = 0;
         int offset = this.offset;
         final int capacity = capacity();
-        final AtomicBuffer logBuffer = logBuffer();
+        final UnsafeBuffer logBuffer = logBuffer();
         final Header header = this.header;
 
         while (offset < capacity && framesCounter < framesCountLimit)

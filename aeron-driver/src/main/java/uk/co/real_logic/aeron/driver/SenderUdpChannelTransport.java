@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
@@ -68,7 +68,7 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
     }
 
     public int dispatch(
-        final int headerType, final AtomicBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
+        final int headerType, final UnsafeBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
         switch (headerType)

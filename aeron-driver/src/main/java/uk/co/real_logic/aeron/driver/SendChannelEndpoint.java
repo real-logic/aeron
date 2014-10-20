@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.BiInt2ObjectMap;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
@@ -123,7 +123,7 @@ public class SendChannelEndpoint implements AutoCloseable
     }
 
     private void onStatusMessageFrame(
-        final StatusMessageFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final StatusMessageFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(header.sessionId(), header.streamId());
 
@@ -146,7 +146,7 @@ public class SendChannelEndpoint implements AutoCloseable
     }
 
     private void onNakFrame(
-        final NakFlyweight nak, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final NakFlyweight nak, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(nak.sessionId(), nak.streamId());
 

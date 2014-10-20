@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
@@ -71,19 +71,19 @@ public class AeronTest extends MockBufferUsage
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
-    private final AtomicBuffer atomicSendBuffer = new AtomicBuffer(sendBuffer);
+    private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
 
     private final ByteBuffer scratchBuffer = ByteBuffer.allocate(SCRATCH_BUFFER_CAPACITY);
-    private final AtomicBuffer atomicScratchBuffer = new AtomicBuffer(scratchBuffer);
+    private final UnsafeBuffer atomicScratchBuffer = new UnsafeBuffer(scratchBuffer);
 
-    private final AtomicBuffer toClientBuffer = new AtomicBuffer(new byte[BROADCAST_BUFFER_SZ]);
+    private final UnsafeBuffer toClientBuffer = new UnsafeBuffer(new byte[BROADCAST_BUFFER_SZ]);
     private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
-    private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new AtomicBuffer(new byte[RING_BUFFER_SZ]));
+    private final RingBuffer toDriverBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(new byte[RING_BUFFER_SZ]));
 
-    private final AtomicBuffer counterValuesBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
-    private final AtomicBuffer counterLabelsBuffer = new AtomicBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final UnsafeBuffer counterLabelsBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_SZ]);
 
     private Aeron aeron;
 
@@ -231,7 +231,7 @@ public class AeronTest extends MockBufferUsage
         toClientTransmitter.transmit(msgTypeId, atomicScratchBuffer, 0, newBufferMessage.length());
     }
 
-    private void cleanBuffer(final AtomicBuffer buffer)
+    private void cleanBuffer(final UnsafeBuffer buffer)
     {
         buffer.setMemory(0, buffer.capacity(), (byte)0);
     }

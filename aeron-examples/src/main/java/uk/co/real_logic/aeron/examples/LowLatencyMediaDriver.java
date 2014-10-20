@@ -28,7 +28,7 @@ public class LowLatencyMediaDriver
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
 //            .conductorIdleStrategy(new BusySpinIdleStrategy())
-            .conductorIdleStrategy(new BackoffIdleStrategy(10, 1, 1, 1))
+            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
             .receiverIdleStrategy(new BusySpinIdleStrategy())
             .senderIdleStrategy(new BusySpinIdleStrategy());
 

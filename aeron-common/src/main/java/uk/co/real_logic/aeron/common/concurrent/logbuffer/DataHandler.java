@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.DirectBuffer;
 
 /**
  * Handler for reading data that is coming from a log buffer.
@@ -31,5 +31,5 @@ public interface DataHandler
      * @param length of the data in bytes.
      * @param header representing the meta data for the data.
      */
-    void onData(AtomicBuffer buffer, int offset, int length, Header header);
+    void onData(DirectBuffer buffer, int offset, int length, Header header);
 }

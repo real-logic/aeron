@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
@@ -54,7 +54,7 @@ class ClientConductor extends Agent implements DriverListener
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
 
-    private final AtomicBuffer counterValuesBuffer;
+    private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final Signal correlationSignal;
     private final TimerWheel timerWheel;
@@ -74,7 +74,7 @@ class ClientConductor extends Agent implements DriverListener
         final IdleStrategy idleStrategy,
         final CopyBroadcastReceiver broadcastReceiver,
         final BufferManager bufferManager,
-        final AtomicBuffer counterValuesBuffer,
+        final UnsafeBuffer counterValuesBuffer,
         final DriverProxy driverProxy,
         final Signal correlationSignal,
         final TimerWheel timerWheel,
@@ -176,14 +176,13 @@ class ClientConductor extends Agent implements DriverListener
     }
 
     public void onNewPublication(
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final int termId,
-            final int limitPositionIndicatorOffset,
-            final ReadyFlyweight message,
-            final long correlationId,
-            final int mtuLength)
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final int termId,
+        final int limitPositionIndicatorOffset,
+        final int mtuLength, final ReadyFlyweight message,
+        final long correlationId)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];

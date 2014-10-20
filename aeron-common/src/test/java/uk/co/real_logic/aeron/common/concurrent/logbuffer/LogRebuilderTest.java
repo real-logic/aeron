@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -36,8 +36,8 @@ public class LogRebuilderTest
     private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
 
-    private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
-    private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
+    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer stateBuffer = spy(new UnsafeBuffer(new byte[STATE_BUFFER_CAPACITY]));
     private final StateViewer stateViewer = new StateViewer(stateBuffer);
 
     private LogRebuilder logRebuilder;
@@ -71,7 +71,7 @@ public class LogRebuilderTest
     @Test
     public void shouldInsertIntoEmptyBuffer()
     {
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(256));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(256));
         final int srcOffset = 0;
         final int length = 256;
 
@@ -92,7 +92,7 @@ public class LogRebuilderTest
         final int frameLength = BitUtil.align(256, FRAME_ALIGNMENT);
         final int srcOffset = 0;
         final int tail = LOG_BUFFER_CAPACITY - frameLength;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(frameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(frameLength));
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
         packet.putInt(lengthOffset(srcOffset), frameLength, LITTLE_ENDIAN);
@@ -118,7 +118,7 @@ public class LogRebuilderTest
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
         final int tail = alignedFrameLength;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(alignedFrameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
 
         stateBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
@@ -143,7 +143,7 @@ public class LogRebuilderTest
         final int frameLength = 50;
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(alignedFrameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
 
         stateBuffer.putInt(TAIL_COUNTER_OFFSET, 0);
@@ -167,7 +167,7 @@ public class LogRebuilderTest
         final int frameLength = 50;
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final AtomicBuffer packet = new AtomicBuffer(ByteBuffer.allocate(alignedFrameLength));
+        final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
 
         stateBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);

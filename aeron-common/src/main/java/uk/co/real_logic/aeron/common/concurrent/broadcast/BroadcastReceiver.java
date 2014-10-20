@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.broadcast;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.common.concurrent.broadcast.RecordDescripto
  */
 public class BroadcastReceiver
 {
-    private final AtomicBuffer buffer;
+    private final UnsafeBuffer buffer;
     private final int capacity;
     private final int mask;
     private final int tailCounterIndex;
@@ -46,7 +46,7 @@ public class BroadcastReceiver
     private final AtomicLong lappedCount = new AtomicLong();
 
     /**
-     * Construct a new broadcast receiver based on an underlying {@link AtomicBuffer}.
+     * Construct a new broadcast receiver based on an underlying {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer}.
      * The underlying buffer must a power of 2 in size plus sufficient space
      * for the {@link BroadcastBufferDescriptor#TRAILER_LENGTH}.
      *
@@ -54,7 +54,7 @@ public class BroadcastReceiver
      * @throws IllegalStateException if the buffer capacity is not a power of 2
      *                               plus {@link BroadcastBufferDescriptor#TRAILER_LENGTH} in capacity.
      */
-    public BroadcastReceiver(final AtomicBuffer buffer)
+    public BroadcastReceiver(final UnsafeBuffer buffer)
     {
         this.buffer = buffer;
         this.capacity = buffer.capacity() - TRAILER_LENGTH;
@@ -124,7 +124,7 @@ public class BroadcastReceiver
      *
      * @return the underlying buffer containing the broadcast message stream.
      */
-    public AtomicBuffer buffer()
+    public UnsafeBuffer buffer()
     {
         return buffer;
     }
@@ -139,7 +139,7 @@ public class BroadcastReceiver
      */
     public boolean receiveNext()
     {
-        final AtomicBuffer buffer = this.buffer;
+        final UnsafeBuffer buffer = this.buffer;
         final long tail = buffer.getLongVolatile(tailCounterIndex);
         long cursor = this.nextRecord;
 
@@ -186,7 +186,7 @@ public class BroadcastReceiver
         return validate(buffer, cursor);
     }
 
-    private boolean validate(final AtomicBuffer buffer, final long cursor)
+    private boolean validate(final UnsafeBuffer buffer, final long cursor)
     {
         return cursor == buffer.getLongVolatile(tailSequenceOffset(recordOffset));
     }

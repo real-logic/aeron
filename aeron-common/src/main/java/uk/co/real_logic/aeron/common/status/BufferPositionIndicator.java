@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.status;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 
 /**
@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.common.concurrent.CountersManager;
  */
 public class BufferPositionIndicator implements PositionIndicator
 {
-    private final AtomicBuffer buffer;
+    private final UnsafeBuffer buffer;
     private final int counterId;
     private final CountersManager countersManager;
     private final int offset;
@@ -34,7 +34,7 @@ public class BufferPositionIndicator implements PositionIndicator
      * @param buffer containing the counter.
      * @param counterId identifier of the counter.
      */
-    public BufferPositionIndicator(final AtomicBuffer buffer, final int counterId)
+    public BufferPositionIndicator(final UnsafeBuffer buffer, final int counterId)
     {
         this(buffer, counterId, null);
     }
@@ -46,7 +46,7 @@ public class BufferPositionIndicator implements PositionIndicator
      * @param counterId identifier of the counter.
      * @param countersManager to be used for freeing the counter when this is closed.
      */
-    public BufferPositionIndicator(final AtomicBuffer buffer, final int counterId, final CountersManager countersManager)
+    public BufferPositionIndicator(final UnsafeBuffer buffer, final int counterId, final CountersManager countersManager)
     {
         this.buffer = buffer;
         this.counterId = counterId;

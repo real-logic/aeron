@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
@@ -24,14 +24,14 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class StateViewer
 {
-    private final AtomicBuffer buffer;
+    private final UnsafeBuffer buffer;
 
     /**
      * Construct a viewer based on an underlying buffer.
      *
      * @param buffer containing the state variables.
      */
-    public StateViewer(final AtomicBuffer buffer)
+    public StateViewer(final UnsafeBuffer buffer)
     {
         checkStateBuffer(buffer);
 

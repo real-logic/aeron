@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.ringbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 
 import static uk.co.real_logic.aeron.common.BitUtil.align;
@@ -37,7 +37,7 @@ public class ManyToOneRingBuffer implements RingBuffer
      */
     public static final int INSUFFICIENT_CAPACITY = -1;
 
-    private final AtomicBuffer buffer;
+    private final UnsafeBuffer buffer;
     private final int capacity;
     private final int mask;
     private final int maxMsgLength;
@@ -47,7 +47,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     private final int consumerHeartbeatIndex;
 
     /**
-     * Construct a new {@link RingBuffer} based on an underlying {@link AtomicBuffer}.
+     * Construct a new {@link RingBuffer} based on an underlying {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer}.
      * The underlying buffer must a power of 2 in size plus sufficient space
      * for the {@link RingBufferDescriptor#TRAILER_LENGTH}.
      *
@@ -55,7 +55,7 @@ public class ManyToOneRingBuffer implements RingBuffer
      * @throws IllegalStateException if the buffer capacity is not a power of 2
      *                               plus {@link RingBufferDescriptor#TRAILER_LENGTH} in capacity.
      */
-    public ManyToOneRingBuffer(final AtomicBuffer buffer)
+    public ManyToOneRingBuffer(final UnsafeBuffer buffer)
     {
         this.buffer = buffer;
         capacity = buffer.capacity() - RingBufferDescriptor.TRAILER_LENGTH;
@@ -81,12 +81,12 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public boolean write(final int msgTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+    public boolean write(final int msgTypeId, final UnsafeBuffer srcBuffer, final int srcIndex, final int length)
     {
         checkMsgTypeId(msgTypeId);
         checkMsgLength(length);
 
-        final AtomicBuffer buffer = this.buffer;
+        final UnsafeBuffer buffer = this.buffer;
         final int requiredCapacity = align(length + HEADER_LENGTH, ALIGNMENT);
         final int recordIndex = claimCapacity(buffer, requiredCapacity);
         if (INSUFFICIENT_CAPACITY == recordIndex)
@@ -116,7 +116,7 @@ public class ManyToOneRingBuffer implements RingBuffer
      */
     public int read(final MessageHandler handler, final int messageCountLimit)
     {
-        final AtomicBuffer buffer = this.buffer;
+        final UnsafeBuffer buffer = this.buffer;
         final long tail = tailVolatile(buffer);
         final long head = headVolatile(buffer);
         final int available = (int)(tail - head);
@@ -176,7 +176,7 @@ public class ManyToOneRingBuffer implements RingBuffer
     /**
      * {@inheritDoc}
      */
-    public AtomicBuffer buffer()
+    public UnsafeBuffer buffer()
     {
         return buffer;
     }
@@ -207,7 +207,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         }
     }
 
-    private int claimCapacity(final AtomicBuffer buffer, final int requiredCapacity)
+    private int claimCapacity(final UnsafeBuffer buffer, final int requiredCapacity)
     {
         final long head = headVolatile(buffer);
         final int headIndex = (int)head & mask;
@@ -250,69 +250,69 @@ public class ManyToOneRingBuffer implements RingBuffer
         return tailIndex;
     }
 
-    private long tailVolatile(final AtomicBuffer buffer)
+    private long tailVolatile(final UnsafeBuffer buffer)
     {
         return buffer.getLongVolatile(tailCounterIndex);
     }
 
-    private long headVolatile(final AtomicBuffer buffer)
+    private long headVolatile(final UnsafeBuffer buffer)
     {
         return buffer.getLongVolatile(headCounterIndex);
     }
 
-    private long consumerHeartbeatVolatile(final AtomicBuffer buffer)
+    private long consumerHeartbeatVolatile(final UnsafeBuffer buffer)
     {
         return buffer.getLongVolatile(consumerHeartbeatIndex);
     }
 
-    private void headOrdered(final AtomicBuffer buffer, final long value)
+    private void headOrdered(final UnsafeBuffer buffer, final long value)
     {
         buffer.putLongOrdered(headCounterIndex, value);
     }
 
-    private void consumerHeartbeatOrdered(final AtomicBuffer buffer, final long value)
+    private void consumerHeartbeatOrdered(final UnsafeBuffer buffer, final long value)
     {
         buffer.putLongOrdered(consumerHeartbeatIndex, value);
     }
 
-    private static void writePaddingRecord(final AtomicBuffer buffer, final int recordIndex, final int padding)
+    private static void writePaddingRecord(final UnsafeBuffer buffer, final int recordIndex, final int padding)
     {
         msgType(buffer, recordIndex, PADDING_MSG_TYPE_ID);
         recordLengthOrdered(buffer, recordIndex, padding);
     }
 
-    private static void recordLengthOrdered(final AtomicBuffer buffer, final int recordIndex, final int length)
+    private static void recordLengthOrdered(final UnsafeBuffer buffer, final int recordIndex, final int length)
     {
         buffer.putIntOrdered(lengthOffset(recordIndex), length);
     }
 
-    private static void msgLength(final AtomicBuffer buffer, final int recordIndex, final int length)
+    private static void msgLength(final UnsafeBuffer buffer, final int recordIndex, final int length)
     {
         buffer.putInt(msgLengthOffset(recordIndex), length);
     }
 
-    private static void msgType(final AtomicBuffer buffer, final int recordIndex, final int msgTypeId)
+    private static void msgType(final UnsafeBuffer buffer, final int recordIndex, final int msgTypeId)
     {
         buffer.putInt(msgTypeOffset(recordIndex), msgTypeId);
     }
 
     private static void writeMsg(
-        final AtomicBuffer buffer, final int recordIndex, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+        final UnsafeBuffer buffer, final int recordIndex, final UnsafeBuffer srcBuffer, final int srcIndex, final int length)
     {
         buffer.putBytes(encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
     }
 
-    private static int msgType(final AtomicBuffer buffer, final int recordIndex)
+    private static int msgType(final UnsafeBuffer buffer, final int recordIndex)
     {
         return buffer.getInt(msgTypeOffset(recordIndex));
     }
 
-    private static int msgLength(final AtomicBuffer buffer, final int recordIndex)
+    private static int msgLength(final UnsafeBuffer buffer, final int recordIndex)
     {
         return buffer.getInt(msgLengthOffset(recordIndex));
     }
 
-    private static int waitForRecordLengthVolatile(final AtomicBuffer buffer, final int recordIndex)
+    private static int waitForRecordLengthVolatile(final UnsafeBuffer buffer, final int recordIndex)
     {
         int recordLength;
         do
@@ -324,7 +324,7 @@ public class ManyToOneRingBuffer implements RingBuffer
         return recordLength;
     }
 
-    private static void zeroBuffer(final AtomicBuffer buffer, final int position, int length)
+    private static void zeroBuffer(final UnsafeBuffer buffer, final int position, int length)
     {
         buffer.setMemory(position, length, (byte)0);
     }

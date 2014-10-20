@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common.concurrent.broadcast;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.broadcast.RecordDescriptor.*;
@@ -28,7 +28,7 @@ import static uk.co.real_logic.aeron.common.concurrent.broadcast.RecordDescripto
  */
 public class BroadcastTransmitter
 {
-    private final AtomicBuffer buffer;
+    private final UnsafeBuffer buffer;
     private final int capacity;
     private final int mask;
     private final int maxMsgLength;
@@ -36,7 +36,7 @@ public class BroadcastTransmitter
     private final int latestCounterIndex;
 
     /**
-     * Construct a new broadcast transmitter based on an underlying {@link AtomicBuffer}.
+     * Construct a new broadcast transmitter based on an underlying {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer}.
      * The underlying buffer must a power of 2 in size plus sufficient space
      * for the {@link BroadcastBufferDescriptor#TRAILER_LENGTH}.
      *
@@ -44,7 +44,7 @@ public class BroadcastTransmitter
      * @throws IllegalStateException if the buffer capacity is not a power of 2
      *                               plus {@link BroadcastBufferDescriptor#TRAILER_LENGTH} in capacity.
      */
-    public BroadcastTransmitter(final AtomicBuffer buffer)
+    public BroadcastTransmitter(final UnsafeBuffer buffer)
     {
         this.buffer = buffer;
         this.capacity = buffer.capacity() - TRAILER_LENGTH;
@@ -87,12 +87,12 @@ public class BroadcastTransmitter
      * @throws IllegalArgumentException of the msgTypeId is not valid,
      *                                  or if the message length is greater than {@link #maxMsgLength()}.
      */
-    public void transmit(final int msgTypeId, final AtomicBuffer srcBuffer, final int srcIndex, final int length)
+    public void transmit(final int msgTypeId, final UnsafeBuffer srcBuffer, final int srcIndex, final int length)
     {
         checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
 
-        final AtomicBuffer buffer = this.buffer;
+        final UnsafeBuffer buffer = this.buffer;
         long tail = buffer.getLong(tailCounterIndex);
         int recordOffset = (int)tail & mask;
         final int recordLength = BitUtil.align(length + HEADER_LENGTH, RECORD_ALIGNMENT);
@@ -117,18 +117,18 @@ public class BroadcastTransmitter
         incrementTailOrdered(buffer, tail, recordLength);
     }
 
-    private void putLatestCounter(final AtomicBuffer buffer, final long tail)
+    private void putLatestCounter(final UnsafeBuffer buffer, final long tail)
     {
         buffer.putLong(latestCounterIndex, tail);
     }
 
-    private void incrementTailOrdered(final AtomicBuffer buffer, final long tail, final int recordLength)
+    private void incrementTailOrdered(final UnsafeBuffer buffer, final long tail, final int recordLength)
     {
         buffer.putLongOrdered(tailCounterIndex, tail + recordLength);
     }
 
     private static void insertPaddingRecord(
-        final AtomicBuffer buffer, final long tail, final int recordOffset, final int remainingBuffer)
+        final UnsafeBuffer buffer, final long tail, final int recordOffset, final int remainingBuffer)
     {
         buffer.putLongOrdered(tailSequenceOffset(recordOffset), tail);
         buffer.putInt(recLengthOffset(recordOffset), remainingBuffer);

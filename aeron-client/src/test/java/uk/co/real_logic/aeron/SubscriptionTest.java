@@ -3,7 +3,7 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
@@ -34,7 +34,7 @@ public class SubscriptionTest
     public static final int HEADER_LENGTH = Header.LENGTH;
 
     private final ByteBuffer readBuffer = ByteBuffer.allocate(READ_BUFFER_CAPACITY);
-    private final AtomicBuffer atomicReadBuffer = new AtomicBuffer(readBuffer);
+    private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final PositionReporter reporter = mock(PositionReporter.class);
     private final DataHandler dataHandler = mock(DataHandler.class);

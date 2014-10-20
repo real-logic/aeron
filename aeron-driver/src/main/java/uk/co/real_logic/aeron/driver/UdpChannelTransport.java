@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -36,7 +36,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final DatagramChannel datagramChannel;
     private final UdpChannel udpChannel;
     private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
-    private final AtomicBuffer receiveBuffer = new AtomicBuffer(receiveByteBuffer);
+    private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final EventLogger logger;
     private final boolean multicast;
@@ -96,7 +96,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
     }
 
-    protected AtomicBuffer receiveBuffer()
+    protected UnsafeBuffer receiveBuffer()
     {
         return receiveBuffer;
     }
@@ -207,7 +207,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveByteBuffer.capacity();
     }
 
-    public abstract int dispatch(int headerType, AtomicBuffer receiveBuffer, int length, InetSocketAddress srcAddress);
+    public abstract int dispatch(int headerType, UnsafeBuffer receiveBuffer, int length, InetSocketAddress srcAddress);
 
     /**
      * Attempt to receive waiting data.
@@ -240,7 +240,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return framesRead;
     }
 
-    private boolean isValidFrame(final AtomicBuffer receiveBuffer, final int length)
+    private boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)
     {
         boolean isFrameValid = true;
 

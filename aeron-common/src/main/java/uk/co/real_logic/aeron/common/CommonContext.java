@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.io.File;
 
@@ -73,8 +73,8 @@ public class CommonContext implements AutoCloseable
     private boolean dirsDeleteOnExit;
     private File toDriverFile;
     private File toClientsFile;
-    private AtomicBuffer counterLabelsBuffer;
-    private AtomicBuffer countersBuffer;
+    private UnsafeBuffer counterLabelsBuffer;
+    private UnsafeBuffer countersBuffer;
 
     public CommonContext()
     {
@@ -180,23 +180,23 @@ public class CommonContext implements AutoCloseable
         return adminDirName;
     }
 
-    public AtomicBuffer counterLabelsBuffer()
+    public UnsafeBuffer counterLabelsBuffer()
     {
         return counterLabelsBuffer;
     }
 
-    public CommonContext counterLabelsBuffer(final AtomicBuffer counterLabelsBuffer)
+    public CommonContext counterLabelsBuffer(final UnsafeBuffer counterLabelsBuffer)
     {
         this.counterLabelsBuffer = counterLabelsBuffer;
         return this;
     }
 
-    public AtomicBuffer countersBuffer()
+    public UnsafeBuffer countersBuffer()
     {
         return countersBuffer;
     }
 
-    public CommonContext countersBuffer(final AtomicBuffer countersBuffer)
+    public CommonContext countersBuffer(final UnsafeBuffer countersBuffer)
     {
         this.countersBuffer = countersBuffer;
         return this;

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.BitUtil.CACHE_LINE_SIZE;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
@@ -80,7 +80,7 @@ public class LogBufferDescriptor
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.
      */
-    public static void checkLogBuffer(final AtomicBuffer buffer)
+    public static void checkLogBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
         if (capacity < MIN_LOG_SIZE)
@@ -108,7 +108,7 @@ public class LogBufferDescriptor
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.
      */
-    public static void checkStateBuffer(final AtomicBuffer buffer)
+    public static void checkStateBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
         if (capacity < STATE_BUFFER_LENGTH)

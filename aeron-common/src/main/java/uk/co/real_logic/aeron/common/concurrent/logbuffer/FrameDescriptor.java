@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
@@ -233,7 +233,7 @@ public class FrameDescriptor
      * @param frameOffset at which a frame begins.
      * @return the value of the frame type header.
      */
-    public static int frameType(final AtomicBuffer logBuffer, final int frameOffset)
+    public static int frameType(final UnsafeBuffer logBuffer, final int frameOffset)
     {
         return logBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }
@@ -245,7 +245,7 @@ public class FrameDescriptor
      * @param frameOffset at which a frame begins.
      * @return true if the frame is a padding frame otherwise false.
      */
-    public static boolean isPaddingFrame(final AtomicBuffer logBuffer, final int frameOffset)
+    public static boolean isPaddingFrame(final UnsafeBuffer logBuffer, final int frameOffset)
     {
         return logBuffer.getShort(typeOffset(frameOffset)) == PADDING_FRAME_TYPE;
     }
@@ -257,7 +257,7 @@ public class FrameDescriptor
      * @param frameOffset at which a frame begins.
      * @return the value for the frame length.
      */
-    public static int frameLengthVolatile(final AtomicBuffer logBuffer, final int frameOffset)
+    public static int frameLengthVolatile(final UnsafeBuffer logBuffer, final int frameOffset)
     {
         int frameLength = logBuffer.getIntVolatile(lengthOffset(frameOffset));
 
@@ -276,7 +276,7 @@ public class FrameDescriptor
      * @param frameOffset at which a frame begins.
      * @param frameLength field to be set for the frame.
      */
-    public static void frameLengthOrdered(final AtomicBuffer logBuffer, final int frameOffset, int frameLength)
+    public static void frameLengthOrdered(final UnsafeBuffer logBuffer, final int frameOffset, int frameLength)
     {
         if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
         {
@@ -293,7 +293,7 @@ public class FrameDescriptor
      * @param frameOffset at which a frame begins.
      * @param type        type value for the frame.
      */
-    public static void frameType(final AtomicBuffer logBuffer, final int frameOffset, final int type)
+    public static void frameType(final UnsafeBuffer logBuffer, final int frameOffset, final int type)
     {
         logBuffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
     }
@@ -305,7 +305,7 @@ public class FrameDescriptor
      * @param frameOffset at which a frame begins.
      * @param flags       value for the frame.
      */
-    public static void frameFlags(final AtomicBuffer logBuffer, final int frameOffset, final byte flags)
+    public static void frameFlags(final UnsafeBuffer logBuffer, final int frameOffset, final byte flags)
     {
         logBuffer.putByte(flagsOffset(frameOffset), flags);
     }
@@ -317,7 +317,7 @@ public class FrameDescriptor
      * @param frameOffset at which a frame begins.
      * @param termOffset  value for the frame.
      */
-    public static void frameTermOffset(final AtomicBuffer logBuffer, final int frameOffset, final int termOffset)
+    public static void frameTermOffset(final UnsafeBuffer logBuffer, final int frameOffset, final int termOffset)
     {
         logBuffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
     }

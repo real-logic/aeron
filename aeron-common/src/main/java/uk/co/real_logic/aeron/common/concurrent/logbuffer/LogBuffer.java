@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
@@ -24,11 +24,11 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class LogBuffer
 {
-    private final AtomicBuffer logBuffer;
-    private final AtomicBuffer stateBuffer;
+    private final UnsafeBuffer logBuffer;
+    private final UnsafeBuffer stateBuffer;
     private final int capacity;
 
-    protected LogBuffer(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
+    protected LogBuffer(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
     {
         checkLogBuffer(logBuffer);
         checkStateBuffer(stateBuffer);
@@ -43,7 +43,7 @@ public class LogBuffer
      *
      * @return the log of messages.
      */
-    public AtomicBuffer logBuffer()
+    public UnsafeBuffer logBuffer()
     {
         return logBuffer;
     }
@@ -53,7 +53,7 @@ public class LogBuffer
      *
      * @return the state describing the log.
      */
-    public AtomicBuffer stateBuffer()
+    public UnsafeBuffer stateBuffer()
     {
         return stateBuffer;
     }

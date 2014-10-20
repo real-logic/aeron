@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.common;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -34,7 +34,7 @@ public class FlyweightTest
 {
     private final ByteBuffer buffer = ByteBuffer.allocateDirect(512);
 
-    private final AtomicBuffer aBuff = new AtomicBuffer(buffer);
+    private final UnsafeBuffer aBuff = new UnsafeBuffer(buffer);
     private final HeaderFlyweight encodeHeader = new HeaderFlyweight();
     private final HeaderFlyweight decodeHeader = new HeaderFlyweight();
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
@@ -181,9 +181,9 @@ public class FlyweightTest
     public void shouldReadAndWriteErrorHeaderWithoutErrorStringCorrectly()
     {
         final ByteBuffer originalBuffer = ByteBuffer.allocateDirect(256);
-        final AtomicBuffer originalAtomicBuffer = new AtomicBuffer(originalBuffer);
+        final UnsafeBuffer originalUnsafeBuffer = new UnsafeBuffer(originalBuffer);
 
-        encodeDataHeader.wrap(originalAtomicBuffer, 0);
+        encodeDataHeader.wrap(originalUnsafeBuffer, 0);
         encodeDataHeader.version((short)1);
         encodeDataHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
@@ -221,9 +221,9 @@ public class FlyweightTest
     {
         final String errorString = "this is an error";
         final ByteBuffer originalBuffer = ByteBuffer.allocateDirect(256);
-        final AtomicBuffer originalAtomicBuffer = new AtomicBuffer(originalBuffer);
+        final UnsafeBuffer originalUnsafeBuffer = new UnsafeBuffer(originalBuffer);
 
-        encodeDataHeader.wrap(originalAtomicBuffer, 0);
+        encodeDataHeader.wrap(originalUnsafeBuffer, 0);
         encodeDataHeader.version((short)1);
         encodeDataHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
         encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);

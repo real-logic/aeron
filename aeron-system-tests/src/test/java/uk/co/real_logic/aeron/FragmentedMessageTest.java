@@ -21,7 +21,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
@@ -63,7 +63,7 @@ public class FragmentedMessageTest
              final Publication publication = publisherClient.addPublication(channel, STREAM_ID);
              final Subscription subscription = subscriberClient.addSubscription(channel, STREAM_ID, adapter))
         {
-            final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[ctx.mtuLength() * 4]);
+            final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength() * 4]);
             final int offset = 0;
             final int length = srcBuffer.capacity() / 4;
 
@@ -85,13 +85,13 @@ public class FragmentedMessageTest
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 
-            final ArgumentCaptor<AtomicBuffer> bufferArg = ArgumentCaptor.forClass(AtomicBuffer.class);
+            final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
             final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
             verify(mockDataHandler, times(1)).onData(
                 bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());
 
-            final AtomicBuffer capturedBuffer = bufferArg.getValue();
+            final UnsafeBuffer capturedBuffer = bufferArg.getValue();
             for (int i = 0; i < srcBuffer.capacity(); i++)
             {
                 assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));

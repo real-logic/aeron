@@ -19,7 +19,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.DirectBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -51,7 +52,7 @@ public class PongTest
     private Publication pingPublication;
     private Publication pongPublication;
 
-    private AtomicBuffer buffer = new AtomicBuffer(new byte[4096]);
+    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
     private DataHandler pongHandler = mock(DataHandler.class);
 
     @Before
@@ -130,13 +131,13 @@ public class PongTest
             TimeUnit.MILLISECONDS.toNanos(900));
 
         verify(pongHandler).onData(
-            any(AtomicBuffer.class),
+            any(UnsafeBuffer.class),
             eq(Header.LENGTH),
             eq(BitUtil.SIZE_OF_INT),
             any(Header.class));
     }
 
-    public void pingHandler(final AtomicBuffer buffer, final int offset, final int length, final Header header)
+    public void pingHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         // echoes back the ping
         assertTrue(pongPublication.offer(buffer, offset, length));

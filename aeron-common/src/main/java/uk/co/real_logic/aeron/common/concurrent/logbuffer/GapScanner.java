@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameLengthVolatile;
@@ -43,7 +43,7 @@ public class GapScanner extends LogBuffer
          * @param length of the gap in bytes.
          * @return true if scanning should continue otherwise false to halt scanning.
          */
-        boolean onGap(AtomicBuffer buffer, int offset, int length);
+        boolean onGap(UnsafeBuffer buffer, int offset, int length);
     }
 
     /**
@@ -52,7 +52,7 @@ public class GapScanner extends LogBuffer
      * @param logBuffer containing the sequence of frames.
      * @param stateBuffer containing the state of the rebuild process.
      */
-    public GapScanner(final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer)
+    public GapScanner(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
     {
         super(logBuffer, stateBuffer);
     }
@@ -68,7 +68,7 @@ public class GapScanner extends LogBuffer
         int count = 0;
         final int highWaterMark = highWaterMarkVolatile();
         int offset = tailVolatile();
-        final AtomicBuffer logBuffer = logBuffer();
+        final UnsafeBuffer logBuffer = logBuffer();
 
         while (offset < highWaterMark)
         {
@@ -98,7 +98,7 @@ public class GapScanner extends LogBuffer
     }
 
     private static int scanGap(
-        final AtomicBuffer logBuffer, final GapHandler handler, final int offset, final int highWaterMark)
+        final UnsafeBuffer logBuffer, final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;
         int alignedFrameLength;
@@ -112,7 +112,7 @@ public class GapScanner extends LogBuffer
         return handler.onGap(logBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
     }
 
-    private static int alignedFrameLength(final AtomicBuffer logBuffer, final int offset)
+    private static int alignedFrameLength(final UnsafeBuffer logBuffer, final int offset)
     {
         return BitUtil.align(frameLengthVolatile(logBuffer, offset), FRAME_ALIGNMENT);
     }

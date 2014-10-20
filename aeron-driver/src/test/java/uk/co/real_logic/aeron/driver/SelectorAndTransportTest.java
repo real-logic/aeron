@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -48,7 +48,7 @@ public class SelectorAndTransportTest
     private static final LossGenerator NO_LOSS = (address, length) -> false;
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
-    private final AtomicBuffer buffer = new AtomicBuffer(byteBuffer);
+    private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
 
     private final DataHeaderFlyweight encodeDataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();

@@ -111,7 +111,7 @@ public class DriverConductor extends Agent
     private final double controlLossRate;
     private final TimerWheel.Timer checkTimeoutTimer;
     private final CountersManager countersManager;
-    private final AtomicBuffer countersBuffer;
+    private final UnsafeBuffer countersBuffer;
     private final EventLogger logger;
 
     private final SystemCounters systemCounters;
@@ -161,7 +161,7 @@ public class DriverConductor extends Agent
             (typeId, buffer, offset, length) ->
                 ctx.eventConsumer().accept(EventCode.get(typeId).decode(buffer, offset, length));
 
-        final AtomicBuffer buffer = toDriverCommands.buffer();
+        final UnsafeBuffer buffer = toDriverCommands.buffer();
         publicationMessage.wrap(buffer, 0);
         subscriptionMessage.wrap(buffer, 0);
         correlatedMessage.wrap(buffer, 0);
@@ -264,7 +264,7 @@ public class DriverConductor extends Agent
         timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
     }
 
-    private void onClientCommand(final int msgTypeId, final AtomicBuffer buffer, final int index, final int length)
+    private void onClientCommand(final int msgTypeId, final UnsafeBuffer buffer, final int index, final int length)
     {
         Flyweight flyweight = null;
 

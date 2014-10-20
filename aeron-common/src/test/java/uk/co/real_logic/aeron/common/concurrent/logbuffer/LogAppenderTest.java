@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
@@ -37,8 +37,8 @@ public class LogAppenderTest
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
 
-    private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
-    private final AtomicBuffer stateBuffer = mock(AtomicBuffer.class);
+    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer stateBuffer = mock(UnsafeBuffer.class);
 
     private LogAppender logAppender;
 
@@ -133,7 +133,7 @@ public class LogAppenderTest
     public void shouldThrowExceptionWhenMaxMessageLengthExceeded()
     {
         final int maxMessageLength = logAppender.maxMessageLength();
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
         logAppender.append(srcBuffer, 0, maxMessageLength + 1);
     }
@@ -142,7 +142,7 @@ public class LogAppenderTest
     public void shouldAppendFrameToEmptyLog()
     {
         final int headerLength = DEFAULT_HEADER.length;
-        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
@@ -165,7 +165,7 @@ public class LogAppenderTest
     public void shouldAppendFrameTwiceToLog()
     {
         final int headerLength = DEFAULT_HEADER.length;
-        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
@@ -198,7 +198,7 @@ public class LogAppenderTest
     @Test
     public void shouldTripWhenAppendingToLogAtCapacity()
     {
-        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int headerLength = DEFAULT_HEADER.length;
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
@@ -217,7 +217,7 @@ public class LogAppenderTest
     @Test
     public void shouldFailWhenTheLogIsAlreadyTripped()
     {
-        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int headerLength = DEFAULT_HEADER.length;
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
@@ -241,7 +241,7 @@ public class LogAppenderTest
         final int headerLength = DEFAULT_HEADER.length;
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
         final int tailValue = logAppender.capacity() - align(msgLength, FRAME_ALIGNMENT);
-        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
 
         when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
@@ -264,7 +264,7 @@ public class LogAppenderTest
         final int msgLength = 120;
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
         final int tailValue = logAppender.capacity() - (requiredFrameSize + (headerLength - FRAME_ALIGNMENT));
-        final AtomicBuffer buffer = new AtomicBuffer(new byte[128]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
 
         when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
@@ -287,7 +287,7 @@ public class LogAppenderTest
         final int headerLength = DEFAULT_HEADER.length;
         final int frameLength = headerLength + 1;
         final int requiredCapacity = align(headerLength + 1, FRAME_ALIGNMENT) + logAppender.maxFrameLength();
-        final AtomicBuffer buffer = new AtomicBuffer(new byte[msgLength]);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[msgLength]);
 
         when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, requiredCapacity))
             .thenReturn(0);

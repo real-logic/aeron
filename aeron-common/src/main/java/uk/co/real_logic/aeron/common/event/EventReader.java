@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.common.event;
 
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.IdleStrategy;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -42,7 +42,7 @@ public class EventReader extends Agent implements MessageHandler
         super(idleStrategy, Throwable::printStackTrace, exceptionsCounter);
 
         this.handler = handler;
-        ringBuffer = new ManyToOneRingBuffer(new AtomicBuffer(buffer));
+        ringBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(buffer));
     }
 
     public int read(final int limit)
@@ -50,7 +50,7 @@ public class EventReader extends Agent implements MessageHandler
         return ringBuffer.read(this, limit);
     }
 
-    public void onMessage(final int typeId, final AtomicBuffer buffer, final int index, final int length)
+    public void onMessage(final int typeId, final UnsafeBuffer buffer, final int index, final int length)
     {
         handler.accept(EventCode.get(typeId).decode(buffer, index, length));
     }

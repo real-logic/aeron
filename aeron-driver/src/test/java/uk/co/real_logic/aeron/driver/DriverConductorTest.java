@@ -23,7 +23,7 @@ import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
@@ -78,15 +78,15 @@ public class DriverConductorTest
     private final TransportPoller transportPoller = mock(TransportPoller.class);
     private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
 
-    private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer));
-    private final RingBuffer toEventReader = new ManyToOneRingBuffer(new AtomicBuffer(toEventBuffer));
+    private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer));
+    private final RingBuffer toEventReader = new ManyToOneRingBuffer(new UnsafeBuffer(toEventBuffer));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
-    private final AtomicBuffer writeBuffer = new AtomicBuffer(ByteBuffer.allocate(256));
+    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(ByteBuffer.allocate(256));
 
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
 
@@ -116,8 +116,8 @@ public class DriverConductorTest
 
         currentTime = 0;
 
-        final AtomicBuffer counterBuffer = new AtomicBuffer(new byte[BUFFER_SIZE]);
-        final CountersManager countersManager = new CountersManager(new AtomicBuffer(new byte[BUFFER_SIZE]), counterBuffer);
+        final UnsafeBuffer counterBuffer = new UnsafeBuffer(new byte[BUFFER_SIZE]);
+        final CountersManager countersManager = new CountersManager(new UnsafeBuffer(new byte[BUFFER_SIZE]), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(transportPoller)

@@ -16,9 +16,7 @@
 package uk.co.real_logic.aeron.examples;
 
 import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
-import uk.co.real_logic.aeron.common.CloseHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -74,7 +72,7 @@ public class Pong
     }
 
     public static void pingHandler(
-        final Publication pongPublication, final AtomicBuffer buffer, final int offset, final int length)
+        final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
         while (!pongPublication.offer(buffer, offset, length))
         {

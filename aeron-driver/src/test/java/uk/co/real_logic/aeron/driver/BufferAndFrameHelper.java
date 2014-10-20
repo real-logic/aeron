@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
@@ -73,15 +73,15 @@ public class BufferAndFrameHelper
     {
         return new RawLog()
         {
-            private final AtomicBuffer logBuffer = new AtomicBuffer((ByteBuffer.allocate((int)logBufferSize)));
-            private final AtomicBuffer stateBuffer = new AtomicBuffer((ByteBuffer.allocate((int)stateBufferSize)));
+            private final UnsafeBuffer logBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)logBufferSize)));
+            private final UnsafeBuffer stateBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)stateBufferSize)));
 
-            public AtomicBuffer logBuffer()
+            public UnsafeBuffer logBuffer()
             {
                 return logBuffer;
             }
 
-            public AtomicBuffer stateBuffer()
+            public UnsafeBuffer stateBuffer()
             {
                 return stateBuffer;
             }

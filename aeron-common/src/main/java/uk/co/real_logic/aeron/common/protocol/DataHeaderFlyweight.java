@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.protocol;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
@@ -169,7 +169,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public static byte[] createDefaultHeader(final int sessionId, final int streamId, final int termId)
     {
         final byte[] hdr = new byte[HEADER_LENGTH];
-        final AtomicBuffer buffer = new AtomicBuffer(hdr);
+        final UnsafeBuffer buffer = new UnsafeBuffer(hdr);
 
         buffer.wrap(hdr);
         buffer.putBytes(0, DEFAULT_HEADER_NULL_IDS);

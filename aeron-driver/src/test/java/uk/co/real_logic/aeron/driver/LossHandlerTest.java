@@ -20,7 +20,7 @@ import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
@@ -85,8 +85,8 @@ public class LossHandlerTest
 
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
-            final AtomicBuffer logBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-            final AtomicBuffer stateBuffer = new AtomicBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+            final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
+            final UnsafeBuffer stateBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
             rebuilders[i] = new LogRebuilder(logBuffer, stateBuffer);
             scanners[i] = new GapScanner(logBuffer, stateBuffer);
         }
@@ -99,7 +99,7 @@ public class LossHandlerTest
 
         nakMessageSender = mock(NakMessageSender.class);
 
-        final AtomicBuffer rcvBuffer = new AtomicBuffer(new byte[MESSAGE_LENGTH]);
+        final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
         handler = new LossHandler(
             scanners, wheel, DELAY_GENERATOR, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
         dataHeader.wrap(rcvBuffer, 0);

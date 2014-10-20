@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.IoUtil;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
@@ -279,7 +279,7 @@ public final class MediaDriver implements AutoCloseable
                     eventLogger = new EventLogger(eventByteBuffer);
                 }
 
-                toEventReader(new ManyToOneRingBuffer(new AtomicBuffer(eventByteBuffer)));
+                toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
                 receiverNioSelector(new TransportPoller());
                 conductorNioSelector(new TransportPoller());
@@ -299,12 +299,12 @@ public final class MediaDriver implements AutoCloseable
 
                 toClientsBuffer = mapNewFile(toClientsFile(), Configuration.TO_CLIENTS_BUFFER_SZ);
 
-                final BroadcastTransmitter transmitter = new BroadcastTransmitter(new AtomicBuffer(toClientsBuffer));
+                final BroadcastTransmitter transmitter = new BroadcastTransmitter(new UnsafeBuffer(toClientsBuffer));
                 clientProxy(new ClientProxy(transmitter, eventLogger));
 
                 toDriverBuffer = mapNewFile(toDriverFile(), Configuration.CONDUCTOR_BUFFER_SZ);
 
-                toDriverCommands(new ManyToOneRingBuffer(new AtomicBuffer(toDriverBuffer)));
+                toDriverCommands(new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer)));
 
                 if (countersManager() == null)
                 {
@@ -321,7 +321,7 @@ public final class MediaDriver implements AutoCloseable
 
                         counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_SZ);
 
-                        counterLabelsBuffer(new AtomicBuffer(counterLabelsByteBuffer));
+                        counterLabelsBuffer(new UnsafeBuffer(counterLabelsByteBuffer));
                     }
 
                     if (countersBuffer() == null)
@@ -337,7 +337,7 @@ public final class MediaDriver implements AutoCloseable
 
                         counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_SZ);
 
-                        countersBuffer(new AtomicBuffer(counterValuesByteBuffer));
+                        countersBuffer(new UnsafeBuffer(counterValuesByteBuffer));
                     }
 
                     countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));

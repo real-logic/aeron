@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -42,7 +42,7 @@ public class ClientProxy
 {
     private static final int WRITE_BUFFER_CAPACITY = 4096;
 
-    private final AtomicBuffer tmpBuffer = new AtomicBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
+    private final UnsafeBuffer tmpBuffer = new UnsafeBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
     private final BroadcastTransmitter transmitter;
 
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();

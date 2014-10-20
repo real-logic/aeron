@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -43,7 +43,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendNothingForZeroLength()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INITIAL_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, 0);
 
@@ -53,7 +53,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendThenReset()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INITIAL_CAPACITY]);
 
         bufferBuilder.append(srcBuffer, 0, srcBuffer.capacity());
 
@@ -67,7 +67,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendOneBufferWithoutResizing()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INITIAL_CAPACITY]);
         final byte[] bytes = "Hello World".getBytes(StandardCharsets.UTF_8);
         srcBuffer.putBytes(0, bytes, 0, bytes.length);
 
@@ -84,7 +84,7 @@ public class BufferBuilderTest
     @Test
     public void shouldAppendTwoBuffersWithoutResizing()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[INITIAL_CAPACITY]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[INITIAL_CAPACITY]);
         final byte[] bytes = "1111111122222222".getBytes(StandardCharsets.UTF_8);
         srcBuffer.putBytes(0, bytes, 0, bytes.length);
 
@@ -105,7 +105,7 @@ public class BufferBuilderTest
         final int bufferSize = 128;
         final byte[] buffer = new byte[bufferSize];
         Arrays.fill(buffer, (byte)7);
-        final AtomicBuffer srcBuffer = new AtomicBuffer(buffer);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
         final BufferBuilder bufferBuilder = new BufferBuilder(bufferSize);
 
@@ -125,7 +125,7 @@ public class BufferBuilderTest
         final int bufferSize = 128;
         final byte[] buffer = new byte[bufferSize + 1];
         Arrays.fill(buffer, (byte)7);
-        final AtomicBuffer srcBuffer = new AtomicBuffer(buffer);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
         final BufferBuilder bufferBuilder = new BufferBuilder(bufferSize);
 
@@ -147,7 +147,7 @@ public class BufferBuilderTest
         final int firstLength = buffer.length / 4;
         final int secondLength = buffer.length / 2;
         Arrays.fill(buffer, 0, firstLength + secondLength, (byte)7);
-        final AtomicBuffer srcBuffer = new AtomicBuffer(buffer);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
         final BufferBuilder bufferBuilder = new BufferBuilder(bufferSize / 2);
 
@@ -167,7 +167,7 @@ public class BufferBuilderTest
     {
         final int bufferSize = INITIAL_CAPACITY / 2;
         final byte[] buffer = new byte[bufferSize];
-        final AtomicBuffer srcBuffer = new AtomicBuffer(buffer);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
         final BufferBuilder bufferBuilder = new BufferBuilder();
 

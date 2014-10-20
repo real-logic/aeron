@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.ringbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 
 import static org.hamcrest.Matchers.is;
@@ -36,7 +36,7 @@ public class ManyToOneRingBufferTest
     private static final int TAIL_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.TAIL_COUNTER_OFFSET;
     private static final int HEAD_COUNTER_INDEX = CAPACITY + RingBufferDescriptor.HEAD_COUNTER_OFFSET;
 
-    private final AtomicBuffer buffer = mock(AtomicBuffer.class);
+    private final UnsafeBuffer buffer = mock(UnsafeBuffer.class);
     private RingBuffer ringBuffer;
 
     @Before
@@ -67,7 +67,7 @@ public class ManyToOneRingBufferTest
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionWhenMaxMessageSizeExceeded()
     {
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
         ringBuffer.write(MSG_TYPE_ID, srcBuffer, 0, ringBuffer.maxMsgLength() + 1);
     }
@@ -84,7 +84,7 @@ public class ManyToOneRingBufferTest
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
         when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength)).thenReturn(Boolean.TRUE);
 
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int srcIndex = 0;
 
         assertTrue(ringBuffer.write(MSG_TYPE_ID, srcBuffer, srcIndex, length));
@@ -106,7 +106,7 @@ public class ManyToOneRingBufferTest
         when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
 
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
         final int srcIndex = 0;
         assertFalse(ringBuffer.write(MSG_TYPE_ID, srcBuffer, srcIndex, length));
@@ -127,7 +127,7 @@ public class ManyToOneRingBufferTest
         when(buffer.getLongVolatile(HEAD_COUNTER_INDEX)).thenReturn(head);
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
 
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
         final int srcIndex = 0;
         assertFalse(ringBuffer.write(MSG_TYPE_ID, srcBuffer, srcIndex, length));
@@ -150,7 +150,7 @@ public class ManyToOneRingBufferTest
         when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength + ALIGNMENT))
             .thenReturn(Boolean.TRUE);
 
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
         final int srcIndex = 0;
         assertTrue(ringBuffer.write(MSG_TYPE_ID, srcBuffer, srcIndex, length));
@@ -177,7 +177,7 @@ public class ManyToOneRingBufferTest
         when(buffer.getLongVolatile(TAIL_COUNTER_INDEX)).thenReturn(tail);
         when(buffer.compareAndSetLong(TAIL_COUNTER_INDEX, tail, tail + recordLength + ALIGNMENT)).thenReturn(Boolean.TRUE);
 
-        final AtomicBuffer srcBuffer = new AtomicBuffer(new byte[1024]);
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
 
         final int srcIndex = 0;
         assertTrue(ringBuffer.write(MSG_TYPE_ID, srcBuffer, srcIndex, length));

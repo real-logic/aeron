@@ -1,7 +1,7 @@
 package uk.co.real_logic.aeron.common.event;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -16,7 +16,7 @@ public class EventCodecTest
 
     private static final int BUFFER_SIZE = 1024 * 10;
 
-    private AtomicBuffer buffer = new AtomicBuffer(new byte[BUFFER_SIZE]);
+    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[BUFFER_SIZE]);
 
     @Test
     public void dissectAsExceptionShouldContainTheValuesEncoded()

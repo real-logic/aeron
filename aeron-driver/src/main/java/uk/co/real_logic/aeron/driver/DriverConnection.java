@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
@@ -317,7 +317,7 @@ public class DriverConnection implements AutoCloseable
      * @param length of the data frame on the wire
      * @return number of bytes inserted
      */
-    public int insertIntoTerm(final int termId, final int termOffset, final AtomicBuffer buffer, final int length)
+    public int insertIntoTerm(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
         int bytesInserted = 0;
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];

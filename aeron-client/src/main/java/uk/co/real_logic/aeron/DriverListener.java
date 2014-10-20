@@ -26,29 +26,30 @@ import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
 interface DriverListener
 {
     void onNewPublication(
-            String channel,
-            int streamId,
-            int sessionId,
-            int termId,
-            int positionIndicatorId,
-            ReadyFlyweight message,
-            long correlationId, final int mtuLength);
+        String channel,
+        int streamId,
+        int sessionId,
+        int termId,
+        int positionIndicatorId,
+        final int mtuLength,
+        ReadyFlyweight message,
+        long correlationId);
 
     void onNewConnection(
-            String channel,
-            int streamId,
-            int sessionId,
-            int termId,
-            long initialPosition,
-            ConnectionReadyFlyweight message,
-            long correlationId);
+        String channel,
+        int streamId,
+        int sessionId,
+        int termId,
+        long initialPosition,
+        ConnectionReadyFlyweight message,
+        long correlationId);
 
     void onInactiveConnection(
-            String channel,
-            int streamId,
-            int sessionId,
-            ConnectionMessageFlyweight message,
-            long correlationId);
+        String channel,
+        int streamId,
+        int sessionId,
+        ConnectionMessageFlyweight message,
+        long correlationId);
 
     void onError(ErrorCode errorCode, String message);
 

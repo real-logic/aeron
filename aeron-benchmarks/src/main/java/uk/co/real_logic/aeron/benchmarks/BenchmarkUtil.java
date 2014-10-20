@@ -4,7 +4,7 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 
 import java.util.concurrent.TimeUnit;
@@ -32,13 +32,13 @@ public class BenchmarkUtil
     }
 
     public static void exchangeMessagesBetweenClients(
-        final Aeron publishingClient, final Aeron consumingClient, final AtomicBuffer publishingBuffer)
+        final Aeron publishingClient, final Aeron consumingClient, final UnsafeBuffer publishingBuffer)
     {
         exchangeMessagesBetweenClients(publishingClient, consumingClient, publishingBuffer, MESSAGES_PER_RUN);
     }
 
     public static void exchangeMessagesBetweenClients(
-        final Aeron publishingClient, final Aeron consumingClient, final AtomicBuffer publishingBuffer, final int messagesPerRun)
+        final Aeron publishingClient, final Aeron consumingClient, final UnsafeBuffer publishingBuffer, final int messagesPerRun)
     {
         clear(publishingBuffer);
 
@@ -89,7 +89,7 @@ public class BenchmarkUtil
         }
     }
 
-    public static void clear(final AtomicBuffer buffer)
+    public static void clear(final UnsafeBuffer buffer)
     {
         buffer.setMemory(0, buffer.capacity(), (byte)0);
     }

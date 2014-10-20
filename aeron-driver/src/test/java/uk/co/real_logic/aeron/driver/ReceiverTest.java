@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
@@ -79,9 +79,9 @@ public class ReceiverTest
     private final PositionReporter mockCompletedReceivedPosition = mock(PositionReporter.class);
     private final PositionReporter mockHighestReceivedPosition = mock(PositionReporter.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
-    private final AtomicBuffer dataBuffer = new AtomicBuffer(dataFrameBuffer);
+    private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocate(SetupFlyweight.HEADER_LENGTH);
-    private final AtomicBuffer setupBuffer = new AtomicBuffer(setupFrameBuffer);
+    private final UnsafeBuffer setupBuffer = new UnsafeBuffer(setupFrameBuffer);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();

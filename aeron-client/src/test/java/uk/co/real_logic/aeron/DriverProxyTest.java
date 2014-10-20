@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
@@ -38,7 +38,7 @@ public class DriverProxyTest
     private static final int SESSION_ID = 2;
     private static final long CORRELATION_ID = 3;
     private final RingBuffer conductorBuffer = new ManyToOneRingBuffer(
-        new AtomicBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
+        new UnsafeBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
     private final DriverProxy conductor = new DriverProxy(conductorBuffer);
 
     @Test

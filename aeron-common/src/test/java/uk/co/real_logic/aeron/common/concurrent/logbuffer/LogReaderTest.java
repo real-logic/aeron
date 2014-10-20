@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -37,8 +37,8 @@ public class LogReaderTest
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
     private static final int HEADER_LENGTH = Header.LENGTH;
 
-    private final AtomicBuffer logBuffer = mock(AtomicBuffer.class);
-    private final AtomicBuffer stateBuffer = spy(new AtomicBuffer(new byte[STATE_BUFFER_CAPACITY]));
+    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer stateBuffer = spy(new UnsafeBuffer(new byte[STATE_BUFFER_CAPACITY]));
     private final DataHandler handler = Mockito.mock(DataHandler.class);
 
     private LogReader logReader;

@@ -15,7 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.DirectBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
@@ -60,7 +61,7 @@ public class LogAppender extends LogBuffer
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public LogAppender(
-        final AtomicBuffer logBuffer, final AtomicBuffer stateBuffer, final byte[] defaultHeader, final int maxFrameLength)
+        final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer, final byte[] defaultHeader, final int maxFrameLength)
     {
         super(logBuffer, stateBuffer);
 
@@ -123,7 +124,7 @@ public class LogAppender extends LogBuffer
      * @return SUCCESS if appended in the log, FAILURE if not appended in the log, TRIPPED if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
-    public AppendStatus append(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    public AppendStatus append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         checkMessageLength(length);
 
@@ -135,13 +136,13 @@ public class LogAppender extends LogBuffer
         return appendFragmentedMessage(srcBuffer, srcOffset, length);
     }
 
-    private AppendStatus appendUnfragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    private AppendStatus appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         final int frameLength = length + headerLength;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
 
-        final AtomicBuffer logBuffer = logBuffer();
+        final UnsafeBuffer logBuffer = logBuffer();
         final int capacity = capacity();
         if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
         {
@@ -168,7 +169,7 @@ public class LogAppender extends LogBuffer
         return AppendStatus.SUCCESS;
     }
 
-    private AppendStatus appendFragmentedMessage(final AtomicBuffer srcBuffer, final int srcOffset, final int length)
+    private AppendStatus appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         final int numMaxPayloads = length / maxPayload;
         final int remainingPayload = length % maxPayload;
@@ -176,7 +177,7 @@ public class LogAppender extends LogBuffer
             align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
         int frameOffset = getTailAndAdd(requiredCapacity);
 
-        final AtomicBuffer logBuffer = logBuffer();
+        final UnsafeBuffer logBuffer = logBuffer();
         final int capacity = capacity();
         if (isBeyondLogBufferCapacity(frameOffset, requiredCapacity, capacity))
         {
@@ -231,7 +232,7 @@ public class LogAppender extends LogBuffer
         return (frameOffset + alignedFrameLength + headerLength) > capacity;
     }
 
-    private void appendPaddingFrame(final AtomicBuffer logBuffer, final int frameOffset)
+    private void appendPaddingFrame(final UnsafeBuffer logBuffer, final int frameOffset)
     {
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 

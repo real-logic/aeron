@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -51,12 +51,12 @@ class MappedBufferManager implements BufferManager
     static class MappedManagedBuffer implements ManagedBuffer
     {
         private final MappedByteBuffer byteBuffer;
-        private final AtomicBuffer buffer;
+        private final UnsafeBuffer buffer;
 
         MappedManagedBuffer(final MappedByteBuffer buffer)
         {
             this.byteBuffer = buffer;
-            this.buffer = new AtomicBuffer(buffer);
+            this.buffer = new UnsafeBuffer(buffer);
         }
 
         public void close()
@@ -64,7 +64,7 @@ class MappedBufferManager implements BufferManager
             IoUtil.unmap(byteBuffer);
         }
 
-        public AtomicBuffer buffer()
+        public UnsafeBuffer buffer()
         {
             return buffer;
         }

@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.collections.BiInt2ObjectMap;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
@@ -108,7 +108,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
     }
 
     public int onFrame(
-        final DataHeaderFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
@@ -133,7 +133,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
     }
 
     public void onFrame(
-        final SetupFlyweight header, final AtomicBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final SetupFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);

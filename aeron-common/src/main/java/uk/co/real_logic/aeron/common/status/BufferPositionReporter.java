@@ -15,25 +15,25 @@
  */
 package uk.co.real_logic.aeron.common.status;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.CountersManager;
 
 /**
- * Reports a position by recording it in an {@link AtomicBuffer}.
+ * Reports a position by recording it in an {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer}.
  */
 public class BufferPositionReporter implements PositionReporter
 {
-    private final AtomicBuffer buffer;
+    private final UnsafeBuffer buffer;
     private final int counterId;
     private final CountersManager countersManager;
     private final int offset;
 
-    public BufferPositionReporter(final AtomicBuffer buffer, final int counterId)
+    public BufferPositionReporter(final UnsafeBuffer buffer, final int counterId)
     {
         this(buffer, counterId, null);
     }
 
-    public BufferPositionReporter(final AtomicBuffer buffer, final int counterId, final CountersManager countersManager)
+    public BufferPositionReporter(final UnsafeBuffer buffer, final int counterId, final CountersManager countersManager)
     {
         this.buffer = buffer;
         this.counterId = counterId;

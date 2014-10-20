@@ -31,7 +31,7 @@ import static uk.co.real_logic.aeron.common.BitUtil.*;
 public class AtomicBuffer
 {
     public static final String DISABLE_BOUNDS_CHECKS_PROP_NAME = "aeron.disable.bounds.checks";
-    public static final boolean DISABLE_BOUNDS_CHECKS = Boolean.getBoolean(DISABLE_BOUNDS_CHECKS_PROP_NAME);
+    public static final boolean SHOULD_BOUNDS_CHECK = !Boolean.getBoolean(DISABLE_BOUNDS_CHECKS_PROP_NAME);
 
     private static final byte[] NULL_BYTES = "null".getBytes(StandardCharsets.UTF_8);
     private static final ByteOrder NATIVE_BYTE_ORDER = ByteOrder.nativeOrder();
@@ -1108,14 +1108,12 @@ public class AtomicBuffer
 
     private void boundsCheck(final int index, final int length)
     {
-        if (DISABLE_BOUNDS_CHECKS)
+        if (SHOULD_BOUNDS_CHECK)
         {
-            return;
-        }
-
-        if (index < 0 || length < 0 || (index + length) > capacity)
-        {
-            throw new IndexOutOfBoundsException(String.format("index=%d, length=%d, capacity=%d", index, length, capacity));
+            if (index < 0 || length < 0 || (index + length) > capacity)
+            {
+                throw new IndexOutOfBoundsException(String.format("index=%d, length=%d, capacity=%d", index, length, capacity));
+            }
         }
     }
 }

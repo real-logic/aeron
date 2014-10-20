@@ -71,7 +71,7 @@ public class CountersManager
             throw new IllegalArgumentException("Unable to allocate counter, labels buffer is full");
         }
 
-        labelsBuffer.putString(labelsOffset, label, LABEL_SIZE - SIZE_OF_INT, nativeOrder());
+        labelsBuffer.putStringUtf8(labelsOffset, label, nativeOrder(), LABEL_SIZE - SIZE_OF_INT);
 
         return counterId;
     }
@@ -119,7 +119,7 @@ public class CountersManager
         {
             if (size != UNREGISTERED_LABEL_SIZE)
             {
-                final String label = labelsBuffer.getString(labelsOffset, nativeOrder());
+                final String label = labelsBuffer.getStringUtf8(labelsOffset, nativeOrder());
                 consumer.accept(id, label);
             }
 

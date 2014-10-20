@@ -176,7 +176,7 @@ public class AtomicBuffer
 
     /**
      * Check that a given limit is not greater than the capacity of a buffer from a given offset.
-     *
+     * <p>
      * Can be overridden in a DirectBuffer subclass to enable an extensible buffer or handle retry after a flush.
      *
      * @param limit up to which access is required.
@@ -189,16 +189,6 @@ public class AtomicBuffer
             final String msg = String.format("limit=%d is beyond capacity=%d", limit, capacity);
             throw new IndexOutOfBoundsException(msg);
         }
-    }
-
-    /**
-     * Reads the underlying offset to to the memory address.
-     *
-     * @return the underlying offset to to the memory address.
-     */
-    public long addressOffset()
-    {
-        return addressOffset;
     }
 
     /**
@@ -221,16 +211,6 @@ public class AtomicBuffer
 
             return duplicate;
         }
-    }
-
-    /**
-     * Return the underlying {@link ByteBuffer} if one is attached.
-     *
-     * @return the underlying {@link ByteBuffer} if one is attached.
-     */
-    public ByteBuffer byteBuffer()
-    {
-        return byteBuffer;
     }
 
     ///////////////////////////////////////////////////////////////////////////
@@ -1028,14 +1008,30 @@ public class AtomicBuffer
             length);
     }
 
-    public String getString(final int offset, final ByteOrder byteOrder)
+    ///////////////////////////////////////////////////////////////////////////
+
+    /**
+     * Get a String from bytes encoded in UTF-8 format that is length prefixed.
+     *
+     * @param offset    at which the String begins.
+     * @param byteOrder for the length at the beginning of the String.
+     * @return the String as represented by the UTF-8 encoded bytes.
+     */
+    public String getStringUtf8(final int offset, final ByteOrder byteOrder)
     {
         final int length = getInt(offset, byteOrder);
 
-        return getString(offset, length);
+        return getStringUtf8(offset, length);
     }
 
-    public String getString(final int offset, final int length)
+    /**
+     * Get part of String from bytes encoded in UTF-8 format that is length prefixed.
+     *
+     * @param offset at which the String begins.
+     * @param length of the String in bytes to decode.
+     * @return the String as represented by the UTF-8 encoded bytes.
+     */
+    public String getStringUtf8(final int offset, final int length)
     {
         final byte[] stringInBytes = new byte[length];
         getBytes(offset + SIZE_OF_INT, stringInBytes);
@@ -1043,25 +1039,51 @@ public class AtomicBuffer
         return new String(stringInBytes, StandardCharsets.UTF_8);
     }
 
-    public int putString(final int offset, final String value, final ByteOrder byteOrder)
+    /**
+     * Encode a String as UTF-8 bytes to the buffer with a length prefix.
+     *
+     * @param offset    at which the String should be encoded.
+     * @param value     of the String to be encoded.
+     * @param byteOrder for the length prefix.
+     * @return the number of bytes put to the buffer.
+     */
+    public int putStringUtf8(final int offset, final String value, final ByteOrder byteOrder)
     {
-        return putString(offset, value, Integer.MAX_VALUE, byteOrder);
+        return putStringUtf8(offset, value, byteOrder, Integer.MAX_VALUE);
     }
 
-    public int putString(final int offset, final String value, final int maximumEncodedSize, final ByteOrder byteOrder)
+    /**
+     * Encode a String as UTF-8 bytes the buffer with a length prefix with a maximum encoded size check.
+     *
+     * @param offset         at which the String should be encoded.
+     * @param value          of the String to be encoded.
+     * @param byteOrder      for the length prefix.
+     * @param maxEncodedSize to be checked before writing to the buffer.
+     * @return the number of bytes put to the buffer.
+     * @throws java.lang.IllegalArgumentException if the encoded bytes are greater than maxEncodedSize.
+     */
+    public int putStringUtf8(final int offset, final String value, final ByteOrder byteOrder, final int maxEncodedSize)
     {
         final byte[] bytes = value != null ? value.getBytes(StandardCharsets.UTF_8) : NULL_BYTES;
-        if (bytes.length > maximumEncodedSize)
+        if (bytes.length > maxEncodedSize)
         {
-            throw new IllegalArgumentException("Encoded string larger than maximum size: " + maximumEncodedSize);
+            throw new IllegalArgumentException("Encoded string larger than maximum size: " + maxEncodedSize);
         }
 
         putInt(offset, bytes.length, byteOrder);
+        putBytes(offset + SIZE_OF_INT, bytes);
 
-        return SIZE_OF_INT + putBytes(offset + SIZE_OF_INT, bytes);
+        return SIZE_OF_INT + bytes.length;
     }
 
-    public String getStringWithoutLength(final int offset, final int length)
+    /**
+     * Get an encoded UTF-8 String from the buffer that does not have a length prefix.
+     *
+     * @param offset at which the String begins.
+     * @param length of the String in bytes to decode.
+     * @return the String as represented by the UTF-8 encoded bytes.
+     */
+    public String getStringWithoutLengthUtf8(final int offset, final int length)
     {
         final byte[] stringInBytes = new byte[length];
         getBytes(offset, stringInBytes);
@@ -1069,12 +1091,22 @@ public class AtomicBuffer
         return new String(stringInBytes, StandardCharsets.UTF_8);
     }
 
-    public int putStringWithoutLength(final int offset, final String value)
+    /**
+     * Encode a String as UTF-8 bytes in the buffer without a length prefix.
+     *
+     * @param offset at which the String begins.
+     * @param value  of the String to be encoded.
+     * @return the number of bytes encoded.
+     */
+    public int putStringWithoutLengthUtf8(final int offset, final String value)
     {
         final byte[] bytes = value != null ? value.getBytes(StandardCharsets.UTF_8) : NULL_BYTES;
+        putBytes(offset, bytes);
 
-        return putBytes(offset, bytes);
+        return bytes.length;
     }
+
+    ///////////////////////////////////////////////////////////////////////////
 
     private void boundsCheck(final int index, final int length)
     {

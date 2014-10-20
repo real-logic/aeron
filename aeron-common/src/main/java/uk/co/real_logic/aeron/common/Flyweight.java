@@ -157,11 +157,11 @@ public class Flyweight
 
     public String stringGet(final int offset, final ByteOrder byteOrder)
     {
-        return atomicBuffer.getString(offset, byteOrder);
+        return atomicBuffer.getStringUtf8(offset, byteOrder);
     }
 
     public int stringPut(final int offset, final String value, final ByteOrder byteOrder)
     {
-        return atomicBuffer.putString(offset, value, byteOrder);
+        return atomicBuffer.putStringUtf8(offset, value, byteOrder);
     }
 }

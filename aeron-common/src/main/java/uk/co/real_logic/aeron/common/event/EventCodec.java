@@ -104,7 +104,7 @@ public class EventCodec
 
     public static int encode(final AtomicBuffer encodingBuffer, final String value)
     {
-        final int length = encodingBuffer.putString(LOG_HEADER_LENGTH, value, LITTLE_ENDIAN);
+        final int length = encodingBuffer.putStringUtf8(LOG_HEADER_LENGTH, value, LITTLE_ENDIAN);
         final int recordLength = LOG_HEADER_LENGTH + length;
         encodeLogHeader(encodingBuffer, recordLength, recordLength);
 
@@ -125,8 +125,8 @@ public class EventCodec
         final String msg = null != ex.getMessage() ? ex.getMessage() : "exception message not set";
 
         int relativeOffset = LOG_HEADER_LENGTH;
-        relativeOffset += encodingBuffer.putString(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putString(relativeOffset, msg, LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, ex.getClass().getName(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, msg, LITTLE_ENDIAN);
 
         final StackTraceElement[] stackTrace = ex.getStackTrace();
         for (int i = 0; i < Math.min(STACK_DEPTH, stackTrace.length); i++)
@@ -144,9 +144,9 @@ public class EventCodec
     {
         encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
-        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getClassName(), LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getMethodName(), LITTLE_ENDIAN);
-        relativeOffset += encodingBuffer.putString(relativeOffset, stack.getFileName(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, stack.getClassName(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, stack.getMethodName(), LITTLE_ENDIAN);
+        relativeOffset += encodingBuffer.putStringUtf8(relativeOffset, stack.getFileName(), LITTLE_ENDIAN);
 
         return relativeOffset;
     }
@@ -275,12 +275,12 @@ public class EventCodec
         builder.append(": ");
 
         int strLength = buffer.getInt(offset, LITTLE_ENDIAN);
-        builder.append(buffer.getString(offset, strLength));
+        builder.append(buffer.getStringUtf8(offset, strLength));
         offset += strLength + SIZE_OF_INT;
 
         builder.append("(");
         strLength = buffer.getInt(offset, LITTLE_ENDIAN);
-        builder.append(buffer.getString(offset, strLength));
+        builder.append(buffer.getStringUtf8(offset, strLength));
         offset += strLength + SIZE_OF_INT;
         builder.append(")");
 
@@ -298,7 +298,7 @@ public class EventCodec
         final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
         builder.append(": ");
-        builder.append(buffer.getString(offset + relativeOffset, LITTLE_ENDIAN));
+        builder.append(buffer.getStringUtf8(offset + relativeOffset, LITTLE_ENDIAN));
         return builder.toString();
     }
 
@@ -308,15 +308,15 @@ public class EventCodec
         offset += SIZE_OF_INT;
 
         int length = buffer.getInt(offset);
-        final String className = buffer.getString(offset, length);
+        final String className = buffer.getStringUtf8(offset, length);
         offset += SIZE_OF_INT + length;
 
         length = buffer.getInt(offset);
-        final String methodName = buffer.getString(offset, length);
+        final String methodName = buffer.getStringUtf8(offset, length);
         offset += SIZE_OF_INT + length;
 
         length = buffer.getInt(offset);
-        final String fileName = buffer.getString(offset, length);
+        final String fileName = buffer.getStringUtf8(offset, length);
         offset += SIZE_OF_INT + length;
 
         builder.append(String.format("%s.%s %s:%d", className, methodName, fileName, lineNumber));

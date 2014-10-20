@@ -124,7 +124,7 @@ public class ConnectionMessageFlyweight extends Flyweight
         final int length = atomicBuffer().getInt(channelOffset, ByteOrder.LITTLE_ENDIAN);
         lengthOfChannel = SIZE_OF_INT + length;
 
-        return atomicBuffer().getString(channelOffset, length);
+        return atomicBuffer().getStringUtf8(channelOffset, length);
     }
 
     /**

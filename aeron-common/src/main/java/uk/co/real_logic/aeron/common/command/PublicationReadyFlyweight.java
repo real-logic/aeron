@@ -324,7 +324,7 @@ public class PublicationReadyFlyweight extends Flyweight implements ReadyFlyweig
         final int start = locationPointer(index);
         final int length = locationPointer(index + 1) - start;
 
-        return atomicBuffer().getStringWithoutLength(offset() + start, length);
+        return atomicBuffer().getStringWithoutLengthUtf8(offset() + start, length);
     }
 
     public PublicationReadyFlyweight location(final int index, final String value)
@@ -335,7 +335,7 @@ public class PublicationReadyFlyweight extends Flyweight implements ReadyFlyweig
             throw new IllegalStateException("Previous location been hasn't been set yet at index " + index);
         }
 
-        final int length = atomicBuffer().putStringWithoutLength(offset() + start, value);
+        final int length = atomicBuffer().putStringWithoutLengthUtf8(offset() + start, value);
         locationPointer(index + 1, start + length);
 
         return this;

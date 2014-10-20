@@ -43,8 +43,7 @@ public final class Aeron implements AutoCloseable
             throwable.printStackTrace();
             if (throwable instanceof DriverTimeoutException)
             {
-                System.err.printf(
-                    "\n***\n*** Timeout from the Media Driver - is it currently running? Exiting.\n***\n");
+                System.err.printf("\n***\n*** Timeout from the Media Driver - is it currently running? Exiting.\n***\n");
                 System.exit(-1);
             }
         };
@@ -52,7 +51,7 @@ public final class Aeron implements AutoCloseable
     private static final long IDLE_MAX_SPINS = 0;
     private static final long IDLE_MAX_YIELDS = 0;
     private static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
-    private static final long IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+    private static final long IDLE_MAX_PARK_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
     private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
     private static final int CONDUCTOR_TICK_DURATION_US = 10_000;

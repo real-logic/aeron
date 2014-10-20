@@ -857,8 +857,6 @@ public class AtomicBuffer
      */
     public void getBytes(final int index, final AtomicBuffer dstBuffer, final int dstIndex, final int length)
     {
-        boundsCheck(index, length);
-
         dstBuffer.putBytes(dstIndex, this, index, length);
     }
 

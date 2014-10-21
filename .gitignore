@@ -27,6 +27,17 @@ build-local.properties
 .gradle
 build
 
+# cpp build
+cppbuild/CMakeCache.txt
+cppbuild/CMakeFiles/
+cppbuild/CTestTestfile.cmake
+cppbuild/Makefile
+cppbuild/Testing/
+cppbuild/aeron-common/
+cppbuild/aeron-examples/
+cppbuild/binaries/
+cppbuild/cmake_install.cmake
+
 # Benchmark timings
 timings.log
 

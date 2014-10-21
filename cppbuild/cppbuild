@@ -1,0 +1,3 @@
+#!/bin/bash
+
+cmake -G "Unix Makefiles" .. && make && make test ARGS=-V

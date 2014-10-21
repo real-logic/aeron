@@ -1,0 +1,15 @@
+project(Mintomic)
+
+file(GLOB INCFILES ../../include/mintomic/*.h)
+file(GLOB PRIVATE_INCFILES ../../include/mintomic/private/*.h)
+source_group("Header Files\\private" FILES ${PRIVATE_INCFILES})
+include_directories(../../include)
+if(${UNIX})
+    # GCC needs to compile a source file
+    file(GLOB SRCFILES *_gcc.c)
+    add_library(Mintomic ${SRCFILES} ${INCFILES} ${PRIVATE_INCFILES})
+    SET_TARGET_PROPERTIES(Mintomic PROPERTIES LINKER_LANGUAGE C)
+    include(../../cmake/BuildSettings.cmake)
+else()
+    add_custom_target(Mintomic SOURCES ${INCFILES} ${PRIVATE_INCFILES})
+endif()

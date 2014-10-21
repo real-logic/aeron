@@ -10,5 +10,5 @@ add_executable(concurrentTests tests/testConcurrent.cpp)
 target_link_libraries(concurrentTests aeron_concurrent gtest_main)
 
 # make test
-add_test(testConcurrent concurrentTests)
+add_test(NAME testConcurrent COMMAND concurrentTests)
 

@@ -10,5 +10,5 @@ add_executable(utilTests
 target_link_libraries(utilTests aeron_util gmock_main)
 
 # make test
-add_test(testUtil utilTests)
+add_test(NAME testUtil COMMAND utilTests)
 

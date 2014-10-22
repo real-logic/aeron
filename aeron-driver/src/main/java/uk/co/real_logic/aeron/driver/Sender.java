@@ -99,6 +99,7 @@ public class Sender implements Agent
             roundRobinIndex = 0;
         }
 
+        final int roundRobinIndex = this.roundRobinIndex;
         if (length > 0)
         {
             int i = roundRobinIndex;

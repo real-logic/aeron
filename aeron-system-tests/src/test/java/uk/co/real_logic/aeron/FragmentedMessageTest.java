@@ -53,7 +53,7 @@ public class FragmentedMessageTest
     @DataPoint
     public static final ThreadingMode DEDICATED = ThreadingMode.DEDICATED;
 
-    private static final int STREAM_ID = 1;
+    public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
     private final DataHandler mockDataHandler = mock(DataHandler.class);

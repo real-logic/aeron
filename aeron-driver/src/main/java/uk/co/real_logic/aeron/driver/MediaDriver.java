@@ -117,14 +117,14 @@ public final class MediaDriver implements AutoCloseable
         {
             case SHARED_NETWORK:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                    new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
                         new CompositeAgent(sender, receiver)),
                     new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
             case SHARED:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                    new AgentRunner(ctx.sharedIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
                         new CompositeAgent(sender,
                             new CompositeAgent(receiver, driverConductor)))
                 );
@@ -243,8 +243,8 @@ public final class MediaDriver implements AutoCloseable
         private IdleStrategy conductorIdleStrategy;
         private IdleStrategy senderIdleStrategy;
         private IdleStrategy receiverIdleStrategy;
-        private IdleStrategy unifiedNetworkIdleStrategy;
-        private IdleStrategy unifiedIdleStrategy;
+        private IdleStrategy sharedNetworkIdleStrategy;
+        private IdleStrategy sharedIdleStrategy;
         private ClientProxy clientProxy;
         private RingBuffer toDriverCommands;
         private RingBuffer toEventReader;
@@ -400,14 +400,14 @@ public final class MediaDriver implements AutoCloseable
                     receiverIdleStrategy(Configuration.agentIdleStrategy());
                 }
 
-                if (null == unifiedNetworkIdleStrategy)
+                if (null == sharedNetworkIdleStrategy)
                 {
-                    unifiedNetworkIdleStrategy(Configuration.agentIdleStrategy());
+                    sharedNetworkIdleStrategy(Configuration.agentIdleStrategy());
                 }
 
-                if (null == unifiedIdleStrategy)
+                if (null == sharedIdleStrategy)
                 {
-                    unifiedIdleStrategy(Configuration.agentIdleStrategy());
+                    sharedIdleStrategy(Configuration.agentIdleStrategy());
                 }
 
             }
@@ -508,15 +508,16 @@ public final class MediaDriver implements AutoCloseable
             this.receiverIdleStrategy = strategy;
             return this;
         }
-        public Context unifiedNetworkIdleStrategy(final IdleStrategy strategy)
+
+        public Context sharedNetworkIdleStrategy(final IdleStrategy strategy)
         {
-            this.unifiedNetworkIdleStrategy = strategy;
+            this.sharedNetworkIdleStrategy = strategy;
             return this;
         }
 
-        public Context unifiedIdleStrategy(final IdleStrategy strategy)
+        public Context sharedIdleStrategy(final IdleStrategy strategy)
         {
-            this.unifiedIdleStrategy = strategy;
+            this.sharedIdleStrategy = strategy;
             return this;
         }
 
@@ -703,14 +704,14 @@ public final class MediaDriver implements AutoCloseable
             return receiverIdleStrategy;
         }
 
-        public IdleStrategy unifiedNetworkIdleStrategy()
+        public IdleStrategy sharedNetworkIdleStrategy()
         {
-            return unifiedNetworkIdleStrategy;
+            return sharedNetworkIdleStrategy;
         }
 
-        public IdleStrategy unifiedIdleStrategy()
+        public IdleStrategy sharedIdleStrategy()
         {
-            return unifiedIdleStrategy;
+            return sharedIdleStrategy;
         }
 
         public ClientProxy clientProxy()

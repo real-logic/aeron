@@ -66,6 +66,8 @@ public class AgentRunner implements Runnable, AutoCloseable
         latch = new CountDownLatch(1);
         thread = Thread.currentThread();
 
+        final IdleStrategy idleStrategy = this.idleStrategy;
+        final Agent agent = this.agent;
         while (running)
         {
             try
@@ -75,7 +77,7 @@ public class AgentRunner implements Runnable, AutoCloseable
             }
             catch (final InterruptedException ignore)
             {
-                break;
+                Thread.interrupted();
             }
             catch (final Throwable ex)
             {

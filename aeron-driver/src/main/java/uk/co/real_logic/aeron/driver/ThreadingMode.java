@@ -20,12 +20,12 @@ package uk.co.real_logic.aeron.driver;
 */
 public enum ThreadingMode
 {
-    /** One thread shared by all 3 agents. */
-    SHARED,
+    /** 3 Threads, one dedicated to each of the agents. */
+    DEDICATED,
 
     /** One thread shared for both the {@link Sender} and {@link Receiver} agents, and one for the {@link DriverConductor}. */
     SHARED_NETWORK,
 
-    /** 3 Threads, one dedicated to each of the agents. */
-    DEDICATED
+    /** One thread shared by all 3 agents. */
+    SHARED,
 }

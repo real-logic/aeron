@@ -61,7 +61,6 @@ public final class MediaDriver implements AutoCloseable
     private final File adminDirectory;
     private final File dataDirectory;
     private final File countersDirectory;
-
     private final List<AgentRunner> runners;
     private final Context ctx;
 
@@ -96,12 +95,12 @@ public final class MediaDriver implements AutoCloseable
         ensureDirectoriesAreRecreated();
 
         ctx.unicastSenderFlowControl(Configuration::unicastSenderFlowControlStrategy)
-                .multicastSenderFlowControl(Configuration::multicastSenderFlowControlStrategy)
-                .conductorTimerWheel(Configuration.newConductorTimerWheel())
-                .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-                .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-                .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-                .conclude();
+           .multicastSenderFlowControl(Configuration::multicastSenderFlowControlStrategy)
+           .conductorTimerWheel(Configuration.newConductorTimerWheel())
+           .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+           .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+           .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+           .conclude();
 
         final AtomicCounter driverExceptions = ctx.systemCounters().driverExceptions();
 
@@ -115,18 +114,18 @@ public final class MediaDriver implements AutoCloseable
 
         switch (ctx.threadingMode)
         {
+            case SHARED:
+                runners = Arrays.asList(
+                    new AgentRunner(ctx.sharedIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                                    new CompositeAgent(sender, new CompositeAgent(receiver, driverConductor)))
+                );
+                break;
+
             case SHARED_NETWORK:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
                                     new CompositeAgent(sender, receiver)),
                     new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
-                );
-                break;
-
-            case SHARED:
-                runners = Arrays.asList(
-                    new AgentRunner(ctx.sharedIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                        new CompositeAgent(sender, new CompositeAgent(receiver, driverConductor)))
                 );
                 break;
 
@@ -299,10 +298,10 @@ public final class MediaDriver implements AutoCloseable
 
         public Context conclude()
         {
+            super.conclude();
+
             try
             {
-                super.conclude();
-
                 if (threadingMode == null)
                 {
                     threadingMode = Configuration.threadingMode();
@@ -349,7 +348,6 @@ public final class MediaDriver implements AutoCloseable
                     if (counterLabelsBuffer() == null)
                     {
                         final File counterLabelsFile = new File(countersDirName(), LABELS_FILE);
-
                         deleteIfExists(counterLabelsFile);
 
                         if (dirsDeleteOnExit())
@@ -358,14 +356,12 @@ public final class MediaDriver implements AutoCloseable
                         }
 
                         counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_SZ);
-
                         counterLabelsBuffer(new UnsafeBuffer(counterLabelsByteBuffer));
                     }
 
                     if (countersBuffer() == null)
                     {
                         final File counterValuesFile = new File(countersDirName(), VALUES_FILE);
-
                         deleteIfExists(counterValuesFile);
 
                         if (dirsDeleteOnExit())
@@ -374,7 +370,6 @@ public final class MediaDriver implements AutoCloseable
                         }
 
                         counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_SZ);
-
                         countersBuffer(new UnsafeBuffer(counterValuesByteBuffer));
                     }
 
@@ -418,7 +413,6 @@ public final class MediaDriver implements AutoCloseable
                 {
                     sharedIdleStrategy(Configuration.agentIdleStrategy());
                 }
-
             }
             catch (final Exception ex)
             {

@@ -33,7 +33,8 @@ public class ReceiverProxy
 
     private Receiver receiver;
 
-    public ReceiverProxy(final ThreadingMode threadingMode, final Queue<? super Object> commandQueue, final AtomicCounter failCount)
+    public ReceiverProxy(
+        final ThreadingMode threadingMode, final Queue<? super Object> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
@@ -47,7 +48,7 @@ public class ReceiverProxy
 
     public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onAddSubscription(mediaEndpoint, streamId);
         }
@@ -59,7 +60,7 @@ public class ReceiverProxy
 
     public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onRemoveSubscription(mediaEndpoint, streamId);
         }
@@ -71,7 +72,7 @@ public class ReceiverProxy
 
     public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onNewConnection(channelEndpoint, connection);
         }
@@ -83,7 +84,7 @@ public class ReceiverProxy
 
     public void removeConnection(final DriverConnection connection)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onRemoveConnection(connection);
         }
@@ -95,7 +96,7 @@ public class ReceiverProxy
 
     public void registerMediaEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onRegisterMediaSubscriptionEndpoint(channelEndpoint);
         }
@@ -107,7 +108,7 @@ public class ReceiverProxy
 
     public void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onCloseReceiveChannelEndpoint(channelEndpoint);
         }
@@ -119,7 +120,7 @@ public class ReceiverProxy
 
     public void removePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onRemovePendingSetup(channelEndpoint, sessionId, streamId);
         }
@@ -131,7 +132,7 @@ public class ReceiverProxy
 
     public void closeSubscription(final DriverSubscription subscription)
     {
-        if(isShared())
+        if (isShared())
         {
             receiver.onCloseSubscription(subscription);
         }

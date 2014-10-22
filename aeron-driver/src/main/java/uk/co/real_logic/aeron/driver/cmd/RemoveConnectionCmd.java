@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverConnection;
-import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 
 public class RemoveConnectionCmd
 {

@@ -48,6 +48,7 @@ import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_PU
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
+import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
 /**
  * Test the Media Driver Conductor in isolation
@@ -142,7 +143,7 @@ public class DriverConductorTest
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
-        ctx.driverConductorProxy(new DriverConductorProxy(ThreadingMode.DEDICATED, ctx.conductorCommandQueue(), mock(AtomicCounter.class)));
+        ctx.driverConductorProxy(new DriverConductorProxy(DEDICATED, ctx.conductorCommandQueue(), mock(AtomicCounter.class)));
 
         driverConductor = new DriverConductor(ctx);
 
@@ -519,5 +520,4 @@ public class DriverConductorTest
 
         return wheel.clock().time() - startTime;
     }
-
 }

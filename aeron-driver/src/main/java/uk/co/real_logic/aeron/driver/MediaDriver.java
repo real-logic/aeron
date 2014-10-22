@@ -27,7 +27,8 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -102,31 +103,38 @@ public final class MediaDriver implements AutoCloseable
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .conclude();
 
-
         final AtomicCounter driverExceptions = ctx.systemCounters().driverExceptions();
+
+        final Receiver receiver = new Receiver(ctx);
+        final Sender sender = new Sender(ctx);
+        final DriverConductor driverConductor = new DriverConductor(ctx);
+
+        ctx.receiverProxy().receiver(receiver);
+        ctx.senderProxy().sender(sender);
+        ctx.driverConductorProxy().driverConductor(driverConductor);
 
         switch (ctx.threadingMode)
         {
             case UNIFIED_NETWORK:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                        new CompositeAgent(new Sender(ctx), new Receiver(ctx))),
-                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new DriverConductor(ctx))
+                        new CompositeAgent(sender, receiver)),
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
             case UNIFIED:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                        new CompositeAgent(new Sender(ctx),
-                            new CompositeAgent(new Receiver(ctx), new DriverConductor(ctx))))
+                        new CompositeAgent(sender,
+                            new CompositeAgent(receiver, driverConductor)))
                 );
                 break;
             default:
             case SEPARATED:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Sender(ctx)),
-                    new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Receiver(ctx)),
-                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new DriverConductor(ctx))
+                    new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, sender),
+                    new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, receiver),
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
         }
@@ -182,17 +190,14 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        startThread(new Thread(runners.get(0)), "aeron-driver-conductor");
-        startThread(new Thread(runners.get(1)), "aeron-sender");
-        startThread(new Thread(runners.get(2)), "aeron-receiver");
+        runners.forEach(runner ->
+        {
+            final Thread thread = new Thread(runner);
+            thread.setName(runner.agent().roleName());
+            thread.start();
+        });
 
         return this;
-    }
-
-    private void startThread(final Thread agentThread, final String name)
-    {
-        agentThread.setName(name);
-        agentThread.start();
     }
 
     private void ensureDirectoriesAreRecreated()
@@ -219,12 +224,6 @@ public final class MediaDriver implements AutoCloseable
             IoUtil.delete(dataDirectory, false);
             IoUtil.delete(countersDirectory, false);
         }
-    }
-
-    public static enum ThreadingMode {
-        UNIFIED,
-        UNIFIED_NETWORK,
-        SEPARATED
     }
 
     public static class Context extends CommonContext
@@ -272,7 +271,6 @@ public final class MediaDriver implements AutoCloseable
         private EventLogger eventLogger;
         private Consumer<String> eventConsumer;
         private ThreadingMode threadingMode;
-        private ReceiverStub receiverStub;
 
         public Context()
         {
@@ -296,6 +294,11 @@ public final class MediaDriver implements AutoCloseable
             try
             {
                 super.conclude();
+
+                if (threadingMode == null)
+                {
+                    threadingMode = Configuration.threadingMode();
+                }
 
                 mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
 
@@ -375,9 +378,9 @@ public final class MediaDriver implements AutoCloseable
                     systemCounters = new SystemCounters(countersManager);
                 }
 
-                receiverProxy(new ReceiverQueueProxy(receiverCommandQueue(), systemCounters.receiverProxyFails()));
-                senderProxy(new SenderProxy(senderCommandQueue(), systemCounters.senderProxyFails()));
-                driverConductorProxy(new DriverConductorProxy(conductorCommandQueue, systemCounters.conductorProxyFails()));
+                receiverProxy(new ReceiverProxy(threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
+                senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.senderProxyFails()));
+                driverConductorProxy(new DriverConductorProxy(threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
 
                 termBuffersFactory(
                     new TermBuffersFactory(dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
@@ -407,10 +410,6 @@ public final class MediaDriver implements AutoCloseable
                     unifiedIdleStrategy(Configuration.agentIdleStrategy());
                 }
 
-                if (threadingMode == null)
-                {
-                    threadingMode = Configuration.threadingMode();
-                }
             }
             catch (final Exception ex)
             {

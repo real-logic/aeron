@@ -22,18 +22,30 @@ import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 
+import static uk.co.real_logic.aeron.driver.ThreadingMode.UNIFIED;
+
 /**
  * Proxy for sending commands to the media conductor.
  */
 public class DriverConductorProxy
 {
+    private final ThreadingMode threadingMode;
     private final Queue<? super Object> commandQueue;
     private final AtomicCounter failCount;
 
-    public DriverConductorProxy(final Queue<? super Object> commandQueue, final AtomicCounter failCount)
+    private DriverConductor driverConductor;
+
+    public DriverConductorProxy(
+        final ThreadingMode threadingMode, final Queue<? super Object> commandQueue, final AtomicCounter failCount)
     {
+        this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
+    }
+
+    public void driverConductor(DriverConductor driverConductor)
+    {
+        this.driverConductor = driverConductor;
     }
 
     public void createConnection(
@@ -47,10 +59,19 @@ public class DriverConductorProxy
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        offerCommand(
-            new CreateConnectionCmd(
+        if (isUnified())
+        {
+            driverConductor.onCreateConnection(
                 sessionId, streamId, termId, termOffset, termSize, senderMtuLength,
-                controlAddress, srcAddress, channelEndpoint));
+                controlAddress, srcAddress, channelEndpoint);
+        }
+        else
+        {
+            offerCommand(
+                new CreateConnectionCmd(
+                    sessionId, streamId, termId, termOffset, termSize, senderMtuLength,
+                    controlAddress, srcAddress, channelEndpoint));
+        }
     }
 
     public void elicitSetupFromSource(
@@ -59,7 +80,20 @@ public class DriverConductorProxy
         final InetSocketAddress controlAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        offerCommand(new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint));
+        ElicitSetupFromSourceCmd cmd = new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint);
+        if (isUnified())
+        {
+            driverConductor.onElicitSetupFromSender(cmd);
+        }
+        else
+        {
+            offerCommand(cmd);
+        }
+    }
+
+    private boolean isUnified()
+    {
+        return threadingMode == UNIFIED;
     }
 
     private void offerCommand(Object cmd)

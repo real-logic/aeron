@@ -54,6 +54,39 @@ public class Sender implements Agent
         return workCount;
     }
 
+    private void processConductorCommands(final Object obj)
+    {
+        if (obj instanceof RetransmitPublicationCmd)
+        {
+            final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
+            onRetransmit(cmd.publication(), cmd.termId(), cmd.termOffset(), cmd.length());
+        }
+        if (obj instanceof NewPublicationCmd)
+        {
+            final NewPublicationCmd cmd = (NewPublicationCmd)obj;
+            onNewPublication(cmd.publication());
+        }
+        else if (obj instanceof ClosePublicationCmd)
+        {
+            final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
+            onClosePublication(cmd.publication());
+        }
+    }
+
+    public void onRetransmit(
+        final DriverPublication publication,
+        final int termId,
+        final int termOffset,
+        final int length)
+    {
+        publication.onRetransmit(termId, termOffset, length);
+    }
+
+    public String roleName()
+    {
+        return "sender";
+    }
+
     private int doSend()
     {
         int bytesSent = 0;
@@ -86,7 +119,7 @@ public class Sender implements Agent
         return bytesSent;
     }
 
-    private void addPublication(final DriverPublication publication)
+    public void onNewPublication(final DriverPublication publication)
     {
         final DriverPublication[] oldPublications = publications;
         final int length = oldPublications.length;
@@ -98,7 +131,7 @@ public class Sender implements Agent
         publications = newPublications;
     }
 
-    private void removePublication(final DriverPublication publication)
+    public void onClosePublication(final DriverPublication publication)
     {
         final DriverPublication[] oldPublications = publications;
         final int length = oldPublications.length;
@@ -113,24 +146,5 @@ public class Sender implements Agent
 
         publications = newPublications;
         publication.close();
-    }
-
-    private void processConductorCommands(final Object obj)
-    {
-        if (obj instanceof RetransmitPublicationCmd)
-        {
-            final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
-            cmd.publication().onRetransmit(cmd.termId(), cmd.termOffset(), cmd.length());
-        }
-        if (obj instanceof NewPublicationCmd)
-        {
-            final NewPublicationCmd cmd = (NewPublicationCmd)obj;
-            addPublication(cmd.publication());
-        }
-        else if (obj instanceof ClosePublicationCmd)
-        {
-            final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
-            removePublication(cmd.publication());
-        }
     }
 }

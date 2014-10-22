@@ -66,7 +66,7 @@ public class Receiver implements Agent
         else if (obj instanceof RemoveConnectionCmd)
         {
             final RemoveConnectionCmd cmd = (RemoveConnectionCmd)obj;
-            onRemoveConnection(cmd.channelEndpoint(), cmd.connection());
+            onRemoveConnection(cmd.connection());
         }
         else if (obj instanceof RemovePendingSetupCmd)
         {
@@ -76,7 +76,7 @@ public class Receiver implements Agent
         else if (obj instanceof CloseReceiveChannelEndpointCmd)
         {
             final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)obj;
-            onCloseMediaSubscriptionEndpoint(cmd.receiveChannelEndpoint());
+            onCloseReceiveChannelEndpoint(cmd.receiveChannelEndpoint());
         }
         else if (obj instanceof CloseSubscriptionCmd)
         {
@@ -95,45 +95,51 @@ public class Receiver implements Agent
         return workCount + bytesReceived;
     }
 
-    private void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    public String roleName()
+    {
+        return "receiver";
+    }
+
+    public void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         channelEndpoint.dispatcher().addSubscription(streamId);
     }
 
-    private void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
+    public void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         channelEndpoint.dispatcher().onRemoveSubscription(streamId);
     }
 
-    private void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
+    public void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
         channelEndpoint.dispatcher().addConnection(connection);
     }
 
-    private void onRemoveConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
+    public void onRemoveConnection(final DriverConnection connection)
     {
-
-        channelEndpoint.dispatcher().removeConnection(connection);
+        connection.receiveChannelEndpoint()
+                  .dispatcher()
+                  .removeConnection(connection);
     }
 
-    private void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    public void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.registerForRead(transportPoller);
         transportPoller.selectNowWithoutProcessing();
     }
 
-    private void onRemovePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
+    public void onRemovePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
         channelEndpoint.dispatcher().removePendingSetup(sessionId, streamId);
     }
 
-    private void onCloseMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
         transportPoller.selectNowWithoutProcessing();
     }
 
-    private void onCloseSubscription(final DriverSubscription subscription)
+    public void onCloseSubscription(final DriverSubscription subscription)
     {
         subscription.close();
     }

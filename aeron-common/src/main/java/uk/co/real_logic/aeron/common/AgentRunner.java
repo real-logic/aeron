@@ -124,4 +124,9 @@ public class AgentRunner implements Runnable, AutoCloseable
 
         agent.onClose();
     }
+
+    public Agent agent()
+    {
+        return agent;
+    }
 }

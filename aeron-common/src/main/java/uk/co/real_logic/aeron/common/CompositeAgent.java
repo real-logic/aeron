@@ -40,4 +40,9 @@ public class CompositeAgent implements Agent
         firstAgent.onClose();
         secondAgent.onClose();
     }
+
+    public String roleName()
+    {
+        return firstAgent.roleName() + "+" + secondAgent.roleName();
+    }
 }

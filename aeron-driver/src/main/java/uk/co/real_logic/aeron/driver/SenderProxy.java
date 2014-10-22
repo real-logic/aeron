@@ -22,33 +22,69 @@ import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
 import java.util.Queue;
 
+import static uk.co.real_logic.aeron.driver.ThreadingMode.UNIFIED;
+
 /**
  * Proxy for offering into the Sender Thread's command queue.
  */
 public class SenderProxy
 {
+    private final ThreadingMode threadingMode;
     private final Queue<Object> commandQueue;
     private final AtomicCounter failCount;
+    private Sender sender;
 
-    public SenderProxy(final Queue<Object> commandQueue, final AtomicCounter failCount)
+    public SenderProxy(final ThreadingMode threadingMode, final Queue<Object> commandQueue, final AtomicCounter failCount)
     {
+        this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
     }
 
+    public void sender(Sender sender)
+    {
+        this.sender = sender;
+    }
+
     public void retransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
-        offerCommand(new RetransmitPublicationCmd(publication, termId, termOffset, length));
+        if (isUnified())
+        {
+            sender.onRetransmit(publication, termId, termOffset, length);
+        }
+        else
+        {
+            offerCommand(new RetransmitPublicationCmd(publication, termId, termOffset, length));
+        }
     }
 
     public void closePublication(final DriverPublication publication)
     {
-        offerCommand(new ClosePublicationCmd(publication));
+        if (isUnified())
+        {
+            sender.onClosePublication(publication);
+        }
+        else
+        {
+            offerCommand(new ClosePublicationCmd(publication));
+        }
     }
 
     public void newPublication(final DriverPublication publication)
     {
-        offerCommand(new NewPublicationCmd(publication));
+        if (isUnified())
+        {
+            sender.onNewPublication(publication);
+        }
+        else
+        {
+            offerCommand(new NewPublicationCmd(publication));
+        }
+    }
+
+    private boolean isUnified()
+    {
+        return threadingMode == UNIFIED;
     }
 
     private void offerCommand(Object cmd)

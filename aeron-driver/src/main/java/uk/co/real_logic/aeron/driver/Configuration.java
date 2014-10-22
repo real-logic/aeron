@@ -27,8 +27,8 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
-import static uk.co.real_logic.aeron.driver.MediaDriver.ThreadingMode;
-import static uk.co.real_logic.aeron.driver.MediaDriver.ThreadingMode.SEPARATED;
+
+import static uk.co.real_logic.aeron.driver.ThreadingMode.SEPARATED;
 
 /**
  * Configuration options for the media driver.

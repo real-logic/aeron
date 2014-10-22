@@ -34,4 +34,12 @@ public interface Agent
     {
         // default to do nothing unless you want to handle the notification.
     }
+
+    /**
+     * Get the name of this agent's role.
+     *
+     * @return the name of this agent's role.
+     */
+    String roleName();
+
 }

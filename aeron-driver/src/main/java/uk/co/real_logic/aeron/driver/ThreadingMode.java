@@ -13,22 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.cmd;
+package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.DriverConnection;
-import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
-
-public class RemoveConnectionCmd
+/**
+* .
+*/
+public enum ThreadingMode
 {
-    private final DriverConnection connection;
-
-    public RemoveConnectionCmd(final DriverConnection connection)
-    {
-        this.connection = connection;
-    }
-
-    public DriverConnection connection()
-    {
-        return connection;
-    }
+    UNIFIED,
+    UNIFIED_NETWORK,
+    SEPARATED
 }

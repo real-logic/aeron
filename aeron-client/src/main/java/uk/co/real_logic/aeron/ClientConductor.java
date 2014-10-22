@@ -108,6 +108,11 @@ class ClientConductor implements Agent, DriverListener
         return workCount;
     }
 
+    public String roleName()
+    {
+        return "client-conductor";
+    }
+
     public synchronized Publication addPublication(final String channel, final int streamId, final int sessionId)
     {
         verifyDriverIsActive();

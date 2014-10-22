@@ -177,6 +177,11 @@ public class DriverConductor implements Agent
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
 
+    public String roleName()
+    {
+        return "driver-conductor";
+    }
+
     public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
     {
         return sendChannelEndpointByChannelMap.get(channel.canonicalForm());
@@ -206,6 +211,7 @@ public class DriverConductor implements Agent
         }
         else if (obj instanceof ElicitSetupFromSourceCmd)
         {
+            // Deliberately passes command object, since it gets put onto a queue
             onElicitSetupFromSender((ElicitSetupFromSourceCmd)obj);
         }
     }
@@ -537,7 +543,7 @@ public class DriverConductor implements Agent
         if (channelEndpoint.streamCount() == 0)
         {
             receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-            receiverProxy.closeMediaEndpoint(channelEndpoint);
+            receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
 
             while (!channelEndpoint.isClosed())
             {
@@ -548,7 +554,7 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onCreateConnection(
+    public void onCreateConnection(
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -725,7 +731,7 @@ public class DriverConductor implements Agent
                 if (channelEndpoint.streamCount() == 0)
                 {
                     receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                    receiverProxy.closeMediaEndpoint(channelEndpoint);
+                    receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
                 }
             }
         }
@@ -820,7 +826,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void onElicitSetupFromSender(final ElicitSetupFromSourceCmd cmd)
+    public void onElicitSetupFromSender(final ElicitSetupFromSourceCmd cmd)
     {
         final int sessionId = cmd.sessionId();
         final int streamId = cmd.streamId();

@@ -91,7 +91,7 @@ public class DriverConductorTest
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
-    private final ReceiverProxy receiverProxy = mock(ReceiverQueueProxy.class);
+    private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
 
     private long currentTime;
     private final TimerWheel wheel = new TimerWheel(
@@ -142,11 +142,11 @@ public class DriverConductorTest
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
-        ctx.driverConductorProxy(new DriverConductorProxy(ctx.conductorCommandQueue(), mock(AtomicCounter.class)));
+        ctx.driverConductorProxy(new DriverConductorProxy(ThreadingMode.SEPARATED, ctx.conductorCommandQueue(), mock(AtomicCounter.class)));
 
         driverConductor = new DriverConductor(ctx);
 
-        doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeMediaEndpoint(any());
+        doAnswer(closeChannelEndpointAnswer).when(receiverProxy).closeReceiveChannelEndpoint(any());
     }
 
     @After

@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -43,6 +44,15 @@ public class FragmentedMessageTest
     @DataPoint
     public static final String MULTICAST_URI = "udp://localhost@224.20.30.39:54326";
 
+    @DataPoint
+    public static final ThreadingMode shared = ThreadingMode.SHARED;
+
+    @DataPoint
+    public static final ThreadingMode sharedNetwork = ThreadingMode.SHARED_NETWORK;
+
+    @DataPoint
+    public static final ThreadingMode dedicated = ThreadingMode.DEDICATED;
+
     private static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
@@ -50,10 +60,11 @@ public class FragmentedMessageTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage(final String channel) throws Exception
+    public void shouldReceivePublishedMessage(final String channel, final ThreadingMode threadingMode) throws Exception
     {
         final MediaDriver.Context ctx = new MediaDriver.Context();
         ctx.dirsDeleteOnExit(true);
+        ctx.threadingMode(threadingMode);
 
         final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockDataHandler);
 

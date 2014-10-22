@@ -56,8 +56,8 @@ public class Pong
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
              final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID,
-                 new FragmentAssemblyAdapter((buffer, offset, length, header) ->
-                     pingHandler(pongPublication, buffer, offset, length))))
+                 new FragmentAssemblyAdapter(
+                     (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length))))
         {
             while (running.get())
             {

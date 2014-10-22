@@ -95,14 +95,7 @@ public class EmbeddedPingPong
         {
             System.out.println("Waiting for new connection from Pong...");
 
-            try
-            {
-                PONG_CONNECTION_LATCH.await();
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
-            }
+            PONG_CONNECTION_LATCH.await();
 
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");

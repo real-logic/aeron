@@ -290,12 +290,6 @@ public final class MediaDriver implements AutoCloseable
             warnIfDirectoriesExist = true;
         }
 
-        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<Object> conductorCommandQueue)
-        {
-            this.conductorCommandQueue = conductorCommandQueue;
-            return this;
-        }
-
         public Context conclude()
         {
             super.conclude();
@@ -343,43 +337,7 @@ public final class MediaDriver implements AutoCloseable
 
                 toDriverCommands(new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer)));
 
-                if (countersManager() == null)
-                {
-                    if (counterLabelsBuffer() == null)
-                    {
-                        final File counterLabelsFile = new File(countersDirName(), LABELS_FILE);
-                        deleteIfExists(counterLabelsFile);
-
-                        if (dirsDeleteOnExit())
-                        {
-                            counterLabelsFile.deleteOnExit();
-                        }
-
-                        counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_SZ);
-                        counterLabelsBuffer(new UnsafeBuffer(counterLabelsByteBuffer));
-                    }
-
-                    if (countersBuffer() == null)
-                    {
-                        final File counterValuesFile = new File(countersDirName(), VALUES_FILE);
-                        deleteIfExists(counterValuesFile);
-
-                        if (dirsDeleteOnExit())
-                        {
-                            counterValuesFile.deleteOnExit();
-                        }
-
-                        counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_SZ);
-                        countersBuffer(new UnsafeBuffer(counterValuesByteBuffer));
-                    }
-
-                    countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
-                }
-
-                if (null == systemCounters)
-                {
-                    systemCounters = new SystemCounters(countersManager);
-                }
+                concludeCounters();
 
                 receiverProxy(new ReceiverProxy(threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
                 senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.senderProxyFails()));
@@ -389,36 +347,19 @@ public final class MediaDriver implements AutoCloseable
                 termBuffersFactory(
                     new TermBuffersFactory(dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
 
-                if (null == conductorIdleStrategy)
-                {
-                    conductorIdleStrategy(Configuration.agentIdleStrategy());
-                }
-
-                if (null == senderIdleStrategy)
-                {
-                    senderIdleStrategy(Configuration.agentIdleStrategy());
-                }
-
-                if (null == receiverIdleStrategy)
-                {
-                    receiverIdleStrategy(Configuration.agentIdleStrategy());
-                }
-
-                if (null == sharedNetworkIdleStrategy)
-                {
-                    sharedNetworkIdleStrategy(Configuration.agentIdleStrategy());
-                }
-
-                if (null == sharedIdleStrategy)
-                {
-                    sharedIdleStrategy(Configuration.agentIdleStrategy());
-                }
+                concludeIdleStrategies();
             }
             catch (final Exception ex)
             {
                 throw new RuntimeException(ex);
             }
 
+            return this;
+        }
+
+        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<Object> conductorCommandQueue)
+        {
+            this.conductorCommandQueue = conductorCommandQueue;
             return this;
         }
 
@@ -840,6 +781,75 @@ public final class MediaDriver implements AutoCloseable
             }
 
             super.close();
+        }
+
+        private void concludeCounters()
+        {
+            if (countersManager() == null)
+            {
+                if (counterLabelsBuffer() == null)
+                {
+                    final File counterLabelsFile = new File(countersDirName(), LABELS_FILE);
+                    deleteIfExists(counterLabelsFile);
+
+                    if (dirsDeleteOnExit())
+                    {
+                        counterLabelsFile.deleteOnExit();
+                    }
+
+                    counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_SZ);
+                    counterLabelsBuffer(new UnsafeBuffer(counterLabelsByteBuffer));
+                }
+
+                if (countersBuffer() == null)
+                {
+                    final File counterValuesFile = new File(countersDirName(), VALUES_FILE);
+                    deleteIfExists(counterValuesFile);
+
+                    if (dirsDeleteOnExit())
+                    {
+                        counterValuesFile.deleteOnExit();
+                    }
+
+                    counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_SZ);
+                    countersBuffer(new UnsafeBuffer(counterValuesByteBuffer));
+                }
+
+                countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
+            }
+
+            if (null == systemCounters)
+            {
+                systemCounters = new SystemCounters(countersManager);
+            }
+        }
+
+        private void concludeIdleStrategies()
+        {
+            if (null == conductorIdleStrategy)
+            {
+                conductorIdleStrategy(Configuration.agentIdleStrategy());
+            }
+
+            if (null == senderIdleStrategy)
+            {
+                senderIdleStrategy(Configuration.agentIdleStrategy());
+            }
+
+            if (null == receiverIdleStrategy)
+            {
+                receiverIdleStrategy(Configuration.agentIdleStrategy());
+            }
+
+            if (null == sharedNetworkIdleStrategy)
+            {
+                sharedNetworkIdleStrategy(Configuration.agentIdleStrategy());
+            }
+
+            if (null == sharedIdleStrategy)
+            {
+                sharedIdleStrategy(Configuration.agentIdleStrategy());
+            }
         }
     }
 }

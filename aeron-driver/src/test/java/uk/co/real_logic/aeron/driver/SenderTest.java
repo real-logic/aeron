@@ -140,7 +140,7 @@ public class SenderTest
     @After
     public void tearDown() throws Exception
     {
-        sender.close();
+        sender.onClose();
     }
 
     @Test

@@ -25,7 +25,7 @@ import java.util.function.Consumer;
 /**
  * Receiver service for JVM based media driver, uses an event loop with command buffer
  */
-public class Receiver extends Agent
+public class Receiver implements Agent
 {
     private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<Object> commandQueue;
@@ -34,8 +34,6 @@ public class Receiver extends Agent
 
     public Receiver(final MediaDriver.Context ctx)
     {
-        super(ctx.receiverIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
-
         this.transportPoller = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
         this.totalBytesReceived = ctx.systemCounters().bytesReceived();

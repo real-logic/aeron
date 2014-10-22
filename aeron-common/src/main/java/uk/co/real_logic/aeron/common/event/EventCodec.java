@@ -120,7 +120,7 @@ public class EventCodec
         return relativeOffset;
     }
 
-    public static int encode(final UnsafeBuffer encodingBuffer, final Exception ex)
+    public static int encode(final UnsafeBuffer encodingBuffer, final Throwable ex)
     {
         final String msg = null != ex.getMessage() ? ex.getMessage() : "exception message not set";
 

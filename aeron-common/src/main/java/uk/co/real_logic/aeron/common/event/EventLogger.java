@@ -160,7 +160,7 @@ public class EventLogger
         }
     }
 
-    public void logException(final Exception ex)
+    public void logException(final Throwable ex)
     {
         if (isEnabled(EXCEPTION, ENABLED_EVENT_CODES))
         {

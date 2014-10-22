@@ -55,7 +55,7 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as handle NAKs and retransmissions
  */
-public class DriverConductor extends Agent
+public class DriverConductor implements Agent
 {
     public static final int HEARTBEAT_TIMEOUT_MS = 1000;  // how often to check liveness & cleanup
 
@@ -122,8 +122,6 @@ public class DriverConductor extends Agent
 
     public DriverConductor(final Context ctx)
     {
-        super(ctx.conductorIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
-
         this.commandQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();

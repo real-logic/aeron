@@ -27,7 +27,7 @@ import java.util.function.Consumer;
 /**
  * Agent that iterates over publications for sending them to registered subscribers.
  */
-public class Sender extends Agent
+public class Sender implements Agent
 {
     private static final DriverPublication[] EMPTY_DRIVER_PUBLICATIONS = new DriverPublication[0];
 
@@ -40,8 +40,6 @@ public class Sender extends Agent
 
     public Sender(final MediaDriver.Context ctx)
     {
-        super(ctx.senderIdleStrategy(), ctx.exceptionConsumer(), ctx.systemCounters().driverExceptions());
-
         this.commandQueue = ctx.senderCommandQueue();
         this.totalBytesSent = ctx.systemCounters().bytesSent();
     }

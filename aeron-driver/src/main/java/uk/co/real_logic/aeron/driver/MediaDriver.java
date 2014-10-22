@@ -15,14 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.IdleStrategy;
-import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
-import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
+import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.concurrent.*;
 import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
@@ -33,6 +27,7 @@ import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -66,9 +61,7 @@ public final class MediaDriver implements AutoCloseable
     private final File dataDirectory;
     private final File countersDirectory;
 
-    private final Receiver receiver;
-    private final Sender sender;
-    private final DriverConductor conductor;
+    private final List<AgentRunner> runners;
     private final Context ctx;
 
     /**
@@ -109,9 +102,13 @@ public final class MediaDriver implements AutoCloseable
            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .conclude();
 
-        conductor = new DriverConductor(ctx);
-        sender = new Sender(ctx);
-        receiver = new Receiver(ctx);
+
+        final AtomicCounter driverExceptions = ctx.systemCounters().driverExceptions();
+
+        runners = Arrays.asList(
+            new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Sender(ctx)),
+            new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Receiver(ctx)),
+            new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new DriverConductor(ctx)));
     }
 
     /**
@@ -142,9 +139,7 @@ public final class MediaDriver implements AutoCloseable
     {
         try
         {
-            sender.close();
-            receiver.close();
-            conductor.close();
+            runners.forEach(AgentRunner::close);
 
             freeSocketsForReuseOnWindows();
             ctx.close();
@@ -165,9 +160,9 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        startThread(new Thread(conductor), "aeron-driver-conductor");
-        startThread(new Thread(sender), "aeron-sender");
-        startThread(new Thread(receiver), "aeron-receiver");
+        startThread(new Thread(runners.get(0)), "aeron-driver-conductor");
+        startThread(new Thread(runners.get(1)), "aeron-sender");
+        startThread(new Thread(runners.get(2)), "aeron-receiver");
 
         return this;
     }
@@ -690,7 +685,7 @@ public final class MediaDriver implements AutoCloseable
             return eventLogger;
         }
 
-        public Consumer<Exception> exceptionConsumer()
+        public Consumer<Throwable> exceptionConsumer()
         {
             return eventLogger::logException;
         }

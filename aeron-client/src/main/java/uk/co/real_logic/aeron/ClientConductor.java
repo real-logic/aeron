@@ -42,7 +42,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
  * to the media driver.
  */
-class ClientConductor extends Agent implements DriverListener
+class ClientConductor implements Agent, DriverListener
 {
     private static final int KEEPALIVE_TIMEOUT_MS = 500;
     private static final long NO_CORRELATION_ID = -1;
@@ -58,6 +58,7 @@ class ClientConductor extends Agent implements DriverListener
     private final DriverProxy driverProxy;
     private final Signal correlationSignal;
     private final TimerWheel timerWheel;
+    private final Consumer<Throwable> errorHandler;
 
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
@@ -71,20 +72,18 @@ class ClientConductor extends Agent implements DriverListener
     private volatile boolean driverActive = true;
 
     public ClientConductor(
-        final IdleStrategy idleStrategy,
         final CopyBroadcastReceiver broadcastReceiver,
         final BufferManager bufferManager,
         final UnsafeBuffer counterValuesBuffer,
         final DriverProxy driverProxy,
         final Signal correlationSignal,
         final TimerWheel timerWheel,
-        final Consumer<Exception> errorHandler,
+        final Consumer<Throwable> errorHandler,
         final NewConnectionHandler newConnectionHandler,
         final InactiveConnectionHandler inactiveConnectionHandler,
         final long driverTimeoutMs)
     {
-        super(idleStrategy, errorHandler, null);
-
+        this.errorHandler = errorHandler;
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
         this.driverProxy = driverProxy;
@@ -366,7 +365,7 @@ class ClientConductor extends Agent implements DriverListener
             driverActive = false;
 
             final String msg = String.format("Driver has been inactive for over %dms", driverTimeoutMs);
-            exceptionHandler().accept(new DriverTimeoutException(msg));
+            errorHandler.accept(new DriverTimeoutException(msg));
         }
     }
 

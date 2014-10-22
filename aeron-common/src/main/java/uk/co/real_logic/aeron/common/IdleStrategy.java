@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 /**
- * Idle strategy for use by {@link Agent} and applications
+ * Idle strategy for use by {@link AgentRunner} and applications
  */
 @FunctionalInterface
 public interface IdleStrategy

@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
  */
 public final class Aeron implements AutoCloseable
 {
-    public static final Consumer<Exception> DEFAULT_ERROR_HANDLER =
+    public static final Consumer<Throwable> DEFAULT_ERROR_HANDLER =
         (throwable) ->
         {
             throwable.printStackTrace();
@@ -60,6 +60,7 @@ public final class Aeron implements AutoCloseable
     private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT = 10_000;
 
     private final ClientConductor conductor;
+    private final AgentRunner conductorRunner;
     private final Context ctx;
 
     Aeron(final Context ctx)
@@ -69,7 +70,6 @@ public final class Aeron implements AutoCloseable
         final TimerWheel wheel = new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
 
         conductor = new ClientConductor(
-            ctx.idleStrategy,
             ctx.toClientBuffer,
             ctx.bufferManager,
             ctx.countersBuffer(),
@@ -80,6 +80,8 @@ public final class Aeron implements AutoCloseable
             ctx.newConnectionHandler,
             ctx.inactiveConnectionHandler,
             ctx.mediaDriverTimeout());
+
+        conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
 
         this.ctx = ctx;
     }
@@ -116,7 +118,7 @@ public final class Aeron implements AutoCloseable
      */
     public void close()
     {
-        conductor.close();
+        conductorRunner.close();
         ctx.close();
     }
 
@@ -179,7 +181,7 @@ public final class Aeron implements AutoCloseable
 
     private Aeron start()
     {
-        final Thread thread = new Thread(conductor);
+        final Thread thread = new Thread(conductorRunner);
         thread.setName("aeron-client-conductor");
         thread.start();
 
@@ -188,7 +190,7 @@ public final class Aeron implements AutoCloseable
 
     private Aeron start(final Executor executor)
     {
-        executor.execute(conductor);
+        executor.execute(conductorRunner);
 
         return this;
     }
@@ -206,7 +208,7 @@ public final class Aeron implements AutoCloseable
 
         private BufferManager bufferManager;
 
-        private Consumer<Exception> errorHandler;
+        private Consumer<Throwable> errorHandler;
         private NewConnectionHandler newConnectionHandler;
         private InactiveConnectionHandler inactiveConnectionHandler;
         private long mediaDriverTimeout = NULL_TIMEOUT;
@@ -296,7 +298,7 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public Context errorHandler(final Consumer<Exception> handler)
+        public Context errorHandler(final Consumer<Throwable> handler)
         {
             this.errorHandler = handler;
             return this;

@@ -15,126 +15,8 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
-
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-
-/**
- * Base agent that is responsible for an ongoing activity.
- */
-public abstract class Agent implements Runnable, AutoCloseable
+public interface Agent
 {
-    private final IdleStrategy idleStrategy;
-    private final Consumer<Exception> exceptionHandler;
-    private final AtomicCounter exceptionCounter;
-    private volatile CountDownLatch latch;
-    private volatile Thread thread;
-
-    private volatile boolean running;
-
-    /**
-     * Create an agent passing in {@link IdleStrategy}
-     *  @param idleStrategy to use for Agent run loop
-     * @param exceptionHandler to be called if an {@link Exception} is encountered
-     * @param exceptionCounter for reporting how many exceptions have been seen.
-     */
-    public Agent(
-        final IdleStrategy idleStrategy, final Consumer<Exception> exceptionHandler, final AtomicCounter exceptionCounter)
-    {
-        this.idleStrategy = idleStrategy;
-        this.exceptionHandler = exceptionHandler;
-        this.exceptionCounter = exceptionCounter;
-    }
-
-    /**
-     * Get the exception handler for this agent.
-     *
-     * @return the exception handler for this agent.
-     */
-    public Consumer<Exception> exceptionHandler()
-    {
-        return exceptionHandler;
-    }
-
-    /**
-     * Run the Agent logic
-     *
-     * This method does not return until the run loop is stopped via {@link #close()} or {@link Thread#interrupt()}.
-     */
-    public void run()
-    {
-        running = true;
-        latch = new CountDownLatch(1);
-        thread = Thread.currentThread();
-
-        while (running)
-        {
-            try
-            {
-                final int workCount = doWork();
-                idleStrategy.idle(workCount);
-            }
-            catch (final InterruptedException ignore)
-            {
-                break;
-            }
-            catch (final Exception ex)
-            {
-                if (null != exceptionCounter)
-                {
-                    exceptionCounter.increment();
-                }
-
-                exceptionHandler.accept(ex);
-            }
-        }
-
-        latch.countDown();
-        thread = null;
-    }
-
-    /**
-     * Stop the running Agent and cleanup. Not waiting for the agent run loop to stop before returning.
-     */
-    public final void close()
-    {
-        running = false;
-        if (null != thread)
-        {
-            thread.interrupt();
-        }
-
-        if (null != latch)
-        {
-            while (true)
-            {
-                try
-                {
-                    if (latch.await(500, TimeUnit.MILLISECONDS))
-                    {
-                        break;
-                    }
-
-                    System.err.println("timeout await for agent. Retrying...");
-                }
-                catch (final InterruptedException ignore)
-                {
-                }
-            }
-        }
-
-        onClose();
-    }
-
-    /**
-     * To be overridden by Agents that which to do resource cleanup on close.
-     */
-    public void onClose()
-    {
-    }
-
     /**
      * An agent should implement this method to do its work.
      *
@@ -142,7 +24,14 @@ public abstract class Agent implements Runnable, AutoCloseable
      * currently available for the agent to process.
      *
      * @return true if work has been done otherwise false to indicate no work was currently available.
-     * @throws Exception
      */
-    public abstract int doWork() throws Exception;
+    int doWork() throws Exception;
+
+    /**
+     * To be overridden by Agents that which to do resource cleanup on close.
+     */
+    default void onClose()
+    {
+        // default to do nothing unless you want to handle the notification.
+    }
 }

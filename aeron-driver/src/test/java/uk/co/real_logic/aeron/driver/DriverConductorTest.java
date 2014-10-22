@@ -152,7 +152,7 @@ public class DriverConductorTest
     @After
     public void tearDown() throws Exception
     {
-        driverConductor.close();
+        driverConductor.onClose();
     }
 
     @Test

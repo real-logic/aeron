@@ -20,8 +20,3 @@ compileJava {
     options.fork = true
     options.forkOptions.executable = 'javac'
 }
-
-checkstyle {
-    // lambdas break checkstyle currently. Grrrr!
-    ignoreFailures = true
-}

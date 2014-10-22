@@ -1,3 +1,5 @@
+import org.gradle.plugins.ide.eclipse.model.Classpath
+
 /*
  * Copyright 2014 Real Logic Ltd.
  *
@@ -53,7 +55,7 @@ subprojects {
     // There needs to be a JDK8 JVM installed in Eclipse before
     // importing the generated projects.
     plugins.withType(JavaBasePlugin) {
-        eclipse.classpath.file.whenMerged { org.gradle.plugins.ide.eclipse.model.Classpath path ->
+        eclipse.classpath.file.whenMerged { Classpath path ->
             path.entries.findAll { it.path.contains('JRE_CONTAINER') }.each {
                 it.path += "/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"
             }

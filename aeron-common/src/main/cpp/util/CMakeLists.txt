@@ -1,6 +1,8 @@
 # static library 
 add_library(aeron_util STATIC 
-			MemoryMappedFile.cpp)
+			MemoryMappedFile.cpp
+			CommandOption.cpp
+			CommandOptionParser.cpp)
 
 # executable for this modules tests
 add_executable(utilTests

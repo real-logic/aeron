@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 /**
- * Base agent that is responsible for an ongoing activity.
+ * Base agent runner that is responsible for lifecycle of an {@link Agent} and ensuring exceptions are handled.
  */
 public class AgentRunner implements Runnable, AutoCloseable
 {
@@ -38,10 +38,10 @@ public class AgentRunner implements Runnable, AutoCloseable
     /**
      * Create an agent passing in {@link IdleStrategy}
      *
-     * @param idleStrategy to use for Agent run loop
+     * @param idleStrategy     to use for Agent run loop
      * @param exceptionHandler to be called if an {@link Exception} is encountered
      * @param exceptionCounter for reporting how many exceptions have been seen.
-     * @param agent to be run in this thread.
+     * @param agent            to be run in this thread.
      */
     public AgentRunner(
         final IdleStrategy idleStrategy,
@@ -56,9 +56,19 @@ public class AgentRunner implements Runnable, AutoCloseable
     }
 
     /**
-     * Run the Agent logic
+     * The {@link Agent} who's lifecycle is being managed.
      *
-     * This method does not return until the run loop is stopped via {@link #close()} or {@link Thread#interrupt()}.
+     * @return {@link Agent} who's lifecycle is being managed.
+     */
+    public Agent agent()
+    {
+        return agent;
+    }
+
+    /**
+     * Run an {@link Agent}.
+     * <p>
+     * This method does not return until the run loop is stopped via {@link #close()}.
      */
     public void run()
     {
@@ -126,10 +136,5 @@ public class AgentRunner implements Runnable, AutoCloseable
         }
 
         agent.onClose();
-    }
-
-    public Agent agent()
-    {
-        return agent;
     }
 }

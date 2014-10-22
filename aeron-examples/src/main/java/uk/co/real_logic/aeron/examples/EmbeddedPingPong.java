@@ -35,9 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * .
- */
 public class EmbeddedPingPong
 {
     private static final int PING_STREAM_ID = ExampleConfiguration.PING_STREAM_ID;
@@ -64,12 +61,12 @@ public class EmbeddedPingPong
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
-                .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
-                .sharedNetworkIdleStrategy(new BusySpinIdleStrategy())
-                .sharedIdleStrategy(new BusySpinIdleStrategy())
-                .receiverIdleStrategy(new BusySpinIdleStrategy())
-                .senderIdleStrategy(new BusySpinIdleStrategy());
+            .threadingMode(ThreadingMode.DEDICATED)
+            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
+            .sharedNetworkIdleStrategy(new BusySpinIdleStrategy())
+            .sharedIdleStrategy(new BusySpinIdleStrategy())
+            .receiverIdleStrategy(new BusySpinIdleStrategy())
+            .senderIdleStrategy(new BusySpinIdleStrategy());
 
         try (final MediaDriver ignored = MediaDriver.launch(ctx))
         {
@@ -86,7 +83,7 @@ public class EmbeddedPingPong
     private static void runPing() throws InterruptedException
     {
         final Aeron.Context ctx = new Aeron.Context()
-                .newConnectionHandler(EmbeddedPingPong::newPongConnectionHandler);
+            .newConnectionHandler(EmbeddedPingPong::newPongConnectionHandler);
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
@@ -110,7 +107,7 @@ public class EmbeddedPingPong
             }
 
             System.out.println(
-                    "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
+                "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
@@ -145,9 +142,10 @@ public class EmbeddedPingPong
                 final Aeron.Context ctx = new Aeron.Context();
                 try (final Aeron aeron = Aeron.connect(ctx);
                      final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
-                     final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID,
-                             new FragmentAssemblyAdapter((buffer, offset, length, header) ->
-                                     pingHandler(pongPublication, buffer, offset, length))))
+                     final Subscription pingSubscription = aeron.addSubscription(
+                         PING_CHANNEL, PING_STREAM_ID,
+                         new FragmentAssemblyAdapter((buffer, offset, length, header) ->
+                                                         pingHandler(pongPublication, buffer, offset, length))))
                 {
                     while (running.get())
                     {
@@ -162,7 +160,7 @@ public class EmbeddedPingPong
     }
 
     private static void sendPingAndReceivePong(
-            final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
+        final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
@@ -190,7 +188,7 @@ public class EmbeddedPingPong
     }
 
     private static void newPongConnectionHandler(
-            final String channel, final int streamId, final int sessionId, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final String sourceInfo)
     {
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {
@@ -199,13 +197,11 @@ public class EmbeddedPingPong
     }
 
     public static void pingHandler(
-            final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
+        final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
         while (!pongPublication.offer(buffer, offset, length))
         {
             PING_HANDLER_IDLE_STRATEGY.idle(0);
         }
     }
-
-
 }

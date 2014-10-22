@@ -115,14 +115,14 @@ public final class MediaDriver implements AutoCloseable
 
         switch (ctx.threadingMode)
         {
-            case UNIFIED_NETWORK:
+            case SHARED_NETWORK:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
                         new CompositeAgent(sender, receiver)),
                     new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
-            case UNIFIED:
+            case SHARED:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
                         new CompositeAgent(sender,
@@ -130,7 +130,7 @@ public final class MediaDriver implements AutoCloseable
                 );
                 break;
             default:
-            case SEPARATED:
+            case DEDICATED:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, sender),
                     new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, receiver),

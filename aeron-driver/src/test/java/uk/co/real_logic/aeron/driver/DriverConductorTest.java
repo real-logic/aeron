@@ -142,7 +142,7 @@ public class DriverConductorTest
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
-        ctx.driverConductorProxy(new DriverConductorProxy(ThreadingMode.SEPARATED, ctx.conductorCommandQueue(), mock(AtomicCounter.class)));
+        ctx.driverConductorProxy(new DriverConductorProxy(ThreadingMode.DEDICATED, ctx.conductorCommandQueue(), mock(AtomicCounter.class)));
 
         driverConductor = new DriverConductor(ctx);
 

@@ -20,7 +20,7 @@ package uk.co.real_logic.aeron.driver;
 */
 public enum ThreadingMode
 {
-    UNIFIED,
-    UNIFIED_NETWORK,
-    SEPARATED
+    SHARED,
+    SHARED_NETWORK,
+    DEDICATED
 }

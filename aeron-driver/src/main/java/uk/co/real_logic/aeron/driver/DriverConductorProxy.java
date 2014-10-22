@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 import java.net.InetSocketAddress;
 import java.util.Queue;
 
-import static uk.co.real_logic.aeron.driver.ThreadingMode.UNIFIED;
+import static uk.co.real_logic.aeron.driver.ThreadingMode.SHARED;
 
 /**
  * Proxy for sending commands to the media conductor.
@@ -59,7 +59,7 @@ public class DriverConductorProxy
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        if (isUnified())
+        if (isShared())
         {
             driverConductor.onCreateConnection(
                 sessionId, streamId, termId, termOffset, termSize, senderMtuLength,
@@ -81,7 +81,7 @@ public class DriverConductorProxy
         final ReceiveChannelEndpoint channelEndpoint)
     {
         ElicitSetupFromSourceCmd cmd = new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint);
-        if (isUnified())
+        if (isShared())
         {
             driverConductor.onElicitSetupFromSender(cmd);
         }
@@ -91,9 +91,9 @@ public class DriverConductorProxy
         }
     }
 
-    private boolean isUnified()
+    private boolean isShared()
     {
-        return threadingMode == UNIFIED;
+        return threadingMode == SHARED;
     }
 
     private void offerCommand(Object cmd)

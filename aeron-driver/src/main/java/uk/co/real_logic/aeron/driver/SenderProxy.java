@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
 
 import java.util.Queue;
 
-import static uk.co.real_logic.aeron.driver.ThreadingMode.UNIFIED;
+import static uk.co.real_logic.aeron.driver.ThreadingMode.SHARED;
 
 /**
  * Proxy for offering into the Sender Thread's command queue.
@@ -48,7 +48,7 @@ public class SenderProxy
 
     public void retransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
-        if (isUnified())
+        if (isShared())
         {
             sender.onRetransmit(publication, termId, termOffset, length);
         }
@@ -60,7 +60,7 @@ public class SenderProxy
 
     public void closePublication(final DriverPublication publication)
     {
-        if (isUnified())
+        if (isShared())
         {
             sender.onClosePublication(publication);
         }
@@ -72,7 +72,7 @@ public class SenderProxy
 
     public void newPublication(final DriverPublication publication)
     {
-        if (isUnified())
+        if (isShared())
         {
             sender.onNewPublication(publication);
         }
@@ -82,9 +82,9 @@ public class SenderProxy
         }
     }
 
-    private boolean isUnified()
+    private boolean isShared()
     {
-        return threadingMode == UNIFIED;
+        return threadingMode == SHARED;
     }
 
     private void offerCommand(Object cmd)

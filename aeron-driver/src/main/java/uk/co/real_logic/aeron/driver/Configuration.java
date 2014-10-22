@@ -28,7 +28,7 @@ import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
 
-import static uk.co.real_logic.aeron.driver.ThreadingMode.SEPARATED;
+import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
 /**
  * Configuration options for the media driver.
@@ -317,7 +317,7 @@ public class Configuration
     public static final int MTU_LENGTH_DEFAULT = 4096;
 
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
-    public static final String THREADING_MODE_DEFAULT = SEPARATED.name();
+    public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
 
     /**
      * How far ahead the receiver can get from the subscriber position.

@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.driver.cmd.*;
 
 import java.util.Queue;
 
-import static uk.co.real_logic.aeron.driver.ThreadingMode.UNIFIED;
+import static uk.co.real_logic.aeron.driver.ThreadingMode.SHARED;
 
 /**
  * Proxy for offering into the Receiver Thread's command queue.
@@ -47,7 +47,7 @@ public class ReceiverProxy
 
     public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onAddSubscription(mediaEndpoint, streamId);
         }
@@ -59,7 +59,7 @@ public class ReceiverProxy
 
     public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onRemoveSubscription(mediaEndpoint, streamId);
         }
@@ -71,7 +71,7 @@ public class ReceiverProxy
 
     public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onNewConnection(channelEndpoint, connection);
         }
@@ -83,7 +83,7 @@ public class ReceiverProxy
 
     public void removeConnection(final DriverConnection connection)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onRemoveConnection(connection);
         }
@@ -95,7 +95,7 @@ public class ReceiverProxy
 
     public void registerMediaEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onRegisterMediaSubscriptionEndpoint(channelEndpoint);
         }
@@ -107,7 +107,7 @@ public class ReceiverProxy
 
     public void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onCloseReceiveChannelEndpoint(channelEndpoint);
         }
@@ -119,7 +119,7 @@ public class ReceiverProxy
 
     public void removePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onRemovePendingSetup(channelEndpoint, sessionId, streamId);
         }
@@ -131,7 +131,7 @@ public class ReceiverProxy
 
     public void closeSubscription(final DriverSubscription subscription)
     {
-        if(isUnified())
+        if(isShared())
         {
             receiver.onCloseSubscription(subscription);
         }
@@ -141,9 +141,9 @@ public class ReceiverProxy
         }
     }
 
-    private boolean isUnified()
+    private boolean isShared()
     {
-        return threadingMode == UNIFIED;
+        return threadingMode == SHARED;
     }
 
     private void offerCommand(Object cmd)

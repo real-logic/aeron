@@ -117,26 +117,25 @@ public final class MediaDriver implements AutoCloseable
         {
             case SHARED_NETWORK:
                 runners = Arrays.asList(
-                        new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                                new CompositeAgent(sender, receiver)),
-                        new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
+                    new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                                    new CompositeAgent(sender, receiver)),
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
 
             case SHARED:
                 runners = Arrays.asList(
-                        new AgentRunner(ctx.sharedIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                                new CompositeAgent(sender,
-                                        new CompositeAgent(receiver, driverConductor)))
+                    new AgentRunner(ctx.sharedIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                        new CompositeAgent(sender, new CompositeAgent(receiver, driverConductor)))
                 );
                 break;
 
             default:
             case DEDICATED:
                 runners = Arrays.asList(
-                        new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, sender),
-                        new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, receiver),
-                        new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
+                    new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, sender),
+                    new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, receiver),
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
         }
@@ -177,7 +176,8 @@ public final class MediaDriver implements AutoCloseable
             ctx.close();
 
             deleteDirectories();
-        } catch (final Exception ex)
+        }
+        catch (final Exception ex)
         {
             throw new RuntimeException(ex);
         }
@@ -192,12 +192,12 @@ public final class MediaDriver implements AutoCloseable
     private MediaDriver start()
     {
         runners.forEach(
-                (runner) ->
-                {
-                    final Thread thread = new Thread(runner);
-                    thread.setName(runner.agent().roleName());
-                    thread.start();
-                });
+            (runner) ->
+            {
+                final Thread thread = new Thread(runner);
+                thread.setName(runner.agent().roleName());
+                thread.start();
+            });
 
         return this;
     }
@@ -205,13 +205,13 @@ public final class MediaDriver implements AutoCloseable
     private void ensureDirectoriesAreRecreated()
     {
         final BiConsumer<String, String> callback =
-                (path, name) ->
+            (path, name) ->
+            {
+                if (ctx.warnIfDirectoriesExist())
                 {
-                    if (ctx.warnIfDirectoriesExist())
-                    {
-                        System.err.println("WARNING: " + name + " directory already exists: " + path);
-                    }
-                };
+                    System.err.println("WARNING: " + name + " directory already exists: " + path);
+                }
+            };
 
         IoUtil.ensureDirectoryIsRecreated(adminDirectory, "conductor", callback);
         IoUtil.ensureDirectoryIsRecreated(dataDirectory, "data", callback);
@@ -289,6 +289,12 @@ public final class MediaDriver implements AutoCloseable
             eventBufferSize = EventConfiguration.bufferSize();
 
             warnIfDirectoriesExist = true;
+        }
+
+        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<Object> conductorCommandQueue)
+        {
+            this.conductorCommandQueue = conductorCommandQueue;
+            return this;
         }
 
         public Context conclude()
@@ -382,11 +388,11 @@ public final class MediaDriver implements AutoCloseable
 
                 receiverProxy(new ReceiverProxy(threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
                 senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.senderProxyFails()));
-                driverConductorProxy(new DriverConductorProxy(threadingMode, conductorCommandQueue, systemCounters
-                        .conductorProxyFails()));
+                driverConductorProxy(
+                    new DriverConductorProxy(threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
 
                 termBuffersFactory(
-                        new TermBuffersFactory(dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
+                    new TermBuffersFactory(dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
 
                 if (null == conductorIdleStrategy)
                 {
@@ -413,17 +419,12 @@ public final class MediaDriver implements AutoCloseable
                     sharedIdleStrategy(Configuration.agentIdleStrategy());
                 }
 
-            } catch (final Exception ex)
+            }
+            catch (final Exception ex)
             {
                 throw new RuntimeException(ex);
             }
 
-            return this;
-        }
-
-        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<Object> conductorCommandQueue)
-        {
-            this.conductorCommandQueue = conductorCommandQueue;
             return this;
         }
 

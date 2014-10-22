@@ -16,11 +16,10 @@
 package uk.co.real_logic.aeron.common;
 
 /**
- * .
+ * Compose two agents into one so a thread can be shared.
  */
 public class CompositeAgent implements Agent
 {
-
     private final Agent firstAgent;
     private final Agent secondAgent;
 

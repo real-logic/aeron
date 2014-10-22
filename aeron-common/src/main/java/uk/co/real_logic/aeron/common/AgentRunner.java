@@ -118,6 +118,7 @@ public class AgentRunner implements Runnable, AutoCloseable
                 }
                 catch (final InterruptedException ignore)
                 {
+                    Thread.currentThread().interrupt();
                 }
             }
         }

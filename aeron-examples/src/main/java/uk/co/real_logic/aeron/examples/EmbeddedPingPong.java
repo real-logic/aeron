@@ -51,10 +51,8 @@ public class EmbeddedPingPong
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
-
     private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
-
-    private static final AtomicBoolean running = new AtomicBoolean(true);
+    private static final AtomicBoolean RUNNING = new AtomicBoolean(true);
 
     public static void main(final String[] args) throws Exception
     {
@@ -73,7 +71,7 @@ public class EmbeddedPingPong
             Thread pongThread = startPong();
             pongThread.start();
             runPing();
-            running.set(false);
+            RUNNING.set(false);
             pongThread.join();
 
             System.out.println("Shutdown Driver...");
@@ -143,11 +141,10 @@ public class EmbeddedPingPong
                 try (final Aeron aeron = Aeron.connect(ctx);
                      final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
                      final Subscription pingSubscription = aeron.addSubscription(
-                         PING_CHANNEL, PING_STREAM_ID,
-                         new FragmentAssemblyAdapter((buffer, offset, length, header) ->
-                                                         pingHandler(pongPublication, buffer, offset, length))))
+                         PING_CHANNEL, PING_STREAM_ID, new FragmentAssemblyAdapter(
+                             (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length))))
                 {
-                    while (running.get())
+                    while (RUNNING.get())
                     {
                         final int fragmentsRead = pingSubscription.poll(FRAME_COUNT_LIMIT);
                         PING_HANDLER_IDLE_STRATEGY.idle(fragmentsRead);

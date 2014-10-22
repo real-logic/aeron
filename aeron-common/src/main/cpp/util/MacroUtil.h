@@ -1,0 +1,9 @@
+#ifndef INCLUDED_AERON_UTIL_MACRO_UTIL_FILE__
+#define INCLUDED_AERON_UTIL_MACRO_UTIL_FILE__
+
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+#define CONCAT_SYMBOLS(x, y) x##y
+
+#endif

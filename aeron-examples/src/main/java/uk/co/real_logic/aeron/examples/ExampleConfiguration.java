@@ -62,7 +62,7 @@ public class ExampleConfiguration
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
-        NUMBER_OF_MESSAGES = Integer.getInteger(NUMBER_OF_MESSAGES_PROP, 10_000_000);
+        NUMBER_OF_MESSAGES = Integer.getInteger(NUMBER_OF_MESSAGES_PROP, 1_000_000);
         WARMUP_NUMBER_OF_MESSAGES = Integer.getInteger(WARMUP_NUMBER_OF_MESSAGES_PROP, 5_000);
         WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger(WARMUP_NUMBER_OF_ITERATIONS_PROP, 10);
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, TimeUnit.SECONDS.toMillis(5));

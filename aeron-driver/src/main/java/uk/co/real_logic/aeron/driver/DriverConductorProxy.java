@@ -80,7 +80,7 @@ public class DriverConductorProxy
         final InetSocketAddress controlAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        ElicitSetupFromSourceCmd cmd = new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint);
+        final ElicitSetupFromSourceCmd cmd = new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint);
         if (isShared())
         {
             driverConductor.onElicitSetupFromSender(cmd);

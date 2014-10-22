@@ -118,17 +118,19 @@ public final class MediaDriver implements AutoCloseable
             case SHARED_NETWORK:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                        new CompositeAgent(sender, receiver)),
+                                    new CompositeAgent(sender, receiver)),
                     new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
+
             case SHARED:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                        new CompositeAgent(sender,
-                            new CompositeAgent(receiver, driverConductor)))
+                                    new CompositeAgent(sender,
+                                                       new CompositeAgent(receiver, driverConductor)))
                 );
                 break;
+
             default:
             case DEDICATED:
                 runners = Arrays.asList(
@@ -190,12 +192,13 @@ public final class MediaDriver implements AutoCloseable
 
     private MediaDriver start()
     {
-        runners.forEach(runner ->
-        {
-            final Thread thread = new Thread(runner);
-            thread.setName(runner.agent().roleName());
-            thread.start();
-        });
+        runners.forEach(
+            (runner) ->
+            {
+                final Thread thread = new Thread(runner);
+                thread.setName(runner.agent().roleName());
+                thread.start();
+            });
 
         return this;
     }
@@ -380,7 +383,8 @@ public final class MediaDriver implements AutoCloseable
 
                 receiverProxy(new ReceiverProxy(threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
                 senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.senderProxyFails()));
-                driverConductorProxy(new DriverConductorProxy(threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
+                driverConductorProxy(new DriverConductorProxy(threadingMode, conductorCommandQueue, systemCounters
+                    .conductorProxyFails()));
 
                 termBuffersFactory(
                     new TermBuffersFactory(dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
@@ -508,6 +512,7 @@ public final class MediaDriver implements AutoCloseable
             this.receiverIdleStrategy = strategy;
             return this;
         }
+
         public Context unifiedNetworkIdleStrategy(final IdleStrategy strategy)
         {
             this.unifiedNetworkIdleStrategy = strategy;

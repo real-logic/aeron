@@ -45,13 +45,13 @@ public class FragmentedMessageTest
     public static final String MULTICAST_URI = "udp://localhost@224.20.30.39:54326";
 
     @DataPoint
-    public static final ThreadingMode shared = ThreadingMode.SHARED;
+    public static final ThreadingMode SHARED = ThreadingMode.SHARED;
 
     @DataPoint
-    public static final ThreadingMode sharedNetwork = ThreadingMode.SHARED_NETWORK;
+    public static final ThreadingMode SHARED_NETWORK = ThreadingMode.SHARED_NETWORK;
 
     @DataPoint
-    public static final ThreadingMode dedicated = ThreadingMode.DEDICATED;
+    public static final ThreadingMode DEDICATED = ThreadingMode.DEDICATED;
 
     private static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;

@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
- * {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler} that sits in a chain-of-responsibilities pattern that re-assembles fragmented messages
+ * {@link DataHandler} that sits in a chain-of-responsibilities pattern that re-assembles fragmented messages
  * so that next handler in the chain only sees unfragmented messages.
  *
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
@@ -57,7 +57,7 @@ public class FragmentAssemblyAdapter implements DataHandler
     /**
      * Construct an adapter to reassembly message fragments and delegate on only whole messages.
      *
-     * @param delegate onto which whole messages are forwarded.
+     * @param delegate          onto which whole messages are forwarded.
      * @param initialBufferSize to be used for each session.
      */
     public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferSize)
@@ -101,8 +101,8 @@ public class FragmentAssemblyAdapter implements DataHandler
     }
 
     /**
-     * Free an existing session buffer to reduce memory pressure when a connection goes inactive or no more large messages
-     * are expected.
+     * Free an existing session buffer to reduce memory pressure when a connection goes inactive or no more
+     * large messages are expected.
      *
      * @param sessionId to have its buffer freed
      * @return true if a buffer has been freed otherwise false.

@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
+import static uk.co.real_logic.aeron.driver.MediaDriver.ThreadingMode;
+import static uk.co.real_logic.aeron.driver.MediaDriver.ThreadingMode.SEPARATED;
 
 /**
  * Configuration options for the media driver.
@@ -314,6 +316,9 @@ public class Configuration
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
     public static final int MTU_LENGTH_DEFAULT = 4096;
 
+    public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
+    public static final String THREADING_MODE_DEFAULT = SEPARATED.name();
+
     /**
      * How far ahead the receiver can get from the subscriber position.
      *
@@ -465,5 +470,10 @@ public class Configuration
         }
 
         return new RandomLossGenerator(lossRate, lossSeed);
+    }
+
+    public static ThreadingMode threadingMode()
+    {
+        return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, THREADING_MODE_DEFAULT));
     }
 }

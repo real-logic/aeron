@@ -91,7 +91,7 @@ public class DriverConductorTest
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
-    private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
+    private final ReceiverProxy receiverProxy = mock(ReceiverQueueProxy.class);
 
     private long currentTime;
     private final TimerWheel wheel = new TimerWheel(

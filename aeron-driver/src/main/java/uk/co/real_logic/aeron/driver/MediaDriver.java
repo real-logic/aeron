@@ -105,10 +105,32 @@ public final class MediaDriver implements AutoCloseable
 
         final AtomicCounter driverExceptions = ctx.systemCounters().driverExceptions();
 
-        runners = Arrays.asList(
-            new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Sender(ctx)),
-            new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Receiver(ctx)),
-            new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new DriverConductor(ctx)));
+        switch (ctx.threadingMode)
+        {
+            case UNIFIED_NETWORK:
+                runners = Arrays.asList(
+                    new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                        new CompositeAgent(new Sender(ctx), new Receiver(ctx))),
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new DriverConductor(ctx))
+                );
+                break;
+            case UNIFIED:
+                runners = Arrays.asList(
+                    new AgentRunner(ctx.unifiedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                        new CompositeAgent(new Sender(ctx),
+                            new CompositeAgent(new Receiver(ctx), new DriverConductor(ctx))))
+                );
+                break;
+            default:
+            case SEPARATED:
+                runners = Arrays.asList(
+                    new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Sender(ctx)),
+                    new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new Receiver(ctx)),
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, new DriverConductor(ctx))
+                );
+                break;
+        }
+
     }
 
     /**
@@ -199,6 +221,12 @@ public final class MediaDriver implements AutoCloseable
         }
     }
 
+    public static enum ThreadingMode {
+        UNIFIED,
+        UNIFIED_NETWORK,
+        SEPARATED
+    }
+
     public static class Context extends CommonContext
     {
         private TermBuffersFactory termBuffersFactory;
@@ -216,6 +244,8 @@ public final class MediaDriver implements AutoCloseable
         private IdleStrategy conductorIdleStrategy;
         private IdleStrategy senderIdleStrategy;
         private IdleStrategy receiverIdleStrategy;
+        private IdleStrategy unifiedNetworkIdleStrategy;
+        private IdleStrategy unifiedIdleStrategy;
         private ClientProxy clientProxy;
         private RingBuffer toDriverCommands;
         private RingBuffer toEventReader;
@@ -241,6 +271,8 @@ public final class MediaDriver implements AutoCloseable
         private boolean warnIfDirectoriesExist;
         private EventLogger eventLogger;
         private Consumer<String> eventConsumer;
+        private ThreadingMode threadingMode;
+        private ReceiverStub receiverStub;
 
         public Context()
         {
@@ -343,7 +375,7 @@ public final class MediaDriver implements AutoCloseable
                     systemCounters = new SystemCounters(countersManager);
                 }
 
-                receiverProxy(new ReceiverProxy(receiverCommandQueue(), systemCounters.receiverProxyFails()));
+                receiverProxy(new ReceiverQueueProxy(receiverCommandQueue(), systemCounters.receiverProxyFails()));
                 senderProxy(new SenderProxy(senderCommandQueue(), systemCounters.senderProxyFails()));
                 driverConductorProxy(new DriverConductorProxy(conductorCommandQueue, systemCounters.conductorProxyFails()));
 
@@ -363,6 +395,21 @@ public final class MediaDriver implements AutoCloseable
                 if (null == receiverIdleStrategy)
                 {
                     receiverIdleStrategy(Configuration.agentIdleStrategy());
+                }
+
+                if (null == unifiedNetworkIdleStrategy)
+                {
+                    unifiedNetworkIdleStrategy(Configuration.agentIdleStrategy());
+                }
+
+                if (null == unifiedIdleStrategy)
+                {
+                    unifiedIdleStrategy(Configuration.agentIdleStrategy());
+                }
+
+                if (threadingMode == null)
+                {
+                    threadingMode = Configuration.threadingMode();
                 }
             }
             catch (final Exception ex)
@@ -460,6 +507,17 @@ public final class MediaDriver implements AutoCloseable
         public Context receiverIdleStrategy(final IdleStrategy strategy)
         {
             this.receiverIdleStrategy = strategy;
+            return this;
+        }
+        public Context unifiedNetworkIdleStrategy(final IdleStrategy strategy)
+        {
+            this.unifiedNetworkIdleStrategy = strategy;
+            return this;
+        }
+
+        public Context unifiedIdleStrategy(final IdleStrategy strategy)
+        {
+            this.unifiedIdleStrategy = strategy;
             return this;
         }
 
@@ -565,6 +623,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context threadingMode(final ThreadingMode threadingMode)
+        {
+            this.threadingMode = threadingMode;
+            return this;
+        }
+
         public OneToOneConcurrentArrayQueue<Object> conductorCommandQueue()
         {
             return conductorCommandQueue;
@@ -638,6 +702,16 @@ public final class MediaDriver implements AutoCloseable
         public IdleStrategy receiverIdleStrategy()
         {
             return receiverIdleStrategy;
+        }
+
+        public IdleStrategy unifiedNetworkIdleStrategy()
+        {
+            return unifiedNetworkIdleStrategy;
+        }
+
+        public IdleStrategy unifiedIdleStrategy()
+        {
+            return unifiedIdleStrategy;
         }
 
         public ClientProxy clientProxy()

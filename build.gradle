@@ -151,8 +151,6 @@ project(':aeron-driver') {
     }
 
     build.doLast {
-        tasks.startScripts.execute()
-        tasks.installApp.execute()
         tasks.distZip.execute()
     }
 }

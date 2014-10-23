@@ -266,6 +266,12 @@ uploadArchives {
                         email = 'richard.warburton@gmail.com'
                         url = 'https://github.com/RichardWarburton'
                     }
+                    developer {
+                        id = 'SimulatedSimian'
+                        name = 'Lee Witek'
+                        email = 'leewitek@gmail.com'
+                        url = 'https://github.com/SimulatedSimian'
+                    }
                 }
             }
         }

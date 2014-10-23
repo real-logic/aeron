@@ -216,25 +216,6 @@ project(':aeron-system-tests') {
     }
 }
 
-task(runEx, dependsOn: project(':aeron-examples').'build', type: JavaExec) {
-    if (!project.hasProperty('mainClass'))
-    {
-        ext.mainClass = ''
-    }
-
-    def baseDir = System.properties['java.io.tmpdir'] + mainClass
-
-    main = 'uk.co.real_logic.aeron.examples.' + mainClass
-    classpath = project(':aeron-examples').sourceSets.main.runtimeClasspath
-    systemProperties('aeron.dir.data': baseDir + '-data',
-            'aeron.example.embeddedMediaDriver': true,
-            'aeron.dir.conductor': baseDir + '-conductor',
-            'aeron.dir.counters': baseDir + '-counters',
-            'aeron.event.buffer.location': baseDir + '-events',
-            'aeron.dir.delete.on.exit': System.properties['aeron.dir.delete.on.exit'],
-            'aeron.event.log': System.properties['aeron.event.log'])
-}
-
 uploadArchives {
     repositories {
         mavenDeployer {

@@ -1,15 +1,46 @@
+#
+# Copyright 2014 Real Logic Ltd.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
 project("aeron")
 
 enable_testing()
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/binaries")
+##########################################################
+# Platform flags, etc.
 
-# TODO: add MSVC flags
-set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -fexceptions -pthread -g -m64")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-Os")
+# all UNIX-based platform compiler flags
+if(UNIX)
+    set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -fexceptions -pthread -g -m64")
+    set(CMAKE_CXX_FLAGS_DEBUG "-O0")
+    set(CMAKE_CXX_FLAGS_RELEASE "-Os")
+endif()
+
+# platform specific flags
+if(APPLE)
+    add_definitions(-DDarwin)
+elseif(WIN32)
+    add_definitions(-DWIN32)
+    # TODO: add MSVC flags
+endif()
+
+##########################################################
+# Project variables, etc.
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/binaries")
 
 set(AERON_COMMON_PATH "${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp")
 set(AERON_3RDPARTY_PATH "${AERON_COMMON_PATH}/3rdparty")

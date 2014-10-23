@@ -3,6 +3,9 @@ Aeron
 
 Efficient reliable unicast and multicast transport protocol.
 
+For details of usage, protocol specification, FAQ, etc. please check out the
+[Wiki](https://github.com/real-logic/Aeron/wiki).
+
 License (See LICENSE file for full license)
 -------------------------------------------
 Copyright 2014 Real Logic Limited

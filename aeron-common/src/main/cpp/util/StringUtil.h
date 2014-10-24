@@ -51,6 +51,8 @@ inline std::string toString (const value_t& value)
     return stream.str();
 }
 
+std::string strPrintf (const char* format, ...);
+
 }}}
 
 #endif

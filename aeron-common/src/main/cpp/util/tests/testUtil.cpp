@@ -51,3 +51,10 @@ TEST(utilTests, stringUtiltoStringTest)
     ASSERT_EQ(toString(1.25), "1.25");
     ASSERT_EQ(toString("hello"), "hello");
 }
+
+TEST(utilTests, stringUtilstrPrintfTest)
+{
+    std::string val = strPrintf("%s %s", "hello", "world");
+    ASSERT_EQ(val, "hello world");
+
+}

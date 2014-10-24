@@ -37,6 +37,7 @@ import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -101,9 +102,11 @@ public class ReceiverTest
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
     private Receiver receiver;
     private ReceiverProxy receiverProxy;
-    private OneToOneConcurrentArrayQueue<Object> toConductorQueue;
+    private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue;
 
     private ReceiveChannelEndpoint receiveChannelEndpoint;
+
+    // TODO rework test to use proxies rather than the command queues.
 
     @Before
     public void setUp() throws Exception
@@ -183,7 +186,7 @@ public class ReceiverTest
             mockHighestReceivedPosition,
             clock,
             mockSystemCounters,
-                SOURCE_ADDRESS,
+            SOURCE_ADDRESS,
             mockLogger);
 
         final int messagesRead = toConductorQueue.drain(
@@ -255,7 +258,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                            SOURCE_ADDRESS,
+                        SOURCE_ADDRESS,
                         mockLogger));
             });
 
@@ -316,7 +319,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                            SOURCE_ADDRESS,
+                        SOURCE_ADDRESS,
                         mockLogger));
             });
 
@@ -380,7 +383,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                            SOURCE_ADDRESS,
+                        SOURCE_ADDRESS,
                         mockLogger));
             });
 
@@ -452,7 +455,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                            SOURCE_ADDRESS,
+                        SOURCE_ADDRESS,
                         mockLogger));
             });
 

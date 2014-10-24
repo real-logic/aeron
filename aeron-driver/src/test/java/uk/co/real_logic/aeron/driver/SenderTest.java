@@ -31,6 +31,7 @@ import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
+import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -85,7 +86,7 @@ public class SenderTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-    private final OneToOneConcurrentArrayQueue<Object> senderCommandQueue = new OneToOneConcurrentArrayQueue<>(1024);
+    private final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue = new OneToOneConcurrentArrayQueue<>(1024);
 
     private Answer<Integer> saveByteBufferAnswer =
         (invocation) ->

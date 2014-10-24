@@ -77,9 +77,9 @@ public class EmbeddedPingPong
             System.out.println("Shutdown Driver...");
         }
     }
-
     private static void runPing() throws InterruptedException
     {
+
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(EmbeddedPingPong::newPongConnectionHandler);
 

@@ -15,11 +15,12 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
+import uk.co.real_logic.aeron.driver.DriverConductor;
 import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 
 import java.net.InetSocketAddress;
 
-public class CreateConnectionCmd
+public class CreateConnectionCmd implements DriverConductorCmd
 {
     private final int sessionId;
     private final int streamId;
@@ -53,9 +54,23 @@ public class CreateConnectionCmd
         this.channelEndpoint = channelEndpoint;
     }
 
-    public int sessionId()
+    public void execute(final DriverConductor conductor)
     {
-        return sessionId;
+        conductor.onCreateConnection(
+            sessionId,
+            streamId,
+            termId,
+            termOffset,
+            termSize,
+            senderMtuLength,
+            controlAddress,
+            srcAddress,
+            channelEndpoint);
+    }
+
+    public ReceiveChannelEndpoint channelEndpoint()
+    {
+        return channelEndpoint;
     }
 
     public int streamId()
@@ -63,38 +78,13 @@ public class CreateConnectionCmd
         return streamId;
     }
 
+    public int sessionId()
+    {
+        return sessionId;
+    }
+
     public int termId()
     {
         return termId;
-    }
-
-    public int termOffset()
-    {
-        return termOffset;
-    }
-
-    public int termSize()
-    {
-        return termSize;
-    }
-
-    public int senderMtuLength()
-    {
-        return senderMtuLength;
-    }
-
-    public InetSocketAddress controlAddress()
-    {
-        return controlAddress;
-    }
-
-    public InetSocketAddress srcAddress()
-    {
-        return srcAddress;
-    }
-
-    public ReceiveChannelEndpoint channelEndpoint()
-    {
-        return channelEndpoint;
     }
 }

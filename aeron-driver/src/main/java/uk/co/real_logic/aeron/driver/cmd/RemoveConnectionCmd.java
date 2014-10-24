@@ -16,8 +16,9 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverConnection;
+import uk.co.real_logic.aeron.driver.Receiver;
 
-public class RemoveConnectionCmd
+public class RemoveConnectionCmd implements ReceiverCmd
 {
     private final DriverConnection connection;
 
@@ -26,8 +27,8 @@ public class RemoveConnectionCmd
         this.connection = connection;
     }
 
-    public DriverConnection connection()
+    public void execute(final Receiver receiver)
     {
-        return connection;
+        receiver.onRemoveConnection(connection);
     }
 }

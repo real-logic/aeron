@@ -15,11 +15,12 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
+import uk.co.real_logic.aeron.driver.DriverConductor;
 import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 
 import java.net.InetSocketAddress;
 
-public class ElicitSetupFromSourceCmd
+public class ElicitSetupFromSourceCmd implements DriverConductorCmd
 {
     private final int sessionId;
     private final int streamId;
@@ -38,6 +39,11 @@ public class ElicitSetupFromSourceCmd
         this.streamId = streamId;
         this.controlAddress = controlAddress;
         this.channelEndpoint = channelEndpoint;
+    }
+
+    public void execute(final DriverConductor conductor)
+    {
+        conductor.onElicitSetupFromSender(this);
     }
 
     public int sessionId()

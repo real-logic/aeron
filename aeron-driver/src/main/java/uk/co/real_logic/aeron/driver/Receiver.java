@@ -23,13 +23,13 @@ import uk.co.real_logic.aeron.driver.cmd.*;
 import java.util.function.Consumer;
 
 /**
- * Receiver service for JVM based media driver, uses an event loop with command buffer
+ * Receiver agent for JVM based media driver, uses an event loop with command buffer
  */
 public class Receiver implements Agent
 {
     private final TransportPoller transportPoller;
-    private final OneToOneConcurrentArrayQueue<Object> commandQueue;
-    private final Consumer<Object> onConductorCommandFunc;
+    private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
+    private final Consumer<ReceiverCmd> onReceiverCmdFunc;
     private final AtomicCounter totalBytesReceived;
 
     public Receiver(final MediaDriver.Context ctx)
@@ -38,66 +38,22 @@ public class Receiver implements Agent
         this.commandQueue = ctx.receiverCommandQueue();
         this.totalBytesReceived = ctx.systemCounters().bytesReceived();
 
-        onConductorCommandFunc = this::onConductorCommand;
-    }
-
-    private void onConductorCommand(final Object obj)
-    {
-        if (obj instanceof NewConnectionCmd)
-        {
-            final NewConnectionCmd cmd = (NewConnectionCmd)obj;
-            onNewConnection(cmd.channelEndpoint(), cmd.connection());
-        }
-        else if (obj instanceof AddSubscriptionCmd)
-        {
-            final AddSubscriptionCmd cmd = (AddSubscriptionCmd)obj;
-            onAddSubscription(cmd.mediaSubscriptionEndpoint(), cmd.streamId());
-        }
-        else if (obj instanceof RemoveSubscriptionCmd)
-        {
-            final RemoveSubscriptionCmd cmd = (RemoveSubscriptionCmd)obj;
-            onRemoveSubscription(cmd.receiveChannelEndpoint(), cmd.streamId());
-        }
-        else if (obj instanceof RegisterReceiveChannelEndpointCmd)
-        {
-            final RegisterReceiveChannelEndpointCmd cmd = (RegisterReceiveChannelEndpointCmd)obj;
-            onRegisterMediaSubscriptionEndpoint(cmd.receiveChannelEndpoint());
-        }
-        else if (obj instanceof RemoveConnectionCmd)
-        {
-            final RemoveConnectionCmd cmd = (RemoveConnectionCmd)obj;
-            onRemoveConnection(cmd.connection());
-        }
-        else if (obj instanceof RemovePendingSetupCmd)
-        {
-            final RemovePendingSetupCmd cmd = (RemovePendingSetupCmd)obj;
-            onRemovePendingSetup(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
-        }
-        else if (obj instanceof CloseReceiveChannelEndpointCmd)
-        {
-            final CloseReceiveChannelEndpointCmd cmd = (CloseReceiveChannelEndpointCmd)obj;
-            onCloseReceiveChannelEndpoint(cmd.receiveChannelEndpoint());
-        }
-        else if (obj instanceof CloseSubscriptionCmd)
-        {
-            final CloseSubscriptionCmd cmd = (CloseSubscriptionCmd)obj;
-            onCloseSubscription(cmd.subscription());
-        }
-    }
-
-    public int doWork() throws Exception
-    {
-        final int workCount = commandQueue.drain(onConductorCommandFunc);
-        final int bytesReceived = transportPoller.pollTransports();
-
-        totalBytesReceived.addOrdered(bytesReceived);
-
-        return workCount + bytesReceived;
+        onReceiverCmdFunc = this::onReceiverCmd;
     }
 
     public String roleName()
     {
         return "receiver";
+    }
+
+    public int doWork() throws Exception
+    {
+        final int workCount = commandQueue.drain(onReceiverCmdFunc);
+        final int bytesReceived = transportPoller.pollTransports();
+
+        totalBytesReceived.addOrdered(bytesReceived);
+
+        return workCount + bytesReceived;
     }
 
     public void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
@@ -122,7 +78,7 @@ public class Receiver implements Agent
                   .removeConnection(connection);
     }
 
-    public void onRegisterMediaSubscriptionEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    public void onRegisterMediaChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.registerForRead(transportPoller);
         transportPoller.selectNowWithoutProcessing();
@@ -142,5 +98,10 @@ public class Receiver implements Agent
     public void onCloseSubscription(final DriverSubscription subscription)
     {
         subscription.close();
+    }
+
+    private void onReceiverCmd(final ReceiverCmd cmd)
+    {
+        cmd.execute(this);
     }
 }

@@ -50,11 +50,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
-/**
- * Test the Media Driver Conductor in isolation
- *
- * Tests for interaction of media conductor with client protocol
- */
 public class DriverConductorTest
 {
     private static final String CHANNEL_URI = "udp://localhost:";
@@ -106,6 +101,7 @@ public class DriverConductorTest
             final Object args[] = invocation.getArguments();
             final ReceiveChannelEndpoint channelEndpoint = (ReceiveChannelEndpoint)args[0];
             channelEndpoint.close();
+
             return null;
         };
 
@@ -398,7 +394,7 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verifyReceiverUnsubscribes(times(1));
+        verifyReceiverRemovesSubscription(times(1));
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -422,11 +418,11 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verifyReceiverUnsubscribes(never());
+        verifyReceiverRemovesSubscription(never());
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
-    private void verifyReceiverUnsubscribes(final VerificationMode times)
+    private void verifyReceiverRemovesSubscription(final VerificationMode times)
     {
         verify(receiverProxy, times).removeSubscription(any(), anyInt());
     }
@@ -480,10 +476,7 @@ public class DriverConductorTest
     }
 
     private void writeSubscriptionMessage(
-        final int msgTypeId,
-        final String channel,
-        final int streamId,
-        final long registrationCorrelationId)
+        final int msgTypeId, final String channel, final int streamId, final long registrationCorrelationId)
     {
         subscriptionMessage.wrap(writeBuffer, 0);
         subscriptionMessage.streamId(streamId)

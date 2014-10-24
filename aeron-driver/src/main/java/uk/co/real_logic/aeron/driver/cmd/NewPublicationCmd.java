@@ -16,8 +16,9 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverPublication;
+import uk.co.real_logic.aeron.driver.Sender;
 
-public class NewPublicationCmd
+public class NewPublicationCmd implements SenderCmd
 {
     private final DriverPublication publication;
 
@@ -26,8 +27,8 @@ public class NewPublicationCmd
         this.publication = publication;
     }
 
-    public DriverPublication publication()
+    public void execute(final Sender sender)
     {
-        return publication;
+        sender.onNewPublication(publication);
     }
 }

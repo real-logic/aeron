@@ -28,20 +28,19 @@ import static uk.co.real_logic.aeron.driver.ThreadingMode.SHARED;
 public class ReceiverProxy
 {
     private final ThreadingMode threadingMode;
-    private final Queue<? super Object> commandQueue;
+    private final Queue<ReceiverCmd> commandQueue;
     private final AtomicCounter failCount;
 
     private Receiver receiver;
 
-    public ReceiverProxy(
-        final ThreadingMode threadingMode, final Queue<? super Object> commandQueue, final AtomicCounter failCount)
+    public ReceiverProxy(final ThreadingMode threadingMode, final Queue<ReceiverCmd> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
     }
 
-    public void receiver(Receiver receiver)
+    public void receiver(final Receiver receiver)
     {
         this.receiver = receiver;
     }
@@ -54,7 +53,7 @@ public class ReceiverProxy
         }
         else
         {
-            offerCommand(new AddSubscriptionCmd(mediaEndpoint, streamId));
+            offer(new AddSubscriptionCmd(mediaEndpoint, streamId));
         }
     }
 
@@ -66,7 +65,7 @@ public class ReceiverProxy
         }
         else
         {
-            offerCommand(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
+            offer(new RemoveSubscriptionCmd(mediaEndpoint, streamId));
         }
     }
 
@@ -78,7 +77,7 @@ public class ReceiverProxy
         }
         else
         {
-            offerCommand(new NewConnectionCmd(channelEndpoint, connection));
+            offer(new NewConnectionCmd(channelEndpoint, connection));
         }
     }
 
@@ -90,7 +89,7 @@ public class ReceiverProxy
         }
         else
         {
-            offerCommand(new RemoveConnectionCmd(connection));
+            offer(new RemoveConnectionCmd(connection));
         }
     }
 
@@ -98,11 +97,11 @@ public class ReceiverProxy
     {
         if (isShared())
         {
-            receiver.onRegisterMediaSubscriptionEndpoint(channelEndpoint);
+            receiver.onRegisterMediaChannelEndpoint(channelEndpoint);
         }
         else
         {
-            offerCommand(new RegisterReceiveChannelEndpointCmd(channelEndpoint));
+            offer(new RegisterReceiveChannelEndpointCmd(channelEndpoint));
         }
     }
 
@@ -114,7 +113,7 @@ public class ReceiverProxy
         }
         else
         {
-            offerCommand(new CloseReceiveChannelEndpointCmd(channelEndpoint));
+            offer(new CloseReceiveChannelEndpointCmd(channelEndpoint));
         }
     }
 
@@ -126,7 +125,7 @@ public class ReceiverProxy
         }
         else
         {
-            offerCommand(new RemovePendingSetupCmd(channelEndpoint, sessionId, streamId));
+            offer(new RemovePendingSetupCmd(channelEndpoint, sessionId, streamId));
         }
     }
 
@@ -138,7 +137,7 @@ public class ReceiverProxy
         }
         else
         {
-            offerCommand(new CloseSubscriptionCmd(subscription));
+            offer(new CloseSubscriptionCmd(subscription));
         }
     }
 
@@ -147,7 +146,7 @@ public class ReceiverProxy
         return threadingMode == SHARED;
     }
 
-    private void offerCommand(Object cmd)
+    private void offer(final ReceiverCmd cmd)
     {
         while (!commandQueue.offer(cmd))
         {

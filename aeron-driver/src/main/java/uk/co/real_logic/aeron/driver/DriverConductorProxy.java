@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 
 import java.net.InetSocketAddress;
@@ -30,20 +31,20 @@ import static uk.co.real_logic.aeron.driver.ThreadingMode.SHARED;
 public class DriverConductorProxy
 {
     private final ThreadingMode threadingMode;
-    private final Queue<? super Object> commandQueue;
+    private final Queue<DriverConductorCmd> commandQueue;
     private final AtomicCounter failCount;
 
     private DriverConductor driverConductor;
 
     public DriverConductorProxy(
-        final ThreadingMode threadingMode, final Queue<? super Object> commandQueue, final AtomicCounter failCount)
+        final ThreadingMode threadingMode, final Queue<DriverConductorCmd> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
     }
 
-    public void driverConductor(DriverConductor driverConductor)
+    public void driverConductor(final DriverConductor driverConductor)
     {
         this.driverConductor = driverConductor;
     }
@@ -54,7 +55,7 @@ public class DriverConductorProxy
         final int termId,
         final int termOffset,
         final int termSize,
-        final int senderMtuLength,
+        final int mtuLength,
         final InetSocketAddress controlAddress,
         final InetSocketAddress srcAddress,
         final ReceiveChannelEndpoint channelEndpoint)
@@ -62,15 +63,12 @@ public class DriverConductorProxy
         if (isShared())
         {
             driverConductor.onCreateConnection(
-                sessionId, streamId, termId, termOffset, termSize, senderMtuLength,
-                controlAddress, srcAddress, channelEndpoint);
+                sessionId, streamId, termId, termOffset, termSize, mtuLength, controlAddress, srcAddress, channelEndpoint);
         }
         else
         {
-            offerCommand(
-                new CreateConnectionCmd(
-                    sessionId, streamId, termId, termOffset, termSize, senderMtuLength,
-                    controlAddress, srcAddress, channelEndpoint));
+            offer(new CreateConnectionCmd(
+                sessionId, streamId, termId, termOffset, termSize, mtuLength, controlAddress, srcAddress, channelEndpoint));
         }
     }
 
@@ -87,7 +85,7 @@ public class DriverConductorProxy
         }
         else
         {
-            offerCommand(cmd);
+            offer(cmd);
         }
     }
 
@@ -96,7 +94,7 @@ public class DriverConductorProxy
         return threadingMode == SHARED;
     }
 
-    private void offerCommand(Object cmd)
+    private void offer(final DriverConductorCmd cmd)
     {
         while (!commandQueue.offer(cmd))
         {

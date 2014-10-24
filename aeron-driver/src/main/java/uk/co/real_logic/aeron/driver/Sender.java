@@ -18,9 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
-import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
+import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 
 import java.util.function.Consumer;
 
@@ -31,8 +29,8 @@ public class Sender implements Agent
 {
     private static final DriverPublication[] EMPTY_DRIVER_PUBLICATIONS = new DriverPublication[0];
 
-    private final Consumer<Object> processConductorCommandsFunc = this::processConductorCommands;
-    private final OneToOneConcurrentArrayQueue<Object> commandQueue;
+    private final Consumer<SenderCmd> processSenderCmdsFunc = this::processSenderCmds;
+    private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final AtomicCounter totalBytesSent;
 
     private DriverPublication[] publications = EMPTY_DRIVER_PUBLICATIONS;
@@ -48,38 +46,10 @@ public class Sender implements Agent
     {
         int workCount = 0;
 
-        workCount += commandQueue.drain(processConductorCommandsFunc);
+        workCount += commandQueue.drain(processSenderCmdsFunc);
         workCount += doSend();
 
         return workCount;
-    }
-
-    private void processConductorCommands(final Object obj)
-    {
-        if (obj instanceof RetransmitPublicationCmd)
-        {
-            final RetransmitPublicationCmd cmd = (RetransmitPublicationCmd)obj;
-            onRetransmit(cmd.publication(), cmd.termId(), cmd.termOffset(), cmd.length());
-        }
-        if (obj instanceof NewPublicationCmd)
-        {
-            final NewPublicationCmd cmd = (NewPublicationCmd)obj;
-            onNewPublication(cmd.publication());
-        }
-        else if (obj instanceof ClosePublicationCmd)
-        {
-            final ClosePublicationCmd cmd = (ClosePublicationCmd)obj;
-            onClosePublication(cmd.publication());
-        }
-    }
-
-    public void onRetransmit(
-        final DriverPublication publication,
-        final int termId,
-        final int termOffset,
-        final int length)
-    {
-        publication.onRetransmit(termId, termOffset, length);
     }
 
     public String roleName()
@@ -87,37 +57,9 @@ public class Sender implements Agent
         return "sender";
     }
 
-    private int doSend()
+    public void onRetransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
-        int bytesSent = 0;
-        final DriverPublication[] publications = this.publications;
-        final int length = publications.length;
-
-        roundRobinIndex++;
-        if (length <= roundRobinIndex)
-        {
-            roundRobinIndex = 0;
-        }
-
-        final int roundRobinIndex = this.roundRobinIndex;
-        if (length > 0)
-        {
-            int i = roundRobinIndex;
-            do
-            {
-                bytesSent += publications[i].send();
-
-                if (++i == length)
-                {
-                    i = 0;
-                }
-            }
-            while (i != roundRobinIndex);
-        }
-
-        totalBytesSent.addOrdered(bytesSent);
-
-        return bytesSent;
+        publication.onRetransmit(termId, termOffset, length);
     }
 
     public void onNewPublication(final DriverPublication publication)
@@ -147,5 +89,42 @@ public class Sender implements Agent
 
         publications = newPublications;
         publication.close();
+    }
+
+    private void processSenderCmds(final SenderCmd cmd)
+    {
+        cmd.execute(this);
+    }
+
+    private int doSend()
+    {
+        int bytesSent = 0;
+        final DriverPublication[] publications = this.publications;
+        final int length = publications.length;
+
+        int roundRobinIndex = ++this.roundRobinIndex;
+        if (roundRobinIndex >= length)
+        {
+            this.roundRobinIndex = roundRobinIndex = 0;
+        }
+
+        if (length > 0)
+        {
+            int i = roundRobinIndex;
+            do
+            {
+                bytesSent += publications[i].send();
+
+                if (++i == length)
+                {
+                    i = 0;
+                }
+            }
+            while (i != roundRobinIndex);
+        }
+
+        totalBytesSent.addOrdered(bytesSent);
+
+        return bytesSent;
     }
 }

@@ -17,16 +17,16 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverPublication;
+import uk.co.real_logic.aeron.driver.Sender;
 
-public class RetransmitPublicationCmd
+public class RetransmitPublicationCmd implements SenderCmd
 {
     private final DriverPublication publication;
     private final int termId;
     private final int termOffset;
     private final int length;
 
-    public RetransmitPublicationCmd(
-        final DriverPublication publication, final int termId, final int termOffset, final int length)
+    public RetransmitPublicationCmd(final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
         this.publication = publication;
         this.termId = termId;
@@ -34,23 +34,8 @@ public class RetransmitPublicationCmd
         this.length = length;
     }
 
-    public DriverPublication publication()
+    public void execute(final Sender sender)
     {
-        return publication;
-    }
-
-    public int termId()
-    {
-        return termId;
-    }
-
-    public int termOffset()
-    {
-        return termOffset;
-    }
-
-    public int length()
-    {
-        return length;
+        sender.onRetransmit(publication, termId, termOffset, length);
     }
 }

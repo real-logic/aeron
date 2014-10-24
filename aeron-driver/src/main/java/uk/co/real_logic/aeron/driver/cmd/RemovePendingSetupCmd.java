@@ -17,8 +17,9 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
+import uk.co.real_logic.aeron.driver.Receiver;
 
-public class RemovePendingSetupCmd
+public class RemovePendingSetupCmd implements ReceiverCmd
 {
     private final int sessionId;
     private final int streamId;
@@ -31,18 +32,8 @@ public class RemovePendingSetupCmd
         this.channelEndpoint = channelEndpoint;
     }
 
-    public int sessionId()
+    public void execute(final Receiver receiver)
     {
-        return sessionId;
-    }
-
-    public int streamId()
-    {
-        return streamId;
-    }
-
-    public ReceiveChannelEndpoint channelEndpoint()
-    {
-        return channelEndpoint;
+        receiver.onRemovePendingSetup(channelEndpoint, sessionId, streamId);
     }
 }

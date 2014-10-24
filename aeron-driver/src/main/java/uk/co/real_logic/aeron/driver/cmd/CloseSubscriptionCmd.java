@@ -1,8 +1,9 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverSubscription;
+import uk.co.real_logic.aeron.driver.Receiver;
 
-public class CloseSubscriptionCmd
+public class CloseSubscriptionCmd implements ReceiverCmd
 {
     private final DriverSubscription subscription;
 
@@ -11,9 +12,8 @@ public class CloseSubscriptionCmd
         this.subscription = subscription;
     }
 
-    public DriverSubscription subscription()
+    public void execute(final Receiver receiver)
     {
-        return subscription;
+        receiver.onCloseSubscription(subscription);
     }
-
 }

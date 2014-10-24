@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
+import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 
 import java.util.Queue;
 
@@ -30,18 +31,18 @@ import static uk.co.real_logic.aeron.driver.ThreadingMode.SHARED;
 public class SenderProxy
 {
     private final ThreadingMode threadingMode;
-    private final Queue<Object> commandQueue;
+    private final Queue<SenderCmd> commandQueue;
     private final AtomicCounter failCount;
     private Sender sender;
 
-    public SenderProxy(final ThreadingMode threadingMode, final Queue<Object> commandQueue, final AtomicCounter failCount)
+    public SenderProxy(final ThreadingMode threadingMode, final Queue<SenderCmd> commandQueue, final AtomicCounter failCount)
     {
         this.threadingMode = threadingMode;
         this.commandQueue = commandQueue;
         this.failCount = failCount;
     }
 
-    public void sender(Sender sender)
+    public void sender(final Sender sender)
     {
         this.sender = sender;
     }
@@ -54,7 +55,7 @@ public class SenderProxy
         }
         else
         {
-            offerCommand(new RetransmitPublicationCmd(publication, termId, termOffset, length));
+            offer(new RetransmitPublicationCmd(publication, termId, termOffset, length));
         }
     }
 
@@ -66,7 +67,7 @@ public class SenderProxy
         }
         else
         {
-            offerCommand(new ClosePublicationCmd(publication));
+            offer(new ClosePublicationCmd(publication));
         }
     }
 
@@ -78,7 +79,7 @@ public class SenderProxy
         }
         else
         {
-            offerCommand(new NewPublicationCmd(publication));
+            offer(new NewPublicationCmd(publication));
         }
     }
 
@@ -87,7 +88,7 @@ public class SenderProxy
         return threadingMode == SHARED;
     }
 
-    private void offerCommand(Object cmd)
+    private void offer(final SenderCmd cmd)
     {
         while (!commandQueue.offer(cmd))
         {

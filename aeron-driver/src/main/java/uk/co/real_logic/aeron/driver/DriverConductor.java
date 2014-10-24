@@ -34,7 +34,7 @@ import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
-import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
@@ -74,7 +74,7 @@ public class DriverConductor implements Agent
     public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
     public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
-    private final OneToOneConcurrentArrayQueue<Object> commandQueue;
+    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> driverConductorCmdQueue;
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
@@ -115,14 +115,14 @@ public class DriverConductor implements Agent
     private final EventLogger logger;
 
     private final SystemCounters systemCounters;
-    private final Consumer<Object> onReceiverCommandFunc;
+    private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc;
     private final MessageHandler onClientCommandFunc;
     private final MessageHandler onEventFunc;
     private final NanoClock clock;
 
     public DriverConductor(final Context ctx)
     {
-        this.commandQueue = ctx.conductorCommandQueue();
+        this.driverConductorCmdQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();
         this.termBuffersFactory = ctx.termBuffersFactory();
@@ -153,7 +153,7 @@ public class DriverConductor implements Agent
 
         systemCounters = ctx.systemCounters();
 
-        onReceiverCommandFunc = this::onReceiverCommand;
+        onDriverConductorCmdFunc = this::onDriverConductorCmd;
         onClientCommandFunc = this::onClientCommand;
         onEventFunc =
             (typeId, buffer, offset, length) ->
@@ -192,37 +192,13 @@ public class DriverConductor implements Agent
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    public void onReceiverCommand(Object obj)
-    {
-        if (obj instanceof CreateConnectionCmd)
-        {
-            final CreateConnectionCmd cmd = (CreateConnectionCmd)obj;
-
-            onCreateConnection(
-                cmd.sessionId(),
-                cmd.streamId(),
-                cmd.termId(),
-                cmd.termOffset(),
-                cmd.termSize(),
-                cmd.senderMtuLength(),
-                cmd.controlAddress(),
-                cmd.srcAddress(),
-                cmd.channelEndpoint());
-        }
-        else if (obj instanceof ElicitSetupFromSourceCmd)
-        {
-            // Deliberately passes command object, since it gets put onto a queue
-            onElicitSetupFromSender((ElicitSetupFromSourceCmd)obj);
-        }
-    }
-
     public int doWork() throws Exception
     {
         int workCount = 0;
 
         workCount += transportPoller.pollTransports();
         workCount += toDriverCommands.read(onClientCommandFunc);
-        workCount += commandQueue.drain(onReceiverCommandFunc);
+        workCount += driverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += toEventReader.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
         workCount += processTimers();
 
@@ -391,7 +367,6 @@ public class DriverConductor implements Agent
             transportPoller.selectNowWithoutProcessing();
 
             channelEndpoint.validateMtuLength(mtuLength);
-
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
         }
 
@@ -401,8 +376,8 @@ public class DriverConductor implements Agent
         {
             final int initialTermId = BitUtil.generateRandomisedId();
             final String canonicalForm = udpChannel.canonicalForm();
-            final TermBuffers termBuffers =
-                termBuffersFactory.newPublication(canonicalForm, sessionId, streamId, correlationId);
+            final TermBuffers termBuffers = termBuffersFactory.newPublication(
+                canonicalForm, sessionId, streamId, correlationId);
 
             final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
             final PositionReporter positionReporter = new BufferPositionReporter(
@@ -440,8 +415,8 @@ public class DriverConductor implements Agent
             senderProxy.newPublication(publication);
         }
 
-        final PublicationRegistration existingRegistration =
-            publicationRegistrations.put(correlationId, new PublicationRegistration(publication, aeronClient));
+        final PublicationRegistration existingRegistration = publicationRegistrations.put(
+            correlationId, new PublicationRegistration(publication, aeronClient));
         if (null != existingRegistration)
         {
             publicationRegistrations.put(correlationId, existingRegistration);
@@ -481,8 +456,7 @@ public class DriverConductor implements Agent
         if (null == channelEndpoint)
         {
             final LossGenerator lossGenerator = Configuration.createLossGenerator(dataLossRate, dataLossSeed);
-            channelEndpoint =
-                new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger, systemCounters, lossGenerator);
+            channelEndpoint = new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger, systemCounters, lossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerMediaEndpoint(channelEndpoint);
@@ -581,15 +555,16 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = subscriptions
             .stream()
             .filter((subscription) -> subscription.matches(streamId, channelEndpoint))
-            .map((subscription) ->
-            {
-                final int positionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
-                final BufferPositionIndicator indicator = new BufferPositionIndicator(
-                    countersBuffer, positionCounterId, countersManager);
-                countersManager.setCounterValue(positionCounterId, joiningPosition);
+            .map(
+                (subscription) ->
+                {
+                    final int positionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
+                    final BufferPositionIndicator indicator = new BufferPositionIndicator(
+                        countersBuffer, positionCounterId, countersManager);
+                    countersManager.setCounterValue(positionCounterId, joiningPosition);
 
-                return new SubscriberPosition(subscription, positionCounterId, indicator);
-            })
+                    return new SubscriberPosition(subscription, positionCounterId, indicator);
+                })
             .collect(toList());
 
         final int receiverCompletedCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
@@ -643,8 +618,9 @@ public class DriverConductor implements Agent
 
         connections.add(connection);
 
-        subscriberPositions.forEach((subscriberPosition) ->
-            subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator()));
+        subscriberPositions.forEach(
+            (subscriberPosition) ->
+                subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator()));
 
         receiverProxy.newConnection(channelEndpoint, connection);
     }
@@ -820,7 +796,6 @@ public class DriverConductor implements Agent
             if (now > (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS))
             {
                 pendingSetups.remove(i);
-
                 receiverProxy.removePendingSetup(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
             }
         }
@@ -837,6 +812,11 @@ public class DriverConductor implements Agent
         cmd.timeOfStatusMessage(clock.time());
 
         pendingSetups.add(cmd);
+    }
+
+    private void onDriverConductorCmd(final DriverConductorCmd cmd)
+    {
+        cmd.execute(this);
     }
 
     private AeronClient getOrAddClient(final long clientId)

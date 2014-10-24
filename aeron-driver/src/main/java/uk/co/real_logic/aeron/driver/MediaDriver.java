@@ -23,6 +23,9 @@ import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
+import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
+import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -235,9 +238,9 @@ public final class MediaDriver implements AutoCloseable
         private Supplier<SenderFlowControl> unicastSenderFlowControl;
         private Supplier<SenderFlowControl> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
-        private OneToOneConcurrentArrayQueue<Object> conductorCommandQueue;
-        private OneToOneConcurrentArrayQueue<Object> receiverCommandQueue;
-        private OneToOneConcurrentArrayQueue<Object> senderCommandQueue;
+        private OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue;
+        private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
         private ReceiverProxy receiverProxy;
         private SenderProxy senderProxy;
         private DriverConductorProxy driverConductorProxy;
@@ -357,7 +360,7 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<Object> conductorCommandQueue)
+        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue)
         {
             this.conductorCommandQueue = conductorCommandQueue;
             return this;
@@ -399,13 +402,13 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<Object> receiverCommandQueue)
+        public Context receiverCommandQueue(final OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue)
         {
             this.receiverCommandQueue = receiverCommandQueue;
             return this;
         }
 
-        public Context senderCommandQueue(final OneToOneConcurrentArrayQueue<Object> senderCommandQueue)
+        public Context senderCommandQueue(final OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue)
         {
             this.senderCommandQueue = senderCommandQueue;
             return this;
@@ -567,7 +570,7 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public OneToOneConcurrentArrayQueue<Object> conductorCommandQueue()
+        public OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue()
         {
             return conductorCommandQueue;
         }
@@ -602,12 +605,12 @@ public final class MediaDriver implements AutoCloseable
             return conductorTimerWheel;
         }
 
-        public OneToOneConcurrentArrayQueue<Object> receiverCommandQueue()
+        public OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()
         {
             return receiverCommandQueue;
         }
 
-        public OneToOneConcurrentArrayQueue<Object> senderCommandQueue()
+        public OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue()
         {
             return senderCommandQueue;
         }

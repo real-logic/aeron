@@ -1,4 +1,6 @@
 
+#include <cstdint>
+
 #include <util/ScopeUtils.h>
 #include <util/StringUtil.h>
 

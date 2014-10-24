@@ -11,7 +11,14 @@
 
 namespace aeron { namespace common { namespace util {
 
-#define SOURCEINFO  __PRETTY_FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
+
+#ifdef _WIN32
+	#define SOURCEINFO __FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
+	#define AERON_NOEXCEPT
+#else 
+	#define SOURCEINFO  __PRETTY_FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
+	#define AERON_NOEXCEPT noexcept 
+#endif
 
 class SourcedException : public std::exception
 {
@@ -25,12 +32,12 @@ public:
     {
     }
 
-    virtual const char *what() const noexcept
+	virtual const char *what() const AERON_NOEXCEPT
     {
         return m_what.c_str();
     }
 
-    const char *where() const noexcept
+		const char *where() const AERON_NOEXCEPT
     {
         return m_where.c_str();
     }

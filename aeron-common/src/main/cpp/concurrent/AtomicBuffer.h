@@ -7,6 +7,7 @@
 #include <mintomic/mintomic.h>
 
 #include <util/Exceptions.h>
+#include <util/StringUtil.h>
 
 namespace aeron { namespace common { namespace concurrent {
 
@@ -199,7 +200,7 @@ private:
     inline void boundsCheck(size_t index, size_t length)
     {
         if (index + length > m_length)
-            throw aeron::common::util::OutOfBoundsException("Index Out of Bounds", SOURCEINFO);
+            throw aeron::common::util::OutOfBoundsException(std::string("Index Out of Bounds. Index: ") + util::toString(index + length) + " Capacity: " + util::toString(m_length), SOURCEINFO);
     }
 };
 

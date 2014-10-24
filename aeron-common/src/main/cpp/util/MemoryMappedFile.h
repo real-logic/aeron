@@ -4,6 +4,11 @@
 #include <cstdint>
 #include <memory>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
+
 namespace aeron { namespace common { namespace util {
 
 class MemoryMappedFile
@@ -26,12 +31,27 @@ private:
     MemoryMappedFile (const char* filename, size_t size);
     MemoryMappedFile (const char* filename);
 
-    void fill (int fd, size_t sz, std::uint8_t);
-    uint8_t* doMapping(size_t size, int fd);
+	struct FileHandle
+	{
+#ifdef _WIN32
+		HANDLE handle;
+#else
+		int handle;
+#endif
+	};
+
+    void fill (FileHandle fd, size_t sz, std::uint8_t);
+    uint8_t* doMapping(size_t size, FileHandle fd);
 
     std::uint8_t* m_memory = 0;
     size_t m_memorySize = 0;
-    const size_t PAGE_SIZE = 4096; // TODO: Get this programaticaly?
+    const static size_t PAGE_SIZE = 4096; // TODO: Get this programaticaly?
+
+#ifdef _WIN32
+	HANDLE m_file;
+	HANDLE m_mapping;
+#endif
+
 };
 
 }}}

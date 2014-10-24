@@ -13,7 +13,7 @@ using namespace aeron::common::concurrent;
 using namespace std::chrono;
 
 
-std::atomic_bool running (true);
+std::atomic<bool> running (true);
 
 void sigIntHandler (int param)
 {

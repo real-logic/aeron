@@ -3,7 +3,9 @@
 
 #include <string>
 #include <sstream>
+#include <type_traits>
 #include "Exceptions.h"
+
 
 namespace aeron { namespace common { namespace util {
 
@@ -25,14 +27,17 @@ inline std::string trimWSBoth (std::string str, const char* wschars = " \t")
 }
 
 template<class valueType>
-inline valueType parse (const std::string& input)
+valueType parse (const std::string& input)
 {
     std::string str = trimWSBoth(input);
 
     std::istringstream stream (str);
     valueType value;
 
-    stream >> value;
+    if (std::is_integral<valueType>::value && input.length() > 2 && input[0] == '0' && (input[1] == 'x' || input[1] == 'X'))
+        stream >> std::hex >> value;
+    else
+        stream >> value;
 
     // if we failed extract an valid value or we didnt use up all the chars then throw an error
     if (stream.fail() || !stream.eof())

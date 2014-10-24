@@ -106,35 +106,37 @@ void MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 #else
 MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
 {
-    int fd = open(filename, O_RDWR|O_CREAT, 0666);
-    if (fd < 0)
+    FileHandle fd;
+    fd.handle = open(filename, O_RDWR|O_CREAT, 0666);
+    if (fd.handle < 0)
         throw IOException(std::string ("Failed to create file: ") + filename, SOURCEINFO);
 
     m_memorySize = size;
 
     OnScopeExit tidy ([&]()
     {
-        close(fd);
+        close(fd.handle);
     });
 
     fill (fd, size, 0);
     m_memory = doMapping(size, fd);
-    close(fd);
+    close(fd.handle);
 }
 
 MemoryMappedFile::MemoryMappedFile(const char *filename)
 {
-    int fd = open(filename, O_RDWR, 0666);
-    if (fd < 0)
+    FileHandle fd;
+    fd.handle = open(filename, O_RDWR, 0666);
+    if (fd.handle < 0)
         throw IOException(std::string ("Failed to open existing file: ") + filename, SOURCEINFO);
 
     OnScopeExit tidy ([&]()
     {
-        close(fd);
+        close(fd.handle);
     });
 
     struct stat statInfo;
-    fstat(fd, &statInfo);
+    fstat(fd.handle, &statInfo);
 
     m_memorySize = statInfo.st_size;
     m_memory = doMapping(m_memorySize, fd);
@@ -148,7 +150,7 @@ MemoryMappedFile::~MemoryMappedFile()
 
 uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd)
 {
-    void* memory = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+    void* memory = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, fd.handle, 0);
     if (memory == MAP_FAILED)
         throw IOException ("Failed to Memory Map File", SOURCEINFO);
 

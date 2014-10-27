@@ -26,7 +26,7 @@ static const char optPeriod = 'u';
 
 struct Settings 
 {
-    std::string basePath = "/dev/shm";
+    std::string basePath = "/dev/shm/aeron";
     int updateIntervalms = 1000;
 };
 
@@ -51,7 +51,7 @@ int main (int argc, char** argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption (optHelp,   0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optPath,   1, 1, "basePath        Base Path to shared memory. Default: /dev/shm"));
+    cp.addOption(CommandOption (optPath,   1, 1, "basePath        Base Path to shared memory. Default: /dev/shm/aeron"));
     cp.addOption(CommandOption (optPeriod, 1, 1, "update period   Update period in millseconds. Default: 1000ms"));
 
     signal (SIGINT, sigIntHandler);
@@ -60,8 +60,8 @@ int main (int argc, char** argv)
     {
         Settings settings = parseCmdLine(cp, argc, argv);
         
-        MemoryMappedFile::ptr_t labelsFile   = MemoryMappedFile::mapExisting((settings.basePath + "/aeron/counters/labels").c_str());
-        MemoryMappedFile::ptr_t countersFile = MemoryMappedFile::mapExisting((settings.basePath + "/aeron/counters/values").c_str());
+        MemoryMappedFile::ptr_t labelsFile   = MemoryMappedFile::mapExisting((settings.basePath + "/counters/labels").c_str());
+        MemoryMappedFile::ptr_t countersFile = MemoryMappedFile::mapExisting((settings.basePath + "/counters/values").c_str());
 
         AtomicBuffer labelsBuffer(labelsFile->getMemoryPtr(), labelsFile->getMemorySize());
         AtomicBuffer countersBuffer(countersFile->getMemoryPtr(), countersFile->getMemorySize());

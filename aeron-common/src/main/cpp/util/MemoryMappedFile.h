@@ -40,7 +40,7 @@ private:
 #endif
 	};
 
-    void fill (FileHandle fd, size_t sz, std::uint8_t);
+	bool fill(FileHandle fd, size_t sz, std::uint8_t);
     uint8_t* doMapping(size_t size, FileHandle fd);
 
     std::uint8_t* m_memory = 0;

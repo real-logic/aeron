@@ -39,7 +39,19 @@ size_t MemoryMappedFile::getMemorySize() const
 
 #ifdef _WIN32
 MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
+	: m_file(NULL), m_mapping(NULL)
 {
+	FileHandle fd;
+	fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+	if (fd.handle == INVALID_HANDLE_VALUE)
+		throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+
+	if (!fill(fd, size, 0))
+		throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+
+	m_memorySize = size;
+	m_memory = doMapping(m_memorySize, fd);
 }
 
 MemoryMappedFile::MemoryMappedFile(const char *filename)
@@ -49,19 +61,14 @@ MemoryMappedFile::MemoryMappedFile(const char *filename)
 	fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
 	if (fd.handle == INVALID_HANDLE_VALUE)
-	{
-		DWORD err = GetLastError();
-		throw IOException(std::string("Failed to open existing file: ") + filename + " " + toString(err) , SOURCEINFO);
-	}
+		throw IOException(std::string("Failed to open existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
 
 	LARGE_INTEGER fileSize;
-	GetFileSizeEx(m_file, &fileSize);
+	if (!GetFileSizeEx(fd.handle, &fileSize))
+		throw IOException(std::string("Failed query size of existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
 		 
 	m_memorySize = (size_t)fileSize.QuadPart;
-
 	m_memory = doMapping(m_memorySize, fd);
-
-
 }
 
 MemoryMappedFile::~MemoryMappedFile()
@@ -84,23 +91,26 @@ uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd)
 	return static_cast<uint8_t*>(memory);
 }
 
-void MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
+bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
-// 	uint8_t buffer[PAGE_SIZE];
-// 	memset(buffer, value, PAGE_SIZE);
-// 
-// 	while (size >= PAGE_SIZE)
-// 	{
-// 		if (static_cast<size_t>(write(fd, buffer, PAGE_SIZE)) != PAGE_SIZE)
-// 			throw IOException("Failed Writing to File", SOURCEINFO);
-// 		size -= PAGE_SIZE;
-// 	}
-// 
-// 	if (size)
-// 	{
-// 		if (static_cast<size_t>(write(fd, buffer, size)) != size)
-// 			throw IOException("Failed Writing to File", SOURCEINFO);
-// 	}
+	uint8_t buffer[PAGE_SIZE];
+ 	memset(buffer, value, PAGE_SIZE);
+ 
+	DWORD written = 0;
+
+ 	while (size >= PAGE_SIZE)
+ 	{
+		if (!WriteFile(fd.handle, buffer, PAGE_SIZE, &written, NULL))
+			return false;
+		size -= written;
+	}
+
+	if (size)
+	{
+		if (!WriteFile(fd.handle, buffer, size, &written, NULL))
+			return false;
+	}
+	return true;
 }
 
 #else
@@ -118,8 +128,10 @@ MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
         close(fd.handle);
     });
 
-    fill (fd, size, 0);
-    m_memory = doMapping(size, fd);
+	if (!fill(fd, size, 0))
+		throw IOException(std::string("Failed to write to file: ") + filename, SOURCEINFO);
+
+	m_memory = doMapping(size, fd);
     close(fd.handle);
 }
 
@@ -157,23 +169,24 @@ uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd)
     return static_cast<uint8_t*>(memory);
 }
 
-void MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
+bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
     uint8_t buffer[PAGE_SIZE];
     memset(buffer, value, PAGE_SIZE);
 
     while (size >= PAGE_SIZE)
     {
-        if (static_cast<size_t>(write(fd.handle, buffer, PAGE_SIZE)) != PAGE_SIZE)
-            throw IOException("Failed Writing to File", SOURCEINFO);
+		if (static_cast<size_t>(write(fd.handle, buffer, PAGE_SIZE)) != PAGE_SIZE)
+			return false;
         size -= PAGE_SIZE;
     }
 
     if (size)
     {
-        if (static_cast<size_t>(write(fd.handle, buffer, size)) != size)
-            throw IOException("Failed Writing to File", SOURCEINFO);
+		if (static_cast<size_t>(write(fd.handle, buffer, size)) != size)
+			return false;
     }
+	return true;
 }
 
 #endif

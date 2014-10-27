@@ -39,7 +39,7 @@ size_t MemoryMappedFile::getMemorySize() const
 
 #ifdef _WIN32
 MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
-	: m_file(NULL), m_mapping(NULL)
+	: m_file(NULL), m_mapping(NULL), m_memory(NULL)
 {
 	FileHandle fd;
 	fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -48,10 +48,18 @@ MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
 		throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
 
 	if (!fill(fd, size, 0))
+	{	
+		cleanUp();
 		throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
-
+	}
 	m_memorySize = size;
 	m_memory = doMapping(m_memorySize, fd);
+
+	if (!m_memory)
+	{
+		cleanUp();
+		throw IOException(std::string("Failed to Map Memory: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+	}
 }
 
 MemoryMappedFile::MemoryMappedFile(const char *filename)
@@ -65,28 +73,46 @@ MemoryMappedFile::MemoryMappedFile(const char *filename)
 
 	LARGE_INTEGER fileSize;
 	if (!GetFileSizeEx(fd.handle, &fileSize))
+	{
+		cleanUp();
 		throw IOException(std::string("Failed query size of existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
-		 
+	}
+
 	m_memorySize = (size_t)fileSize.QuadPart;
 	m_memory = doMapping(m_memorySize, fd);
+
+	if (!m_memory)
+	{
+		cleanUp();
+		throw IOException(std::string("Failed to Map Memory: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+	}
+}
+
+
+void MemoryMappedFile::cleanUp()
+{
+	if (m_file)
+		CloseHandle(m_file);
+	
+	if (m_memory)
+		UnmapViewOfFile(m_memory);
+	
+	if (m_mapping)
+		CloseHandle(m_mapping);
 }
 
 MemoryMappedFile::~MemoryMappedFile()
 {
-	CloseHandle(m_file);
-	UnmapViewOfFile(m_memory);
-	CloseHandle(m_mapping);
+	cleanUp();
 }
 
 uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd)
 {
 	m_mapping = CreateFileMapping(fd.handle, NULL, PAGE_READWRITE, 0, size, NULL);                 
 	if (m_mapping == NULL)
-		throw IOException("Failed to Memory Map File", SOURCEINFO);
+		return NULL;
 
 	void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0,	0, size);
-	if (memory == NULL)
-		throw IOException("Failed to Memory Map File", SOURCEINFO);
 
 	return static_cast<uint8_t*>(memory);
 }

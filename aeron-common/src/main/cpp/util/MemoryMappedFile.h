@@ -48,8 +48,9 @@ private:
     const static size_t PAGE_SIZE = 4096; // TODO: Get this programaticaly?
 
 #ifdef _WIN32
-	HANDLE m_file;
-	HANDLE m_mapping;
+	HANDLE m_file = NULL;
+	HANDLE m_mapping = NULL;
+	void cleanUp();
 #endif
 
 };

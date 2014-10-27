@@ -13,7 +13,7 @@ AtomicCounter::AtomicCounter(const AtomicBuffer buffer, std::int32_t counterId, 
     m_buffer.putInt64(m_offset, 0);
 }
 
-void AtomicCounter::close()
+AtomicCounter::~AtomicCounter()
 {
     m_countersManager.free(m_counterId);
 }

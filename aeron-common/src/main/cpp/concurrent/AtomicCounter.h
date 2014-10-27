@@ -2,6 +2,7 @@
 #define INCLUDED_AERON_CONCURRENT_ATOMIC_COUNTER__
 
 #include <cstdint>
+#include <memory>
 #include <mintomic/mintomic.h>
 #include "AtomicBuffer.h"
 
@@ -14,6 +15,7 @@ class AtomicCounter
 {
 public:
     AtomicCounter(const AtomicBuffer buffer, std::int32_t counterId, CountersManager& countersManager);
+    ~AtomicCounter();
 
     void increment()
     {
@@ -45,7 +47,7 @@ public:
         return m_buffer.getInt64Atomic(m_offset);
     }
 
-    void close();
+    typedef std::shared_ptr<AtomicCounter> ptr_t;
 
 private:
     AtomicBuffer m_buffer;

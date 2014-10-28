@@ -17,16 +17,17 @@ public:
 
     void forEach (const std::function<void(int, const std::string&)>& f);
 
-    int allocate(const std::string& label);
+    std::int32_t allocate(const std::string& label);
     AtomicCounter::ptr_t newCounter(const std::string& label);
     void free(std::int32_t counterId);
 
     size_t counterOffset(std::int32_t counterId);
     size_t labelOffset(std::int32_t counterId);
 
-private:
     static const size_t LABEL_SIZE = 1024;
     static const size_t COUNTER_SIZE = 64;  // cache line size
+
+private:
     static const std::int32_t UNREGISTERED_LABEL_SIZE = -1;
 
     std::int32_t m_highwaterMark = 0;

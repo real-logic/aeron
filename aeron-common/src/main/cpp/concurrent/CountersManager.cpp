@@ -1,5 +1,6 @@
 
 #include <util/Exceptions.h>
+#include <util/StringUtil.h>
 #include <memory>
 
 #include "CountersManager.h"
@@ -13,11 +14,12 @@ CountersManager::CountersManager(const AtomicBuffer& labelsBuffer, const AtomicB
 
 void CountersManager::forEach(const std::function<void(int, const std::string &)> &f)
 {
-    int labelsOffset = 0;
+    size_t labelsOffset = 0;
     int size;
     int id = 0;
 
-    while ((size = m_labelsBuffer.getInt32(labelsOffset)) != 0)
+    while ((labelsOffset < (m_labelsBuffer.getCapacity() - sizeof(std::int32_t)))
+            && (size = m_labelsBuffer.getInt32(labelsOffset)) != 0)
     {
         if (size != UNREGISTERED_LABEL_SIZE)
         {
@@ -56,6 +58,10 @@ AtomicCounter::ptr_t CountersManager::newCounter(const std::string &label)
 
 void CountersManager::free(std::int32_t counterId)
 {
+    std::int32_t lsize = m_labelsBuffer.getInt32(labelOffset(counterId));
+    if (lsize == 0 || lsize == UNREGISTERED_LABEL_SIZE)
+        throw util::IllegalArgumentException(util::strPrintf("Attempt to free unallocated ID: %d", counterId), SOURCEINFO);
+
     m_labelsBuffer.putInt32(labelOffset(counterId), UNREGISTERED_LABEL_SIZE);
     m_countersBuffer.putInt64Ordered(counterOffset(counterId), 0L);
     m_freeList.push_back(counterId);

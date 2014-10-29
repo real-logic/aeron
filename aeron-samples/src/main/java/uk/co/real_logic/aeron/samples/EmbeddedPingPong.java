@@ -13,29 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.examples;
+package uk.co.real_logic.aeron.samples;
 
 import org.HdrHistogram.Histogram;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
+import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
+import uk.co.real_logic.aeron.common.DirectBuffer;
+import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Ping component of Ping-Pong.
- *
- * Initiates and records times.
- */
-public class Ping
+public class EmbeddedPingPong
 {
     private static final int PING_STREAM_ID = ExampleConfiguration.PING_STREAM_ID;
     private static final int PONG_STREAM_ID = ExampleConfiguration.PONG_STREAM_ID;
@@ -46,25 +46,48 @@ public class Ping
     private static final int WARMUP_NUMBER_OF_ITERATIONS = ExampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
     private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAGMENT_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
+    private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
+    private static final AtomicBoolean RUNNING = new AtomicBoolean(true);
 
     public static void main(final String[] args) throws Exception
     {
         ExamplesUtil.useSharedMemoryOnLinux();
 
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .threadingMode(ThreadingMode.DEDICATED)
+            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
+            .sharedNetworkIdleStrategy(new BusySpinIdleStrategy())
+            .sharedIdleStrategy(new BusySpinIdleStrategy())
+            .receiverIdleStrategy(new BusySpinIdleStrategy())
+            .senderIdleStrategy(new BusySpinIdleStrategy());
+
+        try (final MediaDriver ignored = MediaDriver.launch(ctx))
+        {
+            Thread pongThread = startPong();
+            pongThread.start();
+            runPing();
+            RUNNING.set(false);
+            pongThread.join();
+
+            System.out.println("Shutdown Driver...");
+        }
+    }
+    private static void runPing() throws InterruptedException
+    {
+
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(Ping::newPongConnectionHandler);
+            .newConnectionHandler(EmbeddedPingPong::newPongConnectionHandler);
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
         System.out.println("Message size of " + MESSAGE_LENGTH + " bytes");
 
-        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
+        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(EmbeddedPingPong::pongHandler);
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
@@ -96,8 +119,34 @@ public class Ping
             }
             while (barrier.await());
         }
+    }
 
-        CloseHelper.quietClose(driver);
+    private static Thread startPong()
+    {
+        return new Thread()
+        {
+            public void run()
+            {
+                System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
+                System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+
+                final Aeron.Context ctx = new Aeron.Context();
+                try (final Aeron aeron = Aeron.connect(ctx);
+                     final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
+                     final Subscription pingSubscription = aeron.addSubscription(
+                         PING_CHANNEL, PING_STREAM_ID, new FragmentAssemblyAdapter(
+                             (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length))))
+                {
+                    while (RUNNING.get())
+                    {
+                        final int fragmentsRead = pingSubscription.poll(FRAME_COUNT_LIMIT);
+                        PING_HANDLER_IDLE_STRATEGY.idle(fragmentsRead);
+                    }
+
+                    System.out.println("Shutting down...");
+                }
+            }
+        };
     }
 
     private static void sendPingAndReceivePong(
@@ -134,6 +183,15 @@ public class Ping
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {
             PONG_CONNECTION_LATCH.countDown();
+        }
+    }
+
+    public static void pingHandler(
+        final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
+    {
+        while (!pongPublication.offer(buffer, offset, length))
+        {
+            PING_HANDLER_IDLE_STRATEGY.idle(0);
         }
     }
 }

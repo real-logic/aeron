@@ -13,19 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.examples.raw;
+package uk.co.real_logic.aeron.samples.raw;
 
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
-import uk.co.real_logic.aeron.driver.NioSelectedKeySet;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
+import java.nio.channels.*;
+import java.util.Iterator;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.ToIntFunction;
+import java.util.function.IntSupplier;
 
 import static java.nio.channels.SelectionKey.OP_READ;
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
@@ -34,18 +33,19 @@ import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 /**
  * Benchmark used to calculate latency of underlying system.
  *
- * @see SendHackSelectReceiveUdpPing
+ * @see uk.co.real_logic.aeron.examples.raw.SendHackSelectReceiveUdpPing
  */
-public class HackSelectReceiveSendUdpPong
+public class SelectReceiveSendUdpPong
 {
     public static void main(final String[] args) throws IOException
     {
-        new HackSelectReceiveSendUdpPong().run();
+        new SelectReceiveSendUdpPong().run();
     }
 
     private void run() throws IOException
     {
         final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PONG_PORT);
+
         final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
 
         final DatagramChannel receiveChannel = DatagramChannel.open();
@@ -56,10 +56,9 @@ public class HackSelectReceiveSendUdpPong
         Common.init(sendChannel);
 
         final Selector selector = Selector.open();
-        final NioSelectedKeySet keySet = Common.keySet(selector);
 
-        final ToIntFunction<SelectionKey> handler =
-            (key) ->
+        final IntSupplier handler =
+            () ->
             {
                 try
                 {
@@ -84,7 +83,7 @@ public class HackSelectReceiveSendUdpPong
                 return 1;
             };
 
-        receiveChannel.register(selector, OP_READ, null);
+        receiveChannel.register(selector, OP_READ, handler);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
@@ -99,7 +98,19 @@ public class HackSelectReceiveSendUdpPong
                 }
             }
 
-            keySet.forEach(handler);
+            final Set<SelectionKey> selectedKeys = selector.selectedKeys();
+            final Iterator<SelectionKey> iter = selectedKeys.iterator();
+
+            while (iter.hasNext())
+            {
+                final SelectionKey key = iter.next();
+                if (key.isReadable())
+                {
+                    ((IntSupplier)key.attachment()).getAsInt();
+                }
+
+                iter.remove();
+            }
         }
     }
 }

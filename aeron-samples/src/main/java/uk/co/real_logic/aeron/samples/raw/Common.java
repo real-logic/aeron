@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.examples.raw;
+package uk.co.real_logic.aeron.samples.raw;
 
 import uk.co.real_logic.aeron.driver.NioSelectedKeySet;
 

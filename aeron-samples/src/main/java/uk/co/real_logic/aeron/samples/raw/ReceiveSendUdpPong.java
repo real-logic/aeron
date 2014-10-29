@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.examples.raw;
+package uk.co.real_logic.aeron.samples.raw;
 
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
-import static uk.co.real_logic.aeron.examples.raw.Common.init;
+import static uk.co.real_logic.aeron.samples.raw.Common.init;
 
 /**
  * Benchmark used to calculate latency of underlying system.

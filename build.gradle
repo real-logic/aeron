@@ -162,7 +162,7 @@ project(':aeron-client') {
     }
 }
 
-project(':aeron-examples') {
+project(':aeron-samples') {
     apply plugin: 'shadow'
 
     dependencies {
@@ -170,7 +170,7 @@ project(':aeron-examples') {
     }
 
     shadow {
-        outputFile = new File('aeron-examples/build/libs/examples.jar')
+        outputFile = new File('aeron-examples/build/libs/samples.jar')
     }
 
     build.doLast {

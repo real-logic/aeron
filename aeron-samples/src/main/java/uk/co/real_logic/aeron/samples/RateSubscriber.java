@@ -13,23 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.examples;
+package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CloseHelper;
+import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.aeron.examples.ExamplesUtil.printStringMessage;
+import static uk.co.real_logic.aeron.samples.ExamplesUtil.rateReporterHandler;
 
 /**
- * Example Aeron subscriber application
+ * Example that displays current rate while receiving data
  */
-public class ExampleSubscriber
+public class RateSubscriber
 {
     private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
     private static final String CHANNEL = ExampleConfiguration.CHANNEL;
@@ -43,25 +47,35 @@ public class ExampleSubscriber
         ExamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(ExamplesUtil::printNewConnection)
             .inactiveConnectionHandler(ExamplesUtil::printInactiveConnection);
 
-        final DataHandler dataHandler = printStringMessage(STREAM_ID);
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExamplesUtil::printRate);
+        final DataHandler rateReporterHandler = rateReporterHandler(reporter);
 
         final AtomicBoolean running = new AtomicBoolean(true);
-        SigInt.register(() -> running.set(false));
+        SigInt.register(
+            () ->
+            {
+                reporter.halt();
+                running.set(false);
+            });
 
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+        try (final Aeron aeron = Aeron.connect(ctx, executor);
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
-            // run the subscriber thread from here
-            ExamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+            executor.execute(() -> ExamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+
+            // run the rate reporter loop
+            reporter.run();
 
             System.out.println("Shutting down...");
         }
 
+        executor.shutdown();
         CloseHelper.quietClose(driver);
     }
 }

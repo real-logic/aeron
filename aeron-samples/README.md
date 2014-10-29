@@ -1,9 +1,9 @@
-# Aeron Examples
+# Aeron Samples
 
-Here you will find a collection of examples and tools for Aeron. The build process builds a complete
+Here you will find a collection of samples and tools for Aeron. The build process builds a complete
 jar of the examples and places it in this location
 
-     aeron-examples/build/libs/examples.jar
+     aeron-examples/build/libs/samples.jar
 
 Here is a brief list of the examples and what each tries to do.
 

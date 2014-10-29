@@ -297,6 +297,18 @@ public class DriverPublication implements AutoCloseable
         return publisherLimit.id();
     }
 
+    public int updatePublishersLimit()
+    {
+        final long candidatePublisherLimit = senderPosition.position() + termWindowSize;
+        if (publisherLimit.position() != candidatePublisherLimit)
+        {
+            publisherLimit.position(candidatePublisherLimit);
+            return 1;
+        }
+
+        return 0;
+    }
+
     private int sendData()
     {
         final int bytesSent;
@@ -452,17 +464,5 @@ public class DriverPublication implements AutoCloseable
     private long positionForActiveTerm(final int termOffset)
     {
         return TermHelper.calculatePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
-    }
-
-    public int updatePublishersLimit()
-    {
-        long candidatePublisherLimit = senderPosition.position() + termWindowSize;
-        if (publisherLimit.position() != candidatePublisherLimit)
-        {
-            publisherLimit.position(candidatePublisherLimit);
-            return 1;
-        }
-
-        return 0;
     }
 }

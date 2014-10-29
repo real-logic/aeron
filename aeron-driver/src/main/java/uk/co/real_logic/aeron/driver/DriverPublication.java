@@ -62,6 +62,7 @@ public class DriverPublication implements AutoCloseable
     private final TermBuffers termBuffers;
     private final int positionBitsToShift;
     private final int initialTermId;
+    private final PositionReporter senderPosition;
     private final SystemCounters systemCounters;
     private final int termWindowSize;
     private final int termCapacity;
@@ -78,7 +79,6 @@ public class DriverPublication implements AutoCloseable
     private int statusMessagesReceivedCount = 0;
 
     private long timeOfLastSendOrHeartbeat;
-    private long lastSentPosition = 0;
     private long timeOfFlush = 0;
 
     private int lastSentTermId;
@@ -91,6 +91,7 @@ public class DriverPublication implements AutoCloseable
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
         final TermBuffers termBuffers,
+        final PositionReporter senderPosition,
         final PositionReporter publisherLimit,
         final int sessionId,
         final int streamId,
@@ -103,6 +104,7 @@ public class DriverPublication implements AutoCloseable
         this.id = id;
         this.channelEndpoint = channelEndpoint;
         this.termBuffers = termBuffers;
+        this.senderPosition = senderPosition;
         this.systemCounters = systemCounters;
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.clock = clock;
@@ -152,6 +154,7 @@ public class DriverPublication implements AutoCloseable
     {
         termBuffers.close();
         publisherLimit.close();
+        senderPosition.close();
     }
 
     public int send()
@@ -296,6 +299,7 @@ public class DriverPublication implements AutoCloseable
     private int sendData()
     {
         final int bytesSent;
+        final long lastSentPosition = senderPosition.position();
         final int availableWindow = (int)(senderLimit.get() - lastSentPosition);
         final int scanLimit = Math.min(availableWindow, mtuLength);
 
@@ -313,8 +317,7 @@ public class DriverPublication implements AutoCloseable
         final long position = positionForActiveTerm(scanner.offset());
         bytesSent = (int)(position - lastSentPosition);
 
-        lastSentPosition = position;
-        publisherLimit.position(position + termWindowSize);
+        senderPosition.position(position);
 
         return bytesSent;
     }
@@ -448,5 +451,17 @@ public class DriverPublication implements AutoCloseable
     private long positionForActiveTerm(final int termOffset)
     {
         return TermHelper.calculatePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
+    }
+
+    public int updatePublishersLimit()
+    {
+        long candidatePublisherLimit = senderPosition.position() + termWindowSize;
+        if (publisherLimit.position() != candidatePublisherLimit)
+        {
+            publisherLimit.position(candidatePublisherLimit);
+            return 1;
+        }
+
+        return 0;
     }
 }

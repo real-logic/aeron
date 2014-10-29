@@ -126,6 +126,7 @@ public class SenderTest
             mockSendChannelEndpoint,
             wheel.clock(),
             termBuffers,
+            new HeapPositionReporter(),
             mock(BufferPositionReporter.class),
             SESSION_ID,
             STREAM_ID,
@@ -423,4 +424,5 @@ public class SenderTest
     {
         return (offset - 1) * align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
     }
+
 }

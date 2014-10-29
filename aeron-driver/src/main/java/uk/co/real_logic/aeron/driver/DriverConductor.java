@@ -31,7 +31,6 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.common.status.PositionIndicator;
-import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
@@ -216,7 +215,9 @@ public class DriverConductor implements Agent
         final ArrayList<DriverPublication> publications = this.publications;
         for (int i = 0, size = publications.size(); i < size; i++)
         {
-            workCount += publications.get(i).cleanLogBuffer();
+            DriverPublication publication = publications.get(i);
+            workCount += publication.cleanLogBuffer() +
+                         publication.updatePublishersLimit();
         }
 
         return workCount;
@@ -373,10 +374,8 @@ public class DriverConductor implements Agent
             final TermBuffers termBuffers = termBuffersFactory.newPublication(
                 canonicalForm, sessionId, streamId, correlationId);
 
-            final int positionCounterId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
-            final PositionReporter positionReporter = new BufferPositionReporter(
-                countersBuffer, positionCounterId, countersManager);
-
+            final int senderPositionId = allocatePositionCounter("sender", channel, sessionId, streamId);
+            final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
             final SenderFlowControl senderFlowControl =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
@@ -385,7 +384,8 @@ public class DriverConductor implements Agent
                 channelEndpoint,
                 clock,
                 termBuffers,
-                positionReporter,
+                new BufferPositionReporter(countersBuffer, senderPositionId, countersManager),
+                new BufferPositionReporter(countersBuffer, publisherLimitId, countersManager),
                 sessionId,
                 streamId,
                 initialTermId,

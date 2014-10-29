@@ -170,7 +170,7 @@ project(':aeron-samples') {
     }
 
     shadow {
-        outputFile = new File('aeron-examples/build/libs/samples.jar')
+        outputFile = new File('aeron-samples/build/libs/samples.jar')
     }
 
     build.doLast {

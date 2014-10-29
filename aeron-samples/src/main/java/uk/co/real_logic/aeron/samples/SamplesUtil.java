@@ -31,9 +31,9 @@ import static uk.co.real_logic.aeron.common.CommonContext.COUNTERS_DIR_PROP_NAME
 import static uk.co.real_logic.aeron.common.CommonContext.DATA_DIR_PROP_NAME;
 
 /**
- * Utility functions for examples
+ * Utility functions for samples
  */
-public class ExamplesUtil
+public class SamplesUtil
 {
     /**
      * Use shared memory on Linux to avoid contention on the page cache.

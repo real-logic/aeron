@@ -37,16 +37,16 @@ import java.util.concurrent.TimeUnit;
  */
 public class Ping
 {
-    private static final int PING_STREAM_ID = ExampleConfiguration.PING_STREAM_ID;
-    private static final int PONG_STREAM_ID = ExampleConfiguration.PONG_STREAM_ID;
-    private static final String PING_CHANNEL = ExampleConfiguration.PING_CHANNEL;
-    private static final String PONG_CHANNEL = ExampleConfiguration.PONG_CHANNEL;
-    private static final int NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
-    private static final int WARMUP_NUMBER_OF_MESSAGES = ExampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
-    private static final int WARMUP_NUMBER_OF_ITERATIONS = ExampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
-    private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
-    private static final int FRAGMENT_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
+    private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
+    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
+    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
+    private static final int NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final int WARMUP_NUMBER_OF_MESSAGES = SampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
+    private static final int WARMUP_NUMBER_OF_ITERATIONS = SampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
+    private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
+    private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
@@ -54,7 +54,7 @@ public class Ping
 
     public static void main(final String[] args) throws Exception
     {
-        ExamplesUtil.useSharedMemoryOnLinux();
+        SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
         final Aeron.Context ctx = new Aeron.Context()

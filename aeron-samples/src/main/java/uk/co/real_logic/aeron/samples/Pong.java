@@ -29,18 +29,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class Pong
 {
-    private static final int PING_STREAM_ID = ExampleConfiguration.PING_STREAM_ID;
-    private static final int PONG_STREAM_ID = ExampleConfiguration.PONG_STREAM_ID;
-    private static final String PING_CHANNEL = ExampleConfiguration.PING_CHANNEL;
-    private static final String PONG_CHANNEL = ExampleConfiguration.PONG_CHANNEL;
-    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
+    private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
+    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
+    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
+    private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     public static void main(final String[] args) throws Exception
     {
-        ExamplesUtil.useSharedMemoryOnLinux();
+        SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 

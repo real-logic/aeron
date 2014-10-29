@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron.samples;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Configuration used for examples all in one place.
+ * Configuration used for samples all in one place.
  */
-public class ExampleConfiguration
+public class SampleConfiguration
 {
     public static final String CHANNEL_PROP = "aeron.example.channel";
     public static final String STREAM_ID_PROP = "aeron.example.streamId";

@@ -25,7 +25,7 @@ public class LowLatencyMediaDriver
 {
     public static void main(final String[] args) throws Exception
     {
-        ExamplesUtil.useSharedMemoryOnLinux();
+        SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)

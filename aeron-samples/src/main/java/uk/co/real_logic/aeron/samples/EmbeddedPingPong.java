@@ -37,16 +37,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class EmbeddedPingPong
 {
-    private static final int PING_STREAM_ID = ExampleConfiguration.PING_STREAM_ID;
-    private static final int PONG_STREAM_ID = ExampleConfiguration.PONG_STREAM_ID;
-    private static final String PING_CHANNEL = ExampleConfiguration.PING_CHANNEL;
-    private static final String PONG_CHANNEL = ExampleConfiguration.PONG_CHANNEL;
-    private static final int NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
-    private static final int WARMUP_NUMBER_OF_MESSAGES = ExampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
-    private static final int WARMUP_NUMBER_OF_ITERATIONS = ExampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
-    private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
-    private static final int FRAGMENT_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    private static final int FRAME_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
+    private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
+    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
+    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
+    private static final int NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final int WARMUP_NUMBER_OF_MESSAGES = SampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
+    private static final int WARMUP_NUMBER_OF_ITERATIONS = SampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
+    private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
+    private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
@@ -56,7 +56,7 @@ public class EmbeddedPingPong
 
     public static void main(final String[] args) throws Exception
     {
-        ExamplesUtil.useSharedMemoryOnLinux();
+        SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)

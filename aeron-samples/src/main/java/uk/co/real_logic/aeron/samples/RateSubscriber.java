@@ -28,32 +28,32 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.aeron.samples.ExamplesUtil.rateReporterHandler;
+import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
 
 /**
  * Example that displays current rate while receiving data
  */
 public class RateSubscriber
 {
-    private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
-    private static final String CHANNEL = ExampleConfiguration.CHANNEL;
-    private static final int FRAGMENT_COUNT_LIMIT = ExampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+    private static final String CHANNEL = SampleConfiguration.CHANNEL;
+    private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     public static void main(final String[] args) throws Exception
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        ExamplesUtil.useSharedMemoryOnLinux();
+        SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(ExamplesUtil::printNewConnection)
-            .inactiveConnectionHandler(ExamplesUtil::printInactiveConnection);
+            .newConnectionHandler(SamplesUtil::printNewConnection)
+            .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
 
-        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), ExamplesUtil::printRate);
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
 
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -67,7 +67,7 @@ public class RateSubscriber
         try (final Aeron aeron = Aeron.connect(ctx, executor);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
-            executor.execute(() -> ExamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            executor.execute(() -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             // run the rate reporter loop
             reporter.run();

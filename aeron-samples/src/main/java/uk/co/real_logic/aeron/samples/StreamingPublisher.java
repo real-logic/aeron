@@ -35,12 +35,12 @@ import java.util.concurrent.TimeUnit;
  */
 public class StreamingPublisher
 {
-    private static final int STREAM_ID = ExampleConfiguration.STREAM_ID;
-    private static final String CHANNEL = ExampleConfiguration.CHANNEL;
-    private static final int MESSAGE_LENGTH = ExampleConfiguration.MESSAGE_LENGTH;
-    private static final long NUMBER_OF_MESSAGES = ExampleConfiguration.NUMBER_OF_MESSAGES;
-    private static final long LINGER_TIMEOUT_MS = ExampleConfiguration.LINGER_TIMEOUT_MS;
-    private static final boolean EMBEDDED_MEDIA_DRIVER = ExampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+    private static final String CHANNEL = SampleConfiguration.CHANNEL;
+    private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
+    private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
+    private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
+    private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
@@ -49,7 +49,7 @@ public class StreamingPublisher
 
     public static void main(final String[] args) throws Exception
     {
-        ExamplesUtil.useSharedMemoryOnLinux();
+        SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 

@@ -472,6 +472,32 @@ public class DriverConnection implements AutoCloseable
     }
 
     /**
+     * Update the aggregate position for all subscribers as part of the conductor duty cycle.
+     *
+     * @return 1 if an update has occurred otherwise 0.
+     */
+    public int updateSubscribersPosition()
+    {
+        long position = Long.MAX_VALUE;
+
+        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            position = Math.min(position, subscriberPositions.get(i).position());
+        }
+
+        if (subscribersPosition.get() != position)
+        {
+            subscribersPosition.lazySet(position);
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    /**
      * The initial term id this connection started at.
      *
      * @return the initial term id this connection started at.
@@ -551,26 +577,5 @@ public class DriverConnection implements AutoCloseable
         rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);
 
         return nextIndex;
-    }
-
-    public int updateSubscribersPosition()
-    {
-        long position = Long.MAX_VALUE;
-
-        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-        {
-            position = Math.min(position, subscriberPositions.get(i).position());
-        }
-
-        if (subscribersPosition.get() != position)
-        {
-            subscribersPosition.lazySet(position);
-            return 1;
-        }
-        else
-        {
-            return 0;
-        }
     }
 }

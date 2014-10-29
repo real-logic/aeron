@@ -297,6 +297,11 @@ public class DriverPublication implements AutoCloseable
         return publisherLimit.id();
     }
 
+    /**
+     * Update the publishers limit for flow control as part of the conductor duty cycle.
+     *
+     * @return 1 if the limit has been updated otherwise 0.
+     */
     public int updatePublishersLimit()
     {
         final long candidatePublisherLimit = senderPosition.position() + termWindowSize;

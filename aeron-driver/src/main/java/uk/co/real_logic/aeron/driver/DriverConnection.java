@@ -48,6 +48,7 @@ public class DriverConnection implements AutoCloseable
     private final int sessionId;
     private final int streamId;
     private final TermBuffers termBuffers;
+    private final AtomicLong subscribersPosition = new AtomicLong();
     private PositionIndicator[] subscriberPositions;
     private final NanoClock clock;
     private final PositionReporter completedPosition;
@@ -307,7 +308,7 @@ public class DriverConnection implements AutoCloseable
      */
     public long remaining()
     {
-        return Math.max(completedPosition.position() - subscribersPosition(), 0);
+        return Math.max(completedPosition.position() - subscribersPosition.get(), 0);
     }
 
     /**
@@ -385,7 +386,7 @@ public class DriverConnection implements AutoCloseable
         int workCount = 0;
         if (statusMessagesEnabled)
         {
-            final long position = subscribersPosition();
+            final long position = subscribersPosition.get();
             final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
             final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
 
@@ -540,13 +541,21 @@ public class DriverConnection implements AutoCloseable
 
     private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        final long subscribersPosition = subscribersPosition();
-        final boolean isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowSize);
+        long subscribersPosition = this.subscribersPosition.get();
+        boolean isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowSize);
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, subscribersPosition, currentWindowSize);
-            systemCounters.flowControlOverRuns().orderedIncrement();
+            // Test again for the case that the conductor hasn't kept up.
+            updateSubscribersPosition();
+
+            subscribersPosition = this.subscribersPosition.get();
+            isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowSize);
+            if (isFlowControlOverRun)
+            {
+                logger.logOverRun(proposedPosition, subscribersPosition, currentWindowSize);
+                systemCounters.flowControlOverRuns().orderedIncrement();
+            }
         }
 
         return isFlowControlOverRun;
@@ -570,7 +579,7 @@ public class DriverConnection implements AutoCloseable
         return nextIndex;
     }
 
-    private long subscribersPosition()
+    public int updateSubscribersPosition()
     {
         long position = Long.MAX_VALUE;
 
@@ -579,6 +588,14 @@ public class DriverConnection implements AutoCloseable
             position = Math.min(position, indicator.position());
         }
 
-        return position;
+        if (subscribersPosition.get() != position)
+        {
+            subscribersPosition.lazySet(position);
+            return 1;
+        }
+        else
+        {
+            return 0;
+        }
     }
 }

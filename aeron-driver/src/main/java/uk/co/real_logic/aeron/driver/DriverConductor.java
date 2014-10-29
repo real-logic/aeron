@@ -206,17 +206,11 @@ public class DriverConductor implements Agent
         final long now = clock.time();
         for (int i = 0, size = connections.size(); i < size; i++)
         {
-            workCount += connections.get(i).sendPendingStatusMessages(now);
-        }
-
-        for (int i = 0, size = connections.size(); i < size; i++)
-        {
-            workCount += connections.get(i).scanForGaps();
-        }
-
-        for (int i = 0, size = connections.size(); i < size; i++)
-        {
-            workCount += connections.get(i).cleanLogBuffer();
+            final DriverConnection connection = connections.get(i);
+            workCount += connection.sendPendingStatusMessages(now) +
+                         connection.scanForGaps() +
+                         connection.cleanLogBuffer() +
+                         connection.updateSubscribersPosition();
         }
 
         final ArrayList<DriverPublication> publications = this.publications;

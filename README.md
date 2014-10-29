@@ -44,11 +44,11 @@ Common Classes/Methods
 Build
 -----
 
+### Java Build
+
 You require the following to build Aeron:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/)
-
-### Gradle Build
 
 The preferred way to build is using the Gradle script included.
 

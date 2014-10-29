@@ -42,6 +42,9 @@ import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static junit.framework.TestCase.assertTrue;
@@ -71,7 +74,7 @@ public class ReceiverTest
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
-    private static final PositionIndicator[] POSITION_INDICATORS = {POSITION_INDICATOR};
+    private static final List<PositionIndicator> POSITION_INDICATORS = new ArrayList<>(Arrays.asList(POSITION_INDICATOR));
 
     private final LossHandler mockLossHandler = mock(LossHandler.class);
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);

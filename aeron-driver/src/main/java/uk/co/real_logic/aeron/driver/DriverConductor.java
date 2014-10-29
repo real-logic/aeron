@@ -30,7 +30,6 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.status.BufferPositionIndicator;
 import uk.co.real_logic.aeron.common.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.common.status.PositionIndicator;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
@@ -602,7 +601,7 @@ public class DriverConductor implements Agent
             termBuffers,
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
-            subscriberPositions.stream().map(SubscriberPosition::positionIndicator).toArray(PositionIndicator[]::new),
+            subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
             new BufferPositionReporter(countersBuffer, receiverCompletedCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,

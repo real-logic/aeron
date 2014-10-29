@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.NanoClock;
+import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -26,8 +26,8 @@ import uk.co.real_logic.aeron.common.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
 
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
@@ -49,7 +49,7 @@ public class DriverConnection implements AutoCloseable
     private final int streamId;
     private final TermBuffers termBuffers;
     private final AtomicLong subscribersPosition = new AtomicLong();
-    private PositionIndicator[] subscriberPositions;
+    private final List<PositionIndicator> subscriberPositions;
     private final NanoClock clock;
     private final PositionReporter completedPosition;
     private final PositionReporter hwmPosition;
@@ -94,7 +94,7 @@ public class DriverConnection implements AutoCloseable
         final TermBuffers termBuffers,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
-        final PositionIndicator[] subscriberPositions,
+        final List<PositionIndicator> subscriberPositions,
         final PositionReporter completedPosition,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -263,7 +263,7 @@ public class DriverConnection implements AutoCloseable
         completedPosition.close();
         hwmPosition.close();
         termBuffers.close();
-        Stream.of(subscriberPositions).forEach(PositionIndicator::close);
+        subscriberPositions.forEach(PositionIndicator::close);
     }
 
     /**
@@ -447,18 +447,7 @@ public class DriverConnection implements AutoCloseable
      */
     public void removeSubscription(final PositionIndicator subscriberPosition)
     {
-        final PositionIndicator[] oldPositions = subscriberPositions;
-        final int length = oldPositions.length;
-        final PositionIndicator[] newPositions = new PositionIndicator[length - 1];
-        for (int i = 0, j = 0; i < length; i++)
-        {
-            if (oldPositions[i] != subscriberPosition)
-            {
-                newPositions[j++] = oldPositions[i];
-            }
-        }
-
-        subscriberPositions = newPositions;
+        subscriberPositions.remove(subscriberPosition);
         subscriberPosition.close();
     }
 
@@ -469,14 +458,7 @@ public class DriverConnection implements AutoCloseable
      */
     public void addSubscription(final PositionIndicator subscriberPosition)
     {
-        final PositionIndicator[] oldPositions = subscriberPositions;
-        final int length = oldPositions.length;
-        final PositionIndicator[] newPositions = new PositionIndicator[length + 1];
-
-        System.arraycopy(oldPositions, 0, newPositions, 0, length);
-        newPositions[length] = subscriberPosition;
-
-        subscriberPositions = newPositions;
+        subscriberPositions.add(subscriberPosition);
     }
 
     /**
@@ -546,16 +528,8 @@ public class DriverConnection implements AutoCloseable
 
         if (isFlowControlOverRun)
         {
-            // Test again for the case that the conductor hasn't kept up.
-            updateSubscribersPosition();
-
-            subscribersPosition = this.subscribersPosition.get();
-            isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowSize);
-            if (isFlowControlOverRun)
-            {
-                logger.logOverRun(proposedPosition, subscribersPosition, currentWindowSize);
-                systemCounters.flowControlOverRuns().orderedIncrement();
-            }
+            logger.logOverRun(proposedPosition, subscribersPosition, currentWindowSize);
+            systemCounters.flowControlOverRuns().orderedIncrement();
         }
 
         return isFlowControlOverRun;
@@ -583,9 +557,11 @@ public class DriverConnection implements AutoCloseable
     {
         long position = Long.MAX_VALUE;
 
-        for (final PositionIndicator indicator : subscriberPositions)
+
+        List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            position = Math.min(position, indicator.position());
+            position = Math.min(position, subscriberPositions.get(i).position());
         }
 
         if (subscribersPosition.get() != position)

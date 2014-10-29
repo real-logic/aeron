@@ -321,15 +321,14 @@ public class DriverPublication implements AutoCloseable
         final int availableWindow = (int)(senderLimit.get() - lastSentPosition);
         final int scanLimit = Math.min(availableWindow, mtuLength);
 
-        LogScanner scanner = logScanners[activeIndex];
+        final LogScanner scanner = logScanners[activeIndex];
         scanner.scanNext(sendTransmissionUnitFunc, scanLimit);
 
         if (scanner.isComplete())
         {
             activeIndex = BitUtil.next(activeIndex, TermHelper.BUFFER_COUNT);
             activeTermId++;
-            scanner = logScanners[activeIndex];
-            scanner.seek(0);
+            logScanners[activeIndex].seek(0);
         }
 
         final long position = positionForActiveTerm(scanner.offset());

@@ -25,7 +25,7 @@ limitations under the License.
 Directory Structure
 -------------------
 
-Client API and protocol processing
+Client API
 
     aeron-client
 
@@ -55,6 +55,18 @@ The preferred way to build is using the Gradle script included.
 Full clean and build of all modules
 
     $ ./gradlew
+    
+### C++ Build
+
+You require the following to build Aeron with C++:
+
+* 2.8 or higher of [CMake](http://www.cmake.org/)
+* C++11 supported compiler for the supported platform
+
+Full clean and build of all modules
+
+    $ cd cppbuild
+    $ ./cppbuild
 
 Running Samples
 ---------------

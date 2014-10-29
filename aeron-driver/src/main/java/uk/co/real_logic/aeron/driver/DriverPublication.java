@@ -332,7 +332,7 @@ public class DriverPublication implements AutoCloseable
             scanner.seek(0);
         }
 
-        final long position = positionForActiveTerm(scanner.offset());
+        final long position = TermHelper.calculatePosition(activeTermId, scanner.offset(), positionBitsToShift, initialTermId);
         bytesSent = (int)(position - lastSentPosition);
 
         senderPosition.position(position);
@@ -464,10 +464,5 @@ public class DriverPublication implements AutoCloseable
                    .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
                    .flags((byte)0)
                    .version(HeaderFlyweight.CURRENT_VERSION);
-    }
-
-    private long positionForActiveTerm(final int termOffset)
-    {
-        return TermHelper.calculatePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
     }
 }

@@ -34,7 +34,7 @@ cppbuild/CTestTestfile.cmake
 cppbuild/Makefile
 cppbuild/Testing/
 cppbuild/aeron-common/
-cppbuild/aeron-examples/
+cppbuild/aeron-samples/
 cppbuild/binaries/
 cppbuild/cmake_install.cmake
 

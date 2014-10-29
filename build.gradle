@@ -162,7 +162,7 @@ project(':aeron-client') {
     }
 }
 
-project(':aeron-examples') {
+project(':aeron-samples') {
     apply plugin: 'shadow'
 
     dependencies {
@@ -170,31 +170,7 @@ project(':aeron-examples') {
     }
 
     shadow {
-        outputFile = new File('aeron-examples/build/libs/examples.jar')
-    }
-
-    build.doLast {
-        tasks.shadowJar.execute()
-    }
-}
-
-project(':aeron-benchmarks') {
-    apply plugin: 'shadow'
-
-    dependencies {
-        compile project(':aeron-client'), project(':aeron-driver')
-        compile 'org.openjdk.jmh:jmh-core:0.4.2'
-        compile 'org.hdrhistogram:HdrHistogram:1.2.1'
-    }
-
-    shadow {
-        outputFile = new File('aeron-benchmarks/build/libs/microbenchmarks.jar')
-    }
-
-    jar {
-        manifest {
-            attributes 'Main-Class': 'org.openjdk.jmh.Main'
-        }
+        outputFile = new File('aeron-samples/build/libs/samples.jar')
     }
 
     build.doLast {

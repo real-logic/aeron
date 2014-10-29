@@ -25,13 +25,13 @@ limitations under the License.
 Directory Structure
 -------------------
 
-Client API and protocol processing
+Client API
 
     aeron-client
 
-Examples
+Samples
 
-    aeron-examples
+    aeron-samples
 
 Media Driver
 
@@ -41,43 +41,51 @@ Common Classes/Methods
 
     aeron-common
 
-Benchmarks
-
-    aeron-benchmarks
-
 Build
 -----
+
+### Java Build
 
 You require the following to build Aeron:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/)
-
-### Gradle Build
 
 The preferred way to build is using the Gradle script included.
 
 Full clean and build of all modules
 
     $ ./gradlew
+    
+### C++ Build
 
-Running Examples
-----------------
+You require the following to build Aeron with C++:
+
+* 2.8 or higher of [CMake](http://www.cmake.org/)
+* C++11 supported compiler for the supported platform
+
+Full clean and build of all modules
+
+    $ cd cppbuild
+    $ ./cppbuild
+
+Running Samples
+---------------
 
 Start up a media driver
 
-    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.driver.MediaDriver
+    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.driver.MediaDriver
 
 You can run the `ExampleSubscriber` from a command line
 
-    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExampleSubscriber
+    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.examples.ExampleSubscriber
     
 You can run the `ExamplePublisher` from a command line
 
-    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.ExamplePublisher
+    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.examples.ExamplePublisher
 
 You can run the `AeronStat` utility to read system counters from a command line
     
-    $ java -cp aeron-examples/build/libs/examples.jar uk.co.real_logic.aeron.examples.AeronStat
+    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.examples.AeronStat
 
 
 Media Driver Packaging

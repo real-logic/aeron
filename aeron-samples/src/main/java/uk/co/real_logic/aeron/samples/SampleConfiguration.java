@@ -22,21 +22,21 @@ import java.util.concurrent.TimeUnit;
  */
 public class SampleConfiguration
 {
-    public static final String CHANNEL_PROP = "aeron.example.channel";
-    public static final String STREAM_ID_PROP = "aeron.example.streamId";
+    public static final String CHANNEL_PROP = "aeron.sample.channel";
+    public static final String STREAM_ID_PROP = "aeron.sample.streamId";
 
-    public static final String PING_CHANNEL_PROP = "aeron.example.ping.channel";
-    public static final String PONG_CHANNEL_PROP = "aeron.example.pong.channel";
-    public static final String PING_STREAM_ID_PROP = "aeron.example.ping.streamId";
-    public static final String PONG_STREAM_ID_PROP = "aeron.example.pong.streamId";
-    public static final String WARMUP_NUMBER_OF_MESSAGES_PROP = "aeron.example.warmup.messages";
-    public static final String WARMUP_NUMBER_OF_ITERATIONS_PROP = "aeron.example.warmup.iterations";
+    public static final String PING_CHANNEL_PROP = "aeron.sample.ping.channel";
+    public static final String PONG_CHANNEL_PROP = "aeron.sample.pong.channel";
+    public static final String PING_STREAM_ID_PROP = "aeron.sample.ping.streamId";
+    public static final String PONG_STREAM_ID_PROP = "aeron.sample.pong.streamId";
+    public static final String WARMUP_NUMBER_OF_MESSAGES_PROP = "aeron.sample.warmup.messages";
+    public static final String WARMUP_NUMBER_OF_ITERATIONS_PROP = "aeron.sample.warmup.iterations";
 
-    public static final String FRAME_COUNT_LIMIT_PROP = "aeron.example.frameCountLimit";
-    public static final String MESSAGE_LENGTH_PROP = "aeron.example.messageLength";
-    public static final String NUMBER_OF_MESSAGES_PROP = "aeron.example.messages";
-    public static final String LINGER_TIMEOUT_MS_PROP = "aeron.example.lingerTimeout";
-    public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.example.embeddedMediaDriver";
+    public static final String FRAME_COUNT_LIMIT_PROP = "aeron.sample.frameCountLimit";
+    public static final String MESSAGE_LENGTH_PROP = "aeron.sample.messageLength";
+    public static final String NUMBER_OF_MESSAGES_PROP = "aeron.sample.messages";
+    public static final String LINGER_TIMEOUT_MS_PROP = "aeron.sample.lingerTimeout";
+    public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.sample.embeddedMediaDriver";
 
     public static final String CHANNEL;
     public static final String PING_CHANNEL;

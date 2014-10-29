@@ -1,6 +1,7 @@
 #ifndef INCLUDED_AERON_UTIL_EXCEPTIONS_FILE__
 #define INCLUDED_AERON_UTIL_EXCEPTIONS_FILE__
 
+#include <string>
 #include <stdexcept>
 #include "MacroUtil.h"
 

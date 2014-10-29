@@ -25,7 +25,7 @@ import java.net.InetSocketAddress;
  * Max of right edges.
  * No tracking of receivers.
  */
-public class DefaultMulticastSenderFlowControl implements SenderFlowControl
+public class MaxMulticastSenderFlowControl implements SenderFlowControl
 {
     private long positionLimit = 0;
     private int positionBitsToShift;

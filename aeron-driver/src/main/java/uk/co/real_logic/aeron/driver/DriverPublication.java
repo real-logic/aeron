@@ -58,11 +58,12 @@ public class DriverPublication implements AutoCloseable
 
     private final AtomicLong senderLimit;
     private final PositionReporter publisherLimit;
+    private final PositionReporter senderPosition;
+
     private final SendChannelEndpoint channelEndpoint;
     private final TermBuffers termBuffers;
     private final int positionBitsToShift;
     private final int initialTermId;
-    private final PositionReporter senderPosition;
     private final SystemCounters systemCounters;
     private final int termWindowSize;
     private final int termCapacity;

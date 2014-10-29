@@ -120,7 +120,7 @@ public class DriverConductorTest
             .receiverNioSelector(transportPoller)
             .conductorNioSelector(transportPoller)
             .unicastSenderFlowControl(UnicastSenderFlowControl::new)
-            .multicastSenderFlowControl(DefaultMulticastSenderFlowControl::new)
+            .multicastSenderFlowControl(MaxMulticastSenderFlowControl::new)
             .conductorTimerWheel(wheel)
             // TODO: remove
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))

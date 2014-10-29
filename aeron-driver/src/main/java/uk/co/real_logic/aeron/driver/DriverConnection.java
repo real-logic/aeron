@@ -557,7 +557,6 @@ public class DriverConnection implements AutoCloseable
     {
         long position = Long.MAX_VALUE;
 
-
         List<PositionIndicator> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {

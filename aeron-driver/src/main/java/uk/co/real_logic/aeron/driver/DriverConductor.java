@@ -157,7 +157,7 @@ public class DriverConductor implements Agent
             (typeId, buffer, offset, length) ->
                 ctx.eventConsumer().accept(EventCode.get(typeId).decode(buffer, offset, length));
 
-        final UnsafeBuffer buffer = toDriverCommands.buffer();
+        final AtomicBuffer buffer = toDriverCommands.buffer();
         publicationMessage.wrap(buffer, 0);
         subscriptionMessage.wrap(buffer, 0);
         correlatedMessage.wrap(buffer, 0);
@@ -238,7 +238,7 @@ public class DriverConductor implements Agent
         timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
     }
 
-    private void onClientCommand(final int msgTypeId, final UnsafeBuffer buffer, final int index, final int length)
+    private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
         Flyweight flyweight = null;
 

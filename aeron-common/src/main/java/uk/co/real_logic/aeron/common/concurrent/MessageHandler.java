@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.concurrent;
 
+import uk.co.real_logic.aeron.common.MutableDirectBuffer;
+
 /**
  * Callback interface for processing of messages that are read from a buffer.
  */
@@ -28,5 +30,5 @@ public interface MessageHandler
      * @param index at which the encoded message begins.
      * @param length in bytes of the encoded message.
      */
-    void onMessage(int msgTypeId, UnsafeBuffer buffer, int index, int length);
+    void onMessage(int msgTypeId, MutableDirectBuffer buffer, int index, int length);
 }

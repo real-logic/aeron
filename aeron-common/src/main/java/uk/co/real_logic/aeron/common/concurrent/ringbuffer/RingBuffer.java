@@ -15,7 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.ringbuffer;
 
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.aeron.common.DirectBuffer;
+import uk.co.real_logic.aeron.common.concurrent.AtomicBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 
 /**
@@ -40,7 +41,7 @@ public interface RingBuffer
      * @return true if written to the ring-buffer, or false if insufficient space exists.
      * @throws IllegalArgumentException if the length is greater than {@link RingBuffer#maxMsgLength()}
      */
-    boolean write(int msgTypeId, UnsafeBuffer srcBuffer, int srcIndex, int length);
+    boolean write(int msgTypeId, DirectBuffer srcBuffer, int srcIndex, int length);
 
     /**
      * Read as many messages as are available from the ring buffer.
@@ -80,7 +81,7 @@ public interface RingBuffer
      *
      * @return the underlying buffer used by the RingBuffer for storage.
      */
-    UnsafeBuffer buffer();
+    AtomicBuffer buffer();
 
     /**
      * Set the time of the last consumer heartbeat.

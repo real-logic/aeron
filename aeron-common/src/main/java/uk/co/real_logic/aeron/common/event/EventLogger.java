@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
+import uk.co.real_logic.aeron.common.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
 
@@ -30,7 +31,7 @@ import static uk.co.real_logic.aeron.common.event.EventCode.INVOCATION;
  */
 public class EventLogger
 {
-    private static final ThreadLocal<UnsafeBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
+    private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
         () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
     private static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledEventCodes();
@@ -57,11 +58,11 @@ public class EventLogger
         }
     }
 
-    public void log(final EventCode code, final UnsafeBuffer buffer, final int offset, final int length)
+    public void log(final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         if (isEnabled(code, ENABLED_EVENT_CODES))
         {
-            final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
@@ -77,7 +78,7 @@ public class EventLogger
     {
         if (isEnabled(code, ENABLED_EVENT_CODES))
         {
-            final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
@@ -91,7 +92,7 @@ public class EventLogger
     {
         if (isEnabled(code, ENABLED_EVENT_CODES))
         {
-            final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength =
                 EventCodec.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
 
@@ -153,7 +154,7 @@ public class EventLogger
         {
             final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
 
-            final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, stack[INVOKING_METHOD_INDEX]);
 
             ringBuffer.write(INVOCATION.id(), encodedBuffer, 0, encodedLength);
@@ -164,7 +165,7 @@ public class EventLogger
     {
         if (isEnabled(EXCEPTION, ENABLED_EVENT_CODES))
         {
-            final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventCodec.encode(encodedBuffer, ex);
 
             while (!ringBuffer.write(EXCEPTION.id(), encodedBuffer, 0, encodedLength))
@@ -180,7 +181,7 @@ public class EventLogger
 
     private void logString(final EventCode code, final String value)
     {
-        final UnsafeBuffer encodedBuffer = ENCODING_BUFFER.get();
+        final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
         final int encodingLength = EventCodec.encode(encodedBuffer, value);
         ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
     }

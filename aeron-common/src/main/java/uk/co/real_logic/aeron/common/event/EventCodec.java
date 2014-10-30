@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.common.event;
 
 import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.aeron.common.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.command.*;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.*;
 
 import java.net.InetAddress;
@@ -63,7 +63,7 @@ public class EventCodec
     public static final int STACK_DEPTH = 5;
 
     public static int encode(
-        final UnsafeBuffer encodingBuffer, final UnsafeBuffer buffer, final int offset, final int bufferLength)
+        final MutableDirectBuffer encodingBuffer, final MutableDirectBuffer buffer, final int offset, final int bufferLength)
     {
         final int captureLength = determineCaptureLength(bufferLength);
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
@@ -75,7 +75,7 @@ public class EventCodec
     }
 
     public static int encode(
-        final UnsafeBuffer encodingBuffer,
+        final MutableDirectBuffer encodingBuffer,
         final ByteBuffer buffer,
         final int offset,
         final int bufferLength,
@@ -92,7 +92,7 @@ public class EventCodec
     }
 
     public static int encode(
-        final UnsafeBuffer encodingBuffer, final byte[] buffer, final int offset, final int bufferLength)
+        final MutableDirectBuffer encodingBuffer, final byte[] buffer, final int offset, final int bufferLength)
     {
         final int captureLength = determineCaptureLength(bufferLength);
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
@@ -102,7 +102,7 @@ public class EventCodec
         return relativeOffset;
     }
 
-    public static int encode(final UnsafeBuffer encodingBuffer, final String value)
+    public static int encode(final MutableDirectBuffer encodingBuffer, final String value)
     {
         final int length = encodingBuffer.putStringUtf8(LOG_HEADER_LENGTH, value, LITTLE_ENDIAN);
         final int recordLength = LOG_HEADER_LENGTH + length;
@@ -111,7 +111,7 @@ public class EventCodec
         return recordLength;
     }
 
-    public static int encode(final UnsafeBuffer encodingBuffer, final StackTraceElement stack)
+    public static int encode(final MutableDirectBuffer encodingBuffer, final StackTraceElement stack)
     {
         final int relativeOffset = putStackTraceElement(encodingBuffer, stack, LOG_HEADER_LENGTH);
         final int captureLength = relativeOffset;
@@ -120,7 +120,7 @@ public class EventCodec
         return relativeOffset;
     }
 
-    public static int encode(final UnsafeBuffer encodingBuffer, final Throwable ex)
+    public static int encode(final MutableDirectBuffer encodingBuffer, final Throwable ex)
     {
         final String msg = null != ex.getMessage() ? ex.getMessage() : "exception message not set";
 
@@ -140,7 +140,8 @@ public class EventCodec
         return relativeOffset;
     }
 
-    private static int putStackTraceElement(final UnsafeBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
+    private static int putStackTraceElement(
+        final MutableDirectBuffer encodingBuffer, final StackTraceElement stack, int relativeOffset)
     {
         encodingBuffer.putInt(relativeOffset, stack.getLineNumber(), LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
@@ -151,7 +152,8 @@ public class EventCodec
         return relativeOffset;
     }
 
-    public static String dissectAsFrame(final EventCode code, final UnsafeBuffer buffer, final int offset, final int length)
+    public static String dissectAsFrame(
+        final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
         final HeaderFlyweight frame = HEADER_FLYWEIGHT.get();
@@ -199,7 +201,8 @@ public class EventCodec
         return builder.toString();
     }
 
-    public static String dissectAsCommand(final EventCode code, final UnsafeBuffer buffer, final int offset, final int length)
+    public static String dissectAsCommand(
+        final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
@@ -256,7 +259,7 @@ public class EventCodec
     }
 
     public static String dissectAsInvocation(
-        final EventCode code, final UnsafeBuffer buffer, final int initialOffset, final int length)
+        final EventCode code, final MutableDirectBuffer buffer, final int initialOffset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, initialOffset, builder);
@@ -268,7 +271,7 @@ public class EventCodec
     }
 
     public static String dissectAsException(
-        final EventCode code, final UnsafeBuffer buffer, final int initialOffset, final int length)
+        final EventCode code, final MutableDirectBuffer buffer, final int initialOffset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
         int offset = initialOffset + dissectLogHeader(code, buffer, initialOffset, builder);
@@ -293,7 +296,8 @@ public class EventCodec
         return builder.toString();
     }
 
-    public static String dissectAsString(final EventCode code, final UnsafeBuffer buffer, final int offset, final int length)
+    public static String dissectAsString(
+        final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length)
     {
         final StringBuilder builder = new StringBuilder();
         final int relativeOffset = dissectLogHeader(code, buffer, offset, builder);
@@ -302,7 +306,7 @@ public class EventCodec
         return builder.toString();
     }
 
-    private static int readStackTraceElement(final UnsafeBuffer buffer, int offset, final StringBuilder builder)
+    private static int readStackTraceElement(final MutableDirectBuffer buffer, int offset, final StringBuilder builder)
     {
         final int lineNumber = buffer.getInt(offset, LITTLE_ENDIAN);
         offset += SIZE_OF_INT;
@@ -324,7 +328,7 @@ public class EventCodec
         return offset;
     }
 
-    private static int encodeLogHeader(final UnsafeBuffer encodingBuffer, final int captureLength, final int bufferLength)
+    private static int encodeLogHeader(final MutableDirectBuffer encodingBuffer, final int captureLength, final int bufferLength)
     {
         int relativeOffset = 0;
         /*
@@ -348,7 +352,7 @@ public class EventCodec
     }
 
     private static int encodeSocketAddress(
-        final UnsafeBuffer encodingBuffer, final int offset, final InetSocketAddress dstAddress)
+        final MutableDirectBuffer encodingBuffer, final int offset, final InetSocketAddress dstAddress)
     {
         int relativeOffset = 0;
         /*
@@ -376,7 +380,7 @@ public class EventCodec
     }
 
     private static int dissectLogHeader(
-        final EventCode code, final UnsafeBuffer buffer, final int offset, final StringBuilder builder)
+        final EventCode code, final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = 0;
 
@@ -396,7 +400,7 @@ public class EventCodec
         return relativeOffset;
     }
 
-    private static int dissectSocketAddress(final UnsafeBuffer buffer, final int offset, final StringBuilder builder)
+    private static int dissectSocketAddress(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int relativeOffset = 0;
 

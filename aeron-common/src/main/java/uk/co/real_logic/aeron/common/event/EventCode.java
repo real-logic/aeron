@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
+import uk.co.real_logic.aeron.common.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 
 /**
  * Event types and encoding/decoding
@@ -55,7 +55,7 @@ public enum EventCode
     @FunctionalInterface
     private interface DissectFunction
     {
-        String dissect(final EventCode code, final UnsafeBuffer buffer, final int offset, final int length);
+        String dissect(final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length);
     }
 
     private long tagBit;
@@ -105,7 +105,7 @@ public enum EventCode
         return code;
     }
 
-    public String decode(final UnsafeBuffer buffer, final int offset, final int length)
+    public String decode(final MutableDirectBuffer buffer, final int offset, final int length)
     {
         return dissector.dissect(this, buffer, offset, length);
     }

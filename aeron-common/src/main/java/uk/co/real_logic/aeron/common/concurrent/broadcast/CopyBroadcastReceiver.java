@@ -1,5 +1,6 @@
 package uk.co.real_logic.aeron.common.concurrent.broadcast;
 
+import uk.co.real_logic.aeron.common.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
 
@@ -11,7 +12,7 @@ public class CopyBroadcastReceiver
     private static final int SCRATCH_BUFFER_SIZE = 4096;
 
     private final BroadcastReceiver receiver;
-    private final UnsafeBuffer scratchBuffer;
+    private final MutableDirectBuffer scratchBuffer;
 
     /**
      * Wrap a {@link BroadcastReceiver} to simplify the API for receiving messages.

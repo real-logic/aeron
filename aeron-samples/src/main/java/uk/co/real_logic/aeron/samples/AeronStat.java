@@ -17,9 +17,7 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.aeron.common.concurrent.*;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
@@ -44,7 +42,7 @@ public class AeronStat
         final MappedByteBuffer labelsByteBuffer = IoUtil.mapExistingFile(labelsFile, "labels");
         final MappedByteBuffer valuesByteBuffer = IoUtil.mapExistingFile(valuesFile, "values");
 
-        final UnsafeBuffer valuesBuffer = new UnsafeBuffer(valuesByteBuffer);
+        final AtomicBuffer valuesBuffer = new UnsafeBuffer(valuesByteBuffer);
         final CountersManager countersManager = new CountersManager(new UnsafeBuffer(labelsByteBuffer), valuesBuffer);
 
         final AtomicBoolean running = new AtomicBoolean(true);

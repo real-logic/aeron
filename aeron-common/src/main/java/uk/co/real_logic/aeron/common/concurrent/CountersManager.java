@@ -33,8 +33,8 @@ public class CountersManager
     public static final int COUNTER_SIZE = BitUtil.CACHE_LINE_SIZE;
     public static final int UNREGISTERED_LABEL_SIZE = -1;
 
-    private final UnsafeBuffer labelsBuffer;
-    private final UnsafeBuffer countersBuffer;
+    private final AtomicBuffer labelsBuffer;
+    private final AtomicBuffer countersBuffer;
     private final Deque<Integer> freeList = new LinkedList<>();
 
     private int idHighWaterMark = -1;
@@ -45,7 +45,7 @@ public class CountersManager
      * @param labelsBuffer containing the human readable labels for the counters.
      * @param countersBuffer containing the values of the counters themselves.
      */
-    public CountersManager(final UnsafeBuffer labelsBuffer, final UnsafeBuffer countersBuffer)
+    public CountersManager(final AtomicBuffer labelsBuffer, final AtomicBuffer countersBuffer)
     {
         this.labelsBuffer = labelsBuffer;
         this.countersBuffer = countersBuffer;
@@ -153,5 +153,4 @@ public class CountersManager
 
         return freeList.pop();
     }
-
 }

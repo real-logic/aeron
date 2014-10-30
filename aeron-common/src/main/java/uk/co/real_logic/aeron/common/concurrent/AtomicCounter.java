@@ -1,16 +1,16 @@
 package uk.co.real_logic.aeron.common.concurrent;
 
 /**
- * Atomic counter that is backed by an {@link UnsafeBuffer} that can be read across threads and processes.
+ * Atomic counter that is backed by an {@link AtomicBuffer} that can be read across threads and processes.
  */
 public class AtomicCounter implements AutoCloseable
 {
-    private final UnsafeBuffer buffer;
+    private final AtomicBuffer buffer;
     private final int counterId;
     private final CountersManager countersManager;
     private final int offset;
 
-    AtomicCounter(final UnsafeBuffer buffer, final int counterId, final CountersManager countersManager)
+    AtomicCounter(final AtomicBuffer buffer, final int counterId, final CountersManager countersManager)
     {
         this.buffer = buffer;
         this.counterId = counterId;

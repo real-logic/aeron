@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.common.concurrent.SigInt;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -51,7 +52,9 @@ public class AeronStat
 
         while (running.get())
         {
-            final double timestamp = System.nanoTime() / 1000_000_000.0d;
+            System.out.print("\033[H\033[2J");
+            System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
+            System.out.println("=========================");
 
             countersManager.forEach(
                 (id, label) ->
@@ -59,7 +62,7 @@ public class AeronStat
                     final int offset = CountersManager.counterOffset(id);
                     final long value = valuesBuffer.getLongVolatile(offset);
 
-                    System.out.println(String.format("[%f] %d:\t%s: %,d", timestamp, id, label, value));
+                    System.out.format("%3d: %,20d - %s\n", id, value, label);
                 });
 
             Thread.sleep(1000);

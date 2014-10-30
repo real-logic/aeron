@@ -373,7 +373,7 @@ public class DriverConductor implements Agent
             final TermBuffers termBuffers = termBuffersFactory.newPublication(
                 canonicalForm, sessionId, streamId, correlationId);
 
-            final int senderPositionId = allocatePositionCounter("sender", channel, sessionId, streamId);
+            final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId);
             final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
             final SenderFlowControl senderFlowControl =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
@@ -551,7 +551,7 @@ public class DriverConductor implements Agent
             .map(
                 (subscription) ->
                 {
-                    final int positionCounterId = allocatePositionCounter("subscriber", channel, sessionId, streamId);
+                    final int positionCounterId = allocatePositionCounter("subscriber pos", channel, sessionId, streamId);
                     final BufferPositionIndicator indicator = new BufferPositionIndicator(
                         countersBuffer, positionCounterId, countersManager);
                     countersManager.setCounterValue(positionCounterId, joiningPosition);
@@ -560,8 +560,8 @@ public class DriverConductor implements Agent
                 })
             .collect(toList());
 
-        final int receiverCompletedCounterId = allocatePositionCounter("receiver", channel, sessionId, streamId);
-        final int receiverHwmCounterId = allocatePositionCounter("receive-hwm", channel, sessionId, streamId);
+        final int receiverCompletedCounterId = allocatePositionCounter("receiver pos", channel, sessionId, streamId);
+        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
         final String sourceInfo = generateSourceInfo(sourceAddress);
 
         clientProxy.onConnectionReady(
@@ -840,7 +840,7 @@ public class DriverConductor implements Agent
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)
     {
-        return countersManager.allocate(String.format("%s pos: %s %x %x", type, dirName, sessionId, streamId));
+        return countersManager.allocate(String.format("%s: %s %x %x", type, dirName, sessionId, streamId));
     }
 
     private static String generateSourceInfo(final InetSocketAddress address)

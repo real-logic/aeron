@@ -1,4 +1,5 @@
 
+#include <array>
 #include <gtest/gtest.h>
 #include <concurrent/AtomicBuffer.h>
 #include <command/ConnectionMessageFlyweight.h>
@@ -24,6 +25,11 @@ TEST (commandTests, testConnectionMessageFlyweight)
     ASSERT_NO_THROW({
         ConnectionMessageFlyweight cmd (ab, BASEOFFSET);
         cmd.correlationId(1).sessionId(2).streamId(3).channel(channelData);
+
+        ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), 1);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 2);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 3);
+        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 16), channelData);
 
         ASSERT_EQ(cmd.correlationId(), 1);
         ASSERT_EQ(cmd.sessionId(), 2);

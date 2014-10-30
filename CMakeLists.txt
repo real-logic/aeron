@@ -34,8 +34,9 @@ if(APPLE)
     add_definitions(-DDarwin)
 elseif(WIN32)
     add_definitions(-DWIN32)
+    add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 
-    set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Od /ZI")
+    set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Od /Zi")
     set(CMAKE_CXX_FLAGS_RELEASE "/MT")
 
     # TODO: add MSVC flags

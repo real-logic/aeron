@@ -1,6 +1,8 @@
 
 SET(HEADERS
-    ConnectionMessageFlyweight.h)
+    ConnectionMessageFlyweight.h
+    ReadyFlyweight.h
+    ConnectionReadyFlyweight.h)
 
 # header only library
 add_custom_target(aeron_command SOURCES ${HEADERS})

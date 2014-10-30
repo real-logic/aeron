@@ -109,328 +109,164 @@ namespace aeron { namespace common { namespace command {
 #pragma pack(4)
 struct ConnectionReadyDefn
 {
+    static const std::int32_t NUM_FILES = 6;
+
     std::int64_t correlationId;
+    std::int64_t joiningPosition;
     std::int32_t sessionId;
     std::int32_t streamId;
-    struct
-    {
-        std::int32_t channelLength;
-        std::int8_t  channelData[1];
-    } channel;
+    std::int32_t termId;
+    std::int32_t positionIndicatorsCount;
+    std::int32_t fileOffset[NUM_FILES];
+    std::int32_t length[NUM_FILES];
+    std::int32_t locationStart[NUM_FILES];
+    std::int32_t sourceInformationStart;
+    std::int32_t channelStart;
+    std::int32_t channelEnd;
+    std::int32_t variableDataStart;
 };
 #pragma pack(pop)
 
-class ConnectionReadyFlyweight : public common::Flyweight, public ReadyFlyweight
-
+class ConnectionReadyFlyweight : public common::Flyweight<ConnectionReadyDefn>,
+                                 public ReadyFlyweight<ConnectionReadyFlyweight>
 {
+public:
+    inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
+        : common::Flyweight<ConnectionReadyDefn>(buffer, offset)
+    {
+    }
 
+    inline std::int32_t bufferOffset(std::int32_t index) const
+    {
+        return m_struct.fileOffset[index];
+    }
+
+    inline ConnectionReadyFlyweight& bufferOffset(std::int32_t index, std::int32_t value)
+    {
+        m_struct.fileOffset[index] = value;
+        return *this;
+    }
+
+    inline std::int32_t bufferLength(std::int32_t index) const
+    {
+        return m_struct.length[index];
+    }
+
+    inline ConnectionReadyFlyweight& bufferLength(std::int32_t index, std::int32_t value)
+    {
+        m_struct.length[index] = value;
+        return *this;
+    }
+
+    inline std::string location(std::int32_t index) const
+    {
+        return "";
+    }
+
+    inline ConnectionReadyFlyweight& location(std::int32_t index, const std::string &value)
+    {
+        return *this;
+    }
+
+    inline std::int64_t correlationId() const
+    {
+        return m_struct.correlationId;
+    }
+
+    inline ConnectionReadyFlyweight& correlationId(std::int64_t value)
+    {
+        m_struct.correlationId = value;
+        return *this;
+    }
+
+    inline std::int64_t joiningPosition() const
+    {
+        return m_struct.joiningPosition;
+    }
+
+    inline ConnectionReadyFlyweight& joiningPosition(std::int64_t value)
+    {
+        m_struct.joiningPosition = value;
+        return *this;
+    }
+
+    inline std::int32_t sessionId() const
+    {
+        return m_struct.sessionId;
+    }
+
+    inline ConnectionReadyFlyweight& sessionId(std::int32_t value)
+    {
+        m_struct.sessionId = value;
+        return *this;
+    }
+
+    inline std::int32_t streamId() const
+    {
+        return m_struct.streamId;
+    }
+
+    inline ConnectionReadyFlyweight& streamId(std::int32_t value)
+    {
+        m_struct.streamId = value;
+        return *this;
+    }
+
+    inline std::int32_t termId() const
+    {
+        return m_struct.termId;
+    }
+
+    inline ConnectionReadyFlyweight& termId(std::int32_t value)
+    {
+        m_struct.termId = value;
+        return *this;
+    }
+
+    inline std::int32_t positionIndicatorsCount() const
+    {
+        return m_struct.positionIndicatorsCount;
+    }
+
+    inline ConnectionReadyFlyweight& positionIndicatorsCount(std::int32_t value)
+    {
+        m_struct.positionIndicatorsCount = value;
+        return *this;
+    }
+
+    inline std::int32_t sourceInformationStart() const
+    {
+        return m_struct.sourceInformationStart;
+    }
+
+    inline ConnectionReadyFlyweight& sourceInformationStart(std::int32_t value)
+    {
+        m_struct.sourceInformationStart = value;
+        return *this;
+    }
+
+    inline std::int32_t channelStart() const
+    {
+        return m_struct.channelStart;
+    }
+
+    inline ConnectionReadyFlyweight& channelStart(std::int32_t value)
+    {
+        m_struct.channelStart = value;
+        return *this;
+    }
+
+    inline std::int32_t channelEnd() const
+    {
+        return m_struct.channelEnd;
+    }
+
+    inline ConnectionReadyFlyweight& channelEnd(std::int32_t value)
+    {
+        m_struct.channelEnd = value;
+        return *this;
+    }
 };
-
-{
-private static final int NUM_FILES = 6;
-
-private static final int CORRELATION_ID_OFFSET = 0;
-private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-private static final int SESSION_ID_OFFSET = JOINING_POSITION_OFFSET + SIZE_OF_LONG;
-private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-private static final int POSITION_INDICATOR_COUNT_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
-private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
-private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
-private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
-private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (9 * SIZE_OF_INT);
-private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
-
-/**
-* Contains both log buffers and state buffers
-*/
-public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
-
-/**
-* The Source Information sits after the location strings, but before the Channel
-*/
-public static final int SOURCE_INFORMATION_INDEX = PAYLOAD_BUFFER_COUNT;
-
-/**
-* The Channel sits after the source name and location strings for both the log and state buffers.
-*/
-private static final int CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
-
-public int bufferOffset(final int index)
-{
-return relativeIntField(index, FILE_OFFSETS_FIELDS_OFFSET);
-}
-
-public ConnectionReadyFlyweight bufferOffset(final int index, final int value)
-{
-return relativeIntField(index, value, FILE_OFFSETS_FIELDS_OFFSET);
-}
-
-public int bufferLength(final int index)
-{
-return relativeIntField(index, BUFFER_LENGTHS_FIELDS_OFFSET);
-}
-
-public ConnectionReadyFlyweight bufferLength(final int index, final int value)
-{
-return relativeIntField(index, value, BUFFER_LENGTHS_FIELDS_OFFSET);
-}
-
-/**
-* return correlation id field
-*
-* @return correlation id field
-*/
-public long correlationId()
-{
-    return atomicBuffer().getLong(offset() + CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
-}
-
-/**
-* set correlation id field
-*
-* @param correlationId field value
-* @return flyweight
-*/
-public ConnectionReadyFlyweight correlationId(final long correlationId)
-{
-atomicBuffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
-
-return this;
-}
-
-/**
-* The joining position value
-*
-* @return joining position value
-*/
-public long joiningPosition()
-{
-    return atomicBuffer().getLong(offset() + JOINING_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
-}
-
-/**
-* set joining position field
-*
-* @param joiningPosition field value
-* @return flyweight
-*/
-public ConnectionReadyFlyweight joiningPosition(final long joiningPosition)
-{
-atomicBuffer().putLong(offset() + JOINING_POSITION_OFFSET, joiningPosition, ByteOrder.LITTLE_ENDIAN);
-
-return this;
-}
-
-/**
-* return session id field
-* @return session id field
-*/
-public int sessionId()
-{
-    return atomicBuffer().getInt(offset() + SESSION_ID_OFFSET, LITTLE_ENDIAN);
-}
-
-/**
-* set session id field
-* @param sessionId field value
-* @return flyweight
-*/
-public ConnectionReadyFlyweight sessionId(final int sessionId)
-{
-atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
-
-return this;
-}
-
-/**
-* return stream id field
-*
-* @return stream id field
-*/
-public int streamId()
-{
-    return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
-}
-
-/**
-* set stream id field
-*
-* @param streamId field value
-* @return flyweight
-*/
-public ConnectionReadyFlyweight streamId(final int streamId)
-{
-atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-
-return this;
-}
-
-/**
-* return termId field
-*
-* @return termId field
-*/
-public int termId()
-{
-    return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
-}
-
-/**
-* set termId field
-*
-* @param termId field value
-* @return flyweight
-*/
-public ConnectionReadyFlyweight termId(final int termId)
-{
-atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
-
-return this;
-}
-
-/**
-* return the number of position indicators
-*
-* @return the number of position indicators
-*/
-public int positionIndicatorCount()
-{
-    return atomicBuffer().getInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, LITTLE_ENDIAN);
-}
-
-/**
-* set the number of position indicators
-*
-* @param value the number of position indicators
-* @return flyweight
-*/
-public ConnectionReadyFlyweight positionIndicatorCount(final int value)
-{
-atomicBuffer().putInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, value, LITTLE_ENDIAN);
-
-return this;
-}
-
-private int relativeIntField(final int index, final int fieldOffset)
-{
-return atomicBuffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
-}
-
-private ConnectionReadyFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
-{
-atomicBuffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
-
-return this;
-}
-
-private int relativeOffset(final int index, final int fieldOffset)
-{
-return offset() + fieldOffset + index * SIZE_OF_INT;
-}
-
-private int locationPointer(final int index)
-{
-if (index == 0)
-{
-return LOCATION_0_FIELD_OFFSET;
-}
-
-return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
-}
-
-private ConnectionReadyFlyweight locationPointer(final int index, final int value)
-{
-return relativeIntField(index, value, LOCATION_POINTER_FIELDS_OFFSET);
-}
-
-public String location(final int index)
-{
-final int start = locationPointer(index);
-final int length = locationPointer(index + 1) - start;
-
-return atomicBuffer().getStringWithoutLengthUtf8(offset() + start, length);
-}
-
-public ConnectionReadyFlyweight location(final int index, final String value)
-{
-final int start = locationPointer(index);
-if (start == 0)
-{
-throw new IllegalStateException("Previous location been hasn't been set yet at index " + index);
-}
-
-final int length = atomicBuffer().putStringWithoutLengthUtf8(offset() + start, value);
-locationPointer(index + 1, start + length);
-
-return this;
-}
-
-public String sourceInfo()
-{
-    return location(SOURCE_INFORMATION_INDEX);
-}
-
-public ConnectionReadyFlyweight sourceInfo(final String value)
-{
-    return location(SOURCE_INFORMATION_INDEX, value);
-}
-
-public String channel()
-{
-    return location(CHANNEL_INDEX);
-}
-
-public ConnectionReadyFlyweight channel(final String value)
-{
-    return location(CHANNEL_INDEX, value);
-}
-
-public ConnectionReadyFlyweight positionIndicatorCounterId(final int index, final int id)
-{
-atomicBuffer().putInt(positionIndicatorOffset(index), id);
-
-return this;
-}
-
-public int positionIndicatorCounterId(final int index)
-{
-return atomicBuffer().getInt(positionIndicatorOffset(index));
-}
-
-public ConnectionReadyFlyweight positionIndicatorRegistrationId(final int index, final long id)
-{
-atomicBuffer().putLong(positionIndicatorOffset(index) + SIZE_OF_INT, id);
-
-return this;
-}
-
-public long positionIndicatorRegistrationId(final int index)
-{
-return atomicBuffer().getLong(positionIndicatorOffset(index) + SIZE_OF_INT);
-}
-
-private int positionIndicatorOffset(final int index)
-{
-return endOfChannel() + index * POSITION_INDICATOR_FIELD_SIZE;
-}
-
-private int endOfChannel()
-{
-    return locationPointer(CHANNEL_INDEX + 1);
-}
-
-/**
-* Get the length of the current message
-*
-* NB: must be called after the data is written in order to be accurate.
-*
-* @return the length of the current message
-*/
-public int length()
-{
-    return positionIndicatorOffset(positionIndicatorCount() + 1);
-}
 
 }}};
 

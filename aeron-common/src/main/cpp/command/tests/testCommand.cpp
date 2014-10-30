@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 #include <concurrent/AtomicBuffer.h>
 #include <command/ConnectionMessageFlyweight.h>
+#include <command/ConnectionReadyFlyweight.h>
 
 using namespace aeron::common::command;
 using namespace aeron::common::concurrent;
@@ -12,6 +13,19 @@ static std::array<std::uint8_t, 1024> testBuffer;
 static void clearBuffer()
 {
     testBuffer.fill(0);
+}
+
+TEST (commandTests, testConnectionReadyFlyweight)
+{
+    clearBuffer();
+    AtomicBuffer ab (&testBuffer[0], testBuffer.size());
+    const size_t BASEOFFSET = 256;
+
+    std::string channelData = "channelData";
+
+    ASSERT_NO_THROW({
+        ConnectionReadyFlyweight cmd(ab, BASEOFFSET);
+    });
 }
 
 TEST (commandTests, testConnectionMessageFlyweight)

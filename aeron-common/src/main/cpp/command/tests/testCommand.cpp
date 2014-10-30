@@ -1,4 +1,5 @@
 
+#include <array>
 #include <gtest/gtest.h>
 #include <concurrent/AtomicBuffer.h>
 #include <command/ConnectionMessageFlyweight.h>

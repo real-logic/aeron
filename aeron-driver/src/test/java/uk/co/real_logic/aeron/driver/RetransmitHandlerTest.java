@@ -62,7 +62,6 @@ public class RetransmitHandlerTest
     private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private long currentTime;
@@ -246,9 +245,9 @@ public class RetransmitHandlerTest
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), DATA);
+        dataHeader.buffer().putBytes(dataHeader.dataOffset(), DATA);
 
-        logRebuilder.insert(dataHeader.atomicBuffer(), 0, MESSAGE_LENGTH);
+        logRebuilder.insert(rcvBuffer, 0, MESSAGE_LENGTH);
     }
 
     private long processTimersUntil(final BooleanSupplier condition)

@@ -59,6 +59,7 @@ public class ConnectionTest
     private static final long ZERO_INITIAL_POSITION =
         TermHelper.calculatePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
+    private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHandler mockDataHandler = mock(DataHandler.class);
     private final PositionReporter mockPositionReporter = mock(PositionReporter.class);
@@ -88,7 +89,6 @@ public class ConnectionTest
         }
 
         activeIndex = TermHelper.termIdToBufferIndex(INITIAL_TERM_ID);
-        final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -189,9 +189,9 @@ public class ConnectionTest
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), DATA);
+        dataHeader.buffer().putBytes(dataHeader.dataOffset(), DATA);
 
-        rebuilders[activeIndex].insert(dataHeader.atomicBuffer(), 0, ALIGNED_FRAME_LENGTH);
+        rebuilders[activeIndex].insert(rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
     }
 
     private int offsetOfFrame(final int index)

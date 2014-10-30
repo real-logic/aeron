@@ -178,7 +178,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public long correlationId()
     {
-        return atomicBuffer().getLong(offset() + CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getLong(offset() + CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -189,7 +189,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public ConnectionReadyFlyweight correlationId(final long correlationId)
     {
-        atomicBuffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+        buffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }
@@ -201,7 +201,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public long joiningPosition()
     {
-        return atomicBuffer().getLong(offset() + JOINING_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getLong(offset() + JOINING_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -212,7 +212,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public ConnectionReadyFlyweight joiningPosition(final long joiningPosition)
     {
-        atomicBuffer().putLong(offset() + JOINING_POSITION_OFFSET, joiningPosition, ByteOrder.LITTLE_ENDIAN);
+        buffer().putLong(offset() + JOINING_POSITION_OFFSET, joiningPosition, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }
@@ -223,7 +223,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public int sessionId()
     {
-        return atomicBuffer().getInt(offset() + SESSION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + SESSION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -233,7 +233,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public ConnectionReadyFlyweight sessionId(final int sessionId)
     {
-        atomicBuffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -245,7 +245,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public int streamId()
     {
-        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -256,7 +256,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public ConnectionReadyFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -268,7 +268,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public int termId()
     {
-        return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -279,7 +279,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public ConnectionReadyFlyweight termId(final int termId)
     {
-        atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -291,7 +291,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public int positionIndicatorCount()
     {
-        return atomicBuffer().getInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -302,19 +302,19 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public ConnectionReadyFlyweight positionIndicatorCount(final int value)
     {
-        atomicBuffer().putInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, value, LITTLE_ENDIAN);
+        buffer().putInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, value, LITTLE_ENDIAN);
 
         return this;
     }
 
     private int relativeIntField(final int index, final int fieldOffset)
     {
-        return atomicBuffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
+        return buffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
     }
 
     private ConnectionReadyFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
     {
-        atomicBuffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
+        buffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
 
         return this;
     }
@@ -344,7 +344,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         final int start = locationPointer(index);
         final int length = locationPointer(index + 1) - start;
 
-        return atomicBuffer().getStringWithoutLengthUtf8(offset() + start, length);
+        return buffer().getStringWithoutLengthUtf8(offset() + start, length);
     }
 
     public ConnectionReadyFlyweight location(final int index, final String value)
@@ -355,7 +355,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
             throw new IllegalStateException("Previous location been hasn't been set yet at index " + index);
         }
 
-        final int length = atomicBuffer().putStringWithoutLengthUtf8(offset() + start, value);
+        final int length = buffer().putStringWithoutLengthUtf8(offset() + start, value);
         locationPointer(index + 1, start + length);
 
         return this;
@@ -383,26 +383,26 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
 
     public ConnectionReadyFlyweight positionIndicatorCounterId(final int index, final int id)
     {
-        atomicBuffer().putInt(positionIndicatorOffset(index), id);
+        buffer().putInt(positionIndicatorOffset(index), id);
 
         return this;
     }
 
     public int positionIndicatorCounterId(final int index)
     {
-        return atomicBuffer().getInt(positionIndicatorOffset(index));
+        return buffer().getInt(positionIndicatorOffset(index));
     }
 
     public ConnectionReadyFlyweight positionIndicatorRegistrationId(final int index, final long id)
     {
-        atomicBuffer().putLong(positionIndicatorOffset(index) + SIZE_OF_INT, id);
+        buffer().putLong(positionIndicatorOffset(index) + SIZE_OF_INT, id);
 
         return this;
     }
 
     public long positionIndicatorRegistrationId(final int index)
     {
-        return atomicBuffer().getLong(positionIndicatorOffset(index) + SIZE_OF_INT);
+        return buffer().getLong(positionIndicatorOffset(index) + SIZE_OF_INT);
     }
 
     private int positionIndicatorOffset(final int index)

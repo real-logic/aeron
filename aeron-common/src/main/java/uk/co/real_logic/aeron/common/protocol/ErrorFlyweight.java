@@ -144,7 +144,7 @@ public class ErrorFlyweight extends HeaderFlyweight
      */
     public ErrorFlyweight errorMessage(final byte[] errorMessage)
     {
-        atomicBuffer().putBytes(errorMessageOffset(), errorMessage, 0, errorMessage.length);
+        buffer().putBytes(errorMessageOffset(), errorMessage, 0, errorMessage.length);
 
         return this;
     }
@@ -169,7 +169,7 @@ public class ErrorFlyweight extends HeaderFlyweight
         final int len = errorStringLength();
         final byte[] bytes = new byte[len];
 
-        atomicBuffer().getBytes(errorMessageOffset(), bytes, 0, len);
+        buffer().getBytes(errorMessageOffset(), bytes, 0, len);
 
         return bytes;
     }

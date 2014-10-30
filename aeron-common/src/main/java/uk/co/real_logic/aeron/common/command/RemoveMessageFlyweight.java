@@ -43,7 +43,7 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public long registrationId()
     {
-        return atomicBuffer().getLong(offset() + REGISTRATION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer().getLong(offset() + REGISTRATION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -54,7 +54,7 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public RemoveMessageFlyweight registrationId(final long registrationId)
     {
-        atomicBuffer().putLong(offset() + REGISTRATION_ID_OFFSET, registrationId, LITTLE_ENDIAN);
+        buffer().putLong(offset() + REGISTRATION_ID_OFFSET, registrationId, LITTLE_ENDIAN);
 
         return this;
     }

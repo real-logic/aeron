@@ -42,7 +42,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public int termOffset()
     {
-        return atomicBuffer().getInt(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -53,7 +53,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public SetupFlyweight termOffset(final int termOffset)
     {
-        atomicBuffer().putInt(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        buffer().putInt(offset() + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
 
         return this;
     }
@@ -64,7 +64,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public int sessionId()
     {
-        return atomicBuffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -74,7 +74,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public SetupFlyweight sessionId(final int sessionId)
     {
-        atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -86,7 +86,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public int streamId()
     {
-        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -97,7 +97,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public SetupFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -109,7 +109,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public int termId()
     {
-        return atomicBuffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -120,7 +120,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public SetupFlyweight termId(final int termId)
     {
-        atomicBuffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -132,7 +132,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public int termSize()
     {
-        return atomicBuffer().getInt(offset() + TERM_SIZE_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + TERM_SIZE_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -143,7 +143,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public SetupFlyweight termSize(final int termSize)
     {
-        atomicBuffer().putInt(offset() + TERM_SIZE_FIELD_OFFSET, termSize, LITTLE_ENDIAN);
+        buffer().putInt(offset() + TERM_SIZE_FIELD_OFFSET, termSize, LITTLE_ENDIAN);
 
         return this;
     }
@@ -155,7 +155,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public int mtuLength()
     {
-        return atomicBuffer().getInt(offset() + MTU_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + MTU_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -166,7 +166,7 @@ public class SetupFlyweight extends HeaderFlyweight
      */
     public SetupFlyweight mtuLength(final int mtuLength)
     {
-        atomicBuffer().putInt(offset() + MTU_LENGTH_FIELD_OFFSET, mtuLength, LITTLE_ENDIAN);
+        buffer().putInt(offset() + MTU_LENGTH_FIELD_OFFSET, mtuLength, LITTLE_ENDIAN);
 
         return this;
     }

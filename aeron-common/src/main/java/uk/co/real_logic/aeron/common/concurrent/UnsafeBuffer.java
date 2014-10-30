@@ -81,7 +81,7 @@ public class UnsafeBuffer implements AtomicBuffer
      *
      * @param buffer to which the view is attached.
      */
-    public UnsafeBuffer(final UnsafeBuffer buffer)
+    public UnsafeBuffer(final DirectBuffer buffer)
     {
         wrap(buffer);
     }
@@ -120,12 +120,12 @@ public class UnsafeBuffer implements AtomicBuffer
         byteBuffer = null;
     }
 
-    public void wrap(final UnsafeBuffer buffer)
+    public void wrap(final DirectBuffer buffer)
     {
-        addressOffset = buffer.addressOffset;
-        capacity = buffer.capacity;
-        byteArray = buffer.byteArray;
-        byteBuffer = buffer.byteBuffer;
+        addressOffset = buffer.addressOffset();
+        capacity = buffer.capacity();
+        byteArray = buffer.byteArray();
+        byteBuffer = buffer.byteBuffer();
     }
 
     public long addressOffset()
@@ -136,6 +136,11 @@ public class UnsafeBuffer implements AtomicBuffer
     public byte[] byteArray()
     {
         return byteArray;
+    }
+
+    public ByteBuffer byteBuffer()
+    {
+        return byteBuffer;
     }
 
     public void setMemory(final int index, final int length, final byte value)

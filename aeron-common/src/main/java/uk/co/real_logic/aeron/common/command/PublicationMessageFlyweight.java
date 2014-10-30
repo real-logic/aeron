@@ -53,7 +53,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int sessionId()
     {
-        return atomicBuffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -64,7 +64,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public PublicationMessageFlyweight sessionId(final int sessionId)
     {
-        atomicBuffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
+        buffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }
@@ -76,7 +76,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int streamId()
     {
-        return atomicBuffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getInt(offset() + STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -87,7 +87,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public PublicationMessageFlyweight streamId(final int streamId)
     {
-        atomicBuffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
+        buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }

@@ -70,6 +70,7 @@ public class LossHandlerTest
     private final LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
     private final GapScanner[] scanners = new GapScanner[TermHelper.BUFFER_COUNT];
 
+    private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private final TimerWheel wheel;
@@ -99,7 +100,6 @@ public class LossHandlerTest
 
         nakMessageSender = mock(NakMessageSender.class);
 
-        final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
         handler = new LossHandler(
             scanners, wheel, DELAY_GENERATOR, nakMessageSender, TERM_ID, INITIAL_TERM_OFFSET, mockSystemCounters);
         dataHeader.wrap(rcvBuffer, 0);
@@ -432,9 +432,9 @@ public class LossHandlerTest
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        dataHeader.atomicBuffer().putBytes(dataHeader.dataOffset(), payload);
+        dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
 
-        rebuilders[activeIndex].insert(dataHeader.atomicBuffer(), 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+        rebuilders[activeIndex].insert(rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 
     private void insertPaddingFrame(final int offset)
@@ -448,7 +448,7 @@ public class LossHandlerTest
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        rebuilders[activeIndex].insert(dataHeader.atomicBuffer(), 0, FrameDescriptor.BASE_HEADER_LENGTH);
+        rebuilders[activeIndex].insert(rcvBuffer, 0, FrameDescriptor.BASE_HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)

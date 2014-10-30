@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -49,11 +47,11 @@ public interface DirectBuffer
     void wrap(long address, int capacity);
 
     /**
-     * Attach a view to an existing {@link UnsafeBuffer}
+     * Attach a view to an existing {@link uk.co.real_logic.aeron.common.DirectBuffer}
      *
      * @param buffer to which the view is attached.
      */
-    void wrap(UnsafeBuffer buffer);
+    void wrap(DirectBuffer buffer);
 
     /**
      * Reads the underlying offset to to the memory address.
@@ -68,6 +66,13 @@ public interface DirectBuffer
      * @return the underlying byte[] if one exists.
      */
     byte[] byteArray();
+
+    /**
+     * Get the underlying {@link ByteBuffer} if one exists.
+     *
+     * @return the underlying {@link ByteBuffer} if one exists.
+     */
+    ByteBuffer byteBuffer();
 
     /**
      * Get the capacity of the underlying buffer.

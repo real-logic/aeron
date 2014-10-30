@@ -119,3 +119,47 @@ TEST (atomicBufferTests, concurrentTest)
 
     ASSERT_EQ((size_t)ab.getInt64(0), incCount * threads.size());
 }
+
+#pragma pack(push)
+#pragma pack(4)
+struct testStruct
+{
+    std::int32_t f1;
+    std::int32_t f2;
+    std::int64_t f3;
+};
+#pragma pack(pop)
+
+TEST (atomicBufferTests, checkStructOveray)
+{
+    testBuffer.fill(0xff);
+    AtomicBuffer ab(&testBuffer[0], testBuffer.size());
+
+    ASSERT_NO_THROW({
+        ab.overlayStruct<testStruct>(ab.getCapacity() - sizeof(testStruct));
+    });
+
+    ASSERT_THROW({
+        ab.overlayStruct<testStruct>(ab.getCapacity() - sizeof(testStruct) + 1);
+    }, OutOfBoundsException);
+
+    testStruct ts { 1, 2, 3 };
+    ASSERT_NO_THROW({
+        ab.overlayStruct<testStruct>(0) = ts;
+        ASSERT_EQ(ab.getInt32(0), ts.f1);
+        ASSERT_EQ(ab.getInt32(4), ts.f2);
+        ASSERT_EQ(ab.getInt64(8), ts.f3);
+    });
+
+    ASSERT_NO_THROW({
+        ab.putInt32(16, 101);
+        ab.putInt32(20, 102);
+        ab.putInt64(24, 103);
+
+        testStruct& s = ab.overlayStruct<testStruct>(16);
+
+        ASSERT_EQ(s.f1, 101);
+        ASSERT_EQ(s.f2, 102);
+        ASSERT_EQ(s.f3, 103);
+    });
+}

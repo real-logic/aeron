@@ -1,9 +1,16 @@
 
-# static library 
-add_library(aeron_concurrent STATIC 
-			AtomicBuffer.cpp
-			AtomicCounter.cpp
-			CountersManager.cpp)
+SET(SOURCE
+    AtomicBuffer.cpp
+    AtomicCounter.cpp
+    CountersManager.cpp)
+
+SET(HEADERS
+    AtomicBuffer.h
+    AtomicCounter.h
+    CountersManager.h)
+
+# static library
+add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})
 
 # executable for this modules tests
 add_executable(concurrentTests
@@ -13,7 +20,7 @@ add_executable(concurrentTests
 target_link_libraries(concurrentTests
                         aeron_concurrent
                         aeron_util
-                        gtest_main)
+                        gmock_main)
 
 # make test
 add_test(NAME testConcurrent COMMAND concurrentTests)

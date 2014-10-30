@@ -38,7 +38,7 @@ TEST(utilTests, stringUtilParseTest)
     ASSERT_NO_THROW({
         ASSERT_EQ(parse<int> ("100"), 100);
         ASSERT_EQ(parse<double> ("100.25"), 100.25);
-        ASSERT_EQ(parse<std::uint64_t> ("0x123456789abcdef0"), 0x123456789abcdef0);
+        ASSERT_EQ(parse<std::uint64_t> ("0x123456789abcdef0"), 0x123456789abcdef0UL);
     });
 
     ASSERT_THROW(parse<int>(""), ParseException);

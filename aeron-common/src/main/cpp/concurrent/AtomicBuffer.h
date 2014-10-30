@@ -1,3 +1,4 @@
+
 #ifndef INCLUDED_AERON_CONCURRENT_ATOMIC_BUFFER__
 #define INCLUDED_AERON_CONCURRENT_ATOMIC_BUFFER__
 
@@ -18,13 +19,27 @@ class AtomicBuffer
 public:
     AtomicBuffer(std::uint8_t *buffer, size_t length);
 
+    template <typename struct_t>
+    struct_t& overlayStruct (size_t offset)
+    {
+        boundsCheck(offset, sizeof(struct_t));
+        return *reinterpret_cast<struct_t*>(m_buffer + offset);
+    }
+
+    template <typename struct_t>
+    const struct_t& overlayStruct (size_t offset) const
+    {
+        boundsCheck(offset, sizeof(struct_t));
+        return *reinterpret_cast<struct_t*>(m_buffer + offset);
+    }
+
     inline void putInt64(size_t offset, std::int64_t v)
     {
         boundsCheck(offset, sizeof(std::int64_t));
         *reinterpret_cast<std::int64_t *>(m_buffer + offset) = v;
     }
 
-    inline std::int64_t getInt64(size_t offset)
+    inline std::int64_t getInt64(size_t offset) const
     {
         boundsCheck(offset, sizeof(std::int64_t));
         return *reinterpret_cast<std::int64_t *>(m_buffer + offset);
@@ -36,7 +51,7 @@ public:
         *reinterpret_cast<std::int32_t *>(m_buffer + offset) = v;
     }
 
-    inline std::int32_t getInt32(size_t offset)
+    inline std::int32_t getInt32(size_t offset) const
     {
         boundsCheck(offset, sizeof(std::int32_t));
         return *reinterpret_cast<std::int32_t *>(m_buffer + offset);
@@ -49,7 +64,7 @@ public:
         mint_store_64_relaxed((mint_atomic64_t*)(m_buffer + offset), v);
     }
 
-    inline std::int64_t getInt64Ordered(size_t offset)
+    inline std::int64_t getInt64Ordered(size_t offset) const
     {
         boundsCheck(offset, sizeof(std::int64_t));
         std::int64_t v = mint_load_64_relaxed((mint_atomic64_t*)(m_buffer + offset));
@@ -64,7 +79,7 @@ public:
         mint_store_32_relaxed((mint_atomic32_t*)(m_buffer + offset), v);
     }
 
-    inline std::int32_t getInt32Ordered(size_t offset)
+    inline std::int32_t getInt32Ordered(size_t offset) const
     {
         boundsCheck(offset, sizeof(std::int32_t));
         std::int32_t v = mint_load_32_relaxed((mint_atomic32_t*)(m_buffer + offset));
@@ -80,7 +95,7 @@ public:
         mint_thread_fence_seq_cst();
     }
 
-    inline std::int64_t getInt64Atomic(size_t offset)
+    inline std::int64_t getInt64Atomic(size_t offset) const
     {
         boundsCheck(offset, sizeof(std::int64_t));
         mint_thread_fence_seq_cst();
@@ -97,7 +112,7 @@ public:
         mint_thread_fence_seq_cst();
     }
 
-    inline std::int32_t getInt32Atomic(size_t offset)
+    inline std::int32_t getInt32Atomic(size_t offset) const
     {
         boundsCheck(offset, sizeof(std::int32_t));
         mint_thread_fence_seq_cst();
@@ -119,13 +134,13 @@ public:
         return true; // always works??
     }
 
-    inline std::int64_t getAndSetInt64(size_t offset, std::int64_t value)
+    inline std::int64_t getAndSetInt64(size_t offset, std::int64_t value) const
     {
         // TODO: no idea how to implement this with mintomic....
         return 0;
     }
 
-    inline std::int64_t getAndAddInt64(size_t offset, std::int64_t delta)
+    inline std::int64_t getAndAddInt64(size_t offset, std::int64_t delta) const
     {
         boundsCheck(offset, sizeof(std::int64_t));
         return mint_fetch_add_64_relaxed((mint_atomic64_t*)(m_buffer + offset), delta);
@@ -144,13 +159,13 @@ public:
         return true; // always works??
     }
 
-    inline std::int32_t getAndSetInt32(size_t offset, std::int32_t value)
+    inline std::int32_t getAndSetInt32(size_t offset, std::int32_t value) const
     {
         // TODO: no idea how to implement this with mintomic....
         return 0;
     }
 
-    inline std::int32_t getAndAddInt32(size_t offset, std::int32_t delta)
+    inline std::int32_t getAndAddInt32(size_t offset, std::int32_t delta) const
     {
         boundsCheck(offset, sizeof(std::int32_t));
         return mint_fetch_add_32_relaxed((mint_atomic32_t*)(m_buffer + offset), delta);
@@ -164,13 +179,13 @@ public:
 
     // Note: I am assuming that std::string is utf8 encoded
     // TODO: add std::wstring support
-    inline std::string getStringUtf8(size_t offset)
+    inline std::string getStringUtf8(size_t offset) const
     {
         std::int32_t length = getInt32(offset);
         return getStringUtf8(offset, (size_t)length);
     }
 
-    inline std::string getStringUtf8(size_t offset, size_t length)
+    inline std::string getStringUtf8(size_t offset, size_t length) const
     {
         boundsCheck(offset, length);
         return std::string(m_buffer + offset + sizeof(std::int32_t), m_buffer + offset + sizeof(std::int32_t) + length);
@@ -197,7 +212,7 @@ private:
     std::uint8_t *m_buffer;
     size_t m_length;
 
-    inline void boundsCheck(size_t index, size_t length)
+    inline void boundsCheck(size_t index, size_t length) const
     {
         if (index + length > m_length)
             throw aeron::common::util::OutOfBoundsException(std::string("Index Out of Bounds. Index: ") + util::toString(index + length) + " Capacity: " + util::toString(m_length), SOURCEINFO);

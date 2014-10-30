@@ -65,8 +65,10 @@ include_directories(${AERON_3RDPARTY_PATH}/mintomic/include)
 
 include_directories(${AERON_COMMON_PATH})
 
-add_subdirectory(${AERON_COMMON_PATH}/concurrent)
 add_subdirectory(${AERON_COMMON_PATH}/util)
+add_subdirectory(${AERON_COMMON_PATH}/concurrent)
+add_subdirectory(${AERON_COMMON_PATH}/common)
+add_subdirectory(${AERON_COMMON_PATH}/command)
 add_subdirectory(${AERON_SAMPLES_PATH})
 
 

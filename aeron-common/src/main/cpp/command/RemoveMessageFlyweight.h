@@ -27,8 +27,9 @@ namespace aeron { namespace common { namespace command {
 
 #pragma pack(push)
 #pragma pack(4)
-struct RemoveMessageDefn : public CorrelatedMessageDefn
+struct RemoveMessageDefn
 {
+    CorrelatedMessageDefn correlatedMessage;
 	std::int64_t registrationId;
 };
 #pragma pack(pop)

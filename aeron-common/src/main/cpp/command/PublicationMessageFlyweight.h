@@ -32,8 +32,9 @@ namespace aeron { namespace common { namespace command {
 
 #pragma pack(push)
 #pragma pack(4)
-struct PublicationMessageDefn : public CorrelatedMessageDefn
+struct PublicationMessageDefn
 {
+    CorrelatedMessageDefn correlatedMessage;
     std::int32_t sessionId;
     std::int32_t streamId;
     struct

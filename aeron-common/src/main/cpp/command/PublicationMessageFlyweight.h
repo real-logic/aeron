@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <common/Flyweight.h>
 
+#include "CorrelatedMessageFlyweight.h"
+
 namespace aeron { namespace common { namespace command {
 
 /**
@@ -13,6 +15,9 @@ namespace aeron { namespace common { namespace command {
 * 0                   1                   2                   3
 * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+* |                            Client ID                          |
+* |                                                               |
+* +---------------------------------------------------------------+
 * |                         Correlation ID                        |
 * |                                                               |
 * +---------------------------------------------------------------+
@@ -27,9 +32,8 @@ namespace aeron { namespace common { namespace command {
 
 #pragma pack(push)
 #pragma pack(4)
-struct PublicationMessageDefn
+struct PublicationMessageDefn : public CorrelatedMessageDefn
 {
-    std::int64_t correlationId;
     std::int32_t sessionId;
     std::int32_t streamId;
     struct
@@ -41,33 +45,24 @@ struct PublicationMessageDefn
 #pragma pack(pop)
 
 
-class PublicationMessageFlyweight : public common::Flyweight<PublicationMessageDefn>
+class PublicationMessageFlyweight : public CorrelatedMessageFlyweight
 {
 public:
-    inline PublicationMessageFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
-            : common::Flyweight<PublicationMessageDefn>(buffer, offset)
-    {
-    }
+	typedef PublicationMessageFlyweight this_t;
 
-    inline std::int64_t correlationId() const
-    {
-        return m_struct.correlationId;
-    }
-
-    inline PublicationMessageFlyweight& correlationId(std::int64_t correlationId)
-    {
-        m_struct.correlationId = correlationId;
-        return *this;
-    }
+	inline PublicationMessageFlyweight(concurrent::AtomicBuffer& buffer, size_t offset)
+		: CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<PublicationMessageDefn>(0))
+	{
+	}
 
     inline std::int32_t sessionId() const
     {
         return m_struct.sessionId;
     }
 
-    inline PublicationMessageFlyweight& sessionId(std::int32_t sessionId)
+    inline this_t& sessionId(std::int32_t value)
     {
-        m_struct.sessionId = sessionId;
+        m_struct.sessionId = value;
         return *this;
     }
 
@@ -76,9 +71,9 @@ public:
         return m_struct.streamId;
     }
 
-    inline PublicationMessageFlyweight& streamId(std::int32_t streamId)
+    inline this_t& streamId(std::int32_t value)
     {
-        m_struct.streamId = streamId;
+        m_struct.streamId = value;
         return *this;
     }
 
@@ -87,9 +82,9 @@ public:
         return stringGet(offsetof(PublicationMessageDefn, channel));
     }
 
-    inline PublicationMessageFlyweight& channel(const std::string& chan)
+    inline this_t& channel(const std::string& value)
     {
-        stringPut(offsetof(PublicationMessageDefn, channel), chan);
+        stringPut(offsetof(PublicationMessageDefn, channel), value);
         return *this;
     }
 
@@ -97,7 +92,11 @@ public:
     {
         return offsetof(PublicationMessageDefn, channel.channelData) + m_struct.channel.channelLength;
     }
+
+private:
+	PublicationMessageDefn& m_struct;
 };
 
 }}};
+
 #endif

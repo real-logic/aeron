@@ -1,5 +1,5 @@
-#ifndef INCLUDED_AERON_COMMAND_CONNECTIONREADYFLYWEIGHT__
-#define INCLUDED_AERON_COMMAND_CONNECTIONREADYFLYWEIGHT__
+#ifndef INCLUDED_AERON_COMMAND_PUBLICATIONREADYFLYWEIGHT__
+#define INCLUDED_AERON_COMMAND_PUBLICATIONREADYFLYWEIGHT__
 
 #include <cstdint>
 #include <common/Flyweight.h>
@@ -10,15 +10,12 @@ namespace aeron { namespace common { namespace command {
 /**
 * Message to denote that new buffers have been added for a subscription.
 *
-* @see ControlProtocolEvents
+* @see uk.co.real_logic.aeron.common.command.ControlProtocolEvents
 *
 * 0                   1                   2                   3
 * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 * |                         Correlation ID                        |
-* |                                                               |
-* +---------------------------------------------------------------+
-* |                        Joining Position                       |
 * |                                                               |
 * +---------------------------------------------------------------+
 * |                          Session ID                           |
@@ -27,7 +24,9 @@ namespace aeron { namespace common { namespace command {
 * +---------------------------------------------------------------+
 * |                           Term ID                             |
 * +---------------------------------------------------------------+
-* |                   Position Indicators Count                   |
+* |                   Position Indicator Offset                   |
+* +---------------------------------------------------------------+
+* |                           MTU Length                          |
 * +---------------------------------------------------------------+
 * |                          File Offset 0                        |
 * +---------------------------------------------------------------+
@@ -63,8 +62,6 @@ namespace aeron { namespace common { namespace command {
 * +---------------------------------------------------------------+
 * |                          Location 5 Start                     |
 * +---------------------------------------------------------------+
-* |                     Source Information Start                  |
-* +---------------------------------------------------------------+
 * |                           Channel Start                       |
 * +---------------------------------------------------------------+
 * |                           Channel End                         |
@@ -90,51 +87,37 @@ namespace aeron { namespace common { namespace command {
 * |                            Channel                          ...
 * |                                                             ...
 * +---------------------------------------------------------------+
-* |                     Position Indicator Id 0                 ...
-* +---------------------------------------------------------------+
-* |                         Registration Id 0                   ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                     Position Indicator Id 1                 ...
-* +---------------------------------------------------------------+
-* |                         Registration Id 1                   ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                                                             ...
-* Up to "Position Indicators Count" entries of this form
 */
-
 
 #pragma pack(push)
 #pragma pack(4)
-struct ConnectionReadyDefn
+struct PublicationReadyDefn
 {
     static const std::int32_t NUM_FILES = 6;
 
     std::int64_t correlationId;
-    std::int64_t joiningPosition;
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t termId;
     std::int32_t positionIndicatorsCount;
+	std::int32_t mtuLength;
     std::int32_t fileOffset[NUM_FILES];
     std::int32_t length[NUM_FILES];
-    std::int32_t locationStart[NUM_FILES];
-    std::int32_t sourceInformationStart;
-    std::int32_t channelStart;
-    std::int32_t channelEnd;
-    std::int32_t variableDataStart;
+	std::int32_t channelStart;
+	std::int32_t channelEnd;
+	std::int32_t locationStart[NUM_FILES];
+    std::int32_t channel;
 };
 #pragma pack(pop)
 
-class ConnectionReadyFlyweight : public common::Flyweight<ConnectionReadyDefn>,
-                                 public ReadyFlyweight<ConnectionReadyFlyweight>
+class PublicationReadyFlyweight : public common::Flyweight<PublicationReadyDefn>,
+								  public ReadyFlyweight<PublicationReadyFlyweight>
 {
 public:
-	typedef ConnectionReadyFlyweight this_t;
+	typedef PublicationReadyFlyweight this_t;
 
-    inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
-        : common::Flyweight<ConnectionReadyDefn>(buffer, offset)
+	inline PublicationReadyFlyweight(concurrent::AtomicBuffer& buffer, size_t offset)
+		: common::Flyweight<PublicationReadyDefn>(buffer, offset)
     {
     }
 
@@ -178,17 +161,6 @@ public:
     inline this_t& correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
-        return *this;
-    }
-
-    inline std::int64_t joiningPosition() const
-    {
-        return m_struct.joiningPosition;
-    }
-
-    inline this_t& joiningPosition(std::int64_t value)
-    {
-        m_struct.joiningPosition = value;
         return *this;
     }
 
@@ -236,16 +208,16 @@ public:
         return *this;
     }
 
-    inline std::int32_t sourceInformationStart() const
-    {
-        return m_struct.sourceInformationStart;
-    }
+	inline std::int32_t mtuLength() const
+	{
+		return m_struct.mtuLength;
+	}
 
-    inline this_t& sourceInformationStart(std::int32_t value)
-    {
-        m_struct.sourceInformationStart = value;
-        return *this;
-    }
+	inline this_t& mtuLength(std::int32_t value)
+	{
+		m_struct.mtuLength = value;
+		return *this;
+	}
 
     inline std::int32_t channelStart() const
     {

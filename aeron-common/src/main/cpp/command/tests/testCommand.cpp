@@ -4,6 +4,10 @@
 #include <concurrent/AtomicBuffer.h>
 #include <command/ConnectionMessageFlyweight.h>
 #include <command/ConnectionReadyFlyweight.h>
+#include <command/RemoveMessageFlyweight.h>
+#include <command/SubscriptionMessageFlyweight.h>
+#include <command/PublicationMessageFlyweight.h>
+#include <command/PublicationReadyFlyweight.h>
 
 using namespace aeron::common::command;
 using namespace aeron::common::concurrent;
@@ -15,7 +19,7 @@ static void clearBuffer()
     testBuffer.fill(0);
 }
 
-TEST (commandTests, testConnectionReadyFlyweight)
+TEST (commandTests, testInstantiateFlyweights)
 {
     clearBuffer();
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
@@ -23,9 +27,29 @@ TEST (commandTests, testConnectionReadyFlyweight)
 
     std::string channelData = "channelData";
 
+	ASSERT_NO_THROW({
+		ConnectionMessageFlyweight cmd(ab, BASEOFFSET);
+	});
+
     ASSERT_NO_THROW({
         ConnectionReadyFlyweight cmd(ab, BASEOFFSET);
     });
+
+	ASSERT_NO_THROW({
+		RemoveMessageFlyweight cmd(ab, BASEOFFSET);
+	});
+
+	ASSERT_NO_THROW({
+		SubscriptionMessageFlyweight cmd(ab, BASEOFFSET);
+	});
+
+	ASSERT_NO_THROW({
+		PublicationMessageFlyweight cmd(ab, BASEOFFSET);
+	});
+
+	ASSERT_NO_THROW({
+		PublicationReadyFlyweight cmd(ab, BASEOFFSET);
+	});
 }
 
 TEST (commandTests, testConnectionMessageFlyweight)

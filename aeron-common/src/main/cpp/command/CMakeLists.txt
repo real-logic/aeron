@@ -1,10 +1,14 @@
 
-SET(HEADERS
-    ConnectionMessageFlyweight.h
-    ReadyFlyweight.h
-    ConnectionReadyFlyweight.h
-    ControlProtocolEvents.h
-    CorrelatedMessageFlyweight.h)
+SET(HEADERS	
+	ConnectionMessageFlyweight.h
+	ConnectionReadyFlyweight.h
+	ControlProtocolEvents.h
+	CorrelatedMessageFlyweight.h
+	PublicationMessageFlyweight.h
+	PublicationReadyFlyweight.h
+	ReadyFlyweight.h
+	RemoveMessageFlyweight.h
+	SubscriptionMessageFlyweight.h)
 
 # header only library
 add_custom_target(aeron_command SOURCES ${HEADERS})

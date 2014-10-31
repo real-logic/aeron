@@ -44,6 +44,8 @@ struct ConnectionMessageDefn
 class ConnectionMessageFlyweight : public common::Flyweight<ConnectionMessageDefn>
 {
 public:
+	typedef ConnectionMessageFlyweight this_t;
+
     inline ConnectionMessageFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
             : common::Flyweight<ConnectionMessageDefn>(buffer, offset)
     {
@@ -54,9 +56,9 @@ public:
         return m_struct.correlationId;
     }
 
-    inline ConnectionMessageFlyweight& correlationId(std::int64_t correlationId)
+    inline this_t& correlationId(std::int64_t value)
     {
-        m_struct.correlationId = correlationId;
+        m_struct.correlationId = value;
         return *this;
     }
 
@@ -65,9 +67,9 @@ public:
         return m_struct.sessionId;
     }
 
-    inline ConnectionMessageFlyweight& sessionId(std::int32_t sessionId)
+    inline this_t& sessionId(std::int32_t value)
     {
-        m_struct.sessionId = sessionId;
+        m_struct.sessionId = value;
         return *this;
     }
 
@@ -76,9 +78,9 @@ public:
         return m_struct.streamId;
     }
 
-    inline ConnectionMessageFlyweight& streamId(std::int32_t streamId)
+    inline this_t& streamId(std::int32_t value)
     {
-        m_struct.streamId = streamId;
+        m_struct.streamId = value;
         return *this;
     }
 
@@ -87,9 +89,9 @@ public:
         return stringGet(offsetof(ConnectionMessageDefn, channel));
     }
 
-    inline ConnectionMessageFlyweight& channel(const std::string& chan)
+    inline this_t& channel(const std::string& value)
     {
-        stringPut(offsetof(ConnectionMessageDefn, channel), chan);
+        stringPut(offsetof(ConnectionMessageDefn, channel), value);
         return *this;
     }
 

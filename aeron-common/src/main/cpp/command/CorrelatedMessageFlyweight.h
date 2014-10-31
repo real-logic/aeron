@@ -31,6 +31,8 @@ struct CorrelatedMessageDefn
 class CorrelatedMessageFlyweight : public common::Flyweight<CorrelatedMessageDefn>
 {
 public:
+	typedef CorrelatedMessageFlyweight this_t;
+
     inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
             : common::Flyweight<CorrelatedMessageDefn>(buffer, offset)
     {
@@ -41,7 +43,7 @@ public:
         return m_struct.correlationId;
     }
 
-    inline CorrelatedMessageFlyweight& correlationId(std::int64_t value)
+    inline this_t& correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
         return *this;
@@ -52,7 +54,7 @@ public:
         return m_struct.clientId;
     }
 
-    inline CorrelatedMessageFlyweight& clientId(std::int64_t value)
+    inline this_t& clientId(std::int64_t value)
     {
         m_struct.clientId = value;
         return *this;

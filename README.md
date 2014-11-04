@@ -50,7 +50,11 @@ You require the following to build Aeron:
 
 * Latest stable [Oracle JDK 8](http://www.oracle.com/technetwork/java/)
 
-The preferred way to build is using the Gradle script included.
+You must first build and install into the local maven repository [Agrona](https://github.com/real-logic/Agrona).
+
+    $ ./gradlew install
+
+After Agrona is compiled and installed, then you can build Aeron.
 
 Full clean and build of all modules
 

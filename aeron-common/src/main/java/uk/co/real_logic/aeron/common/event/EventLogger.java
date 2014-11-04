@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
-import uk.co.real_logic.aeron.common.MutableDirectBuffer;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.File;
 import java.net.InetSocketAddress;

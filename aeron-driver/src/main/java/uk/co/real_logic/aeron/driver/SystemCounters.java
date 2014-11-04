@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
-import uk.co.real_logic.aeron.common.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 public class SystemCounters implements AutoCloseable
 {

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefault;
+import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
  * Threadsafe for getting to {@link uk.co.real_logic.aeron.Subscription}s by channel and streamId.

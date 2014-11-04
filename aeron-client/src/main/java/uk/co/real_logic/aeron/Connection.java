@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.common.status.PositionReporter;
+import uk.co.real_logic.agrona.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.nio.ByteOrder;
@@ -74,9 +74,9 @@ public class Header
     }
 
     /**
-     * The {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
+     * The {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
      *
-     * @return {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
+     * @return {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
      */
     public UnsafeBuffer buffer()
     {
@@ -84,9 +84,9 @@ public class Header
     }
 
     /**
-     * The {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
+     * The {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
      *
-     * @param buffer {@link uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer} containing the header.
+     * @param buffer {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
      */
     public void buffer(final UnsafeBuffer buffer)
     {

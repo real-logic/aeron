@@ -16,11 +16,11 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.BitUtil;
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.util.concurrent.TimeUnit;
 

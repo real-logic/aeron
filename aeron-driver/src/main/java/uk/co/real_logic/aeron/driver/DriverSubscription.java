@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.status.PositionIndicator;
+import uk.co.real_logic.agrona.status.PositionIndicator;
 
 import java.util.IdentityHashMap;
 import java.util.Map;

@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.DirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.status.PositionIndicator;
+import uk.co.real_logic.agrona.status.PositionIndicator;
 
 import java.util.concurrent.atomic.AtomicInteger;
 

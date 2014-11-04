@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

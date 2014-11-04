@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.DirectBuffer;
+import uk.co.real_logic.agrona.DirectBuffer;
 
 /**
  * Handler for reading data that is coming from a log buffer.

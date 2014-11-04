@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;

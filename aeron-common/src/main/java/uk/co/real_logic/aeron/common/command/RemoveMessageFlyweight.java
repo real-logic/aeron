@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.common.command;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message for removing a Publication or Subscription.

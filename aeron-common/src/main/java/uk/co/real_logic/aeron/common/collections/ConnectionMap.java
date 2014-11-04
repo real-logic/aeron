@@ -15,10 +15,12 @@
  */
 package uk.co.real_logic.aeron.common.collections;
 
+import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
+
 import java.util.HashMap;
 import java.util.Map;
 
-import static uk.co.real_logic.aeron.common.collections.CollectionUtil.getOrDefault;
+import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
  * Map for storing information about Aeron associations. These are keyed

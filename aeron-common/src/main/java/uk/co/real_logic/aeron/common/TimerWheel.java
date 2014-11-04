@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.NanoClock;
-import uk.co.real_logic.aeron.common.concurrent.SystemNanoClock;
+import uk.co.real_logic.agrona.concurrent.NanoClock;
+import uk.co.real_logic.agrona.concurrent.SystemNanoClock;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;

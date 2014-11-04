@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.common;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
+import uk.co.real_logic.agrona.BitUtil;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 

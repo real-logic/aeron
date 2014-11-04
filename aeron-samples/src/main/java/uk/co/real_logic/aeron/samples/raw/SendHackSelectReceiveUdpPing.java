@@ -31,7 +31,7 @@ import java.util.concurrent.locks.LockSupport;
 import java.util.function.ToIntFunction;
 
 import static java.nio.channels.SelectionKey.OP_READ;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 
 /**

@@ -16,13 +16,13 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.MutableDirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.MessageHandler;
-import uk.co.real_logic.aeron.common.concurrent.broadcast.CopyBroadcastReceiver;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;

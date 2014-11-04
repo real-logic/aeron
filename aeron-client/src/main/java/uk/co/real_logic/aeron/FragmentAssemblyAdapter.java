@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.BufferBuilder;
-import uk.co.real_logic.aeron.common.DirectBuffer;
-import uk.co.real_logic.aeron.common.collections.Int2ObjectHashMap;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 

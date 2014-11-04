@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.common.protocol;
 import uk.co.real_logic.aeron.common.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Flyweight for general Aeron header

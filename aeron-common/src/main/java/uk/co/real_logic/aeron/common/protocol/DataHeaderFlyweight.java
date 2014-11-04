@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.protocol;
 
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 

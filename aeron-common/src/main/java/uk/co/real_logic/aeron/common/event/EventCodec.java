@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
-import uk.co.real_logic.aeron.common.BitUtil;
-import uk.co.real_logic.aeron.common.MutableDirectBuffer;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.protocol.*;
 
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Encoding/Dissecting of event types

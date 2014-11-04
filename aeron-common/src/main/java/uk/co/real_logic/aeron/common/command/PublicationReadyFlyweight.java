@@ -21,8 +21,8 @@ import uk.co.real_logic.aeron.common.TermHelper;
 import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Message to denote that new buffers have been added for a subscription.

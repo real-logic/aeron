@@ -1,6 +1,6 @@
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 interface ManagedBuffer extends AutoCloseable
 {

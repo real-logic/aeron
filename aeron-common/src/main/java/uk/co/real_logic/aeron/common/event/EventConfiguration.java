@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
-import uk.co.real_logic.aeron.common.concurrent.ringbuffer.RingBufferDescriptor;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.util.EnumSet;
 import java.util.Set;

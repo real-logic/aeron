@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron.common.command;
 
 import java.nio.ByteOrder;
 
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message for adding or removing a publication

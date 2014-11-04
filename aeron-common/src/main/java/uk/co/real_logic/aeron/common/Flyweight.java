@@ -15,13 +15,15 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.BitUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Parent class for flyweight implementations both in the messaging

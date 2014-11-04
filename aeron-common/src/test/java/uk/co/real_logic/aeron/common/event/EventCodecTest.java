@@ -1,7 +1,7 @@
 package uk.co.real_logic.aeron.common.event;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;

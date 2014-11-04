@@ -16,8 +16,11 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.IoUtil;
+import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.aeron.common.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;

@@ -15,14 +15,14 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.IoUtil;
-import uk.co.real_logic.aeron.common.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 
-import static uk.co.real_logic.aeron.common.IoUtil.mapExistingFile;
+import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 
 /**
  * Default mapping byteBuffer lifecycle strategy for the client

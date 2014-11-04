@@ -4,7 +4,7 @@ import uk.co.real_logic.aeron.common.Flyweight;
 
 import java.nio.ByteOrder;
 
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_LONG;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * 0                   1                   2                   3

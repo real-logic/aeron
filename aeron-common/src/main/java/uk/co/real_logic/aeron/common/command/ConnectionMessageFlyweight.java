@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.Flyweight;
 
 import java.nio.ByteOrder;
 
-import static uk.co.real_logic.aeron.common.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Control message flyweight for any message that needs to represent a connection

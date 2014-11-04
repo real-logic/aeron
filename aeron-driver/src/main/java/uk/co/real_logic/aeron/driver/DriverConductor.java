@@ -139,8 +139,7 @@ public class DriverConductor implements Agent
 
         timerWheel = ctx.conductorTimerWheel();
         this.clock = timerWheel.clock();
-        checkTimeoutTimer =
-            timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
+        checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
 
         toDriverCommands = ctx.toDriverCommands();
         toEventReader = ctx.toEventReader();
@@ -217,7 +216,7 @@ public class DriverConductor implements Agent
         final ArrayList<DriverPublication> publications = this.publications;
         for (int i = 0, size = publications.size(); i < size; i++)
         {
-            DriverPublication publication = publications.get(i);
+            final DriverPublication publication = publications.get(i);
             workCount += publication.cleanLogBuffer() +
                          publication.updatePublishersLimit();
         }

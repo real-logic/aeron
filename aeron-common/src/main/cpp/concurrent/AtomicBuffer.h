@@ -197,13 +197,13 @@ public:
     inline std::string getStringUtf8(size_t offset) const
     {
         std::int32_t length = getInt32(offset);
-        return getStringUtf8(offset, (size_t)length);
+        return getStringUtf8WithoutLength(offset + sizeof(std::int32_t), (size_t)length);
     }
 
-    inline std::string getStringUtf8(size_t offset, size_t length) const
+    inline std::string getStringUtf8WithoutLength(size_t offset, size_t length) const
     {
         boundsCheck(offset, length);
-        return std::string(m_buffer + offset + sizeof(std::int32_t), m_buffer + offset + sizeof(std::int32_t) + length);
+        return std::string(m_buffer + offset, m_buffer + offset + length);
     }
 
     std::int32_t putStringUtf8(size_t offset, const std::string& value)
@@ -217,6 +217,17 @@ public:
 
         return static_cast<std::int32_t>(sizeof(std::int32_t)) + length;
     }
+
+    std::int32_t putStringUtf8WithoutLength(size_t offset, const std::string& value)
+    {
+        std::int32_t length = static_cast<std::int32_t>(value.length());
+
+        boundsCheck(offset, value.length());
+
+        memcpy (m_buffer + offset, value.c_str(), length);
+        return length;
+    }
+
 
     inline size_t getCapacity() const
     {

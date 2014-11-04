@@ -18,7 +18,9 @@
 
 #include <cstdint>
 #include <common/Flyweight.h>
+#include <common/TermHelper.h>
 #include "ReadyFlyweight.h"
+
 
 namespace aeron { namespace common { namespace command {
 

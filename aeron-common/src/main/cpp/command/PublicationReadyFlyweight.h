@@ -118,10 +118,8 @@ struct PublicationReadyDefn
 	std::int32_t mtuLength;
     std::int32_t fileOffset[NUM_FILES];
     std::int32_t length[NUM_FILES];
-	std::int32_t channelStart;
-	std::int32_t channelEnd;
-	std::int32_t locationStart[NUM_FILES];
-    std::int32_t channel;
+	std::int32_t locationStart[NUM_FILES + 2]; // extra space to store location of channel
+    std::int32_t variableDataStart;
 };
 #pragma pack(pop)
 
@@ -160,11 +158,28 @@ public:
 
     inline std::string location(std::int32_t index) const
     {
-        return "";
+        std::int32_t offset;
+        if (index == 0)
+            offset = offsetof(PublicationReadyDefn, variableDataStart);
+        else
+            offset = locationOffset(index);
+
+        std::int32_t length = locationOffset(index+1);
+
+        return stringGetWithoutLength(offset, length);
     }
 
     inline this_t& location(std::int32_t index, const std::string &value)
     {
+        std::int32_t offset;
+        if (index == 0)
+            offset = offsetof(PublicationReadyDefn, variableDataStart);
+        else
+            offset = locationOffset(index);
+
+        offset += stringPutWithoutLength(offset, value);
+        locationOffset(index + 1, offset);
+
         return *this;
     }
 
@@ -234,26 +249,15 @@ public:
 		return *this;
 	}
 
-    inline std::int32_t channelStart() const
+private:
+    inline std::int32_t locationOffset(std::int32_t index) const
     {
-        return m_struct.channelStart;
+        return m_struct.locationStart[index];
     }
 
-    inline this_t& channelStart(std::int32_t value)
+    inline void locationOffset(std::int32_t index, std::int32_t value)
     {
-        m_struct.channelStart = value;
-        return *this;
-    }
-
-    inline std::int32_t channelEnd() const
-    {
-        return m_struct.channelEnd;
-    }
-
-    inline this_t& channelEnd(std::int32_t value)
-    {
-        m_struct.channelEnd = value;
-        return *this;
+        m_struct.locationStart[index] = value;
     }
 };
 

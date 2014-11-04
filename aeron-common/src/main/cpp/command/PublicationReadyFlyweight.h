@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <common/Flyweight.h>
 #include "ReadyFlyweight.h"
+#include <common/TermHelper.h>
 
 namespace aeron { namespace common { namespace command {
 
@@ -109,6 +110,8 @@ namespace aeron { namespace common { namespace command {
 struct PublicationReadyDefn
 {
     static const std::int32_t NUM_FILES = 6;
+    static const std::int32_t PAYLOAD_BUFFER_COUNT = common::TermHelper::BUFFER_COUNT * 2;
+    static const std::int32_t CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
 
     std::int64_t correlationId;
     std::int32_t sessionId;
@@ -119,7 +122,6 @@ struct PublicationReadyDefn
     std::int32_t fileOffset[NUM_FILES];
     std::int32_t length[NUM_FILES];
 	std::int32_t locationStart[NUM_FILES + 2]; // extra space to store location of channel
-    std::int32_t variableDataStart;
 };
 #pragma pack(pop)
 
@@ -160,7 +162,7 @@ public:
     {
         std::int32_t offset;
         if (index == 0)
-            offset = offsetof(PublicationReadyDefn, variableDataStart);
+            offset = (std::int32_t)sizeof(PublicationReadyDefn);
         else
             offset = locationOffset(index);
 
@@ -173,13 +175,24 @@ public:
     {
         std::int32_t offset;
         if (index == 0)
-            offset = offsetof(PublicationReadyDefn, variableDataStart);
+            offset = (std::int32_t)sizeof(PublicationReadyDefn);
         else
             offset = locationOffset(index);
 
         offset += stringPutWithoutLength(offset, value);
         locationOffset(index + 1, offset);
 
+        return *this;
+    }
+
+    inline std::string channel() const
+    {
+        return location(PublicationReadyDefn::CHANNEL_INDEX);
+    }
+
+    inline this_t& channel(const std::string &value)
+    {
+        location(PublicationReadyDefn::CHANNEL_INDEX, value);
         return *this;
     }
 
@@ -248,6 +261,11 @@ public:
 		m_struct.mtuLength = value;
 		return *this;
 	}
+
+    std::int32_t length()
+    {
+        return locationOffset(PublicationReadyDefn::CHANNEL_INDEX + 1);
+    }
 
 private:
     inline std::int32_t locationOffset(std::int32_t index) const

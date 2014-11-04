@@ -132,11 +132,11 @@ subprojects {
     }
 }
 
-//project(':aeron-common') {
-//    dependencies {
-//        compile 'uk.co.real_logic:Agrona:1.0-SNAPSHOT'
-//    }
-//}
+project(':aeron-common') {
+    dependencies {
+        compile 'uk.co.real_logic:Agrona:1.0-SNAPSHOT'
+    }
+}
 
 project(':aeron-driver') {
     apply plugin: 'application'

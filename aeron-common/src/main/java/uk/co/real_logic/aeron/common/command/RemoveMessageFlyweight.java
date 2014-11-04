@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package uk.co.real_logic.aeron.common.command;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;

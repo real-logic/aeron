@@ -74,6 +74,7 @@ DECLARE_SOURCED_EXCEPTION (OutOfBoundsException);
 DECLARE_SOURCED_EXCEPTION (ParseException);
 DECLARE_SOURCED_EXCEPTION (ElementNotFound);
 DECLARE_SOURCED_EXCEPTION (IllegalArgumentException);
+DECLARE_SOURCED_EXCEPTION (IllegalStateException);
 
 }}}
 #endif

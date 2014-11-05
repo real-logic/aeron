@@ -179,6 +179,9 @@ public:
         else
             offset = locationOffset(index);
 
+        if (offset == 0)
+            throw util::IllegalStateException(util::strconcat("Previous location been hasn't been set yet at index " + index), SOURCEINFO);
+
         offset += stringPutWithoutLength(offset, value);
         locationOffset(index + 1, offset);
 

@@ -215,6 +215,17 @@ public:
         return *this;
     }
 
+    inline std::string sourceInfo() const
+    {
+        return location(ConnectionReadyDefn::SOURCE_INFORMATION_INDEX);
+    }
+
+    inline this_t& sourceInfo(const std::string &value)
+    {
+        location(ConnectionReadyDefn::SOURCE_INFORMATION_INDEX, value);
+        return *this;
+    }
+
     inline std::string channel() const
     {
         return location(ConnectionReadyDefn::CHANNEL_INDEX);
@@ -225,7 +236,6 @@ public:
         location(ConnectionReadyDefn::CHANNEL_INDEX, value);
         return *this;
     }
-
 
     inline std::int64_t correlationId() const
     {
@@ -304,20 +314,25 @@ public:
         return overlayStruct<ConnectionReadyDefn::PositionIndicator>(positionIndicatorOffset(index));
     }
 
-    std::int32_t length()
+    inline std::int32_t length()
     {
         return locationOffset(ConnectionReadyDefn::CHANNEL_INDEX + 1) + positionIndicatorsCount() * sizeof(ConnectionReadyDefn::PositionIndicator);
     }
 
 private:
-    std::int32_t channelEnd()
+    inline std::int32_t channelEnd()
     {
         return locationOffset(ConnectionReadyDefn::CHANNEL_INDEX + 1);
     }
 
-    std::int32_t positionIndicatorOffset(std::int32_t index)
+    inline std::int32_t positionIndicatorOffset(std::int32_t index)
     {
-        return channelEnd() + index * sizeof(ConnectionReadyDefn::PositionIndicator);
+        std::int32_t chanEnd = channelEnd();
+
+        if (chanEnd == 0)
+            throw util::IllegalStateException(util::strconcat("Channel must be written before PositionIndicator: " + index), SOURCEINFO);
+
+        return chanEnd + index * sizeof(ConnectionReadyDefn::PositionIndicator);
     }
 
     inline std::int32_t locationOffset(std::int32_t index) const

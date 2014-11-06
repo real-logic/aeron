@@ -19,6 +19,8 @@
 #include <cstdint>
 #include <memory>
 #include <mintomic/mintomic.h>
+
+#include <util/Index.h>
 #include "AtomicBuffer.h"
 
 
@@ -68,7 +70,7 @@ private:
     AtomicBuffer m_buffer;
     std::int32_t m_counterId;
     CountersManager& m_countersManager;
-    size_t m_offset;
+    util::index_t m_offset;
 };
 
 }}}

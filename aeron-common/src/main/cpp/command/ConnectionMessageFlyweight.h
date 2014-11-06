@@ -61,7 +61,7 @@ class ConnectionMessageFlyweight : public common::Flyweight<ConnectionMessageDef
 public:
 	typedef ConnectionMessageFlyweight this_t;
 
-    inline ConnectionMessageFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
+    inline ConnectionMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
             : common::Flyweight<ConnectionMessageDefn>(buffer, offset)
     {
     }
@@ -110,7 +110,7 @@ public:
         return *this;
     }
 
-    std::size_t length()
+    util::index_t length()
     {
         return offsetof(ConnectionMessageDefn, channel.channelData) + m_struct.channel.channelLength;
     }

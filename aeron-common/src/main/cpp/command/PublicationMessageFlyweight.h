@@ -66,7 +66,7 @@ class PublicationMessageFlyweight : public CorrelatedMessageFlyweight
 public:
 	typedef PublicationMessageFlyweight this_t;
 
-	inline PublicationMessageFlyweight(concurrent::AtomicBuffer& buffer, size_t offset)
+	inline PublicationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
 		: CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<PublicationMessageDefn>(0))
 	{
 	}
@@ -104,7 +104,7 @@ public:
         return *this;
     }
 
-    std::size_t length()
+    util::index_t length()
     {
         return offsetof(PublicationMessageDefn, channel.channelData) + m_struct.channel.channelLength;
     }

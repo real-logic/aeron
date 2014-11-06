@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+#include <memory>
+
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
-#include <memory>
 
 #include "CountersManager.h"
 
@@ -27,13 +28,13 @@ CountersManager::CountersManager(const AtomicBuffer& labelsBuffer, const AtomicB
 {
 }
 
-void CountersManager::forEach(const std::function<void(int, const std::string &)> &f)
+void CountersManager::forEach(const std::function<void(std::int32_t, const std::string &)> &f)
 {
-    size_t labelsOffset = 0;
-    int size;
-    int id = 0;
+    util::index_t labelsOffset = 0;
+    util::index_t size;
+    std::int32_t id = 0;
 
-    while ((labelsOffset < (m_labelsBuffer.getCapacity() - sizeof(std::int32_t)))
+    while ((labelsOffset < (m_labelsBuffer.getCapacity() - (util::index_t)sizeof(std::int32_t)))
             && (size = m_labelsBuffer.getInt32(labelsOffset)) != 0)
     {
         if (size != UNREGISTERED_LABEL_SIZE)
@@ -50,7 +51,7 @@ void CountersManager::forEach(const std::function<void(int, const std::string &)
 std::int32_t CountersManager::allocate(const std::string& label)
 {
     std::int32_t ctrId = counterId();
-    size_t labelsOffset = labelOffset(ctrId);
+    util::index_t labelsOffset = labelOffset(ctrId);
 
     if (label.length() > LABEL_SIZE - sizeof(std::int32_t))
         throw util::IllegalArgumentException("Label too long", SOURCEINFO);
@@ -73,7 +74,7 @@ AtomicCounter::ptr_t CountersManager::newCounter(const std::string &label)
 
 void CountersManager::free(std::int32_t counterId)
 {
-    std::int32_t lsize = m_labelsBuffer.getInt32(labelOffset(counterId));
+    util::index_t lsize = m_labelsBuffer.getInt32(labelOffset(counterId));
     if (lsize == 0 || lsize == UNREGISTERED_LABEL_SIZE)
         throw util::IllegalArgumentException(util::strPrintf("Attempt to free unallocated ID: %d", counterId), SOURCEINFO);
 
@@ -82,12 +83,12 @@ void CountersManager::free(std::int32_t counterId)
     m_freeList.push_back(counterId);
 }
 
-size_t CountersManager::counterOffset(std::int32_t counterId)
+util::index_t CountersManager::counterOffset(std::int32_t counterId)
 {
     return counterId * COUNTER_SIZE;
 }
 
-size_t CountersManager::labelOffset(std::int32_t counterId)
+util::index_t CountersManager::labelOffset(std::int32_t counterId)
 {
     return counterId * LABEL_SIZE;
 }

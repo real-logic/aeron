@@ -17,6 +17,7 @@
 #include <array>
 #include <gtest/gtest.h>
 #include <util/Exceptions.h>
+#include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include <command/ConnectionMessageFlyweight.h>
 #include <command/ConnectionReadyFlyweight.h>
@@ -40,7 +41,7 @@ TEST (commandTests, testInstantiateFlyweights)
 {
     clearBuffer();
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
-    const size_t BASEOFFSET = 256;
+    const index_t BASEOFFSET = 256;
 
     std::string channelData = "channelData";
 
@@ -73,7 +74,7 @@ TEST (commandTests, testConnectionMessageFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
-    const size_t BASEOFFSET = 256;
+    const index_t BASEOFFSET = 256;
 
     std::string channelData = "channelData";
 
@@ -100,7 +101,7 @@ TEST (commandTests, testPublicationReadyFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
-    const size_t BASEOFFSET = 0;
+    const index_t BASEOFFSET = 0;
 
     ASSERT_NO_THROW({
         PublicationReadyFlyweight cmd(ab, BASEOFFSET);
@@ -126,7 +127,7 @@ TEST (commandTests, testConnectionReadyFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
-    const size_t BASEOFFSET = 0;
+    const index_t BASEOFFSET = 0;
 
     ASSERT_NO_THROW({
         ConnectionReadyFlyweight cmd(ab, BASEOFFSET);

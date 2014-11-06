@@ -20,6 +20,8 @@
 #include <cstdint>
 #include <deque>
 
+#include <util/Index.h>
+
 #include "AtomicBuffer.h"
 #include "AtomicCounter.h"
 
@@ -36,16 +38,16 @@ public:
     AtomicCounter::ptr_t newCounter(const std::string& label);
     void free(std::int32_t counterId);
 
-    size_t counterOffset(std::int32_t counterId);
-    size_t labelOffset(std::int32_t counterId);
+    util::index_t counterOffset(std::int32_t counterId);
+    util::index_t labelOffset(std::int32_t counterId);
 
-    static const size_t LABEL_SIZE = 1024;
-    static const size_t COUNTER_SIZE = 64;  // cache line size
+    static const util::index_t LABEL_SIZE = 1024;
+    static const util::index_t COUNTER_SIZE = 64;  // cache line size
 
 private:
-    static const std::int32_t UNREGISTERED_LABEL_SIZE = -1;
+    static const util::index_t UNREGISTERED_LABEL_SIZE = -1;
 
-    std::int32_t m_highwaterMark = 0;
+    util::index_t m_highwaterMark = 0;
 
     std::deque<std::int32_t> m_freeList;
 

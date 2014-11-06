@@ -65,7 +65,7 @@ class SubscriptionMessageFlyweight : public CorrelatedMessageFlyweight
 public:
 	typedef SubscriptionMessageFlyweight this_t;
 
-	inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer& buffer, size_t offset)
+	inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
 		: CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<SubscriptionMessageDefn>(0))
 	{
 	}
@@ -103,7 +103,7 @@ public:
 		return *this;
 	}
 
-	std::size_t length()
+    util::index_t length()
 	{
 		return offsetof(ConnectionMessageDefn, channel.channelData) + m_struct.channel.channelLength;
 	}

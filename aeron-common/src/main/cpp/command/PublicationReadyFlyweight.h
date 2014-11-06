@@ -131,7 +131,7 @@ class PublicationReadyFlyweight : public common::Flyweight<PublicationReadyDefn>
 public:
 	typedef PublicationReadyFlyweight this_t;
 
-	inline PublicationReadyFlyweight(concurrent::AtomicBuffer& buffer, size_t offset)
+	inline PublicationReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
 		: common::Flyweight<PublicationReadyDefn>(buffer, offset)
     {
     }

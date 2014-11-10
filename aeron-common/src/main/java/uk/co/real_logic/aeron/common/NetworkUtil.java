@@ -15,8 +15,13 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.util.Enumeration;
+import java.util.List;
 
 /**
  * Collection of network specific utility functions
@@ -79,5 +84,69 @@ public class NetworkUtil
         }
 
         return savedIfc;
+    }
+
+    private static boolean areEqual(byte[] a, byte[] b, int prefixLength)
+    {
+        if (a.length != b.length)
+        {
+            return false;
+        }
+
+        int currentLength = prefixLength;
+        int index = 0;
+        while (currentLength > 0)
+        {
+            int mask = (currentLength < 8) ? (1 << currentLength) - 1 : 0xFF;
+            if ((a[index] & mask) != (b[index] & mask))
+            {
+                return false;
+            }
+            index++;
+            currentLength -= 8;
+        }
+
+        return true;
+    }
+
+    public static NetworkInterface findByInetAddressAndMask(InetSocketAddress localAddress, int prefixLength) throws SocketException
+    {
+        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements())
+        {
+            byte[] queryAddress = localAddress.getAddress().getAddress();
+
+            NetworkInterface ifc = interfaces.nextElement();
+            List<InterfaceAddress> interfaceAddresses = ifc.getInterfaceAddresses();
+
+            for (InterfaceAddress interfaceAddress : interfaceAddresses)
+            {
+                byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
+
+                if (queryAddress.length == candidateAddress.length)
+                {
+                    int currentLength = prefixLength;
+                    int index = 0;
+                    while (currentLength > 0)
+                    {
+                        if (currentLength < 8)
+                        {
+                            int mask = (1 << currentLength) - 1;
+
+                            if ((queryAddress[index] & mask) != (candidateAddress[index] & mask))
+                            {
+                                continue;
+                            }
+                        }
+
+                        index++;
+                    }
+                }
+            }
+
+            interfaceAddresses.forEach(System.out::println);
+        }
+
+        return null;
     }
 }

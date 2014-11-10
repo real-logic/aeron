@@ -17,9 +17,12 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.aeron.common.NetworkUtil;
+import uk.co.real_logic.aeron.common.UriUtil;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 import java.net.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.net.InetAddress.getByAddress;
 
@@ -33,6 +36,7 @@ import static java.net.InetAddress.getByAddress;
  */
 public final class UdpChannel
 {
+    private static final String MASK_KEY = "mask";
     private static final int LAST_MULTICAST_DIGIT = 3;
     private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = NetworkUtil.determineDefaultMulticastInterface();
 
@@ -58,6 +62,7 @@ public final class UdpChannel
             final URI uri = new URI(uriStr);
             final String userInfo = uri.getUserInfo();
             final int uriPort = uri.getPort();
+            final Map<String, String> params = UriUtil.parseQueryString(uri, new HashMap<>());
 
             if (!"udp".equals(uri.getScheme()))
             {
@@ -83,7 +88,7 @@ public final class UdpChannel
 
                 final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
 
-                NetworkInterface localInterface = NetworkInterface.getByInetAddress(localAddress.getAddress());
+                NetworkInterface localInterface = findInterface(localAddress, params);
 
                 if (null == localInterface)
                 {
@@ -124,6 +129,23 @@ public final class UdpChannel
         catch (final Exception ex)
         {
             throw new InvalidChannelException(ex);
+        }
+    }
+
+    private static NetworkInterface findInterface(final InetSocketAddress localAddress, Map<String, String> params)
+        throws SocketException
+    {
+        if (params.containsKey(MASK_KEY))
+        {
+            int mask = Integer.parseInt(params.get(MASK_KEY));
+
+            NetworkInterface netInterface = NetworkUtil.findByInetAddressAndMask(localAddress, mask);
+
+            return netInterface;
+        }
+        else
+        {
+            return NetworkInterface.getByInetAddress(localAddress.getAddress());
         }
     }
 

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import static java.net.InetAddress.getByAddress;
+import static uk.co.real_logic.aeron.common.NetworkUtil.findAddressOnInterface;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -40,7 +41,7 @@ import uk.co.real_logic.agrona.BitUtil;
  */
 public final class UdpChannel
 {
-    private static final String MASK_KEY = "mask";
+    private static final String MASK_KEY = "subnetPrefix";
     private static final int LAST_MULTICAST_DIGIT = 3;
     private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = NetworkUtil.determineDefaultMulticastInterface();
 
@@ -90,8 +91,7 @@ public final class UdpChannel
                 final InetSocketAddress controlAddress = new InetSocketAddress(getByAddress(addressAsBytes), uriPort);
                 final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, uriPort);
 
-                final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
-
+                InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
                 NetworkInterface localInterface = findInterface(localAddress, params);
 
                 if (null == localInterface)
@@ -102,6 +102,10 @@ public final class UdpChannel
                     }
 
                     localInterface = DEFAULT_MULTICAST_INTERFACE;
+                }
+                else
+                {
+                    localAddress = resolveToAddressOfInterface(localInterface, localAddress, params);
                 }
 
                 context.localControlAddress(localAddress)
@@ -136,14 +140,30 @@ public final class UdpChannel
         }
     }
 
+    private static InetSocketAddress resolveToAddressOfInterface(
+        NetworkInterface localInterface, InetSocketAddress localAddress, Map<String, String> params)
+    {
+        if (params.containsKey(MASK_KEY))
+        {
+            final int subnetPrefix = Integer.parseInt(params.get(MASK_KEY));
+            final InetAddress interfaceAddress =
+                findAddressOnInterface(localInterface, localAddress.getAddress(), subnetPrefix);
+            return new InetSocketAddress(interfaceAddress, localAddress.getPort());
+        }
+        else
+        {
+            return localAddress;
+        }
+    }
+
     private static NetworkInterface findInterface(final InetSocketAddress localAddress, Map<String, String> params)
         throws SocketException
     {
         if (params.containsKey(MASK_KEY))
         {
-            final int mask = Integer.parseInt(params.get(MASK_KEY));
+            final int subnetPrefix = Integer.parseInt(params.get(MASK_KEY));
 
-            final NetworkInterface netInterface = NetworkUtil.findByInetAddressAndMask(localAddress, mask);
+            final NetworkInterface netInterface = NetworkUtil.findByInetAddressAndSubnetPrefix(localAddress, subnetPrefix);
 
             return netInterface;
         }

@@ -154,24 +154,16 @@ public class UdpChannelTest
         final UdpChannel udpChannelLocalPort = UdpChannel.parse("udp://127.0.0.1:40455@224.0.1.1:40456");
         final UdpChannel udpChannelAllSystems = UdpChannel.parse("udp://localhost@all-systems.mcast.net:40456");
 
+        final UdpChannel udpChannelSubnet = UdpChannel.parse("udp://localhost@224.0.1.1:40456?subnetPrefix=24");
+        final UdpChannel udpChannelSubnetLocal = UdpChannel.parse("udp://127.0.0.0@224.0.1.1:40456?subnetPrefix=24");
+        final UdpChannel udpChannelSubnetLocalPort = UdpChannel.parse("udp://127.0.0.0:40455@224.0.1.1:40456?subnetPrefix=24");
+
         assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-e0000101-40456"));
         assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-7f000001-0-e0000001-40456"));
-    }
-
-    @Test
-//    @Ignore
-    public void shouldHandleCanonicalFormForMulticastWithMaskCorrectly() throws Exception
-    {
-        final UdpChannel udpChannel = UdpChannel.parse("udp://172.29.1.0@224.0.1.1:40456?mask=24");
-//        final UdpChannel udpChannelLocal = UdpChannel.parse("udp://127.0.0.1@224.0.1.1:40456");
-//        final UdpChannel udpChannelLocalPort = UdpChannel.parse("udp://127.0.0.1:40455@224.0.1.1:40456");
-//        final UdpChannel udpChannelAllSystems = UdpChannel.parse("udp://localhost@all-systems.mcast.net:40456");
-//
-//        assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-//        assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-//        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-e0000101-40456"));
-//        assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-7f000001-0-e0000001-40456"));
+        assertThat(udpChannelSubnet.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
+        assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
+        assertThat(udpChannelSubnetLocalPort.canonicalForm(), is("UDP-7f000001-40455-e0000101-40456"));
     }
 }

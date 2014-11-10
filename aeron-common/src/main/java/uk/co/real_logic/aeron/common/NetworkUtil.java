@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -27,6 +28,17 @@ import java.util.List;
  */
 public class NetworkUtil
 {
+    private static final int[] LEADING_BIT_MASK_TABLE =
+    {
+        0b10000000,
+        0b11000000,
+        0b11100000,
+        0b11110000,
+        0b11111000,
+        0b11111100,
+        0b11111110
+    };
+
     /**
      * Try to set the default multicast interface.
      *
@@ -85,14 +97,37 @@ public class NetworkUtil
         return savedIfc;
     }
 
-    private static final int[] MASK_TABLE = { 128, 192, 224, 240, 248, 252, 254 };
+    public static NetworkInterface findByInetAddressAndSubnetPrefix(
+        InetSocketAddress localAddress, int prefixLength)
+        throws SocketException
+    {
+        final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        while (interfaces.hasMoreElements())
+        {
+            final byte[] queryAddress = localAddress.getAddress().getAddress();
+
+            final NetworkInterface ifc = interfaces.nextElement();
+
+            if (null != findAddressOnInterface(ifc, queryAddress, prefixLength))
+            {
+                return ifc;
+            }
+        }
+
+        return null;
+    }
+
+    public static InetAddress findAddressOnInterface(NetworkInterface ifc, InetAddress address, int subnetPrefix)
+    {
+        return findAddressOnInterface(ifc, address.getAddress(), subnetPrefix);
+    }
 
     static int leadingBitMask(int prefixLength)
     {
-        return MASK_TABLE[prefixLength - 1];
+        return LEADING_BIT_MASK_TABLE[prefixLength - 1];
     }
 
-    static boolean areEqual(byte[] a, byte[] b, int prefixLength)
+    static boolean isMatchWithPrefix(byte[] a, byte[] b, int prefixLength)
     {
         if (a.length != b.length)
         {
@@ -115,25 +150,16 @@ public class NetworkUtil
         return true;
     }
 
-    public static NetworkInterface findByInetAddressAndMask(
-        InetSocketAddress localAddress, int prefixLength)
-        throws SocketException
+    static InetAddress findAddressOnInterface(NetworkInterface ifc, byte[] queryAddress, int prefixLength)
     {
-        final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        while (interfaces.hasMoreElements())
+        final List<InterfaceAddress> interfaceAddresses = ifc.getInterfaceAddresses();
+
+        for (final InterfaceAddress interfaceAddress : interfaceAddresses)
         {
-            final byte[] queryAddress = localAddress.getAddress().getAddress();
-
-            final NetworkInterface ifc = interfaces.nextElement();
-            final List<InterfaceAddress> interfaceAddresses = ifc.getInterfaceAddresses();
-
-            for (final InterfaceAddress interfaceAddress : interfaceAddresses)
+            final byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
+            if (isMatchWithPrefix(candidateAddress, queryAddress, prefixLength))
             {
-                final byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
-                if (areEqual(candidateAddress, queryAddress, prefixLength))
-                {
-                    return ifc;
-                }
+                return interfaceAddress.getAddress();
             }
         }
 

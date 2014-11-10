@@ -11,9 +11,9 @@ public class NetworkUtilTest
     @Test
     public void shouldNotMatchIfLengthsAreDifferent()
     {
-        assertFalse(NetworkUtil.areEqual(new byte[0], new byte[3], 0));
-        assertFalse(NetworkUtil.areEqual(new byte[1], new byte[2], 0));
-        assertFalse(NetworkUtil.areEqual(new byte[5], new byte[5000], 0));
+        assertFalse(NetworkUtil.isMatchWithPrefix(new byte[0], new byte[3], 0));
+        assertFalse(NetworkUtil.isMatchWithPrefix(new byte[1], new byte[2], 0));
+        assertFalse(NetworkUtil.isMatchWithPrefix(new byte[5], new byte[5000], 0));
     }
 
     @Test
@@ -21,7 +21,7 @@ public class NetworkUtilTest
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'c', 'd' };
-        assertTrue(NetworkUtil.areEqual(a, b, 32));
+        assertTrue(NetworkUtil.isMatchWithPrefix(a, b, 32));
     }
 
     @Test
@@ -29,7 +29,7 @@ public class NetworkUtilTest
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'c', 'e' };
-        assertTrue(NetworkUtil.areEqual(a, b, 24));
+        assertTrue(NetworkUtil.isMatchWithPrefix(a, b, 24));
     }
 
     @Test
@@ -37,13 +37,13 @@ public class NetworkUtilTest
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'd', 'd' };
-        assertFalse(NetworkUtil.areEqual(a, b, 24));
+        assertFalse(NetworkUtil.isMatchWithPrefix(a, b, 24));
     }
 
     @Test
     public void shouldMatchIfAllBytesWithPrefixUnalignedMatch() throws Exception
     {
-        assertTrue(NetworkUtil.areEqual(
+        assertTrue(NetworkUtil.isMatchWithPrefix(
             asBytes(0b10101010_11111111_00000000_00000000),
             asBytes(0b10101010_11111110_00000000_00000000),
             15));
@@ -52,7 +52,7 @@ public class NetworkUtilTest
     @Test
     public void shouldNotMatchIfNotAllBytesWithUnalignedPrefixMatch() throws Exception
     {
-        assertFalse(NetworkUtil.areEqual(
+        assertFalse(NetworkUtil.isMatchWithPrefix(
             asBytes(0b10101010_11111111_00000000_00000000),
             asBytes(0b10101010_11111111_10000000_00000000),
             17));

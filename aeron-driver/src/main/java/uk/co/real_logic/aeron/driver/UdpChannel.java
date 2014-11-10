@@ -15,16 +15,20 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.aeron.common.NetworkUtil;
-import uk.co.real_logic.aeron.common.UriUtil;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import static java.net.InetAddress.getByAddress;
 
-import java.net.*;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.net.InetAddress.getByAddress;
+import uk.co.real_logic.aeron.common.NetworkUtil;
+import uk.co.real_logic.aeron.common.UriUtil;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import uk.co.real_logic.agrona.BitUtil;
 
 /**
  * Encapsulation of UDP Channels
@@ -137,9 +141,9 @@ public final class UdpChannel
     {
         if (params.containsKey(MASK_KEY))
         {
-            int mask = Integer.parseInt(params.get(MASK_KEY));
+            final int mask = Integer.parseInt(params.get(MASK_KEY));
 
-            NetworkInterface netInterface = NetworkUtil.findByInetAddressAndMask(localAddress, mask);
+            final NetworkInterface netInterface = NetworkUtil.findByInetAddressAndMask(localAddress, mask);
 
             return netInterface;
         }

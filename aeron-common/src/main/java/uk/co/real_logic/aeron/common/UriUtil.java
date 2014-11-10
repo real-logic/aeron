@@ -9,11 +9,17 @@ public class UriUtil
     public static <M extends Map<String, String>> M parseQueryString(URI uri, M queryParams)
         throws MalformedURLException
     {
-        String query = uri.getQuery();
-        String[] pairs = query.split("&");
-        for (String pair : pairs)
+        final String query = uri.getQuery();
+
+        if (null == query)
         {
-            String[] componentParts = pair.split("=");
+            return queryParams;
+        }
+
+        final String[] pairs = query.split("&");
+        for (final String pair : pairs)
+        {
+            final String[] componentParts = pair.split("=");
             if (componentParts.length == 2)
             {
                 queryParams.put(componentParts[0], componentParts[1]);

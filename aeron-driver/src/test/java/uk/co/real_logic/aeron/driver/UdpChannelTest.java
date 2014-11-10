@@ -16,9 +16,8 @@
 
 package uk.co.real_logic.aeron.driver;
 
-import org.hamcrest.Matcher;
-import org.junit.Test;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -27,8 +26,10 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
+import org.hamcrest.Matcher;
+import org.junit.Test;
+
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 public class UdpChannelTest
 {
@@ -160,6 +161,7 @@ public class UdpChannelTest
     }
 
     @Test
+//    @Ignore
     public void shouldHandleCanonicalFormForMulticastWithMaskCorrectly() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("udp://172.29.1.0@224.0.1.1:40456?mask=24");

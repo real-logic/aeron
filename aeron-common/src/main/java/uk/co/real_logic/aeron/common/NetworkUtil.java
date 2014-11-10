@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
@@ -86,7 +85,14 @@ public class NetworkUtil
         return savedIfc;
     }
 
-    private static boolean areEqual(byte[] a, byte[] b, int prefixLength)
+    private static final int[] MASK_TABLE = { 128, 192, 224, 240, 248, 252, 254 };
+
+    static int leadingBitMask(int prefixLength)
+    {
+        return MASK_TABLE[prefixLength - 1];
+    }
+
+    static boolean areEqual(byte[] a, byte[] b, int prefixLength)
     {
         if (a.length != b.length)
         {
@@ -95,9 +101,9 @@ public class NetworkUtil
 
         int currentLength = prefixLength;
         int index = 0;
-        while (currentLength > 0)
+        while (currentLength > 0 && index < a.length)
         {
-            int mask = (currentLength < 8) ? (1 << currentLength) - 1 : 0xFF;
+            final int mask = (currentLength < 8) ? leadingBitMask(currentLength) : 0xFF;
             if ((a[index] & mask) != (b[index] & mask))
             {
                 return false;
@@ -109,42 +115,26 @@ public class NetworkUtil
         return true;
     }
 
-    public static NetworkInterface findByInetAddressAndMask(InetSocketAddress localAddress, int prefixLength) throws SocketException
+    public static NetworkInterface findByInetAddressAndMask(
+        InetSocketAddress localAddress, int prefixLength)
+        throws SocketException
     {
-        Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+        final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements())
         {
-            byte[] queryAddress = localAddress.getAddress().getAddress();
+            final byte[] queryAddress = localAddress.getAddress().getAddress();
 
-            NetworkInterface ifc = interfaces.nextElement();
-            List<InterfaceAddress> interfaceAddresses = ifc.getInterfaceAddresses();
+            final NetworkInterface ifc = interfaces.nextElement();
+            final List<InterfaceAddress> interfaceAddresses = ifc.getInterfaceAddresses();
 
-            for (InterfaceAddress interfaceAddress : interfaceAddresses)
+            for (final InterfaceAddress interfaceAddress : interfaceAddresses)
             {
-                byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
-
-                if (queryAddress.length == candidateAddress.length)
+                final byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
+                if (areEqual(candidateAddress, queryAddress, prefixLength))
                 {
-                    int currentLength = prefixLength;
-                    int index = 0;
-                    while (currentLength > 0)
-                    {
-                        if (currentLength < 8)
-                        {
-                            int mask = (1 << currentLength) - 1;
-
-                            if ((queryAddress[index] & mask) != (candidateAddress[index] & mask))
-                            {
-                                continue;
-                            }
-                        }
-
-                        index++;
-                    }
+                    return ifc;
                 }
             }
-
-            interfaceAddresses.forEach(System.out::println);
         }
 
         return null;

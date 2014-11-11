@@ -1,13 +1,33 @@
 package uk.co.real_logic.aeron.common;
 
+import static java.lang.Short.parseShort;
+import static java.net.InetAddress.getByName;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static uk.co.real_logic.aeron.common.NetworkUtil.filterBySubnet;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.IdentityHashMap;
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Test;
 
 public class NetworkUtilTest
 {
-
     @Test
     public void shouldNotMatchIfLengthsAreDifferent()
     {
@@ -56,6 +76,137 @@ public class NetworkUtilTest
             asBytes(0b10101010_11111111_00000000_00000000),
             asBytes(0b10101010_11111111_10000000_00000000),
             17));
+    }
+
+    @Test
+    public void shouldFilterBySubnetAndFindOneResult() throws Exception
+    {
+        final NetworkInterfaceStub stub = new NetworkInterfaceStub();
+
+        final NetworkInterface ifc1 = stub.add("192.168.0.1/24");
+        stub.add("10.0.0.2/8");
+
+        final Collection<NetworkInterface> filteredBySubnet =
+            NetworkUtil.filterBySubnet(stub, getByName("192.168.0.0"), 24);
+
+        assertThat(filteredBySubnet.size(), is(1));
+        assertThat(first(filteredBySubnet), is(ifc1));
+    }
+
+    @Test
+    public void shouldFilterBySubnetAndFindNoResults() throws Exception
+    {
+        final NetworkInterfaceStub stub = new NetworkInterfaceStub();
+
+        stub.add("192.168.0.1/24");
+        stub.add("10.0.0.2/8");
+
+        final Collection<NetworkInterface> filteredBySubnet =
+            NetworkUtil.filterBySubnet(stub, getByName("192.169.0.0"), 24);
+
+        assertThat(filteredBySubnet.size(), is(0));
+    }
+
+    @Test
+    public void shouldFilterBySubnetAndFindMultipleResultsOrderedByMatchLength() throws Exception
+    {
+        final NetworkInterfaceStub stub = new NetworkInterfaceStub();
+
+        stub.add("10.0.0.2/8");
+        final NetworkInterface ifc1 = stub.add("192.0.0.0/8");
+        final NetworkInterface ifc2 = stub.add("192.168.1.1/24");
+        final NetworkInterface ifc3 = stub.add("192.168.0.0/16");
+
+        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("192.0.0.0"), 8);
+
+        assertThat(filteredBySubnet.size(), is(3));
+        final Iterator<NetworkInterface> it = filteredBySubnet.iterator();
+        assertThat(it.next(), sameInstance(ifc2));
+        assertThat(it.next(), sameInstance(ifc3));
+        assertThat(it.next(), sameInstance(ifc1));
+    }
+
+    private <T> T first(Collection<T> c)
+    {
+        return c.iterator().next();
+    }
+
+    private static class NetworkInterfaceStub implements NetworkInterfaceShim
+    {
+        private int counter = 0;
+
+        private final IdentityHashMap<NetworkInterface, List<InterfaceAddress>> addressesByInterface =
+            new IdentityHashMap<>();
+
+        @Override
+        public Enumeration<NetworkInterface> getNetworkInterfaces() throws SocketException
+        {
+            return Collections.enumeration(addressesByInterface.keySet());
+        }
+
+        @Override
+        public List<InterfaceAddress> getInterfaceAddresses(NetworkInterface ifc)
+        {
+            return addressesByInterface.get(ifc);
+        }
+
+        public NetworkInterface add(String...ips) throws UnknownHostException
+        {
+            final List<InterfaceAddress> ias = new ArrayList<>();
+            for (final String ip : ips)
+            {
+                final String[] parts = ip.split("/");
+                ias.add(newInterfaceAddress(getByName(parts[0]), parseShort(parts[1])));
+            }
+
+            final NetworkInterface ifc = newNetworkInterface(String.valueOf(counter++));
+            addressesByInterface.put(ifc, ias);
+
+            return ifc;
+        }
+    }
+
+    private static NetworkInterface newNetworkInterface(String name)
+    {
+        try
+        {
+            final Constructor<NetworkInterface> ctor = NetworkInterface.class.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            final Field nameField = NetworkInterface.class.getDeclaredField("name");
+            nameField.setAccessible(true);
+
+            final NetworkInterface networkInterface = ctor.newInstance();
+            nameField.set(networkInterface, name);
+
+            return networkInterface;
+        }
+        catch (final Exception e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static InterfaceAddress newInterfaceAddress(InetAddress inetAddress, short maskLength)
+    {
+        try
+        {
+            final Constructor<InterfaceAddress> ctor = InterfaceAddress.class.getDeclaredConstructor();
+            ctor.setAccessible(true);
+            final Field addressField = InterfaceAddress.class.getDeclaredField("address");
+            addressField.setAccessible(true);
+            final Field maskLengthField = InterfaceAddress.class.getDeclaredField("maskLength");
+            maskLengthField.setAccessible(true);
+
+            final InterfaceAddress interfaceAddress = ctor.newInstance();
+            addressField.set(interfaceAddress, inetAddress);
+            maskLengthField.set(interfaceAddress, maskLength);
+
+            return interfaceAddress;
+        }
+        catch (final Exception e)
+        {
+            throw new RuntimeException(e);
+        }
     }
 
     private static byte[] asBytes(int i)

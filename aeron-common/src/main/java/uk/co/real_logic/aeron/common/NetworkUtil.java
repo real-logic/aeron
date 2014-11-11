@@ -15,11 +15,17 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import static java.lang.Integer.compare;
+import static java.lang.Integer.numberOfTrailingZeros;
+import static java.util.Collections.sort;
+
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -28,17 +34,6 @@ import java.util.List;
  */
 public class NetworkUtil
 {
-    private static final int[] LEADING_BIT_MASK_TABLE =
-    {
-        0b10000000,
-        0b11000000,
-        0b11100000,
-        0b11110000,
-        0b11111000,
-        0b11111100,
-        0b11111110
-    };
-
     /**
      * Try to set the default multicast interface.
      *
@@ -97,35 +92,81 @@ public class NetworkUtil
         return savedIfc;
     }
 
+    public static Collection<NetworkInterface> filterBySubnet(
+        NetworkInterfaceShim shim, InetAddress address, int subnetPrefix)
+        throws SocketException
+    {
+        final Enumeration<NetworkInterface> ifcs = shim.getNetworkInterfaces();
+        final List<FilterResult> filterResults = new ArrayList<>();
+        final byte[] queryAddress = address.getAddress();
+
+        while (ifcs.hasMoreElements())
+        {
+            final NetworkInterface ifc = ifcs.nextElement();
+            final InterfaceAddress interfaceAddress = findAddressOnInterface(shim, ifc, queryAddress, subnetPrefix);
+
+            if (null != interfaceAddress)
+            {
+                filterResults.add(new FilterResult(interfaceAddress, ifc));
+            }
+        }
+
+        sort(filterResults);
+
+        final List<NetworkInterface> results = new ArrayList<>();
+        filterResults.forEach(filterResult -> results.add(filterResult.ifc));
+
+        return results;
+    }
+
     public static NetworkInterface findByInetAddressAndSubnetPrefix(
         InetSocketAddress localAddress, int prefixLength)
         throws SocketException
     {
-        final Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-        while (interfaces.hasMoreElements())
+        final Collection<NetworkInterface> ifcs =
+            filterBySubnet(NetworkInterfaceShim.DEFAULT, localAddress.getAddress(), prefixLength);
+
+        if (ifcs.size() == 0)
         {
-            final byte[] queryAddress = localAddress.getAddress().getAddress();
+            return null;
+        }
 
-            final NetworkInterface ifc = interfaces.nextElement();
+        return ifcs.iterator().next();
+    }
 
-            if (null != findAddressOnInterface(ifc, queryAddress, prefixLength))
+    public static InetAddress findAddressOnInterface(NetworkInterface ifc, InetAddress address, int subnetPrefix)
+    {
+        final InterfaceAddress interfaceAddress =
+            findAddressOnInterface(NetworkInterfaceShim.DEFAULT, ifc, address.getAddress(), subnetPrefix);
+
+        if (null == interfaceAddress)
+        {
+            return null;
+        }
+
+        return interfaceAddress.getAddress();
+    }
+
+    static InterfaceAddress findAddressOnInterface(
+        NetworkInterfaceShim shim, NetworkInterface ifc, byte[] queryAddress, int prefixLength)
+    {
+        final List<InterfaceAddress> interfaceAddresses = shim.getInterfaceAddresses(ifc);
+
+        for (final InterfaceAddress interfaceAddress : interfaceAddresses)
+        {
+            final byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
+            if (isMatchWithPrefix(candidateAddress, queryAddress, prefixLength))
             {
-                return ifc;
+                return interfaceAddress;
             }
         }
 
         return null;
     }
 
-    public static InetAddress findAddressOnInterface(NetworkInterface ifc, InetAddress address, int subnetPrefix)
-    {
-        return findAddressOnInterface(ifc, address.getAddress(), subnetPrefix);
-    }
-
-    static int leadingBitMask(int prefixLength)
-    {
-        return LEADING_BIT_MASK_TABLE[prefixLength - 1];
-    }
+    //
+    // Byte matching and calculation.
+    //
 
     static boolean isMatchWithPrefix(byte[] a, byte[] b, int prefixLength)
     {
@@ -134,35 +175,61 @@ public class NetworkUtil
             return false;
         }
 
-        int currentLength = prefixLength;
-        int index = 0;
-        while (currentLength > 0 && index < a.length)
+        if (a.length == 4)
         {
-            final int mask = (currentLength < 8) ? leadingBitMask(currentLength) : 0xFF;
-            if ((a[index] & mask) != (b[index] & mask))
-            {
-                return false;
-            }
-            index++;
-            currentLength -= 8;
+            final int mask = prefixLengthToIpV4Mask(prefixLength);
+            return (toInt(a) & mask) == (toInt(b) & mask);
         }
 
-        return true;
+        throw new IllegalArgumentException("How many bytes does an IP address have again?");
     }
 
-    static InetAddress findAddressOnInterface(NetworkInterface ifc, byte[] queryAddress, int prefixLength)
+    static int calculateMatchLength(final byte[] bs, int subnetPrefix)
     {
-        final List<InterfaceAddress> interfaceAddresses = ifc.getInterfaceAddresses();
-
-        for (final InterfaceAddress interfaceAddress : interfaceAddresses)
+        if (bs.length == 4)
         {
-            final byte[] candidateAddress = interfaceAddress.getAddress().getAddress();
-            if (isMatchWithPrefix(candidateAddress, queryAddress, prefixLength))
-            {
-                return interfaceAddress.getAddress();
-            }
+            final int addressAsInt = toInt(bs);
+            final int mask = prefixLengthToIpV4Mask(subnetPrefix);
+            return 32 - numberOfTrailingZeros(addressAsInt & mask);
         }
 
-        return null;
+        throw new IllegalArgumentException("How many bytes does an IP address have again?");
+    }
+
+    private static int prefixLengthToIpV4Mask(int subnetPrefix)
+    {
+        return 0xFFFFFFFF ^ ((1 << 32 - subnetPrefix) - 1);
+    }
+
+    // TODO: Should these be common?
+    private static int toInt(byte[] b)
+    {
+        return ((b[3] & 0xFF)) + ((b[2] & 0xFF) << 8) + ((b[1] & 0xFF) << 16) + ((b[0]) << 24);
+    }
+
+    static long toLong(byte[] b)
+    {
+        return ((b[7] & 0xFFL)) + ((b[6] & 0xFFL) << 8) + ((b[5] & 0xFFL) << 16) + ((b[4] & 0xFFL) << 24) +
+            ((b[3] & 0xFFL) << 32) + ((b[2] & 0xFFL) << 40) + ((b[1] & 0xFFL) << 48) + (((long) b[0]) << 56);
+    }
+
+    private static class FilterResult implements Comparable<FilterResult>
+    {
+        private final InterfaceAddress interfaceAddress;
+        private final NetworkInterface ifc;
+
+        public FilterResult(InterfaceAddress interfaceAddress, NetworkInterface ifc)
+        {
+            this.interfaceAddress = interfaceAddress;
+            this.ifc = ifc;
+        }
+
+        @Override
+        public int compareTo(FilterResult o)
+        {
+            return -compare(
+                interfaceAddress.getNetworkPrefixLength(),
+                o.interfaceAddress.getNetworkPrefixLength());
+        }
     }
 }

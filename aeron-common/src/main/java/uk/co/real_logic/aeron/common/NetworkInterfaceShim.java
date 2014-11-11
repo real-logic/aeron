@@ -6,7 +6,7 @@ import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.List;
 
-public interface NetworkInterfaceShim
+interface NetworkInterfaceShim
 {
     Enumeration<NetworkInterface> getNetworkInterfaces() throws SocketException;
     List<InterfaceAddress> getInterfaceAddresses(NetworkInterface ifc);

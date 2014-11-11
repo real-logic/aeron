@@ -93,8 +93,13 @@ public class NetworkUtil
         return savedIfc;
     }
 
-    public static Collection<NetworkInterface> filterBySubnet(
-        NetworkInterfaceShim shim, InetAddress address, int subnetPrefix)
+    public static Collection<NetworkInterface> filterBySubnet(InetAddress address, int subnetPrefix)
+        throws SocketException
+    {
+        return filterBySubnet(NetworkInterfaceShim.DEFAULT, address, subnetPrefix);
+    }
+
+    static Collection<NetworkInterface> filterBySubnet(NetworkInterfaceShim shim, InetAddress address, int subnetPrefix)
         throws SocketException
     {
         final Enumeration<NetworkInterface> ifcs = shim.getNetworkInterfaces();

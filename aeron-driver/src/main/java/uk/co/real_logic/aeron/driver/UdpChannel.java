@@ -15,7 +15,11 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import static java.lang.Integer.parseInt;
 import static java.net.InetAddress.getByAddress;
+import static java.net.NetworkInterface.getByInetAddress;
+import static uk.co.real_logic.aeron.common.NetworkUtil.determineDefaultMulticastInterface;
+import static uk.co.real_logic.aeron.common.NetworkUtil.filterBySubnet;
 import static uk.co.real_logic.aeron.common.NetworkUtil.findAddressOnInterface;
 
 import java.net.InetAddress;
@@ -23,6 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -92,7 +97,7 @@ public final class UdpChannel
                 final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, uriPort);
 
                 InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
-                NetworkInterface localInterface = findInterface(localAddress, params);
+                NetworkInterface localInterface = findInterface(userInfo, params);
 
                 if (null == localInterface)
                 {
@@ -156,20 +161,70 @@ public final class UdpChannel
         }
     }
 
-    private static NetworkInterface findInterface(final InetSocketAddress localAddress, Map<String, String> params)
-        throws SocketException
+    private static NetworkInterface findInterface(String userInfo, Map<String, String> params) throws SocketException
     {
-        if (params.containsKey(MASK_KEY))
+        if (null == userInfo)
         {
-            final int subnetPrefix = Integer.parseInt(params.get(MASK_KEY));
+            return determineDefaultMulticastInterface();
+        }
 
-            final NetworkInterface netInterface = NetworkUtil.findByInetAddressAndSubnetPrefix(localAddress, subnetPrefix);
+        final InetSocketAddress userAddress = determineLocalAddressFromUserInfo(userInfo);
 
-            return netInterface;
+        if (!params.containsKey(MASK_KEY))
+        {
+            final NetworkInterface ifc = getByInetAddress(userAddress.getAddress());
+
+            if (null == ifc)
+            {
+                throw new IllegalArgumentException("No interface matching: " + userAddress);
+            }
+
+            if (!ifc.supportsMulticast())
+            {
+                throw new IllegalArgumentException(
+                    "Interface: " + ifc.getDisplayName() +
+                    " for address: " + userAddress.getAddress() + ", does not support multicast");
+            }
+
+            return ifc;
         }
         else
         {
-            return NetworkInterface.getByInetAddress(localAddress.getAddress());
+            final int subnetPrefix = parseInt(params.get(MASK_KEY));
+            final Collection<NetworkInterface> filteredIfcs = filterBySubnet(userAddress.getAddress(), subnetPrefix);
+
+            // Results are ordered by prefix length
+            for (final NetworkInterface ifc : filteredIfcs)
+            {
+                if (ifc.supportsMulticast())
+                {
+                    return ifc;
+                }
+            }
+
+            final StringBuilder builder = new StringBuilder();
+            builder
+                .append("Unable to find multicast interface matching criteria: ")
+                .append(userAddress.getAddress())
+                .append("/")
+                .append(subnetPrefix);
+
+            if (filteredIfcs.size() > 0)
+            {
+                builder.append("\n  Candidates:\n");
+                for (final NetworkInterface ifc : filteredIfcs)
+                {
+                    builder
+                        .append("  - Name: ")
+                        .append(ifc.getDisplayName())
+                        .append(", addresses: ")
+                        .append(ifc.getInterfaceAddresses())
+                        .append(", multicast: ")
+                        .append(ifc.supportsMulticast());
+                }
+            }
+
+            throw new IllegalArgumentException(builder.toString());
         }
     }
 

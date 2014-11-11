@@ -93,6 +93,18 @@ public class NetworkUtil
         return savedIfc;
     }
 
+    /**
+     * Search for a list of network interfaces that match the specified address and subnet prefix.
+     * The results will be ordered by the length of the subnet prefix
+     * ({@link InterfaceAddress#getNetworkPrefixLength()}).  If no results match, then the collection
+     * will be empty.
+     *
+     * @param address
+     * @param subnetPrefix
+     * @return {@link NetworkInterface}s that match the supplied criteria, ordered by the length
+     * of the subnet prefix.  Empty if none match.
+     * @throws SocketException
+     */
     public static Collection<NetworkInterface> filterBySubnet(InetAddress address, int subnetPrefix)
         throws SocketException
     {
@@ -123,21 +135,6 @@ public class NetworkUtil
         filterResults.forEach(filterResult -> results.add(filterResult.ifc));
 
         return results;
-    }
-
-    public static NetworkInterface findByInetAddressAndSubnetPrefix(
-        InetSocketAddress localAddress, int prefixLength)
-        throws SocketException
-    {
-        final Collection<NetworkInterface> ifcs =
-            filterBySubnet(NetworkInterfaceShim.DEFAULT, localAddress.getAddress(), prefixLength);
-
-        if (ifcs.size() == 0)
-        {
-            return null;
-        }
-
-        return ifcs.iterator().next();
     }
 
     public static InetAddress findAddressOnInterface(NetworkInterface ifc, InetAddress address, int subnetPrefix)

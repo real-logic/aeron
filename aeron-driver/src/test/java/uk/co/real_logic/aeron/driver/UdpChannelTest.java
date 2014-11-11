@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assume.assumeTrue;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -28,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hamcrest.Matcher;
-import org.junit.Assume;
 import org.junit.Test;
 
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
@@ -78,6 +78,8 @@ public class UdpChannelTest
     @Test
     public void shouldParseValidMulticastAddress() throws Exception
     {
+        assumeTrue(loopbackSupportsMulticast());
+
         final UdpChannel udpChannel = UdpChannel.parse("udp://localhost@224.10.9.9:40124");
 
         assertThat(udpChannel.localControl(), is(new InetSocketAddress("localhost", 0)));
@@ -151,7 +153,7 @@ public class UdpChannelTest
     @Test
     public void shouldHandleCanonicalFormForMulticastCorrectly() throws Exception
     {
-        Assume.assumeTrue(loopbackSupportsMulticast());
+        assumeTrue(loopbackSupportsMulticast());
 
         final UdpChannel udpChannel = UdpChannel.parse("udp://localhost@224.0.1.1:40456");
         final UdpChannel udpChannelLocal = UdpChannel.parse("udp://127.0.0.1@224.0.1.1:40456");

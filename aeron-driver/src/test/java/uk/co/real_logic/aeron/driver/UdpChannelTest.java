@@ -22,11 +22,13 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.hamcrest.Matcher;
+import org.junit.Assume;
 import org.junit.Test;
 
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
@@ -149,6 +151,8 @@ public class UdpChannelTest
     @Test
     public void shouldHandleCanonicalFormForMulticastCorrectly() throws Exception
     {
+        Assume.assumeTrue(loopbackSupportsMulticast());
+
         final UdpChannel udpChannel = UdpChannel.parse("udp://localhost@224.0.1.1:40456");
         final UdpChannel udpChannelLocal = UdpChannel.parse("udp://127.0.0.1@224.0.1.1:40456");
         final UdpChannel udpChannelLocalPort = UdpChannel.parse("udp://127.0.0.1:40455@224.0.1.1:40456");
@@ -165,5 +169,10 @@ public class UdpChannelTest
         assertThat(udpChannelSubnet.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(udpChannelSubnetLocalPort.canonicalForm(), is("UDP-7f000001-40455-e0000101-40456"));
+    }
+
+    private boolean loopbackSupportsMulticast() throws SocketException, UnknownHostException
+    {
+        return NetworkInterface.getByInetAddress(InetAddress.getByName("127.0.0.1")).supportsMulticast();
     }
 }

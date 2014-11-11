@@ -16,7 +16,8 @@
 package uk.co.real_logic.aeron.common;
 
 import static java.lang.Integer.compare;
-import static java.lang.Integer.numberOfTrailingZeros;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
 import static java.util.Collections.sort;
 
 import java.net.InetAddress;
@@ -178,19 +179,17 @@ public class NetworkUtil
         if (a.length == 4)
         {
             final int mask = prefixLengthToIpV4Mask(prefixLength);
+
             return (toInt(a) & mask) == (toInt(b) & mask);
         }
-
-        throw new IllegalArgumentException("How many bytes does an IP address have again?");
-    }
-
-    static int calculateMatchLength(final byte[] bs, int subnetPrefix)
-    {
-        if (bs.length == 4)
+        else if (a.length == 16)
         {
-            final int addressAsInt = toInt(bs);
-            final int mask = prefixLengthToIpV4Mask(subnetPrefix);
-            return 32 - numberOfTrailingZeros(addressAsInt & mask);
+            final long upperMask = prefixLengthToIpV6Mask(min(prefixLength, 64));
+            final long lowerMask = prefixLengthToIpV6Mask(max(prefixLength - 64, 0));
+
+            return
+                (upperMask & toLong(a, 0)) == (upperMask & toLong(b, 0)) &&
+                (lowerMask & toLong(b, 8)) == (lowerMask & toLong(b, 8));
         }
 
         throw new IllegalArgumentException("How many bytes does an IP address have again?");
@@ -198,7 +197,12 @@ public class NetworkUtil
 
     private static int prefixLengthToIpV4Mask(int subnetPrefix)
     {
-        return 0xFFFFFFFF ^ ((1 << 32 - subnetPrefix) - 1);
+        return 0 == subnetPrefix ? 0 : 0xFFFFFFFF ^ ((1 << 32 - subnetPrefix) - 1);
+    }
+
+    private static long prefixLengthToIpV6Mask(int subnetPrefix)
+    {
+        return 0 == subnetPrefix ? 0 : 0xFFFFFFFFFFFFFFFFL ^ ((1L << 64 - subnetPrefix) - 1);
     }
 
     // TODO: Should these be common?
@@ -207,10 +211,11 @@ public class NetworkUtil
         return ((b[3] & 0xFF)) + ((b[2] & 0xFF) << 8) + ((b[1] & 0xFF) << 16) + ((b[0]) << 24);
     }
 
-    static long toLong(byte[] b)
+    static long toLong(byte[] b, int off)
     {
-        return ((b[7] & 0xFFL)) + ((b[6] & 0xFFL) << 8) + ((b[5] & 0xFFL) << 16) + ((b[4] & 0xFFL) << 24) +
-            ((b[3] & 0xFFL) << 32) + ((b[2] & 0xFFL) << 40) + ((b[1] & 0xFFL) << 48) + (((long) b[0]) << 56);
+        return ((b[off + 7] & 0xFFL)) + ((b[off + 6] & 0xFFL) << 8) + ((b[off + 5] & 0xFFL) << 16) +
+            ((b[off + 4] & 0xFFL) << 24) + ((b[off + 3] & 0xFFL) << 32) + ((b[off + 2] & 0xFFL) << 40) +
+            ((b[off + 1] & 0xFFL) << 48) + (((long) b[off]) << 56);
     }
 
     private static class FilterResult implements Comparable<FilterResult>

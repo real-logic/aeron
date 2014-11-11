@@ -86,8 +86,7 @@ public class NetworkUtilTest
         final NetworkInterface ifc1 = stub.add("192.168.0.1/24");
         stub.add("10.0.0.2/8");
 
-        final Collection<NetworkInterface> filteredBySubnet =
-            NetworkUtil.filterBySubnet(stub, getByName("192.168.0.0"), 24);
+        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("192.168.0.0"), 24);
 
         assertThat(filteredBySubnet.size(), is(1));
         assertThat(first(filteredBySubnet), is(ifc1));
@@ -101,8 +100,7 @@ public class NetworkUtilTest
         stub.add("192.168.0.1/24");
         stub.add("10.0.0.2/8");
 
-        final Collection<NetworkInterface> filteredBySubnet =
-            NetworkUtil.filterBySubnet(stub, getByName("192.169.0.0"), 24);
+        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("192.169.0.0"), 24);
 
         assertThat(filteredBySubnet.size(), is(0));
     }
@@ -126,7 +124,55 @@ public class NetworkUtilTest
         assertThat(it.next(), sameInstance(ifc1));
     }
 
-    private <T> T first(Collection<T> c)
+    @Test
+    public void shouldFilerBySubnetAndFindOneIpV6Result() throws Exception
+    {
+        final NetworkInterfaceStub stub = new NetworkInterfaceStub();
+
+        final NetworkInterface ifc1 = stub.add("fe80:0:0:0001:0002:0:0:1/80");
+        stub.add("fe80:0:0:0002:0003:0:0:1/80");
+
+        final Collection<NetworkInterface> filteredBySubnet =
+            filterBySubnet(stub, getByName("fe80:0:0:0001:0:0:0:0"), 80);
+
+        assertThat(filteredBySubnet.size(), is(1));
+        assertThat(first(filteredBySubnet), is(ifc1));
+    }
+
+    @Test
+    public void shouldFilterBySubnetAndFindNoIpV6Results() throws Exception
+    {
+        final NetworkInterfaceStub stub = new NetworkInterfaceStub();
+
+        stub.add("fe80:0:0:0001:0:0:0:1/64");
+        stub.add("fe80:0:0:0002:0:0:0:1/64");
+
+        final Collection<NetworkInterface> filteredBySubnet =
+            filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
+
+        assertThat(filteredBySubnet.size(), is(0));
+    }
+
+    @Test
+    public void shouldFilterBySubnetAndFindMultipleIpV6ResultsOrderedByMatchLength() throws Exception
+    {
+        final NetworkInterfaceStub stub = new NetworkInterfaceStub();
+
+        stub.add("ee80:0:0:0001:0:0:0:1/64");
+        final NetworkInterface ifc1 = stub.add("fe80:0:0:0:0:0:0:1/16");
+        final NetworkInterface ifc2 = stub.add("fe80:0001:0:0:0:0:0:1/32");
+        final NetworkInterface ifc3 = stub.add("fe80:0001:abcd:0:0:0:0:1/48");
+
+        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0:0:0:0:0"), 16);
+
+        assertThat(filteredBySubnet.size(), is(3));
+        final Iterator<NetworkInterface> it = filteredBySubnet.iterator();
+        assertThat(it.next(), sameInstance(ifc3));
+        assertThat(it.next(), sameInstance(ifc2));
+        assertThat(it.next(), sameInstance(ifc1));
+    }
+
+    private static <T> T first(Collection<T> c)
     {
         return c.iterator().next();
     }

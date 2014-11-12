@@ -40,15 +40,15 @@ public class TransferToPing
         final FileChannel sendFileChannel = Common.createTmpFileChannel();
         final ByteBuffer sendByteBuffer = sendFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel sendDatagramChannel = DatagramChannel.open();
-        sendDatagramChannel.bind(new InetSocketAddress("localhost", 40123));
         init(sendDatagramChannel);
+        sendDatagramChannel.bind(new InetSocketAddress("localhost", 40123));
         sendDatagramChannel.connect(new InetSocketAddress("localhost", 40124));
 
         final FileChannel receiveFileChannel = Common.createTmpFileChannel();
         final ByteBuffer receiveByteBuffer = receiveFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel receiveDatagramChannel = DatagramChannel.open();
-        receiveDatagramChannel.bind(new InetSocketAddress("localhost", 40126));
         init(receiveDatagramChannel);
+        receiveDatagramChannel.bind(new InetSocketAddress("localhost", 40126));
         receiveDatagramChannel.connect(new InetSocketAddress("localhost", 40125));
 
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -119,7 +119,7 @@ public class TransferToPing
                 throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
             }
 
-            final long duration = System.nanoTime() - receiveByteBuffer.get(SIZE_OF_LONG);
+            final long duration = System.nanoTime() - receiveByteBuffer.getLong(SIZE_OF_LONG);
             histogram.recordValue(duration);
         }
 

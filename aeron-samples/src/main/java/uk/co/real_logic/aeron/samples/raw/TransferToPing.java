@@ -40,14 +40,16 @@ public class TransferToPing
         final FileChannel sendFileChannel = Common.createTmpFileChannel();
         final ByteBuffer sendByteBuffer = sendFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel sendDatagramChannel = DatagramChannel.open();
+        sendDatagramChannel.bind(new InetSocketAddress("localhost", 40123));
         init(sendDatagramChannel);
-        sendDatagramChannel.connect(new InetSocketAddress("localhost", Common.PING_PORT));
+        sendDatagramChannel.connect(new InetSocketAddress("localhost", 40124));
 
         final FileChannel receiveFileChannel = Common.createTmpFileChannel();
         final ByteBuffer receiveByteBuffer = receiveFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel receiveDatagramChannel = DatagramChannel.open();
+        receiveDatagramChannel.bind(new InetSocketAddress("localhost", 40126));
         init(receiveDatagramChannel);
-        receiveDatagramChannel.connect(new InetSocketAddress("localhost", Common.PONG_PORT));
+        receiveDatagramChannel.connect(new InetSocketAddress("localhost", 40125));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));

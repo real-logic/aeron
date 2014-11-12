@@ -16,10 +16,10 @@ import org.gradle.plugins.ide.eclipse.model.Classpath
  * limitations under the License.
  */
 
-defaultTasks 'clean', 'build'
-
 apply plugin: 'maven'
 apply plugin: 'signing'
+
+defaultTasks 'clean', 'build', 'install'
 
 ext {
     group = aeronGroup

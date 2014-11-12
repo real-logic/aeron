@@ -90,7 +90,7 @@ public class Common
         return tmpSet;
     }
 
-    static FileChannel createTmpFileChannel() throws IOException
+    public static FileChannel createTmpFileChannel() throws IOException
     {
         final File file = File.createTempFile("buffer-", ".dat");
         file.deleteOnExit();

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import static java.lang.Integer.parseInt;
+import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
 import static java.net.NetworkInterface.getByInetAddress;
 import static uk.co.real_logic.aeron.common.NetworkUtil.determineDefaultMulticastInterface;
@@ -46,9 +47,9 @@ import uk.co.real_logic.agrona.BitUtil;
  */
 public final class UdpChannel
 {
-    private static final String MASK_KEY = "subnetPrefix";
+    private static final String SUBNET_PREFIX_KEY = "subnetPrefix";
     private static final int LAST_MULTICAST_DIGIT = 3;
-    private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = NetworkUtil.determineDefaultMulticastInterface();
+    private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = determineDefaultMulticastInterface();
 
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -96,22 +97,8 @@ public final class UdpChannel
                 final InetSocketAddress controlAddress = new InetSocketAddress(getByAddress(addressAsBytes), uriPort);
                 final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, uriPort);
 
-                InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
-                NetworkInterface localInterface = findInterface(userInfo, params);
-
-                if (null == localInterface)
-                {
-                    if (null == DEFAULT_MULTICAST_INTERFACE)
-                    {
-                        throw new IllegalArgumentException("Interface not specified and default not set");
-                    }
-
-                    localInterface = DEFAULT_MULTICAST_INTERFACE;
-                }
-                else
-                {
-                    localAddress = resolveToAddressOfInterface(localInterface, localAddress, params);
-                }
+                final NetworkInterface localInterface = findInterface(userInfo, params);
+                final InetSocketAddress localAddress = resolveToAddressOfInterface(localInterface, userInfo, params);
 
                 context.localControlAddress(localAddress)
                        .remoteControlAddress(controlAddress)
@@ -146,13 +133,27 @@ public final class UdpChannel
     }
 
     private static InetSocketAddress resolveToAddressOfInterface(
-        NetworkInterface localInterface, InetSocketAddress localAddress, Map<String, String> params)
+        NetworkInterface localInterface, String userInfo, Map<String, String> params)
     {
-        if (params.containsKey(MASK_KEY))
+        if (null == userInfo)
         {
-            final int subnetPrefix = Integer.parseInt(params.get(MASK_KEY));
+            final InetAddress address = findAddressOnInterface(localInterface, NetworkUtil.inAddrAny(), 0);
+            return new InetSocketAddress(address, 0);
+        }
+
+        final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
+
+        if (params.containsKey(SUBNET_PREFIX_KEY))
+        {
+            final int subnetPrefix = Integer.parseInt(params.get(SUBNET_PREFIX_KEY));
             final InetAddress interfaceAddress =
                 findAddressOnInterface(localInterface, localAddress.getAddress(), subnetPrefix);
+
+            if (null == interfaceAddress)
+            {
+                throw new IllegalStateException();
+            }
+
             return new InetSocketAddress(interfaceAddress, localAddress.getPort());
         }
         else
@@ -165,12 +166,17 @@ public final class UdpChannel
     {
         if (null == userInfo)
         {
-            return determineDefaultMulticastInterface();
+            if (null == DEFAULT_MULTICAST_INTERFACE)
+            {
+                throw new IllegalArgumentException("Interface not specified and default not set");
+            }
+
+            return DEFAULT_MULTICAST_INTERFACE;
         }
 
         final InetSocketAddress userAddress = determineLocalAddressFromUserInfo(userInfo);
 
-        if (!params.containsKey(MASK_KEY))
+        if (!params.containsKey(SUBNET_PREFIX_KEY))
         {
             final NetworkInterface ifc = getByInetAddress(userAddress.getAddress());
 
@@ -181,16 +187,14 @@ public final class UdpChannel
 
             if (!ifc.supportsMulticast())
             {
-                throw new IllegalArgumentException(
-                    "Interface: " + ifc.getDisplayName() +
-                    " for address: " + userAddress.getAddress() + ", does not support multicast");
+                throw new IllegalArgumentException(errorInvalidMulticastInterface(ifc, userAddress));
             }
 
             return ifc;
         }
         else
         {
-            final int subnetPrefix = parseInt(params.get(MASK_KEY));
+            final int subnetPrefix = parseInt(params.get(SUBNET_PREFIX_KEY));
             final Collection<NetworkInterface> filteredIfcs = filterBySubnet(userAddress.getAddress(), subnetPrefix);
 
             // Results are ordered by prefix length
@@ -202,35 +206,9 @@ public final class UdpChannel
                 }
             }
 
-            final StringBuilder builder = new StringBuilder();
-            builder
-                .append("Unable to find multicast interface matching criteria: ")
-                .append(userAddress.getAddress())
-                .append("/")
-                .append(subnetPrefix);
-
-            if (filteredIfcs.size() > 0)
-            {
-                builder.append("\n  Candidates:\n");
-                for (final NetworkInterface ifc : filteredIfcs)
-                {
-                    builder
-                        .append("  - Name: ")
-                        .append(ifc.getDisplayName())
-                        .append(", addresses: ")
-                        .append(ifc.getInterfaceAddresses())
-                        .append(", multicast: ")
-                        .append(ifc.supportsMulticast());
-                }
-            }
-
-            throw new IllegalArgumentException(builder.toString());
+            throw new IllegalArgumentException(
+                errorNoMatchingInterfaces(filteredIfcs, userAddress, subnetPrefix));
         }
-    }
-
-    private static UdpChannel malformedUri(final String uriStr)
-    {
-        throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
 
     private static InetSocketAddress determineLocalAddressFromUserInfo(final String userInfo)
@@ -460,5 +438,52 @@ public final class UdpChannel
             this.localInterface = ifc;
             return this;
         }
+    }
+
+    //
+    // Error generation.
+    //
+
+    private static String errorInvalidMulticastInterface(final NetworkInterface ifc, final InetSocketAddress userAddress)
+    {
+        return "Interface: " + ifc.getDisplayName() +
+            " for address: " + userAddress.getAddress() + ", does not support multicast";
+    }
+
+    private static String errorNoMatchingInterfaces(
+        final Collection<NetworkInterface> filteredIfcs, final InetSocketAddress userAddress, final int subnetPrefix)
+        throws SocketException
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder
+            .append("Unable to find multicast interface matching criteria: ")
+            .append(userAddress.getAddress())
+            .append("/")
+            .append(subnetPrefix);
+
+        if (filteredIfcs.size() > 0)
+        {
+            builder
+                .append(lineSeparator())
+                .append("  Candidates:");
+            for (final NetworkInterface ifc : filteredIfcs)
+            {
+                builder
+                    .append(lineSeparator())
+                    .append("  - Name: ")
+                    .append(ifc.getDisplayName())
+                    .append(", addresses: ")
+                    .append(ifc.getInterfaceAddresses())
+                    .append(", multicast: ")
+                    .append(ifc.supportsMulticast());
+            }
+        }
+
+        return builder.toString();
+    }
+
+    private static UdpChannel malformedUri(final String uriStr)
+    {
+        throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
 }

@@ -21,6 +21,7 @@ import static java.lang.Math.min;
 import static java.util.Collections.sort;
 
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -237,5 +238,10 @@ public class NetworkUtil
                 interfaceAddress.getNetworkPrefixLength(),
                 o.interfaceAddress.getNetworkPrefixLength());
         }
+    }
+
+    public static InetAddress inAddrAny()
+    {
+        return new InetSocketAddress(0).getAddress();
     }
 }

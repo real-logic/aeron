@@ -27,22 +27,59 @@ using namespace aeron::common::concurrent::ringbuffer;
 using namespace aeron::common::concurrent;
 
 #define BUFFER_SZ (1024 + RingBufferDescriptor::TRAILER_LENGTH)
+#define ODD_BUFFER_SZ (1023 + RingBufferDescriptor::TRAILER_LENGTH)
 
 typedef std::array<std::uint8_t, BUFFER_SZ> buffer_t;
-static MINT_DECL_ALIGNED(buffer_t testBuffer, 16);
+typedef std::array<std::uint8_t, ODD_BUFFER_SZ> odd_sized_buffer_t;
 
-static void clearBuffer()
+class ManyToOneRingBufferTest : public testing::Test
 {
-    testBuffer.fill(0);
+public:
+    static const std::int32_t MSG_TYPE_ID = 101;
+
+    ManyToOneRingBufferTest()
+        : m_ab(&m_buffer[0], m_buffer.size()), m_ringBuffer(m_ab), m_srcAb(&m_srcBuffer[0], m_srcBuffer.size())
+    {
+        clear();
+    }
+
+protected:
+    MINT_DECL_ALIGNED(buffer_t m_buffer, 16);
+    MINT_DECL_ALIGNED(buffer_t m_srcBuffer, 16);
+    AtomicBuffer m_ab;
+    AtomicBuffer m_srcAb;
+    ManyToOneRingBuffer m_ringBuffer;
+
+    inline void clear()
+    {
+        m_buffer.fill(0);
+        m_srcBuffer.fill(0);
+    }
+};
+
+TEST_F(ManyToOneRingBufferTest, shouldCalculateCapacityForBuffer)
+{
+    ASSERT_EQ(m_ab.getCapacity(), BUFFER_SZ);
+    ASSERT_EQ(m_ringBuffer.capacity(), BUFFER_SZ - RingBufferDescriptor::TRAILER_LENGTH);
 }
 
-TEST(manyToOneRingBufferTests, shouldCalculateCapacityForBuffer)
+TEST_F(ManyToOneRingBufferTest, shouldThrowForCapacityNotPowerOfTwo)
 {
-    clearBuffer();
+    MINT_DECL_ALIGNED(odd_sized_buffer_t testBuffer, 16);
+
+    testBuffer.fill(0);
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
 
-    ASSERT_EQ(ab.getCapacity(), BUFFER_SZ);
-    ManyToOneRingBuffer ringBuffer (ab);
+    ASSERT_THROW(
+    {
+        ManyToOneRingBuffer ringBuffer (ab);
+    }, aeron::common::util::IllegalArgumentException);
+}
 
-    ASSERT_EQ(ringBuffer.capacity(), 1024);
+TEST_F(ManyToOneRingBufferTest, shouldThrowWhenMaxMessageSizeExceeded)
+{
+    ASSERT_THROW(
+    {
+        m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, 0, m_ringBuffer.maxMsgLength() + 1);
+    }, aeron::common::util::IllegalArgumentException);
 }

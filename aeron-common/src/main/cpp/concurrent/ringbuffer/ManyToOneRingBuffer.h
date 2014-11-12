@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
 #define INCLUDED_AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
 
+#include <functional>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include "RingBufferDescriptor.h"
@@ -105,6 +106,11 @@ public:
         }
 
         return messagesRead;
+    }
+
+    inline util::index_t maxMsgLength()
+    {
+        return m_maxMsgLength;
     }
 
     inline std::int64_t nextCorrelationId()

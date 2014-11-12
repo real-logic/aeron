@@ -34,7 +34,8 @@ add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})
 # executable for this modules tests
 add_executable(concurrentTests
                 tests/testConcurrent.cpp
-                tests/testCountersManager.cpp)
+                tests/testCountersManager.cpp
+                tests/testManyToOneRingBuffer.cpp)
 
 target_link_libraries(concurrentTests
                         aeron_concurrent

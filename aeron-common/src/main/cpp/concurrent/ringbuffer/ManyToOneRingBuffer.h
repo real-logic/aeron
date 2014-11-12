@@ -88,7 +88,7 @@ public:
                 const std::int32_t recordIndex = headIndex + bytesRead;
                 const std::int32_t recordLength = waitForRecordLengthVolatile(m_buffer, recordIndex);
 
-                const std::int32_t msgLength = msgLength(m_buffer, recordIndex);
+                const std::int32_t messageLength = msgLength(m_buffer, recordIndex);
                 const std::int32_t msgTypeId = msgType(m_buffer, recordIndex);
 
                 bytesRead += recordLength;
@@ -96,7 +96,7 @@ public:
                 if (msgTypeId != PADDING_MSG_TYPE_ID)
                 {
                     ++messagesRead;
-                    handler(msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex), msgLength);
+                    handler(msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex), messageLength);
                 }
             }
             // TODO: RAII for catching exceptions from handler call
@@ -135,7 +135,7 @@ private:
     util::index_t m_tailCounterIndex;
     util::index_t m_correlationIdCounterIndex;
     util::index_t m_consumerHeartbeatIndex;
-    
+
     util::index_t claimCapacity(util::index_t requiredCapacity)
     {
         const std::int64_t head = headVolatile();
@@ -230,7 +230,7 @@ private:
         buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
     }
 
-    inline static std::int32_t waitForRecordLengthVolatile(concurrent::AtomicBuffer& buffer, util::index_t recordIndex) const
+    inline static std::int32_t waitForRecordLengthVolatile(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
     {
         std::int32_t recordLength;
 
@@ -243,12 +243,12 @@ private:
         return recordLength;
     }
 
-    inline static std::int32_t msgLength(concurrent::AtomicBuffer& buffer, util::index_t recordIndex) const
+    inline static std::int32_t msgLength(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
     {
         return buffer.getInt32(RecordDescriptor::msgLengthOffset(recordIndex));
     }
 
-    inline static std::int32_t msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex) const
+    inline static std::int32_t msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
     {
         return buffer.getInt32(RecordDescriptor::msgTypeOffset(recordIndex));
     }

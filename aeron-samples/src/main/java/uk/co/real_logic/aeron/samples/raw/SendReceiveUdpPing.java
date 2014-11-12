@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.samples.raw;
 
 import org.HdrHistogram.Histogram;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.agrona.BitUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -119,7 +120,7 @@ public class SendReceiveUdpPing
                 throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
             }
 
-            final long duration = System.nanoTime() - timestamp;
+            final long duration = System.nanoTime() - buffer.getLong(BitUtil.SIZE_OF_LONG);
             histogram.recordValue(duration);
         }
 

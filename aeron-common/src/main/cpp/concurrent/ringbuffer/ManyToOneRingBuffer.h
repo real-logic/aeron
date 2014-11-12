@@ -108,6 +108,11 @@ public:
         return messagesRead;
     }
 
+    inline util::index_t maxMsgLength()
+    {
+        return m_maxMsgLength;
+    }
+
     inline std::int64_t nextCorrelationId()
     {
         return m_buffer.getAndAddInt64(m_correlationIdCounterIndex, 1);

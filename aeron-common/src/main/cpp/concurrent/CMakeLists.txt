@@ -22,7 +22,11 @@ SET(SOURCE
 SET(HEADERS
     AtomicBuffer.h
     AtomicCounter.h
-    CountersManager.h)
+    CountersManager.h
+    ringbuffer/RingBuffer.h
+    ringbuffer/RecordDescriptor.h
+    ringbuffer/ManyToOneRingBuffer.h
+    ringbuffer/RingBufferDescriptor.h)
 
 # static library
 add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})

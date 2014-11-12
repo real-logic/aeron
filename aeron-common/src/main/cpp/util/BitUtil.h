@@ -24,6 +24,21 @@ namespace aeron { namespace common { namespace util {
 
 namespace BitUtil
 {
+    /** Size of the data blocks used by the CPU cache sub-system in bytes. */
+    static const size_t CACHE_LINE_SIZE = 64;
+
+    template <typename value_t>
+    inline bool isPowerOfTwo(value_t value)
+    {
+        return value > 0 && ((value & (~value + 1)) == value);
+    }
+
+    template <typename value_t>
+    inline value_t align(value_t value, value_t alignment)
+    {
+        return (value + (alignment - 1)) & ~(alignment - 1);
+    }
+
     template <typename value_t>
     bool isEven(value_t value)
     {

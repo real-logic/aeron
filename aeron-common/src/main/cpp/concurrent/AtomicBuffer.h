@@ -187,6 +187,14 @@ public:
         return mint_fetch_add_32_relaxed((mint_atomic32_t*)(m_buffer + offset), delta);
     }
 
+    inline void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+    {
+        boundsCheck(index, length);
+        srcBuffer.boundsCheck(srcIndex, length);
+
+        ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
+    }
+
     inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)
     {
         boundsCheck(offset, length);

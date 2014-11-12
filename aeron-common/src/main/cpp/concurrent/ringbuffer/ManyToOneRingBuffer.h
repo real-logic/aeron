@@ -117,7 +117,7 @@ public:
         m_buffer.putInt64Ordered(m_consumerHeartbeatIndex, time);
     }
 
-    inline std::int64_t consumerHeartbeatTimeNs()
+    inline std::int64_t consumerHeartbeatTimeNs() const
     {
         return m_buffer.getInt64Ordered(m_consumerHeartbeatIndex);
     }
@@ -127,6 +127,15 @@ private:
     static const util::index_t INSUFFICIENT_CAPACITY = -1;
     static const std::int32_t PADDING_MSG_TYPE_ID = -1;
 
+    concurrent::AtomicBuffer m_buffer;
+    util::index_t m_capacity;
+    util::index_t m_mask;
+    util::index_t m_maxMsgLength;
+    util::index_t m_headCounterIndex;
+    util::index_t m_tailCounterIndex;
+    util::index_t m_correlationIdCounterIndex;
+    util::index_t m_consumerHeartbeatIndex;
+    
     util::index_t claimCapacity(util::index_t requiredCapacity)
     {
         const std::int64_t head = headVolatile();
@@ -221,7 +230,7 @@ private:
         buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
     }
 
-    inline static std::int32_t waitForRecordLengthVolatile(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
+    inline static std::int32_t waitForRecordLengthVolatile(concurrent::AtomicBuffer& buffer, util::index_t recordIndex) const
     {
         std::int32_t recordLength;
 
@@ -234,12 +243,12 @@ private:
         return recordLength;
     }
 
-    inline static std::int32_t msgLength(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
+    inline static std::int32_t msgLength(concurrent::AtomicBuffer& buffer, util::index_t recordIndex) const
     {
         return buffer.getInt32(RecordDescriptor::msgLengthOffset(recordIndex));
     }
 
-    inline static std::int32_t msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
+    inline static std::int32_t msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex) const
     {
         return buffer.getInt32(RecordDescriptor::msgTypeOffset(recordIndex));
     }
@@ -248,15 +257,6 @@ private:
     {
         buffer.setMemory(position, length, 0);
     }
-
-    concurrent::AtomicBuffer m_buffer;
-    util::index_t m_capacity;
-    util::index_t m_mask;
-    util::index_t m_maxMsgLength;
-    util::index_t m_headCounterIndex;
-    util::index_t m_tailCounterIndex;
-    util::index_t m_correlationIdCounterIndex;
-    util::index_t m_consumerHeartbeatIndex;
 };
 
 }}}}

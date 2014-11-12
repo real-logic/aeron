@@ -17,12 +17,14 @@
 package uk.co.real_logic.aeron.samples.raw;
 
 import uk.co.real_logic.aeron.driver.NioSelectedKeySet;
+import uk.co.real_logic.agrona.IoUtil;
 
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.StandardSocketOptions;
-import java.nio.channels.DatagramChannel;
-import java.nio.channels.Selector;
+import java.nio.channels.*;
+
+import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 
 public class Common
 {
@@ -86,5 +88,17 @@ public class Common
         }
 
         return tmpSet;
+    }
+
+    static FileChannel createTmpFileChannel() throws IOException
+    {
+        final File file = File.createTempFile("buffer-", ".dat");
+        file.deleteOnExit();
+
+        final RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+        final FileChannel fileChannel = randomAccessFile.getChannel();
+        IoUtil.fill(fileChannel, 0, MTU_LENGTH_DEFAULT, (byte)0);
+
+        return fileChannel;
     }
 }

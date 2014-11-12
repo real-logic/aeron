@@ -13,61 +13,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.samples.raw;
 
 import org.HdrHistogram.Histogram;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
-import uk.co.real_logic.agrona.BitUtil;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
+import java.nio.channels.FileChannel;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 import static uk.co.real_logic.aeron.samples.raw.Common.init;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
-/**
- * Benchmark used to calculate latency of underlying system.
- *
- * @see ReceiveSendUdpPong
- */
-public class SendReceiveUdpPing
+public class TransferToPing
 {
     public static void main(final String[] args) throws IOException
     {
-        int numChannels = 1;
-        if (1 == args.length)
-        {
-            numChannels = Integer.parseInt(args[0]);
-        }
-
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
-        final ByteBuffer buffer = ByteBuffer.allocateDirect(MTU_LENGTH_DEFAULT);
+        final FileChannel sendFileChannel = Common.createTmpFileChannel();
+        final ByteBuffer sendByteBuffer = sendFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
+        final DatagramChannel sendDatagramChannel = DatagramChannel.open();
+        init(sendDatagramChannel);
+        sendDatagramChannel.connect(new InetSocketAddress("localhost", Common.PING_PORT));
 
-        final DatagramChannel[] receiveChannels = new DatagramChannel[numChannels];
-        for (int i = 0; i < receiveChannels.length; i++)
-        {
-            receiveChannels[i] = DatagramChannel.open();
-            init(receiveChannels[i]);
-            receiveChannels[i].bind(new InetSocketAddress("localhost", Common.PONG_PORT + i));
-        }
-
-        final InetSocketAddress sendAddress = new InetSocketAddress("localhost", Common.PING_PORT);
-        final DatagramChannel sendChannel = DatagramChannel.open();
-        init(sendChannel);
+        final FileChannel receiveFileChannel = Common.createTmpFileChannel();
+        final ByteBuffer receiveByteBuffer = receiveFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
+        final DatagramChannel receiveDatagramChannel = DatagramChannel.open();
+        init(receiveDatagramChannel);
+        receiveDatagramChannel.connect(new InetSocketAddress("localhost", Common.PONG_PORT));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
         while (running.get())
         {
-            measureRoundTrip(histogram, sendAddress, buffer, receiveChannels, sendChannel, running);
+            measureRoundTrip(
+                histogram,
+                receiveFileChannel,
+                receiveDatagramChannel,
+                receiveByteBuffer,
+                sendFileChannel,
+                sendDatagramChannel,
+                sendByteBuffer,
+                running);
 
             histogram.reset();
             System.gc();
@@ -77,25 +72,30 @@ public class SendReceiveUdpPing
 
     private static void measureRoundTrip(
         final Histogram histogram,
-        final InetSocketAddress sendAddress,
-        final ByteBuffer buffer,
-        final DatagramChannel[] receiveChannels,
-        final DatagramChannel sendChannel,
+        final FileChannel receiveFileChannel,
+        final DatagramChannel receiveDatagramChannel,
+        final ByteBuffer receiveByteBuffer,
+        final FileChannel sendFileChannel,
+        final DatagramChannel sendDatagramChannel,
+        final ByteBuffer sendByteBuffer,
         final AtomicBoolean running)
         throws IOException
     {
+        final int packetSize = SIZE_OF_LONG * 2;
+
         for (int sequenceNumber = 0; sequenceNumber < Common.NUM_MESSAGES; sequenceNumber++)
         {
             final long timestamp = System.nanoTime();
 
-            buffer.clear();
-            buffer.putLong(sequenceNumber);
-            buffer.putLong(timestamp);
-            buffer.flip();
+            sendByteBuffer.putLong(0, sequenceNumber);
+            sendByteBuffer.putLong(SIZE_OF_LONG, timestamp);
 
-            sendChannel.send(buffer, sendAddress);
+            final long bytesSent = sendFileChannel.transferTo(0, packetSize, sendDatagramChannel);
+            if (packetSize != bytesSent)
+            {
+                throw new IllegalStateException("Invalid bytes sent " + bytesSent);
+            }
 
-            buffer.clear();
             boolean available = false;
             while (!available)
             {
@@ -104,23 +104,20 @@ public class SendReceiveUdpPing
                     return;
                 }
 
-                for (int i = receiveChannels.length - 1; i >=0; i--)
+                final long bytesReceived = receiveFileChannel.transferFrom(receiveDatagramChannel, 0, packetSize);
+                if (packetSize == bytesReceived)
                 {
-                    if (null != receiveChannels[i].receive(buffer))
-                    {
-                        available = true;
-                        break;
-                    }
+                    available = true;
                 }
             }
 
-            final long receivedSequenceNumber = buffer.getLong(0);
+            final long receivedSequenceNumber = receiveByteBuffer.getLong(0);
             if (receivedSequenceNumber != sequenceNumber)
             {
                 throw new IllegalStateException("Data Loss:" + sequenceNumber + " to " + receivedSequenceNumber);
             }
 
-            final long duration = System.nanoTime() - buffer.getLong(BitUtil.SIZE_OF_LONG);
+            final long duration = System.nanoTime() - receiveByteBuffer.get(SIZE_OF_LONG);
             histogram.recordValue(duration);
         }
 

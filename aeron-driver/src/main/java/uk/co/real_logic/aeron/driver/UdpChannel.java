@@ -486,4 +486,20 @@ public final class UdpChannel
     {
         throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
+
+    public String description()
+    {
+        final StringBuilder builder = new StringBuilder("UdpChannel - ");
+        if (null != localInterface)
+        {
+            builder
+                .append("interface: ")
+                .append(localInterface.getDisplayName())
+                .append(", ");
+        }
+        builder.append("localData: ").append(localData);
+        builder.append(", remoteData: ").append(remoteData);
+
+        return builder.toString();
+    }
 }

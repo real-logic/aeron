@@ -195,6 +195,11 @@ public:
         ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
     }
 
+    inline void getBytes(util::index_t index, concurrent::AtomicBuffer& dstBuffer, util::index_t dstIndex, util::index_t length)
+    {
+        dstBuffer.putBytes(dstIndex, *this, index, length);
+    }
+
     inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)
     {
         boundsCheck(offset, length);

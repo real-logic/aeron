@@ -25,6 +25,9 @@
 
 namespace aeron { namespace common { namespace concurrent { namespace ringbuffer {
 
+/** The read handler function signature */
+typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> handler_t;
+
 class ManyToOneRingBuffer
 {
 public:
@@ -71,7 +74,7 @@ public:
         return true;
     }
 
-    int read(const std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)>& handler, int messageCountLimit)
+    int read(const handler_t& handler, int messageCountLimit)
     {
         const std::int64_t tail = tailVolatile();
         const std::int64_t head = headVolatile();
@@ -94,7 +97,7 @@ public:
 
                 bytesRead += recordLength;
 
-                if (msgTypeId != PADDING_MSG_TYPE_ID)
+                if (msgTypeId != RecordDescriptor::PADDING_MSG_TYPE_ID)
                 {
                     ++messagesRead;
                     handler(msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex), messageLength);
@@ -106,6 +109,11 @@ public:
         }
 
         return messagesRead;
+    }
+
+    inline int read(const handler_t& handler)
+    {
+        return read(handler, INT_MAX);
     }
 
     inline util::index_t maxMsgLength()
@@ -131,7 +139,6 @@ public:
 private:
 
     static const util::index_t INSUFFICIENT_CAPACITY = -1;
-    static const std::int32_t PADDING_MSG_TYPE_ID = -1;
 
     concurrent::AtomicBuffer m_buffer;
     util::index_t m_capacity;
@@ -211,7 +218,7 @@ private:
 
     inline static void writePaddingRecord(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, util::index_t padding)
     {
-        msgType(buffer, recordIndex, PADDING_MSG_TYPE_ID);
+        msgType(buffer, recordIndex, RecordDescriptor::PADDING_MSG_TYPE_ID);
         recordLengthOrdered(buffer, recordIndex, padding);
     }
 

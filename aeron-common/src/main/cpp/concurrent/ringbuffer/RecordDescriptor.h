@@ -39,6 +39,7 @@ namespace RecordDescriptor {
 
     static const util::index_t HEADER_LENGTH = sizeof(std::int32_t) * 4;
     static const util::index_t ALIGNMENT = 32;
+    static const std::int32_t PADDING_MSG_TYPE_ID = -1;
 
     inline static util::index_t lengthOffset(util::index_t recordOffset)
     {

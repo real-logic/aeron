@@ -149,6 +149,14 @@ public class EventLogger
         }
     }
 
+    public void logChannelCreated(String description)
+    {
+        if (isEnabled(EventCode.CHANNEL_CREATION, ENABLED_EVENT_CODES))
+        {
+            logString(EventCode.CHANNEL_CREATION, description);
+        }
+    }
+
     public void logInvocation()
     {
         if (isEnabled(INVOCATION, ENABLED_EVENT_CODES))

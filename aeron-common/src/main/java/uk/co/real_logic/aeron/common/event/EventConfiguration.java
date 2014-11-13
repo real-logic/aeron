@@ -69,7 +69,8 @@ public class EventConfiguration
         CMD_OUT_ON_OPERATION_SUCCESS,
         ERROR_DELETING_FILE,
         FRAME_OUT_INCOMPLETE_SEND,
-        FLOW_CONTROL_OVERRUN);
+        FLOW_CONTROL_OVERRUN,
+        CHANNEL_CREATION);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 

@@ -40,7 +40,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class LogAppender extends LogBuffer
 {
-    public enum AppendStatus
+    public enum ActionStatus
     {
         SUCCESS,
         TRIPPED,
@@ -51,7 +51,7 @@ public class LogAppender extends LogBuffer
     private final int headerLength;
     private final int maxMessageLength;
     private final int maxFrameLength;
-    private final int maxPayload;
+    private final int maxPayloadLength;
 
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
@@ -73,7 +73,7 @@ public class LogAppender extends LogBuffer
         this.headerLength = defaultHeader.length;
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity());
-        this.maxPayload = maxFrameLength - headerLength;
+        this.maxPayloadLength = maxFrameLength - headerLength;
     }
 
     /**
@@ -93,7 +93,7 @@ public class LogAppender extends LogBuffer
      */
     public int maxPayloadLength()
     {
-        return maxPayload;
+        return maxPayloadLength;
     }
 
     /**
@@ -122,14 +122,14 @@ public class LogAppender extends LogBuffer
      * @param srcBuffer containing the encoded message.
      * @param srcOffset at which the encoded message begins.
      * @param length    of the message in bytes.
-     * @return SUCCESS if appended in the log, FAILURE if not appended in the log, TRIPPED if first failure.
+     * @return SUCCESS if append was successful, FAILURE if beyond end of the log in the log, TRIPPED if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
-    public AppendStatus append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    public ActionStatus append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         checkMessageLength(length);
 
-        if (length <= maxPayload)
+        if (length <= maxPayloadLength)
         {
             return appendUnfragmentedMessage(srcBuffer, srcOffset, length);
         }
@@ -137,8 +137,22 @@ public class LogAppender extends LogBuffer
         return appendFragmentedMessage(srcBuffer, srcOffset, length);
     }
 
-    private AppendStatus appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    /**
+     * Claim a range within the buffer for recording a message payload.
+     *
+     * @param length      of the message payload
+     * @param bufferClaim to be completed for the claim if successful.
+     * @return SUCCESS if claim was successful, FAILURE if beyond end of the log in the log, TRIPPED if first failure.
+     */
+    public ActionStatus claim(final int length, final BufferClaim bufferClaim)
     {
+        if (length > maxPayloadLength)
+        {
+            final String s = String.format("claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length);
+            throw new IllegalArgumentException(s);
+        }
+
+        final int headerLength = this.headerLength;
         final int frameLength = length + headerLength;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
@@ -150,14 +164,51 @@ public class LogAppender extends LogBuffer
             if (frameOffset < capacity)
             {
                 appendPaddingFrame(logBuffer, frameOffset);
-                return AppendStatus.TRIPPED;
+                return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
             {
-                return AppendStatus.TRIPPED;
+                return ActionStatus.TRIPPED;
             }
 
-            return AppendStatus.FAILURE;
+            return ActionStatus.FAILURE;
+        }
+
+        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+        frameFlags(logBuffer, frameOffset, UNFRAGMENTED);
+        frameTermOffset(logBuffer, frameOffset, frameOffset);
+
+        bufferClaim.buffer(logBuffer)
+                   .offset(frameOffset + headerLength)
+                   .length(length)
+                   .frameLengthOffset(lengthOffset(frameOffset))
+                   .frameLength(frameLength);
+
+        return ActionStatus.SUCCESS;
+    }
+
+    private ActionStatus appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    {
+        final int headerLength = this.headerLength;
+        final int frameLength = length + headerLength;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int frameOffset = getTailAndAdd(alignedLength);
+
+        final UnsafeBuffer logBuffer = logBuffer();
+        final int capacity = capacity();
+        if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
+        {
+            if (frameOffset < capacity)
+            {
+                appendPaddingFrame(logBuffer, frameOffset);
+                return ActionStatus.TRIPPED;
+            }
+            else if (frameOffset == capacity)
+            {
+                return ActionStatus.TRIPPED;
+            }
+
+            return ActionStatus.FAILURE;
         }
 
         logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
@@ -167,13 +218,14 @@ public class LogAppender extends LogBuffer
         frameTermOffset(logBuffer, frameOffset, frameOffset);
         frameLengthOrdered(logBuffer, frameOffset, frameLength);
 
-        return AppendStatus.SUCCESS;
+        return ActionStatus.SUCCESS;
     }
 
-    private AppendStatus appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    private ActionStatus appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
-        final int numMaxPayloads = length / maxPayload;
-        final int remainingPayload = length % maxPayload;
+        final int numMaxPayloads = length / maxPayloadLength;
+        final int remainingPayload = length % maxPayloadLength;
+        final int headerLength = this.headerLength;
         final int requiredCapacity =
             align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
         int frameOffset = getTailAndAdd(requiredCapacity);
@@ -185,21 +237,21 @@ public class LogAppender extends LogBuffer
             if (frameOffset < capacity)
             {
                 appendPaddingFrame(logBuffer, frameOffset);
-                return AppendStatus.TRIPPED;
+                return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
             {
-                return AppendStatus.TRIPPED;
+                return ActionStatus.TRIPPED;
             }
 
-            return AppendStatus.FAILURE;
+            return ActionStatus.FAILURE;
         }
 
         byte flags = BEGIN_FRAG;
         int remaining = length;
         do
         {
-            final int bytesToWrite = Math.min(remaining, maxPayload);
+            final int bytesToWrite = Math.min(remaining, maxPayloadLength);
             final int frameLength = bytesToWrite + headerLength;
             final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
@@ -210,7 +262,7 @@ public class LogAppender extends LogBuffer
                 srcOffset + (length - remaining),
                 bytesToWrite);
 
-            if (remaining <= maxPayload)
+            if (remaining <= maxPayloadLength)
             {
                 flags |= END_FRAG;
             }
@@ -225,7 +277,7 @@ public class LogAppender extends LogBuffer
         }
         while (remaining > 0);
 
-        return AppendStatus.SUCCESS;
+        return ActionStatus.SUCCESS;
     }
 
     private boolean isBeyondLogBufferCapacity(final int frameOffset, final int alignedFrameLength, final int capacity)
@@ -252,11 +304,7 @@ public class LogAppender extends LogBuffer
     {
         if (length > maxMessageLength)
         {
-            final String s = String.format(
-                "encoded message exceeds maxMessageLength of %d, length=%d",
-                maxMessageLength,
-                length);
-
+            final String s = String.format("encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length);
             throw new IllegalArgumentException(s);
         }
     }

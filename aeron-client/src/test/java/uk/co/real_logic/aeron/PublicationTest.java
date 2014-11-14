@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationMode;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -34,7 +35,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
 import static uk.co.real_logic.agrona.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.MIN_LOG_SIZE;
 
 public class PublicationTest
@@ -71,6 +72,7 @@ public class PublicationTest
             final byte[] header = new byte[DataHeaderFlyweight.HEADER_LENGTH];
             headers[i] = header;
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
+            when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCESS);
             when(appenders[i].defaultHeader()).thenReturn(header);
             when(appenders[i].capacity()).thenReturn(MIN_LOG_SIZE);
         }
@@ -122,6 +124,30 @@ public class PublicationTest
         // written data to the next record
         inOrder.verify(appenders[termIdToBufferIndex(TERM_ID_1 + 1)])
                .append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
+
+        // updated the term id in the header
+        dataHeaderFlyweight.wrap(headers[termIdToBufferIndex(TERM_ID_1 + 1)]);
+        assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
+    }
+
+    @Test
+    public void shouldRotateWhenClaimTrips()
+    {
+        when(appenders[termIdToBufferIndex(TERM_ID_1)].claim(anyInt(), any())).thenReturn(TRIPPED);
+        when(appenders[termIdToBufferIndex(TERM_ID_1)].tailVolatile()).thenReturn(MIN_LOG_SIZE - RECORD_ALIGNMENT);
+        when(limit.position()).thenReturn(Long.MAX_VALUE);
+
+        final BufferClaim bufferClaim = new BufferClaim();
+        assertFalse(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
+        assertTrue(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
+
+        final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
+        inOrder.verify(appenders[termIdToBufferIndex(TERM_ID_1 + 1)]).status();
+        inOrder.verify(appenders[termIdToBufferIndex(TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
+
+        // written data to the next record
+        inOrder.verify(appenders[termIdToBufferIndex(TERM_ID_1 + 1)])
+               .claim(SEND_BUFFER_CAPACITY, bufferClaim);
 
         // updated the term id in the header
         dataHeaderFlyweight.wrap(headers[termIdToBufferIndex(TERM_ID_1 + 1)]);

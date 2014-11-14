@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 public class LogAppenderTest
@@ -309,6 +309,35 @@ public class LogAppenderTest
         inOrder.verify(logBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
         inOrder.verify(logBuffer, times(1)).putBytes(tail + headerLength, buffer, logAppender.maxPayloadLength(), 1);
         inOrder.verify(logBuffer, times(1)).putByte(flagsOffset(tail), END_FRAG);
+        inOrder.verify(logBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
+        inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
+    }
+
+    @Test
+    public void shouldClaimRegionForZeroCopyEncoding()
+    {
+        final int headerLength = DEFAULT_HEADER.length;
+        final int msgLength = 20;
+        final int frameLength = msgLength + headerLength;
+        final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+        final int tail = 0;
+        final BufferClaim bufferClaim = new BufferClaim();
+
+        when(stateBuffer.getAndAddInt(TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0);
+
+        assertThat(logAppender.claim(msgLength, bufferClaim), is(SUCCESS));
+
+        assertThat(bufferClaim.buffer(), is(logBuffer));
+        assertThat(bufferClaim.offset(), is(tail + headerLength));
+        assertThat(bufferClaim.length(), is(msgLength));
+
+        // Map flyweight or encode to buffer directly then call commit() when done
+        bufferClaim.commit();
+
+        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
+        inOrder.verify(stateBuffer, times(1)).getAndAddInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
+        inOrder.verify(logBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
+        inOrder.verify(logBuffer, times(1)).putByte(flagsOffset(tail), UNFRAGMENTED);
         inOrder.verify(logBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
         inOrder.verify(logBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
     }

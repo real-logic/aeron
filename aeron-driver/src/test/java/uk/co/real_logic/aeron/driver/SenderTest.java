@@ -47,7 +47,7 @@ import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.AppendStatus.SUCCESS;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.SUCCESS;
 
 public class SenderTest
 {

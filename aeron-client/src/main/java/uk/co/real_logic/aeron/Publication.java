@@ -16,6 +16,7 @@
 
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
@@ -109,7 +110,18 @@ public class Publication implements AutoCloseable
 
     public void close()
     {
-        release();
+        synchronized (clientConductor)
+        {
+            if (--refCount == 0)
+            {
+                clientConductor.releasePublication(this);
+
+                for (final ManagedBuffer managedBuffer : managedBuffers)
+                {
+                    managedBuffer.close();
+                }
+            }
+        }
     }
 
     /**
@@ -129,11 +141,11 @@ public class Publication implements AutoCloseable
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return true if the message can be published otherwise false.
+     * @return true if the message was published otherwise false.
      */
     public boolean offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        boolean offerSucceeded = false;
+        boolean succeeded = false;
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
@@ -142,7 +154,7 @@ public class Publication implements AutoCloseable
             switch (logAppender.append(buffer, offset, length))
             {
                 case SUCCESS:
-                    offerSucceeded = true;
+                    succeeded = true;
                     break;
 
                 case TRIPPED:
@@ -154,7 +166,43 @@ public class Publication implements AutoCloseable
             }
         }
 
-        return offerSucceeded;
+        return succeeded;
+    }
+
+    /**
+     * Try to claim a range in the publication log for writing a message into with zero copy semantics.
+     *
+     * <b>Note:</b> This method can only be used for message lengths less than MTU size minus header.
+     *
+     * @param length      of the range to claim.
+     * @param bufferClaim to be populate if the claim succeeds.
+     * @return true of the claim was successful otherwise false.
+     * @throws IllegalArgumentException if the length is greater than max payload size within an MTU.
+     */
+    public boolean tryClaim(final int length, final BufferClaim bufferClaim)
+    {
+        boolean succeeded = false;
+        final LogAppender logAppender = logAppenders[activeIndex];
+        final int currentTail = logAppender.tailVolatile();
+
+        if (isWithinFlowControlLimit(currentTail))
+        {
+            switch (logAppender.claim(length, bufferClaim))
+            {
+                case SUCCESS:
+                    succeeded = true;
+                    break;
+
+                case TRIPPED:
+                    nextTerm();
+                    break;
+
+                case FAILURE:
+                    break;
+            }
+        }
+
+        return succeeded;
     }
 
     long registrationId()
@@ -167,26 +215,6 @@ public class Publication implements AutoCloseable
         synchronized (clientConductor)
         {
             ++refCount;
-        }
-    }
-
-    private void release()
-    {
-        synchronized (clientConductor)
-        {
-            if (--refCount == 0)
-            {
-                clientConductor.releasePublication(this);
-                closeBuffers();
-            }
-        }
-    }
-
-    private void closeBuffers()
-    {
-        for (final ManagedBuffer managedBuffer : managedBuffers)
-        {
-            managedBuffer.close();
         }
     }
 

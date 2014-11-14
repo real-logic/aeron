@@ -37,7 +37,7 @@ public class Subscription implements AutoCloseable
 
     private int roundRobinIndex = 0;
 
-    public Subscription(
+    Subscription(
         final ClientConductor conductor,
         final DataHandler dataHandler,
         final String channel,
@@ -51,33 +51,24 @@ public class Subscription implements AutoCloseable
         this.registrationId = registrationId;
     }
 
+    /**
+     * Media address for delivery to the channel.
+     *
+     * @return Media address for delivery to the channel.
+     */
     public String channel()
     {
         return channel;
     }
 
+    /**
+     * Stream identity for scoping within the channel media address.
+     *
+     * @return Stream identity for scoping within the channel media address.
+     */
     public int streamId()
     {
         return streamId;
-    }
-
-    public long registrationId()
-    {
-        return registrationId;
-    }
-
-    /**
-     * Release the Subscription so that associated buffers can be released.
-     */
-    public void close()
-    {
-        clientConductor.releaseSubscription(this);
-        closeBuffers();
-    }
-
-    private void closeBuffers()
-    {
-        connections.forEach(Connection::close);
     }
 
     /**
@@ -97,6 +88,20 @@ public class Subscription implements AutoCloseable
         }
 
         return connections.doLimitedAction(roundRobinIndex, fragmentCountLimit, Connection::poll);
+    }
+
+    /**
+     * Release the Subscription so that associated buffers can be released.
+     */
+    public void close()
+    {
+        clientConductor.releaseSubscription(this);
+        connections.forEach(Connection::close);
+    }
+
+    long registrationId()
+    {
+        return registrationId;
     }
 
     void onConnectionReady(
@@ -125,13 +130,6 @@ public class Subscription implements AutoCloseable
         return null != connections.findFirst((e) -> e.sessionId() == sessionId);
     }
 
-    /**
-     * Remove a connection with the given sessionId
-     *
-     * @param sessionId     for connection to be removed
-     * @param correlationId for connection to be removed
-     * @return true if it removed something, false otherwise
-     */
     boolean removeConnection(final int sessionId, final long correlationId)
     {
         final Connection connection =
@@ -145,7 +143,7 @@ public class Subscription implements AutoCloseable
         return connection != null;
     }
 
-    public boolean hasNoConnections()
+    boolean hasNoConnections()
     {
         return connections.isEmpty();
     }

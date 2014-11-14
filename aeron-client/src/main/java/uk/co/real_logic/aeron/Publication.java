@@ -51,7 +51,7 @@ public class Publication implements AutoCloseable
     private int refCount = 1;
     private int activeIndex;
 
-    public Publication(
+    Publication(
         final ClientConductor clientConductor,
         final String channel,
         final int streamId,
@@ -107,37 +107,9 @@ public class Publication implements AutoCloseable
         return sessionId;
     }
 
-    public long registrationId()
-    {
-        return registrationId;
-    }
-
     public void close()
     {
         release();
-    }
-
-    private void release()
-    {
-        synchronized (clientConductor)
-        {
-            if (--refCount == 0)
-            {
-                clientConductor.releasePublication(this);
-                closeBuffers();
-            }
-        }
-    }
-
-    /**
-     * Accessed by the client conductor.
-     */
-    void incRef()
-    {
-        synchronized (clientConductor)
-        {
-            ++refCount;
-        }
     }
 
     /**
@@ -183,6 +155,31 @@ public class Publication implements AutoCloseable
         }
 
         return offerSucceeded;
+    }
+
+    long registrationId()
+    {
+        return registrationId;
+    }
+
+    void incRef()
+    {
+        synchronized (clientConductor)
+        {
+            ++refCount;
+        }
+    }
+
+    private void release()
+    {
+        synchronized (clientConductor)
+        {
+            if (--refCount == 0)
+            {
+                clientConductor.releasePublication(this);
+                closeBuffers();
+            }
+        }
     }
 
     private void closeBuffers()

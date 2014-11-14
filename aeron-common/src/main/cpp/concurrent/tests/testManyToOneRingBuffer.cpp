@@ -22,7 +22,6 @@
 #include <concurrent/ringbuffer/RingBufferDescriptor.h>
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
-#include <Python/Python.h>
 #include <thread>
 
 using namespace aeron::common::concurrent::ringbuffer;
@@ -301,3 +300,95 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
 }
 
 // TODO: add test for dealing with exception from handler correctly
+
+#define NUM_MESSAGES_PER_PUBLISHER (10 * 1000 * 1000)
+#define NUM_PUBLISHERS (2)
+
+TEST(manyToOneRingBufferConcurrentTest, shouldExchangeMessages)
+{
+    MINT_DECL_ALIGNED(buffer_t mpscBuffer, 16);
+    mpscBuffer.fill(0);
+    AtomicBuffer mpscAb(&mpscBuffer[0], mpscBuffer.size());
+    ManyToOneRingBuffer ringBuffer(mpscAb);
+
+    std::atomic<int> countDown(NUM_PUBLISHERS);
+    std::atomic<int> publisherId(0);
+
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < NUM_PUBLISHERS; i++)
+    {
+        threads.push_back(std::thread([&]()
+        {
+            MINT_DECL_ALIGNED(buffer_t srcBuffer, 16);
+            srcBuffer.fill(0);
+            AtomicBuffer srcAb(&srcBuffer[0], srcBuffer.size());
+            int id = publisherId.fetch_add(1);
+
+            countDown--;
+            while (countDown > 0)
+            {
+                std::this_thread::yield(); // spin until we is ready
+            }
+
+            const int messageLength = 4 + 4;
+            const int messageNumOffset = 4;
+
+            srcAb.putInt32(0, id);
+
+            for (int m = 0; m < NUM_MESSAGES_PER_PUBLISHER; m++)
+            {
+                srcAb.putInt32(messageNumOffset, m);
+                while (!ringBuffer.write(MSG_TYPE_ID, srcAb, 0, messageLength))
+                {
+                    std::this_thread::yield();
+                }
+            }
+        }));
+    }
+
+    try
+    {
+        int msgCount = 0;
+        int counts[NUM_PUBLISHERS];
+
+        for (int i = 0; i < NUM_PUBLISHERS; i++)
+        {
+            counts[i] = 0;
+        }
+
+        while (msgCount < (NUM_MESSAGES_PER_PUBLISHER * NUM_PUBLISHERS)) {
+            const int readCount = ringBuffer.read([&counts](
+                std::int32_t msgTypeId, concurrent::AtomicBuffer &buffer, util::index_t index, util::index_t length)
+                {
+                    const std::int32_t id = buffer.getInt32(index);
+                    const std::int32_t messageNumber = buffer.getInt32(index + 4);
+
+                    EXPECT_EQ(length, 4 + 4);
+                    EXPECT_EQ(msgTypeId, MSG_TYPE_ID);
+
+                    EXPECT_EQ(counts[id], messageNumber);
+                    counts[id]++;
+                });
+
+            if (0 == readCount) {
+                std::this_thread::yield();
+            }
+
+            msgCount += readCount;
+        }
+
+        // wait for all threads to finish
+        for (std::thread &thr: threads) {
+            thr.join();
+        }
+    }
+    catch (util::OutOfBoundsException& e)
+    {
+        printf("EXCEPTION %s at %s\n", e.what(), e.where());
+    }
+    catch (...)
+    {
+        printf("EXCEPTION unknown\n");
+    }
+}

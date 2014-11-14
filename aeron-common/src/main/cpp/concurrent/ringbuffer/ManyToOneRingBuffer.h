@@ -38,6 +38,8 @@ public:
 
         RingBufferDescriptor::checkCapacity(m_capacity);
 
+        buffer.setMemory(0, buffer.getCapacity(), 0);
+
         m_mask = m_capacity - 1;
         m_maxMsgLength = m_capacity / 8;
 

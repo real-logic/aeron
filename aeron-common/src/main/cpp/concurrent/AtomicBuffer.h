@@ -51,6 +51,7 @@ public:
 
     inline void putInt64(util::index_t offset, std::int64_t v)
     {
+//        printf("putInt64 %d\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
         *reinterpret_cast<std::int64_t *>(m_buffer + offset) = v;
     }
@@ -63,18 +64,21 @@ public:
 
     inline void putInt32(util::index_t offset, std::int32_t v)
     {
+//        printf("putInt32 %d\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
         *reinterpret_cast<std::int32_t *>(m_buffer + offset) = v;
     }
 
     inline std::int32_t getInt32(util::index_t offset) const
     {
+//        printf("getInt32 %d\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
         return *reinterpret_cast<std::int32_t *>(m_buffer + offset);
     }
 
     inline void putInt64Ordered(util::index_t offset, std::int64_t v)
     {
+//        printf("putInt64 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
         mint_thread_fence_release();
         mint_store_64_relaxed((mint_atomic64_t*)(m_buffer + offset), v);
@@ -82,6 +86,7 @@ public:
 
     inline std::int64_t getInt64Ordered(util::index_t offset) const
     {
+//        printf("getInt64Ordered %d\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
         std::int64_t v = mint_load_64_relaxed((mint_atomic64_t*)(m_buffer + offset));
         mint_thread_fence_acquire();
@@ -90,6 +95,7 @@ public:
 
     inline void putInt32Ordered(util::index_t offset, std::int32_t v)
     {
+//        printf("putInt32 %d %d Ordered\n", offset, v);
         boundsCheck(offset, sizeof(std::int32_t));
         mint_thread_fence_release();
         mint_store_32_relaxed((mint_atomic32_t*)(m_buffer + offset), v);
@@ -97,6 +103,7 @@ public:
 
     inline std::int32_t getInt32Ordered(util::index_t offset) const
     {
+//        printf("getInt32 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
         std::int32_t v = mint_load_32_relaxed((mint_atomic32_t*)(m_buffer + offset));
         mint_thread_fence_acquire();
@@ -145,9 +152,10 @@ public:
 
     inline bool compareAndSetInt64(util::index_t offset, std::int64_t expectedValue, std::int64_t updateValue)
     {
+//        printf("compareAndSetInt64 %d %d == %d\n", offset, expectedValue, updateValue);
         boundsCheck(offset, sizeof(std::int64_t));
-        mint_compare_exchange_strong_64_relaxed((mint_atomic64_t*)(m_buffer + offset), expectedValue, updateValue);
-        return true; // always works??
+        std::int64_t original = mint_compare_exchange_strong_64_relaxed((mint_atomic64_t*)(m_buffer + offset), expectedValue, updateValue);
+        return (original == expectedValue);
     }
 
     inline std::int64_t getAndSetInt64(util::index_t offset, std::int64_t value) const
@@ -189,21 +197,18 @@ public:
 
     inline void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
+//        printf("putBytes %d %d\n", index, length);
         boundsCheck(index, length);
         srcBuffer.boundsCheck(srcIndex, length);
 
         ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
     }
 
-    inline void getBytes(util::index_t index, concurrent::AtomicBuffer& dstBuffer, util::index_t dstIndex, util::index_t length)
-    {
-        dstBuffer.putBytes(dstIndex, *this, index, length);
-    }
-
     inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)
     {
+//        printf("setMemory %d %d\n", offset, length);
         boundsCheck(offset, length);
-        memset(m_buffer, value, length);
+        memset(m_buffer + offset, value, length);
     }
 
     // Note: I am assuming that std::string is utf8 encoded

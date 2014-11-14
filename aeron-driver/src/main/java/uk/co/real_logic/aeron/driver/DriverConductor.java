@@ -351,6 +351,8 @@ public class DriverConductor implements Agent
         final String channel, final int sessionId, final int streamId, final long correlationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
+        logger.logChannelCreated(udpChannel.description());
+
         SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {

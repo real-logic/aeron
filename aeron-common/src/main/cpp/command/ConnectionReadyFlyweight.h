@@ -17,8 +17,12 @@
 #define INCLUDED_AERON_COMMAND_CONNECTIONREADYFLYWEIGHT__
 
 #include <cstdint>
+#include <util/Exceptions.h>
+#include <util/StringUtil.h>
 #include <common/Flyweight.h>
+#include <common/TermHelper.h>
 #include "ReadyFlyweight.h"
+
 
 namespace aeron { namespace common { namespace command {
 
@@ -126,6 +130,16 @@ struct ConnectionReadyDefn
 {
     static const std::int32_t NUM_FILES = 6;
 
+    static const std::int32_t PAYLOAD_BUFFER_COUNT = common::TermHelper::BUFFER_COUNT * 2;
+    static const std::int32_t SOURCE_INFORMATION_INDEX = PAYLOAD_BUFFER_COUNT;
+    static const std::int32_t CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
+
+    struct PositionIndicator
+    {
+        std::int32_t indicatorId;
+        std::int64_t registrationId;
+    };
+
     std::int64_t correlationId;
     std::int64_t joiningPosition;
     std::int32_t sessionId;
@@ -134,11 +148,7 @@ struct ConnectionReadyDefn
     std::int32_t positionIndicatorsCount;
     std::int32_t fileOffset[NUM_FILES];
     std::int32_t length[NUM_FILES];
-    std::int32_t locationStart[NUM_FILES];
-    std::int32_t sourceInformationStart;
-    std::int32_t channelStart;
-    std::int32_t channelEnd;
-    std::int32_t variableDataStart;
+    std::int32_t locationStart[NUM_FILES + 3];
 };
 #pragma pack(pop)
 
@@ -148,7 +158,7 @@ class ConnectionReadyFlyweight : public common::Flyweight<ConnectionReadyDefn>,
 public:
 	typedef ConnectionReadyFlyweight this_t;
 
-    inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
+    inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
         : common::Flyweight<ConnectionReadyDefn>(buffer, offset)
     {
     }
@@ -177,11 +187,53 @@ public:
 
     inline std::string location(std::int32_t index) const
     {
-        return "";
+        std::int32_t offset;
+        if (index == 0)
+            offset = (std::int32_t)sizeof(ConnectionReadyDefn);
+        else
+            offset = locationOffset(index);
+
+        std::int32_t length = locationOffset(index+1);
+
+        return stringGetWithoutLength(offset, length);
     }
 
     inline this_t& location(std::int32_t index, const std::string &value)
     {
+        std::int32_t offset;
+        if (index == 0)
+            offset = (std::int32_t)sizeof(ConnectionReadyDefn);
+        else
+            offset = locationOffset(index);
+
+        if (offset == 0)
+            throw util::IllegalStateException(util::strconcat("Previous location been hasn't been set yet at index " + index), SOURCEINFO);
+
+        offset += stringPutWithoutLength(offset, value);
+        locationOffset(index + 1, offset);
+
+        return *this;
+    }
+
+    inline std::string sourceInfo() const
+    {
+        return location(ConnectionReadyDefn::SOURCE_INFORMATION_INDEX);
+    }
+
+    inline this_t& sourceInfo(const std::string &value)
+    {
+        location(ConnectionReadyDefn::SOURCE_INFORMATION_INDEX, value);
+        return *this;
+    }
+
+    inline std::string channel() const
+    {
+        return location(ConnectionReadyDefn::CHANNEL_INDEX);
+    }
+
+    inline this_t& channel(const std::string &value)
+    {
+        location(ConnectionReadyDefn::CHANNEL_INDEX, value);
         return *this;
     }
 
@@ -251,37 +303,46 @@ public:
         return *this;
     }
 
-    inline std::int32_t sourceInformationStart() const
+    inline this_t& positionIndicator(std::int32_t index, const ConnectionReadyDefn::PositionIndicator& value)
     {
-        return m_struct.sourceInformationStart;
-    }
-
-    inline this_t& sourceInformationStart(std::int32_t value)
-    {
-        m_struct.sourceInformationStart = value;
+        overlayStruct<ConnectionReadyDefn::PositionIndicator>(positionIndicatorOffset(index)) = value;
         return *this;
     }
 
-    inline std::int32_t channelStart() const
+    inline ConnectionReadyDefn::PositionIndicator positionIndicator(std::int32_t index)
     {
-        return m_struct.channelStart;
+        return overlayStruct<ConnectionReadyDefn::PositionIndicator>(positionIndicatorOffset(index));
     }
 
-    inline this_t& channelStart(std::int32_t value)
+    inline std::int32_t length()
     {
-        m_struct.channelStart = value;
-        return *this;
+        return locationOffset(ConnectionReadyDefn::CHANNEL_INDEX + 1) + positionIndicatorsCount() * sizeof(ConnectionReadyDefn::PositionIndicator);
     }
 
-    inline std::int32_t channelEnd() const
+private:
+    inline std::int32_t channelEnd()
     {
-        return m_struct.channelEnd;
+        return locationOffset(ConnectionReadyDefn::CHANNEL_INDEX + 1);
     }
 
-    inline this_t& channelEnd(std::int32_t value)
+    inline std::int32_t positionIndicatorOffset(std::int32_t index)
     {
-        m_struct.channelEnd = value;
-        return *this;
+        std::int32_t chanEnd = channelEnd();
+
+        if (chanEnd == 0)
+            throw util::IllegalStateException(util::strconcat("Channel must be written before PositionIndicator: " + index), SOURCEINFO);
+
+        return chanEnd + index * sizeof(ConnectionReadyDefn::PositionIndicator);
+    }
+
+    inline std::int32_t locationOffset(std::int32_t index) const
+    {
+        return m_struct.locationStart[index];
+    }
+
+    inline void locationOffset(std::int32_t index, std::int32_t value)
+    {
+        m_struct.locationStart[index] = value;
     }
 };
 

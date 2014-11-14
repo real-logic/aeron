@@ -13,13 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "AtomicBuffer.h"
 
-namespace aeron { namespace common { namespace concurrent {
+#ifndef INCLUDED_AERON_CONCURRENT_RINGBUFFER_RING_BUFFER__
+#define INCLUDED_AERON_CONCURRENT_RINGBUFFER_RING_BUFFER__
 
-AtomicBuffer::AtomicBuffer(std::uint8_t *buffer, util::index_t length)
-    : m_buffer (buffer), m_length(length)
+#include <util/Index.h>
+
+namespace aeron { namespace common { namespace concurrent { namespace ringbuffer {
+
+class RingBuffer
 {
-}
+public:
 
-}}}
+    inline util::index_t getCapacity() const
+    {
+        return m_length;
+    }
+
+protected:
+    util::index_t m_length;
+};
+
+}}}}
+
+#endif

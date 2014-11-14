@@ -49,7 +49,9 @@ public enum EventCode
     FRAME_OUT_INCOMPLETE_SEND(20, EventCodec::dissectAsString),
 
     FLOW_CONTROL_OVERRUN(21, EventCodec::dissectAsString),
-    INVALID_VERSION(22, EventCodec::dissectAsCommand);
+    INVALID_VERSION(22, EventCodec::dissectAsCommand),
+
+    CHANNEL_CREATION(23, EventCodec::dissectAsString);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

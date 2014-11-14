@@ -48,7 +48,7 @@ class CorrelatedMessageFlyweight : public common::Flyweight<CorrelatedMessageDef
 public:
 	typedef CorrelatedMessageFlyweight this_t;
 
-    inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, size_t offset)
+    inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
             : common::Flyweight<CorrelatedMessageDefn>(buffer, offset)
     {
     }

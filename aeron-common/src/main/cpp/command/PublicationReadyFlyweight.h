@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <common/Flyweight.h>
 #include "ReadyFlyweight.h"
+#include <common/TermHelper.h>
 
 namespace aeron { namespace common { namespace command {
 
@@ -109,6 +110,8 @@ namespace aeron { namespace common { namespace command {
 struct PublicationReadyDefn
 {
     static const std::int32_t NUM_FILES = 6;
+    static const std::int32_t PAYLOAD_BUFFER_COUNT = common::TermHelper::BUFFER_COUNT * 2;
+    static const std::int32_t CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
 
     std::int64_t correlationId;
     std::int32_t sessionId;
@@ -118,10 +121,7 @@ struct PublicationReadyDefn
 	std::int32_t mtuLength;
     std::int32_t fileOffset[NUM_FILES];
     std::int32_t length[NUM_FILES];
-	std::int32_t channelStart;
-	std::int32_t channelEnd;
-	std::int32_t locationStart[NUM_FILES];
-    std::int32_t channel;
+	std::int32_t locationStart[NUM_FILES + 2]; // extra space to store location of channel
 };
 #pragma pack(pop)
 
@@ -131,7 +131,7 @@ class PublicationReadyFlyweight : public common::Flyweight<PublicationReadyDefn>
 public:
 	typedef PublicationReadyFlyweight this_t;
 
-	inline PublicationReadyFlyweight(concurrent::AtomicBuffer& buffer, size_t offset)
+	inline PublicationReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
 		: common::Flyweight<PublicationReadyDefn>(buffer, offset)
     {
     }
@@ -160,11 +160,42 @@ public:
 
     inline std::string location(std::int32_t index) const
     {
-        return "";
+        std::int32_t offset;
+        if (index == 0)
+            offset = (std::int32_t)sizeof(PublicationReadyDefn);
+        else
+            offset = locationOffset(index);
+
+        std::int32_t length = locationOffset(index+1);
+
+        return stringGetWithoutLength(offset, length);
     }
 
     inline this_t& location(std::int32_t index, const std::string &value)
     {
+        std::int32_t offset;
+        if (index == 0)
+            offset = (std::int32_t)sizeof(PublicationReadyDefn);
+        else
+            offset = locationOffset(index);
+
+        if (offset == 0)
+            throw util::IllegalStateException(util::strconcat("Previous location been hasn't been set yet at index " + index), SOURCEINFO);
+
+        offset += stringPutWithoutLength(offset, value);
+        locationOffset(index + 1, offset);
+
+        return *this;
+    }
+
+    inline std::string channel() const
+    {
+        return location(PublicationReadyDefn::CHANNEL_INDEX);
+    }
+
+    inline this_t& channel(const std::string &value)
+    {
+        location(PublicationReadyDefn::CHANNEL_INDEX, value);
         return *this;
     }
 
@@ -234,26 +265,20 @@ public:
 		return *this;
 	}
 
-    inline std::int32_t channelStart() const
+    std::int32_t length()
     {
-        return m_struct.channelStart;
+        return locationOffset(PublicationReadyDefn::CHANNEL_INDEX + 1);
     }
 
-    inline this_t& channelStart(std::int32_t value)
+private:
+    inline std::int32_t locationOffset(std::int32_t index) const
     {
-        m_struct.channelStart = value;
-        return *this;
+        return m_struct.locationStart[index];
     }
 
-    inline std::int32_t channelEnd() const
+    inline void locationOffset(std::int32_t index, std::int32_t value)
     {
-        return m_struct.channelEnd;
-    }
-
-    inline this_t& channelEnd(std::int32_t value)
-    {
-        m_struct.channelEnd = value;
-        return *this;
+        m_struct.locationStart[index] = value;
     }
 };
 

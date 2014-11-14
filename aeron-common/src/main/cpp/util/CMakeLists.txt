@@ -27,7 +27,9 @@ SET(HEADERS
     StringUtil.h
     Exceptions.h
     MacroUtil.h
-    ScopeUtils.h)
+    ScopeUtils.h
+    BitUtil.h
+    Index.h)
 
 # static library
 add_library(aeron_util STATIC ${SOURCE} ${HEADERS})

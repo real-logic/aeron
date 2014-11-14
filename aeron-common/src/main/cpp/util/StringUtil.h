@@ -73,6 +73,30 @@ inline std::string toString (const value_t& value)
 
 std::string strPrintf (const char* format, ...);
 
+namespace private_impl
+{
+    template <typename T>
+    void concat (std::stringstream& s, T v)
+    {
+        s << v;
+    }
+
+    template <typename T, typename... Ts>
+    void concat (std::stringstream& s, T v, Ts... vs)
+    {
+        s << v;
+        concat(s, vs...);
+    }
+}
+
+template <typename... Ts>
+std::string strconcat (Ts... vs)
+{
+    std::stringstream s;
+    private_impl::concat(s, vs...);
+    return s.str();
+}
+
 }}}
 
 #endif

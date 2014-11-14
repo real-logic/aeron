@@ -13,13 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "AtomicBuffer.h"
 
-namespace aeron { namespace common { namespace concurrent {
+#ifndef INCLUDED_AERON_COMMON_TERMHELPER__
+#define INCLUDED_AERON_COMMON_TERMHELPER__
 
-AtomicBuffer::AtomicBuffer(std::uint8_t *buffer, util::index_t length)
-    : m_buffer (buffer), m_length(length)
+#include <type_traits>
+#include <cstdint>
+
+#include <util/BitUtil.h>
+
+namespace aeron { namespace common { namespace common {
+
+namespace TermHelper
 {
+    const std::int32_t BUFFER_COUNT = 3;
+
+    inline std::int32_t rotateNext(std::int32_t current)
+    {
+        return util::BitUtil::next(current, BUFFER_COUNT);
+    }
+
+    inline std::int32_t rotatePrevious(std::int32_t current)
+    {
+        return util::BitUtil::previous(current, BUFFER_COUNT);
+    }
 }
 
-}}}
+}}};
+
+#endif

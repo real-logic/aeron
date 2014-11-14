@@ -22,7 +22,11 @@ SET(SOURCE
 SET(HEADERS
     AtomicBuffer.h
     AtomicCounter.h
-    CountersManager.h)
+    CountersManager.h
+    ringbuffer/RingBuffer.h
+    ringbuffer/RecordDescriptor.h
+    ringbuffer/ManyToOneRingBuffer.h
+    ringbuffer/RingBufferDescriptor.h)
 
 # static library
 add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})
@@ -30,7 +34,8 @@ add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})
 # executable for this modules tests
 add_executable(concurrentTests
                 tests/testConcurrent.cpp
-                tests/testCountersManager.cpp)
+                tests/testCountersManager.cpp
+                tests/testManyToOneRingBuffer.cpp)
 
 target_link_libraries(concurrentTests
                         aeron_concurrent

@@ -52,7 +52,7 @@ struct RemoveMessageDefn
 class RemoveMessageFlyweight : public CorrelatedMessageFlyweight
 {
 public:
-	inline RemoveMessageFlyweight(concurrent::AtomicBuffer& buffer, size_t offset)
+	inline RemoveMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
 		: CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<RemoveMessageDefn>(0))
 	{
 	}

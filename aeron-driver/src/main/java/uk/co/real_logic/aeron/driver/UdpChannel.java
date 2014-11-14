@@ -15,13 +15,27 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.aeron.common.NetworkUtil;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
-
-import java.net.*;
-
+import static java.lang.Integer.parseInt;
+import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
+import static java.net.NetworkInterface.getByInetAddress;
+import static uk.co.real_logic.aeron.common.NetworkUtil.determineDefaultMulticastInterface;
+import static uk.co.real_logic.aeron.common.NetworkUtil.filterBySubnet;
+import static uk.co.real_logic.aeron.common.NetworkUtil.findAddressOnInterface;
+
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URI;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
+import uk.co.real_logic.aeron.common.NetworkUtil;
+import uk.co.real_logic.aeron.common.UriUtil;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import uk.co.real_logic.agrona.BitUtil;
 
 /**
  * Encapsulation of UDP Channels
@@ -33,8 +47,9 @@ import static java.net.InetAddress.getByAddress;
  */
 public final class UdpChannel
 {
+    private static final String SUBNET_PREFIX_KEY = "subnetPrefix";
     private static final int LAST_MULTICAST_DIGIT = 3;
-    private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = NetworkUtil.determineDefaultMulticastInterface();
+    private static final NetworkInterface DEFAULT_MULTICAST_INTERFACE = determineDefaultMulticastInterface();
 
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -58,6 +73,7 @@ public final class UdpChannel
             final URI uri = new URI(uriStr);
             final String userInfo = uri.getUserInfo();
             final int uriPort = uri.getPort();
+            final Map<String, String> params = UriUtil.parseQueryString(uri, new HashMap<>());
 
             if (!"udp".equals(uri.getScheme()))
             {
@@ -81,19 +97,8 @@ public final class UdpChannel
                 final InetSocketAddress controlAddress = new InetSocketAddress(getByAddress(addressAsBytes), uriPort);
                 final InetSocketAddress dataAddress = new InetSocketAddress(hostAddress, uriPort);
 
-                final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
-
-                NetworkInterface localInterface = NetworkInterface.getByInetAddress(localAddress.getAddress());
-
-                if (null == localInterface)
-                {
-                    if (null == DEFAULT_MULTICAST_INTERFACE)
-                    {
-                        throw new IllegalArgumentException("Interface not specified and default not set");
-                    }
-
-                    localInterface = DEFAULT_MULTICAST_INTERFACE;
-                }
+                final NetworkInterface localInterface = findInterface(userInfo, params);
+                final InetSocketAddress localAddress = resolveToAddressOfInterface(localInterface, userInfo, params);
 
                 context.localControlAddress(localAddress)
                        .remoteControlAddress(controlAddress)
@@ -127,9 +132,83 @@ public final class UdpChannel
         }
     }
 
-    private static UdpChannel malformedUri(final String uriStr)
+    private static InetSocketAddress resolveToAddressOfInterface(
+        NetworkInterface localInterface, String userInfo, Map<String, String> params)
     {
-        throw new IllegalArgumentException("malformed channel URI: " + uriStr);
+        if (null == userInfo)
+        {
+            final InetAddress address = findAddressOnInterface(localInterface, NetworkUtil.inAddrAny(), 0);
+            return new InetSocketAddress(address, 0);
+        }
+
+        final InetSocketAddress localAddress = determineLocalAddressFromUserInfo(userInfo);
+
+        if (params.containsKey(SUBNET_PREFIX_KEY))
+        {
+            final int subnetPrefix = Integer.parseInt(params.get(SUBNET_PREFIX_KEY));
+            final InetAddress interfaceAddress =
+                findAddressOnInterface(localInterface, localAddress.getAddress(), subnetPrefix);
+
+            if (null == interfaceAddress)
+            {
+                throw new IllegalStateException();
+            }
+
+            return new InetSocketAddress(interfaceAddress, localAddress.getPort());
+        }
+        else
+        {
+            return localAddress;
+        }
+    }
+
+    private static NetworkInterface findInterface(String userInfo, Map<String, String> params) throws SocketException
+    {
+        if (null == userInfo)
+        {
+            if (null == DEFAULT_MULTICAST_INTERFACE)
+            {
+                throw new IllegalArgumentException("Interface not specified and default not set");
+            }
+
+            return DEFAULT_MULTICAST_INTERFACE;
+        }
+
+        final InetSocketAddress userAddress = determineLocalAddressFromUserInfo(userInfo);
+
+        if (!params.containsKey(SUBNET_PREFIX_KEY))
+        {
+            final NetworkInterface ifc = getByInetAddress(userAddress.getAddress());
+
+            if (null == ifc)
+            {
+                throw new IllegalArgumentException("No interface matching: " + userAddress);
+            }
+
+            if (!ifc.supportsMulticast())
+            {
+                throw new IllegalArgumentException(errorInvalidMulticastInterface(ifc, userAddress));
+            }
+
+            return ifc;
+        }
+        else
+        {
+            final int subnetPrefix = parseInt(params.get(SUBNET_PREFIX_KEY));
+            final Collection<NetworkInterface> filteredIfcs = filterBySubnet(userAddress.getAddress(), subnetPrefix);
+
+            // Results are ordered by prefix length
+            for (final NetworkInterface ifc : filteredIfcs)
+            {
+                if (ifc.supportsMulticast())
+                {
+                    return ifc;
+                }
+            }
+
+            throw new IllegalArgumentException(
+                errorNoMatchingInterfaces(filteredIfcs, userAddress, subnetPrefix));
+        }
     }
 
     private static InetSocketAddress determineLocalAddressFromUserInfo(final String userInfo)
@@ -359,5 +438,68 @@ public final class UdpChannel
             this.localInterface = ifc;
             return this;
         }
+    }
+
+    //
+    // Error generation.
+    //
+
+    private static String errorInvalidMulticastInterface(final NetworkInterface ifc, final InetSocketAddress userAddress)
+    {
+        return "Interface: " + ifc.getDisplayName() +
+            " for address: " + userAddress.getAddress() + ", does not support multicast";
+    }
+
+    private static String errorNoMatchingInterfaces(
+        final Collection<NetworkInterface> filteredIfcs, final InetSocketAddress userAddress, final int subnetPrefix)
+        throws SocketException
+    {
+        final StringBuilder builder = new StringBuilder();
+        builder
+            .append("Unable to find multicast interface matching criteria: ")
+            .append(userAddress.getAddress())
+            .append("/")
+            .append(subnetPrefix);
+
+        if (filteredIfcs.size() > 0)
+        {
+            builder
+                .append(lineSeparator())
+                .append("  Candidates:");
+            for (final NetworkInterface ifc : filteredIfcs)
+            {
+                builder
+                    .append(lineSeparator())
+                    .append("  - Name: ")
+                    .append(ifc.getDisplayName())
+                    .append(", addresses: ")
+                    .append(ifc.getInterfaceAddresses())
+                    .append(", multicast: ")
+                    .append(ifc.supportsMulticast());
+            }
+        }
+
+        return builder.toString();
+    }
+
+    private static UdpChannel malformedUri(final String uriStr)
+    {
+        throw new IllegalArgumentException("malformed channel URI: " + uriStr);
+    }
+
+    public String description()
+    {
+        final StringBuilder builder = new StringBuilder("UdpChannel - ");
+        if (null != localInterface)
+        {
+            builder
+                .append("interface: ")
+                .append(localInterface.getDisplayName())
+                .append(", ");
+        }
+        builder.append("localData: ").append(localData);
+        builder.append(", remoteData: ").append(remoteData);
+
+        return builder.toString();
     }
 }

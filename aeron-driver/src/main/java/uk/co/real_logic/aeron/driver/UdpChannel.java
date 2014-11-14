@@ -185,11 +185,11 @@ public final class UdpChannel
                 throw new IllegalArgumentException("No interface matching: " + userAddress);
             }
 
-            // TODO: add this back in once we figure out why some Linux distros don't set lo0 MUTLICAST flag
-//            if (!ifc.supportsMulticast())
-//            {
-//                throw new IllegalArgumentException(errorInvalidMulticastInterface(ifc, userAddress));
-//            }
+            // an unnamed Linux distro doesn't set MULTICAST on loopback, but loopback is quite fine with it
+            if (!ifc.isLoopback() && !ifc.supportsMulticast())
+            {
+                throw new IllegalArgumentException(errorInvalidMulticastInterface(ifc, userAddress));
+            }
 
             return ifc;
         }

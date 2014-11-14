@@ -207,8 +207,7 @@ public final class UdpChannel
                 }
             }
 
-            throw new IllegalArgumentException(
-                errorNoMatchingInterfaces(filteredIfcs, userAddress, subnetPrefix));
+            throw new IllegalArgumentException(errorNoMatchingInterfaces(filteredIfcs, userAddress, subnetPrefix));
         }
     }
 
@@ -293,7 +292,7 @@ public final class UdpChannel
 
     /**
      * The canonical form for the channel
-     *
+     * <p>
      * {@link UdpChannel#canonicalise(java.net.InetSocketAddress, java.net.InetSocketAddress)}
      *
      * @return canonical form for channel
@@ -335,13 +334,13 @@ public final class UdpChannel
     /**
      * Return a string which is a canonical form of the channel suitable for use as a file or directory
      * name and also as a method of hashing, etc.
-     *
+     * <p>
      * A canonical form:
      * - begins with the string "UDP-"
      * - has all hostnames converted to hexadecimal
      * - has all fields expanded out
      * - uses "-" as all field separators
-     *
+     * <p>
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *
@@ -456,27 +455,25 @@ public final class UdpChannel
         throws SocketException
     {
         final StringBuilder builder = new StringBuilder();
-        builder
-            .append("Unable to find multicast interface matching criteria: ")
-            .append(userAddress.getAddress())
-            .append("/")
-            .append(subnetPrefix);
+        builder.append("Unable to find multicast interface matching criteria: ")
+               .append(userAddress.getAddress())
+               .append("/")
+               .append(subnetPrefix);
 
         if (filteredIfcs.size() > 0)
         {
-            builder
-                .append(lineSeparator())
-                .append("  Candidates:");
+            builder.append(lineSeparator())
+                   .append("  Candidates:");
+
             for (final NetworkInterface ifc : filteredIfcs)
             {
-                builder
-                    .append(lineSeparator())
-                    .append("  - Name: ")
-                    .append(ifc.getDisplayName())
-                    .append(", addresses: ")
-                    .append(ifc.getInterfaceAddresses())
-                    .append(", multicast: ")
-                    .append(ifc.supportsMulticast());
+                builder.append(lineSeparator())
+                       .append("  - Name: ")
+                       .append(ifc.getDisplayName())
+                       .append(", addresses: ")
+                       .append(ifc.getInterfaceAddresses())
+                       .append(", multicast: ")
+                       .append(ifc.supportsMulticast());
             }
         }
 
@@ -493,13 +490,13 @@ public final class UdpChannel
         final StringBuilder builder = new StringBuilder("UdpChannel - ");
         if (null != localInterface)
         {
-            builder
-                .append("interface: ")
-                .append(localInterface.getDisplayName())
-                .append(", ");
+            builder.append("interface: ")
+                   .append(localInterface.getDisplayName())
+                   .append(", ");
         }
-        builder.append("localData: ").append(localData);
-        builder.append(", remoteData: ").append(remoteData);
+
+        builder.append("localData: ").append(localData)
+               .append(", remoteData: ").append(remoteData);
 
         return builder.toString();
     }

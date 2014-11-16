@@ -171,13 +171,34 @@ public class Publication implements AutoCloseable
 
     /**
      * Try to claim a range in the publication log for writing a message into with zero copy semantics.
+     * Once the message has been populate then {@link BufferClaim#commit()} should be called thus making it available.
      *
      * <b>Note:</b> This method can only be used for message lengths less than MTU size minus header.
+     *
+     * <code>
+     *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
+     *
+     *     if (publication.tryClaim(messageLength, bufferClaim))
+     *     {
+     *         try
+     *         {
+     *              final MutableDirectBuffer buffer = bufferClaim.buffer();
+     *              final int offset = bufferClaim.offset();
+     *
+     *              // Work with buffer directly or wrap with a flyweight
+     *         }
+     *         finally
+     *         {
+     *             bufferClaim.commit();
+     *         }
+     *     }
+     * </code>
      *
      * @param length      of the range to claim.
      * @param bufferClaim to be populate if the claim succeeds.
      * @return true of the claim was successful otherwise false.
      * @throws IllegalArgumentException if the length is greater than max payload size within an MTU.
+     * @see uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim#commit()
      */
     public boolean tryClaim(final int length, final BufferClaim bufferClaim)
     {

@@ -42,6 +42,7 @@ class MappedTermBuffers implements TermBuffers
     private static final String STATE_SUFFIX = "-state";
 
     private final FileChannel logTemplate;
+    private final FileChannel stateTemplate;
     private final int logBufferLength;
     private final int stateBufferLength;
     private final MappedRawLog[] buffers;
@@ -61,6 +62,7 @@ class MappedTermBuffers implements TermBuffers
         this.logTemplate = logTemplate;
         this.logBufferLength = logBufferLength;
         this.stateBufferLength = stateBufferSize;
+        this.stateTemplate = stateTemplate;
 
         try
         {
@@ -150,8 +152,8 @@ class MappedTermBuffers implements TermBuffers
                 stateFile,
                 logFileChannel,
                 stateFileChannel,
-                mapBufferFile(logFileChannel, logBufferLength),
-                mapBufferFile(stateFileChannel, stateBufferLength),
+                mapBufferFile(logFileChannel, logTemplate, logBufferLength),
+                mapBufferFile(stateFileChannel, stateTemplate, stateBufferLength),
                 logger);
         }
         catch (final IOException ex)
@@ -165,9 +167,12 @@ class MappedTermBuffers implements TermBuffers
         return new RandomAccessFile(file, "rw").getChannel();
     }
 
-    private MappedByteBuffer mapBufferFile(final FileChannel channel, final long bufferSize)
+    private MappedByteBuffer mapBufferFile(
+        final FileChannel channel,
+        final FileChannel template,
+        final long bufferSize)
     {
-        reset(channel, logTemplate, bufferSize);
+        reset(channel, template, bufferSize);
 
         try
         {

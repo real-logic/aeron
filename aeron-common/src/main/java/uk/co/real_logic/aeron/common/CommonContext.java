@@ -45,17 +45,20 @@ public class CommonContext implements AutoCloseable
     /** Directory of the data buffers */
     public static final String DATA_DIR_PROP_NAME = "aeron.dir.data";
     /** Default directory for data buffers */
-    public static final String DATA_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + DATA_DIR_NAME;
+    public static final String DATA_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator +
+            System.getProperty("user.name") + File.separator + DATA_DIR_NAME;
 
     /** Directory of the conductor buffers */
     public static final String ADMIN_DIR_PROP_NAME = "aeron.dir.conductor";
     /** Default directory for conductor buffers */
-    public static final String ADMIN_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + CONDUCTOR_DIR_NAME;
+    public static final String ADMIN_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator +
+            System.getProperty("user.name") + File.separator + CONDUCTOR_DIR_NAME;
 
     /** Directory for the counters */
     public static final String COUNTERS_DIR_PROP_NAME = "aeron.dir.counters";
     /** Default directory for conductor buffers */
-    public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + COUNTERS_DIR_NAME;
+    public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator +
+            System.getProperty("user.name") + File.separator + COUNTERS_DIR_NAME;
 
     /** Name of the default multicast interface */
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";

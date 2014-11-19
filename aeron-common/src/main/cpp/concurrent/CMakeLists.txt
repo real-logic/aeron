@@ -23,10 +23,13 @@ SET(HEADERS
     AtomicBuffer.h
     AtomicCounter.h
     CountersManager.h
-    ringbuffer/RingBuffer.h
     ringbuffer/RecordDescriptor.h
     ringbuffer/ManyToOneRingBuffer.h
-    ringbuffer/RingBufferDescriptor.h)
+    ringbuffer/RingBufferDescriptor.h
+    logbuffer/LogBuffer.h
+    logbuffer/LogBufferDescriptor.h
+    logbuffer/FrameDescriptor.h
+    logbuffer/LogAppender.h)
 
 # static library
 add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})
@@ -35,7 +38,8 @@ add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})
 add_executable(concurrentTests
                 tests/testConcurrent.cpp
                 tests/testCountersManager.cpp
-                tests/testManyToOneRingBuffer.cpp)
+                tests/testManyToOneRingBuffer.cpp
+                tests/testLogAppender.cpp)
 
 target_link_libraries(concurrentTests
                         aeron_concurrent

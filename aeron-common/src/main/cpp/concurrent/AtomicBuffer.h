@@ -76,6 +76,18 @@ public:
         return *reinterpret_cast<std::int32_t *>(m_buffer + offset);
     }
 
+    inline void putUInt16(util::index_t offset, std::uint16_t v)
+    {
+        boundsCheck(offset, sizeof(std::uint16_t));
+        *reinterpret_cast<std::uint16_t *>(m_buffer + offset) = v;
+    }
+
+    inline void putUInt8(util::index_t offset, std::uint8_t v)
+    {
+        boundsCheck(offset, sizeof(std::uint8_t));
+        *reinterpret_cast<std::uint8_t *>(m_buffer + offset) = v;
+    }
+
     inline void putInt64Ordered(util::index_t offset, std::int64_t v)
     {
 //        printf("putInt64 %d Ordered\n", offset);
@@ -202,6 +214,12 @@ public:
         srcBuffer.boundsCheck(srcIndex, length);
 
         ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
+    }
+
+    inline void putBytes(util::index_t index, std::uint8_t *srcBuffer, util::index_t length)
+    {
+        boundsCheck(index, length);
+        ::memcpy(m_buffer + index, srcBuffer, length);
     }
 
     inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)

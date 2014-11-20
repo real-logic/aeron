@@ -33,7 +33,10 @@ namespace aeron { namespace common { namespace concurrent {
 class AtomicBuffer
 {
 public:
-    AtomicBuffer(std::uint8_t *buffer, util::index_t length);
+    AtomicBuffer(std::uint8_t *buffer, util::index_t length)
+        : m_buffer (buffer), m_length(length)
+    {
+    }
 
     template <typename struct_t>
     struct_t& overlayStruct (util::index_t offset)

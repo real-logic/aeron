@@ -15,7 +15,6 @@
 #
 
 SET(SOURCE
-    AtomicBuffer.cpp
     AtomicCounter.cpp
     CountersManager.cpp)
 

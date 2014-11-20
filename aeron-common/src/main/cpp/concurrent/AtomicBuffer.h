@@ -26,6 +26,8 @@
 #include <util/StringUtil.h>
 #include <util/Index.h>
 
+#include <util/MacroUtil.h>
+
 namespace aeron { namespace common { namespace concurrent {
 
 
@@ -35,6 +37,10 @@ class AtomicBuffer
 public:
     AtomicBuffer(std::uint8_t *buffer, util::index_t length)
         : m_buffer (buffer), m_length(length)
+    {
+    }
+
+    virtual ~AtomicBuffer()
     {
     }
 
@@ -52,7 +58,7 @@ public:
         return *reinterpret_cast<struct_t*>(m_buffer + offset);
     }
 
-    inline void putInt64(util::index_t offset, std::int64_t v)
+    inline COND_MOCK_VIRTUAL void putInt64(util::index_t offset, std::int64_t v)
     {
 //        printf("putInt64 %d\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
@@ -116,7 +122,7 @@ public:
         mint_store_32_relaxed((mint_atomic32_t*)(m_buffer + offset), v);
     }
 
-    inline std::int32_t getInt32Ordered(util::index_t offset) const
+    inline COND_MOCK_VIRTUAL std::int32_t getInt32Ordered(util::index_t offset) const
     {
 //        printf("getInt32 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));

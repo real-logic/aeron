@@ -19,11 +19,12 @@
 #include <gtest/gtest.h>
 #include <mintomic/mintomic.h>
 
-#include <concurrent/AtomicBuffer.h>
 #include <thread>
+#include "MockAtomicBuffer.h"
 #include <concurrent/logbuffer/LogAppender.h>
 
 using namespace aeron::common::concurrent::logbuffer;
+using namespace aeron::common::concurrent::mock;
 using namespace aeron::common::concurrent;
 using namespace aeron::common;
 
@@ -60,8 +61,8 @@ protected:
     MINT_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
     MINT_DECL_ALIGNED(state_buffer_t m_stateBuffer, 16);
     MINT_DECL_ALIGNED(hdr_t m_hdr, 16);
-    AtomicBuffer m_log;
-    AtomicBuffer m_state;
+    MockAtomicBuffer m_log;
+    MockAtomicBuffer m_state;
     LogAppender m_logAppender;
 };
 
@@ -73,4 +74,17 @@ TEST_F(LogAppenderTest, shouldReportCapacity)
 TEST_F(LogAppenderTest, shouldReportMaxFrameLength)
 {
     EXPECT_EQ(m_logAppender.maxFrameLength(), MAX_FRAME_LENGTH);
+}
+
+// TODO: exceptions tests
+
+TEST_F(LogAppenderTest, shouldReportCurrentTail)
+{
+    const std::int32_t tailValue = 64;
+
+    EXPECT_CALL(m_state, getInt32Ordered(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+        .Times(1)
+        .WillOnce(testing::Return(tailValue));
+
+    EXPECT_EQ(m_logAppender.tailVolatile(), tailValue);
 }

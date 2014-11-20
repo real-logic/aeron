@@ -28,7 +28,8 @@ SET(HEADERS
     logbuffer/LogBuffer.h
     logbuffer/LogBufferDescriptor.h
     logbuffer/FrameDescriptor.h
-    logbuffer/LogAppender.h)
+    logbuffer/LogAppender.h
+    tests/MockAtomicBuffer.h)
 
 # static library
 add_library(aeron_concurrent STATIC ${SOURCE} ${HEADERS})

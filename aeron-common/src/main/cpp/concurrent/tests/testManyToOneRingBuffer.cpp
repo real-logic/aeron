@@ -18,6 +18,7 @@
 
 #include <gtest/gtest.h>
 #include <mintomic/mintomic.h>
+#include <atomic>
 
 #include <concurrent/ringbuffer/RingBufferDescriptor.h>
 #include <concurrent/AtomicBuffer.h>

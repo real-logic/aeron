@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
 #define INCLUDED_AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
 
+#include <limits.h>
 #include <functional>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>

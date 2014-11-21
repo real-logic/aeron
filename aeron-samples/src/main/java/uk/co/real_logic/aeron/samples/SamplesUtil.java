@@ -45,17 +45,17 @@ public class SamplesUtil
         {
             if (null == System.getProperty(ADMIN_DIR_PROP_NAME))
             {
-                System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
+                System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/" + System.getProperty("user.name") + "/conductor");
             }
 
             if (null == System.getProperty(COUNTERS_DIR_PROP_NAME))
             {
-                System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/counters");
+                System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/" + System.getProperty("user.name") + "/counters");
             }
 
             if (null == System.getProperty(DATA_DIR_PROP_NAME))
             {
-                System.setProperty(DATA_DIR_PROP_NAME, "/dev/shm/aeron/data");
+                System.setProperty(DATA_DIR_PROP_NAME, "/dev/shm/aeron/" + System.getProperty("user.name") + "/data");
             }
         }
     }

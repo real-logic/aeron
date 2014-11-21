@@ -32,10 +32,12 @@ using namespace aeron::common;
 #define STATE_BUFFER_CAPACITY (LogBufferDescriptor::STATE_BUFFER_LENGTH)
 #define HDR_LENGTH (FrameDescriptor::BASE_HEADER_LENGTH + sizeof(std::int32_t))
 #define MAX_FRAME_LENGTH (1024)
+#define LOG_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::MIN_LOG_SIZE + FrameDescriptor::FRAME_ALIGNMENT - 1)
 
 typedef std::array<std::uint8_t, LOG_BUFFER_CAPACITY> log_buffer_t;
 typedef std::array<std::uint8_t, STATE_BUFFER_CAPACITY> state_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
+typedef std::array<std::uint8_t, LOG_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
 
 class LogAppenderTest : public testing::Test
 {
@@ -76,7 +78,60 @@ TEST_F(LogAppenderTest, shouldReportMaxFrameLength)
     EXPECT_EQ(m_logAppender.maxFrameLength(), MAX_FRAME_LENGTH);
 }
 
-// TODO: exceptions tests
+TEST_F(LogAppenderTest, shouldThrowExceptionOnInsufficientLogBufferCapacity)
+{
+    MockAtomicBuffer mockLog(&m_logBuffer[0], LogBufferDescriptor::MIN_LOG_SIZE - 1);
+
+    ASSERT_THROW(
+    {
+        LogAppender logAppender(mockLog, m_state, &m_hdr[0], m_hdr.size(), MAX_FRAME_LENGTH);
+    }, util::IllegalStateException);
+}
+
+TEST_F(LogAppenderTest, shouldThrowExceptionWhenCapacityNotMultipleOfAlignment)
+{
+    MINT_DECL_ALIGNED(log_buffer_unaligned_t logBuffer, 16);
+    MockAtomicBuffer mockLog(&logBuffer[0], logBuffer.size());
+
+    ASSERT_THROW(
+    {
+        LogAppender logAppender(mockLog, m_state, &m_hdr[0], m_hdr.size(), MAX_FRAME_LENGTH);
+    }, util::IllegalStateException);
+}
+
+TEST_F(LogAppenderTest, shouldThrowExceptionOnInsufficientStateBufferCapacity)
+{
+    MockAtomicBuffer mockState(&m_stateBuffer[0], LogBufferDescriptor::STATE_BUFFER_LENGTH - 1);
+
+    ASSERT_THROW(
+    {
+        LogAppender logAppender(m_log, mockState, &m_hdr[0], m_hdr.size(), MAX_FRAME_LENGTH);
+    }, util::IllegalStateException);
+}
+
+TEST_F(LogAppenderTest, shouldThrowExceptionOnDefaultHeaderLengthLessThanBaseHeaderLength)
+{
+    ASSERT_THROW(
+    {
+        LogAppender logAppender(m_log, m_state, &m_hdr[0], FrameDescriptor::BASE_HEADER_LENGTH - 1, MAX_FRAME_LENGTH);
+    }, util::IllegalStateException);
+}
+
+TEST_F(LogAppenderTest, shouldThrowExceptionOnDefaultHeaderLengthNotOnWordSizeBoundary)
+{
+    ASSERT_THROW(
+    {
+        LogAppender logAppender(m_log, m_state, &m_hdr[0], m_hdr.size() - 1, MAX_FRAME_LENGTH);
+    }, util::IllegalStateException);
+}
+
+TEST_F(LogAppenderTest, shouldThrowExceptionOnMaxFrameSizeNotOnWordSizeBoundary)
+{
+    ASSERT_THROW(
+    {
+        LogAppender logAppender(m_log, m_state, &m_hdr[0], m_hdr.size(), 1001);
+    }, util::IllegalStateException);
+}
 
 TEST_F(LogAppenderTest, shouldReportCurrentTail)
 {

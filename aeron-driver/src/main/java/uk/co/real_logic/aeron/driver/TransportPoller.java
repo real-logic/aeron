@@ -19,12 +19,11 @@ package uk.co.real_logic.aeron.driver;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.ClosedChannelException;
-import java.nio.channels.SelectableChannel;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 
 /**
- * Encapsulation of NIO Selector logic for integration into Receiver Thread and Conductor Thread
+ * Encapsulates the polling of a number of {@link UdpChannelTransport}s using whatever means provides the lowest latency.
  */
 public class TransportPoller implements AutoCloseable
 {
@@ -71,7 +70,6 @@ public class TransportPoller implements AutoCloseable
         try
         {
             selector = Selector.open(); // yes, SelectorProvider, blah, blah
-
             selectedKeySet = new NioSelectedKeySet();
 
             SELECTED_KEYS_FIELD.set(selector, selectedKeySet);
@@ -86,17 +84,16 @@ public class TransportPoller implements AutoCloseable
     /**
      * Register channel for read.
      *
-     * @param channel to select for read
      * @param transport to associate with read
      * @return SelectionKey for registration for cancel
      */
-    public SelectionKey registerForRead(final SelectableChannel channel, final UdpChannelTransport transport)
+    public SelectionKey registerForRead(final UdpChannelTransport transport)
     {
         try
         {
             addTransport(transport);
 
-            return channel.register(selector, SelectionKey.OP_READ, transport);
+            return transport.datagramChannel().register(selector, SelectionKey.OP_READ, transport);
         }
         catch (final ClosedChannelException ex)
         {

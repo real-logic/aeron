@@ -64,7 +64,7 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
         setupHeader.wrap(receiveBuffer(), 0);
     }
 
-    public int dispatch(
+    protected int dispatch(
         final int headerType, final UnsafeBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;

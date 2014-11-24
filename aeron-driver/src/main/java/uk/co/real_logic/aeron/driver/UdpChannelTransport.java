@@ -113,11 +113,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
     }
 
-    protected UnsafeBuffer receiveBuffer()
-    {
-        return receiveBuffer;
-    }
-
     /**
      * Register this transport for reading from a {@link TransportPoller}.
      *
@@ -126,7 +121,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     public void registerForRead(final TransportPoller transportPoller)
     {
         registeredTransportPoller = transportPoller;
-        registeredKey = transportPoller.registerForRead(datagramChannel, this);
+        registeredKey = transportPoller.registerForRead(this);
     }
 
     /**
@@ -137,6 +132,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
     public UdpChannel udpChannel()
     {
         return udpChannel;
+    }
+
+    /**
+     * The {@link DatagramChannel} for this transport channel.
+     *
+     * @return {@link DatagramChannel} for this transport channel.
+     */
+    public DatagramChannel datagramChannel()
+    {
+        return datagramChannel;
     }
 
     /**
@@ -224,7 +229,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveByteBuffer.capacity();
     }
 
-    public abstract int dispatch(int headerType, UnsafeBuffer receiveBuffer, int length, InetSocketAddress srcAddress);
+    protected abstract int dispatch(int headerType, UnsafeBuffer receiveBuffer, int length, InetSocketAddress srcAddress);
 
     /**
      * Attempt to receive waiting data.
@@ -255,6 +260,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
 
         return framesRead;
+    }
+
+    protected UnsafeBuffer receiveBuffer()
+    {
+        return receiveBuffer;
     }
 
     private boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)

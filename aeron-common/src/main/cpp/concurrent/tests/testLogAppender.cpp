@@ -33,11 +33,13 @@ using namespace aeron::common;
 #define HDR_LENGTH (FrameDescriptor::BASE_HEADER_LENGTH + sizeof(std::int32_t))
 #define MAX_FRAME_LENGTH (1024)
 #define LOG_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::MIN_LOG_SIZE + FrameDescriptor::FRAME_ALIGNMENT - 1)
+#define SRC_BUFFER_CAPACITY (1024)
 
 typedef std::array<std::uint8_t, LOG_BUFFER_CAPACITY> log_buffer_t;
 typedef std::array<std::uint8_t, STATE_BUFFER_CAPACITY> state_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
 typedef std::array<std::uint8_t, LOG_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
+typedef std::array<std::uint8_t, SRC_BUFFER_CAPACITY> src_buffer_t;
 
 class LogAppenderTest : public testing::Test
 {
@@ -133,6 +135,18 @@ TEST_F(LogAppenderTest, shouldThrowExceptionOnMaxFrameSizeNotOnWordSizeBoundary)
     }, util::IllegalStateException);
 }
 
+TEST_F(LogAppenderTest, shouldThrowExceptionWhenMaxMessageLengthExceeded)
+{
+    const util::index_t maxMessageLength = m_logAppender.maxMessageLength();
+    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AtomicBuffer srcBuffer(&buffer[0], buffer.size());
+
+    ASSERT_THROW(
+    {
+        m_logAppender.append(srcBuffer, 0, maxMessageLength + 1);
+    }, util::IllegalArgumentException);
+}
+
 TEST_F(LogAppenderTest, shouldReportCurrentTail)
 {
     const std::int32_t tailValue = 64;
@@ -142,4 +156,20 @@ TEST_F(LogAppenderTest, shouldReportCurrentTail)
         .WillOnce(testing::Return(tailValue));
 
     EXPECT_EQ(m_logAppender.tailVolatile(), tailValue);
+}
+
+TEST_F(LogAppenderTest, shouldReportCurrentTailAtCapacity)
+{
+    const std::int32_t tailValue = LOG_BUFFER_CAPACITY + 64;
+
+    EXPECT_CALL(m_state, getInt32Ordered(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+        .Times(1)
+        .WillOnce(testing::Return(tailValue));
+
+    EXPECT_CALL(m_state, getInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+        .Times(1)
+        .WillOnce(testing::Return(tailValue));
+
+    EXPECT_EQ(m_logAppender.tailVolatile(), LOG_BUFFER_CAPACITY);
+    EXPECT_EQ(m_logAppender.tail(), LOG_BUFFER_CAPACITY);
 }

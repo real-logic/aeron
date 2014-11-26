@@ -78,7 +78,7 @@ public:
         *reinterpret_cast<std::int32_t *>(m_buffer + offset) = v;
     }
 
-    inline std::int32_t getInt32(util::index_t offset) const
+    inline COND_MOCK_VIRTUAL std::int32_t getInt32(util::index_t offset) const
     {
 //        printf("getInt32 %d\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));

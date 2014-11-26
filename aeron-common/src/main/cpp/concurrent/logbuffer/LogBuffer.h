@@ -76,7 +76,7 @@ public:
 
     inline std::int32_t tail()
     {
-        return m_stateBuffer.getInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET);
+        return std::min(m_stateBuffer.getInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET), m_capacity);
     }
 
     inline std::int32_t highWaterMark()

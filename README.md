@@ -7,8 +7,8 @@ Efficient reliable unicast and multicast transport protocol.
 For details of usage, protocol specification, FAQ, etc. please check out the
 [Wiki](https://github.com/real-logic/Aeron/wiki).
 
-For those who prefer to watch a video to understand the design this. [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from Strangeloop in 2014.
-Things have moved on with performance and some features but the basic design still applies.
+For those who prefer to watch a video then try [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from StrangeLoop 2014.
+Things have moved on quite a bit with performance and some features but the basic design still applies.
 
 License (See LICENSE file for full license)
 -------------------------------------------

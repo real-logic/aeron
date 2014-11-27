@@ -196,6 +196,12 @@ public class NetworkUtilTest
             return addressesByInterface.get(ifc);
         }
 
+        @Override
+        public boolean isLoopback(NetworkInterface ifc) throws SocketException
+        {
+            return false;
+        }
+
         public NetworkInterface add(String...ips) throws UnknownHostException
         {
             final List<InterfaceAddress> ias = new ArrayList<>();

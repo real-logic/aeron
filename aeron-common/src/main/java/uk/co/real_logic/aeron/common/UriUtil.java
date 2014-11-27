@@ -1,13 +1,13 @@
 package uk.co.real_logic.aeron.common;
 
-import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Map;
 
 public class UriUtil
 {
     public static <M extends Map<String, String>> M parseQueryString(URI uri, M queryParams)
-        throws MalformedURLException
+        throws URISyntaxException
     {
         final String query = uri.getQuery();
 
@@ -30,7 +30,7 @@ public class UriUtil
             }
             else
             {
-                throw new MalformedURLException();
+                throw new URISyntaxException(pair, "Did not contain 1 or 2 parts");
             }
         }
 

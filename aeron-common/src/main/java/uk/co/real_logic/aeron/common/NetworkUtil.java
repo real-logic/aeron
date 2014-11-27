@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import static java.lang.Boolean.compare;
 import static java.lang.Integer.compare;
 import static java.lang.Math.max;
 import static java.lang.Math.min;
@@ -125,7 +126,7 @@ public class NetworkUtil
 
             if (null != interfaceAddress)
             {
-                filterResults.add(new FilterResult(interfaceAddress, ifc));
+                filterResults.add(new FilterResult(interfaceAddress, ifc, shim.isLoopback(ifc)));
             }
         }
 
@@ -224,19 +225,31 @@ public class NetworkUtil
     {
         private final InterfaceAddress interfaceAddress;
         private final NetworkInterface ifc;
+        private final boolean isLoopback;
 
-        public FilterResult(InterfaceAddress interfaceAddress, NetworkInterface ifc)
+        public FilterResult(
+            InterfaceAddress interfaceAddress,
+            NetworkInterface ifc,
+            boolean isLoopback) throws SocketException
         {
             this.interfaceAddress = interfaceAddress;
             this.ifc = ifc;
+            this.isLoopback = isLoopback;
         }
 
         @Override
         public int compareTo(FilterResult o)
         {
-            return -compare(
-                interfaceAddress.getNetworkPrefixLength(),
-                o.interfaceAddress.getNetworkPrefixLength());
+            if (isLoopback == o.isLoopback)
+            {
+                return -compare(
+                    interfaceAddress.getNetworkPrefixLength(),
+                    o.interfaceAddress.getNetworkPrefixLength());
+            }
+            else
+            {
+                return compare(isLoopback, o.isLoopback);
+            }
         }
     }
 

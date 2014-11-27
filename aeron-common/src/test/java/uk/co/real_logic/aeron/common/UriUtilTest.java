@@ -5,8 +5,8 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static uk.co.real_logic.aeron.common.UriUtil.parseQueryString;
 
-import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
@@ -68,13 +68,13 @@ public class UriUtilTest
         assertThat(params.get("ip"), is("FE80::0202:B3FF:FE1E:8329"));
     }
 
-    @Test(expected = MalformedURLException.class)
+    @Test(expected = URISyntaxException.class)
     public void shouldThrowMalformedUriExceptionIfQueryParametersAreInvalid() throws Exception
     {
         doParse(URI.create("http://example.com:12345/foo/bar.html?mask=24&ip=abc=4"));
     }
 
-    private static Map<String, String> doParse(URI uri) throws MalformedURLException
+    private static Map<String, String> doParse(URI uri) throws URISyntaxException
     {
         return parseQueryString(uri, new HashMap<String, String>());
     }

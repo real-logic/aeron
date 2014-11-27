@@ -1,5 +1,8 @@
 package uk.co.real_logic.aeron.common.uri;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -60,6 +63,55 @@ public class AeronUri
         }
 
         return defaultValue;
+    }
+
+    public InetAddress getInetAddress(String key) throws UnknownHostException
+    {
+        return InetAddress.getByName(get(key));
+    }
+
+    public InetSocketAddress getSocketAddress(String key)
+    {
+        return SocketAddressUtil.parse(get(key));
+    }
+
+    public InetSocketAddress getSocketAddress(String key, int defaultPort, InetSocketAddress defaultValue)
+    {
+        if (!containsKey(key))
+        {
+            return defaultValue;
+        }
+
+        return SocketAddressUtil.parse(get(key), defaultPort);
+    }
+
+    public InterfaceSearchAddress getInterfaceSearchAddress(
+        String key, InterfaceSearchAddress defaultValue) throws UnknownHostException
+    {
+        if (!containsKey(key))
+        {
+            return defaultValue;
+        }
+
+        return InterfaceSearchAddress.parse(get(key));
+    }
+
+    public boolean containsKey(String key)
+    {
+        return params.containsKey(key);
+    }
+
+    public boolean containsAnyKey(String[] keys)
+    {
+        for (final String key : keys)
+        {
+            if (params.containsKey(key))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public static AeronUri parse(CharSequence cs)
@@ -166,5 +218,37 @@ public class AeronUri
         }
 
         return true;
+    }
+
+    public static class Builder
+    {
+        private final Map<String, String> params = new HashMap<>();
+        private String media;
+
+        public Builder media(String media)
+        {
+            this.media = media;
+            return this;
+        }
+
+        public Builder param(String key, String value)
+        {
+            if (null != key && null != value)
+            {
+                params.put(key, value);
+            }
+
+            return this;
+        }
+
+        public AeronUri newInstance()
+        {
+            return new AeronUri("aeron", media, params);
+        }
+    }
+
+    public static Builder builder()
+    {
+        return new Builder();
     }
 }

@@ -12,7 +12,10 @@ import uk.co.real_logic.aeron.common.Strings;
 
 public class InterfaceSearchAddress
 {
-    private static final Pattern ADDRESS_PATTERN = Pattern.compile("([^:/]+)(?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
+    private static final Pattern IPV4_ADDRESS_PATTERN =
+        Pattern.compile("([^:/]+)(?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
+    private static final Pattern IPV6_ADDRESS_PATTERN =
+        Pattern.compile("\\[([0-9A-Fa-f:]+)\\](?::(?<port>[0-9]+))?(?:/(?<subnet>[0-9]+))?");
 
     private final InetSocketAddress address;
     private final int subnetPrefix;
@@ -50,12 +53,7 @@ public class InterfaceSearchAddress
             throw new IllegalArgumentException("Search address string is null or empty");
         }
 
-        final Matcher matcher = ADDRESS_PATTERN.matcher(s);
-
-        if (!matcher.matches())
-        {
-            throw new IllegalArgumentException("Invalid search address: " + s);
-        }
+        final Matcher matcher = getMatcher(s);
 
         final InetAddress hostAddress = InetAddress.getByName(matcher.group(1));
         final int defaultSubnetPrefix = hostAddress.getAddress().length * 8;
@@ -63,6 +61,25 @@ public class InterfaceSearchAddress
         final int subnetPrefix = parseIntOrDefault(matcher.group("subnet"), defaultSubnetPrefix);
 
         return new InterfaceSearchAddress(new InetSocketAddress(hostAddress, port), subnetPrefix);
+    }
+
+    private static Matcher getMatcher(CharSequence cs)
+    {
+        final Matcher ipV4Matcher = IPV4_ADDRESS_PATTERN.matcher(cs);
+
+        if (ipV4Matcher.matches())
+        {
+            return ipV4Matcher;
+        }
+
+        final Matcher ipV6Matcher = IPV6_ADDRESS_PATTERN.matcher(cs);
+
+        if (ipV6Matcher.matches())
+        {
+            return ipV6Matcher;
+        }
+
+        throw new IllegalArgumentException("Invalid search address: " + cs);
     }
 
     public static InterfaceSearchAddress wildcard()

@@ -60,8 +60,6 @@ public final class UdpChannel
     private static final String[] UNICAST_KEYS = { LOCAL_KEY, REMOTE_KEY };
     private static final String[] MULTICAST_KEYS = { GROUP_KEY, INTERFACE_KEY };
 
-    private static final int LAST_MULTICAST_DIGIT = 3;
-
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
     private final InetSocketAddress remoteControl;
@@ -94,7 +92,7 @@ public final class UdpChannel
 
                 validateDataAddress(addressAsBytes);
 
-                addressAsBytes[LAST_MULTICAST_DIGIT]++;
+                addressAsBytes[addressAsBytes.length - 1]++;
                 final InetSocketAddress controlAddress =
                     new InetSocketAddress(getByAddress(addressAsBytes), dataAddress.getPort());
 
@@ -133,7 +131,7 @@ public final class UdpChannel
 
     private static void validateDataAddress(final byte[] addressAsBytes)
     {
-        if (BitUtil.isEven(addressAsBytes[LAST_MULTICAST_DIGIT]))
+        if (BitUtil.isEven(addressAsBytes[addressAsBytes.length - 1]))
         {
             throw new IllegalArgumentException("Multicast data address must be odd");
         }

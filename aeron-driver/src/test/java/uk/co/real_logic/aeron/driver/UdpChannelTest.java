@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.hamcrest.Matcher;
+import org.junit.Assume;
 import org.junit.Test;
 
 import uk.co.real_logic.aeron.common.NetworkUtil;
@@ -208,6 +209,17 @@ public class UdpChannelTest
     }
 
     @Test
+    public void shouldHandleIpV6CanonicalFormForUnicastCorrectly() throws Exception
+    {
+        final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?local=[::1]|remote=192.168.0.1:40456");
+        final UdpChannel udpChannelLocalPort =
+            UdpChannel.parse("aeron:udp?local=127.0.0.1:40455|remote=[fe80::5246:5dff:fe73:df06]:40456");
+
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-00000000000000000000000000000001-0-c0a80001-40456"));
+        assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-fe8000000000000052465dfffe73df06-40456"));
+    }
+
+    @Test
     public void shouldHandleCanonicalFormForUnicastCorrectlyWithAeronUri() throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=192.168.0.1:40456");
@@ -272,6 +284,17 @@ public class UdpChannelTest
         assertThat(udpChannelDefault.localInterface(), is(NetworkUtil.determineDefaultMulticastInterface()));
     }
 
+    @Test
+    public void shouldHandleIpV6CanonicalFormForMulticastCorrectly() throws Exception
+    {
+        Assume.assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
+
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|group=[FF01::FD]:40456");
+        final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?interface=[::1]:54321/64|group=224.0.1.1:40456");
+
+        assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-ff0100000000000000000000000000fd-40456"));
+        assertThat(udpChannelLocal.canonicalForm(), is("UDP-00000000000000000000000000000001-54321-e0000101-40456"));
+    }
 
     @Test(expected = InvalidChannelException.class)
     public void shouldFailIfBothUnicastAndMulticastSpecified() throws Exception

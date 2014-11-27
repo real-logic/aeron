@@ -42,6 +42,12 @@ public class SocketAddressUtilTest
         SocketAddressUtil.parse("192.168.1.20:");
     }
 
+    @Test
+    public void shouldParseIpV6() throws Exception
+    {
+        assertCorrectParseIpV6("::1", 54321);
+    }
+
     private void assertCorrectParse(final String host, final int port) throws UnknownHostException
     {
         final InetSocketAddress address = SocketAddressUtil.parse(host + ":" + port);
@@ -49,4 +55,10 @@ public class SocketAddressUtilTest
         assertThat(address.getPort(), is(port));
     }
 
+    private void assertCorrectParseIpV6(final String host, final int port) throws UnknownHostException
+    {
+        final InetSocketAddress address = SocketAddressUtil.parse("[" + host + "]:" + port);
+        assertThat(address.getAddress(), is(InetAddress.getByName(host)));
+        assertThat(address.getPort(), is(port));
+    }
 }

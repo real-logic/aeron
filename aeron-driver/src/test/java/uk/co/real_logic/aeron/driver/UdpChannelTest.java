@@ -22,15 +22,17 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Assume;
 import org.junit.Test;
 
-import uk.co.real_logic.aeron.common.NetworkUtil;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 
 public class UdpChannelTest
@@ -262,7 +264,8 @@ public class UdpChannelTest
         assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-7f000001-0-e0000001-40456"));
         assertThat(udpChannelSubnet.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelDefault.localInterface(), is(NetworkUtil.determineDefaultMulticastInterface()));
+
+        assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
 
     @Test
@@ -281,7 +284,7 @@ public class UdpChannelTest
         assertThat(udpChannelAllSystems.canonicalForm(), is("UDP-7f000001-0-e0000001-40456"));
         assertThat(udpChannelSubnet.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(udpChannelSubnetLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
-        assertThat(udpChannelDefault.localInterface(), is(NetworkUtil.determineDefaultMulticastInterface()));
+        assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
 
     @Test
@@ -300,5 +303,30 @@ public class UdpChannelTest
     public void shouldFailIfBothUnicastAndMulticastSpecified() throws Exception
     {
         UdpChannel.parse("aeron:udp?group=224.0.1.1:40456|remote=192.168.0.1:40456");
+    }
+
+    private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()
+    {
+        return new TypeSafeMatcher<NetworkInterface>()
+        {
+            @Override
+            public void describeTo(Description description)
+            {
+                description.appendText("Interface supports multicast or is loopack");
+            }
+
+            @Override
+            protected boolean matchesSafely(NetworkInterface item)
+            {
+                try
+                {
+                    return item.supportsMulticast() || item.isLoopback();
+                }
+                catch (final SocketException e)
+                {
+                    throw new RuntimeException(e);
+                }
+            }
+        };
     }
 }

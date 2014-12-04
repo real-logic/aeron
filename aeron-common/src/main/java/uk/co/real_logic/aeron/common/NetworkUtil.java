@@ -37,64 +37,6 @@ import java.util.List;
 public class NetworkUtil
 {
     /**
-     * Try to set the default multicast interface.
-     *
-     * If the {@link CommonContext#MULTICAST_DEFAULT_INTERFACE_PROP_NAME} system property is set,
-     * try to find the interface by name and use it. If not set, then scan interfaces and pick one that is UP
-     * and MULTICAST. Prefer non-loopback, but settle for loopback if nothing else.
-     *
-     * @return default multicast interface or null if could not be found
-     */
-    public static NetworkInterface determineDefaultMulticastInterface()
-    {
-        NetworkInterface savedIfc = null;
-
-        try
-        {
-            final String ifcName = System.getProperty(CommonContext.MULTICAST_DEFAULT_INTERFACE_PROP_NAME);
-
-            if (null != ifcName)
-            {
-                savedIfc = NetworkInterface.getByName(ifcName);
-            }
-            else
-            {
-                final Enumeration<NetworkInterface> ifcs = NetworkInterface.getNetworkInterfaces();
-
-                while (ifcs.hasMoreElements())
-                {
-                    final NetworkInterface ifc = ifcs.nextElement();
-
-                    // search for UP, MULTICAST interface. Preferring non-loopback. But settle for loopback. Break
-                    // once we find one.
-                    if (ifc.isUp() && ifc.supportsMulticast())
-                    {
-                        savedIfc = ifc;
-
-                        if (ifc.isLoopback())
-                        {
-                            continue;
-                        }
-
-                        break;
-                    }
-                }
-            }
-        }
-        catch (final Exception ex)
-        {
-            throw new RuntimeException(ex);
-        }
-
-        if (null != savedIfc)
-        {
-            System.setProperty(CommonContext.MULTICAST_DEFAULT_INTERFACE_PROP_NAME, savedIfc.getName());
-        }
-
-        return savedIfc;
-    }
-
-    /**
      * Search for a list of network interfaces that match the specified address and subnet prefix.
      * The results will be ordered by the length of the subnet prefix
      * ({@link InterfaceAddress#getNetworkPrefixLength()}).  If no results match, then the collection

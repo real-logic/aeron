@@ -96,7 +96,7 @@ inline static void checkMaxFrameLength(util::index_t length)
 
 inline static util::index_t calculateMaxMessageLength(util::index_t capacity)
 {
-    return std::min(capacity / 8, 1 << 16);
+    return capacity / 8;
 }
 
 inline static util::index_t typeOffset(util::index_t frameOffset)

@@ -173,3 +173,73 @@ TEST_F(LogAppenderTest, shouldReportCurrentTailAtCapacity)
     EXPECT_EQ(m_logAppender.tailVolatile(), LOG_BUFFER_CAPACITY);
     EXPECT_EQ(m_logAppender.tail(), LOG_BUFFER_CAPACITY);
 }
+
+TEST_F(LogAppenderTest, shouldAppendFrameToEmptyLog)
+{
+    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AtomicBuffer srcBuffer(&buffer[0], buffer.size());
+    const util::index_t msgLength = 20;
+    const util::index_t frameLength = m_hdr.size() + msgLength;
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+    util::index_t tail = 0;
+
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+        .Times(1)
+        .WillOnce(testing::Return(0));
+
+    EXPECT_CALL(m_log, putBytes(tail, &m_hdr[0], m_hdr.size()))
+        .Times(1);
+    EXPECT_CALL(m_log, putBytes(m_hdr.size(), testing::Ref(srcBuffer), 0, msgLength))
+        .Times(1);
+    EXPECT_CALL(m_log, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::UNFRAGMENTED))
+        .Times(1);
+    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
+        .Times(1);
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
+        .Times(1);
+
+    EXPECT_EQ(m_logAppender.append(srcBuffer, 0, msgLength), LogAppender::SUCCESS);
+}
+
+TEST_F(LogAppenderTest, shouldAppendFrameTwiceToLog)
+{
+    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AtomicBuffer srcBuffer(&buffer[0], buffer.size());
+    const util::index_t msgLength = 20;
+    const util::index_t frameLength = m_hdr.size() + msgLength;
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+    util::index_t tail = 0;
+
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+        .Times(2)
+        .WillOnce(testing::Return(0))
+        .WillOnce(testing::Return(alignedFrameLength));
+
+    EXPECT_CALL(m_log, putBytes(tail, &m_hdr[0], m_hdr.size()))
+        .Times(1);
+    EXPECT_CALL(m_log, putBytes(m_hdr.size(), testing::Ref(srcBuffer), 0, msgLength))
+        .Times(1);
+    EXPECT_CALL(m_log, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::UNFRAGMENTED))
+        .Times(1);
+    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
+        .Times(1);
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
+        .Times(1);
+
+    EXPECT_EQ(m_logAppender.append(srcBuffer, 0, msgLength), LogAppender::SUCCESS);
+
+    tail = alignedFrameLength;
+
+    EXPECT_CALL(m_log, putBytes(tail, &m_hdr[0], m_hdr.size()))
+        .Times(1);
+    EXPECT_CALL(m_log, putBytes(tail + m_hdr.size(), testing::Ref(srcBuffer), 0, msgLength))
+        .Times(1);
+    EXPECT_CALL(m_log, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::UNFRAGMENTED))
+        .Times(1);
+    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
+        .Times(1);
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
+        .Times(1);
+
+    EXPECT_EQ(m_logAppender.append(srcBuffer, 0, msgLength), LogAppender::SUCCESS);
+}

@@ -71,7 +71,7 @@ public:
         return *reinterpret_cast<std::int64_t *>(m_buffer + offset);
     }
 
-    inline void putInt32(util::index_t offset, std::int32_t v)
+    inline COND_MOCK_VIRTUAL void putInt32(util::index_t offset, std::int32_t v)
     {
 //        printf("putInt32 %d\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
@@ -91,7 +91,7 @@ public:
         *reinterpret_cast<std::uint16_t *>(m_buffer + offset) = v;
     }
 
-    inline void putUInt8(util::index_t offset, std::uint8_t v)
+    inline COND_MOCK_VIRTUAL void putUInt8(util::index_t offset, std::uint8_t v)
     {
         boundsCheck(offset, sizeof(std::uint8_t));
         *reinterpret_cast<std::uint8_t *>(m_buffer + offset) = v;
@@ -114,7 +114,7 @@ public:
         return v;
     }
 
-    inline void putInt32Ordered(util::index_t offset, std::int32_t v)
+    inline void COND_MOCK_VIRTUAL putInt32Ordered(util::index_t offset, std::int32_t v)
     {
 //        printf("putInt32 %d %d Ordered\n", offset, v);
         boundsCheck(offset, sizeof(std::int32_t));
@@ -179,13 +179,13 @@ public:
         return (original == expectedValue);
     }
 
-    inline std::int64_t getAndSetInt64(util::index_t offset, std::int64_t value) const
+    inline std::int64_t getAndSetInt64(util::index_t offset, std::int64_t value)
     {
         // TODO: no idea how to implement this with mintomic....
         return 0;
     }
 
-    inline std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta) const
+    inline std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta)
     {
         boundsCheck(offset, sizeof(std::int64_t));
         return mint_fetch_add_64_relaxed((mint_atomic64_t*)(m_buffer + offset), delta);
@@ -210,13 +210,13 @@ public:
         return 0;
     }
 
-    inline std::int32_t getAndAddInt32(util::index_t offset, std::int32_t delta) const
+    inline COND_MOCK_VIRTUAL std::int32_t getAndAddInt32(util::index_t offset, std::int32_t delta)
     {
         boundsCheck(offset, sizeof(std::int32_t));
         return mint_fetch_add_32_relaxed((mint_atomic32_t*)(m_buffer + offset), delta);
     }
 
-    inline void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
+    inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
 //        printf("putBytes %d %d\n", index, length);
         boundsCheck(index, length);
@@ -225,7 +225,7 @@ public:
         ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
     }
 
-    inline void putBytes(util::index_t index, std::uint8_t *srcBuffer, util::index_t length)
+    inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, std::uint8_t *srcBuffer, util::index_t length)
     {
         boundsCheck(index, length);
         ::memcpy(m_buffer + index, srcBuffer, length);

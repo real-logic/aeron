@@ -85,7 +85,7 @@ public:
         return *reinterpret_cast<std::int32_t *>(m_buffer + offset);
     }
 
-    inline void putUInt16(util::index_t offset, std::uint16_t v)
+    inline COND_MOCK_VIRTUAL void putUInt16(util::index_t offset, std::uint16_t v)
     {
         boundsCheck(offset, sizeof(std::uint16_t));
         *reinterpret_cast<std::uint16_t *>(m_buffer + offset) = v;

@@ -116,7 +116,7 @@ private:
 
     ActionStatus appendFragmentedMessage(AtomicBuffer& srcBuffer, util::index_t srcOffset, util::index_t length)
     {
-        const int numMaxPayloads = length / m_maxMessageLength;
+        const int numMaxPayloads = length / m_maxPayloadLength;
         const util::index_t remainingPayload = length % m_maxPayloadLength;
         const util::index_t requiredCapacity =
             util::BitUtil::align(remainingPayload + m_defaultHdrLength, FrameDescriptor::FRAME_ALIGNMENT) +
@@ -149,6 +149,11 @@ private:
 
             logBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
             logBuffer().putBytes(frameOffset + m_defaultHdrLength, srcBuffer, srcOffset + (length - remaining), bytesToWrite);
+
+            if (remaining <= m_maxPayloadLength)
+            {
+                flags |= FrameDescriptor::END_FRAG;
+            }
 
             FrameDescriptor::frameFlags(logBuffer(), frameOffset, flags);
             FrameDescriptor::frameTermOffset(logBuffer(), frameOffset, frameOffset);

@@ -41,7 +41,7 @@ static const util::index_t STREAM_ID_FIELD_OFFSET = 16;
 static const util::index_t TERM_ID_FIELD_OFFSET = 20;
 static const util::index_t DATA_OFFSET = 24;
 
-static const util::index_t LENGTH = util::BitUtil::align(DATA_OFFSET, FrameDescriptor::FRAME_ALIGNMENT);
+static const util::index_t LENGTH = DATA_OFFSET;
 
 }
 
@@ -76,25 +76,25 @@ public:
     inline std::int32_t frameLength()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + FRAME_LENGTH_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset + DataHeader::FRAME_LENGTH_FIELD_OFFSET);
     }
 
     inline std::int32_t sessionId()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + SESSION_ID_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset + DataHeader::SESSION_ID_FIELD_OFFSET);
     }
 
     inline std::int32_t streamId()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + STREAM_ID_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset + DataHeader::STREAM_ID_FIELD_OFFSET);
     }
 
     inline std::int32_t termId()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + TERM_ID_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset + DataHeader::TERM_ID_FIELD_OFFSET);
     }
 
     inline std::int32_t termOffset()
@@ -105,12 +105,12 @@ public:
     inline std::uint16_t type()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getUInt16(m_offset + TYPE_FIELD_OFFSET);
+        return m_buffer.getUInt16(m_offset + DataHeader::TYPE_FIELD_OFFSET);
     }
 
     inline std::uint8_t flags()
     {
-        return m_buffer.getUInt8(m_offset + FLAGS_FIELD_OFFSET);
+        return m_buffer.getUInt8(m_offset + DataHeader::FLAGS_FIELD_OFFSET);
     }
 
 private:

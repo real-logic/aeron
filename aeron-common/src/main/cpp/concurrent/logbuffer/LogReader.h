@@ -59,7 +59,7 @@ public:
         return (m_offset >= capacity());
     }
 
-    inline int read(handler_t handler, int framesCountLimit)
+    inline int read(const handler_t& handler, int framesCountLimit)
     {
         int framesCounter = 0;
         util::index_t offset = m_offset;

@@ -32,6 +32,9 @@ SET(HEADERS
     logbuffer/BufferClaim.h
     logbuffer/LogReader.h
     logbuffer/Header.h
+    broadcast/BroadcastBufferDescriptor.h
+    broadcast/RecordDescriptor.h
+    broadcast/BroadcastTransmitter.h
     tests/MockAtomicBuffer.h)
 
 # static library

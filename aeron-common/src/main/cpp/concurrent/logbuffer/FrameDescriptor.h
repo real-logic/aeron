@@ -85,6 +85,15 @@ inline static void checkHeaderLength(util::index_t length)
     }
 }
 
+inline static void checkOffsetAlignment(util::index_t offset)
+{
+    if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
+    {
+        throw util::IllegalArgumentException(
+            util::strPrintf("Cannot seek to an offset that isn't a multiple of %d", FRAME_ALIGNMENT), SOURCEINFO);
+    }
+}
+
 inline static void checkMaxFrameLength(util::index_t length)
 {
     if ((length & (FRAME_ALIGNMENT - 1)) != 0)
@@ -134,9 +143,20 @@ inline static void frameTermOffset(AtomicBuffer& logBuffer, util::index_t frameO
     logBuffer.putInt32(termOffsetOffset(frameOffset), termOffset);
 }
 
+inline static bool isPaddingFrame(AtomicBuffer& logBuffer, util::index_t frameOffset)
+{
+    return logBuffer.getUInt16(typeOffset(frameOffset)) == PADDING_FRAME_TYPE;
+}
+
+inline static std::int32_t frameLengthVolatile(AtomicBuffer& logBuffer, util::index_t frameOffset)
+{
+    // TODO: need to byte order to LITTLE_ENDIAN
+    return logBuffer.getInt32Ordered(lengthOffset(frameOffset));
+}
+
 inline static void frameLengthOrdered(AtomicBuffer& logBuffer, util::index_t frameOffset, std::int32_t frameLength)
 {
-    // TODO: need to byte order to LITTLE_ENDIAN?
+    // TODO: need to byte order to LITTLE_ENDIAN
     logBuffer.putInt32Ordered(lengthOffset(frameOffset), frameLength);
 }
 

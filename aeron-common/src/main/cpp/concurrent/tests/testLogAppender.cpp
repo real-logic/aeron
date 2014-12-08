@@ -416,7 +416,40 @@ TEST_F(LogAppenderTest, shouldFragmentMessageOverTwoFrames)
     EXPECT_EQ(m_logAppender.append(srcBuffer, 0, msgLength), LogAppender::SUCCESS);
 }
 
-TEST_F(LogAppenderTest, DISABLED_shouldClaimRegionForZeroCopyEncoding)
+TEST_F(LogAppenderTest, shouldClaimRegionForZeroCopyEncoding)
 {
+    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AtomicBuffer srcBuffer(&buffer[0], buffer.size());
+    const util::index_t msgLength = 20;
+    const util::index_t frameLength = m_hdr.size() + msgLength;
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+    util::index_t tail = 0;
+    BufferClaim bufferClaim;
+    testing::Sequence sequence;
 
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(tail));
+
+    EXPECT_CALL(m_log, putBytes(tail, &m_hdr[0], m_hdr.size()))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_log, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::UNFRAGMENTED))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
+        .Times(1)
+        .InSequence(sequence);
+
+    EXPECT_EQ(m_logAppender.claim(msgLength, bufferClaim), LogAppender::SUCCESS);
+
+    EXPECT_EQ(bufferClaim.buffer(), &m_log);
+    EXPECT_EQ(bufferClaim.offset(), (tail + m_hdr.size()));
+    EXPECT_EQ(bufferClaim.length(), msgLength);
+
+    bufferClaim.commit();
 }

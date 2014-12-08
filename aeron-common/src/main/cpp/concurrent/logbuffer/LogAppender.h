@@ -21,6 +21,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include "LogBufferDescriptor.h"
 #include "LogBuffer.h"
+#include "BufferClaim.h"
 
 namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
 
@@ -74,7 +75,41 @@ public:
         return appendFragmentedMessage(srcBuffer, offset, length);
     }
 
-    // TODO: add claim() API
+    inline ActionStatus claim(util::index_t length, BufferClaim& bufferClaim)
+    {
+        checkClaimLength(length);
+
+        const util::index_t frameLength = length + m_defaultHdrLength;
+        const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+        const util::index_t frameOffset = getTailAndAdd(alignedLength);
+
+        if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity()))
+        {
+            if (frameOffset < capacity())
+            {
+                appendPaddingFrame(logBuffer(), frameOffset);
+                return ActionStatus::TRIPPED;
+            }
+            else if (frameOffset == capacity())
+            {
+                return ActionStatus::TRIPPED;
+            }
+
+            return ActionStatus::FAILURE;
+        }
+
+        logBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
+        FrameDescriptor::frameFlags(logBuffer(), frameOffset, FrameDescriptor::UNFRAGMENTED);
+        FrameDescriptor::frameTermOffset(logBuffer(), frameOffset, frameOffset);
+
+        bufferClaim.buffer(&logBuffer())
+            .offset(frameOffset + m_defaultHdrLength)
+            .length(length)
+            .frameLengthOffset(FrameDescriptor::lengthOffset(frameOffset))
+            .frameLength(frameLength);
+
+        return ActionStatus::SUCCESS;
+    }
 
 private:
     std::uint8_t *m_defaultHdr;
@@ -194,6 +229,15 @@ private:
         {
             throw util::IllegalArgumentException(
                 util::strPrintf("encoded message exceeds maxMessageLength of %d, length=%d", m_maxMessageLength, length), SOURCEINFO);
+        }
+    }
+
+    inline void checkClaimLength(util::index_t length)
+    {
+        if (length > m_maxPayloadLength)
+        {
+            throw util::IllegalArgumentException(
+                util::strPrintf("claim exceeds maxPayloadLength of %d, length=%d", m_maxPayloadLength, length), SOURCEINFO);
         }
     }
 };

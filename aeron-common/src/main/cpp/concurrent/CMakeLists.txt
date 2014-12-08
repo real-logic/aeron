@@ -29,6 +29,7 @@ SET(HEADERS
     logbuffer/LogBufferDescriptor.h
     logbuffer/FrameDescriptor.h
     logbuffer/LogAppender.h
+    logbuffer/BufferClaim.h
     tests/MockAtomicBuffer.h)
 
 # static library

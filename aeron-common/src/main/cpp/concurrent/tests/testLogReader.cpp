@@ -105,11 +105,182 @@ TEST_F(LogReaderTest, shouldReadFirstMessage)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-
     const int framesRead = m_logReader.read([&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
         handler.onData(buffer, offset, length, header);
     }, INT_MAX);
 
     EXPECT_EQ(framesRead, 1);
+}
+
+TEST_F(LogReaderTest, shouldNotReadWhenLimitIsZero)
+{
+    MockDataHandler handler;
+    const util::index_t msgLength = 1;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(0)))
+        .Times(0);
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+        .Times(0);
+
+    const int framesRead = m_logReader.read([&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    {
+        handler.onData(buffer, offset, length, header);
+    }, 0);
+
+    EXPECT_EQ(framesRead, 0);
+}
+
+TEST_F(LogReaderTest, shouldNotReadPastTail)
+{
+    MockDataHandler handler;
+    const util::index_t msgLength = 1;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(0)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(0));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(0)))
+        .Times(0);
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+        .Times(0);
+
+    const int framesRead = m_logReader.read([&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    {
+        handler.onData(buffer, offset, length, header);
+    }, INT_MAX);
+
+    EXPECT_EQ(framesRead, 0);
+}
+
+TEST_F(LogReaderTest, shouldReadOneLimitedMessage)
+{
+    MockDataHandler handler;
+    const util::index_t msgLength = 1;
+    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_log, getInt32Ordered(testing::_))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(frameLength));
+    EXPECT_CALL(m_log, getUInt16(testing::_))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(0x01));
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+        .Times(1)
+        .InSequence(sequence);
+
+    const int framesRead = m_logReader.read([&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    {
+        handler.onData(buffer, offset, length, header);
+    }, 1);
+
+    EXPECT_EQ(framesRead, 1);
+}
+
+TEST_F(LogReaderTest, shouldReadMultipleMessages)
+{
+    MockDataHandler handler;
+    const util::index_t msgLength = 1;
+    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(0)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(frameLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(0)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(0x01));
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(alignedFrameLength)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(frameLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedFrameLength)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(0x01));
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), alignedFrameLength + DataHeader::LENGTH, msgLength, testing::_))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(alignedFrameLength * 2)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(0));
+
+    const int framesRead = m_logReader.read([&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    {
+        handler.onData(buffer, offset, length, header);
+    }, INT_MAX);
+
+    EXPECT_EQ(framesRead, 2);
+}
+
+TEST_F(LogReaderTest, shouldReadLastMessage)
+{
+    MockDataHandler handler;
+    const util::index_t msgLength = 1;
+    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const util::index_t startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(startOfMessage)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(frameLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(startOfMessage)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(0x01));
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataHeader::LENGTH, msgLength, testing::_))
+        .Times(1)
+        .InSequence(sequence);
+
+    m_logReader.seek(startOfMessage);
+    const int framesRead = m_logReader.read([&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    {
+        handler.onData(buffer, offset, length, header);
+    }, INT_MAX);
+
+    EXPECT_EQ(framesRead, 1);
+}
+
+TEST_F(LogReaderTest, shouldNotReadLastMessageWhenPadding)
+{
+    MockDataHandler handler;
+    const util::index_t msgLength = 1;
+    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const util::index_t startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(startOfMessage)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(frameLength));
+    EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(startOfMessage)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(FrameDescriptor::PADDING_FRAME_TYPE));
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataHeader::LENGTH, msgLength, testing::_))
+        .Times(0);
+
+    m_logReader.seek(startOfMessage);
+    const int framesRead = m_logReader.read([&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    {
+        handler.onData(buffer, offset, length, header);
+    }, INT_MAX);
+
+    EXPECT_EQ(framesRead, 0);
+    EXPECT_TRUE(m_logReader.isComplete());
 }

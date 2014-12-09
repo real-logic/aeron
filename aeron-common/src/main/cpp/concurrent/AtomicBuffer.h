@@ -65,7 +65,7 @@ public:
         *reinterpret_cast<std::int64_t *>(m_buffer + offset) = v;
     }
 
-    inline std::int64_t getInt64(util::index_t offset) const
+    inline COND_MOCK_VIRTUAL std::int64_t getInt64(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(std::int64_t));
         return *reinterpret_cast<std::int64_t *>(m_buffer + offset);
@@ -109,7 +109,7 @@ public:
         *reinterpret_cast<std::uint8_t *>(m_buffer + offset) = v;
     }
 
-    inline void putInt64Ordered(util::index_t offset, std::int64_t v)
+    inline COND_MOCK_VIRTUAL void putInt64Ordered(util::index_t offset, std::int64_t v)
     {
 //        printf("putInt64 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));

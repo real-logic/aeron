@@ -48,7 +48,8 @@ add_executable(concurrentTests
                 tests/testCountersManager.cpp
                 tests/testManyToOneRingBuffer.cpp
                 tests/testLogAppender.cpp
-                tests/testLogReader.cpp)
+                tests/testLogReader.cpp
+                tests/testBroadcastTransmitter.cpp)
 
 target_link_libraries(concurrentTests
                         aeron_concurrent

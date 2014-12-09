@@ -57,7 +57,7 @@ public:
         std::int32_t recordOffset = (std::int32_t)tail & m_mask;
         const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
 
-        const std::int32_t remainingBuffer = m_capacity - recordLength;
+        const std::int32_t remainingBuffer = m_capacity - recordOffset;
         if (remainingBuffer < recordLength)
         {
             insertPaddingRecord(m_buffer, tail, recordOffset, remainingBuffer);

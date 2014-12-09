@@ -44,6 +44,8 @@ public:
     MOCK_METHOD3(putBytes, void(util::index_t index, std::uint8_t *srcBuffer, util::index_t length));
     MOCK_METHOD2(putInt32Ordered, void(util::index_t offset, std::int32_t v));
     MOCK_METHOD1(getUInt16, std::uint16_t(util::index_t offset));
+    MOCK_CONST_METHOD1(getInt64, std::int64_t(util::index_t offset));
+    MOCK_METHOD2(putInt64Ordered, void(util::index_t, std::int64_t v));
 };
 
 }}}}

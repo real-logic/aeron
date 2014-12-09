@@ -35,6 +35,7 @@ SET(HEADERS
     broadcast/BroadcastBufferDescriptor.h
     broadcast/RecordDescriptor.h
     broadcast/BroadcastTransmitter.h
+    broadcast/BroadcastReceiver.h
     tests/MockAtomicBuffer.h)
 
 # static library

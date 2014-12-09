@@ -73,7 +73,41 @@ public:
 
     bool receiveNext()
     {
-        
+        const std::int64_t tail = m_buffer.getInt64Ordered(m_tailCounterIndex);
+        std::int64_t cursor = m_nextRecord;
+
+        if (tail > cursor)
+        {
+            m_recordOffset = (std::int32_t)cursor & m_mask;
+
+            if (!validate(m_buffer, cursor))
+            {
+                m_lappedCount += 1;
+                cursor = m_buffer.getInt64Ordered(m_latestCounterIndex);
+                m_recordOffset = (std::int32_t)cursor & m_mask;
+            }
+
+            m_cursor = cursor;
+            m_nextRecord = cursor + m_buffer.getInt32(RecordDescriptor::recLengthOffset(m_recordOffset));
+
+            if (RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::msgTypeOffset(m_recordOffset)))
+            {
+                m_recordOffset = 0;
+                m_cursor = m_nextRecord;
+                m_nextRecord += m_buffer.getInt32(RecordDescriptor::recLengthOffset(m_recordOffset));
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    inline bool validate()
+    {
+        // TODO: full fence
+
+        return validate(m_buffer, m_cursor);
     }
 
 private:
@@ -83,11 +117,15 @@ private:
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
-    util::index_t m_recordOffset;
-    util::index_t m_cursor;
-    util::index_t m_nextRecord;
+    std::int64_t m_recordOffset;
+    std::int64_t m_cursor;
+    std::int64_t m_nextRecord;
     std::atomic_long m_lappedCount;
 
+    inline bool validate(AtomicBuffer& buffer, std::int64_t cursor)
+    {
+        return cursor == buffer.getInt64Ordered(RecordDescriptor::tailSequenceOffset(m_recordOffset));
+    }
 };
 
 }}}}

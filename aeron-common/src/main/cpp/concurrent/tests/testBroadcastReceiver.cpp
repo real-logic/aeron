@@ -82,6 +82,10 @@ TEST_F(BroadcastReceiverTest, shouldNotBeLappedBeforeReception)
 
 TEST_F(BroadcastReceiverTest, shouldNotReceiveFromEmptyBuffer)
 {
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+        .Times(1)
+        .WillOnce(testing::Return(0));
+
     EXPECT_FALSE(m_broadcastReceiver.receiveNext());
 }
 
@@ -92,6 +96,234 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
     const std::int64_t tail = recordLength;
     const std::int64_t latestRecord = tail - recordLength;
     const std::int32_t recordOffset = (std::int32_t)latestRecord;
+    testing::Sequence sequence;
 
-    
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(tail));
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(LATEST_COUNTER_INDEX))
+        .Times(0);
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset)))
+        .Times(2)
+        .InSequence(sequence)
+        .WillRepeatedly(testing::Return(latestRecord));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(length));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+        .Times(2)
+        .WillRepeatedly(testing::Return(MSG_TYPE_ID));
+
+    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
+    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver.length(), length);
+    EXPECT_TRUE(m_broadcastReceiver.validate());
+}
+
+TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
+{
+    const std::int32_t length = 8;
+    const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
+    const std::int64_t tail = recordLength * 2;
+    const std::int64_t latestRecord = tail - recordLength;
+    const std::int32_t recordOffsetOne = 0;
+    const std::int32_t recordOffsetTwo = (std::int32_t)latestRecord;
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+        .Times(2)
+        .WillRepeatedly(testing::Return(tail));
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(LATEST_COUNTER_INDEX))
+        .Times(0);
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffsetOne)))
+        .Times(2)
+        .WillRepeatedly(testing::Return(0));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(recordOffsetOne)))
+        .Times(1)
+        .WillOnce(testing::Return(recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffsetOne)))
+        .Times(1)
+        .WillOnce(testing::Return(length));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffsetOne)))
+        .Times(2)
+        .WillRepeatedly(testing::Return(MSG_TYPE_ID));
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffsetTwo)))
+        .Times(2)
+        .WillRepeatedly(testing::Return(latestRecord));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(recordOffsetTwo)))
+        .Times(1)
+        .WillOnce(testing::Return(recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffsetTwo)))
+        .Times(1)
+        .WillOnce(testing::Return(length));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffsetTwo)))
+        .Times(2)
+        .WillRepeatedly(testing::Return(MSG_TYPE_ID));
+
+    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
+    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffsetOne));
+    EXPECT_EQ(m_broadcastReceiver.length(), length);
+
+    EXPECT_TRUE(m_broadcastReceiver.validate());
+
+    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
+    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffsetTwo));
+    EXPECT_EQ(m_broadcastReceiver.length(), length);
+
+    EXPECT_TRUE(m_broadcastReceiver.validate());
+}
+
+TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
+{
+    const std::int32_t length = 8;
+    const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
+    const std::int64_t tail = CAPACITY * 3 + RecordDescriptor::RECORD_ALIGNMENT + recordLength;
+    const std::int64_t latestRecord = tail - recordLength;
+    const std::int32_t recordOffset = (std::int32_t)latestRecord & (CAPACITY - 1);
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+        .Times(1)
+        .WillOnce(testing::Return(tail));
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(LATEST_COUNTER_INDEX))
+        .Times(1)
+        .WillOnce(testing::Return(latestRecord));
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(0)))
+        .Times(1)
+        .WillOnce(testing::Return(CAPACITY * 3));
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(latestRecord));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(length));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+        .Times(2)
+        .WillRepeatedly(testing::Return(MSG_TYPE_ID));
+
+    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
+    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver.length(), length);
+    EXPECT_TRUE(m_broadcastReceiver.validate());
+    EXPECT_GT(m_broadcastReceiver.lappedCount(), 0);
+}
+
+TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRecord)
+{
+    const std::int32_t length = 120;
+    const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
+    const std::int64_t catchupTail = (CAPACITY * 2) - RecordDescriptor::RECORD_ALIGNMENT;
+    const std::int64_t postPaddingTail = catchupTail + RecordDescriptor::RECORD_ALIGNMENT + recordLength;
+    const std::int64_t latestRecord = catchupTail - recordLength;
+    const std::int32_t catchupOffset = (std::int32_t)latestRecord & (CAPACITY - 1);
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+        .Times(2)
+        .WillOnce(testing::Return(catchupTail))
+        .WillOnce(testing::Return(postPaddingTail));
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(LATEST_COUNTER_INDEX))
+        .Times(1)
+        .WillOnce(testing::Return(latestRecord));
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(0)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(CAPACITY * 2));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(catchupOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(catchupOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(MSG_TYPE_ID));
+
+    const std::int32_t paddingOffset = (std::int32_t)catchupTail & (CAPACITY - 1);
+    const std::int32_t recordOffset = (std::int32_t)(postPaddingTail - recordLength) & (CAPACITY - 1);
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(paddingOffset)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(catchupTail));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(paddingOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(RecordDescriptor::RECORD_ALIGNMENT));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(paddingOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(RecordDescriptor::PADDING_MSG_TYPE_ID));
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset)))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(postPaddingTail - recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(length));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(MSG_TYPE_ID));
+
+    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
+    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
+    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver.length(), length);
+    EXPECT_TRUE(m_broadcastReceiver.validate());
+}
+
+TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
+{
+    const std::int32_t length = 8;
+    const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
+    const std::int64_t tail = recordLength;
+    const std::int64_t latestRecord = tail - recordLength;
+    const std::int32_t recordOffset = (std::int32_t)latestRecord;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+        .Times(1)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(tail));
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(LATEST_COUNTER_INDEX))
+        .Times(0);
+    EXPECT_CALL(m_mockBuffer, getInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset)))
+        .Times(2)
+        .InSequence(sequence)
+        .WillOnce(testing::Return(latestRecord))
+        .WillOnce(testing::Return(latestRecord + CAPACITY));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::recLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(recordLength));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+        .Times(1)
+        .WillOnce(testing::Return(length));
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+        .Times(2)
+        .WillRepeatedly(testing::Return(MSG_TYPE_ID));
+
+    EXPECT_TRUE(m_broadcastReceiver.receiveNext());
+    EXPECT_EQ(m_broadcastReceiver.typeId(), MSG_TYPE_ID);
+    EXPECT_EQ(&(m_broadcastReceiver.buffer()), &m_mockBuffer);
+    EXPECT_EQ(m_broadcastReceiver.offset(), RecordDescriptor::msgOffset(recordOffset));
+    EXPECT_EQ(m_broadcastReceiver.length(), length);
+    EXPECT_FALSE(m_broadcastReceiver.validate());
 }

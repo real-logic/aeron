@@ -117,7 +117,7 @@ public:
         mint_store_64_relaxed((mint_atomic64_t*)(m_buffer + offset), v);
     }
 
-    inline std::int64_t getInt64Ordered(util::index_t offset) const
+    inline COND_MOCK_VIRTUAL std::int64_t getInt64Ordered(util::index_t offset) const
     {
 //        printf("getInt64Ordered %d\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));

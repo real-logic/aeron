@@ -46,6 +46,7 @@ public:
     MOCK_METHOD1(getUInt16, std::uint16_t(util::index_t offset));
     MOCK_CONST_METHOD1(getInt64, std::int64_t(util::index_t offset));
     MOCK_METHOD2(putInt64Ordered, void(util::index_t, std::int64_t v));
+    MOCK_CONST_METHOD1(getInt64Ordered, std::int64_t(util::index_t));
 };
 
 }}}}

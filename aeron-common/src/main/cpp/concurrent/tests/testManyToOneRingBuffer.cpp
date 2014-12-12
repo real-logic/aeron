@@ -36,9 +36,9 @@ using namespace aeron::common;
 typedef std::array<std::uint8_t, BUFFER_SZ> buffer_t;
 typedef std::array<std::uint8_t, ODD_BUFFER_SZ> odd_sized_buffer_t;
 
-constexpr static std::int32_t MSG_TYPE_ID = 101;
-constexpr static util::index_t HEAD_COUNTER_INDEX = 1024 + RingBufferDescriptor::HEAD_COUNTER_OFFSET;
-constexpr static util::index_t TAIL_COUNTER_INDEX = 1024 + RingBufferDescriptor::TAIL_COUNTER_OFFSET;
+const static std::int32_t MSG_TYPE_ID = 101;
+const static util::index_t HEAD_COUNTER_INDEX = 1024 + RingBufferDescriptor::HEAD_COUNTER_OFFSET;
+const static util::index_t TAIL_COUNTER_INDEX = 1024 + RingBufferDescriptor::TAIL_COUNTER_OFFSET;
 
 class ManyToOneRingBufferTest : public testing::Test
 {

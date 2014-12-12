@@ -22,7 +22,7 @@
 
 #define CONCAT_SYMBOLS(x, y) x##y
 
-#if (COND_MOCK == true)
+#if COND_MOCK == 1
     #define COND_MOCK_VIRTUAL virtual
 #else
     #define COND_MOCK_VIRTUAL

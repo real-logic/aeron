@@ -19,7 +19,7 @@
 
 #include <gmock/gmock.h>
 
-#define COND_MOCK true
+#define COND_MOCK 1
 
 #include <concurrent/AtomicBuffer.h>
 

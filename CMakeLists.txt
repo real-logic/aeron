@@ -35,6 +35,7 @@ if(APPLE)
 elseif(WIN32)
     add_definitions(-DWIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-DNOMINMAX)
 
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Od /Zi")
     set(CMAKE_CXX_FLAGS_RELEASE "/MT")

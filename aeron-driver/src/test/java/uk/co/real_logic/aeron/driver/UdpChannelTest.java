@@ -200,14 +200,11 @@ public class UdpChannelTest
         final UdpChannel udpChannelLocal = UdpChannel.parse("udp://127.0.0.1@192.168.0.1:40456");
         final UdpChannel udpChannelLocalPort = UdpChannel.parse("udp://127.0.0.1:40455@192.168.0.1:40456");
         final UdpChannel udpChannelLocalhost = UdpChannel.parse("udp://localhost@localhost:40456");
-        // should resolve to 93.184.216.119
-        final UdpChannel udpChannelExampleCom = UdpChannel.parse("udp://example.com:40456");
 
         assertThat(udpChannel.canonicalForm(), is("UDP-00000000-0-c0a80001-40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-c0a80001-40456"));
         assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-c0a80001-40456"));
         assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-7f000001-0-7f000001-40456"));
-        assertThat(udpChannelExampleCom.canonicalForm(), is("UDP-00000000-0-5db8d877-40456"));
     }
 
     @Test
@@ -228,14 +225,23 @@ public class UdpChannelTest
         final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?local=127.0.0.1|remote=192.168.0.1:40456");
         final UdpChannel udpChannelLocalPort = UdpChannel.parse("aeron:udp?local=127.0.0.1:40455|remote=192.168.0.1:40456");
         final UdpChannel udpChannelLocalhost = UdpChannel.parse("aeron:udp?local=localhost|remote=localhost:40456");
-        // should resolve to 93.184.216.119
-        final UdpChannel udpChannelExampleCom = UdpChannel.parse("aeron:udp?remote=example.com:40456");
 
         assertThat(udpChannel.canonicalForm(), is("UDP-00000000-0-c0a80001-40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-c0a80001-40456"));
         assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-c0a80001-40456"));
         assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-7f000001-0-7f000001-40456"));
-        assertThat(udpChannelExampleCom.canonicalForm(), is("UDP-00000000-0-5db8d877-40456"));
+    }
+
+    @Test
+    public void shouldHandleCanonicalFormWithExampleCom() throws Exception
+    {
+        final String exampleDotCom = resolveToHexAddress("example.com");
+
+        final UdpChannel udpChannelExampleCom0 = UdpChannel.parse("aeron:udp?remote=example.com:40456");
+        assertThat(udpChannelExampleCom0.canonicalForm(), is("UDP-00000000-0-" + exampleDotCom + "-40456"));
+
+        final UdpChannel udpChannelExampleCom1 = UdpChannel.parse("udp://example.com:40456");
+        assertThat(udpChannelExampleCom1.canonicalForm(), is("UDP-00000000-0-" + exampleDotCom + "-40456"));
     }
 
     @Test
@@ -328,5 +334,19 @@ public class UdpChannelTest
                 }
             }
         };
+    }
+
+    private String resolveToHexAddress(String host) throws UnknownHostException
+    {
+        final InetAddress address = InetAddress.getByName(host);
+        String asHex = "";
+
+        final byte[] address2 = address.getAddress();
+        for (final byte b : address2)
+        {
+            final int i = (0xFF) & b;
+            asHex += Integer.toHexString(i);
+        }
+        return asHex;
     }
 }

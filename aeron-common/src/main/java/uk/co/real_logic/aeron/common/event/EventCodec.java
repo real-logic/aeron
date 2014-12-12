@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.event;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -53,7 +52,7 @@ public class EventCodec
     private static final ThreadLocal<PublicationReadyFlyweight> PUBLICATION_READY =
         ThreadLocal.withInitial(PublicationReadyFlyweight::new);
     private static final ThreadLocal<ConnectionReadyFlyweight> CONNECTION_READY =
-            ThreadLocal.withInitial(ConnectionReadyFlyweight::new);
+        ThreadLocal.withInitial(ConnectionReadyFlyweight::new);
     private static final ThreadLocal<CorrelatedMessageFlyweight> CORRELATED_MSG =
         ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
     private static final ThreadLocal<ConnectionMessageFlyweight> CONNECTION_MSG =
@@ -98,7 +97,8 @@ public class EventCodec
         final int captureLength = determineCaptureLength(bufferLength);
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
 
-        relativeOffset += encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
+        encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
+        relativeOffset += captureLength;
 
         return relativeOffset;
     }
@@ -370,7 +370,8 @@ public class EventCodec
         encodingBuffer.putInt(offset + relativeOffset, addrBuffer.length, LITTLE_ENDIAN);
         relativeOffset += SIZE_OF_INT;
 
-        relativeOffset += encodingBuffer.putBytes(offset + relativeOffset, addrBuffer);
+        encodingBuffer.putBytes(offset + relativeOffset, addrBuffer);
+        relativeOffset += addrBuffer.length;
 
         return relativeOffset;
     }
@@ -394,9 +395,9 @@ public class EventCodec
         final long timestamp = buffer.getLong(offset + relativeOffset, LITTLE_ENDIAN);
         relativeOffset += BitUtil.SIZE_OF_LONG;
 
-        builder.append(
-            String.format("[%1$f] %2$s [%3$d/%4$d]",
-                (double)timestamp / 1000000000.0, code.name(), captureLength, bufferLength));
+        builder.append(String.format(
+            "[%1$f] %2$s [%3$d/%4$d]",
+            (double)timestamp / 1000000000.0, code.name(), captureLength, bufferLength));
 
         return relativeOffset;
     }
@@ -411,7 +412,8 @@ public class EventCodec
         final byte[] addressBuffer = new byte[buffer.getInt(offset + relativeOffset)];
         relativeOffset += SIZE_OF_INT;
 
-        relativeOffset += buffer.getBytes(offset + relativeOffset, addressBuffer);
+        buffer.getBytes(offset + relativeOffset, addressBuffer);
+        relativeOffset += addressBuffer.length;
 
         try
         {
@@ -427,7 +429,8 @@ public class EventCodec
 
     private static String dissect(final DataHeaderFlyweight header)
     {
-        return String.format("%s %x len %d %x:%x:%x @%x",
+        return String.format(
+            "%s %x len %d %x:%x:%x @%x",
             header.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA",
             header.flags(),
             header.frameLength(),
@@ -439,7 +442,8 @@ public class EventCodec
 
     private static String dissect(final StatusMessageFlyweight header)
     {
-        return String.format("SM %x len %d %x:%x:%x @%x %d",
+        return String.format(
+            "SM %x len %d %x:%x:%x @%x %d",
             header.flags(),
             header.frameLength(),
             header.sessionId(),
@@ -451,7 +455,8 @@ public class EventCodec
 
     private static String dissect(final NakFlyweight header)
     {
-        return String.format("NAK %x len %d %x:%x:%x @%x %d",
+        return String.format(
+            "NAK %x len %d %x:%x:%x @%x %d",
             header.flags(),
             header.frameLength(),
             header.sessionId(),
@@ -463,7 +468,8 @@ public class EventCodec
 
     private static String dissect(final SetupFlyweight header)
     {
-        return String.format("SETUP %x len %d %x:%x:%x @%x %d MTU %d",
+        return String.format(
+            "SETUP %x len %d %x:%x:%x @%x %d MTU %d",
             header.flags(),
             header.frameLength(),
             header.sessionId(),
@@ -476,7 +482,8 @@ public class EventCodec
 
     private static String dissect(final PublicationMessageFlyweight command)
     {
-        return String.format("%3$s %1$x:%2$x [%5$x:%4$x]",
+        return String.format(
+            "%3$s %1$x:%2$x [%5$x:%4$x]",
             command.sessionId(),
             command.streamId(),
             command.channel(),
@@ -486,7 +493,8 @@ public class EventCodec
 
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
-        return String.format("%s %d [%x][%x:%x]",
+        return String.format(
+            "%s %d [%x][%x:%x]",
             command.channel(),
             command.streamId(),
             command.registrationCorrelationId(),
@@ -498,11 +506,12 @@ public class EventCodec
     {
         final String locations =
             IntStream.range(0, 6)
-                 .mapToObj((i) -> String.format("{%s, %d@%x}",
-                     command.location(i), command.bufferLength(i), command.bufferOffset(i)))
-                 .collect(Collectors.joining("\n    "));
+                     .mapToObj((i) -> String.format(
+                         "{%s, %d@%x}", command.location(i), command.bufferLength(i), command.bufferOffset(i)))
+                     .collect(Collectors.joining("\n    "));
 
-        return String.format("%s %x:%x:%x %x [%x]\n    %s",
+        return String.format(
+            "%s %x:%x:%x %x [%x]\n    %s",
             command.channel(),
             command.sessionId(),
             command.streamId(),
@@ -516,19 +525,20 @@ public class EventCodec
     {
         final String locations =
             IntStream.range(0, 6)
-                .mapToObj((i) -> String.format("{%s, %d@%x}",
-                    command.location(i), command.bufferLength(i), command.bufferOffset(i)))
-                .collect(Collectors.joining("\n    "));
+                     .mapToObj((i) -> String.format(
+                         "{%s, %d@%x}", command.location(i), command.bufferLength(i), command.bufferOffset(i)))
+                     .collect(Collectors.joining("\n    "));
 
-        return String.format("%s %x:%x:%x %x %s [%x]\n    %s",
-            command.channel(),
-            command.sessionId(),
-            command.streamId(),
-            command.termId(),
-            command.positionIndicatorCount(),
-            command.sourceInfo(),
-            command.correlationId(),
-            locations);
+        return String.format(
+            "%s %x:%x:%x %x %s [%x]\n    %s",
+             command.channel(),
+             command.sessionId(),
+             command.streamId(),
+             command.termId(),
+             command.positionIndicatorCount(),
+             command.sourceInfo(),
+             command.correlationId(),
+             locations);
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)
@@ -538,7 +548,8 @@ public class EventCodec
 
     private static String dissect(final ConnectionMessageFlyweight command)
     {
-        return String.format("%s %x:%x [%x]",
+        return String.format(
+            "%s %x:%x [%x]",
             command.channel(),
             command.sessionId(),
             command.streamId(),

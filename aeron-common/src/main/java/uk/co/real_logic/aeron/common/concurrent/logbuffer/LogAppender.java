@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -226,8 +225,7 @@ public class LogAppender extends LogBuffer
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
         final int headerLength = this.headerLength;
-        final int requiredCapacity =
-            align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
+        final int requiredCapacity = align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
         int frameOffset = getTailAndAdd(requiredCapacity);
 
         final UnsafeBuffer logBuffer = logBuffer();

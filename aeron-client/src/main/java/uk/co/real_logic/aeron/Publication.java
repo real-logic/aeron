@@ -23,8 +23,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.PositionIndicator;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 
 /**
@@ -42,7 +40,6 @@ public class Publication implements AutoCloseable
     private final long registrationId;
     private final LogAppender[] logAppenders;
     private final PositionIndicator limit;
-    private final AtomicInteger activeTermId;
     private final int positionBitsToShift;
     private final int initialTermId;
 
@@ -50,6 +47,7 @@ public class Publication implements AutoCloseable
 
     private int refCount = 1;
     private int activeIndex;
+    private volatile int activeTermId;
 
     Publication(
         final ClientConductor clientConductor,
@@ -68,7 +66,7 @@ public class Publication implements AutoCloseable
         this.sessionId = sessionId;
         this.managedBuffers = managedBuffers;
         this.registrationId = registrationId;
-        this.activeTermId = new AtomicInteger(initialTermId);
+        this.activeTermId = initialTermId;
         this.logAppenders = logAppenders;
         this.limit = limit;
         this.activeIndex = termIdToBufferIndex(initialTermId);
@@ -145,7 +143,7 @@ public class Publication implements AutoCloseable
     public boolean offer(final DirectBuffer buffer, final int offset, final int length)
     {
         boolean succeeded = false;
-        final int activeTermId = this.activeTermId.get();
+        final int activeTermId = this.activeTermId;
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
@@ -203,7 +201,7 @@ public class Publication implements AutoCloseable
     public boolean tryClaim(final int length, final BufferClaim bufferClaim)
     {
         boolean succeeded = false;
-        final int activeTermId = this.activeTermId.get();
+        final int activeTermId = this.activeTermId;
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
@@ -254,7 +252,7 @@ public class Publication implements AutoCloseable
 
         final int previousIndex = rotatePrevious(activeIndex);
         this.activeIndex = nextIndex;
-        this.activeTermId.lazySet(newTermId);
+        this.activeTermId = newTermId;
         logAppenders[previousIndex].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
     }
 

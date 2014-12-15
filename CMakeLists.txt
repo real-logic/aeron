@@ -35,6 +35,7 @@ if(APPLE)
 elseif(WIN32)
     add_definitions(-DWIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+    add_definitions(-DNOMINMAX)
 
     set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Od /Zi")
     set(CMAKE_CXX_FLAGS_RELEASE "/MT")
@@ -50,6 +51,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/binaries")
 set(AERON_COMMON_PATH "${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp")
 set(AERON_3RDPARTY_PATH "${AERON_COMMON_PATH}/3rdparty")
 set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
+set(AERON_CLIENT_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 
 ##########################################################
 # 3rd party libs
@@ -71,6 +73,6 @@ add_subdirectory(${AERON_COMMON_PATH}/concurrent)
 add_subdirectory(${AERON_COMMON_PATH}/common)
 add_subdirectory(${AERON_COMMON_PATH}/command)
 add_subdirectory(${AERON_SAMPLES_PATH})
-
+add_subdirectory(${AERON_CLIENT_PATH})
 
 

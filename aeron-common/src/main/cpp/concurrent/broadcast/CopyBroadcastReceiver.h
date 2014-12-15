@@ -17,9 +17,10 @@
 #ifndef INCLUDED_AERON_CONCURRENT_BROADCAST_COPY_BROADCAST_RECEIVER__
 #define INCLUDED_AERON_CONCURRENT_BROADCAST_COPY_BROADCAST_RECEIVER__
 
+#include <array>
+#include <functional>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
-#include <array>
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
 #include "BroadcastReceiver.h"

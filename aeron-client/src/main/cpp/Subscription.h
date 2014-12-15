@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_UTIL_MACRO_UTIL_FILE__
-#define INCLUDED_AERON_UTIL_MACRO_UTIL_FILE__
+#ifndef INCLUDED_AERON_SUBSCRIPTION__
+#define INCLUDED_AERON_SUBSCRIPTION__
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
+namespace aeron {
 
-#define CONCAT_SYMBOLS(x, y) x##y
+class Subscription
+{
+public:
+    Subscription()
+    {
 
-#if COND_MOCK == 1
-    #define COND_MOCK_VIRTUAL virtual
-#else
-    #define COND_MOCK_VIRTUAL
-#endif
+    }
+
+private:
+};
+
+}
 
 #endif

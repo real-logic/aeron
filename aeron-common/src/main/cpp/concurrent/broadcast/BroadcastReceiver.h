@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_CONCURRENT_BROADCAST_RECEIVER__
 #define INCLUDED_AERON_CONCURRENT_BROADCAST_RECEIVER__
 
+#include <atomic>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include "BroadcastBufferDescriptor.h"
@@ -120,7 +121,7 @@ private:
     std::int64_t m_recordOffset;
     std::int64_t m_cursor;
     std::int64_t m_nextRecord;
-    std::atomic_long m_lappedCount;
+    std::atomic<long> m_lappedCount;
 
     inline bool validate(AtomicBuffer& buffer, std::int64_t cursor)
     {

@@ -15,10 +15,10 @@
 #
 
 SET(HEADERS
-    Flyweight.h
-    TermHelper.h
-    AgentRunner.h
-    BusySpinIdleStrategy.h)
+    ClientConductor.h
+    Aeron.h
+    Publication.h
+    Subscription.h)
 
 # header only library
-add_custom_target(aeron_common SOURCES ${HEADERS})
+add_custom_target(aeron_client SOURCES ${HEADERS})

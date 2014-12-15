@@ -19,6 +19,7 @@
 
 #include <limits.h>
 #include <functional>
+#include <algorithm>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include "RingBufferDescriptor.h"

@@ -32,6 +32,40 @@ namespace aeron {
 using namespace aeron::common::common;
 using namespace aeron::common::concurrent::logbuffer;
 
+inline static void defaultErrorHandler(util::SourcedException& exception)
+{
+    std::cerr << "ERROR: " << exception.what() << " : " << exception.where() << std::endl;
+    ::exit(-1);
+}
+
+class Context
+{
+    friend class Aeron;
+public:
+    typedef Context this_t;
+
+    Context() :
+        m_exceptionHandler(defaultErrorHandler)
+    {
+    }
+
+    this_t& conclude()
+    {
+        return *this;
+    }
+
+    this_t& useSharedMemoryOnLinux()
+    {
+        // TODO: set data dir
+        // TODO: set admin dir
+        // TODO: set counters dir
+        return *this;
+    }
+
+private:
+    exception_handler_t m_exceptionHandler;
+};
+
 class Aeron
 {
 public:
@@ -53,7 +87,7 @@ public:
 
     Publication& addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
     {
-        return *new Publication();
+        return *new Publication(channel, streamId, sessionId);
     }
 
     Subscription& addSubscription(const std::string& channel, std::int32_t streamId, handler_t& handler)
@@ -66,32 +100,6 @@ private:
     BusySpinIdleStrategy m_idleStrategy;
     AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
     Context& m_context;
-};
-
-inline static void defaultErrorHandler(common::util::SourcedException& exception)
-{
-    std::cerr << "ERROR: " << exception.what() << " : " << exception.where() << std::endl;
-    ::exit(-1);
-}
-
-class Context
-{
-friend class Aeron;
-public:
-    typedef Context this_t;
-
-    Context() :
-        m_exceptionHandler(defaultErrorHandler)
-    {
-    }
-
-    this_t& conclude()
-    {
-        return *this;
-    }
-
-private:
-    exception_handler_t m_exceptionHandler;
 };
 
 }

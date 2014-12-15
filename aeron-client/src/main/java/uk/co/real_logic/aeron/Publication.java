@@ -158,7 +158,7 @@ public class Publication implements AutoCloseable
                     break;
 
                 case TRIPPED:
-                    nextTerm();
+                    nextTerm(activeTermId);
                     break;
 
                 case FAILURE:
@@ -216,7 +216,7 @@ public class Publication implements AutoCloseable
                     break;
 
                 case TRIPPED:
-                    nextTerm();
+                    nextTerm(activeTermId);
                     break;
 
                 case FAILURE:
@@ -240,9 +240,8 @@ public class Publication implements AutoCloseable
         }
     }
 
-    private void nextTerm()
+    private void nextTerm(final int activeTermId)
     {
-        final int activeTermId = this.activeTermId.get();
         final int newTermId = activeTermId + 1;
         final int activeIndex = this.activeIndex;
 

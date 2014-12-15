@@ -207,17 +207,18 @@ public class DriverPublication implements AutoCloseable
      */
     public int cleanLogBuffer()
     {
+        int workCount = 0;
+
         for (final LogBuffer logBuffer : logScanners)
         {
             if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
             {
                 logBuffer.clean();
-
-                return 1;
+                workCount = 1;
             }
         }
 
-        return 0;
+        return workCount;
     }
 
     public long timeOfFlush()

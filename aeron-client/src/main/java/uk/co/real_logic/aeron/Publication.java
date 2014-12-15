@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
@@ -29,7 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 
 /**
- * Publication end of a channel for publishing messages to subscribers.
+ * Publication end of a channel and stream for publishing messages to subscribers.
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publisher threads.
  */
@@ -146,10 +145,11 @@ public class Publication implements AutoCloseable
     public boolean offer(final DirectBuffer buffer, final int offset, final int length)
     {
         boolean succeeded = false;
+        final int activeTermId = this.activeTermId.get();
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (isWithinFlowControlLimit(currentTail))
+        if (isWithinFlowControlLimit(activeTermId, currentTail))
         {
             switch (logAppender.append(buffer, offset, length))
             {
@@ -203,10 +203,11 @@ public class Publication implements AutoCloseable
     public boolean tryClaim(final int length, final BufferClaim bufferClaim)
     {
         boolean succeeded = false;
+        final int activeTermId = this.activeTermId.get();
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (isWithinFlowControlLimit(currentTail))
+        if (isWithinFlowControlLimit(activeTermId, currentTail))
         {
             switch (logAppender.claim(length, bufferClaim))
             {
@@ -241,30 +242,25 @@ public class Publication implements AutoCloseable
 
     private void nextTerm()
     {
-        final int nextIndex = rotateNext(activeIndex);
-
-        final LogAppender nextAppender = logAppenders[nextIndex];
         final int activeTermId = this.activeTermId.get();
         final int newTermId = activeTermId + 1;
+        final int activeIndex = this.activeIndex;
 
+        final int nextIndex = rotateNext(activeIndex);
+        final LogAppender nextAppender = logAppenders[nextIndex];
         ensureClean(nextAppender);
 
         dataHeader.wrap(nextAppender.defaultHeader());
         dataHeader.termId(newTermId);
 
-        this.activeTermId.lazySet(newTermId);
         final int previousIndex = rotatePrevious(activeIndex);
-        activeIndex = nextIndex;
+        this.activeIndex = nextIndex;
+        this.activeTermId.lazySet(newTermId);
         logAppenders[previousIndex].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
     }
 
-    private boolean isWithinFlowControlLimit(final int currentTail)
+    private boolean isWithinFlowControlLimit(final int activeTermId, final int currentTail)
     {
-        return position(currentTail) < limit.position();
-    }
-
-    private long position(final int currentTail)
-    {
-        return TermHelper.calculatePosition(activeTermId.get(), currentTail, positionBitsToShift, initialTermId);
+        return TermHelper.calculatePosition(activeTermId, currentTail, positionBitsToShift, initialTermId) < limit.position();
     }
 }

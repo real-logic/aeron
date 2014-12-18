@@ -21,8 +21,11 @@ add_executable(AeronStat AeronStat.cpp ${HEADERS})
 add_executable(BasicPublisher BasicPublisher.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
-                      aeron_concurrent
-                      aeron_util)
+    aeron_concurrent
+    aeron_util)
 
-target_link_libraries(BasicPublisher aeron_concurrent aeron_util)
+target_link_libraries(BasicPublisher
+    aeron_concurrent
+    aeron_util
+    aeron_client)
 

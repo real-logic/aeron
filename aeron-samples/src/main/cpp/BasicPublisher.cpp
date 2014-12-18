@@ -84,7 +84,8 @@ int main (int argc, char** argv)
 
         aeron::Context context;
         Aeron aeron(context.useSharedMemoryOnLinux());
-        Publication publication = aeron.addPublication(settings.channel, settings.streamId);
+        // shared so that it will be deleted when going out of scope
+        std::shared_ptr<Publication> publication(aeron.addPublication(settings.channel, settings.streamId));
 
         MINT_DECL_ALIGNED(buffer_t buffer, 16);
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
@@ -99,7 +100,7 @@ int main (int argc, char** argv)
             std::cout << "offering " << i << "/" << settings.numberOfMessages;
             std::cout.flush();
 
-            const bool result = publication.offer(srcBuffer, 0, messageLen);
+            const bool result = publication->offer(srcBuffer, 0, messageLen);
 
             if (!result)
             {

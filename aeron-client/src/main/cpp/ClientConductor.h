@@ -17,7 +17,14 @@
 #ifndef INCLUDED_AERON_CLIENT_CONDUCTOR__
 #define INCLUDED_AERON_CLIENT_CONDUCTOR__
 
+#include <concurrent/logbuffer/LogReader.h>
+#include <vector>
+#include "Publication.h"
+#include "Subscription.h"
+
 namespace aeron {
+
+using namespace aeron::common::concurrent::logbuffer;
 
 class ClientConductor
 {
@@ -36,7 +43,24 @@ public:
     {
     }
 
+    /*
+     * non-blocking API semantics
+     * - Publication & Subscription are valid, but no-op offer/poll until successful registration
+     * - on error (driver timeout, etc.), deliver notification via errorHandler
+     * - next call to method of Publication or Subscription causes exception
+     */
+
+    Publication* addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
+    void releasePublication(Publication* publication);
+
+    Subscription* addSubscription(const std::string& channel, std::int32_t streamId, handler_t& handler);
+    void releaseSubscription(Subscription* subscription);
+
 private:
+    std::mutex m_publicationsLock;
+    std::mutex m_subscriptionsLock;
+    std::vector<Publication*> m_publications;
+    std::vector<Subscription*> m_subscriptions;
 };
 
 }

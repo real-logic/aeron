@@ -14,11 +14,16 @@
 # limitations under the License.
 #
 
+SET(SOURCE
+    Publication.cpp
+    Subscription.cpp
+    ClientConductor.cpp)
+
 SET(HEADERS
     ClientConductor.h
     Aeron.h
     Publication.h
     Subscription.h)
 
-# header only library
-add_custom_target(aeron_client SOURCES ${HEADERS})
+# static library
+add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

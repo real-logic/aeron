@@ -17,17 +17,35 @@
 #ifndef INCLUDED_AERON_SUBSCRIPTION__
 #define INCLUDED_AERON_SUBSCRIPTION__
 
+#include <iostream>
+
 namespace aeron {
+
+class ClientConductor;
 
 class Subscription
 {
+friend class ClientConductor;
 public:
-    Subscription()
-    {
 
+    virtual ~Subscription();
+
+    inline const std::string& channel() const
+    {
+        return m_channel;
+    }
+
+    inline std::int32_t streamId() const
+    {
+        return m_streamId;
     }
 
 private:
+    ClientConductor& m_conductor;
+    const std::string& m_channel;
+    std::int32_t m_streamId;
+
+    Subscription(ClientConductor& conductor, const std::string& channel, std::int32_t streamId);
 };
 
 }

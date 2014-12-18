@@ -25,14 +25,14 @@ namespace aeron {
 
 using namespace aeron::common;
 
+class ClientConductor;
+
 class Publication
 {
-friend class Aeron;
+friend class ClientConductor;
 public:
-    virtual ~Publication()
-    {
-        // TODO: call back into conductor to deref
-    }
+
+    virtual ~Publication();
 
     inline const std::string& channel() const
     {
@@ -69,18 +69,13 @@ public:
     }
 
 private:
+    ClientConductor& m_conductor;
     const std::string& m_channel;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
 
     // Aeron should only be the one constructing these
-    Publication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId) :
-        m_channel(channel),
-        m_streamId(streamId),
-        m_sessionId(sessionId)
-    {
-
-    }
+    Publication(ClientConductor& conductor, const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
 };
 
 }

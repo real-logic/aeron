@@ -85,14 +85,21 @@ public:
         m_conductorRunner.close();
     }
 
-    Publication& addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
+    inline Publication* addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
     {
-        return *new Publication(channel, streamId, sessionId);
+        std::int32_t sessionIdToRequest = sessionId;
+
+        if (0 == sessionIdToRequest)
+        {
+            // TODO: generate random sessionIdToRequest
+        }
+
+        return m_conductor.addPublication(channel, streamId, sessionIdToRequest);
     }
 
-    Subscription& addSubscription(const std::string& channel, std::int32_t streamId, handler_t& handler)
+    inline Subscription* addSubscription(const std::string& channel, std::int32_t streamId, handler_t& handler)
     {
-        return *new Subscription();
+        return m_conductor.addSubscription(channel, streamId, handler);
     }
 
 private:

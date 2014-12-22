@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
@@ -191,12 +192,12 @@ class ClientConductor implements Agent, DriverListener
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
+        final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             final ManagedBuffer logBuffer = mapBuffer(message, i);
             final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
-            final byte[] header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
 
             logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, mtuLength);
             managedBuffers[i * 2] = logBuffer;

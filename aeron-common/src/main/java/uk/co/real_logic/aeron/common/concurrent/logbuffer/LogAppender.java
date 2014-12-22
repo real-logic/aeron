@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.agrona.BitUtil.align;
@@ -46,7 +47,7 @@ public class LogAppender extends LogBuffer
         FAILURE,
     }
 
-    private final byte[] defaultHeader;
+    private final MutableDirectBuffer defaultHeader;
     private final int headerLength;
     private final int maxMessageLength;
     private final int maxFrameLength;
@@ -61,15 +62,18 @@ public class LogAppender extends LogBuffer
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public LogAppender(
-        final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer, final byte[] defaultHeader, final int maxFrameLength)
+        final UnsafeBuffer logBuffer,
+        final UnsafeBuffer stateBuffer,
+        final MutableDirectBuffer defaultHeader,
+        final int maxFrameLength)
     {
         super(logBuffer, stateBuffer);
 
-        checkHeaderLength(defaultHeader.length);
+        checkHeaderLength(defaultHeader.capacity());
         checkMaxFrameLength(maxFrameLength);
 
         this.defaultHeader = defaultHeader;
-        this.headerLength = defaultHeader.length;
+        this.headerLength = defaultHeader.capacity();
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.calculateMaxMessageLength(capacity());
         this.maxPayloadLength = maxFrameLength - headerLength;
@@ -110,7 +114,7 @@ public class LogAppender extends LogBuffer
      *
      * @return the default header applied to each record.
      */
-    public byte[] defaultHeader()
+    public MutableDirectBuffer defaultHeader()
     {
         return defaultHeader;
     }

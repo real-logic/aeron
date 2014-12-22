@@ -21,6 +21,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -58,8 +59,9 @@ public class SenderTest
     private static final int INITIAL_TERM_ID = 3;
     private static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
-    private static final byte[] HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
-    private static final int ALIGNED_FRAME_LENGTH = align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
+    private static final MutableDirectBuffer HEADER =
+        DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
+    private static final int ALIGNED_FRAME_LENGTH = align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
     private static final long PUBLICATION_ID = 7L;
 
     private final EventLogger mockLogger = mock(EventLogger.class);
@@ -133,7 +135,7 @@ public class SenderTest
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,
-            HEADER.length,
+            HEADER.capacity(),
             MAX_FRAME_LENGTH,
             spySenderFlowControl.initialPositionLimit(INITIAL_TERM_ID, (int)LOG_BUFFER_SIZE),
             mockSystemCounters);
@@ -424,7 +426,7 @@ public class SenderTest
 
     private int offsetOfMessage(final int offset)
     {
-        return (offset - 1) * align(HEADER.length + PAYLOAD.length, FRAME_ALIGNMENT);
+        return (offset - 1) * align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
     }
 
 }

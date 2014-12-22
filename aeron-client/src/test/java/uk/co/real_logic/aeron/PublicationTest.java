@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -53,7 +54,7 @@ public class PublicationTest
     private Publication publication;
     private PositionIndicator limit;
     private LogAppender[] appenders;
-    private byte[][] headers;
+    private MutableDirectBuffer[] headers;
     private ManagedBuffer[] managedBuffers;
 
     @Before
@@ -64,11 +65,11 @@ public class PublicationTest
         when(limit.position()).thenReturn(2L * SEND_BUFFER_CAPACITY);
 
         appenders = new LogAppender[BUFFER_COUNT];
-        headers = new byte[BUFFER_COUNT][];
+        headers = new MutableDirectBuffer[BUFFER_COUNT];
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             appenders[i] = mock(LogAppender.class);
-            final byte[] header = new byte[DataHeaderFlyweight.HEADER_LENGTH];
+            final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(0, 0, 0);
             headers[i] = header;
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
             when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCESS);

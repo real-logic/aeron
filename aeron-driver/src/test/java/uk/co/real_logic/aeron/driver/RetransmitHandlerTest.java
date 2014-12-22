@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import org.junit.experimental.theories.DataPoint;
@@ -59,7 +58,7 @@ public class RetransmitHandlerTest
     private final UnsafeBuffer stateBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
 
     private final LogAppender logAppender = new LogAppender(
-        logBuffer, stateBuffer, DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, 1024);
+        logBuffer, stateBuffer, DataHeaderFlyweight.createDefaultHeader(0, 0 , 0), 1024);
     private final LogRebuilder logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
@@ -85,7 +84,7 @@ public class RetransmitHandlerTest
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> RECEIVER_ADD_DATA_FRAME =
-        (h, i) -> h.addReceivedDataFrame(i);
+        RetransmitHandlerTest::addReceivedDataFrame;
 
     @Theory
     public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)

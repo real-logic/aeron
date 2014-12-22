@@ -68,10 +68,10 @@ public class MockBufferUsage
 
             appendersSession1[i] = new LogAppender(
                 logBuffersSession1[i], stateBuffersSession1[i],
-                DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                DataHeaderFlyweight.createDefaultHeader(0, 0, 0), MAX_FRAME_LENGTH);
             appendersSession2[i] = new LogAppender(
                 logBuffersSession2[i], stateBuffersSession2[i],
-                DataHeaderFlyweight.DEFAULT_HEADER_NULL_IDS, MAX_FRAME_LENGTH);
+                DataHeaderFlyweight.createDefaultHeader(0, 0, 0), MAX_FRAME_LENGTH);
         }
     }
 

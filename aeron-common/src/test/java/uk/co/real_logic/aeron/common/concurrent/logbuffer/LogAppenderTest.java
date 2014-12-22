@@ -19,6 +19,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -36,7 +37,7 @@ public class LogAppenderTest
     private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_LOG_SIZE;
     private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
-    private static final byte[] DEFAULT_HEADER = new byte[BASE_HEADER_LENGTH + SIZE_OF_INT];
+    private static final MutableDirectBuffer DEFAULT_HEADER = new UnsafeBuffer(new byte[BASE_HEADER_LENGTH + SIZE_OF_INT]);
 
     private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
     private final UnsafeBuffer stateBuffer = mock(UnsafeBuffer.class);
@@ -93,13 +94,13 @@ public class LogAppenderTest
     public void shouldThrowExceptionOnDefaultHeaderLengthLessThanBaseHeaderLength()
     {
         final int length = BASE_HEADER_LENGTH - 1;
-        logAppender = new LogAppender(logBuffer, stateBuffer, new byte[length], MAX_FRAME_LENGTH);
+        logAppender = new LogAppender(logBuffer, stateBuffer, new UnsafeBuffer(new byte[length]), MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnDefaultHeaderLengthNotOnWordSizeBoundary()
     {
-        logAppender = new LogAppender(logBuffer, stateBuffer, new byte[31], MAX_FRAME_LENGTH);
+        logAppender = new LogAppender(logBuffer, stateBuffer, new UnsafeBuffer(new byte[31]), MAX_FRAME_LENGTH);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -142,7 +143,7 @@ public class LogAppenderTest
     @Test
     public void shouldAppendFrameToEmptyLog()
     {
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
@@ -165,7 +166,7 @@ public class LogAppenderTest
     @Test
     public void shouldAppendFrameTwiceToLog()
     {
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
@@ -200,7 +201,7 @@ public class LogAppenderTest
     public void shouldTripWhenAppendingToLogAtCapacity()
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
@@ -219,7 +220,7 @@ public class LogAppenderTest
     public void shouldFailWhenTheLogIsAlreadyTripped()
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
@@ -239,7 +240,7 @@ public class LogAppenderTest
     public void shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacity()
     {
         final int msgLength = 120;
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
         final int tailValue = logAppender.capacity() - align(msgLength, FRAME_ALIGNMENT);
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
@@ -261,7 +262,7 @@ public class LogAppenderTest
     @Test
     public void shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacityIncludingHeader()
     {
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final int msgLength = 120;
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
         final int tailValue = logAppender.capacity() - (requiredFrameSize + (headerLength - FRAME_ALIGNMENT));
@@ -285,7 +286,7 @@ public class LogAppenderTest
     public void shouldFragmentMessageOverTwoFrames()
     {
         final int msgLength = logAppender.maxPayloadLength() + 1;
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final int frameLength = headerLength + 1;
         final int requiredCapacity = align(headerLength + 1, FRAME_ALIGNMENT) + logAppender.maxFrameLength();
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[msgLength]);
@@ -316,7 +317,7 @@ public class LogAppenderTest
     @Test
     public void shouldClaimRegionForZeroCopyEncoding()
     {
-        final int headerLength = DEFAULT_HEADER.length;
+        final int headerLength = DEFAULT_HEADER.capacity();
         final int msgLength = 20;
         final int frameLength = msgLength + headerLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);

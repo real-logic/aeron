@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.PositionIndicator;
 
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.TermHelper.*;
 
 /**
@@ -33,20 +34,18 @@ import static uk.co.real_logic.aeron.common.TermHelper.*;
 public class Publication implements AutoCloseable
 {
     private final ClientConductor clientConductor;
+    private final ManagedBuffer[] managedBuffers;
     private final String channel;
     private final int streamId;
     private final int sessionId;
-    private final ManagedBuffer[] managedBuffers;
     private final long registrationId;
     private final LogAppender[] logAppenders;
     private final PositionIndicator limit;
     private final int positionBitsToShift;
     private final int initialTermId;
 
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-
-    private int refCount = 1;
     private volatile int activeTermId;
+    private int refCount = 1;
 
     Publication(
         final ClientConductor clientConductor,
@@ -244,14 +243,11 @@ public class Publication implements AutoCloseable
     {
         final int newTermId = activeTermId + 1;
         final int nextIndex = rotateNext(activeIndex);
-        final LogAppender nextAppender = logAppenders[nextIndex];
 
-        dataHeader.wrap(nextAppender.defaultHeader());
-        dataHeader.termId(newTermId);
+        logAppenders[nextIndex].defaultHeader().putInt(DataHeaderFlyweight.TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
+        logAppenders[rotatePrevious(activeIndex)].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
 
-        final int previousIndex = rotatePrevious(activeIndex);
         this.activeTermId = newTermId;
-        logAppenders[previousIndex].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
     }
 
     private boolean isWithinFlowControlLimit(final int initialTermId, final int activeTermId, final int currentTail)

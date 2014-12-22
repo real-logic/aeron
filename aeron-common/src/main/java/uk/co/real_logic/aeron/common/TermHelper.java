@@ -28,19 +28,38 @@ public class TermHelper
 {
     public static final int BUFFER_COUNT = 3;
 
+    /**
+     * Rotate to the next buffer in sequence for the term id.
+     *
+     * @param current buffer index
+     * @return the next buffer index
+     */
     public static int rotateNext(final int current)
     {
         return BitUtil.next(current, BUFFER_COUNT);
     }
 
+    /**
+     * Rotate to the previous buffer in sequence for the term id.
+     *
+     * @param current buffer index
+     * @return the previous buffer index
+     */
     public static int rotatePrevious(final int current)
     {
         return BitUtil.previous(current, BUFFER_COUNT);
     }
 
-    public static int termIdToBufferIndex(final int termId)
+    /**
+     * Determine the buffer index to be used given the initial term and active term ids.
+     *
+     * @param initialTermId at which the log buffer usage began
+     * @param activeTermId  that is in current usage
+     * @return the index of which buffer should be used
+     */
+    public static int bufferIndex(final int initialTermId, final int activeTermId)
     {
-        return Math.abs(termId % BUFFER_COUNT);
+        return (activeTermId - initialTermId) % BUFFER_COUNT;
     }
 
     /**

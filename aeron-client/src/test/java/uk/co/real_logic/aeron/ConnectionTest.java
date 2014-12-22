@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import org.junit.Before;
@@ -77,8 +76,7 @@ public class ConnectionTest
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-            final UnsafeBuffer stateBuffer =
-                new UnsafeBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+            final UnsafeBuffer stateBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
 
             rebuilders[i] = new LogRebuilder(logBuffer, stateBuffer);
             readers[i] = new LogReader(logBuffer, stateBuffer);
@@ -89,7 +87,7 @@ public class ConnectionTest
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
-        activeIndex = TermHelper.termIdToBufferIndex(INITIAL_TERM_ID);
+        activeIndex = TermHelper.bufferIndex(INITIAL_TERM_ID, INITIAL_TERM_ID);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -151,7 +149,7 @@ public class ConnectionTest
         final long initialPosition =
             TermHelper.calculatePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        activeIndex = TermHelper.termIdToBufferIndex(activeTermId);
+        activeIndex = TermHelper.bufferIndex(INITIAL_TERM_ID, activeTermId);
         rebuilders[activeIndex].tail(initialTermOffset);
 
         connection = createConnection(initialPosition);
@@ -175,8 +173,8 @@ public class ConnectionTest
     public Connection createConnection(final long initialPosition)
     {
         return new Connection(
-            readers, SESSION_ID, INITIAL_TERM_ID, initialPosition, CORRELATION_ID,
-            mockDataHandler, mockPositionReporter, managedBuffers);
+            readers, SESSION_ID, INITIAL_TERM_ID, initialPosition,
+            CORRELATION_ID, mockDataHandler, mockPositionReporter, managedBuffers);
     }
 
     private void insertDataFrame(final int offset)

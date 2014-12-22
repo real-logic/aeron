@@ -68,7 +68,7 @@ public class ReceiverTest
     private static final int TERM_ID = 3;
     private static final int SESSION_ID = 1;
     private static final int INITIAL_TERM_OFFSET = 0;
-    private static final int ACTIVE_INDEX = TermHelper.termIdToBufferIndex(TERM_ID);
+    private static final int ACTIVE_INDEX = TermHelper.bufferIndex(TERM_ID, TERM_ID);
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final int INITIAL_WINDOW_SIZE = Configuration.INITIAL_WINDOW_SIZE_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;

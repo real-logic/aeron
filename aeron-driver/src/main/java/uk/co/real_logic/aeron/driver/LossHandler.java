@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapHandler;
 
 /**
@@ -82,7 +83,7 @@ public class LossHandler
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
         this.hwmPosition = new AtomicLong(
                 TermHelper.calculatePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId));
-        this.activeIndex = TermHelper.termIdToBufferIndex(initialTermId);
+        this.activeIndex = bufferIndex(initialTermId, initialTermId);
         this.activeTermId = initialTermId;
         this.initialTermId = initialTermId;
         onGapFunc = this::onGap;

@@ -65,7 +65,7 @@ class Connection
         final int currentTermId = TermHelper.calculateTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
         final int initialTermOffset = TermHelper.calculateTermOffsetFromPosition(initialPosition, positionBitsToShift);
         this.activeTermId = new AtomicInteger(currentTermId);
-        this.activeIndex = termIdToBufferIndex(currentTermId);
+        this.activeIndex = TermHelper.bufferIndex(initialTermId, currentTermId);
 
         logReaders[activeIndex].seek(initialTermOffset);
         subscriberPosition.position(initialPosition);

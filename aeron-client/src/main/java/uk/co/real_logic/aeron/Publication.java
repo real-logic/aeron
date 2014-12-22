@@ -46,7 +46,6 @@ public class Publication implements AutoCloseable
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private int refCount = 1;
-    private int activeIndex;
     private volatile int activeTermId;
 
     Publication(
@@ -69,7 +68,6 @@ public class Publication implements AutoCloseable
         this.activeTermId = initialTermId;
         this.logAppenders = logAppenders;
         this.limit = limit;
-        this.activeIndex = termIdToBufferIndex(initialTermId);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
         this.initialTermId = initialTermId;
@@ -143,11 +141,13 @@ public class Publication implements AutoCloseable
     public boolean offer(final DirectBuffer buffer, final int offset, final int length)
     {
         boolean succeeded = false;
+        final int initialTermId = this.initialTermId;
         final int activeTermId = this.activeTermId;
+        final int activeIndex = bufferIndex(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (isWithinFlowControlLimit(activeTermId, currentTail))
+        if (isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
         {
             switch (logAppender.append(buffer, offset, length))
             {
@@ -156,7 +156,7 @@ public class Publication implements AutoCloseable
                     break;
 
                 case TRIPPED:
-                    nextTerm(activeTermId);
+                    nextTerm(activeTermId, activeIndex);
                     break;
 
                 case FAILURE:
@@ -201,11 +201,13 @@ public class Publication implements AutoCloseable
     public boolean tryClaim(final int length, final BufferClaim bufferClaim)
     {
         boolean succeeded = false;
+        final int initialTermId = this.initialTermId;
         final int activeTermId = this.activeTermId;
+        final int activeIndex = bufferIndex(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (isWithinFlowControlLimit(activeTermId, currentTail))
+        if (isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
         {
             switch (logAppender.claim(length, bufferClaim))
             {
@@ -214,7 +216,7 @@ public class Publication implements AutoCloseable
                     break;
 
                 case TRIPPED:
-                    nextTerm(activeTermId);
+                    nextTerm(activeTermId, activeIndex);
                     break;
 
                 case FAILURE:
@@ -238,11 +240,9 @@ public class Publication implements AutoCloseable
         }
     }
 
-    private void nextTerm(final int activeTermId)
+    private void nextTerm(final int activeTermId, final int activeIndex)
     {
         final int newTermId = activeTermId + 1;
-        final int activeIndex = this.activeIndex;
-
         final int nextIndex = rotateNext(activeIndex);
         final LogAppender nextAppender = logAppenders[nextIndex];
         ensureClean(nextAppender);
@@ -251,12 +251,11 @@ public class Publication implements AutoCloseable
         dataHeader.termId(newTermId);
 
         final int previousIndex = rotatePrevious(activeIndex);
-        this.activeIndex = nextIndex;
         this.activeTermId = newTermId;
         logAppenders[previousIndex].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
     }
 
-    private boolean isWithinFlowControlLimit(final int activeTermId, final int currentTail)
+    private boolean isWithinFlowControlLimit(final int initialTermId, final int activeTermId, final int currentTail)
     {
         return TermHelper.calculatePosition(activeTermId, currentTail, positionBitsToShift, initialTermId) < limit.position();
     }

@@ -120,7 +120,7 @@ public class DriverConnection implements AutoCloseable
         this.clock = clock;
         activeTermId = initialTermId;
         timeOfLastFrame.lazySet(clock.time());
-        this.hwmIndex = this.activeIndex = termIdToBufferIndex(initialTermId);
+        this.hwmIndex = this.activeIndex = bufferIndex(initialTermId, initialTermId);
         this.hwmTermId = initialTermId;
 
         rebuilders = termBuffers

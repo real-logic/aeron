@@ -32,7 +32,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.common.TermHelper.termIdToBufferIndex;
+import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.AvailabilityHandler;
@@ -115,7 +115,7 @@ public class DriverPublication implements AutoCloseable
         this.streamId = streamId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
-        this.activeIndex = termIdToBufferIndex(initialTermId);
+        this.activeIndex = bufferIndex(initialTermId, initialTermId);
 
         final RawLog[] rawLogs = termBuffers.buffers();
         for (int i = 0; i < rawLogs.length; i++)

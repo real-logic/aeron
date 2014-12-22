@@ -167,8 +167,8 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Try to claim a range in the publication log for writing a message into with zero copy semantics.
-     * Once the message has been populate then {@link BufferClaim#commit()} should be called thus making it available.
+     * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
+     * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      *
      * <b>Note:</b> This method can only be used for message lengths less than MTU size minus header.
      *

@@ -117,7 +117,6 @@ public class PublicationTest
         assertTrue(publication.offer(atomicSendBuffer));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]).status();
         inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
 
         // written data to the next record
@@ -141,7 +140,6 @@ public class PublicationTest
         assertTrue(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]).status();
         inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
 
         // written data to the next record

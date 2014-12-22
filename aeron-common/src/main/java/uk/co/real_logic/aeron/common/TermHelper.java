@@ -13,13 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common;
 
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
 import uk.co.real_logic.agrona.BitUtil;
-
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Common helper for dealing with term buffers.
@@ -104,34 +100,5 @@ public class TermHelper
         final int mask = (1 << positionBitsToShift) - 1;
 
         return (int)(position & mask);
-    }
-
-    /**
-     * Check that has been cleaned and is ready for use. If it is not clean it will be cleaned on this thread
-     * or this thread will wait for the conductor to complete the cleaning.
-     *
-     * @param logBuffer to be checked.
-     * @return true if the buffer was clean otherwise false if you needed cleaning.
-     */
-    public static boolean ensureClean(final LogBuffer logBuffer)
-    {
-        if (CLEAN != logBuffer.status())
-        {
-            if (logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
-            {
-                logBuffer.clean(); // Conductor is not keeping up so do it yourself!!!
-            }
-            else
-            {
-                while (CLEAN != logBuffer.status())
-                {
-                    Thread.yield();
-                }
-            }
-
-            return false;
-        }
-
-        return true;
     }
 }

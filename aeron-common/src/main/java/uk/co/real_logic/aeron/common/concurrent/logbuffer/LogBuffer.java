@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -87,18 +86,6 @@ public class LogBuffer
     public int status()
     {
         return stateBuffer.getIntVolatile(STATUS_OFFSET);
-    }
-
-    /**
-     * Atomically compare and set the status to updateStatus if it is in expectedStatus.
-     *
-     * @param expectedStatus as a conditional guard.
-     * @param updateStatus to be applied if conditional guard is meet.
-     * @return true if successful otherwise false.
-     */
-    public boolean compareAndSetStatus(final int expectedStatus, final int updateStatus)
-    {
-        return stateBuffer.compareAndSetInt(STATUS_OFFSET, expectedStatus, updateStatus);
     }
 
     /**

@@ -34,7 +34,6 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter heartbeatsSent;
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
-    private final AtomicCounter subscriptionCleaningLate;
     private final AtomicCounter invalidPackets;
     private final AtomicCounter driverExceptions;
     private final AtomicCounter dataFrameShortSends;
@@ -57,7 +56,6 @@ public class SystemCounters implements AutoCloseable
         retransmitsSent = countersManager.newCounter("Retransmits sent");
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
-        subscriptionCleaningLate = countersManager.newCounter("Term cleaning late");
         invalidPackets = countersManager.newCounter("Invalid packets");
         driverExceptions = countersManager.newCounter("Driver Exceptions");
         dataFrameShortSends = countersManager.newCounter("Data Frame short sends");
@@ -81,7 +79,6 @@ public class SystemCounters implements AutoCloseable
         retransmitsSent.close();
         flowControlUnderRuns.close();
         flowControlOverRuns.close();
-        subscriptionCleaningLate.close();
         invalidPackets.close();
         driverExceptions.close();
         dataFrameShortSends.close();
@@ -153,11 +150,6 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter flowControlOverRuns()
     {
         return flowControlOverRuns;
-    }
-
-    public AtomicCounter subscriptionCleaningLate()
-    {
-        return subscriptionCleaningLate;
     }
 
     public AtomicCounter invalidPackets()

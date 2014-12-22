@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.TermHelper.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 
 /**
@@ -278,7 +277,7 @@ public class DriverConnection implements AutoCloseable
 
         for (final LogBuffer logBuffer : rebuilders)
         {
-            if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+            if (logBuffer.status() == NEEDS_CLEANING)
             {
                 logBuffer.clean();
                 workCount = 1;
@@ -324,10 +323,11 @@ public class DriverConnection implements AutoCloseable
     {
         int bytesInserted = 0;
         final LogRebuilder currentRebuilder = rebuilders[activeIndex];
+        final int initialTermId = this.initialTermId;
         final int activeTermId = this.activeTermId;
 
-        final long packetPosition = calculatePosition(termId, termOffset);
-        final long currentPosition = calculatePosition(activeTermId, currentRebuilder.tail());
+        final long packetPosition = calculatePosition(initialTermId, termId, termOffset);
+        final long currentPosition = calculatePosition(initialTermId, activeTermId, currentRebuilder.tail());
         final long proposedPosition = packetPosition + length;
 
         if (isHeartbeat(currentPosition, proposedPosition) ||
@@ -348,7 +348,7 @@ public class DriverConnection implements AutoCloseable
 
             if (currentRebuilder.isComplete())
             {
-                activeIndex = hwmIndex = rotateTermBuffers();
+                activeIndex = hwmIndex = rotateTermBuffers(activeIndex);
                 this.activeTermId = activeTermId + 1;
             }
         }
@@ -356,7 +356,7 @@ public class DriverConnection implements AutoCloseable
         {
             if (termId != hwmTermId)
             {
-                hwmIndex = rotateTermBuffers();
+                hwmIndex = rotateTermBuffers(activeIndex);
                 hwmTermId = termId;
             }
 
@@ -480,6 +480,7 @@ public class DriverConnection implements AutoCloseable
      */
     public int updateSubscribersPosition()
     {
+        int workCount = 0;
         long position = Long.MAX_VALUE;
 
         final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
@@ -491,12 +492,10 @@ public class DriverConnection implements AutoCloseable
         if (subscribersPosition.get() != position)
         {
             subscribersPosition.lazySet(position);
-            return 1;
+            workCount = 1;
         }
-        else
-        {
-            return 0;
-        }
+
+        return workCount;
     }
 
     /**
@@ -520,7 +519,7 @@ public class DriverConnection implements AutoCloseable
         systemCounters.statusMessagesSent().orderedIncrement();
     }
 
-    private long calculatePosition(final int termId, final int tail)
+    private long calculatePosition(final int initialTermId, final int termId, final int tail)
     {
         return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialTermId);
     }
@@ -563,21 +562,10 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlOverRun;
     }
 
-    private int rotateTermBuffers()
+    private int rotateTermBuffers(final int activeIndex)
     {
-        final int nextIndex = TermHelper.rotateNext(activeIndex);
-        final LogRebuilder rebuilder = rebuilders[nextIndex];
-
-        if (nextIndex != hwmIndex)
-        {
-            if (!ensureClean(rebuilder))
-            {
-                systemCounters.subscriptionCleaningLate().orderedIncrement();
-            }
-        }
-
         rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);
 
-        return nextIndex;
+        return TermHelper.rotateNext(activeIndex);
     }
 }

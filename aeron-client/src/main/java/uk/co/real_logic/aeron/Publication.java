@@ -245,7 +245,6 @@ public class Publication implements AutoCloseable
         final int newTermId = activeTermId + 1;
         final int nextIndex = rotateNext(activeIndex);
         final LogAppender nextAppender = logAppenders[nextIndex];
-        ensureClean(nextAppender);
 
         dataHeader.wrap(nextAppender.defaultHeader());
         dataHeader.termId(newTermId);

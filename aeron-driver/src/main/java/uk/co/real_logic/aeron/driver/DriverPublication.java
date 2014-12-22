@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -33,7 +32,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.IN_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.AvailabilityHandler;
 
@@ -211,7 +209,7 @@ public class DriverPublication implements AutoCloseable
 
         for (final LogBuffer logBuffer : logScanners)
         {
-            if (logBuffer.status() == NEEDS_CLEANING && logBuffer.compareAndSetStatus(NEEDS_CLEANING, IN_CLEANING))
+            if (logBuffer.status() == NEEDS_CLEANING)
             {
                 logBuffer.clean();
                 workCount = 1;

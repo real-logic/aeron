@@ -38,11 +38,6 @@ public class LogBufferDescriptor
     public static final int NEEDS_CLEANING = 1;
 
     /**
-     * The log is in the process of being cleaned.
-     */
-    public static final int IN_CLEANING = 2;
-
-    /**
      * Offset within the trailer where the tail value is stored.
      */
     public static final int TAIL_COUNTER_OFFSET;

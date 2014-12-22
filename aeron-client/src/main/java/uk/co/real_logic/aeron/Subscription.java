@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.concurrent.AtomicArray;
@@ -133,7 +132,7 @@ public class Subscription implements AutoCloseable
     boolean removeConnection(final int sessionId, final long correlationId)
     {
         final Connection connection =
-            connections.remove(conn -> conn.sessionId() == sessionId && conn.correlationId() == correlationId);
+            connections.remove((conn) -> conn.sessionId() == sessionId && conn.correlationId() == correlationId);
 
         if (connection != null)
         {

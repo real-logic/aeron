@@ -193,7 +193,7 @@ public class Publication implements AutoCloseable
      *
      * @param length      of the range to claim.
      * @param bufferClaim to be populate if the claim succeeds.
-     * @return true of the claim was successful otherwise false.
+     * @return true if the claim was successful otherwise false.
      * @throws IllegalArgumentException if the length is greater than max payload size within an MTU.
      * @see uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim#commit()
      */

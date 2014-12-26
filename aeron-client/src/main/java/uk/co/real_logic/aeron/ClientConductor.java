@@ -192,12 +192,12 @@ class ClientConductor implements Agent, DriverListener
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
         final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
-        final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             final ManagedBuffer logBuffer = mapBuffer(message, i);
             final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+            final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
 
             logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, mtuLength);
             managedBuffers[i * 2] = logBuffer;

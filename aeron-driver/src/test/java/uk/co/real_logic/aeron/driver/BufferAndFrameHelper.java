@@ -16,7 +16,7 @@
 
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
@@ -47,20 +47,20 @@ public class BufferAndFrameHelper
                 return buffers;
             }
 
-            public void appendBufferLocationsTo(final ReadyFlyweight logBuffersMessage)
+            public void writeBufferLocations(final BuffersReadyFlyweight logBuffersMessage)
             {
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
                     logBuffersMessage.bufferOffset(i, 0);
                     logBuffersMessage.bufferLength(i, (int)logBufferSize);
-                    logBuffersMessage.location(i, "logBuffer-" + i);
+                    logBuffersMessage.bufferLocation(i, "logBuffer-" + i);
                 }
 
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
                     logBuffersMessage.bufferOffset(i + BUFFER_COUNT, 0);
                     logBuffersMessage.bufferLength(i + BUFFER_COUNT, (int)stateBufferSize);
-                    logBuffersMessage.location(i + BUFFER_COUNT, "stateBuffer-" + i);
+                    logBuffersMessage.bufferLocation(i + BUFFER_COUNT, "stateBuffer-" + i);
                 }
             }
 

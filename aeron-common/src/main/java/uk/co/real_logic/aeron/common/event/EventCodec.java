@@ -49,10 +49,10 @@ public class EventCodec
         ThreadLocal.withInitial(PublicationMessageFlyweight::new);
     private static final ThreadLocal<SubscriptionMessageFlyweight> SUB_MESSAGE =
         ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
-    private static final ThreadLocal<PublicationReadyFlyweight> PUBLICATION_READY =
-        ThreadLocal.withInitial(PublicationReadyFlyweight::new);
-    private static final ThreadLocal<ConnectionReadyFlyweight> CONNECTION_READY =
-        ThreadLocal.withInitial(ConnectionReadyFlyweight::new);
+    private static final ThreadLocal<PublicationBuffersReadyFlyweight> PUBLICATION_READY =
+        ThreadLocal.withInitial(PublicationBuffersReadyFlyweight::new);
+    private static final ThreadLocal<ConnectionBuffersReadyFlyweight> CONNECTION_READY =
+        ThreadLocal.withInitial(ConnectionBuffersReadyFlyweight::new);
     private static final ThreadLocal<CorrelatedMessageFlyweight> CORRELATED_MSG =
         ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
     private static final ThreadLocal<ConnectionMessageFlyweight> CONNECTION_MSG =
@@ -227,13 +227,13 @@ public class EventCodec
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
-                final PublicationReadyFlyweight newBuffer = PUBLICATION_READY.get();
+                final PublicationBuffersReadyFlyweight newBuffer = PUBLICATION_READY.get();
                 newBuffer.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(newBuffer));
                 break;
 
             case CMD_OUT_CONNECTION_READY:
-                final ConnectionReadyFlyweight connectionReadyCommand = CONNECTION_READY.get();
+                final ConnectionBuffersReadyFlyweight connectionReadyCommand = CONNECTION_READY.get();
                 connectionReadyCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(connectionReadyCommand));
                 break;
@@ -502,12 +502,12 @@ public class EventCodec
             command.correlationId());
     }
 
-    private static String dissect(final PublicationReadyFlyweight command)
+    private static String dissect(final PublicationBuffersReadyFlyweight command)
     {
         final String locations =
             IntStream.range(0, 6)
                      .mapToObj((i) -> String.format(
-                         "{%s, %d@%x}", command.location(i), command.bufferLength(i), command.bufferOffset(i)))
+                         "{%s, %d@%x}", command.bufferLocation(i), command.bufferLength(i), command.bufferOffset(i)))
                      .collect(Collectors.joining("\n    "));
 
         return String.format(
@@ -521,12 +521,12 @@ public class EventCodec
             locations);
     }
 
-    private static String dissect(final ConnectionReadyFlyweight command)
+    private static String dissect(final ConnectionBuffersReadyFlyweight command)
     {
         final String locations =
             IntStream.range(0, 6)
                      .mapToObj((i) -> String.format(
-                         "{%s, %d@%x}", command.location(i), command.bufferLength(i), command.bufferOffset(i)))
+                         "{%s, %d@%x}", command.bufferLocation(i), command.bufferLength(i), command.bufferOffset(i)))
                      .collect(Collectors.joining("\n    "));
 
         return String.format(

@@ -19,8 +19,8 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -187,7 +187,7 @@ class ClientConductor implements Agent, DriverListener
         final int sessionId,
         final int termId,
         final int limitPositionIndicatorOffset,
-        final int mtuLength, final ReadyFlyweight message,
+        final int mtuLength, final BuffersReadyFlyweight message,
         final long correlationId)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
@@ -217,7 +217,7 @@ class ClientConductor implements Agent, DriverListener
         final int sessionId,
         final int initialTermId,
         final long initialPosition,
-        final ConnectionReadyFlyweight message,
+        final ConnectionBuffersReadyFlyweight message,
         final long correlationId)
     {
         activeSubscriptions.forEach(channel, streamId,
@@ -333,9 +333,9 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
-    private ManagedBuffer mapBuffer(final ReadyFlyweight logBuffersMessage, final int index)
+    private ManagedBuffer mapBuffer(final BuffersReadyFlyweight logBuffersMessage, final int index)
     {
-        final String location = logBuffersMessage.location(index);
+        final String location = logBuffersMessage.bufferLocation(index);
         final int offset = logBuffersMessage.bufferOffset(index);
         final int length = logBuffersMessage.bufferLength(index);
 

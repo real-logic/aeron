@@ -13,23 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 
 import java.util.stream.Stream;
 
 /**
- * Represents the collection of term buffers for the connection between a publisher and subscriber connection.
+ * Represents the collection of term buffers for the connection between a publisher and subscriber connection for
+ * the replicated log.
  */
 public interface TermBuffers extends AutoCloseable
 {
+    /**
+     * A {@link Stream} of the {@link RawLog} buffers.
+     *
+     * @return a {@link Stream} of the {@link RawLog} buffers.
+     */
     Stream<? extends RawLog> stream();
 
+    /**
+     * An array of the {@link RawLog} buffers.
+     *
+     * @return an array of the {@link RawLog} buffers.
+     */
     RawLog[] buffers();
 
-    void appendBufferLocationsTo(final ReadyFlyweight readyFlyweight);
+    /**
+     * Write the buffer location details to the flyweight.
+     *
+     * @param buffersReadyFlyweight to which the buffer locations will be written.
+     */
+    void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight);
 
     void close();
 }

@@ -28,15 +28,12 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * Message to denote that new buffers have been added for a subscription.
  *
- * @see ControlProtocolEvents
+ * @see uk.co.real_logic.aeron.common.command.ControlProtocolEvents
  *
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
  * |                         Correlation ID                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                        Joining Position                       |
  * |                                                               |
  * +---------------------------------------------------------------+
  * |                          Session ID                           |
@@ -45,7 +42,9 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                           Term ID                             |
  * +---------------------------------------------------------------+
- * |                   Position Indicators Count                   |
+ * |                   Position Indicator Offset                   |
+ * +---------------------------------------------------------------+
+ * |                           MTU Length                          |
  * +---------------------------------------------------------------+
  * |                          File Offset 0                        |
  * +---------------------------------------------------------------+
@@ -81,8 +80,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                          Location 5 Start                     |
  * +---------------------------------------------------------------+
- * |                     Source Information Start                  |
- * +---------------------------------------------------------------+
  * |                           Channel Start                       |
  * +---------------------------------------------------------------+
  * |                           Channel End                         |
@@ -108,34 +105,21 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                            Channel                          ...
  * |                                                             ...
  * +---------------------------------------------------------------+
- * |                     Position Indicator Id 0                 ...
- * +---------------------------------------------------------------+
- * |                         Registration Id 0                   ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                     Position Indicator Id 1                 ...
- * +---------------------------------------------------------------+
- * |                         Registration Id 1                   ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                                                             ...
- * Up to "Position Indicators Count" entries of this form
  */
-public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweight
+public class PublicationBuffersReadyFlyweight extends Flyweight implements BuffersReadyFlyweight
 {
     private static final int NUM_FILES = 6;
 
     private static final int CORRELATION_ID_OFFSET = 0;
-    private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int SESSION_ID_OFFSET = JOINING_POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int POSITION_INDICATOR_COUNT_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
+    private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int MTU_LENGTH_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
+    private static final int FILE_OFFSETS_FIELDS_OFFSET = MTU_LENGTH_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
-    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (9 * SIZE_OF_INT);
-    private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
+    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
 
     /**
      * Contains both log buffers and state buffers
@@ -143,21 +127,17 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
 
     /**
-     * The Source Information sits after the location strings, but before the Channel
+     * The Channel sits at the end of the message, after the location strings for both the
+     * log and state buffers.
      */
-    public static final int SOURCE_INFORMATION_INDEX = PAYLOAD_BUFFER_COUNT;
-
-    /**
-     * The Channel sits after the source name and location strings for both the log and state buffers.
-     */
-    private static final int CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
+    private static final int CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
 
     public int bufferOffset(final int index)
     {
         return relativeIntField(index, FILE_OFFSETS_FIELDS_OFFSET);
     }
 
-    public ConnectionReadyFlyweight bufferOffset(final int index, final int value)
+    public PublicationBuffersReadyFlyweight bufferOffset(final int index, final int value)
     {
         return relativeIntField(index, value, FILE_OFFSETS_FIELDS_OFFSET);
     }
@@ -167,7 +147,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         return relativeIntField(index, BUFFER_LENGTHS_FIELDS_OFFSET);
     }
 
-    public ConnectionReadyFlyweight bufferLength(final int index, final int value)
+    public PublicationBuffersReadyFlyweight bufferLength(final int index, final int value)
     {
         return relativeIntField(index, value, BUFFER_LENGTHS_FIELDS_OFFSET);
     }
@@ -188,32 +168,9 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      * @param correlationId field value
      * @return flyweight
      */
-    public ConnectionReadyFlyweight correlationId(final long correlationId)
+    public PublicationBuffersReadyFlyweight correlationId(final long correlationId)
     {
         buffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * The joining position value
-     *
-     * @return joining position value
-     */
-    public long joiningPosition()
-    {
-        return buffer().getLong(offset() + JOINING_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * set joining position field
-     *
-     * @param joiningPosition field value
-     * @return flyweight
-     */
-    public ConnectionReadyFlyweight joiningPosition(final long joiningPosition)
-    {
-        buffer().putLong(offset() + JOINING_POSITION_OFFSET, joiningPosition, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }
@@ -232,7 +189,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      * @param sessionId field value
      * @return flyweight
      */
-    public ConnectionReadyFlyweight sessionId(final int sessionId)
+    public PublicationBuffersReadyFlyweight sessionId(final int sessionId)
     {
         buffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
 
@@ -255,7 +212,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      * @param streamId field value
      * @return flyweight
      */
-    public ConnectionReadyFlyweight streamId(final int streamId)
+    public PublicationBuffersReadyFlyweight streamId(final int streamId)
     {
         buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
@@ -278,7 +235,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      * @param termId field value
      * @return flyweight
      */
-    public ConnectionReadyFlyweight termId(final int termId)
+    public PublicationBuffersReadyFlyweight termId(final int termId)
     {
         buffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
@@ -286,24 +243,47 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
     }
 
     /**
-     * return the number of position indicators
+     * return position counter id field
      *
-     * @return the number of position indicators
+     * @return position counter id field
      */
-    public int positionIndicatorCount()
+    public int positionCounterId()
     {
-        return buffer().getInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + POSITION_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set the number of position indicators
+     * set position counter id field
      *
-     * @param value the number of position indicators
+     * @param positionCounterId field value
      * @return flyweight
      */
-    public ConnectionReadyFlyweight positionIndicatorCount(final int value)
+    public PublicationBuffersReadyFlyweight positionCounterId(final int positionCounterId)
     {
-        buffer().putInt(offset() + POSITION_INDICATOR_COUNT_OFFSET, value, LITTLE_ENDIAN);
+        buffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * return mtu length field
+     *
+     * @return mtu length field
+     */
+    public int mtuLength()
+    {
+        return buffer().getInt(offset() + MTU_LENGTH_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set mtu length field
+     *
+     * @param mtuLength field value
+     * @return flyweight
+     */
+    public PublicationBuffersReadyFlyweight mtuLength(final int mtuLength)
+    {
+        buffer().putInt(offset() + MTU_LENGTH_OFFSET, mtuLength, LITTLE_ENDIAN);
 
         return this;
     }
@@ -313,7 +293,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         return buffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
     }
 
-    private ConnectionReadyFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
+    private PublicationBuffersReadyFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
     {
         buffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
 
@@ -335,12 +315,12 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
     }
 
-    private ConnectionReadyFlyweight locationPointer(final int index, final int value)
+    private PublicationBuffersReadyFlyweight locationPointer(final int index, final int value)
     {
         return relativeIntField(index, value, LOCATION_POINTER_FIELDS_OFFSET);
     }
 
-    public String location(final int index)
+    public String bufferLocation(final int index)
     {
         final int start = locationPointer(index);
         final int length = locationPointer(index + 1) - start;
@@ -348,7 +328,7 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         return buffer().getStringWithoutLengthUtf8(offset() + start, length);
     }
 
-    public ConnectionReadyFlyweight location(final int index, final String value)
+    public PublicationBuffersReadyFlyweight bufferLocation(final int index, final String value)
     {
         final int start = locationPointer(index);
         if (start == 0)
@@ -362,58 +342,14 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
         return this;
     }
 
-    public String sourceInfo()
-    {
-        return location(SOURCE_INFORMATION_INDEX);
-    }
-
-    public ConnectionReadyFlyweight sourceInfo(final String value)
-    {
-        return location(SOURCE_INFORMATION_INDEX, value);
-    }
-
     public String channel()
     {
-        return location(CHANNEL_INDEX);
+        return bufferLocation(CHANNEL_INDEX);
     }
 
-    public ConnectionReadyFlyweight channel(final String value)
+    public PublicationBuffersReadyFlyweight channel(final String value)
     {
-        return location(CHANNEL_INDEX, value);
-    }
-
-    public ConnectionReadyFlyweight positionIndicatorCounterId(final int index, final int id)
-    {
-        buffer().putInt(positionIndicatorOffset(index), id);
-
-        return this;
-    }
-
-    public int positionIndicatorCounterId(final int index)
-    {
-        return buffer().getInt(positionIndicatorOffset(index));
-    }
-
-    public ConnectionReadyFlyweight positionIndicatorRegistrationId(final int index, final long id)
-    {
-        buffer().putLong(positionIndicatorOffset(index) + SIZE_OF_INT, id);
-
-        return this;
-    }
-
-    public long positionIndicatorRegistrationId(final int index)
-    {
-        return buffer().getLong(positionIndicatorOffset(index) + SIZE_OF_INT);
-    }
-
-    private int positionIndicatorOffset(final int index)
-    {
-        return endOfChannel() + index * POSITION_INDICATOR_FIELD_SIZE;
-    }
-
-    private int endOfChannel()
-    {
-        return locationPointer(CHANNEL_INDEX + 1);
+        return bufferLocation(CHANNEL_INDEX, value);
     }
 
     /**
@@ -425,6 +361,6 @@ public class ConnectionReadyFlyweight extends Flyweight implements ReadyFlyweigh
      */
     public int length()
     {
-        return positionIndicatorOffset(positionIndicatorCount() + 1);
+        return locationPointer(CHANNEL_INDEX + 1);
     }
 }

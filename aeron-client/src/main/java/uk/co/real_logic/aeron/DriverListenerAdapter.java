@@ -19,9 +19,9 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
@@ -36,8 +36,8 @@ class DriverListenerAdapter implements MessageHandler
     private final CopyBroadcastReceiver broadcastReceiver;
 
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
-    private final PublicationReadyFlyweight publicationReady = new PublicationReadyFlyweight();
-    private final ConnectionReadyFlyweight connectionReady = new ConnectionReadyFlyweight();
+    private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
+    private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final DriverListener listener;

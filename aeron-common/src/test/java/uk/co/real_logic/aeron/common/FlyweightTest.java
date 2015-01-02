@@ -17,7 +17,7 @@
 package uk.co.real_logic.aeron.common;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -44,8 +44,8 @@ public class FlyweightTest
     private final PublicationMessageFlyweight decodePublication = new PublicationMessageFlyweight();
     private final ErrorFlyweight encodeError = new ErrorFlyweight();
     private final ErrorFlyweight decodeError = new ErrorFlyweight();
-    private final PublicationReadyFlyweight encodeNewBuffer = new PublicationReadyFlyweight();
-    private final PublicationReadyFlyweight decodeNewBuffer = new PublicationReadyFlyweight();
+    private final PublicationBuffersReadyFlyweight encodeNewBuffer = new PublicationBuffersReadyFlyweight();
+    private final PublicationBuffersReadyFlyweight decodeNewBuffer = new PublicationBuffersReadyFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
     private final NakFlyweight decodeNakHeader = new NakFlyweight();
 
@@ -278,12 +278,12 @@ public class FlyweightTest
                        .bufferLength(0, 1)
                        .bufferLength(1, 2)
                        .bufferLength(2, 3)
-                       .location(0, "def")
-                       .location(1, "ghi")
-                       .location(2, "jkl")
-                       .location(3, "def")
-                       .location(4, "ghi")
-                       .location(5, "jkl")
+                       .bufferLocation(0, "def")
+                       .bufferLocation(1, "ghi")
+                       .bufferLocation(2, "jkl")
+                       .bufferLocation(3, "def")
+                       .bufferLocation(4, "ghi")
+                       .bufferLocation(5, "jkl")
                        .channel("abc");
 
         assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
@@ -301,13 +301,13 @@ public class FlyweightTest
         assertThat(decodeNewBuffer.bufferLength(1), is(2));
         assertThat(decodeNewBuffer.bufferLength(2), is(3));
 
-        assertThat(decodeNewBuffer.location(0), is("def"));
-        assertThat(decodeNewBuffer.location(1), is("ghi"));
-        assertThat(decodeNewBuffer.location(2), is("jkl"));
+        assertThat(decodeNewBuffer.bufferLocation(0), is("def"));
+        assertThat(decodeNewBuffer.bufferLocation(1), is("ghi"));
+        assertThat(decodeNewBuffer.bufferLocation(2), is("jkl"));
 
-        assertThat(decodeNewBuffer.location(3), is("def"));
-        assertThat(decodeNewBuffer.location(4), is("ghi"));
-        assertThat(decodeNewBuffer.location(5), is("jkl"));
+        assertThat(decodeNewBuffer.bufferLocation(3), is("def"));
+        assertThat(decodeNewBuffer.bufferLocation(4), is("ghi"));
+        assertThat(decodeNewBuffer.bufferLocation(5), is("jkl"));
 
         assertThat(decodeNewBuffer.channel(), is("abc"));
     }

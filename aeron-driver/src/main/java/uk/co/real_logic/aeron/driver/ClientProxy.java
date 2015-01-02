@@ -20,8 +20,8 @@ import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.Flyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -47,8 +47,8 @@ public class ClientProxy
     private final BroadcastTransmitter transmitter;
 
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
-    private final PublicationReadyFlyweight publicationReady = new PublicationReadyFlyweight();
-    private final ConnectionReadyFlyweight connectionReady = new ConnectionReadyFlyweight();
+    private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
+    private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final EventLogger logger;
@@ -94,7 +94,7 @@ public class ClientProxy
                        .joiningPosition(joiningPosition)
                        .correlationId(correlationId)
                        .termId(termId);
-        termBuffers.appendBufferLocationsTo(connectionReady);
+        termBuffers.writeBufferLocations(connectionReady);
         connectionReady.sourceInfo(sourceInfo);
         connectionReady.channel(channel);
 
@@ -129,7 +129,7 @@ public class ClientProxy
                         .positionCounterId(positionCounterId)
                         .mtuLength(mtuLength);
 
-        termBuffers.appendBufferLocationsTo(publicationReady);
+        termBuffers.writeBufferLocations(publicationReady);
         publicationReady.channel(channel);
 
         logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());

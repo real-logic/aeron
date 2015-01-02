@@ -17,7 +17,7 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -129,22 +129,22 @@ class MappedRawLog implements RawLog
         }
     }
 
-    public void logBufferInformation(final int index, final ReadyFlyweight newBufferMessage)
+    public void logBufferInformation(final int index, final BuffersReadyFlyweight newBufferMessage)
     {
         bufferInformation(index, newBufferMessage, mappedLogBuffer, logFile);
     }
 
-    public void stateBufferInformation(final int index, final ReadyFlyweight newBufferMessage)
+    public void stateBufferInformation(final int index, final BuffersReadyFlyweight newBufferMessage)
     {
         bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, stateFile);
     }
 
     private void bufferInformation(
-        final int index, final ReadyFlyweight newBufferMessage, final MappedByteBuffer buffer, final File file)
+        final int index, final BuffersReadyFlyweight newBufferMessage, final MappedByteBuffer buffer, final File file)
     {
         final int offset = buffer.position();
         newBufferMessage.bufferOffset(index, offset);
         newBufferMessage.bufferLength(index, buffer.capacity() - offset);
-        newBufferMessage.location(index, file.getAbsolutePath());
+        newBufferMessage.bufferLocation(index, file.getAbsolutePath());
     }
 }

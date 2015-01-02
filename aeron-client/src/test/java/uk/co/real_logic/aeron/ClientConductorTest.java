@@ -20,9 +20,9 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
-import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
@@ -63,8 +63,8 @@ public class ClientConductorTest extends MockBufferUsage
 
     private static final String SOURCE_NAME = "127.0.0.1:40789";
 
-    private final PublicationReadyFlyweight publicationReady = new PublicationReadyFlyweight();
-    private final ConnectionReadyFlyweight connectionReady = new ConnectionReadyFlyweight();
+    private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
+    private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
@@ -315,12 +315,12 @@ public class ClientConductorTest extends MockBufferUsage
         toClientTransmitter.transmit(ON_CONNECTION_READY, atomicSendBuffer, 0, connectionReady.length());
     }
 
-    private static void addBuffers(final int sessionId, final ReadyFlyweight message)
+    private static void addBuffers(final int sessionId, final BuffersReadyFlyweight message)
     {
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
             (i) ->
             {
-                message.location(i, sessionId + "-log-" + i);
+                message.bufferLocation(i, sessionId + "-log-" + i);
                 message.bufferOffset(i, 0);
                 message.bufferLength(i, LOG_BUFFER_SZ);
             });
@@ -328,7 +328,7 @@ public class ClientConductorTest extends MockBufferUsage
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
             (i) ->
             {
-                message.location(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
+                message.bufferLocation(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
                 message.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
                 message.bufferLength(i + TermHelper.BUFFER_COUNT, STATE_BUFFER_LENGTH);
             });

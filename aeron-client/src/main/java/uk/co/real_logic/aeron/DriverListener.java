@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.ConnectionReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.ReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 
 /**
  * Callback interface for receiving messages from the driver.
@@ -33,7 +33,7 @@ interface DriverListener
         int termId,
         int positionIndicatorId,
         final int mtuLength,
-        ReadyFlyweight message,
+        BuffersReadyFlyweight message,
         long correlationId);
 
     void onNewConnection(
@@ -42,7 +42,7 @@ interface DriverListener
         int sessionId,
         int termId,
         long initialPosition,
-        ConnectionReadyFlyweight message,
+        ConnectionBuffersReadyFlyweight message,
         long correlationId);
 
     void onInactiveConnection(

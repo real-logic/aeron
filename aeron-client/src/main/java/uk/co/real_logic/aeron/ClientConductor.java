@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.*;
@@ -187,7 +186,8 @@ class ClientConductor implements Agent, DriverListener
         final int sessionId,
         final int termId,
         final int limitPositionIndicatorOffset,
-        final int mtuLength, final BuffersReadyFlyweight message,
+        final int mtuLength,
+        final BuffersReadyFlyweight message,
         final long correlationId)
     {
         final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
@@ -333,11 +333,11 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
-    private ManagedBuffer mapBuffer(final BuffersReadyFlyweight logBuffersMessage, final int index)
+    private ManagedBuffer mapBuffer(final BuffersReadyFlyweight buffersReadyFlyweight, final int index)
     {
-        final String location = logBuffersMessage.bufferLocation(index);
-        final int offset = logBuffersMessage.bufferOffset(index);
-        final int length = logBuffersMessage.bufferLength(index);
+        final String location = buffersReadyFlyweight.bufferLocation(index);
+        final int offset = buffersReadyFlyweight.bufferOffset(index);
+        final int length = buffersReadyFlyweight.bufferLength(index);
 
         return bufferManager.newBuffer(location, offset, length);
     }

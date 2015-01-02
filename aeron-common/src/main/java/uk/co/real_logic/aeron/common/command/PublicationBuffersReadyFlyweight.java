@@ -26,7 +26,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Message to denote that new buffers have been added for a subscription.
+ * Message to denote that new buffers have been setup for a publication.
  *
  * @see uk.co.real_logic.aeron.common.command.ControlProtocolEvents
  *

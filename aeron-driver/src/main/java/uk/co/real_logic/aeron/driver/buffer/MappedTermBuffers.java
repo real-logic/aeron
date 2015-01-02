@@ -32,9 +32,7 @@ import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 /**
- * Encapsulates responsibility for rotating and reusing memory mapped files used by the log buffers.
- * <p>
- * Keeps 3 buffers on hold at any one time.
+ * Encapsulates responsibility for mapping the files into memory used by the log buffers.
  */
 class MappedTermBuffers implements TermBuffers
 {
@@ -69,11 +67,7 @@ class MappedTermBuffers implements TermBuffers
             checkSizeLogBuffer(logTemplate.size(), logBufferLength);
             checkSizeStateBuffer(stateTemplate.size(), stateBufferSize);
 
-            final MappedRawLog active = newTerm("0", directory);
-            final MappedRawLog clean = newTerm("1", directory);
-            final MappedRawLog dirty = newTerm("2", directory);
-
-            buffers = new MappedRawLog[]{active, clean, dirty};
+            buffers = new MappedRawLog[]{mapRawLog("0", directory), mapRawLog("1", directory), mapRawLog("2", directory)};
         }
         catch (final IOException e)
         {
@@ -100,12 +94,12 @@ class MappedTermBuffers implements TermBuffers
     {
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            buffers[i].logBufferInformation(i, buffersReadyFlyweight);
+            buffers[i].writeLogBufferLocation(i, buffersReadyFlyweight);
         }
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            buffers[i].stateBufferInformation(i, buffersReadyFlyweight);
+            buffers[i].writeStateBufferLocation(i, buffersReadyFlyweight);
         }
     }
 
@@ -138,7 +132,7 @@ class MappedTermBuffers implements TermBuffers
         }
     }
 
-    private MappedRawLog newTerm(final String prefix, final File directory)
+    private MappedRawLog mapRawLog(final String prefix, final File directory)
     {
         try
         {
@@ -167,10 +161,7 @@ class MappedTermBuffers implements TermBuffers
         return new RandomAccessFile(file, "rw").getChannel();
     }
 
-    private MappedByteBuffer mapBufferFile(
-        final FileChannel channel,
-        final FileChannel template,
-        final long bufferSize)
+    private MappedByteBuffer mapBufferFile(final FileChannel channel, final FileChannel template, final long bufferSize)
     {
         reset(channel, template, bufferSize);
 

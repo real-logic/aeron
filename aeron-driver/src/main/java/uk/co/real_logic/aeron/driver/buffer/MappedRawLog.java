@@ -129,22 +129,22 @@ class MappedRawLog implements RawLog
         }
     }
 
-    public void logBufferInformation(final int index, final BuffersReadyFlyweight newBufferMessage)
+    public void writeLogBufferLocation(final int index, final BuffersReadyFlyweight buffersReadyFlyweight)
     {
-        bufferInformation(index, newBufferMessage, mappedLogBuffer, logFile);
+        bufferLocation(index, buffersReadyFlyweight, mappedLogBuffer, logFile);
     }
 
-    public void stateBufferInformation(final int index, final BuffersReadyFlyweight newBufferMessage)
+    public void writeStateBufferLocation(final int index, final BuffersReadyFlyweight buffersReadyFlyweight)
     {
-        bufferInformation(index + BUFFER_COUNT, newBufferMessage, mappedStateBuffer, stateFile);
+        bufferLocation(index + BUFFER_COUNT, buffersReadyFlyweight, mappedStateBuffer, stateFile);
     }
 
-    private void bufferInformation(
-        final int index, final BuffersReadyFlyweight newBufferMessage, final MappedByteBuffer buffer, final File file)
+    private void bufferLocation(
+        final int index, final BuffersReadyFlyweight buffersReadyFlyweight, final MappedByteBuffer buffer, final File file)
     {
         final int offset = buffer.position();
-        newBufferMessage.bufferOffset(index, offset);
-        newBufferMessage.bufferLength(index, buffer.capacity() - offset);
-        newBufferMessage.bufferLocation(index, file.getAbsolutePath());
+        buffersReadyFlyweight.bufferOffset(index, offset);
+        buffersReadyFlyweight.bufferLength(index, buffer.capacity() - offset);
+        buffersReadyFlyweight.bufferLocation(index, file.getAbsolutePath());
     }
 }

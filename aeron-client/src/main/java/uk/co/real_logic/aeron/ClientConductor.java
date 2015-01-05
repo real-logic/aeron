@@ -119,7 +119,6 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         Publication publication = publicationMap.get(channel, sessionId, streamId);
-
         if (publication == null)
         {
             activeCorrelationId = driverProxy.addPublication(channel, streamId, sessionId);
@@ -220,7 +219,9 @@ class ClientConductor implements Agent, DriverListener
         final ConnectionBuffersReadyFlyweight message,
         final long correlationId)
     {
-        activeSubscriptions.forEach(channel, streamId,
+        activeSubscriptions.forEach(
+            channel,
+            streamId,
             (subscription) ->
             {
                 if (null != subscription && !subscription.isConnected(sessionId))
@@ -283,7 +284,9 @@ class ClientConductor implements Agent, DriverListener
         final ConnectionMessageFlyweight message,
         final long correlationId)
     {
-        activeSubscriptions.forEach(channel, streamId,
+        activeSubscriptions.forEach(
+            channel,
+            streamId,
             (subscription) ->
             {
                 if (subscription.removeConnection(sessionId, correlationId))

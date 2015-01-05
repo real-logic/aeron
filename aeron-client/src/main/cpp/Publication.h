@@ -74,7 +74,7 @@ private:
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
 
-    // Aeron should only be the one constructing these
+    // ClientConductor should only be the one constructing these
     Publication(ClientConductor& conductor, const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
 };
 

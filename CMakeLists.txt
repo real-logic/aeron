@@ -47,6 +47,7 @@ endif()
 # Project variables, etc.
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/binaries")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/lib")
 
 set(AERON_COMMON_PATH "${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp")
 set(AERON_3RDPARTY_PATH "${AERON_COMMON_PATH}/3rdparty")

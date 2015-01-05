@@ -27,7 +27,7 @@ import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
-import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
+import uk.co.real_logic.aeron.driver.buffer.RawLogBuffers;
 
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -83,7 +83,7 @@ public class ClientProxy
         final int sessionId,
         final int termId,
         final long joiningPosition,
-        final TermBuffers termBuffers,
+        final RawLogBuffers rawLogBuffers,
         final long correlationId,
         final List<SubscriberPosition> subscriberPositions,
         final String sourceInfo)
@@ -94,7 +94,7 @@ public class ClientProxy
                        .joiningPosition(joiningPosition)
                        .correlationId(correlationId)
                        .termId(termId);
-        termBuffers.writeBufferLocations(connectionReady);
+        rawLogBuffers.writeBufferLocations(connectionReady);
         connectionReady.sourceInfo(sourceInfo);
         connectionReady.channel(channel);
 
@@ -116,7 +116,7 @@ public class ClientProxy
         final int streamId,
         final int sessionId,
         final int termId,
-        final TermBuffers termBuffers,
+        final RawLogBuffers rawLogBuffers,
         final long correlationId,
         final int positionCounterId,
         final int mtuLength)
@@ -129,7 +129,7 @@ public class ClientProxy
                         .positionCounterId(positionCounterId)
                         .mtuLength(mtuLength);
 
-        termBuffers.writeBufferLocations(publicationReady);
+        rawLogBuffers.writeBufferLocations(publicationReady);
         publicationReady.channel(channel);
 
         logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());

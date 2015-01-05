@@ -33,7 +33,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class TermBuffersFactoryTest
+public class RawLogBuffersFactoryTest
 {
     private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;
@@ -42,7 +42,7 @@ public class TermBuffersFactoryTest
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_SZ_DEFAULT;
     private static final int TERM_BUFFER_SZ_MAX = Configuration.TERM_BUFFER_SZ_MAX_DEFAULT;
-    private TermBuffersFactory termBuffersFactory;
+    private RawLogBuffersFactory rawLogBuffersFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
     private EventLogger logger = mock(EventLogger.class);
 
@@ -50,8 +50,8 @@ public class TermBuffersFactoryTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        termBuffersFactory =
-            new TermBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ, TERM_BUFFER_SZ_MAX, logger);
+        rawLogBuffersFactory =
+            new RawLogBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ, TERM_BUFFER_SZ_MAX, logger);
     }
 
     @After
@@ -64,19 +64,19 @@ public class TermBuffersFactoryTest
     public void shouldCreateCorrectSizeAndZeroedFilesForPublication() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final TermBuffers termBuffers =
-            termBuffersFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
+        final RawLogBuffers rawLogBuffers =
+            rawLogBuffersFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
 
-        termBuffers.stream().forEach(
+        rawLogBuffers.stream().forEach(
             (rawLog) ->
             {
-                final UnsafeBuffer log = rawLog.logBuffer();
+                final UnsafeBuffer log = rawLog.termBuffer();
 
                 assertThat(log.capacity(), is(TERM_BUFFER_SZ));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte(TERM_BUFFER_SZ - 1), is((byte)0));
 
-                final UnsafeBuffer state = rawLog.stateBuffer();
+                final UnsafeBuffer state = rawLog.termStateBuffer();
 
                 assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
@@ -89,20 +89,20 @@ public class TermBuffersFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int maxConnectionTermBufferSize = TERM_BUFFER_SZ / 2;
-        final TermBuffers termBuffers =
-            termBuffersFactory.newConnection(
+        final RawLogBuffers rawLogBuffers =
+            rawLogBuffersFactory.newConnection(
                 canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
 
-        termBuffers.stream().forEach(
+        rawLogBuffers.stream().forEach(
             (rawLog) ->
             {
-                final UnsafeBuffer log = rawLog.logBuffer();
+                final UnsafeBuffer log = rawLog.termBuffer();
 
                 assertThat(log.capacity(), is(maxConnectionTermBufferSize));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte(maxConnectionTermBufferSize - 1), is((byte)0));
 
-                final UnsafeBuffer state = rawLog.stateBuffer();
+                final UnsafeBuffer state = rawLog.termStateBuffer();
 
                 assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
@@ -115,7 +115,7 @@ public class TermBuffersFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int maxConnectionTermBufferSize = TERM_BUFFER_SZ_MAX * 2;
-        termBuffersFactory.newConnection(
+        rawLogBuffersFactory.newConnection(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
     }
 }

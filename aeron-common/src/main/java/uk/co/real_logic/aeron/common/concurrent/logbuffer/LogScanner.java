@@ -47,13 +47,13 @@ public class LogScanner extends LogBuffer
      * Construct a reader that iterates over a log buffer with associated state buffer. Messages are identified as
      * they become available up to the MTU limit.
      *
-     * @param logBuffer containing the framed messages.
+     * @param termBuffer containing the framed messages.
      * @param stateBuffer containing the state variables indicating the tail progress.
      * @param headerLength of frame before payload begins.
      */
-    public LogScanner(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer, final int headerLength)
+    public LogScanner(final UnsafeBuffer termBuffer, final UnsafeBuffer stateBuffer, final int headerLength)
     {
-        super(logBuffer, stateBuffer);
+        super(termBuffer, stateBuffer);
 
         checkHeaderLength(headerLength);
 
@@ -105,13 +105,13 @@ public class LogScanner extends LogBuffer
         {
             final int capacity = capacity();
             final int offset = this.offset;
-            final UnsafeBuffer logBuffer = logBuffer();
+            final UnsafeBuffer termBuffer = termBuffer();
 
             int padding = 0;
 
             do
             {
-                final int frameLength = frameLengthVolatile(logBuffer, offset + length);
+                final int frameLength = frameLengthVolatile(termBuffer, offset + length);
                 if (0 == frameLength)
                 {
                     break;
@@ -119,7 +119,7 @@ public class LogScanner extends LogBuffer
 
                 int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
-                if (isPaddingFrame(logBuffer, offset + length))
+                if (isPaddingFrame(termBuffer, offset + length))
                 {
                     padding = alignedFrameLength - alignedHeaderLength;
                     alignedFrameLength = alignedHeaderLength;
@@ -139,7 +139,7 @@ public class LogScanner extends LogBuffer
             if (length > 0)
             {
                 this.offset += (length + padding);
-                handler.onAvailable(logBuffer, offset, length);
+                handler.onAvailable(termBuffer, offset, length);
             }
         }
 

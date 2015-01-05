@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -34,7 +33,7 @@ public class StateViewer
      */
     public StateViewer(final UnsafeBuffer buffer)
     {
-        checkStateBuffer(buffer);
+        checkTermStateBuffer(buffer);
 
         this.buffer = buffer;
     }

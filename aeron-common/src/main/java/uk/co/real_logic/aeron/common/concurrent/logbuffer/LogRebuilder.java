@@ -35,12 +35,12 @@ public class LogRebuilder extends LogBuffer
     /**
      * Construct a rebuilder over a log and state buffer.
      *
-     * @param logBuffer containing the sequence of frames.
+     * @param termBuffer containing the sequence of frames.
      * @param stateBuffer containing the state of the rebuild process.
      */
-    public LogRebuilder(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
+    public LogRebuilder(final UnsafeBuffer termBuffer, final UnsafeBuffer stateBuffer)
     {
-        super(logBuffer, stateBuffer);
+        super(termBuffer, stateBuffer);
     }
 
     /**
@@ -50,7 +50,7 @@ public class LogRebuilder extends LogBuffer
      */
     public void tail(final int offset)
     {
-        putTailOrdered(stateBuffer(), offset);
+        putTailOrdered(termStateBuffer(), offset);
     }
 
     /**
@@ -60,7 +60,7 @@ public class LogRebuilder extends LogBuffer
      */
     public boolean isComplete()
     {
-        return stateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
+        return termStateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
     }
 
     /**
@@ -84,25 +84,25 @@ public class LogRebuilder extends LogBuffer
             final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
             packet.putInt(lengthOffset, 0, LITTLE_ENDIAN);
 
-            final UnsafeBuffer logBuffer = logBuffer();
-            logBuffer.putBytes(termOffset, packet, srcOffset, length);
-            FrameDescriptor.frameLengthOrdered(logBuffer, termOffset, frameLength);
+            final UnsafeBuffer termBuffer = termBuffer();
+            termBuffer.putBytes(termOffset, packet, srcOffset, length);
+            FrameDescriptor.frameLengthOrdered(termBuffer, termOffset, frameLength);
 
-            updateCompetitionStatus(logBuffer, termOffset, length, tail);
+            updateCompetitionStatus(termBuffer, termOffset, length, tail);
         }
     }
 
-    private void updateCompetitionStatus(final UnsafeBuffer logBuffer, final int termOffset, final int length, int tail)
+    private void updateCompetitionStatus(final UnsafeBuffer termBuffer, final int termOffset, final int length, int tail)
     {
         final int capacity = capacity();
         int frameLength;
-        while ((tail < capacity) && (frameLength = logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)) != 0)
+        while ((tail < capacity) && (frameLength = termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)) != 0)
         {
             final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
             tail += alignedFrameLength;
         }
 
-        final UnsafeBuffer stateBuffer = stateBuffer();
+        final UnsafeBuffer stateBuffer = termStateBuffer();
         putTailOrdered(stateBuffer, tail);
 
         final int endOfFrame = termOffset + length;

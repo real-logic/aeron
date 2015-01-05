@@ -71,18 +71,18 @@ public class LogBufferDescriptor
     public static final int MIN_LOG_SIZE = 64 * 1024; // TODO: make a sensible default
 
     /**
-     * Check that log buffer is the correct size and alignment.
+     * Check that term buffer is the correct size and alignment.
      *
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.
      */
-    public static void checkLogBuffer(final UnsafeBuffer buffer)
+    public static void checkTermBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
         if (capacity < MIN_LOG_SIZE)
         {
             final String s = String.format(
-                "Log buffer capacity less than min size of %d, capacity=%d",
+                "Term buffer capacity less than min size of %d, capacity=%d",
                 MIN_LOG_SIZE,
                 capacity);
             throw new IllegalStateException(s);
@@ -91,7 +91,7 @@ public class LogBufferDescriptor
         if ((capacity & (FRAME_ALIGNMENT - 1)) != 0)
         {
             final String s = String.format(
-                "Log buffer capacity not a multiple of %d, capacity=%d",
+                "Term buffer capacity not a multiple of %d, capacity=%d",
                 FRAME_ALIGNMENT,
                 capacity);
             throw new IllegalStateException(s);
@@ -104,13 +104,13 @@ public class LogBufferDescriptor
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.
      */
-    public static void checkStateBuffer(final UnsafeBuffer buffer)
+    public static void checkTermStateBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
         if (capacity < STATE_BUFFER_LENGTH)
         {
             final String s = String.format(
-                "State buffer capacity less than min size of %d, capacity=%d",
+                "Term State buffer capacity less than min size of %d, capacity=%d",
                 STATE_BUFFER_LENGTH,
                 capacity);
             throw new IllegalStateException(s);

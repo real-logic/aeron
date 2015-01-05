@@ -26,11 +26,11 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
- * Factory for creating new {@link TermBuffers} in publications or subscriptions directory as appropriate.
+ * Factory for creating new {@link RawLogBuffers} in the publications or subscriptions directories as appropriate.
  */
-public class TermBuffersFactory implements AutoCloseable
+public class RawLogBuffersFactory implements AutoCloseable
 {
-    private final FileChannel logTemplate;
+    private final FileChannel termTemplate;
     private final FileChannel stateTemplate;
 
     private final File publicationsDir;
@@ -40,7 +40,7 @@ public class TermBuffersFactory implements AutoCloseable
     private final int maxConnectionTermBufferSize;
     private final EventLogger logger;
 
-    public TermBuffersFactory(
+    public RawLogBuffersFactory(
         final String dataDirectoryName,
         final int publicationTermBufferSize,
         final int maxConnectionTermBufferSize,
@@ -59,7 +59,7 @@ public class TermBuffersFactory implements AutoCloseable
         this.maxConnectionTermBufferSize = maxConnectionTermBufferSize;
 
         final int templateSize = Math.max(publicationTermBufferSize, maxConnectionTermBufferSize);
-        logTemplate = createTemplateFile(dataDirectoryName, "logTemplate", templateSize);
+        termTemplate = createTemplateFile(dataDirectoryName, "termTemplate", templateSize);
         stateTemplate = createTemplateFile(dataDirectoryName, "stateTemplate", STATE_BUFFER_LENGTH);
     }
 
@@ -70,7 +70,7 @@ public class TermBuffersFactory implements AutoCloseable
     {
         try
         {
-            logTemplate.close();
+            termTemplate.close();
             stateTemplate.close();
         }
         catch (final Exception ex)
@@ -80,15 +80,15 @@ public class TermBuffersFactory implements AutoCloseable
     }
 
     /**
-     * Create new {@link TermBuffers} in the publications directory for the supplied triplet.
+     * Create new {@link RawLogBuffers} in the publications directory for the supplied triplet.
      *
      * @param channel       address on the media to send to.
      * @param sessionId     under which transmissions are made.
      * @param streamId      within the channel address to separate message flows.
      * @param correlationId to use to distinguish this publication
-     * @return the newly allocated {@link TermBuffers}
+     * @return the newly allocated {@link RawLogBuffers}
      */
-    public TermBuffers newPublication(
+    public RawLogBuffers newPublication(
         final String channel,
         final int sessionId,
         final int streamId,
@@ -98,16 +98,16 @@ public class TermBuffersFactory implements AutoCloseable
     }
 
     /**
-     * Create new {@link TermBuffers} in the subscriptions directory for the supplied triplet.
+     * Create new {@link RawLogBuffers} in the subscriptions directory for the supplied triplet.
      *
      * @param channel        address on the media to listened to.
      * @param sessionId      under which transmissions are made.
      * @param streamId       within the channel address to separate message flows.
      * @param correlationId  to use to distinguish this connection
      * @param termBufferSize to use for the log buffer
-     * @return the newly allocated {@link TermBuffers}
+     * @return the newly allocated {@link RawLogBuffers}
      */
-    public TermBuffers newConnection(
+    public RawLogBuffers newConnection(
         final String channel,
         final int sessionId,
         final int streamId,
@@ -131,7 +131,7 @@ public class TermBuffersFactory implements AutoCloseable
         return IoUtil.createEmptyFile(templateFile, size);
     }
 
-    private TermBuffers newInstance(
+    private RawLogBuffers newInstance(
         final File rootDir,
         final String channel,
         final int sessionId,
@@ -141,7 +141,7 @@ public class TermBuffersFactory implements AutoCloseable
     {
         final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
 
-        return new MappedTermBuffers(
-            dir, logTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
+        return new MappedRawLogBuffers(
+            dir, termTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
     }
 }

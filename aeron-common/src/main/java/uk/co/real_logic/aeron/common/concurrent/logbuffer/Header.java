@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -47,11 +46,11 @@ public class Header
     /**
      * Construct a header that references a buffer for the log.
      *
-     * @param logBuffer for the log.
+     * @param termBuffer for the log.
      */
-    public Header(final UnsafeBuffer logBuffer)
+    public Header(final UnsafeBuffer termBuffer)
     {
-        this.buffer = logBuffer;
+        this.buffer = termBuffer;
     }
 
     /**

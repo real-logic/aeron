@@ -33,38 +33,38 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 /**
  * Encapsulates responsibility for mapping the files into memory used by the log buffers.
  */
-class MappedTermBuffers implements TermBuffers
+class MappedRawLogBuffers implements RawLogBuffers
 {
     private static final String LOG_SUFFIX = "-log";
     private static final String STATE_SUFFIX = "-state";
 
-    private final FileChannel logTemplate;
+    private final FileChannel termTemplate;
     private final FileChannel stateTemplate;
-    private final int logBufferLength;
-    private final int stateBufferLength;
+    private final int termBufferLength;
+    private final int termStateBufferLength;
     private final MappedRawLog[] buffers;
     private final EventLogger logger;
 
-    MappedTermBuffers(
+    MappedRawLogBuffers(
         final File directory,
-        final FileChannel logTemplate,
-        final int logBufferLength,
-        final FileChannel stateTemplate,
-        final int stateBufferSize,
+        final FileChannel termTemplate,
+        final int termBufferLength,
+        final FileChannel termStateTemplate,
+        final int termStateBufferSize,
         final EventLogger logger)
     {
         this.logger = logger;
         IoUtil.ensureDirectoryExists(directory, "buffer directory");
 
-        this.logTemplate = logTemplate;
-        this.logBufferLength = logBufferLength;
-        this.stateBufferLength = stateBufferSize;
-        this.stateTemplate = stateTemplate;
+        this.termTemplate = termTemplate;
+        this.termBufferLength = termBufferLength;
+        this.termStateBufferLength = termStateBufferSize;
+        this.stateTemplate = termStateTemplate;
 
         try
         {
-            checkSizeLogBuffer(logTemplate.size(), logBufferLength);
-            checkSizeStateBuffer(stateTemplate.size(), stateBufferSize);
+            checkSizeLogBuffer(termTemplate.size(), termBufferLength);
+            checkSizeStateBuffer(termStateTemplate.size(), termStateBufferSize);
 
             buffers = new MappedRawLog[]{mapRawLog("0", directory), mapRawLog("1", directory), mapRawLog("2", directory)};
         }
@@ -135,18 +135,18 @@ class MappedTermBuffers implements TermBuffers
     {
         try
         {
-            final File logFile = new File(directory, prefix + LOG_SUFFIX);
+            final File termFile = new File(directory, prefix + LOG_SUFFIX);
             final File stateFile = new File(directory, prefix + STATE_SUFFIX);
-            final FileChannel logFileChannel = openBufferFile(logFile);
+            final FileChannel termFileChannel = openBufferFile(termFile);
             final FileChannel stateFileChannel = openBufferFile(stateFile);
 
             return new MappedRawLog(
-                logFile,
+                termFile,
                 stateFile,
-                logFileChannel,
+                termFileChannel,
                 stateFileChannel,
-                mapBufferFile(logFileChannel, logTemplate, logBufferLength),
-                mapBufferFile(stateFileChannel, stateTemplate, stateBufferLength),
+                mapBufferFile(termFileChannel, termTemplate, termBufferLength),
+                mapBufferFile(stateFileChannel, stateTemplate, termStateBufferLength),
                 logger);
         }
         catch (final IOException ex)

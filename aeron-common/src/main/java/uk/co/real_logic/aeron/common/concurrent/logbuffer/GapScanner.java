@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -69,7 +68,7 @@ public class GapScanner extends LogBuffer
         int count = 0;
         final int highWaterMark = highWaterMarkVolatile();
         int offset = tailVolatile();
-        final UnsafeBuffer logBuffer = logBuffer();
+        final UnsafeBuffer logBuffer = termBuffer();
 
         while (offset < highWaterMark)
         {

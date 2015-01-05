@@ -13,17 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Encapsulates the pair of buffers used to hold a term of publication/subscription
+ * Encapsulates the pair of buffers used to hold a term and associated state for publication/subscription
  */
 public interface RawLog extends AutoCloseable
 {
-    UnsafeBuffer logBuffer();
+    /**
+     * Get the buffer holding the recorded log of messages for a term.
+     *
+     * @return the buffer holding the recorded log of messages for a term.
+     */
+    UnsafeBuffer termBuffer();
 
-    UnsafeBuffer stateBuffer();
+    /**
+     * Get the buffer holding the state information about the recorded log of messages for a term.
+     *
+     * @return the buffer holding the state information about the recorded log of messages for a term.
+     */
+    UnsafeBuffer termStateBuffer();
 }

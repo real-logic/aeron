@@ -35,48 +35,48 @@ class MappedRawLog implements RawLog
 {
     public static final int MAX_TREE_DEPTH = 3;
 
-    private final File logFile;
+    private final File termFile;
     private final File stateFile;
 
-    private final FileChannel logFileChannel;
+    private final FileChannel termFileChannel;
     private final FileChannel stateFileChannel;
 
-    private final MappedByteBuffer mappedLogBuffer;
+    private final MappedByteBuffer mappedTermBuffer;
     private final MappedByteBuffer mappedStateBuffer;
 
-    private final UnsafeBuffer logBuffer;
+    private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer stateBuffer;
 
     private final EventLogger logger;
 
     MappedRawLog(
-        final File logFile,
+        final File termFile,
         final File stateFile,
-        final FileChannel logFileChannel,
+        final FileChannel termFileChannel,
         final FileChannel stateFileChannel,
-        final MappedByteBuffer logBuffer,
+        final MappedByteBuffer termBuffer,
         final MappedByteBuffer stateBuffer,
         final EventLogger logger)
     {
-        this.logFile = logFile;
+        this.termFile = termFile;
         this.stateFile = stateFile;
-        this.logFileChannel = logFileChannel;
+        this.termFileChannel = termFileChannel;
         this.stateFileChannel = stateFileChannel;
 
-        this.mappedLogBuffer = logBuffer;
+        this.mappedTermBuffer = termBuffer;
         this.mappedStateBuffer = stateBuffer;
         this.logger = logger;
 
         this.stateBuffer = new UnsafeBuffer(stateBuffer);
-        this.logBuffer = new UnsafeBuffer(logBuffer);
+        this.termBuffer = new UnsafeBuffer(termBuffer);
     }
 
-    public UnsafeBuffer logBuffer()
+    public UnsafeBuffer termBuffer()
     {
-        return logBuffer;
+        return termBuffer;
     }
 
-    public UnsafeBuffer stateBuffer()
+    public UnsafeBuffer termStateBuffer()
     {
         return stateBuffer;
     }
@@ -85,20 +85,20 @@ class MappedRawLog implements RawLog
     {
         try
         {
-            logFileChannel.close();
+            termFileChannel.close();
             stateFileChannel.close();
 
-            IoUtil.unmap(mappedLogBuffer);
+            IoUtil.unmap(mappedTermBuffer);
             IoUtil.unmap(mappedStateBuffer);
 
-            if (logFile.delete() && stateFile.delete())
+            if (termFile.delete() && stateFile.delete())
             {
                 final File directory = stateFile.getParentFile();
                 recursivelyDeleteUpTree(directory, MAX_TREE_DEPTH);
             }
             else
             {
-                logger.log(EventCode.ERROR_DELETING_FILE, logFile);
+                logger.log(EventCode.ERROR_DELETING_FILE, termFile);
                 logger.log(EventCode.ERROR_DELETING_FILE, stateFile);
             }
         }
@@ -130,7 +130,7 @@ class MappedRawLog implements RawLog
 
     public void writeLogBufferLocation(final int index, final BuffersReadyFlyweight buffersReadyFlyweight)
     {
-        bufferLocation(index, buffersReadyFlyweight, mappedLogBuffer, logFile);
+        bufferLocation(index, buffersReadyFlyweight, mappedTermBuffer, termFile);
     }
 
     public void writeStateBufferLocation(final int index, final BuffersReadyFlyweight buffersReadyFlyweight)

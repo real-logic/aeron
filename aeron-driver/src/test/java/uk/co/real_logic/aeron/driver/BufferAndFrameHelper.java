@@ -19,7 +19,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
+import uk.co.real_logic.aeron.driver.buffer.RawLogBuffers;
 
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
@@ -28,9 +28,9 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 public class BufferAndFrameHelper
 {
-    public static TermBuffers newTestTermBuffers(final long logBufferSize, final long stateBufferSize)
+    public static RawLogBuffers newTestTermBuffers(final long logBufferSize, final long stateBufferSize)
     {
-        return new TermBuffers()
+        return new RawLogBuffers()
         {
             private RawLog clean = newTestLogBuffer(logBufferSize, stateBufferSize);
             private RawLog dirty = newTestLogBuffer(logBufferSize, stateBufferSize);
@@ -53,14 +53,14 @@ public class BufferAndFrameHelper
                 {
                     logBuffersMessage.bufferOffset(i, 0);
                     logBuffersMessage.bufferLength(i, (int)logBufferSize);
-                    logBuffersMessage.bufferLocation(i, "logBuffer-" + i);
+                    logBuffersMessage.bufferLocation(i, "termBuffer-" + i);
                 }
 
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
                     logBuffersMessage.bufferOffset(i + BUFFER_COUNT, 0);
                     logBuffersMessage.bufferLength(i + BUFFER_COUNT, (int)stateBufferSize);
-                    logBuffersMessage.bufferLocation(i + BUFFER_COUNT, "stateBuffer-" + i);
+                    logBuffersMessage.bufferLocation(i + BUFFER_COUNT, "termStateBuffer-" + i);
                 }
             }
 
@@ -77,12 +77,12 @@ public class BufferAndFrameHelper
             private final UnsafeBuffer logBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)logBufferSize)));
             private final UnsafeBuffer stateBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)stateBufferSize)));
 
-            public UnsafeBuffer logBuffer()
+            public UnsafeBuffer termBuffer()
             {
                 return logBuffer;
             }
 
-            public UnsafeBuffer stateBuffer()
+            public UnsafeBuffer termStateBuffer()
             {
                 return stateBuffer;
             }

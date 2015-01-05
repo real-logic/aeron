@@ -31,8 +31,8 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.BufferPositionIndicator;
 import uk.co.real_logic.agrona.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.driver.buffer.TermBuffers;
-import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.driver.buffer.RawLogBuffers;
+import uk.co.real_logic.aeron.driver.buffer.RawLogBuffersFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
@@ -81,7 +81,7 @@ public class DriverConductor implements Agent
     private final ClientProxy clientProxy;
     private final DriverConductorProxy conductorProxy;
     private final TransportPoller transportPoller;
-    private final TermBuffersFactory termBuffersFactory;
+    private final RawLogBuffersFactory rawLogBuffersFactory;
     private final RingBuffer toDriverCommands;
     private final RingBuffer toEventReader;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
@@ -126,7 +126,7 @@ public class DriverConductor implements Agent
         this.driverConductorCmdQueue = ctx.conductorCommandQueue();
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();
-        this.termBuffersFactory = ctx.termBuffersFactory();
+        this.rawLogBuffersFactory = ctx.rawLogBuffersFactory();
         this.transportPoller = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowSize = ctx.initialWindowSize();
@@ -170,7 +170,7 @@ public class DriverConductor implements Agent
 
     public void onClose()
     {
-        termBuffersFactory.close();
+        rawLogBuffersFactory.close();
         publications.forEach(DriverPublication::close);
         connections.forEach(DriverConnection::close);
         sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
@@ -374,7 +374,7 @@ public class DriverConductor implements Agent
         {
             final int initialTermId = BitUtil.generateRandomisedId();
             final String canonicalForm = udpChannel.canonicalForm();
-            final TermBuffers termBuffers = termBuffersFactory.newPublication(
+            final RawLogBuffers rawLogBuffers = rawLogBuffersFactory.newPublication(
                 canonicalForm, sessionId, streamId, correlationId);
 
             final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId);
@@ -386,7 +386,7 @@ public class DriverConductor implements Agent
                 correlationId,
                 channelEndpoint,
                 clock,
-                termBuffers,
+                rawLogBuffers,
                 new BufferPositionReporter(countersBuffer, senderPositionId, countersManager),
                 new BufferPositionReporter(countersBuffer, publisherLimitId, countersManager),
                 sessionId,
@@ -544,7 +544,7 @@ public class DriverConductor implements Agent
         final String channel = udpChannel.originalUriString();
         final long correlationId = generateCreationCorrelationId();
 
-        final TermBuffers termBuffers = termBuffersFactory.newConnection(
+        final RawLogBuffers rawLogBuffers = rawLogBuffersFactory.newConnection(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferSize);
         final long joiningPosition = TermHelper.calculatePosition(
             initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
@@ -574,14 +574,14 @@ public class DriverConductor implements Agent
             sessionId,
             initialTermId,
             joiningPosition,
-            termBuffers,
+            rawLogBuffers,
             correlationId,
             subscriberPositions,
             sourceInfo);
 
-        final GapScanner[] gapScanners = termBuffers
+        final GapScanner[] gapScanners = rawLogBuffers
             .stream()
-            .map((rawLog) -> new GapScanner(rawLog.logBuffer(), rawLog.stateBuffer()))
+            .map((rawLog) -> new GapScanner(rawLog.termBuffer(), rawLog.termStateBuffer()))
             .toArray(GapScanner[]::new);
 
         final LossHandler lossHandler = new LossHandler(
@@ -602,7 +602,7 @@ public class DriverConductor implements Agent
             initialTermOffset,
             initialWindowSize,
             statusMessageTimeout,
-            termBuffers,
+            rawLogBuffers,
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),

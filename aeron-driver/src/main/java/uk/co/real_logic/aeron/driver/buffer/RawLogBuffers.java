@@ -20,10 +20,10 @@ import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import java.util.stream.Stream;
 
 /**
- * Represents the collection of term buffers for the connection between a publisher and subscriber connection for
- * the replicated log.
+ * Represents the collection of term and associated state buffers for the connection between a publisher and subscriber
+ * connection for the replicated log.
  */
-public interface TermBuffers extends AutoCloseable
+public interface RawLogBuffers extends AutoCloseable
 {
     /**
      * A {@link Stream} of the {@link RawLog} buffers.

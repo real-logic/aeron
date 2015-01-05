@@ -33,7 +33,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.buffer.TermBuffersFactory;
+import uk.co.real_logic.aeron.driver.buffer.RawLogBuffersFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -73,7 +73,7 @@ public class DriverConductorTest
         EventConfiguration.BUFFER_SIZE_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final TransportPoller transportPoller = mock(TransportPoller.class);
-    private final TermBuffersFactory mockTermBuffersFactory = mock(TermBuffersFactory.class);
+    private final RawLogBuffersFactory mockRawLogBuffersFactory = mock(RawLogBuffersFactory.class);
 
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer));
     private final RingBuffer toEventReader = new ManyToOneRingBuffer(new UnsafeBuffer(toEventBuffer));
@@ -109,7 +109,7 @@ public class DriverConductorTest
     @Before
     public void setUp() throws Exception
     {
-        when(mockTermBuffersFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
+        when(mockRawLogBuffersFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
             .thenReturn(BufferAndFrameHelper.newTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         currentTime = 0;
@@ -126,7 +126,7 @@ public class DriverConductorTest
             // TODO: remove
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
-            .termBuffersFactory(mockTermBuffersFactory)
+            .rawLogBuffersFactory(mockRawLogBuffersFactory)
             .countersManager(countersManager);
 
         ctx.toEventReader(toEventReader);

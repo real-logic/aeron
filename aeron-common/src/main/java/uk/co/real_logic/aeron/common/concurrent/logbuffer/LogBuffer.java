@@ -24,38 +24,38 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 public class LogBuffer
 {
-    private final UnsafeBuffer logBuffer;
-    private final UnsafeBuffer stateBuffer;
+    private final UnsafeBuffer termBuffer;
+    private final UnsafeBuffer termStateBuffer;
     private final int capacity;
 
-    protected LogBuffer(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
+    protected LogBuffer(final UnsafeBuffer termBuffer, final UnsafeBuffer termStateBuffer)
     {
-        checkLogBuffer(logBuffer);
-        checkStateBuffer(stateBuffer);
+        checkTermBuffer(termBuffer);
+        checkTermStateBuffer(termStateBuffer);
 
-        this.logBuffer = logBuffer;
-        this.stateBuffer = stateBuffer;
-        this.capacity = logBuffer.capacity();
+        this.termBuffer = termBuffer;
+        this.termStateBuffer = termStateBuffer;
+        this.capacity = termBuffer.capacity();
     }
 
     /**
-     * The log of messages.
+     * The log of messages for a term.
      *
-     * @return the log of messages.
+     * @return the log of messages for a term.
      */
-    public UnsafeBuffer logBuffer()
+    public UnsafeBuffer termBuffer()
     {
-        return logBuffer;
+        return termBuffer;
     }
 
     /**
-     * The state describing the log.
+     * The state describing the term.
      *
-     * @return the state describing the log.
+     * @return the state describing the term.
      */
-    public UnsafeBuffer stateBuffer()
+    public UnsafeBuffer termStateBuffer()
     {
-        return stateBuffer;
+        return termStateBuffer;
     }
 
     /**
@@ -73,8 +73,8 @@ public class LogBuffer
      */
     public void clean()
     {
-        logBuffer.setMemory(0, logBuffer.capacity(), (byte)0);
-        stateBuffer.setMemory(0, stateBuffer.capacity(), (byte)0);
+        termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
+        termStateBuffer.setMemory(0, termStateBuffer.capacity(), (byte)0);
         statusOrdered(CLEAN);
     }
 
@@ -85,7 +85,7 @@ public class LogBuffer
      */
     public int status()
     {
-        return stateBuffer.getIntVolatile(STATUS_OFFSET);
+        return termStateBuffer.getIntVolatile(STATUS_OFFSET);
     }
 
     /**
@@ -95,7 +95,7 @@ public class LogBuffer
      */
     public void statusOrdered(final int status)
     {
-        stateBuffer.putIntOrdered(STATUS_OFFSET, status);
+        termStateBuffer.putIntOrdered(STATUS_OFFSET, status);
     }
 
     /**
@@ -105,7 +105,7 @@ public class LogBuffer
      */
     public int tailVolatile()
     {
-        return Math.min(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(termStateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**
@@ -115,7 +115,7 @@ public class LogBuffer
      */
     public int highWaterMarkVolatile()
     {
-        return stateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET);
+        return termStateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET);
     }
 
     /**
@@ -125,7 +125,7 @@ public class LogBuffer
      */
     public int tail()
     {
-        return Math.min(stateBuffer.getInt(TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(termStateBuffer.getInt(TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**
@@ -135,6 +135,6 @@ public class LogBuffer
      */
     public int highWaterMark()
     {
-        return stateBuffer.getInt(HIGH_WATER_MARK_OFFSET);
+        return termStateBuffer.getInt(HIGH_WATER_MARK_OFFSET);
     }
 }

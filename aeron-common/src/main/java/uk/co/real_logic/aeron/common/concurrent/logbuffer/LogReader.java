@@ -34,13 +34,13 @@ public class LogReader extends LogBuffer
     /**
      * Construct a reader for a log and associated state buffer.
      *
-     * @param logBuffer containing the data frames.
+     * @param termBuffer containing the data frames.
      * @param stateBuffer containing the state data for the log.
      */
-    public LogReader(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
+    public LogReader(final UnsafeBuffer termBuffer, final UnsafeBuffer stateBuffer)
     {
-        super(logBuffer, stateBuffer);
-        header = new Header(logBuffer);
+        super(termBuffer, stateBuffer);
+        header = new Header(termBuffer);
     }
 
     /**
@@ -83,12 +83,12 @@ public class LogReader extends LogBuffer
         int framesCounter = 0;
         int offset = this.offset;
         final int capacity = capacity();
-        final UnsafeBuffer logBuffer = logBuffer();
+        final UnsafeBuffer termBuffer = termBuffer();
         final Header header = this.header;
 
         while (offset < capacity && framesCounter < framesCountLimit)
         {
-            final int frameLength = frameLengthVolatile(logBuffer, offset);
+            final int frameLength = frameLengthVolatile(termBuffer, offset);
             if (0 == frameLength)
             {
                 break;
@@ -96,10 +96,10 @@ public class LogReader extends LogBuffer
 
             try
             {
-                if (!isPaddingFrame(logBuffer, offset))
+                if (!isPaddingFrame(termBuffer, offset))
                 {
                     header.offset(offset);
-                    handler.onData(logBuffer, offset + Header.LENGTH, frameLength - Header.LENGTH, header);
+                    handler.onData(termBuffer, offset + Header.LENGTH, frameLength - Header.LENGTH, header);
 
                     ++framesCounter;
                 }

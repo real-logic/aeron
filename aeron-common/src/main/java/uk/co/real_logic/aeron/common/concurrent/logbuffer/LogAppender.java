@@ -56,18 +56,18 @@ public class LogAppender extends LogBuffer
     /**
      * Construct a view over a log buffer and state buffer for appending frames.
      *
-     * @param logBuffer      for where messages are stored.
+     * @param termBuffer     for where messages are stored.
      * @param stateBuffer    for where the state of writers is stored manage concurrency.
      * @param defaultHeader  to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public LogAppender(
-        final UnsafeBuffer logBuffer,
+        final UnsafeBuffer termBuffer,
         final UnsafeBuffer stateBuffer,
         final MutableDirectBuffer defaultHeader,
         final int maxFrameLength)
     {
-        super(logBuffer, stateBuffer);
+        super(termBuffer, stateBuffer);
 
         checkHeaderLength(defaultHeader.capacity());
         checkMaxFrameLength(maxFrameLength);
@@ -160,13 +160,13 @@ public class LogAppender extends LogBuffer
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
 
-        final UnsafeBuffer logBuffer = logBuffer();
+        final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = capacity();
         if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(logBuffer, frameOffset);
+                appendPaddingFrame(termBuffer, frameOffset);
                 return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -177,11 +177,11 @@ public class LogAppender extends LogBuffer
             return ActionStatus.FAILURE;
         }
 
-        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
-        frameFlags(logBuffer, frameOffset, UNFRAGMENTED);
-        frameTermOffset(logBuffer, frameOffset, frameOffset);
+        termBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
+        frameTermOffset(termBuffer, frameOffset, frameOffset);
 
-        bufferClaim.buffer(logBuffer)
+        bufferClaim.buffer(termBuffer)
                    .offset(frameOffset + headerLength)
                    .length(length)
                    .frameLengthOffset(lengthOffset(frameOffset))
@@ -197,13 +197,13 @@ public class LogAppender extends LogBuffer
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
 
-        final UnsafeBuffer logBuffer = logBuffer();
+        final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = capacity();
         if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(logBuffer, frameOffset);
+                appendPaddingFrame(termBuffer, frameOffset);
                 return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -214,12 +214,12 @@ public class LogAppender extends LogBuffer
             return ActionStatus.FAILURE;
         }
 
-        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
-        logBuffer.putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
+        termBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+        termBuffer.putBytes(frameOffset + headerLength, srcBuffer, srcOffset, length);
 
-        frameFlags(logBuffer, frameOffset, UNFRAGMENTED);
-        frameTermOffset(logBuffer, frameOffset, frameOffset);
-        frameLengthOrdered(logBuffer, frameOffset, frameLength);
+        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
+        frameTermOffset(termBuffer, frameOffset, frameOffset);
+        frameLengthOrdered(termBuffer, frameOffset, frameLength);
 
         return ActionStatus.SUCCESS;
     }
@@ -232,13 +232,13 @@ public class LogAppender extends LogBuffer
         final int requiredCapacity = align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
         int frameOffset = getTailAndAdd(requiredCapacity);
 
-        final UnsafeBuffer logBuffer = logBuffer();
+        final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = capacity();
         if (isBeyondLogBufferCapacity(frameOffset, requiredCapacity, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(logBuffer, frameOffset);
+                appendPaddingFrame(termBuffer, frameOffset);
                 return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -257,8 +257,8 @@ public class LogAppender extends LogBuffer
             final int frameLength = bytesToWrite + headerLength;
             final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-            logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
-            logBuffer.putBytes(
+            termBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+            termBuffer.putBytes(
                 frameOffset + headerLength,
                 srcBuffer,
                 srcOffset + (length - remaining),
@@ -269,9 +269,9 @@ public class LogAppender extends LogBuffer
                 flags |= END_FRAG;
             }
 
-            frameFlags(logBuffer, frameOffset, flags);
-            frameTermOffset(logBuffer, frameOffset, frameOffset);
-            frameLengthOrdered(logBuffer, frameOffset, frameLength);
+            frameFlags(termBuffer, frameOffset, flags);
+            frameTermOffset(termBuffer, frameOffset, frameOffset);
+            frameLengthOrdered(termBuffer, frameOffset, frameLength);
 
             flags = 0;
             frameOffset += alignedLength;
@@ -287,19 +287,19 @@ public class LogAppender extends LogBuffer
         return (frameOffset + alignedFrameLength + headerLength) > capacity;
     }
 
-    private void appendPaddingFrame(final UnsafeBuffer logBuffer, final int frameOffset)
+    private void appendPaddingFrame(final UnsafeBuffer termBuffer, final int frameOffset)
     {
-        logBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
+        termBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
-        frameType(logBuffer, frameOffset, PADDING_FRAME_TYPE);
-        frameFlags(logBuffer, frameOffset, UNFRAGMENTED);
-        frameTermOffset(logBuffer, frameOffset, frameOffset);
-        frameLengthOrdered(logBuffer, frameOffset, capacity() - frameOffset);
+        frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
+        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
+        frameTermOffset(termBuffer, frameOffset, frameOffset);
+        frameLengthOrdered(termBuffer, frameOffset, capacity() - frameOffset);
     }
 
     private int getTailAndAdd(final int delta)
     {
-        return stateBuffer().getAndAddInt(TAIL_COUNTER_OFFSET, delta);
+        return termStateBuffer().getAndAddInt(TAIL_COUNTER_OFFSET, delta);
     }
 
     private void checkMessageLength(final int length)

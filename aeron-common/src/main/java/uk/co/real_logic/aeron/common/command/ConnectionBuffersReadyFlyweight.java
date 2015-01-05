@@ -138,7 +138,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
     private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
 
     /**
-     * Contains both log buffers and state buffers
+     * Contains both term buffers and state buffers
      */
     public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
 
@@ -148,7 +148,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
     public static final int SOURCE_INFORMATION_INDEX = PAYLOAD_BUFFER_COUNT;
 
     /**
-     * The Channel sits after the source name and location strings for both the log and state buffers.
+     * The Channel sits after the source name and location strings for both the term and state buffers.
      */
     private static final int CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
 
@@ -220,6 +220,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
 
     /**
      * return session id field
+     *
      * @return session id field
      */
     public int sessionId()

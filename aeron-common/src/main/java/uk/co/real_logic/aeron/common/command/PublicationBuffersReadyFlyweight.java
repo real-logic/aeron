@@ -121,13 +121,13 @@ public class PublicationBuffersReadyFlyweight extends Flyweight implements Buffe
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
 
     /**
-     * Contains both log buffers and state buffers
+     * Contains both term buffers and state buffers
      */
     public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
 
     /**
      * The Channel sits at the end of the message, after the location strings for both the
-     * log and state buffers.
+     * term and state buffers.
      */
     private static final int CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
 
@@ -176,6 +176,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight implements Buffe
 
     /**
      * return session id field
+     *
      * @return session id field
      */
     public int sessionId()
@@ -185,6 +186,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight implements Buffe
 
     /**
      * set session id field
+     *
      * @param sessionId field value
      * @return flyweight
      */

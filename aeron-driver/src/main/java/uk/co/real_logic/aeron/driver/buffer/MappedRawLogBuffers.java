@@ -35,42 +35,36 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
  */
 class MappedRawLogBuffers implements RawLogBuffers
 {
-    private static final String LOG_SUFFIX = "-log";
+    private static final String TERM_SUFFIX = "-term";
     private static final String STATE_SUFFIX = "-state";
 
-    private final FileChannel termTemplate;
-    private final FileChannel stateTemplate;
-    private final int termBufferLength;
-    private final int termStateBufferLength;
     private final MappedRawLog[] buffers;
-    private final EventLogger logger;
 
     MappedRawLogBuffers(
         final File directory,
         final FileChannel termTemplate,
         final int termBufferLength,
         final FileChannel termStateTemplate,
-        final int termStateBufferSize,
+        final int termStateBufferLength,
         final EventLogger logger)
     {
-        this.logger = logger;
-        IoUtil.ensureDirectoryExists(directory, "buffer directory");
-
-        this.termTemplate = termTemplate;
-        this.termBufferLength = termBufferLength;
-        this.termStateBufferLength = termStateBufferSize;
-        this.stateTemplate = termStateTemplate;
+        IoUtil.ensureDirectoryExists(directory, "log buffer directory");
 
         try
         {
             checkSizeTermBuffer(termTemplate.size(), termBufferLength);
-            checkSizeStateBuffer(termStateTemplate.size(), termStateBufferSize);
+            checkSizeStateBuffer(termStateTemplate.size(), termStateBufferLength);
 
-            buffers = new MappedRawLog[]{mapRawLog("0", directory), mapRawLog("1", directory), mapRawLog("2", directory)};
+            buffers = new MappedRawLog[]
+            {
+                mapRawLog("0", directory, termTemplate, termBufferLength, termStateTemplate, termStateBufferLength, logger),
+                mapRawLog("1", directory, termTemplate, termBufferLength, termStateTemplate, termStateBufferLength, logger),
+                mapRawLog("2", directory, termTemplate, termBufferLength, termStateTemplate, termStateBufferLength, logger),
+            };
         }
-        catch (final IOException e)
+        catch (final IOException ex)
         {
-            throw new IllegalStateException(e);
+            throw new IllegalStateException(ex);
         }
     }
 
@@ -102,12 +96,12 @@ class MappedRawLogBuffers implements RawLogBuffers
         }
     }
 
-    public static void reset(final FileChannel channel, final FileChannel template, final long bufferSize)
+    public static void reset(final FileChannel channel, final FileChannel template, final long bufferLength)
     {
         try
         {
             channel.position(0);
-            template.transferTo(0, bufferSize, channel);
+            template.transferTo(0, bufferLength, channel);
         }
         catch (final IOException ex)
         {
@@ -115,27 +109,34 @@ class MappedRawLogBuffers implements RawLogBuffers
         }
     }
 
-    private static void checkSizeTermBuffer(final long templateSize, final long desiredSize)
+    private static void checkSizeTermBuffer(final long templateLength, final long desiredLength)
     {
-        if (desiredSize > templateSize)
+        if (desiredLength > templateLength)
         {
-            throw new IllegalArgumentException("Desired size (" + desiredSize + ") > template size: " + templateSize);
+            throw new IllegalArgumentException("Desired size (" + desiredLength + ") > template length: " + templateLength);
         }
     }
 
-    private static void checkSizeStateBuffer(final long templateSize, final long desiredSize)
+    private static void checkSizeStateBuffer(final long templateLength, final long desiredLength)
     {
-        if (desiredSize != templateSize)
+        if (desiredLength != templateLength)
         {
-            throw new IllegalArgumentException("Values aren't equal: " + desiredSize + " and " + templateSize);
+            throw new IllegalArgumentException("Values aren't equal: " + desiredLength + " and " + templateLength);
         }
     }
 
-    private MappedRawLog mapRawLog(final String prefix, final File directory)
+    private MappedRawLog mapRawLog(
+        final String prefix,
+        final File directory,
+        final FileChannel termTemplate,
+        final int termBufferLength,
+        final FileChannel stateTemplate,
+        final int termStateBufferLength,
+        final EventLogger logger)
     {
         try
         {
-            final File termFile = new File(directory, prefix + LOG_SUFFIX);
+            final File termFile = new File(directory, prefix + TERM_SUFFIX);
             final File stateFile = new File(directory, prefix + STATE_SUFFIX);
             final FileChannel termFileChannel = openBufferFile(termFile);
             final FileChannel stateFileChannel = openBufferFile(stateFile);
@@ -160,13 +161,13 @@ class MappedRawLogBuffers implements RawLogBuffers
         return new RandomAccessFile(file, "rw").getChannel();
     }
 
-    private MappedByteBuffer mapBufferFile(final FileChannel channel, final FileChannel template, final long bufferSize)
+    private MappedByteBuffer mapBufferFile(final FileChannel channel, final FileChannel template, final long bufferLength)
     {
-        reset(channel, template, bufferSize);
+        reset(channel, template, bufferLength);
 
         try
         {
-            return channel.map(READ_WRITE, 0, bufferSize);
+            return channel.map(READ_WRITE, 0, bufferLength);
         }
         catch (final IOException ex)
         {

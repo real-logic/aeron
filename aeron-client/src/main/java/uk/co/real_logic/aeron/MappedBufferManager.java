@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.IoUtil;
@@ -32,9 +31,9 @@ import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
  */
 class MappedBufferManager implements BufferManager
 {
-    public ManagedBuffer newBuffer(final String location, final int offset, final int length)
+    public ManagedBuffer mapBuffer(final String fileName, final int offset, final int length)
     {
-        final MappedByteBuffer buffer = mapExistingFile(new File(location), "Term Buffer");
+        final MappedByteBuffer buffer = mapExistingFile(new File(fileName), "Term Buffer");
         if (requiresIndirection(buffer, offset, length))
         {
             buffer.position(offset);

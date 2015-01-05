@@ -57,13 +57,13 @@ public class MockBufferUsage
             logBuffersSession2[i] = new UnsafeBuffer(new byte[LOG_BUFFER_SZ]);
             stateBuffersSession2[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
 
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(logBuffersSession1[i]));
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_1 + "-state-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-state-" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(stateBuffersSession1[i]));
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-log-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_2 + "-log-" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(logBuffersSession2[i]));
-            when(mockBufferUsage.newBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(stateBuffersSession2[i]));
 
             appendersSession1[i] = new LogAppender(

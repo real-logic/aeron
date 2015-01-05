@@ -13,14 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+/**
+ * Management wrapper for a buffer that can be closed to the underlying resource can be released.
+ */
 interface ManagedBuffer extends AutoCloseable
 {
+    /**
+     * Get the managed buffer.
+     *
+     * @return the managed buffer.
+     */
     UnsafeBuffer buffer();
 
+    /**
+     * Close the resources underlying the buffer.
+     */
     void close();
 }

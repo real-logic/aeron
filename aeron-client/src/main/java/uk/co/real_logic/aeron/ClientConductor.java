@@ -339,7 +339,7 @@ class ClientConductor implements Agent, DriverListener
         final int offset = buffersReadyFlyweight.bufferOffset(index);
         final int length = buffersReadyFlyweight.bufferLength(index);
 
-        return bufferManager.newBuffer(location, offset, length);
+        return bufferManager.mapBuffer(location, offset, length);
     }
 
     private int processTimers()

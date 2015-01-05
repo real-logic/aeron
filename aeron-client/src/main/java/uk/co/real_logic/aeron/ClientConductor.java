@@ -40,8 +40,8 @@ import java.util.function.Consumer;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 /**
- * Client conductor takes responses and notifications from media driver and acts on them. As well as passes commands
- * to the media driver.
+ * Client conductor takes responses and notifications from media driver and acts on them.
+ * As well as passes commands to the media driver.
  */
 class ClientConductor implements Agent, DriverListener
 {
@@ -335,11 +335,11 @@ class ClientConductor implements Agent, DriverListener
 
     private ManagedBuffer mapBuffer(final BuffersReadyFlyweight buffersReadyFlyweight, final int index)
     {
-        final String location = buffersReadyFlyweight.bufferLocation(index);
+        final String fullyQualifiedFileName = buffersReadyFlyweight.bufferLocation(index);
         final int offset = buffersReadyFlyweight.bufferOffset(index);
         final int length = buffersReadyFlyweight.bufferLength(index);
 
-        return bufferManager.mapBuffer(location, offset, length);
+        return bufferManager.mapBuffer(fullyQualifiedFileName, offset, length);
     }
 
     private int processTimers()

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
@@ -28,7 +27,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 public class BufferAndFrameHelper
 {
-    public static RawLogBuffers newTestTermBuffers(final long logBufferSize, final long stateBufferSize)
+    public static RawLogBuffers newTestLogBuffers(final long logBufferSize, final long stateBufferSize)
     {
         return new RawLogBuffers()
         {
@@ -70,16 +69,16 @@ public class BufferAndFrameHelper
         };
     }
 
-    public static RawLog newTestLogBuffer(final long logBufferSize, final long stateBufferSize)
+    public static RawLog newTestLogBuffer(final long termBufferSize, final long stateBufferSize)
     {
         return new RawLog()
         {
-            private final UnsafeBuffer logBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)logBufferSize)));
+            private final UnsafeBuffer termBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)termBufferSize)));
             private final UnsafeBuffer stateBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)stateBufferSize)));
 
             public UnsafeBuffer termBuffer()
             {
-                return logBuffer;
+                return termBuffer;
             }
 
             public UnsafeBuffer termStateBuffer()

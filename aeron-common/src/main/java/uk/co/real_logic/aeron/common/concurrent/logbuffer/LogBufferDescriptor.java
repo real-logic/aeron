@@ -66,9 +66,9 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Minimum buffer size for the log
+     * Minimum buffer size for a log term
      */
-    public static final int MIN_LOG_SIZE = 64 * 1024; // TODO: make a sensible default
+    public static final int MIN_TERM_SIZE = 64 * 1024; // TODO: make a sensible default
 
     /**
      * Check that term buffer is the correct size and alignment.
@@ -79,11 +79,11 @@ public class LogBufferDescriptor
     public static void checkTermBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < MIN_LOG_SIZE)
+        if (capacity < MIN_TERM_SIZE)
         {
             final String s = String.format(
                 "Term buffer capacity less than min size of %d, capacity=%d",
-                MIN_LOG_SIZE,
+                MIN_TERM_SIZE,
                 capacity);
             throw new IllegalStateException(s);
         }

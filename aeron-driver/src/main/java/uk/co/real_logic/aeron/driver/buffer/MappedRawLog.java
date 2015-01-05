@@ -128,7 +128,7 @@ class MappedRawLog implements RawLog
         }
     }
 
-    public void writeLogBufferLocation(final int index, final BuffersReadyFlyweight buffersReadyFlyweight)
+    public void writeTermBufferLocation(final int index, final BuffersReadyFlyweight buffersReadyFlyweight)
     {
         bufferLocation(index, buffersReadyFlyweight, mappedTermBuffer, termFile);
     }

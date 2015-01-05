@@ -110,7 +110,7 @@ public class DriverConductorTest
     public void setUp() throws Exception
     {
         when(mockRawLogBuffersFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
-            .thenReturn(BufferAndFrameHelper.newTestTermBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
+            .thenReturn(BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         currentTime = 0;
 

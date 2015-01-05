@@ -427,7 +427,7 @@ public class DriverConductor implements Agent
             streamId,
             sessionId,
             publication.initialTermId(),
-            publication.termBuffers(),
+            publication.rawLogBuffers(),
             correlationId,
             publication.publisherLimitCounterId(),
             mtuLength);
@@ -486,7 +486,7 @@ public class DriverConductor implements Agent
                     connection.sessionId(),
                     connection.initialTermId(),
                     connection.completedPosition(),
-                    connection.termBuffers(),
+                    connection.rawLogBuffers(),
                     correlationId,
                     Arrays.asList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
                     sourceInfo);

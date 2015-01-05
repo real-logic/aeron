@@ -287,7 +287,7 @@ public class DriverPublication implements AutoCloseable
         return initialTermId;
     }
 
-    public RawLogBuffers termBuffers()
+    public RawLogBuffers rawLogBuffers()
     {
         return rawLogBuffers;
     }

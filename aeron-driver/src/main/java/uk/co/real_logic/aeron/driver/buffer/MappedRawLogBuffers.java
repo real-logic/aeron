@@ -63,7 +63,7 @@ class MappedRawLogBuffers implements RawLogBuffers
 
         try
         {
-            checkSizeLogBuffer(termTemplate.size(), termBufferLength);
+            checkSizeTermBuffer(termTemplate.size(), termBufferLength);
             checkSizeStateBuffer(termStateTemplate.size(), termStateBufferSize);
 
             buffers = new MappedRawLog[]{mapRawLog("0", directory), mapRawLog("1", directory), mapRawLog("2", directory)};
@@ -93,7 +93,7 @@ class MappedRawLogBuffers implements RawLogBuffers
     {
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            buffers[i].writeLogBufferLocation(i, buffersReadyFlyweight);
+            buffers[i].writeTermBufferLocation(i, buffersReadyFlyweight);
         }
 
         for (int i = 0; i < BUFFER_COUNT; i++)
@@ -115,7 +115,7 @@ class MappedRawLogBuffers implements RawLogBuffers
         }
     }
 
-    private static void checkSizeLogBuffer(final long templateSize, final long desiredSize)
+    private static void checkSizeTermBuffer(final long templateSize, final long desiredSize)
     {
         if (desiredSize > templateSize)
         {

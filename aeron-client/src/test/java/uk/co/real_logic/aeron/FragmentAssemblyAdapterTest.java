@@ -38,7 +38,7 @@ public class FragmentAssemblyAdapterTest
     private static final int SESSION_ID = 777;
 
     private final DataHandler delegateDataHandler = mock(DataHandler.class);
-    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final Header header = mock(Header.class);
     private final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(delegateDataHandler);
 
@@ -46,8 +46,8 @@ public class FragmentAssemblyAdapterTest
     public void setUp()
     {
         when(header.sessionId()).thenReturn(SESSION_ID);
-        when(header.buffer()).thenReturn(logBuffer);
-        when(logBuffer.getInt(anyInt(), any(ByteOrder.class))).thenReturn(SESSION_ID);
+        when(header.buffer()).thenReturn(termBuffer);
+        when(termBuffer.getInt(anyInt(), any(ByteOrder.class))).thenReturn(SESSION_ID);
     }
 
     @Test

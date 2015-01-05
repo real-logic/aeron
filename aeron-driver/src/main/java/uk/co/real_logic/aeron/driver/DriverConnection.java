@@ -210,7 +210,7 @@ public class DriverConnection implements AutoCloseable
      *
      * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLogBuffers} the back this connection.
      */
-    public RawLogBuffers termBuffers()
+    public RawLogBuffers rawLogBuffers()
     {
         return rawLogBuffers;
     }

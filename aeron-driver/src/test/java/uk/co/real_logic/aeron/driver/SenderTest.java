@@ -52,7 +52,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.Act
 
 public class SenderTest
 {
-    private static final long LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_LOG_SIZE;
+    private static final long TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_SIZE;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 2;
@@ -67,7 +67,7 @@ public class SenderTest
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final RawLogBuffers rawLogBuffers =
-        BufferAndFrameHelper.newTestTermBuffers(LOG_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+        BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;
@@ -137,7 +137,7 @@ public class SenderTest
             INITIAL_TERM_ID,
             HEADER.capacity(),
             MAX_FRAME_LENGTH,
-            spySenderFlowControl.initialPositionLimit(INITIAL_TERM_ID, (int)LOG_BUFFER_SIZE),
+            spySenderFlowControl.initialPositionLimit(INITIAL_TERM_ID, (int)TERM_BUFFER_SIZE),
             mockSystemCounters);
 
         senderCommandQueue.offer(new NewPublicationCmd(publication));

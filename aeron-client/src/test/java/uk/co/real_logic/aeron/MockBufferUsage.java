@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import org.junit.Before;
@@ -34,7 +33,7 @@ import static org.mockito.Mockito.when;
 public class MockBufferUsage
 {
     protected static final int MAX_FRAME_LENGTH = 1024;
-    protected static final int LOG_BUFFER_SZ = LogBufferDescriptor.MIN_TERM_SIZE;
+    protected static final int TERM_BUFFER_SZ = LogBufferDescriptor.MIN_TERM_SIZE;
 
     protected static final int SESSION_ID_1 = 13;
     protected static final int SESSION_ID_2 = 15;
@@ -52,9 +51,9 @@ public class MockBufferUsage
     {
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
-            termBuffersSession1[i] = new UnsafeBuffer(new byte[LOG_BUFFER_SZ]);
+            termBuffersSession1[i] = new UnsafeBuffer(new byte[TERM_BUFFER_SZ]);
             stateBuffersSession1[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
-            termBuffersSession2[i] = new UnsafeBuffer(new byte[LOG_BUFFER_SZ]);
+            termBuffersSession2[i] = new UnsafeBuffer(new byte[TERM_BUFFER_SZ]);
             stateBuffersSession2[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.STATE_BUFFER_LENGTH]);
 
             when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
@@ -81,6 +80,7 @@ public class MockBufferUsage
         {
             final ManagedBuffer mockBuffer = mock(ManagedBuffer.class);
             when(mockBuffer.buffer()).thenReturn(buffer);
+
             return mockBuffer;
         };
     }

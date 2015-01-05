@@ -322,7 +322,7 @@ public class ClientConductorTest extends MockBufferUsage
             {
                 message.bufferLocation(i, sessionId + "-log-" + i);
                 message.bufferOffset(i, 0);
-                message.bufferLength(i, LOG_BUFFER_SZ);
+                message.bufferLength(i, TERM_BUFFER_SZ);
             });
 
         IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(

@@ -132,6 +132,6 @@ public class RawLogTripletFactory implements AutoCloseable
     {
         final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
 
-        return new MappedRawLogTriplet(dir, termTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
+        return new MappedRawLogTriplet(dir, termTemplate, termBufferSize, stateTemplate, logger);
     }
 }

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -45,7 +46,6 @@ class MappedRawLogTriplet implements RawLogTriplet
         final FileChannel termTemplate,
         final int termBufferLength,
         final FileChannel termStateTemplate,
-        final int termStateBufferLength,
         final EventLogger logger)
     {
         IoUtil.ensureDirectoryExists(directory, "log buffer directory");
@@ -53,13 +53,13 @@ class MappedRawLogTriplet implements RawLogTriplet
         try
         {
             checkSizeTermBuffer(termTemplate.size(), termBufferLength);
-            checkSizeStateBuffer(termStateTemplate.size(), termStateBufferLength);
+            checkSizeStateBuffer(termStateTemplate.size(), LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
             buffers = new MappedRawLog[]
             {
-                mapRawLog("0", directory, termTemplate, termBufferLength, termStateTemplate, termStateBufferLength, logger),
-                mapRawLog("1", directory, termTemplate, termBufferLength, termStateTemplate, termStateBufferLength, logger),
-                mapRawLog("2", directory, termTemplate, termBufferLength, termStateTemplate, termStateBufferLength, logger),
+                mapRawLog("0", directory, termTemplate, termBufferLength, termStateTemplate, logger),
+                mapRawLog("1", directory, termTemplate, termBufferLength, termStateTemplate, logger),
+                mapRawLog("2", directory, termTemplate, termBufferLength, termStateTemplate, logger),
             };
         }
         catch (final IOException ex)
@@ -131,7 +131,6 @@ class MappedRawLogTriplet implements RawLogTriplet
         final FileChannel termTemplate,
         final int termBufferLength,
         final FileChannel stateTemplate,
-        final int termStateBufferLength,
         final EventLogger logger)
     {
         try
@@ -147,7 +146,7 @@ class MappedRawLogTriplet implements RawLogTriplet
                 termFileChannel,
                 stateFileChannel,
                 mapBufferFile(termFileChannel, termTemplate, termBufferLength),
-                mapBufferFile(stateFileChannel, stateTemplate, termStateBufferLength),
+                mapBufferFile(stateFileChannel, stateTemplate, LogBufferDescriptor.STATE_BUFFER_LENGTH),
                 logger);
         }
         catch (final IOException ex)

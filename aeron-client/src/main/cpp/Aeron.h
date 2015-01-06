@@ -26,64 +26,20 @@
 #include "common/AgentRunner.h"
 #include "Publication.h"
 #include "Subscription.h"
+#include "Context.h"
 
 namespace aeron {
 
 using namespace aeron::common::common;
-using namespace aeron::common::concurrent::logbuffer;
-
-inline static void defaultErrorHandler(util::SourcedException& exception)
-{
-    std::cerr << "ERROR: " << exception.what() << " : " << exception.where() << std::endl;
-    ::exit(-1);
-}
-
-class Context
-{
-    friend class Aeron;
-public:
-    typedef Context this_t;
-
-    Context() :
-        m_exceptionHandler(defaultErrorHandler)
-    {
-    }
-
-    this_t& conclude()
-    {
-        return *this;
-    }
-
-    this_t& useSharedMemoryOnLinux()
-    {
-        // TODO: set data dir
-        // TODO: set admin dir
-        // TODO: set counters dir
-        return *this;
-    }
-
-private:
-    exception_handler_t m_exceptionHandler;
-};
+using namespace aeron::common::concurrent;
 
 class Aeron
 {
 public:
     typedef Aeron this_t;
 
-    Aeron(Context& context) :
-        m_conductor(),
-        m_idleStrategy(),
-        m_conductorRunner(m_conductor, m_idleStrategy, context.m_exceptionHandler),
-        m_context(context)
-    {
-        m_conductorRunner.start();
-    }
-
-    virtual ~Aeron()
-    {
-        m_conductorRunner.close();
-    }
+    Aeron(Context& context);
+    virtual ~Aeron();
 
     inline Publication* addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
     {
@@ -97,7 +53,7 @@ public:
         return m_conductor.addPublication(channel, streamId, sessionIdToRequest);
     }
 
-    inline Subscription* addSubscription(const std::string& channel, std::int32_t streamId, handler_t& handler)
+    inline Subscription* addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
     {
         return m_conductor.addSubscription(channel, streamId, handler);
     }
@@ -107,6 +63,10 @@ private:
     BusySpinIdleStrategy m_idleStrategy;
     AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
     Context& m_context;
+
+    // items managed by Aeron
+
+    DriverProxy& createDriverProxy(const Context& context);
 };
 
 }

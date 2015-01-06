@@ -48,10 +48,11 @@ Publication* ClientConductor::addPublication(const std::string& channel, std::in
 
     if (SIZE_MAX == element)
     {
-        publication = new Publication(*this, channel, streamId, sessionId);
+        std::int64_t correlationId = 0;
+
+        publication = new Publication(*this, channel, streamId, sessionId, correlationId);
 
         m_publications.push_back(publication);
-        // TODO: send command to driver
     }
     else
     {
@@ -78,7 +79,7 @@ void ClientConductor::releasePublication(Publication* publication)
     }
 }
 
-Subscription* ClientConductor::addSubscription(const std::string& channel, std::int32_t streamId, handler_t& handler)
+Subscription* ClientConductor::addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
 

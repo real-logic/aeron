@@ -20,6 +20,7 @@
 #include <util/Exceptions.h>
 #include <functional>
 #include <thread>
+#include <atomic>
 
 namespace aeron { namespace common { namespace common {
 

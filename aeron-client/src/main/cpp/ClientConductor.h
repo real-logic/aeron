@@ -19,17 +19,21 @@
 
 #include <concurrent/logbuffer/LogReader.h>
 #include <vector>
+#include <mutex>
 #include "Publication.h"
 #include "Subscription.h"
+#include "DriverProxy.h"
+#include "Context.h"
 
 namespace aeron {
 
-using namespace aeron::common::concurrent::logbuffer;
+using namespace aeron::common::concurrent;
 
 class ClientConductor
 {
 public:
-    ClientConductor()
+    ClientConductor(DriverProxy& driverProxy) :
+        m_driverProxy(driverProxy)
     {
 
     }
@@ -45,15 +49,18 @@ public:
 
     /*
      * non-blocking API semantics
-     * - Publication & Subscription are valid, but no-op offer/poll until successful registration
-     * - on error (driver timeout, etc.), deliver notification via errorHandler
-     * - next call to method of Publication or Subscription causes exception
+     * - addPublication, addSubscription do NOT return objects, but instead return correlationIds
+     * - onReadyFlyweight -> deliver notification via handler(correlationId, Publication) (2 handlers 1 Pub + 1 Sub)
+     *      - Publication/Subscription created on reception of Flyweight
+     * - onError [timeout or error return] -> deliver notification via errorHandler (should call handler with NULL Pub/Sub?)
+     * - app can poll for usage of Publication/Subscription (concurrent array/map)
+     *      - use correlationId as key
      */
 
     Publication* addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
     void releasePublication(Publication* publication);
 
-    Subscription* addSubscription(const std::string& channel, std::int32_t streamId, handler_t& handler);
+    Subscription* addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler);
     void releaseSubscription(Subscription* subscription);
 
 private:
@@ -61,6 +68,7 @@ private:
     std::mutex m_subscriptionsLock;
     std::vector<Publication*> m_publications;
     std::vector<Subscription*> m_subscriptions;
+    DriverProxy& m_driverProxy;
 };
 
 }

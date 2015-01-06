@@ -17,13 +17,16 @@
 SET(SOURCE
     Publication.cpp
     Subscription.cpp
-    ClientConductor.cpp)
+    ClientConductor.cpp
+    Aeron.cpp)
 
 SET(HEADERS
     ClientConductor.h
+    Context.h
     Aeron.h
     Publication.h
-    Subscription.h)
+    Subscription.h
+    DriverProxy.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

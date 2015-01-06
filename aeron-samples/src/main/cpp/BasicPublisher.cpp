@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <signal.h>
 #include <util/CommandOptionParser.h>
 #include <thread>
 #include "Configuration.h"
@@ -65,7 +66,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     return s;
 }
 
-int main (int argc, char** argv)
+int main(int argc, char** argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption (optHelp,     0, 0, "                Displays help information."));

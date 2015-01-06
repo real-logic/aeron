@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_CONCURRENT_LOGBUFFER_LOG_READER__
 #define INCLUDED_AERON_CONCURRENT_LOGBUFFER_LOG_READER__
 
+#include <functional>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include "LogBufferDescriptor.h"

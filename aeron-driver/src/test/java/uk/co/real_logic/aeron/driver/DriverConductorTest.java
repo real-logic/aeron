@@ -70,7 +70,7 @@ public class DriverConductorTest
         Configuration.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final ByteBuffer toEventBuffer = ByteBuffer.allocate(
-        EventConfiguration.BUFFER_SIZE_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
+        EventConfiguration.BUFFER_LENGTH_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final TransportPoller transportPoller = mock(TransportPoller.class);
     private final RawLogBuffersFactory mockRawLogBuffersFactory = mock(RawLogBuffersFactory.class);

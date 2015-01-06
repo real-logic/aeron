@@ -73,7 +73,7 @@ public class MultiDriverTest
 
         buffer.putInt(0, 1);
 
-        driverAContext.termBufferSize(TERM_BUFFER_SIZE);
+        driverAContext.termBufferLength(TERM_BUFFER_SIZE);
         driverAContext.dirsDeleteOnExit(true);
         driverAContext.adminDirName(baseDirA + File.separator + "conductor");
         driverAContext.dataDirName(baseDirA + File.separator + "data");
@@ -83,7 +83,7 @@ public class MultiDriverTest
         aeronAContext.dataDirName(driverAContext.dataDirName());
         aeronAContext.countersDirName(driverAContext.countersDirName());
 
-        driverBContext.termBufferSize(TERM_BUFFER_SIZE);
+        driverBContext.termBufferLength(TERM_BUFFER_SIZE);
         driverBContext.dirsDeleteOnExit(true);
         driverBContext.adminDirName(baseDirB + File.separator + "conductor");
         driverBContext.dataDirName(baseDirB + File.separator + "data");

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
@@ -50,8 +49,7 @@ import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_PROP_NAME;
 
 /**
  * Main class for JVM-based media driver
- * <p>
- * <p>
+ *
  * Usage:
  * <code>
  * $ java -jar aeron-driver.jar
@@ -266,10 +264,10 @@ public final class MediaDriver implements AutoCloseable
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
-        private int publicationTermBufferSize;
-        private int maxConnectionTermBufferSize;
-        private int initialWindowSize;
-        private int eventBufferSize;
+        private int publicationTermBufferLength;
+        private int maxConnectionTermBufferLength;
+        private int initialWindowLength;
+        private int eventBufferLength;
         private long statusMessageTimeout;
         private long dataLossSeed;
         private long controlLossSeed;
@@ -284,9 +282,9 @@ public final class MediaDriver implements AutoCloseable
 
         public Context()
         {
-            termBufferSize(Configuration.termBufferSize());
-            termBufferSizeMax(Configuration.termBufferSizeMax());
-            initialWindowSize(Configuration.initialWindowSize());
+            termBufferLength(Configuration.termBufferLength());
+            termBufferMaxLength(Configuration.termBufferLengthMax());
+            initialWindowLength(Configuration.initialWindowLength());
             statusMessageTimeout(Configuration.statusMessageTimeout());
             dataLossRate(Configuration.dataLossRate());
             dataLossSeed(Configuration.dataLossSeed());
@@ -294,7 +292,7 @@ public final class MediaDriver implements AutoCloseable
             controlLossSeed(Configuration.controlLossSeed());
 
             eventConsumer = System.out::println;
-            eventBufferSize = EventConfiguration.bufferSize();
+            eventBufferLength = EventConfiguration.bufferLength();
 
             warnIfDirectoriesExist = true;
         }
@@ -312,7 +310,7 @@ public final class MediaDriver implements AutoCloseable
 
                 mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
 
-                final ByteBuffer eventByteBuffer = ByteBuffer.allocate(eventBufferSize);
+                final ByteBuffer eventByteBuffer = ByteBuffer.allocate(eventBufferLength);
 
                 if (null == eventLogger)
                 {
@@ -324,8 +322,8 @@ public final class MediaDriver implements AutoCloseable
                 receiverNioSelector(new TransportPoller());
                 conductorNioSelector(new TransportPoller());
 
-                Configuration.validateTermBufferSize(termBufferSize());
-                Configuration.validateInitialWindowSize(initialWindowSize(), mtuLength());
+                Configuration.validateTermBufferLength(termBufferLength());
+                Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
 
                 // clean out existing files. We've warned about them already.
                 deleteIfExists(toClientsFile());
@@ -350,11 +348,11 @@ public final class MediaDriver implements AutoCloseable
 
                 receiverProxy(new ReceiverProxy(threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
                 senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.senderProxyFails()));
-                driverConductorProxy(
-                    new DriverConductorProxy(threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
+                driverConductorProxy(new DriverConductorProxy(
+                    threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
 
-                rawLogBuffersFactory(
-                    new RawLogBuffersFactory(dataDirName(), publicationTermBufferSize, maxConnectionTermBufferSize, eventLogger));
+                rawLogBuffersFactory(new RawLogBuffersFactory(
+                    dataDirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
 
                 concludeIdleStrategies();
             }
@@ -402,9 +400,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorTimerWheel(final TimerWheel wheel)
+        public Context conductorTimerWheel(final TimerWheel timerWheel)
         {
-            this.conductorTimerWheel = wheel;
+            this.conductorTimerWheel = timerWheel;
             return this;
         }
 
@@ -486,21 +484,21 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context termBufferSize(final int termBufferSize)
+        public Context termBufferLength(final int termBufferLength)
         {
-            this.publicationTermBufferSize = termBufferSize;
+            this.publicationTermBufferLength = termBufferLength;
             return this;
         }
 
-        public Context termBufferSizeMax(final int termBufferSizeMax)
+        public Context termBufferMaxLength(final int termBufferMaxLength)
         {
-            this.maxConnectionTermBufferSize = termBufferSizeMax;
+            this.maxConnectionTermBufferLength = termBufferMaxLength;
             return this;
         }
 
-        public Context initialWindowSize(final int initialWindowSize)
+        public Context initialWindowLength(final int initialWindowLength)
         {
-            this.initialWindowSize = initialWindowSize;
+            this.initialWindowLength = initialWindowLength;
             return this;
         }
 
@@ -534,9 +532,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context eventBufferSize(final int size)
+        public Context eventBufferLength(final int length)
         {
-            this.eventBufferSize = size;
+            this.eventBufferLength = length;
             return this;
         }
 
@@ -676,19 +674,19 @@ public final class MediaDriver implements AutoCloseable
             return countersManager;
         }
 
-        public int termBufferSize()
+        public int termBufferLength()
         {
-            return publicationTermBufferSize;
+            return publicationTermBufferLength;
         }
 
-        public int termBufferSizeMax()
+        public int termBufferMaxLength()
         {
-            return maxConnectionTermBufferSize;
+            return maxConnectionTermBufferLength;
         }
 
-        public int initialWindowSize()
+        public int initialWindowLength()
         {
-            return initialWindowSize;
+            return initialWindowLength;
         }
 
         public long statusMessageTimeout()
@@ -752,9 +750,9 @@ public final class MediaDriver implements AutoCloseable
             return eventConsumer;
         }
 
-        public int eventBufferSize()
+        public int eventBufferLength()
         {
-            return eventBufferSize;
+            return eventBufferLength;
         }
 
         public RingBuffer toEventReader()

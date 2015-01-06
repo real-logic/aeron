@@ -129,8 +129,8 @@ public class DriverConductor implements Agent
         this.rawLogBuffersFactory = ctx.rawLogBuffersFactory();
         this.transportPoller = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
-        this.initialWindowSize = ctx.initialWindowSize();
-        this.capacity = ctx.termBufferSize();
+        this.initialWindowSize = ctx.initialWindowLength();
+        this.capacity = ctx.termBufferLength();
         this.statusMessageTimeout = ctx.statusMessageTimeout();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();

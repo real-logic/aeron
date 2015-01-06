@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.event;
 
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -33,7 +32,7 @@ public class EventConfiguration
     /**
      * Event Buffer size system property name
      */
-    public static final String BUFFER_SIZE_PROPERTY_NAME = "aeron.event.buffer.size";
+    public static final String BUFFER_LENGTH_PROPERTY_NAME = "aeron.event.buffer.length";
 
     /**
      * Event tags system property name. This is either:
@@ -77,7 +76,7 @@ public class EventConfiguration
     /**
      * Event Buffer default size (in bytes)
      */
-    public static final int BUFFER_SIZE_DEFAULT = 65536;
+    public static final int BUFFER_LENGTH_DEFAULT = 65536;
 
     /**
      * Maximum length of an event in bytes
@@ -101,11 +100,11 @@ public class EventConfiguration
         return makeTagBitSet(getEnabledEventCodes(enabledLoggerEventCodes));
     }
 
-    public static int bufferSize()
+    public static int bufferLength()
     {
         return Integer.getInteger(
-                EventConfiguration.BUFFER_SIZE_PROPERTY_NAME,
-                EventConfiguration.BUFFER_SIZE_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
+                EventConfiguration.BUFFER_LENGTH_PROPERTY_NAME,
+                EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
     }
 
     static long makeTagBitSet(final Set<EventCode> eventCodes)

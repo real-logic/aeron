@@ -347,7 +347,7 @@ public class Configuration
      *
      * @param size of the term buffer
      */
-    public static void validateTermBufferSize(final int size)
+    public static void validateTermBufferLength(final int size)
     {
         if (!BitUtil.isPowerOfTwo(size))
         {
@@ -361,7 +361,7 @@ public class Configuration
      * @param initialWindowSize to be validated.
      * @param mtuLength against which to validate.
      */
-    public static void validateInitialWindowSize(final int initialWindowSize, final int mtuLength)
+    public static void validateInitialWindowLength(final int initialWindowSize, final int mtuLength)
     {
         if (mtuLength > initialWindowSize)
         {
@@ -423,17 +423,17 @@ public class Configuration
         return new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
     }
 
-    public static int termBufferSize()
+    public static int termBufferLength()
     {
         return getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT);
     }
 
-    public static int termBufferSizeMax()
+    public static int termBufferLengthMax()
     {
         return getInteger(TERM_BUFFER_SZ_MAX_PROP_NAME, TERM_BUFFER_SZ_MAX_DEFAULT);
     }
 
-    public static int initialWindowSize()
+    public static int initialWindowLength()
     {
         return getInteger(INITIAL_WINDOW_SIZE_PROP_NAME, INITIAL_WINDOW_SIZE_DEFAULT);
     }

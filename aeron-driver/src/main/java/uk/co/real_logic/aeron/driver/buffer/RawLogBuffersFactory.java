@@ -36,13 +36,13 @@ public class RawLogBuffersFactory implements AutoCloseable
     private final File subscriptionsDir;
 
     private final int publicationTermBufferLength;
-    private final int maxConnectionTermBufferLength;
+    private final int connectionTermBufferMaxLength;
     private final EventLogger logger;
 
     public RawLogBuffersFactory(
         final String dataDirectoryName,
         final int publicationTermBufferLength,
-        final int maxConnectionTermBufferLength,
+        final int connectionTermBufferMaxLength,
         final EventLogger logger)
     {
         this.logger = logger;
@@ -55,9 +55,9 @@ public class RawLogBuffersFactory implements AutoCloseable
         IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.SUBSCRIPTIONS);
 
         this.publicationTermBufferLength = publicationTermBufferLength;
-        this.maxConnectionTermBufferLength = maxConnectionTermBufferLength;
+        this.connectionTermBufferMaxLength = connectionTermBufferMaxLength;
 
-        final int templateLength = Math.max(publicationTermBufferLength, maxConnectionTermBufferLength);
+        final int templateLength = Math.max(publicationTermBufferLength, connectionTermBufferMaxLength);
         termTemplate = createTemplateFile(dataDirectoryName, "termTemplate", templateLength);
         stateTemplate = createTemplateFile(dataDirectoryName, "stateTemplate", STATE_BUFFER_LENGTH);
     }
@@ -105,10 +105,10 @@ public class RawLogBuffersFactory implements AutoCloseable
     public RawLogBuffers newConnection(
         final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
-        if (termBufferLength > maxConnectionTermBufferLength)
+        if (termBufferLength > connectionTermBufferMaxLength)
         {
             throw new IllegalArgumentException(
-                "term buffer larger than max length: " + termBufferLength + " > " + maxConnectionTermBufferLength);
+                "connection term buffer larger than max length: " + termBufferLength + " > " + connectionTermBufferMaxLength);
         }
 
         return newInstance(subscriptionsDir, channel, sessionId, streamId, correlationId, termBufferLength);

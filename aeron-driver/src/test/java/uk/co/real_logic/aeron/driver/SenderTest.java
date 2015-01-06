@@ -30,7 +30,7 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.agrona.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.driver.buffer.RawLogBuffers;
+import uk.co.real_logic.aeron.driver.buffer.RawLogTriplet;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -66,7 +66,7 @@ public class SenderTest
 
     private final EventLogger mockLogger = mock(EventLogger.class);
 
-    private final RawLogBuffers rawLogBuffers =
+    private final RawLogTriplet rawLogTriplet =
         BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
 
     private LogAppender[] logAppenders;
@@ -120,7 +120,7 @@ public class SenderTest
                 .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger));
 
-        logAppenders = rawLogBuffers
+        logAppenders = rawLogTriplet
             .stream()
             .map((log) -> new LogAppender(log.termBuffer(), log.termStateBuffer(), HEADER, MAX_FRAME_LENGTH))
             .toArray(LogAppender[]::new);
@@ -129,7 +129,7 @@ public class SenderTest
             PUBLICATION_ID,
             mockSendChannelEndpoint,
             wheel.clock(),
-            rawLogBuffers,
+            rawLogTriplet,
             new HeapPositionReporter(),
             mock(BufferPositionReporter.class),
             SESSION_ID,

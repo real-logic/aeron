@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  * Represents the collection of term and associated state buffers for the connection between a publisher and subscriber
  * connection for the replicated log.
  */
-public interface RawLogBuffers extends AutoCloseable
+public interface RawLogTriplet extends AutoCloseable
 {
     /**
      * A {@link Stream} of the {@link RawLog} buffers.

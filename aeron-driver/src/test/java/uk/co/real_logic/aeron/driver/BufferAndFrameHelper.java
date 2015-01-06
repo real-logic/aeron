@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogBuffers;
+import uk.co.real_logic.aeron.driver.buffer.RawLogTriplet;
 
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
@@ -27,9 +27,9 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 public class BufferAndFrameHelper
 {
-    public static RawLogBuffers newTestLogBuffers(final long logBufferSize, final long stateBufferSize)
+    public static RawLogTriplet newTestLogBuffers(final long logBufferSize, final long stateBufferSize)
     {
-        return new RawLogBuffers()
+        return new RawLogTriplet()
         {
             private RawLog clean = newTestLogBuffer(logBufferSize, stateBufferSize);
             private RawLog dirty = newTestLogBuffer(logBufferSize, stateBufferSize);

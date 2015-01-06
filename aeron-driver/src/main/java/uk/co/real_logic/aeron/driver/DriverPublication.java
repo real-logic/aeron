@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.agrona.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogBuffers;
+import uk.co.real_logic.aeron.driver.buffer.RawLogTriplet;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -60,7 +60,7 @@ public class DriverPublication implements AutoCloseable
     private final PositionReporter senderPosition;
 
     private final SendChannelEndpoint channelEndpoint;
-    private final RawLogBuffers rawLogBuffers;
+    private final RawLogTriplet rawLogTriplet;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final SystemCounters systemCounters;
@@ -90,7 +90,7 @@ public class DriverPublication implements AutoCloseable
         final long id,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
-        final RawLogBuffers rawLogBuffers,
+        final RawLogTriplet rawLogTriplet,
         final PositionReporter senderPosition,
         final PositionReporter publisherLimit,
         final int sessionId,
@@ -103,7 +103,7 @@ public class DriverPublication implements AutoCloseable
     {
         this.id = id;
         this.channelEndpoint = channelEndpoint;
-        this.rawLogBuffers = rawLogBuffers;
+        this.rawLogTriplet = rawLogTriplet;
         this.senderPosition = senderPosition;
         this.systemCounters = systemCounters;
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
@@ -115,7 +115,7 @@ public class DriverPublication implements AutoCloseable
         this.mtuLength = mtuLength;
         this.activeIndex = bufferIndex(initialTermId, initialTermId);
 
-        final RawLog[] rawLogs = rawLogBuffers.buffers();
+        final RawLog[] rawLogs = rawLogTriplet.buffers();
         for (int i = 0; i < rawLogs.length; i++)
         {
             logScanners[i] = newScanner(rawLogs[i]);
@@ -152,7 +152,7 @@ public class DriverPublication implements AutoCloseable
 
     public void close()
     {
-        rawLogBuffers.close();
+        rawLogTriplet.close();
         publisherLimit.close();
         senderPosition.close();
     }
@@ -287,9 +287,9 @@ public class DriverPublication implements AutoCloseable
         return initialTermId;
     }
 
-    public RawLogBuffers rawLogBuffers()
+    public RawLogTriplet rawLogBuffers()
     {
-        return rawLogBuffers;
+        return rawLogTriplet;
     }
 
     public int publisherLimitCounterId()

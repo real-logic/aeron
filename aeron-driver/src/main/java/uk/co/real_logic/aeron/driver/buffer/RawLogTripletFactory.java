@@ -25,9 +25,9 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
- * Factory for creating new {@link RawLogBuffers} in the publications or subscriptions directories as appropriate.
+ * Factory for creating new {@link RawLogTriplet} in the publications or subscriptions directories as appropriate.
  */
-public class RawLogBuffersFactory implements AutoCloseable
+public class RawLogTripletFactory implements AutoCloseable
 {
     private final FileChannel termTemplate;
     private final FileChannel stateTemplate;
@@ -39,7 +39,7 @@ public class RawLogBuffersFactory implements AutoCloseable
     private final int connectionTermBufferMaxLength;
     private final EventLogger logger;
 
-    public RawLogBuffersFactory(
+    public RawLogTripletFactory(
         final String dataDirectoryName,
         final int publicationTermBufferLength,
         final int connectionTermBufferMaxLength,
@@ -79,30 +79,30 @@ public class RawLogBuffersFactory implements AutoCloseable
     }
 
     /**
-     * Create new {@link RawLogBuffers} in the publications directory for the supplied triplet.
+     * Create new {@link RawLogTriplet} in the publications directory for the supplied triplet.
      *
      * @param channel       address on the media to send to.
      * @param sessionId     under which transmissions are made.
      * @param streamId      within the channel address to separate message flows.
      * @param correlationId to use to distinguish this publication
-     * @return the newly allocated {@link RawLogBuffers}
+     * @return the newly allocated {@link RawLogTriplet}
      */
-    public RawLogBuffers newPublication(final String channel, final int sessionId, final int streamId, final long correlationId)
+    public RawLogTriplet newPublication(final String channel, final int sessionId, final int streamId, final long correlationId)
     {
         return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, publicationTermBufferLength);
     }
 
     /**
-     * Create new {@link RawLogBuffers} in the subscriptions directory for the supplied triplet.
+     * Create new {@link RawLogTriplet} in the subscriptions directory for the supplied triplet.
      *
      * @param channel          address on the media to listened to.
      * @param sessionId        under which transmissions are made.
      * @param streamId         within the channel address to separate message flows.
      * @param correlationId    to use to distinguish this connection
      * @param termBufferLength to use for the log buffer
-     * @return the newly allocated {@link RawLogBuffers}
+     * @return the newly allocated {@link RawLogTriplet}
      */
-    public RawLogBuffers newConnection(
+    public RawLogTriplet newConnection(
         final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
         if (termBufferLength > connectionTermBufferMaxLength)
@@ -122,7 +122,7 @@ public class RawLogBuffersFactory implements AutoCloseable
         return IoUtil.createEmptyFile(templateFile, size);
     }
 
-    private RawLogBuffers newInstance(
+    private RawLogTriplet newInstance(
         final File rootDir,
         final String channel,
         final int sessionId,
@@ -132,6 +132,6 @@ public class RawLogBuffersFactory implements AutoCloseable
     {
         final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
 
-        return new MappedRawLogBuffers(dir, termTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
+        return new MappedRawLogTriplet(dir, termTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
     }
 }

@@ -22,7 +22,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.buffer.RawLogBuffersFactory;
+import uk.co.real_logic.aeron.driver.buffer.RawLogTripletFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
@@ -236,7 +236,7 @@ public final class MediaDriver implements AutoCloseable
 
     public static class Context extends CommonContext
     {
-        private RawLogBuffersFactory rawLogBuffersFactory;
+        private RawLogTripletFactory rawLogTripletFactory;
         private TransportPoller receiverTransportPoller;
         private TransportPoller conductorTransportPoller;
         private Supplier<SenderFlowControl> unicastSenderFlowControl;
@@ -351,7 +351,7 @@ public final class MediaDriver implements AutoCloseable
                 driverConductorProxy(new DriverConductorProxy(
                     threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
 
-                rawLogBuffersFactory(new RawLogBuffersFactory(
+                rawLogBuffersFactory(new RawLogTripletFactory(
                     dataDirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
 
                 concludeIdleStrategies();
@@ -370,9 +370,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context rawLogBuffersFactory(final RawLogBuffersFactory rawLogBuffersFactory)
+        public Context rawLogBuffersFactory(final RawLogTripletFactory rawLogTripletFactory)
         {
-            this.rawLogBuffersFactory = rawLogBuffersFactory;
+            this.rawLogTripletFactory = rawLogTripletFactory;
             return this;
         }
 
@@ -579,9 +579,9 @@ public final class MediaDriver implements AutoCloseable
             return conductorCommandQueue;
         }
 
-        public RawLogBuffersFactory rawLogBuffersFactory()
+        public RawLogTripletFactory rawLogBuffersFactory()
         {
-            return rawLogBuffersFactory;
+            return rawLogTripletFactory;
         }
 
         public TransportPoller receiverNioSelector()

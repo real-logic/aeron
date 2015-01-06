@@ -33,7 +33,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.buffer.RawLogBuffersFactory;
+import uk.co.real_logic.aeron.driver.buffer.RawLogTripletFactory;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -58,7 +58,7 @@ public class DriverConductorTest
     private static final int STREAM_ID_1 = 10;
     private static final int STREAM_ID_2 = 20;
     private static final int STREAM_ID_3 = 30;
-    private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_SZ_DEFAULT;
+    private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final long CORRELATION_ID_1 = 1429;
     private static final long CORRELATION_ID_2 = 1430;
     private static final long CORRELATION_ID_3 = 1431;
@@ -73,7 +73,7 @@ public class DriverConductorTest
         EventConfiguration.BUFFER_LENGTH_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final TransportPoller transportPoller = mock(TransportPoller.class);
-    private final RawLogBuffersFactory mockRawLogBuffersFactory = mock(RawLogBuffersFactory.class);
+    private final RawLogTripletFactory mockRawLogTripletFactory = mock(RawLogTripletFactory.class);
 
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer));
     private final RingBuffer toEventReader = new ManyToOneRingBuffer(new UnsafeBuffer(toEventBuffer));
@@ -109,7 +109,7 @@ public class DriverConductorTest
     @Before
     public void setUp() throws Exception
     {
-        when(mockRawLogBuffersFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
+        when(mockRawLogTripletFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
             .thenReturn(BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SZ, STATE_BUFFER_LENGTH));
 
         currentTime = 0;
@@ -126,7 +126,7 @@ public class DriverConductorTest
             // TODO: remove
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
-            .rawLogBuffersFactory(mockRawLogBuffersFactory)
+            .rawLogBuffersFactory(mockRawLogTripletFactory)
             .countersManager(countersManager);
 
         ctx.toEventReader(toEventReader);

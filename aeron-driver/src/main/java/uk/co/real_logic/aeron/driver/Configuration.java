@@ -44,12 +44,12 @@ public class Configuration
     /**
      * Size (in bytes) of the log buffers for publication terms
      */
-    public static final String TERM_BUFFER_SZ_PROP_NAME = "aeron.term.buffer.size";
+    public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.size";
 
     /**
      * Size (in bytes) of the log buffers for terms for incoming connections
      */
-    public static final String TERM_BUFFER_SZ_MAX_PROP_NAME = "aeron.term.buffer.size.max";
+    public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.size.max";
 
     /**
      * Size (in bytes) of the command buffers between threads
@@ -147,12 +147,12 @@ public class Configuration
     /**
      * Default term buffer size.
      */
-    public static final int TERM_BUFFER_SZ_DEFAULT = 16 * 1024 * 1024;
+    public static final int TERM_BUFFER_LENGTH_DEFAULT = 16 * 1024 * 1024;
 
     /**
      * Default term buffer size max.
      */
-    public static final int TERM_BUFFER_SZ_MAX_DEFAULT = 16 * 1024 * 1024;
+    public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 16 * 1024 * 1024;
 
     /**
      * Default buffer size for command buffers between threads
@@ -425,12 +425,12 @@ public class Configuration
 
     public static int termBufferLength()
     {
-        return getInteger(TERM_BUFFER_SZ_PROP_NAME, TERM_BUFFER_SZ_DEFAULT);
+        return getInteger(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
     }
 
     public static int termBufferLengthMax()
     {
-        return getInteger(TERM_BUFFER_SZ_MAX_PROP_NAME, TERM_BUFFER_SZ_MAX_DEFAULT);
+        return getInteger(TERM_BUFFER_MAX_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_MAX_DEFAULT);
     }
 
     public static int initialWindowLength()

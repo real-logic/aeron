@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver.buffer;
 
 import org.junit.After;
@@ -33,16 +32,16 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class RawLogBuffersFactoryTest
+public class RawLogTripletFactoryTest
 {
     private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID = 101;
     private static final int CREATION_ID = 102;
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
-    private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_SZ_DEFAULT;
-    private static final int TERM_BUFFER_SZ_MAX = Configuration.TERM_BUFFER_SZ_MAX_DEFAULT;
-    private RawLogBuffersFactory rawLogBuffersFactory;
+    private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
+    private static final int TERM_BUFFER_MAX_LENGTH = Configuration.TERM_BUFFER_LENGTH_MAX_DEFAULT;
+    private RawLogTripletFactory rawLogTripletFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
     private EventLogger logger = mock(EventLogger.class);
 
@@ -50,8 +49,8 @@ public class RawLogBuffersFactoryTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        rawLogBuffersFactory =
-            new RawLogBuffersFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_SZ, TERM_BUFFER_SZ_MAX, logger);
+        rawLogTripletFactory = new RawLogTripletFactory(
+            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, logger);
     }
 
     @After
@@ -61,20 +60,20 @@ public class RawLogBuffersFactoryTest
     }
 
     @Test
-    public void shouldCreateCorrectSizeAndZeroedFilesForPublication() throws Exception
+    public void shouldCreateCorrectLengthAndZeroedFilesForPublication() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLogBuffers rawLogBuffers =
-            rawLogBuffersFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
+        final RawLogTriplet rawLogTriplet =
+            rawLogTripletFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
 
-        rawLogBuffers.stream().forEach(
+        rawLogTriplet.stream().forEach(
             (rawLog) ->
             {
                 final UnsafeBuffer log = rawLog.termBuffer();
 
-                assertThat(log.capacity(), is(TERM_BUFFER_SZ));
+                assertThat(log.capacity(), is(TERM_BUFFER_LENGTH));
                 assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte(TERM_BUFFER_SZ - 1), is((byte)0));
+                assertThat(log.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
 
                 final UnsafeBuffer state = rawLog.termStateBuffer();
 
@@ -85,15 +84,15 @@ public class RawLogBuffersFactoryTest
     }
 
     @Test
-    public void shouldCreateCorrectSizeAndZeroedFilesForConnection() throws Exception
+    public void shouldCreateCorrectLengthAndZeroedFilesForConnection() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final int maxConnectionTermBufferSize = TERM_BUFFER_SZ / 2;
-        final RawLogBuffers rawLogBuffers =
-            rawLogBuffersFactory.newConnection(
+        final int maxConnectionTermBufferSize = TERM_BUFFER_LENGTH / 2;
+        final RawLogTriplet rawLogTriplet =
+            rawLogTripletFactory.newConnection(
                 canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
 
-        rawLogBuffers.stream().forEach(
+        rawLogTriplet.stream().forEach(
             (rawLog) ->
             {
                 final UnsafeBuffer log = rawLog.termBuffer();
@@ -111,11 +110,11 @@ public class RawLogBuffersFactoryTest
     }
 
     @Test(expected = IllegalArgumentException.class)
-    public void shouldExceptionIfRequestedTermBufferSizeGreaterThanMax()
+    public void shouldExceptionIfRequestedTermBufferLengthGreaterThanMax()
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final int maxConnectionTermBufferSize = TERM_BUFFER_SZ_MAX * 2;
-        rawLogBuffersFactory.newConnection(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
+        final int connectionTermBufferMaxLength = TERM_BUFFER_MAX_LENGTH * 2;
+        rawLogTripletFactory.newConnection(
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, connectionTermBufferMaxLength);
     }
 }

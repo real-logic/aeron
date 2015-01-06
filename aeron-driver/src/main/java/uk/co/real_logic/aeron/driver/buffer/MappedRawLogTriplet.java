@@ -33,14 +33,14 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 /**
  * Encapsulates responsibility for mapping the files into memory used by the log buffers.
  */
-class MappedRawLogBuffers implements RawLogBuffers
+class MappedRawLogTriplet implements RawLogTriplet
 {
     private static final String TERM_SUFFIX = "-term";
     private static final String STATE_SUFFIX = "-state";
 
     private final MappedRawLog[] buffers;
 
-    MappedRawLogBuffers(
+    MappedRawLogTriplet(
         final File directory,
         final FileChannel termTemplate,
         final int termBufferLength,

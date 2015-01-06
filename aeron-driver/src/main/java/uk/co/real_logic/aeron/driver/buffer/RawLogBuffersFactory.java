@@ -35,14 +35,14 @@ public class RawLogBuffersFactory implements AutoCloseable
     private final File publicationsDir;
     private final File subscriptionsDir;
 
-    private final int publicationTermBufferSize;
-    private final int maxConnectionTermBufferSize;
+    private final int publicationTermBufferLength;
+    private final int maxConnectionTermBufferLength;
     private final EventLogger logger;
 
     public RawLogBuffersFactory(
         final String dataDirectoryName,
-        final int publicationTermBufferSize,
-        final int maxConnectionTermBufferSize,
+        final int publicationTermBufferLength,
+        final int maxConnectionTermBufferLength,
         final EventLogger logger)
     {
         this.logger = logger;
@@ -54,11 +54,11 @@ public class RawLogBuffersFactory implements AutoCloseable
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
         IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.SUBSCRIPTIONS);
 
-        this.publicationTermBufferSize = publicationTermBufferSize;
-        this.maxConnectionTermBufferSize = maxConnectionTermBufferSize;
+        this.publicationTermBufferLength = publicationTermBufferLength;
+        this.maxConnectionTermBufferLength = maxConnectionTermBufferLength;
 
-        final int templateSize = Math.max(publicationTermBufferSize, maxConnectionTermBufferSize);
-        termTemplate = createTemplateFile(dataDirectoryName, "termTemplate", templateSize);
+        final int templateLength = Math.max(publicationTermBufferLength, maxConnectionTermBufferLength);
+        termTemplate = createTemplateFile(dataDirectoryName, "termTemplate", templateLength);
         stateTemplate = createTemplateFile(dataDirectoryName, "stateTemplate", STATE_BUFFER_LENGTH);
     }
 
@@ -87,39 +87,31 @@ public class RawLogBuffersFactory implements AutoCloseable
      * @param correlationId to use to distinguish this publication
      * @return the newly allocated {@link RawLogBuffers}
      */
-    public RawLogBuffers newPublication(
-        final String channel,
-        final int sessionId,
-        final int streamId,
-        final long correlationId)
+    public RawLogBuffers newPublication(final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, publicationTermBufferSize);
+        return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, publicationTermBufferLength);
     }
 
     /**
      * Create new {@link RawLogBuffers} in the subscriptions directory for the supplied triplet.
      *
-     * @param channel        address on the media to listened to.
-     * @param sessionId      under which transmissions are made.
-     * @param streamId       within the channel address to separate message flows.
-     * @param correlationId  to use to distinguish this connection
-     * @param termBufferSize to use for the log buffer
+     * @param channel          address on the media to listened to.
+     * @param sessionId        under which transmissions are made.
+     * @param streamId         within the channel address to separate message flows.
+     * @param correlationId    to use to distinguish this connection
+     * @param termBufferLength to use for the log buffer
      * @return the newly allocated {@link RawLogBuffers}
      */
     public RawLogBuffers newConnection(
-        final String channel,
-        final int sessionId,
-        final int streamId,
-        final long correlationId,
-        final int termBufferSize)
+        final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
-        if (maxConnectionTermBufferSize < termBufferSize)
+        if (termBufferLength > maxConnectionTermBufferLength)
         {
             throw new IllegalArgumentException(
-                "term buffer size larger than max: " + termBufferSize + " > " + maxConnectionTermBufferSize);
+                "term buffer larger than max length: " + termBufferLength + " > " + maxConnectionTermBufferLength);
         }
 
-        return newInstance(subscriptionsDir, channel, sessionId, streamId, correlationId, termBufferSize);
+        return newInstance(subscriptionsDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
 
     private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
@@ -140,7 +132,6 @@ public class RawLogBuffersFactory implements AutoCloseable
     {
         final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
 
-        return new MappedRawLogBuffers(
-            dir, termTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
+        return new MappedRawLogBuffers(dir, termTemplate, termBufferSize, stateTemplate, STATE_BUFFER_LENGTH, logger);
     }
 }

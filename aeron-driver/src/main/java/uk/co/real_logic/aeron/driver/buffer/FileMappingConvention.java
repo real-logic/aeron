@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.agrona.IoUtil;
@@ -29,7 +28,7 @@ import java.io.File;
  *
  * Both publications and subscriptions share the same structure of "sessionId/streamId/termId".
  */
-public class FileMappingConvention
+class FileMappingConvention
 {
     public static final String PUBLICATIONS = "publications";
     public static final String SUBSCRIPTIONS = "subscriptions";
@@ -41,6 +40,7 @@ public class FileMappingConvention
     {
         final File dataDir = new File(dataDirName);
         IoUtil.ensureDirectoryExists(dataDir, "data directory");
+
         publicationsDir = new File(dataDir, PUBLICATIONS);
         subscriptionsDir = new File(dataDir, SUBSCRIPTIONS);
     }
@@ -95,5 +95,4 @@ public class FileMappingConvention
     {
         return String.format("%X", value);
     }
-
 }

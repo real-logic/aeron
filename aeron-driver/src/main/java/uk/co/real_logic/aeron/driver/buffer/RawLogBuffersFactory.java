@@ -114,7 +114,7 @@ public class RawLogBuffersFactory implements AutoCloseable
         return newInstance(subscriptionsDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
 
-    private FileChannel createTemplateFile(final String dataDir, final String name, final long size)
+    private static FileChannel createTemplateFile(final String dataDir, final String name, final long size)
     {
         final File templateFile = new File(dataDir, name);
         templateFile.deleteOnExit();

@@ -61,10 +61,10 @@ public class TermHelper
     /**
      * Calculate the current position in absolute number of bytes.
      *
-     * @param activeTermId active term id.
-     * @param currentTail in the term.
+     * @param activeTermId        active term id.
+     * @param currentTail         in the term.
      * @param positionBitsToShift number of times to left shift the term count
-     * @param initialTermId the initial term id that this stream started on
+     * @param initialTermId       the initial term id that this stream started on
      * @return the absolute position in bytes
      */
     public static long calculatePosition(
@@ -78,9 +78,9 @@ public class TermHelper
     /**
      * Calculate the term id from a position.
      *
-     * @param position             to calculate from
-     * @param positionBitsToShift  number of times to right shift the position
-     * @param initialTermId        the initial term id that this stream started on
+     * @param position            to calculate from
+     * @param positionBitsToShift number of times to right shift the position
+     * @param initialTermId       the initial term id that this stream started on
      * @return the term id according to the position
      */
     public static int calculateTermIdFromPosition(final long position, final int positionBitsToShift, final int initialTermId)

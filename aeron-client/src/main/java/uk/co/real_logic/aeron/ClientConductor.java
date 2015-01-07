@@ -194,13 +194,13 @@ class ClientConductor implements Agent, DriverListener
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            final ManagedBuffer logBuffer = mapBuffer(message, i);
-            final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+            final ManagedBuffer termBuffer = mapBuffer(message, i);
+            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
             final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
 
-            logs[i] = new LogAppender(logBuffer.buffer(), stateBuffer.buffer(), header, mtuLength);
-            managedBuffers[i * 2] = logBuffer;
-            managedBuffers[i * 2 + 1] = stateBuffer;
+            logs[i] = new LogAppender(termBuffer.buffer(), metaDataBuffer.buffer(), header, mtuLength);
+            managedBuffers[i * 2] = termBuffer;
+            managedBuffers[i * 2 + 1] = metaDataBuffer;
         }
 
         final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
@@ -245,12 +245,12 @@ class ClientConductor implements Agent, DriverListener
 
                         for (int i = 0; i < BUFFER_COUNT; i++)
                         {
-                            final ManagedBuffer logBuffer = mapBuffer(message, i);
-                            final ManagedBuffer stateBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+                            final ManagedBuffer termBuffer = mapBuffer(message, i);
+                            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
 
-                            logs[i] = new LogReader(logBuffer.buffer(), stateBuffer.buffer());
-                            managedBuffers[i * 2] = logBuffer;
-                            managedBuffers[i * 2 + 1] = stateBuffer;
+                            logs[i] = new LogReader(termBuffer.buffer(), metaDataBuffer.buffer());
+                            managedBuffers[i * 2] = termBuffer;
+                            managedBuffers[i * 2 + 1] = metaDataBuffer;
                         }
 
                         subscription.onConnectionReady(

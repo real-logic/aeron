@@ -57,17 +57,17 @@ public class LogAppender extends LogBuffer
      * Construct a view over a log buffer and state buffer for appending frames.
      *
      * @param termBuffer     for where messages are stored.
-     * @param stateBuffer    for where the state of writers is stored manage concurrency.
+     * @param metaDataBuffer for where the state of writers is stored manage concurrency.
      * @param defaultHeader  to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public LogAppender(
         final UnsafeBuffer termBuffer,
-        final UnsafeBuffer stateBuffer,
+        final UnsafeBuffer metaDataBuffer,
         final MutableDirectBuffer defaultHeader,
         final int maxFrameLength)
     {
-        super(termBuffer, stateBuffer);
+        super(termBuffer, metaDataBuffer);
 
         checkHeaderLength(defaultHeader.capacity());
         checkMaxFrameLength(maxFrameLength);
@@ -299,7 +299,7 @@ public class LogAppender extends LogBuffer
 
     private int getTailAndAdd(final int delta)
     {
-        return termStateBuffer().getAndAddInt(TAIL_COUNTER_OFFSET, delta);
+        return metaDataBuffer().getAndAddInt(TAIL_COUNTER_OFFSET, delta);
     }
 
     private void checkMessageLength(final int length)

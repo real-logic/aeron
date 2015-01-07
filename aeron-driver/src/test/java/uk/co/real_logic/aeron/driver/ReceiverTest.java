@@ -35,8 +35,8 @@ import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.agrona.status.PositionIndicator;
 import uk.co.real_logic.agrona.status.PositionReporter;
-import uk.co.real_logic.aeron.driver.buffer.RawLogTriplet;
-import uk.co.real_logic.aeron.driver.buffer.RawLogTripletFactory;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 
@@ -60,7 +60,7 @@ import static uk.co.real_logic.aeron.driver.BufferAndFrameHelper.newTestLogBuffe
 
 public class ReceiverTest
 {
-    private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final long CORRELATION_ID = 20;
@@ -80,7 +80,7 @@ public class ReceiverTest
     private final LossHandler mockLossHandler = mock(LossHandler.class);
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
-    private final RawLogTripletFactory mockRawLogTripletFactory = mock(RawLogTripletFactory.class);
+    private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
     private final PositionReporter mockCompletedReceivedPosition = mock(PositionReporter.class);
     private final PositionReporter mockHighestReceivedPosition = mock(PositionReporter.class);
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
@@ -95,7 +95,7 @@ public class ReceiverTest
     private long currentTime = 0;
     private final NanoClock clock = () -> currentTime;
 
-    private final RawLogTriplet rawLogTriplet = newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.STATE_BUFFER_LENGTH);
+    private final RawLog rawLog = newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.META_DATA_BUFFER_LENGTH);
     private final EventLogger mockLogger = mock(EventLogger.class);
     private final TimerWheel timerWheel = new TimerWheel(
         clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
@@ -126,7 +126,7 @@ public class ReceiverTest
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockTransportPoller)
             .conductorNioSelector(mockTransportPoller)
-            .rawLogBuffersFactory(mockRawLogTripletFactory)
+            .rawLogBuffersFactory(mockRawLogFactory)
             .conductorTimerWheel(timerWheel)
             .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
@@ -145,10 +145,10 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        logReaders =
-            rawLogTriplet.stream()
-                       .map((rawLog) -> new LogReader(rawLog.termBuffer(), rawLog.termStateBuffer()))
-                       .toArray(LogReader[]::new);
+        logReaders = rawLog
+            .stream()
+            .map((rawLogFragment) -> new LogReader(rawLogFragment.termBuffer(), rawLogFragment.metaDataBuffer()))
+            .toArray(LogReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI), driverConductorProxy, mockLogger, mockSystemCounters, (address, length) -> false);
@@ -182,7 +182,7 @@ public class ReceiverTest
             INITIAL_TERM_OFFSET,
             INITIAL_WINDOW_SIZE,
             STATUS_MESSAGE_TIMEOUT,
-            rawLogTriplet,
+            rawLog,
             mockLossHandler,
             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
             POSITION_INDICATORS,
@@ -254,7 +254,7 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_SIZE,
                         STATUS_MESSAGE_TIMEOUT,
-                        rawLogTriplet,
+                        rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
@@ -315,7 +315,7 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_SIZE,
                         STATUS_MESSAGE_TIMEOUT,
-                        rawLogTriplet,
+                        rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
@@ -379,7 +379,7 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_SIZE,
                         STATUS_MESSAGE_TIMEOUT,
-                        rawLogTriplet,
+                        rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
@@ -451,7 +451,7 @@ public class ReceiverTest
                         initialTermOffset,
                         INITIAL_WINDOW_SIZE,
                         STATUS_MESSAGE_TIMEOUT,
-                        rawLogTriplet,
+                        rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,

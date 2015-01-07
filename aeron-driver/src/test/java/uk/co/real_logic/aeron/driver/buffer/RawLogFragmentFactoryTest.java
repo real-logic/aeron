@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class RawLogTripletFactoryTest
+public class RawLogFragmentFactoryTest
 {
     private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;
@@ -41,7 +41,7 @@ public class RawLogTripletFactoryTest
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int TERM_BUFFER_MAX_LENGTH = Configuration.TERM_BUFFER_LENGTH_MAX_DEFAULT;
-    private RawLogTripletFactory rawLogTripletFactory;
+    private RawLogFactory rawLogFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
     private EventLogger logger = mock(EventLogger.class);
 
@@ -49,8 +49,7 @@ public class RawLogTripletFactoryTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        rawLogTripletFactory = new RawLogTripletFactory(
-            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, logger);
+        rawLogFactory = new RawLogFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, logger);
     }
 
     @After
@@ -63,23 +62,22 @@ public class RawLogTripletFactoryTest
     public void shouldCreateCorrectLengthAndZeroedFilesForPublication() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLogTriplet rawLogTriplet =
-            rawLogTripletFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
+        final RawLog rawLogTriplet = rawLogFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
 
         rawLogTriplet.stream().forEach(
-            (rawLog) ->
+            (rawLogFragment) ->
             {
-                final UnsafeBuffer log = rawLog.termBuffer();
+                final UnsafeBuffer log = rawLogFragment.termBuffer();
 
                 assertThat(log.capacity(), is(TERM_BUFFER_LENGTH));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
 
-                final UnsafeBuffer state = rawLog.termStateBuffer();
+                final UnsafeBuffer state = rawLogFragment.metaDataBuffer();
 
-                assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+                assertThat(state.capacity(), is(LogBufferDescriptor.META_DATA_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
-                assertThat(state.getByte(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
+                assertThat(state.getByte(LogBufferDescriptor.META_DATA_BUFFER_LENGTH - 1), is((byte)0));
             });
     }
 
@@ -88,24 +86,23 @@ public class RawLogTripletFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int maxConnectionTermBufferSize = TERM_BUFFER_LENGTH / 2;
-        final RawLogTriplet rawLogTriplet =
-            rawLogTripletFactory.newConnection(
-                canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
+        final RawLog rawLogTriplet = rawLogFactory.newConnection(
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
 
         rawLogTriplet.stream().forEach(
-            (rawLog) ->
+            (rawLogFragment) ->
             {
-                final UnsafeBuffer log = rawLog.termBuffer();
+                final UnsafeBuffer log = rawLogFragment.termBuffer();
 
                 assertThat(log.capacity(), is(maxConnectionTermBufferSize));
                 assertThat(log.getByte(0), is((byte)0));
                 assertThat(log.getByte(maxConnectionTermBufferSize - 1), is((byte)0));
 
-                final UnsafeBuffer state = rawLog.termStateBuffer();
+                final UnsafeBuffer state = rawLogFragment.metaDataBuffer();
 
-                assertThat(state.capacity(), is(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+                assertThat(state.capacity(), is(LogBufferDescriptor.META_DATA_BUFFER_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
-                assertThat(state.getByte(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1), is((byte)0));
+                assertThat(state.getByte(LogBufferDescriptor.META_DATA_BUFFER_LENGTH - 1), is((byte)0));
             });
     }
 
@@ -114,7 +111,6 @@ public class RawLogTripletFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int connectionTermBufferMaxLength = TERM_BUFFER_MAX_LENGTH * 2;
-        rawLogTripletFactory.newConnection(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, connectionTermBufferMaxLength);
+        rawLogFactory.newConnection(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, connectionTermBufferMaxLength);
     }
 }

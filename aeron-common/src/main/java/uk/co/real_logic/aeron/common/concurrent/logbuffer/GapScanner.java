@@ -50,11 +50,11 @@ public class GapScanner extends LogBuffer
      * Construct a gap scanner over a log and state buffer.
      *
      * @param logBuffer containing the sequence of frames.
-     * @param stateBuffer containing the state of the rebuild process.
+     * @param metaDataBuffer containing the state of the rebuild process.
      */
-    public GapScanner(final UnsafeBuffer logBuffer, final UnsafeBuffer stateBuffer)
+    public GapScanner(final UnsafeBuffer logBuffer, final UnsafeBuffer metaDataBuffer)
     {
-        super(logBuffer, stateBuffer);
+        super(logBuffer, metaDataBuffer);
     }
 
     /**

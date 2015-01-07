@@ -22,7 +22,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
- * Layout description for the log and state buffers.
+ * Layout description log buffers buffers.
  */
 public class LogBufferDescriptor
 {
@@ -52,25 +52,25 @@ public class LogBufferDescriptor
     public static final int STATUS_OFFSET;
 
     /**
-     * Total length of the state buffer in bytes.
+     * Total length of the meta data buffer in bytes.
      */
-    public static final int STATE_BUFFER_LENGTH;
+    public static final int META_DATA_BUFFER_LENGTH;
 
     static
     {
         HIGH_WATER_MARK_OFFSET = 0;
         TAIL_COUNTER_OFFSET = HIGH_WATER_MARK_OFFSET + SIZE_OF_INT;
         STATUS_OFFSET = TAIL_COUNTER_OFFSET + CACHE_LINE_SIZE;
-        STATE_BUFFER_LENGTH = CACHE_LINE_SIZE * 2;
+        META_DATA_BUFFER_LENGTH = CACHE_LINE_SIZE * 2;
     }
 
     /**
-     * Minimum buffer size for a log term
+     * Minimum buffer length for a log term
      */
-    public static final int MIN_TERM_SIZE = 64 * 1024; // TODO: make a sensible default
+    public static final int MIN_TERM_LENGTH = 64 * 1024; // TODO: make a sensible default
 
     /**
-     * Check that term buffer is the correct size and alignment.
+     * Check that term buffer is the correct length and alignment.
      *
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.
@@ -78,11 +78,11 @@ public class LogBufferDescriptor
     public static void checkTermBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < MIN_TERM_SIZE)
+        if (capacity < MIN_TERM_LENGTH)
         {
             final String s = String.format(
-                "Term buffer capacity less than min size of %d, capacity=%d",
-                MIN_TERM_SIZE,
+                "Term buffer capacity less than min length of %d, capacity=%d",
+                MIN_TERM_LENGTH,
                 capacity);
             throw new IllegalStateException(s);
         }
@@ -98,19 +98,19 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Check that state buffer is of sufficient size.
+     * Check that meta data buffer is of sufficient size.
      *
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.
      */
-    public static void checkTermStateBuffer(final UnsafeBuffer buffer)
+    public static void checkMetaDataBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < STATE_BUFFER_LENGTH)
+        if (capacity < META_DATA_BUFFER_LENGTH)
         {
             final String s = String.format(
-                "Term State buffer capacity less than min size of %d, capacity=%d",
-                STATE_BUFFER_LENGTH,
+                "Meta data buffer capacity less than min length of %d, capacity=%d",
+                META_DATA_BUFFER_LENGTH,
                 capacity);
             throw new IllegalStateException(s);
         }

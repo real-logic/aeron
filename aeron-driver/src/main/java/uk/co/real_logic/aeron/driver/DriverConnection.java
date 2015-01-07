@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.agrona.status.PositionIndicator;
 import uk.co.real_logic.agrona.status.PositionReporter;
-import uk.co.real_logic.aeron.driver.buffer.RawLogTriplet;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -47,7 +47,7 @@ public class DriverConnection implements AutoCloseable
     private final long correlationId;
     private final int sessionId;
     private final int streamId;
-    private final RawLogTriplet rawLogTriplet;
+    private final RawLog rawLog;
     private final AtomicLong subscribersPosition = new AtomicLong();
     private final List<PositionIndicator> subscriberPositions;
     private final NanoClock clock;
@@ -91,7 +91,7 @@ public class DriverConnection implements AutoCloseable
         final int initialTermOffset,
         final int initialWindowSize,
         final long statusMessageTimeout,
-        final RawLogTriplet rawLogTriplet,
+        final RawLog rawLogTriplet,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
         final List<PositionIndicator> subscriberPositions,
@@ -106,7 +106,7 @@ public class DriverConnection implements AutoCloseable
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.rawLogTriplet = rawLogTriplet;
+        this.rawLog = rawLogTriplet;
         this.subscriberPositions = subscriberPositions;
         this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
@@ -124,7 +124,7 @@ public class DriverConnection implements AutoCloseable
 
         rebuilders = rawLogTriplet
             .stream()
-            .map((rawLog) -> new LogRebuilder(rawLog.termBuffer(), rawLog.termStateBuffer()))
+            .map((rawLogFragment) -> new LogRebuilder(rawLogFragment.termBuffer(), rawLogFragment.metaDataBuffer()))
             .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
@@ -206,13 +206,13 @@ public class DriverConnection implements AutoCloseable
     }
 
     /**
-     * Get the {@link uk.co.real_logic.aeron.driver.buffer.RawLogTriplet} the back this connection.
+     * Get the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this connection.
      *
-     * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLogTriplet} the back this connection.
+     * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this connection.
      */
-    public RawLogTriplet rawLogBuffers()
+    public RawLog rawLogBuffers()
     {
-        return rawLogTriplet;
+        return rawLog;
     }
 
     /**
@@ -262,7 +262,7 @@ public class DriverConnection implements AutoCloseable
     {
         completedPosition.close();
         hwmPosition.close();
-        rawLogTriplet.close();
+        rawLog.close();
         subscriberPositions.forEach(PositionIndicator::close);
     }
 

@@ -36,7 +36,7 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
 import static uk.co.real_logic.agrona.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.MIN_TERM_SIZE;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.MIN_TERM_LENGTH;
 
 public class PublicationTest
 {
@@ -74,7 +74,7 @@ public class PublicationTest
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
             when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCESS);
             when(appenders[i].defaultHeader()).thenReturn(header);
-            when(appenders[i].capacity()).thenReturn(MIN_TERM_SIZE);
+            when(appenders[i].capacity()).thenReturn(MIN_TERM_LENGTH);
         }
 
         managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
@@ -111,7 +111,7 @@ public class PublicationTest
     public void shouldRotateWhenAppendTrips()
     {
         when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
-        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(MIN_TERM_SIZE - RECORD_ALIGNMENT);
+        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(MIN_TERM_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         assertFalse(publication.offer(atomicSendBuffer));
@@ -133,7 +133,7 @@ public class PublicationTest
     public void shouldRotateWhenClaimTrips()
     {
         when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TRIPPED);
-        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(MIN_TERM_SIZE - RECORD_ALIGNMENT);
+        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(MIN_TERM_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         final BufferClaim bufferClaim = new BufferClaim();

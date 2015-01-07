@@ -25,16 +25,16 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 public class LogBuffer
 {
     private final UnsafeBuffer termBuffer;
-    private final UnsafeBuffer termStateBuffer;
+    private final UnsafeBuffer metaDataBuffer;
     private final int capacity;
 
-    protected LogBuffer(final UnsafeBuffer termBuffer, final UnsafeBuffer termStateBuffer)
+    protected LogBuffer(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
         checkTermBuffer(termBuffer);
-        checkTermStateBuffer(termStateBuffer);
+        checkMetaDataBuffer(metaDataBuffer);
 
         this.termBuffer = termBuffer;
-        this.termStateBuffer = termStateBuffer;
+        this.metaDataBuffer = metaDataBuffer;
         this.capacity = termBuffer.capacity();
     }
 
@@ -49,13 +49,13 @@ public class LogBuffer
     }
 
     /**
-     * The state describing the term.
+     * The meta data describing the term.
      *
-     * @return the state describing the term.
+     * @return the meta data describing the term.
      */
-    public UnsafeBuffer termStateBuffer()
+    public UnsafeBuffer metaDataBuffer()
     {
-        return termStateBuffer;
+        return metaDataBuffer;
     }
 
     /**
@@ -74,7 +74,7 @@ public class LogBuffer
     public void clean()
     {
         termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
-        termStateBuffer.setMemory(0, termStateBuffer.capacity(), (byte)0);
+        metaDataBuffer.setMemory(0, metaDataBuffer.capacity(), (byte)0);
         statusOrdered(CLEAN);
     }
 
@@ -85,7 +85,7 @@ public class LogBuffer
      */
     public int status()
     {
-        return termStateBuffer.getIntVolatile(STATUS_OFFSET);
+        return metaDataBuffer.getIntVolatile(STATUS_OFFSET);
     }
 
     /**
@@ -95,7 +95,7 @@ public class LogBuffer
      */
     public void statusOrdered(final int status)
     {
-        termStateBuffer.putIntOrdered(STATUS_OFFSET, status);
+        metaDataBuffer.putIntOrdered(STATUS_OFFSET, status);
     }
 
     /**
@@ -105,7 +105,7 @@ public class LogBuffer
      */
     public int tailVolatile()
     {
-        return Math.min(termStateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**
@@ -115,7 +115,7 @@ public class LogBuffer
      */
     public int highWaterMarkVolatile()
     {
-        return termStateBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET);
+        return metaDataBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET);
     }
 
     /**
@@ -125,7 +125,7 @@ public class LogBuffer
      */
     public int tail()
     {
-        return Math.min(termStateBuffer.getInt(TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(metaDataBuffer.getInt(TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**
@@ -135,6 +135,6 @@ public class LogBuffer
      */
     public int highWaterMark()
     {
-        return termStateBuffer.getInt(HIGH_WATER_MARK_OFFSET);
+        return metaDataBuffer.getInt(HIGH_WATER_MARK_OFFSET);
     }
 }

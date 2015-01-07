@@ -35,12 +35,12 @@ public class LogRebuilder extends LogBuffer
     /**
      * Construct a rebuilder over a log and state buffer.
      *
-     * @param termBuffer containing the sequence of frames.
-     * @param stateBuffer containing the state of the rebuild process.
+     * @param termBuffer     containing the sequence of frames.
+     * @param metaDataBuffer containing the state of the rebuild process.
      */
-    public LogRebuilder(final UnsafeBuffer termBuffer, final UnsafeBuffer stateBuffer)
+    public LogRebuilder(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
-        super(termBuffer, stateBuffer);
+        super(termBuffer, metaDataBuffer);
     }
 
     /**
@@ -50,7 +50,7 @@ public class LogRebuilder extends LogBuffer
      */
     public void tail(final int offset)
     {
-        putTailOrdered(termStateBuffer(), offset);
+        putTailOrdered(metaDataBuffer(), offset);
     }
 
     /**
@@ -60,7 +60,7 @@ public class LogRebuilder extends LogBuffer
      */
     public boolean isComplete()
     {
-        return termStateBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
+        return metaDataBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
     }
 
     /**
@@ -69,9 +69,9 @@ public class LogRebuilder extends LogBuffer
      * The tail and high-water-mark will be updated as appropriate. Data can be consumed up to the the tail. The
      * high-water-mark can be used to detect loss.
      *
-     * @param packet containing a sequence of frames.
+     * @param packet    containing a sequence of frames.
      * @param srcOffset in the packet at which the frames begin.
-     * @param length of the sequence of frames in bytes.
+     * @param length    of the sequence of frames in bytes.
      */
     public void insert(final UnsafeBuffer packet, final int srcOffset, final int length)
     {
@@ -102,23 +102,23 @@ public class LogRebuilder extends LogBuffer
             tail += alignedFrameLength;
         }
 
-        final UnsafeBuffer stateBuffer = termStateBuffer();
-        putTailOrdered(stateBuffer, tail);
+        final UnsafeBuffer metaDataBuffer = metaDataBuffer();
+        putTailOrdered(metaDataBuffer, tail);
 
         final int endOfFrame = termOffset + length;
         if (endOfFrame > highWaterMark())
         {
-            putHighWaterMark(stateBuffer, endOfFrame);
+            putHighWaterMark(metaDataBuffer, endOfFrame);
         }
     }
 
-    private static void putTailOrdered(final UnsafeBuffer stateBuffer, final int tail)
+    private static void putTailOrdered(final UnsafeBuffer metaDataBuffer, final int tail)
     {
-        stateBuffer.putIntOrdered(TAIL_COUNTER_OFFSET, tail);
+        metaDataBuffer.putIntOrdered(TAIL_COUNTER_OFFSET, tail);
     }
 
-    private static void putHighWaterMark(final UnsafeBuffer stateBuffer, final int highWaterMark)
+    private static void putHighWaterMark(final UnsafeBuffer metaDataBuffer, final int highWaterMark)
     {
-        stateBuffer.putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
+        metaDataBuffer.putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
     }
 }

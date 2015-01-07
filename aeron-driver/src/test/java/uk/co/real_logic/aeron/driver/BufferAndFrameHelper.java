@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFragment;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogTriplet;
 
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
@@ -27,21 +27,21 @@ import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 
 public class BufferAndFrameHelper
 {
-    public static RawLogTriplet newTestLogBuffers(final long logBufferSize, final long stateBufferSize)
+    public static RawLog newTestLogBuffers(final long logBufferSize, final long metaDataBufferSize)
     {
-        return new RawLogTriplet()
+        return new RawLog()
         {
-            private RawLog clean = newTestLogBuffer(logBufferSize, stateBufferSize);
-            private RawLog dirty = newTestLogBuffer(logBufferSize, stateBufferSize);
-            private RawLog active = newTestLogBuffer(logBufferSize, stateBufferSize);
-            private RawLog[] buffers = new RawLog[]{active, clean, dirty};
+            private RawLogFragment clean = newTestLogBuffer(logBufferSize, metaDataBufferSize);
+            private RawLogFragment dirty = newTestLogBuffer(logBufferSize, metaDataBufferSize);
+            private RawLogFragment active = newTestLogBuffer(logBufferSize, metaDataBufferSize);
+            private RawLogFragment[] buffers = new RawLogFragment[]{active, clean, dirty};
 
-            public Stream<RawLog> stream()
+            public Stream<RawLogFragment> stream()
             {
                 return Stream.of(buffers);
             }
 
-            public RawLog[] buffers()
+            public RawLogFragment[] fragments()
             {
                 return buffers;
             }
@@ -58,8 +58,8 @@ public class BufferAndFrameHelper
                 for (int i = 0; i < BUFFER_COUNT; i++)
                 {
                     logBuffersMessage.bufferOffset(i + BUFFER_COUNT, 0);
-                    logBuffersMessage.bufferLength(i + BUFFER_COUNT, (int)stateBufferSize);
-                    logBuffersMessage.bufferLocation(i + BUFFER_COUNT, "termStateBuffer-" + i);
+                    logBuffersMessage.bufferLength(i + BUFFER_COUNT, (int)metaDataBufferSize);
+                    logBuffersMessage.bufferLocation(i + BUFFER_COUNT, "metaDataBuffer-" + i);
                 }
             }
 
@@ -69,21 +69,21 @@ public class BufferAndFrameHelper
         };
     }
 
-    public static RawLog newTestLogBuffer(final long termBufferSize, final long stateBufferSize)
+    public static RawLogFragment newTestLogBuffer(final long termBufferSize, final long metaDataBufferSize)
     {
-        return new RawLog()
+        return new RawLogFragment()
         {
             private final UnsafeBuffer termBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)termBufferSize)));
-            private final UnsafeBuffer stateBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)stateBufferSize)));
+            private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)metaDataBufferSize)));
 
             public UnsafeBuffer termBuffer()
             {
                 return termBuffer;
             }
 
-            public UnsafeBuffer termStateBuffer()
+            public UnsafeBuffer metaDataBuffer()
             {
-                return stateBuffer;
+                return metaDataBuffer;
             }
 
             public void close()

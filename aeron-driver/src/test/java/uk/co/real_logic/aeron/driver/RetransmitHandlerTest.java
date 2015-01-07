@@ -35,14 +35,13 @@ import java.util.stream.IntStream;
 
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 @RunWith(Theories.class)
 public class RetransmitHandlerTest
 {
     private static final int MTU_LENGTH = 1024;
-    private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_SIZE;
-    private static final int STATE_BUFFER_SIZE = STATE_BUFFER_LENGTH;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int META_DATA_BUFFER_LENGTH = LogBufferDescriptor.META_DATA_BUFFER_LENGTH;
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
@@ -54,12 +53,12 @@ public class RetransmitHandlerTest
     private static final FeedbackDelayGenerator ZERO_DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(0);
     private static final FeedbackDelayGenerator LINGER_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(40);
 
-    private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_SIZE));
-    private final UnsafeBuffer stateBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(STATE_BUFFER_SIZE));
+    private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(META_DATA_BUFFER_LENGTH));
 
     private final LogAppender logAppender = new LogAppender(
-        termBuffer, stateBuffer, DataHeaderFlyweight.createDefaultHeader(0, 0 , 0), 1024);
-    private final LogRebuilder logRebuilder = new LogRebuilder(termBuffer, stateBuffer);
+        termBuffer, metaDataBuffer, DataHeaderFlyweight.createDefaultHeader(0, 0 , 0), 1024);
+    private final LogRebuilder logRebuilder = new LogRebuilder(termBuffer, metaDataBuffer);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -76,7 +75,7 @@ public class RetransmitHandlerTest
     private final SystemCounters systemCounters = mock(SystemCounters.class);
 
     private RetransmitHandler handler = new RetransmitHandler(
-        wheel, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, TERM_BUFFER_SIZE);
+        wheel, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, TERM_BUFFER_LENGTH);
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> SENDER_ADD_DATA_FRAME =
@@ -213,7 +212,7 @@ public class RetransmitHandlerTest
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
         return new RetransmitHandler(
-            wheel, systemCounters, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, TERM_BUFFER_SIZE);
+            wheel, systemCounters, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, TERM_BUFFER_LENGTH);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)

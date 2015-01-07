@@ -20,9 +20,9 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
- * View over the state for a log buffer that can be read in a thread safe manner.
+ * View over the meta data for a term log buffer that can be read in a thread safe manner.
  */
-public class StateViewer
+public class MetaDataViewer
 {
     private final UnsafeBuffer buffer;
 
@@ -31,9 +31,9 @@ public class StateViewer
      *
      * @param buffer containing the state variables.
      */
-    public StateViewer(final UnsafeBuffer buffer)
+    public MetaDataViewer(final UnsafeBuffer buffer)
     {
-        checkTermStateBuffer(buffer);
+        checkMetaDataBuffer(buffer);
 
         this.buffer = buffer;
     }

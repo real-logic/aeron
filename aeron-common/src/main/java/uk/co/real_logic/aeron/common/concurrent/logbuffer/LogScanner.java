@@ -47,13 +47,13 @@ public class LogScanner extends LogBuffer
      * Construct a reader that iterates over a log buffer with associated state buffer. Messages are identified as
      * they become available up to the MTU limit.
      *
-     * @param termBuffer containing the framed messages.
-     * @param stateBuffer containing the state variables indicating the tail progress.
-     * @param headerLength of frame before payload begins.
+     * @param termBuffer     containing the framed messages.
+     * @param metaDataBuffer containing the state variables indicating the tail progress.
+     * @param headerLength   of frame before payload begins.
      */
-    public LogScanner(final UnsafeBuffer termBuffer, final UnsafeBuffer stateBuffer, final int headerLength)
+    public LogScanner(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer, final int headerLength)
     {
-        super(termBuffer, stateBuffer);
+        super(termBuffer, metaDataBuffer);
 
         checkHeaderLength(headerLength);
 
@@ -93,7 +93,7 @@ public class LogScanner extends LogBuffer
     /**
      * Scan forward in the buffer for available frames limited by what will fit in mtuLength.
      *
-     * @param handler called back if a frame is available.
+     * @param handler   called back if a frame is available.
      * @param mtuLength in bytes to scan.
      * @return number of bytes notified available
      */

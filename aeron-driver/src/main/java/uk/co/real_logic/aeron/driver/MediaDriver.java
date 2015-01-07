@@ -22,7 +22,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.buffer.RawLogTripletFactory;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
@@ -236,7 +236,7 @@ public final class MediaDriver implements AutoCloseable
 
     public static class Context extends CommonContext
     {
-        private RawLogTripletFactory rawLogTripletFactory;
+        private RawLogFactory rawLogFactory;
         private TransportPoller receiverTransportPoller;
         private TransportPoller conductorTransportPoller;
         private Supplier<SenderFlowControl> unicastSenderFlowControl;
@@ -351,7 +351,7 @@ public final class MediaDriver implements AutoCloseable
                 driverConductorProxy(new DriverConductorProxy(
                     threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
 
-                rawLogBuffersFactory(new RawLogTripletFactory(
+                rawLogBuffersFactory(new RawLogFactory(
                     dataDirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
 
                 concludeIdleStrategies();
@@ -370,9 +370,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context rawLogBuffersFactory(final RawLogTripletFactory rawLogTripletFactory)
+        public Context rawLogBuffersFactory(final RawLogFactory rawLogFactory)
         {
-            this.rawLogTripletFactory = rawLogTripletFactory;
+            this.rawLogFactory = rawLogFactory;
             return this;
         }
 
@@ -579,9 +579,9 @@ public final class MediaDriver implements AutoCloseable
             return conductorCommandQueue;
         }
 
-        public RawLogTripletFactory rawLogBuffersFactory()
+        public RawLogFactory rawLogBuffersFactory()
         {
-            return rawLogTripletFactory;
+            return rawLogFactory;
         }
 
         public TransportPoller receiverNioSelector()

@@ -39,6 +39,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.META_DATA_BUFFER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class LossHandlerTest
@@ -87,10 +88,10 @@ public class LossHandlerTest
 
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
-            final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-            final UnsafeBuffer stateBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
-            rebuilders[i] = new LogRebuilder(logBuffer, stateBuffer);
-            scanners[i] = new GapScanner(logBuffer, stateBuffer);
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
+            final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(META_DATA_BUFFER_LENGTH));
+            rebuilders[i] = new LogRebuilder(termBuffer, metaDataBuffer);
+            scanners[i] = new GapScanner(termBuffer, metaDataBuffer);
         }
 
         wheel = new TimerWheel(

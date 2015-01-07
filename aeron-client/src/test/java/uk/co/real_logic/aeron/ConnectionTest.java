@@ -34,6 +34,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.META_DATA_BUFFER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class ConnectionTest
@@ -76,10 +77,10 @@ public class ConnectionTest
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
-            final UnsafeBuffer stateBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LogBufferDescriptor.STATE_BUFFER_LENGTH));
+            final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(META_DATA_BUFFER_LENGTH));
 
-            rebuilders[i] = new LogRebuilder(logBuffer, stateBuffer);
-            readers[i] = new LogReader(logBuffer, stateBuffer);
+            rebuilders[i] = new LogRebuilder(logBuffer, metaDataBuffer);
+            readers[i] = new LogReader(logBuffer, metaDataBuffer);
         }
 
         for (int i = 0; i < TermHelper.BUFFER_COUNT * 2; i++)

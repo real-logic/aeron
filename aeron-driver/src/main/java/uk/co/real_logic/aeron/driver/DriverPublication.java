@@ -24,8 +24,8 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.agrona.status.PositionReporter;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFragment;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogTriplet;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -60,7 +60,7 @@ public class DriverPublication implements AutoCloseable
     private final PositionReporter senderPosition;
 
     private final SendChannelEndpoint channelEndpoint;
-    private final RawLogTriplet rawLogTriplet;
+    private final RawLog rawLog;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final SystemCounters systemCounters;
@@ -90,7 +90,7 @@ public class DriverPublication implements AutoCloseable
         final long id,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
-        final RawLogTriplet rawLogTriplet,
+        final RawLog rawLog,
         final PositionReporter senderPosition,
         final PositionReporter publisherLimit,
         final int sessionId,
@@ -103,7 +103,7 @@ public class DriverPublication implements AutoCloseable
     {
         this.id = id;
         this.channelEndpoint = channelEndpoint;
-        this.rawLogTriplet = rawLogTriplet;
+        this.rawLog = rawLog;
         this.senderPosition = senderPosition;
         this.systemCounters = systemCounters;
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
@@ -115,12 +115,12 @@ public class DriverPublication implements AutoCloseable
         this.mtuLength = mtuLength;
         this.activeIndex = bufferIndex(initialTermId, initialTermId);
 
-        final RawLog[] rawLogs = rawLogTriplet.buffers();
-        for (int i = 0; i < rawLogs.length; i++)
+        final RawLogFragment[] rawLogFragments = rawLog.fragments();
+        for (int i = 0; i < rawLogFragments.length; i++)
         {
-            logScanners[i] = newScanner(rawLogs[i]);
-            retransmitLogScanners[i] = newScanner(rawLogs[i]);
-            sendBuffers[i] = duplicateLogBuffer(rawLogs[i]);
+            logScanners[i] = newScanner(rawLogFragments[i]);
+            retransmitLogScanners[i] = newScanner(rawLogFragments[i]);
+            sendBuffers[i] = duplicateLogBuffer(rawLogFragments[i]);
         }
 
         termCapacity = logScanners[0].capacity();
@@ -152,7 +152,7 @@ public class DriverPublication implements AutoCloseable
 
     public void close()
     {
-        rawLogTriplet.close();
+        rawLog.close();
         publisherLimit.close();
         senderPosition.close();
     }
@@ -287,9 +287,9 @@ public class DriverPublication implements AutoCloseable
         return initialTermId;
     }
 
-    public RawLogTriplet rawLogBuffers()
+    public RawLog rawLogBuffers()
     {
-        return rawLogTriplet;
+        return rawLog;
     }
 
     public int publisherLimitCounterId()
@@ -378,7 +378,7 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private ByteBuffer duplicateLogBuffer(final RawLog log)
+    private ByteBuffer duplicateLogBuffer(final RawLogFragment log)
     {
         final ByteBuffer buffer = log.termBuffer().duplicateByteBuffer();
         buffer.clear();
@@ -386,9 +386,9 @@ public class DriverPublication implements AutoCloseable
         return buffer;
     }
 
-    private LogScanner newScanner(final RawLog log)
+    private LogScanner newScanner(final RawLogFragment log)
     {
-        return new LogScanner(log.termBuffer(), log.termStateBuffer(), headerLength);
+        return new LogScanner(log.termBuffer(), log.metaDataBuffer(), headerLength);
     }
 
     private int determineIndexByTermId(final int termId)

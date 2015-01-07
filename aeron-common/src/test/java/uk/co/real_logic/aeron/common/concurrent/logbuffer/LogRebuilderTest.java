@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import org.junit.Before;
@@ -34,21 +33,21 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class LogRebuilderTest
 {
-    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
-    private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
 
-    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
-    private final UnsafeBuffer stateBuffer = spy(new UnsafeBuffer(new byte[STATE_BUFFER_CAPACITY]));
-    private final StateViewer stateViewer = new StateViewer(stateBuffer);
+    private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer metaDataBuffer = spy(new UnsafeBuffer(new byte[META_DATA_BUFFER_CAPACITY]));
+    private final MetaDataViewer metaDataViewer = new MetaDataViewer(metaDataBuffer);
 
     private LogRebuilder logRebuilder;
 
     @Before
     public void setUp()
     {
-        when(valueOf(logBuffer.capacity())).thenReturn(valueOf(LOG_BUFFER_CAPACITY));
+        when(valueOf(termBuffer.capacity())).thenReturn(valueOf(TERM_BUFFER_CAPACITY));
 
-        logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
+        logRebuilder = new LogRebuilder(termBuffer, metaDataBuffer);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -56,17 +55,17 @@ public class LogRebuilderTest
     {
         final int logBufferCapacity = LogBufferDescriptor.MIN_TERM_SIZE + FRAME_ALIGNMENT + 1;
 
-        when(logBuffer.capacity()).thenReturn(logBufferCapacity);
+        when(termBuffer.capacity()).thenReturn(logBufferCapacity);
 
-        logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
+        logRebuilder = new LogRebuilder(termBuffer, metaDataBuffer);
     }
 
     @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnInsufficientStateBufferCapacity()
+    public void shouldThrowExceptionOnInsufficientMetaDataBufferCapacity()
     {
-        when(stateBuffer.capacity()).thenReturn(LogBufferDescriptor.STATE_BUFFER_LENGTH - 1);
+        when(metaDataBuffer.capacity()).thenReturn(LogBufferDescriptor.META_DATA_BUFFER_LENGTH - 1);
 
-        logRebuilder = new LogRebuilder(logBuffer, stateBuffer);
+        logRebuilder = new LogRebuilder(termBuffer, metaDataBuffer);
     }
 
     @Test
@@ -76,15 +75,15 @@ public class LogRebuilderTest
         final int srcOffset = 0;
         final int length = 256;
 
-        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
+        when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(packet, srcOffset, length);
         assertFalse(logRebuilder.isComplete());
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).putBytes(0, packet, srcOffset, length);
-        inOrder.verify(stateBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, length);
-        inOrder.verify(stateBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, length);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        inOrder.verify(termBuffer).putBytes(0, packet, srcOffset, length);
+        inOrder.verify(metaDataBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, length);
+        inOrder.verify(metaDataBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, length);
     }
 
     @Test
@@ -92,24 +91,24 @@ public class LogRebuilderTest
     {
         final int frameLength = BitUtil.align(256, FRAME_ALIGNMENT);
         final int srcOffset = 0;
-        final int tail = LOG_BUFFER_CAPACITY - frameLength;
+        final int tail = TERM_BUFFER_CAPACITY - frameLength;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(frameLength));
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
         packet.putInt(lengthOffset(srcOffset), frameLength, LITTLE_ENDIAN);
 
-        when(stateBuffer.getInt(TAIL_COUNTER_OFFSET)).thenReturn(tail);
-        when(stateBuffer.getInt(HIGH_WATER_MARK_OFFSET)).thenReturn(tail);
-        when(logBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
+        when(metaDataBuffer.getInt(TAIL_COUNTER_OFFSET)).thenReturn(tail);
+        when(metaDataBuffer.getInt(HIGH_WATER_MARK_OFFSET)).thenReturn(tail);
+        when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
         logRebuilder.insert(packet, srcOffset, frameLength);
         assertTrue(logRebuilder.isComplete());
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, frameLength);
-        inOrder.verify(stateBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, tail + frameLength);
-        inOrder.verify(stateBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, tail + frameLength);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);
+        inOrder.verify(metaDataBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, tail + frameLength);
+        inOrder.verify(metaDataBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, tail + frameLength);
     }
 
     @Test
@@ -122,20 +121,20 @@ public class LogRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
 
-        stateBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
-        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
-        when(logBuffer.getInt(lengthOffset(0))).thenReturn(frameLength);
-        when(logBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(logBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
+        metaDataBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
+        metaDataBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
+        when(termBuffer.getInt(lengthOffset(0))).thenReturn(frameLength);
+        when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
 
         logRebuilder.insert(packet, srcOffset, alignedFrameLength);
 
-        assertThat(stateViewer.tailVolatile(), is(alignedFrameLength * 3));
-        assertThat(stateViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
+        assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength * 3));
+        assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
-        inOrder.verify(stateBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, alignedFrameLength * 3);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
+        inOrder.verify(metaDataBuffer).putIntOrdered(TAIL_COUNTER_OFFSET, alignedFrameLength * 3);
     }
 
     @Test
@@ -147,19 +146,19 @@ public class LogRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
 
-        stateBuffer.putInt(TAIL_COUNTER_OFFSET, 0);
-        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 2);
-        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
-        when(logBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
+        metaDataBuffer.putInt(TAIL_COUNTER_OFFSET, 0);
+        metaDataBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 2);
+        when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
+        when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
 
         logRebuilder.insert(packet, srcOffset, alignedFrameLength);
 
-        assertThat(stateViewer.tailVolatile(), is(0));
-        assertThat(stateViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
+        assertThat(metaDataViewer.tailVolatile(), is(0));
+        assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
-        inOrder.verify(stateBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        inOrder.verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
+        inOrder.verify(metaDataBuffer).putIntOrdered(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
     }
 
     @Test
@@ -171,16 +170,16 @@ public class LogRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
         packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
 
-        stateBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
-        stateBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 4);
-        when(logBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(logBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
+        metaDataBuffer.putInt(TAIL_COUNTER_OFFSET, alignedFrameLength);
+        metaDataBuffer.putInt(HIGH_WATER_MARK_OFFSET, alignedFrameLength * 4);
+        when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
 
         logRebuilder.insert(packet, srcOffset, alignedFrameLength);
 
-        assertThat(stateViewer.tailVolatile(), is(alignedFrameLength));
-        assertThat(stateViewer.highWaterMarkVolatile(), is(alignedFrameLength * 4));
+        assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength));
+        assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 4));
 
-        verify(logBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
+        verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
 }

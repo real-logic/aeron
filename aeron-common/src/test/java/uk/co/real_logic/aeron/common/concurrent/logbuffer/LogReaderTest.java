@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import org.junit.Before;
@@ -34,12 +33,12 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DA
 
 public class LogReaderTest
 {
-    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
-    private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
     private static final int HEADER_LENGTH = Header.LENGTH;
 
-    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
-    private final UnsafeBuffer stateBuffer = spy(new UnsafeBuffer(new byte[STATE_BUFFER_CAPACITY]));
+    private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer metaDataBuffer = spy(new UnsafeBuffer(new byte[META_DATA_BUFFER_CAPACITY]));
     private final DataHandler handler = Mockito.mock(DataHandler.class);
 
     private LogReader logReader;
@@ -47,18 +46,18 @@ public class LogReaderTest
     @Before
     public void setUp()
     {
-        when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
+        when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
 
-        logReader = new LogReader(logBuffer, stateBuffer);
+        logReader = new LogReader(termBuffer, metaDataBuffer);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
         final int logBufferCapacity = LogBufferDescriptor.MIN_TERM_SIZE + FRAME_ALIGNMENT + 1;
-        when(logBuffer.capacity()).thenReturn(logBufferCapacity);
+        when(termBuffer.capacity()).thenReturn(logBufferCapacity);
 
-        logReader = new LogReader(logBuffer, stateBuffer);
+        logReader = new LogReader(termBuffer, metaDataBuffer);
     }
 
     @Test
@@ -67,14 +66,14 @@ public class LogReaderTest
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
 
-        when(logBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(0))).thenReturn((short)HDR_TYPE_DATA);
+        when(termBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
+        when(termBuffer.getShort(typeOffset(0))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(1));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
-        verify(handler).onData(eq(logBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(0));
+        verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -83,7 +82,7 @@ public class LogReaderTest
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
 
-        when(logBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
 
         assertThat(logReader.read(handler, 0), is(0));
 
@@ -95,7 +94,7 @@ public class LogReaderTest
     {
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(0));
 
-        verify(logBuffer).getIntVolatile(lengthOffset(0));
+        verify(termBuffer).getIntVolatile(lengthOffset(0));
         verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
     }
 
@@ -106,15 +105,15 @@ public class LogReaderTest
         final int frameLength = HEADER_LENGTH + msgLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
-        when(logBuffer.getIntVolatile(anyInt())).thenReturn(frameLength);
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
+        when(termBuffer.getIntVolatile(anyInt())).thenReturn(frameLength);
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(alignedFrameLength * 2);
+        when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler, 1), is(1));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
-        inOrder.verify(handler).onData(eq(logBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(0));
+        inOrder.verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -125,18 +124,18 @@ public class LogReaderTest
         final int frameLength = HEADER_LENGTH + msgLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
-        when(logBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
-        when(logBuffer.getIntVolatile(lengthOffset(alignedFrameLength))).thenReturn(frameLength);
-        when(logBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
+        when(termBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(lengthOffset(alignedFrameLength))).thenReturn(frameLength);
+        when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(2));
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(0));
-        inOrder.verify(handler).onData(eq(logBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(0));
+        inOrder.verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
 
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(alignedFrameLength));
-        inOrder.verify(handler).onData(eq(logBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(alignedFrameLength));
+        inOrder.verify(handler).onData(eq(termBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -145,18 +144,18 @@ public class LogReaderTest
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
-        final int startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
+        final int startOfMessage = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
-        when(logBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(startOfMessage))).thenReturn((short)HDR_TYPE_DATA);
+        when(termBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
+        when(termBuffer.getShort(typeOffset(startOfMessage))).thenReturn((short)HDR_TYPE_DATA);
 
         logReader.seek(startOfMessage);
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(1));
         assertTrue(logReader.isComplete());
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(startOfMessage));
-        inOrder.verify(handler).onData(eq(logBuffer), eq(startOfMessage + HEADER_LENGTH), eq(msgLength), any(Header.class));
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(startOfMessage));
+        inOrder.verify(handler).onData(eq(termBuffer), eq(startOfMessage + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -165,17 +164,17 @@ public class LogReaderTest
         final int msgLength = 1;
         final int frameLength = HEADER_LENGTH + msgLength;
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
-        final int startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
+        final int startOfMessage = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
-        when(logBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(startOfMessage))).thenReturn((short)PADDING_FRAME_TYPE);
+        when(termBuffer.getIntVolatile(lengthOffset(startOfMessage))).thenReturn(frameLength);
+        when(termBuffer.getShort(typeOffset(startOfMessage))).thenReturn((short)PADDING_FRAME_TYPE);
 
         logReader.seek(startOfMessage);
         assertThat(logReader.read(handler, Integer.MAX_VALUE), is(0));
         assertTrue(logReader.isComplete());
 
-        final InOrder inOrder = inOrder(logBuffer, stateBuffer);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(startOfMessage));
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(startOfMessage));
         verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
     }
 }

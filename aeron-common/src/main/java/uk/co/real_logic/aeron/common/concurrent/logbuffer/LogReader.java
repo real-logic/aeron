@@ -34,12 +34,12 @@ public class LogReader extends LogBuffer
     /**
      * Construct a reader for a log and associated state buffer.
      *
-     * @param termBuffer containing the data frames.
-     * @param stateBuffer containing the state data for the log.
+     * @param termBuffer     containing the data frames.
+     * @param metaDataBuffer containing the state data for the log.
      */
-    public LogReader(final UnsafeBuffer termBuffer, final UnsafeBuffer stateBuffer)
+    public LogReader(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
-        super(termBuffer, stateBuffer);
+        super(termBuffer, metaDataBuffer);
         header = new Header(termBuffer);
     }
 
@@ -74,7 +74,7 @@ public class LogReader extends LogBuffer
     /**
      * Reads data from the log buffer.
      *
-     * @param handler the handler for data that has been read
+     * @param handler          the handler for data that has been read
      * @param framesCountLimit limit the number of frames read.
      * @return the number of frames read
      */

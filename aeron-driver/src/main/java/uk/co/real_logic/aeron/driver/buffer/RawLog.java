@@ -15,24 +15,36 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
+
+import java.util.stream.Stream;
 
 /**
- * Encapsulates the pair of buffers used to hold a term and associated state for publication/subscription
+ * Represents the collection of term and associated state buffers for the connection between a publisher and subscriber
+ * connection for the replicated log.
  */
 public interface RawLog extends AutoCloseable
 {
     /**
-     * Get the buffer holding the recorded log of messages for a term.
+     * A {@link Stream} of the {@link RawLogFragment} buffers.
      *
-     * @return the buffer holding the recorded log of messages for a term.
+     * @return a {@link Stream} of the {@link RawLogFragment} buffers.
      */
-    UnsafeBuffer termBuffer();
+    Stream<? extends RawLogFragment> stream();
 
     /**
-     * Get the buffer holding the state information about the recorded log of messages for a term.
+     * An array of the {@link RawLogFragment} buffers.
      *
-     * @return the buffer holding the state information about the recorded log of messages for a term.
+     * @return an array of the {@link RawLogFragment} buffers.
      */
-    UnsafeBuffer termStateBuffer();
+    RawLogFragment[] fragments();
+
+    /**
+     * Write the buffer location details to the flyweight.
+     *
+     * @param buffersReadyFlyweight to which the buffer locations will be written.
+     */
+    void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight);
+
+    void close();
 }

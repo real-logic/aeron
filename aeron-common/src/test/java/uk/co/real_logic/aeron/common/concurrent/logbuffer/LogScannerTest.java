@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import org.junit.Before;
@@ -33,13 +32,13 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DA
 
 public class LogScannerTest
 {
-    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
-    private static final int STATE_BUFFER_CAPACITY = STATE_BUFFER_LENGTH;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
     private static final int MTU_LENGTH = 1024;
     private static final int HEADER_LENGTH = 32;
 
-    private final UnsafeBuffer logBuffer = mock(UnsafeBuffer.class);
-    private final UnsafeBuffer stateBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer metaDataBuffer = mock(UnsafeBuffer.class);
     private final LogScanner.AvailabilityHandler handler = mock(LogScanner.AvailabilityHandler.class);
 
     private LogScanner scanner;
@@ -47,16 +46,16 @@ public class LogScannerTest
     @Before
     public void setUp()
     {
-        when(logBuffer.capacity()).thenReturn(LOG_BUFFER_CAPACITY);
-        when(stateBuffer.capacity()).thenReturn(STATE_BUFFER_CAPACITY);
+        when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
+        when(metaDataBuffer.capacity()).thenReturn(META_DATA_BUFFER_CAPACITY);
 
-        scanner = new LogScanner(logBuffer, stateBuffer, HEADER_LENGTH);
+        scanner = new LogScanner(termBuffer, metaDataBuffer, HEADER_LENGTH);
     }
 
     @Test
     public void shouldReportUnderlyingCapacity()
     {
-        assertThat(scanner.capacity(), is(LOG_BUFFER_CAPACITY));
+        assertThat(scanner.capacity(), is(TERM_BUFFER_CAPACITY));
     }
 
     @Test
@@ -73,20 +72,20 @@ public class LogScannerTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = 0;
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
-        inOrder.verify(handler).onAvailable(logBuffer, frameOffset, alignedFrameLength);
+        final InOrder inOrder = inOrder(metaDataBuffer, termBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
+        inOrder.verify(handler).onAvailable(termBuffer, frameOffset, alignedFrameLength);
     }
 
     @Test
@@ -98,19 +97,19 @@ public class LogScannerTest
         final int maxLength = alignedFrameLength - 1;
         final int frameOffset = 0;
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, maxLength), is(0));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
+        final InOrder inOrder = inOrder(metaDataBuffer, termBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
         inOrder.verify(handler, never()).onAvailable(any(), anyInt(), anyInt());
     }
 
@@ -122,29 +121,29 @@ public class LogScannerTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         int frameOffset = 0;
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
             .thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
+        when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
+        final InOrder inOrder = inOrder(metaDataBuffer, termBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += alignedFrameLength;
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
-        inOrder.verify(handler).onAvailable(logBuffer, 0, alignedFrameLength * 2);
+        inOrder.verify(handler).onAvailable(termBuffer, 0, alignedFrameLength * 2);
     }
 
     @Test
@@ -155,29 +154,29 @@ public class LogScannerTest
 
         int frameOffset = 0;
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
             .thenReturn(frameOneLength + frameTwoLength);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
             .thenReturn(frameTwoLength);
-        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength)))
+        when(termBuffer.getShort(typeOffset(frameOffset + frameOneLength)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
+        final InOrder inOrder = inOrder(metaDataBuffer, termBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += frameOneLength;
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
-        inOrder.verify(handler).onAvailable(logBuffer, 0, frameOneLength + frameTwoLength);
+        inOrder.verify(handler).onAvailable(termBuffer, 0, frameOneLength + frameTwoLength);
     }
 
     @Test
@@ -187,42 +186,42 @@ public class LogScannerTest
         final int frameOneLength = MTU_LENGTH - (frameTwoLength / 2);
         int frameOffset = 0;
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
             .thenReturn(frameOneLength + frameTwoLength);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength)))
             .thenReturn(frameTwoLength);
-        when(logBuffer.getShort(typeOffset(frameOffset + frameOneLength)))
+        when(termBuffer.getShort(typeOffset(frameOffset + frameOneLength)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanNext(handler, MTU_LENGTH), greaterThan(0));
         assertFalse(scanner.isComplete());
 
-        final InOrder inOrder = inOrder(stateBuffer, logBuffer, handler);
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
+        final InOrder inOrder = inOrder(metaDataBuffer, termBuffer, handler);
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += frameOneLength;
-        inOrder.verify(logBuffer).getIntVolatile(lengthOffset(frameOffset));
-        inOrder.verify(logBuffer).getShort(typeOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
-        inOrder.verify(handler).onAvailable(logBuffer, 0, frameOneLength);
+        inOrder.verify(handler).onAvailable(termBuffer, 0, frameOneLength);
     }
 
     @Test
     public void shouldScanLastFrameInBuffer()
     {
         final int alignedFrameLength = align(HEADER_LENGTH * 2, FRAME_ALIGNMENT);
-        final int frameOffset = LOG_BUFFER_CAPACITY - alignedFrameLength;
+        final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
-            .thenReturn(LOG_BUFFER_CAPACITY);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset)))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(TERM_BUFFER_CAPACITY);
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
 
         scanner.seek(frameOffset);
@@ -231,24 +230,24 @@ public class LogScannerTest
         assertTrue(scanner.isComplete());
         assertThat(scanner.scanNext(handler, MTU_LENGTH), is(0));
 
-        verify(handler).onAvailable(logBuffer, frameOffset, alignedFrameLength);
+        verify(handler).onAvailable(termBuffer, frameOffset, alignedFrameLength);
     }
 
     @Test
     public void shouldScanLastMessageInBufferPlusPadding()
     {
         final int alignedFrameLength = align(HEADER_LENGTH, FRAME_ALIGNMENT);
-        final int frameOffset = LOG_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
+        final int frameOffset = TERM_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
-            .thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(TERM_BUFFER_CAPACITY - FRAME_ALIGNMENT);
+        when(valueOf(termBuffer.getIntVolatile(lengthOffset(frameOffset))))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
             .thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
+        when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
             .thenReturn((short)PADDING_FRAME_TYPE);
 
         scanner.seek(frameOffset);
@@ -257,25 +256,25 @@ public class LogScannerTest
         assertTrue(scanner.isComplete());
         assertThat(scanner.scanNext(handler, MTU_LENGTH), is(0));
 
-        verify(handler, times(1)).onAvailable(logBuffer, frameOffset, alignedFrameLength * 2);
+        verify(handler, times(1)).onAvailable(termBuffer, frameOffset, alignedFrameLength * 2);
     }
 
     @Test
     public void shouldScanLastMessageInBufferMinusPaddingLimitedByMtu()
     {
         final int alignedFrameLength = align(HEADER_LENGTH, FRAME_ALIGNMENT);
-        final int frameOffset = LOG_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
+        final int frameOffset = TERM_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
         final int mtu = alignedFrameLength + 8;
 
-        when(stateBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
-            .thenReturn(LOG_BUFFER_CAPACITY - FRAME_ALIGNMENT);
-        when(valueOf(logBuffer.getIntVolatile(lengthOffset(frameOffset))))
+        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+            .thenReturn(TERM_BUFFER_CAPACITY - FRAME_ALIGNMENT);
+        when(valueOf(termBuffer.getIntVolatile(lengthOffset(frameOffset))))
             .thenReturn(alignedFrameLength);
-        when(logBuffer.getShort(typeOffset(frameOffset)))
+        when(termBuffer.getShort(typeOffset(frameOffset)))
             .thenReturn((short)HDR_TYPE_DATA);
-        when(logBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength)))
             .thenReturn(alignedFrameLength * 2);
-        when(logBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
+        when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength)))
             .thenReturn((short)PADDING_FRAME_TYPE);
 
         scanner.seek(frameOffset);
@@ -284,7 +283,7 @@ public class LogScannerTest
         assertTrue(!scanner.isComplete());
         assertThat(scanner.remaining(), greaterThan(0));
 
-        verify(handler, times(1)).onAvailable(logBuffer, frameOffset, alignedFrameLength);
+        verify(handler, times(1)).onAvailable(termBuffer, frameOffset, alignedFrameLength);
         verifyZeroInteractions(handler);
     }
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common;
 
 import org.junit.Test;
@@ -293,9 +292,9 @@ public class FlyweightTest
         assertThat(decodeNewBuffer.sessionId(), is(2));
         assertThat(decodeNewBuffer.termId(), is(3));
 
-        assertThat(decodeNewBuffer.bufferOffset(0), is(1));
-        assertThat(decodeNewBuffer.bufferOffset(1), is(2));
-        assertThat(decodeNewBuffer.bufferOffset(2), is(3));
+        assertThat(decodeNewBuffer.bufferOffset(0), is(1L));
+        assertThat(decodeNewBuffer.bufferOffset(1), is(2L));
+        assertThat(decodeNewBuffer.bufferOffset(2), is(3L));
 
         assertThat(decodeNewBuffer.bufferLength(0), is(1));
         assertThat(decodeNewBuffer.bufferLength(1), is(2));

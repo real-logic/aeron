@@ -26,7 +26,7 @@ public interface BuffersReadyFlyweight
      * @param index of the buffer
      * @return offset at which the buffer for a given index starts.
      */
-    int bufferOffset(int index);
+    long bufferOffset(int index);
 
     /**
      * Set the length of the buffer for a given index.
@@ -35,7 +35,7 @@ public interface BuffersReadyFlyweight
      * @param offset of the buffer starting position
      * @return this for fluent API usage.
      */
-    BuffersReadyFlyweight bufferOffset(int index, int offset);
+    BuffersReadyFlyweight bufferOffset(int index, long offset);
 
     /**
      * Get the length of the buffer for a given index.

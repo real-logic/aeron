@@ -19,7 +19,6 @@ import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 
 import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
@@ -31,21 +30,9 @@ import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
  */
 class MappedBufferManager implements BufferManager
 {
-    public ManagedBuffer mapBuffer(final String fileName, final int offset, final int length)
+    public ManagedBuffer mapBuffer(final String fileName, final long offset, final int length)
     {
-        final MappedByteBuffer buffer = mapExistingFile(new File(fileName), "Term Buffer");
-        if (requiresIndirection(buffer, offset, length))
-        {
-            buffer.position(offset);
-            buffer.limit(offset + length);
-        }
-
-        return new MappedManagedBuffer(buffer);
-    }
-
-    private boolean requiresIndirection(final ByteBuffer buffer, final int offset, final int length)
-    {
-        return offset != 0 || buffer.capacity() != length;
+        return new MappedManagedBuffer(mapExistingFile(new File(fileName), "Log Buffer", offset, length));
     }
 
     static class MappedManagedBuffer implements ManagedBuffer

@@ -15,13 +15,14 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
+import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
@@ -29,8 +30,7 @@ import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamL
  */
 public class RawLogTripletFactory implements AutoCloseable
 {
-    private final FileChannel termTemplate;
-    private final FileChannel stateTemplate;
+    private final FileChannel blankTemplate;
 
     private final File publicationsDir;
     private final File subscriptionsDir;
@@ -47,9 +47,9 @@ public class RawLogTripletFactory implements AutoCloseable
     {
         this.logger = logger;
 
-        final FileMappingConvention fileConvention = new FileMappingConvention(dataDirectoryName);
-        publicationsDir = fileConvention.publicationsDir();
-        subscriptionsDir = fileConvention.subscriptionsDir();
+        final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
+        publicationsDir = fileMappingConvention.publicationsDir();
+        subscriptionsDir = fileMappingConvention.subscriptionsDir();
 
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
         IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.SUBSCRIPTIONS);
@@ -57,9 +57,13 @@ public class RawLogTripletFactory implements AutoCloseable
         this.publicationTermBufferLength = publicationTermBufferLength;
         this.connectionTermBufferMaxLength = connectionTermBufferMaxLength;
 
-        final int templateLength = Math.max(publicationTermBufferLength, connectionTermBufferMaxLength);
-        termTemplate = createTemplateFile(dataDirectoryName, "termTemplate", templateLength);
-        stateTemplate = createTemplateFile(dataDirectoryName, "stateTemplate", STATE_BUFFER_LENGTH);
+        final int maxTermLength = Math.max(publicationTermBufferLength, connectionTermBufferMaxLength);
+
+        final long blankTemplateLength =
+            (maxTermLength * TermHelper.BUFFER_COUNT) +
+            (LogBufferDescriptor.STATE_BUFFER_LENGTH * TermHelper.BUFFER_COUNT);
+
+        blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
     }
 
     /**
@@ -69,8 +73,7 @@ public class RawLogTripletFactory implements AutoCloseable
     {
         try
         {
-            termTemplate.close();
-            stateTemplate.close();
+            blankTemplate.close();
         }
         catch (final Exception ex)
         {
@@ -114,12 +117,12 @@ public class RawLogTripletFactory implements AutoCloseable
         return newInstance(subscriptionsDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
 
-    private static FileChannel createTemplateFile(final String dataDir, final String name, final long size)
+    private static FileChannel createTemplateFile(final String dataDir, final String name, final long length)
     {
         final File templateFile = new File(dataDir, name);
         templateFile.deleteOnExit();
 
-        return IoUtil.createEmptyFile(templateFile, size);
+        return IoUtil.createEmptyFile(templateFile, length);
     }
 
     private RawLogTriplet newInstance(
@@ -132,6 +135,6 @@ public class RawLogTripletFactory implements AutoCloseable
     {
         final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
 
-        return new MappedRawLogTriplet(dir, termTemplate, termBufferSize, stateTemplate, logger);
+        return new MappedRawLogTriplet(dir, blankTemplate, termBufferSize, logger);
     }
 }

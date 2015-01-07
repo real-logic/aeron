@@ -339,7 +339,7 @@ class ClientConductor implements Agent, DriverListener
     private ManagedBuffer mapBuffer(final BuffersReadyFlyweight buffersReadyFlyweight, final int index)
     {
         final String fullyQualifiedFileName = buffersReadyFlyweight.bufferLocation(index);
-        final int offset = buffersReadyFlyweight.bufferOffset(index);
+        final long offset = buffersReadyFlyweight.bufferOffset(index);
         final int length = buffersReadyFlyweight.bufferLength(index);
 
         return bufferManager.mapBuffer(fullyQualifiedFileName, offset, length);

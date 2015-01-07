@@ -28,5 +28,5 @@ interface BufferManager
      * @param length   of the region in the file to be mapped.
      * @return a {@link ManagedBuffer} representing the mapped buffer.
      */
-    ManagedBuffer mapBuffer(String fileName, int offset, int length);
+    ManagedBuffer mapBuffer(String fileName, long offset, int length);
 }

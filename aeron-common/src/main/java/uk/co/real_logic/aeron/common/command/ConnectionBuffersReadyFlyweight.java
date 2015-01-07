@@ -48,16 +48,22 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                   Position Indicators Count                   |
  * +---------------------------------------------------------------+
  * |                          File Offset 0                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 1                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 2                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 3                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 4                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 5                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                             Length 0                          |
  * +---------------------------------------------------------------+
@@ -132,7 +138,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_INDICATOR_COUNT_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
-    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
+    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_LONG);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (9 * SIZE_OF_INT);
     private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
@@ -152,14 +158,16 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
      */
     private static final int CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
 
-    public int bufferOffset(final int index)
+    public long bufferOffset(final int index)
     {
-        return relativeIntField(index, FILE_OFFSETS_FIELDS_OFFSET);
+        return buffer().getLong(FILE_OFFSETS_FIELDS_OFFSET + (index * SIZE_OF_LONG), ByteOrder.LITTLE_ENDIAN);
     }
 
-    public ConnectionBuffersReadyFlyweight bufferOffset(final int index, final int value)
+    public ConnectionBuffersReadyFlyweight bufferOffset(final int index, final long value)
     {
-        return relativeIntField(index, value, FILE_OFFSETS_FIELDS_OFFSET);
+        buffer().putLong(FILE_OFFSETS_FIELDS_OFFSET + (index * SIZE_OF_LONG), value, ByteOrder.LITTLE_ENDIAN);
+
+        return this;
     }
 
     public int bufferLength(final int index)

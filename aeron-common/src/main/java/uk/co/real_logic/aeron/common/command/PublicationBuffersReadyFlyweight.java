@@ -46,16 +46,22 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                           MTU Length                          |
  * +---------------------------------------------------------------+
  * |                          File Offset 0                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 1                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 2                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 3                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 4                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                          File Offset 5                        |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                             Length 0                          |
  * +---------------------------------------------------------------+
@@ -116,7 +122,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight implements Buffe
     private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int MTU_LENGTH_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
     private static final int FILE_OFFSETS_FIELDS_OFFSET = MTU_LENGTH_OFFSET + SIZE_OF_INT;
-    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
+    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_LONG);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
     private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
 
@@ -131,14 +137,16 @@ public class PublicationBuffersReadyFlyweight extends Flyweight implements Buffe
      */
     private static final int CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
 
-    public int bufferOffset(final int index)
+    public long bufferOffset(final int index)
     {
-        return relativeIntField(index, FILE_OFFSETS_FIELDS_OFFSET);
+        return buffer().getLong(FILE_OFFSETS_FIELDS_OFFSET + (index * SIZE_OF_LONG), ByteOrder.LITTLE_ENDIAN);
     }
 
-    public PublicationBuffersReadyFlyweight bufferOffset(final int index, final int value)
+    public PublicationBuffersReadyFlyweight bufferOffset(final int index, final long value)
     {
-        return relativeIntField(index, value, FILE_OFFSETS_FIELDS_OFFSET);
+        buffer().putLong(FILE_OFFSETS_FIELDS_OFFSET + (index * SIZE_OF_LONG), value, ByteOrder.LITTLE_ENDIAN);
+
+        return this;
     }
 
     public int bufferLength(final int index)

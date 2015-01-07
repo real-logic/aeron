@@ -60,7 +60,7 @@ import static uk.co.real_logic.aeron.driver.BufferAndFrameHelper.newTestLogBuffe
 
 public class ReceiverTest
 {
-    private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final long CORRELATION_ID = 20;

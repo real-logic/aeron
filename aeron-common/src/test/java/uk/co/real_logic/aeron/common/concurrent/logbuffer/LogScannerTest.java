@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DA
 
 public class LogScannerTest
 {
-    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
     private static final int MTU_LENGTH = 1024;
     private static final int HEADER_LENGTH = 32;

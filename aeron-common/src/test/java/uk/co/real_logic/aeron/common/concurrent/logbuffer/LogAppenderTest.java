@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class LogAppenderTest
 {
-    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final MutableDirectBuffer DEFAULT_HEADER = new UnsafeBuffer(new byte[BASE_HEADER_LENGTH + SIZE_OF_INT]);
@@ -67,7 +67,7 @@ public class LogAppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnInsufficientCapacityForLog()
     {
-        when(termBuffer.capacity()).thenReturn(LogBufferDescriptor.MIN_TERM_SIZE - 1);
+        when(termBuffer.capacity()).thenReturn(LogBufferDescriptor.MIN_TERM_LENGTH - 1);
 
         logAppender = new LogAppender(termBuffer, metaDataBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);
     }
@@ -75,7 +75,7 @@ public class LogAppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
-        final int logBufferCapacity = LogBufferDescriptor.MIN_TERM_SIZE + FRAME_ALIGNMENT + 1;
+        final int logBufferCapacity = LogBufferDescriptor.MIN_TERM_LENGTH + FRAME_ALIGNMENT + 1;
         when(termBuffer.capacity()).thenReturn(logBufferCapacity);
 
         logAppender = new LogAppender(termBuffer, metaDataBuffer, DEFAULT_HEADER, MAX_FRAME_LENGTH);

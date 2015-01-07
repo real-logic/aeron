@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 public class MockBufferUsage
 {
     protected static final int MAX_FRAME_LENGTH = 1024;
-    protected static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.MIN_TERM_SIZE;
+    protected static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.MIN_TERM_LENGTH;
 
     protected static final int SESSION_ID_1 = 13;
     protected static final int SESSION_ID_2 = 15;

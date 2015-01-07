@@ -44,7 +44,7 @@ import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class LossHandlerTest
 {
-    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE);
     private static final byte[] DATA = new byte[36];
 

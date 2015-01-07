@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class GapScannerTest
 {
-    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);

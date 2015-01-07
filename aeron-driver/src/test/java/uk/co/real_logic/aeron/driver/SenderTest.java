@@ -52,7 +52,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.Act
 
 public class SenderTest
 {
-    private static final long TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final long TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 2;

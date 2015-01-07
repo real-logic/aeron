@@ -65,12 +65,12 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Minimum buffer size for a log term
+     * Minimum buffer length for a log term
      */
-    public static final int MIN_TERM_SIZE = 64 * 1024; // TODO: make a sensible default
+    public static final int MIN_TERM_LENGTH = 64 * 1024; // TODO: make a sensible default
 
     /**
-     * Check that term buffer is the correct size and alignment.
+     * Check that term buffer is the correct length and alignment.
      *
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.
@@ -78,11 +78,11 @@ public class LogBufferDescriptor
     public static void checkTermBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < MIN_TERM_SIZE)
+        if (capacity < MIN_TERM_LENGTH)
         {
             final String s = String.format(
-                "Term buffer capacity less than min size of %d, capacity=%d",
-                MIN_TERM_SIZE,
+                "Term buffer capacity less than min length of %d, capacity=%d",
+                MIN_TERM_LENGTH,
                 capacity);
             throw new IllegalStateException(s);
         }
@@ -109,7 +109,7 @@ public class LogBufferDescriptor
         if (capacity < META_DATA_BUFFER_LENGTH)
         {
             final String s = String.format(
-                "Meta data buffer capacity less than min size of %d, capacity=%d",
+                "Meta data buffer capacity less than min length of %d, capacity=%d",
                 META_DATA_BUFFER_LENGTH,
                 capacity);
             throw new IllegalStateException(s);

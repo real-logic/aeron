@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class LogRebuilderTest
 {
-    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_SIZE;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_LENGTH;
     private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
@@ -53,7 +53,7 @@ public class LogRebuilderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
-        final int logBufferCapacity = LogBufferDescriptor.MIN_TERM_SIZE + FRAME_ALIGNMENT + 1;
+        final int logBufferCapacity = LogBufferDescriptor.MIN_TERM_LENGTH + FRAME_ALIGNMENT + 1;
 
         when(termBuffer.capacity()).thenReturn(logBufferCapacity);
 

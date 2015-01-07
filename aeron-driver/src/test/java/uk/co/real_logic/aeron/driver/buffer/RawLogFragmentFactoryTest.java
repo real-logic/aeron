@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class RawLogFragmentTripletFactoryTest
+public class RawLogFragmentFactoryTest
 {
     private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;
@@ -49,8 +49,7 @@ public class RawLogFragmentTripletFactoryTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        rawLogFactory = new RawLogFactory(
-            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, logger);
+        rawLogFactory = new RawLogFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, logger);
     }
 
     @After
@@ -63,8 +62,7 @@ public class RawLogFragmentTripletFactoryTest
     public void shouldCreateCorrectLengthAndZeroedFilesForPublication() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLogTriplet =
-            rawLogFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
+        final RawLog rawLogTriplet = rawLogFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
 
         rawLogTriplet.stream().forEach(
             (rawLogFragment) ->
@@ -88,9 +86,8 @@ public class RawLogFragmentTripletFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int maxConnectionTermBufferSize = TERM_BUFFER_LENGTH / 2;
-        final RawLog rawLogTriplet =
-            rawLogFactory.newConnection(
-                canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
+        final RawLog rawLogTriplet = rawLogFactory.newConnection(
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
 
         rawLogTriplet.stream().forEach(
             (rawLogFragment) ->
@@ -114,7 +111,6 @@ public class RawLogFragmentTripletFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int connectionTermBufferMaxLength = TERM_BUFFER_MAX_LENGTH * 2;
-        rawLogFactory.newConnection(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, connectionTermBufferMaxLength);
+        rawLogFactory.newConnection(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, connectionTermBufferMaxLength);
     }
 }

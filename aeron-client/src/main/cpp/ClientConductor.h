@@ -32,8 +32,9 @@ using namespace aeron::common::concurrent;
 class ClientConductor
 {
 public:
-    ClientConductor(DriverProxy& driverProxy) :
-        m_driverProxy(driverProxy)
+    ClientConductor(DriverProxy& driverProxy, CopyBroadcastReceiver& broadcastReceiver) :
+        m_driverProxy(driverProxy),
+        m_broadcastReceiver(broadcastReceiver)
     {
 
     }
@@ -69,6 +70,7 @@ private:
     std::vector<Publication*> m_publications;
     std::vector<Subscription*> m_subscriptions;
     DriverProxy& m_driverProxy;
+    CopyBroadcastReceiver& m_broadcastReceiver;
 };
 
 }

@@ -19,11 +19,15 @@
 
 #include <util/Exceptions.h>
 #include <common/AgentRunner.h>
+#include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
+#include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <iostream>
 
 namespace aeron {
 
 using namespace aeron::common::common;
+using namespace aeron::common::concurrent::ringbuffer;
+using namespace aeron::common::concurrent::broadcast;
 
 inline static void defaultErrorHandler(util::SourcedException& exception)
 {
@@ -36,6 +40,11 @@ class Context
     friend class Aeron;
 public:
     typedef Context this_t;
+
+    this_t& conclude()
+    {
+        return *this;
+    }
 
     this_t& useSharedMemoryOnLinux()
     {
@@ -56,6 +65,17 @@ public:
     inline ManyToOneRingBuffer* toDriverBuffer() const
     {
         return m_toDriverBuffer;
+    }
+
+    inline this_t& toClientsBuffer(CopyBroadcastReceiver *toClientsBuffer)
+    {
+        m_toClientsBuffer = toClientsBuffer;
+        return *this;
+    }
+
+    inline CopyBroadcastReceiver* toClientsBuffer() const
+    {
+        return m_toClientsBuffer;
     }
 
     inline void dataDirName(const std::string& name)
@@ -88,11 +108,26 @@ public:
         return m_countersDirName;
     }
 
+    inline const std::string& toDriverFileName()
+    {
+        m_toDriverFileName = m_adminDirName + "/" + "to-driver";
+        return m_toDriverFileName;
+    }
+
+    inline const std::string& toClientsFileName()
+    {
+        m_toClientsFileName = m_adminDirName + "/" + "to-clients";
+        return m_toClientsFileName;
+    }
+
 private:
     ManyToOneRingBuffer *m_toDriverBuffer = nullptr;
+    CopyBroadcastReceiver *m_toClientsBuffer = nullptr;
     std::string m_dataDirName = "";
     std::string m_adminDirName = "";
     std::string m_countersDirName = "";
+    std::string m_toDriverFileName = "";
+    std::string m_toClientsFileName = "";
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
 };
 

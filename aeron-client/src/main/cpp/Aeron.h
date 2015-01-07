@@ -21,6 +21,8 @@
 #include <iostream>
 #include <thread>
 #include <concurrent/logbuffer/LogReader.h>
+#include <util/MemoryMappedFile.h>
+#include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include "ClientConductor.h"
 #include "common/BusySpinIdleStrategy.h"
 #include "common/AgentRunner.h"
@@ -32,6 +34,7 @@ namespace aeron {
 
 using namespace aeron::common::common;
 using namespace aeron::common::concurrent;
+using namespace aeron::common::concurrent::broadcast;
 
 class Aeron
 {
@@ -59,14 +62,21 @@ public:
     }
 
 private:
+    Context& m_context;
     ClientConductor m_conductor;
     BusySpinIdleStrategy m_idleStrategy;
     AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
-    Context& m_context;
 
-    // items managed by Aeron
+    util::MemoryMappedFile::ptr_t m_toDriverBuffer;
+    ManyToOneRingBuffer* m_toDriverRingBuffer = nullptr;
+    DriverProxy* m_driverProxy = nullptr;
 
-    DriverProxy& createDriverProxy(const Context& context);
+    util::MemoryMappedFile::ptr_t m_toClientsBuffer;
+    BroadcastReceiver* m_toClientsBroadcastReceiver = nullptr;
+    CopyBroadcastReceiver* m_toClientsCopyReceiver = nullptr;
+
+    DriverProxy& createDriverProxy(Context& context);
+    CopyBroadcastReceiver& createDriverReceiver(Context& context);
 };
 
 }

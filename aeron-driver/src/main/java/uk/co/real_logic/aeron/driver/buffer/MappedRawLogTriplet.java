@@ -15,13 +15,12 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
@@ -30,37 +29,51 @@ import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.STATE_BUFFER_LENGTH;
 
 /**
  * Encapsulates responsibility for mapping the files into memory used by the log buffers.
  */
 class MappedRawLogTriplet implements RawLogTriplet
 {
-    private static final String TERM_SUFFIX = "-term";
-    private static final String STATE_SUFFIX = "-state";
+    private static final int MAX_TREE_DEPTH = 3;
+    private static final String LOG_NAME = "stream.log";
 
+    private final int termBufferLength;
+    private final EventLogger logger;
+    private final File logFile;
     private final MappedRawLog[] buffers;
 
     MappedRawLogTriplet(
-        final File directory,
-        final FileChannel termTemplate,
-        final int termBufferLength,
-        final FileChannel termStateTemplate,
-        final EventLogger logger)
+        final File directory, final FileChannel blankTemplate, final int termBufferLength, final EventLogger logger)
     {
+        this.termBufferLength = termBufferLength;
+        this.logger = logger;
+
         IoUtil.ensureDirectoryExists(directory, "log buffer directory");
+        logFile = new File(directory, LOG_NAME);
 
         try
         {
-            checkSizeTermBuffer(termTemplate.size(), termBufferLength);
-            checkSizeStateBuffer(termStateTemplate.size(), LogBufferDescriptor.STATE_BUFFER_LENGTH);
+            final long stateBuffersStartingOffset = termBufferLength * BUFFER_COUNT;
+            final long totalLogLength = stateBuffersStartingOffset + (STATE_BUFFER_LENGTH * 3);
 
-            buffers = new MappedRawLog[]
+            final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
+            blankTemplate.transferTo(0, totalLogLength, logChannel);
+
+            buffers = new MappedRawLog[BUFFER_COUNT];
+            for (int i = 0; i < BUFFER_COUNT; i++)
             {
-                mapRawLog("0", directory, termTemplate, termBufferLength, termStateTemplate, logger),
-                mapRawLog("1", directory, termTemplate, termBufferLength, termStateTemplate, logger),
-                mapRawLog("2", directory, termTemplate, termBufferLength, termStateTemplate, logger),
-            };
+                final long termBufferOffset = i * termBufferLength;
+                final MappedByteBuffer mappedTermBuffer = logChannel.map(READ_WRITE, termBufferOffset, termBufferLength);
+
+                final long stateBufferOffset = stateBuffersStartingOffset + (i * STATE_BUFFER_LENGTH);
+                final MappedByteBuffer mappedStateBuffer = logChannel.map(READ_WRITE, stateBufferOffset, STATE_BUFFER_LENGTH);
+
+                buffers[i] = new MappedRawLog(mappedTermBuffer, mappedStateBuffer);
+            }
+
+            logChannel.close();
         }
         catch (final IOException ex)
         {
@@ -71,6 +84,16 @@ class MappedRawLogTriplet implements RawLogTriplet
     public void close()
     {
         stream().forEach(MappedRawLog::close);
+
+        if (logFile.delete())
+        {
+            final File directory = logFile.getParentFile();
+            recursivelyDeleteUpTree(directory, MAX_TREE_DEPTH);
+        }
+        else
+        {
+            logger.log(EventCode.ERROR_DELETING_FILE, logFile);
+        }
     }
 
     public Stream<MappedRawLog> stream()
@@ -85,92 +108,44 @@ class MappedRawLogTriplet implements RawLogTriplet
 
     public void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight)
     {
-        for (int i = 0; i < BUFFER_COUNT; i++)
-        {
-            buffers[i].writeTermBufferLocation(i, buffersReadyFlyweight);
-        }
+        final String absoluteFilePath = logFile.getAbsolutePath();
+        final int termBufferLength = this.termBufferLength;
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
-            buffers[i].writeStateBufferLocation(i, buffersReadyFlyweight);
+            buffersReadyFlyweight.bufferOffset(i, i * (long)termBufferLength);
+            buffersReadyFlyweight.bufferLength(i, termBufferLength);
+            buffersReadyFlyweight.bufferLocation(i, absoluteFilePath);
+        }
+
+        final long stateBuffersStartingOffset = termBufferLength * BUFFER_COUNT;
+
+        for (int i = 0; i < BUFFER_COUNT; i++)
+        {
+            final int index = i + BUFFER_COUNT;
+            buffersReadyFlyweight.bufferOffset(index, stateBuffersStartingOffset + (i * STATE_BUFFER_LENGTH));
+            buffersReadyFlyweight.bufferLength(index, termBufferLength);
+            buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
         }
     }
 
-    public static void reset(final FileChannel channel, final FileChannel template, final long bufferLength)
+    private void recursivelyDeleteUpTree(final File directory, int remainingTreeDepth)
     {
-        try
+        if (remainingTreeDepth == 0)
         {
-            channel.position(0);
-            template.transferTo(0, bufferLength, channel);
+            return;
         }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
-    }
 
-    private static void checkSizeTermBuffer(final long templateLength, final long desiredLength)
-    {
-        if (desiredLength > templateLength)
+        if (directory.list().length == 0)
         {
-            throw new IllegalArgumentException("Desired size (" + desiredLength + ") > template length: " + templateLength);
-        }
-    }
-
-    private static void checkSizeStateBuffer(final long templateLength, final long desiredLength)
-    {
-        if (desiredLength != templateLength)
-        {
-            throw new IllegalArgumentException("Values aren't equal: " + desiredLength + " and " + templateLength);
-        }
-    }
-
-    private MappedRawLog mapRawLog(
-        final String prefix,
-        final File directory,
-        final FileChannel termTemplate,
-        final int termBufferLength,
-        final FileChannel stateTemplate,
-        final EventLogger logger)
-    {
-        try
-        {
-            final File termFile = new File(directory, prefix + TERM_SUFFIX);
-            final File stateFile = new File(directory, prefix + STATE_SUFFIX);
-            final FileChannel termFileChannel = openBufferFile(termFile);
-            final FileChannel stateFileChannel = openBufferFile(stateFile);
-
-            return new MappedRawLog(
-                termFile,
-                stateFile,
-                termFileChannel,
-                stateFileChannel,
-                mapBufferFile(termFileChannel, termTemplate, termBufferLength),
-                mapBufferFile(stateFileChannel, stateTemplate, LogBufferDescriptor.STATE_BUFFER_LENGTH),
-                logger);
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    private FileChannel openBufferFile(final File file) throws FileNotFoundException
-    {
-        return new RandomAccessFile(file, "rw").getChannel();
-    }
-
-    private MappedByteBuffer mapBufferFile(final FileChannel channel, final FileChannel template, final long bufferLength)
-    {
-        reset(channel, template, bufferLength);
-
-        try
-        {
-            return channel.map(READ_WRITE, 0, bufferLength);
-        }
-        catch (final IOException ex)
-        {
-            throw new RuntimeException(ex);
+            if (directory.delete())
+            {
+                recursivelyDeleteUpTree(directory.getParentFile(), remainingTreeDepth - 1);
+            }
+            else
+            {
+                logger.log(EventCode.ERROR_DELETING_FILE, directory);
+            }
         }
     }
 }

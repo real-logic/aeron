@@ -85,7 +85,7 @@ public class LogBuffer
      */
     public int status()
     {
-        return metaDataBuffer.getIntVolatile(STATUS_OFFSET);
+        return metaDataBuffer.getIntVolatile(TERM_STATUS_OFFSET);
     }
 
     /**
@@ -95,7 +95,7 @@ public class LogBuffer
      */
     public void statusOrdered(final int status)
     {
-        metaDataBuffer.putIntOrdered(STATUS_OFFSET, status);
+        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
     }
 
     /**
@@ -105,7 +105,7 @@ public class LogBuffer
      */
     public int tailVolatile()
     {
-        return Math.min(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**
@@ -115,7 +115,7 @@ public class LogBuffer
      */
     public int highWaterMarkVolatile()
     {
-        return metaDataBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET);
+        return metaDataBuffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
     }
 
     /**
@@ -125,7 +125,7 @@ public class LogBuffer
      */
     public int tail()
     {
-        return Math.min(metaDataBuffer.getInt(TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET), capacity);
     }
 
     /**
@@ -135,6 +135,6 @@ public class LogBuffer
      */
     public int highWaterMark()
     {
-        return metaDataBuffer.getInt(HIGH_WATER_MARK_OFFSET);
+        return metaDataBuffer.getInt(TERM_HIGH_WATER_MARK_OFFSET);
     }
 }

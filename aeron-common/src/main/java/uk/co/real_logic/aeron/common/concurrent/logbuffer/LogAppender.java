@@ -22,7 +22,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
 /**
  * Log buffer appender which supports many producers concurrently writing an append-only log.
@@ -299,7 +299,7 @@ public class LogAppender extends LogBuffer
 
     private int getTailAndAdd(final int delta)
     {
-        return metaDataBuffer().getAndAddInt(TAIL_COUNTER_OFFSET, delta);
+        return metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, delta);
     }
 
     private void checkMessageLength(final int length)

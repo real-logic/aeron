@@ -61,7 +61,7 @@ public class RawLogFactory implements AutoCloseable
 
         final long blankTemplateLength =
             (maxTermLength * TermHelper.BUFFER_COUNT) +
-            (LogBufferDescriptor.META_DATA_BUFFER_LENGTH * TermHelper.BUFFER_COUNT);
+            (LogBufferDescriptor.TERM_META_DATA_LENGTH * TermHelper.BUFFER_COUNT);
 
         blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
     }

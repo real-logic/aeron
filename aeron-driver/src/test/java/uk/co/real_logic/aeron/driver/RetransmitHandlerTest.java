@@ -40,8 +40,8 @@ import static uk.co.real_logic.agrona.BitUtil.align;
 public class RetransmitHandlerTest
 {
     private static final int MTU_LENGTH = 1024;
-    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.MIN_TERM_LENGTH;
-    private static final int META_DATA_BUFFER_LENGTH = LogBufferDescriptor.META_DATA_BUFFER_LENGTH;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int META_DATA_BUFFER_LENGTH = LogBufferDescriptor.TERM_META_DATA_LENGTH;
     private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);

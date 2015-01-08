@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.META_DATA_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
 /**
  * Encapsulates responsibility for mapping the files into memory used by the log buffers.
@@ -56,7 +56,7 @@ class MappedRawLog implements RawLog
         try
         {
             final long metaDataStartingOffset = termBufferLength * BUFFER_COUNT;
-            final long totalLogLength = metaDataStartingOffset + (META_DATA_BUFFER_LENGTH * 3);
+            final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3);
 
             final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
             blankTemplate.transferTo(0, totalLogLength, logChannel);
@@ -67,8 +67,8 @@ class MappedRawLog implements RawLog
                 final long termBufferOffset = i * termBufferLength;
                 final MappedByteBuffer mappedTermBuffer = logChannel.map(READ_WRITE, termBufferOffset, termBufferLength);
 
-                final long metaDataOffset = metaDataStartingOffset + (i * META_DATA_BUFFER_LENGTH);
-                final MappedByteBuffer mappedMetaDataBuffer = logChannel.map(READ_WRITE, metaDataOffset, META_DATA_BUFFER_LENGTH);
+                final long metaDataOffset = metaDataStartingOffset + (i * TERM_META_DATA_LENGTH);
+                final MappedByteBuffer mappedMetaDataBuffer = logChannel.map(READ_WRITE, metaDataOffset, TERM_META_DATA_LENGTH);
 
                 buffers[i] = new MappedRawLogFragment(mappedTermBuffer, mappedMetaDataBuffer);
             }
@@ -123,7 +123,7 @@ class MappedRawLog implements RawLog
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
             final int index = i + BUFFER_COUNT;
-            buffersReadyFlyweight.bufferOffset(index, metaDataStartingOffset + (i * META_DATA_BUFFER_LENGTH));
+            buffersReadyFlyweight.bufferOffset(index, metaDataStartingOffset + (i * TERM_META_DATA_LENGTH));
             buffersReadyFlyweight.bufferLength(index, termBufferLength);
             buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
         }

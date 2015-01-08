@@ -47,7 +47,7 @@ import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.ErrorCode.UNKNOWN_PUBLICATION;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_PUBLICATION;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_PUBLICATION;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.META_DATA_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
@@ -110,7 +110,7 @@ public class DriverConductorTest
     public void setUp() throws Exception
     {
         when(mockRawLogFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
-            .thenReturn(BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SZ, META_DATA_BUFFER_LENGTH));
+            .thenReturn(BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SZ, TERM_META_DATA_LENGTH));
 
         currentTime = 0;
 

@@ -30,8 +30,8 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class GapScannerTest
 {
-    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_LENGTH;
-    private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
+    private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int META_DATA_BUFFER_CAPACITY = TERM_META_DATA_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final UnsafeBuffer metaDataBuffer = mock(UnsafeBuffer.class);
@@ -54,8 +54,8 @@ public class GapScannerTest
         assertThat(scanner.scan(gapHandler), is(0));
 
         final InOrder inOrder = inOrder(metaDataBuffer);
-        inOrder.verify(metaDataBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
-        inOrder.verify(metaDataBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
         verifyZeroInteractions(gapHandler);
     }
 
@@ -64,14 +64,14 @@ public class GapScannerTest
     {
         final int fillLevel = FRAME_ALIGNMENT * 4;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(fillLevel);
-        when(metaDataBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(fillLevel);
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(fillLevel);
+        when(metaDataBuffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET)).thenReturn(fillLevel);
 
         assertThat(scanner.scan(gapHandler), is(0));
 
         final InOrder inOrder = inOrder(metaDataBuffer);
-        inOrder.verify(metaDataBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
-        inOrder.verify(metaDataBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
         verifyZeroInteractions(gapHandler);
     }
 
@@ -81,15 +81,15 @@ public class GapScannerTest
         final int frameOffset = FRAME_ALIGNMENT * 3;
         final int highWaterMark = frameOffset + FRAME_ALIGNMENT;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(0);
-        when(metaDataBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(0);
+        when(metaDataBuffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(FRAME_ALIGNMENT);
 
         assertThat(scanner.scan(gapHandler), is(1));
 
         final InOrder inOrder = inOrder(metaDataBuffer);
-        inOrder.verify(metaDataBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
-        inOrder.verify(metaDataBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
         verify(gapHandler).onGap(termBuffer, 0, frameOffset);
     }
 
@@ -99,8 +99,8 @@ public class GapScannerTest
         final int tail = FRAME_ALIGNMENT;
         final int highWaterMark = FRAME_ALIGNMENT * 3;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
-        when(metaDataBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(tail);
+        when(metaDataBuffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
         when(termBuffer.getIntVolatile(lengthOffset(tail - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
@@ -112,8 +112,8 @@ public class GapScannerTest
         assertThat(scanner.scan(gapHandler), is(1));
 
         final InOrder inOrder = inOrder(metaDataBuffer);
-        inOrder.verify(metaDataBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
-        inOrder.verify(metaDataBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
         verify(gapHandler).onGap(termBuffer, tail, FRAME_ALIGNMENT);
     }
 
@@ -123,8 +123,8 @@ public class GapScannerTest
         final int tail = LOG_BUFFER_CAPACITY - (FRAME_ALIGNMENT * 2);
         final int highWaterMark = LOG_BUFFER_CAPACITY;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
-        when(metaDataBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(tail);
+        when(metaDataBuffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
         when(termBuffer.getIntVolatile(lengthOffset(tail - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
@@ -136,8 +136,8 @@ public class GapScannerTest
         assertThat(scanner.scan(gapHandler), is(1));
 
         final InOrder inOrder = inOrder(metaDataBuffer);
-        inOrder.verify(metaDataBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
-        inOrder.verify(metaDataBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
         verify(gapHandler).onGap(termBuffer, tail, FRAME_ALIGNMENT);
     }
 
@@ -147,8 +147,8 @@ public class GapScannerTest
         final int tail = FRAME_ALIGNMENT;
         final int highWaterMark = FRAME_ALIGNMENT * 6;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(tail);
-        when(metaDataBuffer.getIntVolatile(HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(tail);
+        when(metaDataBuffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET)).thenReturn(highWaterMark);
 
         when(termBuffer.getIntVolatile(lengthOffset(0)))
             .thenReturn(FRAME_ALIGNMENT);
@@ -165,8 +165,8 @@ public class GapScannerTest
         assertThat(scanner.scan(gapHandler), is(2));
 
         final InOrder inOrder = inOrder(metaDataBuffer);
-        inOrder.verify(metaDataBuffer).getIntVolatile(HIGH_WATER_MARK_OFFSET);
-        inOrder.verify(metaDataBuffer).getIntVolatile(TAIL_COUNTER_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
+        inOrder.verify(metaDataBuffer).getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
         verify(gapHandler).onGap(termBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT);
         verify(gapHandler).onGap(termBuffer, FRAME_ALIGNMENT * 3, FRAME_ALIGNMENT * 2);
     }

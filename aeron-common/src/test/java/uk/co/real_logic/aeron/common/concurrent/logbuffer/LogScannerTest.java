@@ -32,8 +32,8 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DA
 
 public class LogScannerTest
 {
-    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_LENGTH;
-    private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int META_DATA_BUFFER_CAPACITY = TERM_META_DATA_LENGTH;
     private static final int MTU_LENGTH = 1024;
     private static final int HEADER_LENGTH = 32;
 
@@ -72,7 +72,7 @@ public class LogScannerTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = 0;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(alignedFrameLength);
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
@@ -97,7 +97,7 @@ public class LogScannerTest
         final int maxLength = alignedFrameLength - 1;
         final int frameOffset = 0;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(alignedFrameLength);
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
@@ -121,7 +121,7 @@ public class LogScannerTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         int frameOffset = 0;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(alignedFrameLength * 2);
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameLength);
@@ -154,7 +154,7 @@ public class LogScannerTest
 
         int frameOffset = 0;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(frameOneLength + frameTwoLength);
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
@@ -186,7 +186,7 @@ public class LogScannerTest
         final int frameOneLength = MTU_LENGTH - (frameTwoLength / 2);
         int frameOffset = 0;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(frameOneLength + frameTwoLength);
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(frameOneLength);
@@ -217,7 +217,7 @@ public class LogScannerTest
         final int alignedFrameLength = align(HEADER_LENGTH * 2, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(TERM_BUFFER_CAPACITY);
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(alignedFrameLength);
@@ -239,7 +239,7 @@ public class LogScannerTest
         final int alignedFrameLength = align(HEADER_LENGTH, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(TERM_BUFFER_CAPACITY - FRAME_ALIGNMENT);
         when(valueOf(termBuffer.getIntVolatile(lengthOffset(frameOffset))))
             .thenReturn(alignedFrameLength);
@@ -266,7 +266,7 @@ public class LogScannerTest
         final int frameOffset = TERM_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
         final int mtu = alignedFrameLength + 8;
 
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET))
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET))
             .thenReturn(TERM_BUFFER_CAPACITY - FRAME_ALIGNMENT);
         when(valueOf(termBuffer.getIntVolatile(lengthOffset(frameOffset))))
             .thenReturn(alignedFrameLength);

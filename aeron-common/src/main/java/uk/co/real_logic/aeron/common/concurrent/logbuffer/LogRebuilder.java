@@ -21,8 +21,8 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.HIGH_WATER_MARK_OFFSET;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TAIL_COUNTER_OFFSET;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_HIGH_WATER_MARK_OFFSET;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
 /**
  * Rebuild a log buffer based on incoming frames that can be out-of-order.
@@ -60,7 +60,7 @@ public class LogRebuilder extends LogBuffer
      */
     public boolean isComplete()
     {
-        return metaDataBuffer().getIntVolatile(TAIL_COUNTER_OFFSET) >= capacity();
+        return metaDataBuffer().getIntVolatile(TERM_TAIL_COUNTER_OFFSET) >= capacity();
     }
 
     /**
@@ -114,11 +114,11 @@ public class LogRebuilder extends LogBuffer
 
     private static void putTailOrdered(final UnsafeBuffer metaDataBuffer, final int tail)
     {
-        metaDataBuffer.putIntOrdered(TAIL_COUNTER_OFFSET, tail);
+        metaDataBuffer.putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
     }
 
     private static void putHighWaterMark(final UnsafeBuffer metaDataBuffer, final int highWaterMark)
     {
-        metaDataBuffer.putIntOrdered(HIGH_WATER_MARK_OFFSET, highWaterMark);
+        metaDataBuffer.putIntOrdered(TERM_HIGH_WATER_MARK_OFFSET, highWaterMark);
     }
 }

@@ -44,7 +44,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_CONNECTION_READY;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_PUBLICATION_READY;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.META_DATA_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
 public class ClientConductorTest extends MockBufferUsage
 {
@@ -330,7 +330,7 @@ public class ClientConductorTest extends MockBufferUsage
             {
                 message.bufferLocation(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
                 message.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
-                message.bufferLength(i + TermHelper.BUFFER_COUNT, META_DATA_BUFFER_LENGTH);
+                message.bufferLength(i + TermHelper.BUFFER_COUNT, TERM_META_DATA_LENGTH);
             });
     }
 

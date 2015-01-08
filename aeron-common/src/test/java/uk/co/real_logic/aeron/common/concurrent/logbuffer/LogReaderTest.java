@@ -33,8 +33,8 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DA
 
 public class LogReaderTest
 {
-    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.MIN_TERM_LENGTH;
-    private static final int META_DATA_BUFFER_CAPACITY = META_DATA_BUFFER_LENGTH;
+    private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int META_DATA_BUFFER_CAPACITY = TERM_META_DATA_LENGTH;
     private static final int HEADER_LENGTH = Header.LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
@@ -54,7 +54,7 @@ public class LogReaderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
     {
-        final int logBufferCapacity = LogBufferDescriptor.MIN_TERM_LENGTH + FRAME_ALIGNMENT + 1;
+        final int logBufferCapacity = LogBufferDescriptor.TERM_MIN_LENGTH + FRAME_ALIGNMENT + 1;
         when(termBuffer.capacity()).thenReturn(logBufferCapacity);
 
         logReader = new LogReader(termBuffer, metaDataBuffer);
@@ -106,7 +106,7 @@ public class LogReaderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
         when(termBuffer.getIntVolatile(anyInt())).thenReturn(frameLength);
-        when(metaDataBuffer.getIntVolatile(TAIL_COUNTER_OFFSET)).thenReturn(alignedFrameLength * 2);
+        when(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(alignedFrameLength * 2);
         when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(logReader.read(handler, 1), is(1));

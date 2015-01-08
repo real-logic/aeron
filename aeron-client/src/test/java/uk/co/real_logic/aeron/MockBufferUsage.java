@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 public class MockBufferUsage
 {
     protected static final int MAX_FRAME_LENGTH = 1024;
-    protected static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.MIN_TERM_LENGTH;
+    protected static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
 
     protected static final int SESSION_ID_1 = 13;
     protected static final int SESSION_ID_2 = 15;
@@ -52,9 +52,9 @@ public class MockBufferUsage
         for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             termBuffersSession1[i] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-            metaDataBuffersSession1[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.META_DATA_BUFFER_LENGTH]);
+            metaDataBuffersSession1[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.TERM_META_DATA_LENGTH]);
             termBuffersSession2[i] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-            metaDataBuffersSession2[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.META_DATA_BUFFER_LENGTH]);
+            metaDataBuffersSession2[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.TERM_META_DATA_LENGTH]);
 
             when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(termBuffersSession1[i]));

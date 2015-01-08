@@ -75,9 +75,9 @@ public class RawLogFragmentFactoryTest
 
                 final UnsafeBuffer state = rawLogFragment.metaDataBuffer();
 
-                assertThat(state.capacity(), is(LogBufferDescriptor.META_DATA_BUFFER_LENGTH));
+                assertThat(state.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
-                assertThat(state.getByte(LogBufferDescriptor.META_DATA_BUFFER_LENGTH - 1), is((byte)0));
+                assertThat(state.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
             });
     }
 
@@ -100,9 +100,9 @@ public class RawLogFragmentFactoryTest
 
                 final UnsafeBuffer state = rawLogFragment.metaDataBuffer();
 
-                assertThat(state.capacity(), is(LogBufferDescriptor.META_DATA_BUFFER_LENGTH));
+                assertThat(state.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
                 assertThat(state.getByte(0), is((byte)0));
-                assertThat(state.getByte(LogBufferDescriptor.META_DATA_BUFFER_LENGTH - 1), is((byte)0));
+                assertThat(state.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
             });
     }
 

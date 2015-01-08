@@ -45,7 +45,7 @@ public class MetaDataViewer
      */
     public int tailVolatile()
     {
-        return buffer.getIntVolatile(TAIL_COUNTER_OFFSET);
+        return buffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
     }
 
     /**
@@ -55,7 +55,7 @@ public class MetaDataViewer
      */
     public int highWaterMarkVolatile()
     {
-        return buffer.getIntVolatile(HIGH_WATER_MARK_OFFSET);
+        return buffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
     }
 
     /**
@@ -65,7 +65,7 @@ public class MetaDataViewer
      */
     public int tail()
     {
-        return buffer.getInt(TAIL_COUNTER_OFFSET);
+        return buffer.getInt(TERM_TAIL_COUNTER_OFFSET);
     }
 
     /**
@@ -75,6 +75,6 @@ public class MetaDataViewer
      */
     public int highWaterMark()
     {
-        return buffer.getInt(HIGH_WATER_MARK_OFFSET);
+        return buffer.getInt(TERM_HIGH_WATER_MARK_OFFSET);
     }
 }

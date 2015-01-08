@@ -52,7 +52,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.Act
 
 public class SenderTest
 {
-    private static final long TERM_BUFFER_SIZE = LogBufferDescriptor.MIN_TERM_LENGTH;
+    private static final long TERM_BUFFER_SIZE = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 2;
@@ -67,7 +67,7 @@ public class SenderTest
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final RawLog rawLog =
-        BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.META_DATA_BUFFER_LENGTH);
+        BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.TERM_META_DATA_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;

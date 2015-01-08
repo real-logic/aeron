@@ -17,57 +17,91 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_SIZE;
+import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
- * Layout description log buffers buffers.
+ * Layout description for log buffers which contain terms, term meta data, and log meta data.
+ *
+ * +----------------------------+
+ * |           Term 0           |
+ * +----------------------------+
+ * |           Term 1           |
+ * +----------------------------+
+ * |           Term 2           |
+ * +----------------------------+
+ * |      Term Meta Data 0      |
+ * +----------------------------+
+ * |      Term Meta Data 1      |
+ * +----------------------------+
+ * |      Term Meta Data 2      |
+ * +----------------------------+
+ * |        Log Meta Data       |
+ * +----------------------------+
  */
 public class LogBufferDescriptor
 {
     /**
-     * The log is currently clean or in use.
+     * Minimum buffer length for a log term
+     */
+    public static final int TERM_MIN_LENGTH = 64 * 1024; // TODO: make a sensible default
+
+    // ********************************
+    // *** Term Meta Data Constants ***
+    // ********************************
+
+    /**
+     * The term is currently clean or in use.
      */
     public static final int CLEAN = 0;
 
     /**
-     * The log is dirty and requires cleaning.
+     * The term is dirty and requires cleaning.
      */
     public static final int NEEDS_CLEANING = 1;
 
     /**
-     * Offset within the trailer where the tail value is stored.
+     * Offset within the term meta data where the tail value is stored.
      */
-    public static final int TAIL_COUNTER_OFFSET;
+    public static final int TERM_TAIL_COUNTER_OFFSET;
 
     /**
-     * Offset within the trailer where the high water mark is stored.
+     * Offset within the term meta data where the high water mark is stored.
      */
-    public static final int HIGH_WATER_MARK_OFFSET;
+    public static final int TERM_HIGH_WATER_MARK_OFFSET;
 
     /**
-     * Offset within the trailer where current status is stored
+     * Offset within the term meta data where current status is stored
      */
-    public static final int STATUS_OFFSET;
+    public static final int TERM_STATUS_OFFSET;
 
     /**
-     * Total length of the meta data buffer in bytes.
+     * Total length of the term meta data buffer in bytes.
      */
-    public static final int META_DATA_BUFFER_LENGTH;
+    public static final int TERM_META_DATA_LENGTH;
 
     static
     {
-        HIGH_WATER_MARK_OFFSET = 0;
-        TAIL_COUNTER_OFFSET = HIGH_WATER_MARK_OFFSET + SIZE_OF_INT;
-        STATUS_OFFSET = TAIL_COUNTER_OFFSET + CACHE_LINE_SIZE;
-        META_DATA_BUFFER_LENGTH = CACHE_LINE_SIZE * 2;
+        TERM_HIGH_WATER_MARK_OFFSET = 0;
+        TERM_TAIL_COUNTER_OFFSET = TERM_HIGH_WATER_MARK_OFFSET + SIZE_OF_INT;
+        TERM_STATUS_OFFSET = TERM_TAIL_COUNTER_OFFSET + CACHE_LINE_LENGTH;
+        TERM_META_DATA_LENGTH = CACHE_LINE_LENGTH * 2;
     }
 
+    // *******************************
+    // *** Log Meta Data Constants ***
+    // *******************************
+
     /**
-     * Minimum buffer length for a log term
+     * Offset within the log meta data where the active term id is stored.
      */
-    public static final int MIN_TERM_LENGTH = 64 * 1024; // TODO: make a sensible default
+    public static final int LOG_ACTIVE_TERM_ID_OFFSET = 0;
+
+    /**
+     * Total length of the log meta buffer in bytes.
+     */
+    public static final int LOG_META_DATA_LENGTH = CACHE_LINE_LENGTH;
 
     /**
      * Check that term buffer is the correct length and alignment.
@@ -78,11 +112,11 @@ public class LogBufferDescriptor
     public static void checkTermBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < MIN_TERM_LENGTH)
+        if (capacity < TERM_MIN_LENGTH)
         {
             final String s = String.format(
                 "Term buffer capacity less than min length of %d, capacity=%d",
-                MIN_TERM_LENGTH,
+                TERM_MIN_LENGTH,
                 capacity);
             throw new IllegalStateException(s);
         }
@@ -106,11 +140,11 @@ public class LogBufferDescriptor
     public static void checkMetaDataBuffer(final UnsafeBuffer buffer)
     {
         final int capacity = buffer.capacity();
-        if (capacity < META_DATA_BUFFER_LENGTH)
+        if (capacity < TERM_META_DATA_LENGTH)
         {
             final String s = String.format(
                 "Meta data buffer capacity less than min length of %d, capacity=%d",
-                META_DATA_BUFFER_LENGTH,
+                TERM_META_DATA_LENGTH,
                 capacity);
             throw new IllegalStateException(s);
         }

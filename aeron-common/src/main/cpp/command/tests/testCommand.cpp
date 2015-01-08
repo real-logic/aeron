@@ -45,29 +45,29 @@ TEST (commandTests, testInstantiateFlyweights)
 
     std::string channelData = "channelData";
 
-	ASSERT_NO_THROW({
-		ConnectionMessageFlyweight cmd(ab, BASEOFFSET);
-	});
+    ASSERT_NO_THROW({
+        ConnectionMessageFlyweight cmd(ab, BASEOFFSET);
+    });
 
     ASSERT_NO_THROW({
         ConnectionReadyFlyweight cmd(ab, BASEOFFSET);
     });
 
-	ASSERT_NO_THROW({
-		RemoveMessageFlyweight cmd(ab, BASEOFFSET);
-	});
+    ASSERT_NO_THROW({
+        RemoveMessageFlyweight cmd(ab, BASEOFFSET);
+    });
 
-	ASSERT_NO_THROW({
-		SubscriptionMessageFlyweight cmd(ab, BASEOFFSET);
-	});
+    ASSERT_NO_THROW({
+        SubscriptionMessageFlyweight cmd(ab, BASEOFFSET);
+    });
 
-	ASSERT_NO_THROW({
-		PublicationMessageFlyweight cmd(ab, BASEOFFSET);
-	});
+    ASSERT_NO_THROW({
+        PublicationMessageFlyweight cmd(ab, BASEOFFSET);
+    });
 
-	ASSERT_NO_THROW({
-		PublicationReadyFlyweight cmd(ab, BASEOFFSET);
-	});
+    ASSERT_NO_THROW({
+        PublicationReadyFlyweight cmd(ab, BASEOFFSET);
+    });
 }
 
 TEST (commandTests, testConnectionMessageFlyweight)

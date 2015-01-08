@@ -45,36 +45,36 @@ namespace aeron { namespace common { namespace command {
 struct RemoveMessageDefn
 {
     CorrelatedMessageDefn correlatedMessage;
-	std::int64_t registrationId;
+    std::int64_t registrationId;
 };
 #pragma pack(pop)
 
 class RemoveMessageFlyweight : public CorrelatedMessageFlyweight
 {
 public:
-	inline RemoveMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-		: CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<RemoveMessageDefn>(0))
-	{
-	}
+    inline RemoveMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
+        : CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<RemoveMessageDefn>(0))
+    {
+    }
 
-	inline std::int64_t registrationId() const
-	{
-		return m_struct.registrationId;
-	}
+    inline std::int64_t registrationId() const
+    {
+        return m_struct.registrationId;
+    }
 
-	inline CorrelatedMessageFlyweight& registrationId(std::int64_t value)
-	{
-		m_struct.registrationId = value;
-		return *this;
-	}
+    inline CorrelatedMessageFlyweight& registrationId(std::int64_t value)
+    {
+        m_struct.registrationId = value;
+        return *this;
+    }
 
-	inline static std::int32_t length()
-	{
-		return (std::int32_t)sizeof(RemoveMessageDefn);
-	}
+    inline static std::int32_t length()
+    {
+        return (std::int32_t)sizeof(RemoveMessageDefn);
+    }
 
 private:
-	RemoveMessageDefn& m_struct;
+    RemoveMessageDefn& m_struct;
 };
 
 }}};

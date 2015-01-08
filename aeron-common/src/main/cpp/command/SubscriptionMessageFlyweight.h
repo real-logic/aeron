@@ -50,66 +50,66 @@ namespace aeron { namespace common { namespace command {
 struct SubscriptionMessageDefn
 {
     CorrelatedMessageDefn correlatedMessage;
-	std::int64_t registrationCorrelationId;
-	std::int32_t streamId;
-	struct
-	{
-		std::int32_t channelLength;
-		std::int8_t  channelData[1];
-	} channel;
+    std::int64_t registrationCorrelationId;
+    std::int32_t streamId;
+    struct
+    {
+        std::int32_t channelLength;
+        std::int8_t  channelData[1];
+    } channel;
 };
 #pragma pack(pop)
 
 class SubscriptionMessageFlyweight : public CorrelatedMessageFlyweight
 {
 public:
-	typedef SubscriptionMessageFlyweight this_t;
+    typedef SubscriptionMessageFlyweight this_t;
 
-	inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-		: CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<SubscriptionMessageDefn>(0))
-	{
-	}
+    inline SubscriptionMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
+        : CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<SubscriptionMessageDefn>(0))
+    {
+    }
 
-	inline std::int64_t registrationCorrelationId() const
-	{
-		return m_struct.registrationCorrelationId;
-	}
+    inline std::int64_t registrationCorrelationId() const
+    {
+        return m_struct.registrationCorrelationId;
+    }
 
-	inline this_t& registrationCorrelationId(std::int64_t value)
-	{
-		m_struct.registrationCorrelationId = value;
-		return *this;
-	}
+    inline this_t& registrationCorrelationId(std::int64_t value)
+    {
+        m_struct.registrationCorrelationId = value;
+        return *this;
+    }
 
-	inline std::int32_t streamId() const
-	{
-		return m_struct.streamId;
-	}
+    inline std::int32_t streamId() const
+    {
+        return m_struct.streamId;
+    }
 
-	inline this_t& streamId(std::int32_t value)
-	{
-		m_struct.streamId = value;
-		return *this;
-	}
+    inline this_t& streamId(std::int32_t value)
+    {
+        m_struct.streamId = value;
+        return *this;
+    }
 
-	inline std::string channel()
-	{
-		return stringGet(offsetof(ConnectionMessageDefn, channel));
-	}
+    inline std::string channel()
+    {
+        return stringGet(offsetof(SubscriptionMessageDefn, channel));
+    }
 
-	inline this_t& channel(const std::string& value)
-	{
-		stringPut(offsetof(ConnectionMessageDefn, channel), value);
-		return *this;
-	}
+    inline this_t& channel(const std::string& value)
+    {
+        stringPut(offsetof(SubscriptionMessageDefn, channel), value);
+        return *this;
+    }
 
     util::index_t length()
-	{
-		return offsetof(ConnectionMessageDefn, channel.channelData) + m_struct.channel.channelLength;
-	}
+    {
+        return offsetof(SubscriptionMessageDefn, channel.channelData) + m_struct.channel.channelLength;
+    }
 
 private:
-	SubscriptionMessageDefn& m_struct;
+    SubscriptionMessageDefn& m_struct;
 };
 
 }}};

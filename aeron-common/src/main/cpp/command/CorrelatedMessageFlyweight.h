@@ -42,11 +42,12 @@ struct CorrelatedMessageDefn
 };
 #pragma pack(pop)
 
+static const util::index_t CORRELATED_MESSAGE_LENGTH = sizeof(struct CorrelatedMessageDefn);
 
 class CorrelatedMessageFlyweight : public common::Flyweight<CorrelatedMessageDefn>
 {
 public:
-	typedef CorrelatedMessageFlyweight this_t;
+    typedef CorrelatedMessageFlyweight this_t;
 
     inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
             : common::Flyweight<CorrelatedMessageDefn>(buffer, offset)

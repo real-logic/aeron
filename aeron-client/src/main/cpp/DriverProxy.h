@@ -17,43 +17,148 @@
 #ifndef INCLUDED_AERON_DRIVER_PROXY__
 #define INCLUDED_AERON_DRIVER_PROXY__
 
+#include <array>
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
+#include <command/PublicationMessageFlyweight.h>
+#include <command/RemoveMessageFlyweight.h>
+#include <command/SubscriptionMessageFlyweight.h>
+#include <command/ControlProtocolEvents.h>
 
 namespace aeron {
 
+using namespace aeron::command;
+using namespace aeron::common::concurrent;
 using namespace aeron::common::concurrent::ringbuffer;
 
 class DriverProxy
 {
 public:
     DriverProxy(ManyToOneRingBuffer&toDriverCommandBuffer) :
-        m_toDriverCommandBuffer(toDriverCommandBuffer)
+        m_toDriverCommandBuffer(toDriverCommandBuffer),
+        m_clientId(toDriverCommandBuffer.nextCorrelationId())
     {
+    }
 
+    inline std::int64_t timeOfLastDriverKeepaliveNs()
+    {
+        return m_toDriverCommandBuffer.consumerHeartbeatTimeNs();
     }
 
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)
     {
-        return 0;
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            PublicationMessageFlyweight publicationMessage(buffer, 0);
+
+            publicationMessage.clientId(m_clientId);
+            publicationMessage.correlationId(correlationId);
+            publicationMessage.streamId(streamId);
+            publicationMessage.sessionId(sessionId);
+            publicationMessage.channel(channel);
+
+            length = publicationMessage.length();
+
+            return ControlProtocolEvents::ADD_PUBLICATION;
+        });
+
+        return correlationId;
     }
 
-    std::int64_t removePublication(std::int64_t correlationId)
+    std::int64_t removePublication(std::int64_t registrationId)
     {
-        return 0;
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            RemoveMessageFlyweight removeMessage(buffer, 0);
+
+            removeMessage.correlationId(correlationId);
+            removeMessage.registrationId(registrationId);
+
+            length = removeMessage.length();
+
+            return ControlProtocolEvents::REMOVE_PUBLICATION;
+        });
+
+        return correlationId;
     }
 
     std::int64_t addSubscription(const std::string& channel, std::int32_t streamId)
     {
-        return 0;
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            SubscriptionMessageFlyweight subscriptionMessage(buffer, 0);
+
+            subscriptionMessage.clientId(m_clientId);
+            subscriptionMessage.registrationCorrelationId(-1);
+            subscriptionMessage.correlationId(correlationId);
+            subscriptionMessage.streamId(streamId);
+            subscriptionMessage.channel(channel);
+
+            length = subscriptionMessage.length();
+
+            return ControlProtocolEvents::ADD_SUBSCRIPTION;
+        });
+
+        return correlationId;
     }
 
-    std::int64_t removeSubscription(std::int64_t correlationId)
+    std::int64_t removeSubscription(std::int64_t registrationId)
     {
-        return 0;
+        std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
+
+        writeCommandToDriver([&](AtomicBuffer &buffer, util::index_t &length)
+        {
+            RemoveMessageFlyweight removeMessage(buffer, 0);
+
+            removeMessage.correlationId(correlationId);
+            removeMessage.registrationId(registrationId);
+
+            length = removeMessage.length();
+
+            return ControlProtocolEvents::REMOVE_SUBSCRIPTION;
+        });
+        return correlationId;
+    }
+
+    void sendClientKeepalive()
+    {
+        writeCommandToDriver([&](AtomicBuffer& buffer, util::index_t& length)
+        {
+            CorrelatedMessageFlyweight correlatedMessage(buffer, 0);
+
+            correlatedMessage.clientId(m_clientId);
+            correlatedMessage.correlationId(0);
+
+            length = CORRELATED_MESSAGE_LENGTH;
+
+            return ControlProtocolEvents::CLIENT_KEEPALIVE;
+        });
     }
 
 private:
+    typedef std::array<std::uint8_t, 512> driver_proxy_command_buffer_t;
+
     ManyToOneRingBuffer& m_toDriverCommandBuffer;
+    std::int64_t m_clientId;
+
+    inline void writeCommandToDriver(const std::function<util::index_t(AtomicBuffer&, util::index_t &)>& filler)
+    {
+        MINT_DECL_ALIGNED(driver_proxy_command_buffer_t messageBuffer, 16);
+        AtomicBuffer buffer(&messageBuffer[0], messageBuffer.size());
+        util::index_t length = messageBuffer.size();
+
+        util::index_t msgTypeId = filler(buffer, length);
+
+        if (!m_toDriverCommandBuffer.write(msgTypeId, buffer, 0, length))
+        {
+            throw util::IllegalStateException("couldn't write command to driver", SOURCEINFO);
+        }
+    }
 };
 
 }

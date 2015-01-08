@@ -64,12 +64,12 @@ struct PublicationMessageDefn
 class PublicationMessageFlyweight : public CorrelatedMessageFlyweight
 {
 public:
-	typedef PublicationMessageFlyweight this_t;
+    typedef PublicationMessageFlyweight this_t;
 
-	inline PublicationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-		: CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<PublicationMessageDefn>(0))
-	{
-	}
+    inline PublicationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
+        : CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<PublicationMessageDefn>(0))
+    {
+    }
 
     inline std::int32_t sessionId() const
     {
@@ -110,7 +110,7 @@ public:
     }
 
 private:
-	PublicationMessageDefn& m_struct;
+    PublicationMessageDefn& m_struct;
 };
 
 }}};

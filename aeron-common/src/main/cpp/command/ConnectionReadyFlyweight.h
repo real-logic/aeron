@@ -156,7 +156,7 @@ class ConnectionReadyFlyweight : public common::Flyweight<ConnectionReadyDefn>,
                                  public ReadyFlyweight<ConnectionReadyFlyweight>
 {
 public:
-	typedef ConnectionReadyFlyweight this_t;
+    typedef ConnectionReadyFlyweight this_t;
 
     inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
         : common::Flyweight<ConnectionReadyDefn>(buffer, offset)

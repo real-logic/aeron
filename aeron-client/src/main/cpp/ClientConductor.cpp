@@ -121,3 +121,16 @@ void ClientConductor::releaseSubscription(Subscription* subscription)
         m_subscriptions.erase(m_subscriptions.begin() + element);
     }
 }
+
+void ClientConductor::onNewPublication(
+    std::int64_t correlationId,
+    const std::string& channel,
+    std::int32_t streamId,
+    std::int32_t sessionId,
+    std::int32_t termId,
+    std::int32_t positionCounterId,
+    std::int32_t mtuLengt,
+    const PublicationReadyFlyweight& publicationReady)
+{
+
+}

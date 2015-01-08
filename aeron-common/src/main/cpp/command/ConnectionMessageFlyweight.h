@@ -59,7 +59,7 @@ struct ConnectionMessageDefn
 class ConnectionMessageFlyweight : public common::Flyweight<ConnectionMessageDefn>
 {
 public:
-	typedef ConnectionMessageFlyweight this_t;
+    typedef ConnectionMessageFlyweight this_t;
 
     inline ConnectionMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
             : common::Flyweight<ConnectionMessageDefn>(buffer, offset)

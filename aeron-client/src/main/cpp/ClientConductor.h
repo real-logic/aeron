@@ -24,6 +24,7 @@
 #include "Subscription.h"
 #include "DriverProxy.h"
 #include "Context.h"
+#include "DriverListenerAdapter.h"
 
 namespace aeron {
 
@@ -34,14 +35,19 @@ class ClientConductor
 public:
     ClientConductor(DriverProxy& driverProxy, CopyBroadcastReceiver& broadcastReceiver) :
         m_driverProxy(driverProxy),
-        m_broadcastReceiver(broadcastReceiver)
+        m_broadcastReceiver(broadcastReceiver),
+        m_driverListenerAdapter(broadcastReceiver, *this)
     {
 
     }
 
     int doWork()
     {
-        return 0;
+        int workCount = 0;
+
+        workCount += m_driverListenerAdapter.receiveMessages();
+
+        return workCount;
     }
 
     void onClose()
@@ -64,6 +70,16 @@ public:
     Subscription* addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler);
     void releaseSubscription(Subscription* subscription);
 
+    void onNewPublication(
+        std::int64_t correlationId,
+        const std::string& channel,
+        std::int32_t streamId,
+        std::int32_t sessionId,
+        std::int32_t termId,
+        std::int32_t positionCounterId,
+        std::int32_t mtuLengt,
+        const PublicationReadyFlyweight& publicationReady);
+
 private:
     std::mutex m_publicationsLock;
     std::mutex m_subscriptionsLock;
@@ -71,6 +87,7 @@ private:
     std::vector<Subscription*> m_subscriptions;
     DriverProxy& m_driverProxy;
     CopyBroadcastReceiver& m_broadcastReceiver;
+    DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
 };
 
 }

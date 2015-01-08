@@ -118,21 +118,21 @@ struct PublicationReadyDefn
     std::int32_t streamId;
     std::int32_t termId;
     std::int32_t positionIndicatorsCount;
-	std::int32_t mtuLength;
+    std::int32_t mtuLength;
     std::int32_t fileOffset[NUM_FILES];
     std::int32_t length[NUM_FILES];
-	std::int32_t locationStart[NUM_FILES + 2]; // extra space to store location of channel
+    std::int32_t locationStart[NUM_FILES + 2]; // extra space to store location of channel
 };
 #pragma pack(pop)
 
 class PublicationReadyFlyweight : public common::Flyweight<PublicationReadyDefn>,
-								  public ReadyFlyweight<PublicationReadyFlyweight>
+                                  public ReadyFlyweight<PublicationReadyFlyweight>
 {
 public:
-	typedef PublicationReadyFlyweight this_t;
+    typedef PublicationReadyFlyweight this_t;
 
-	inline PublicationReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-		: common::Flyweight<PublicationReadyDefn>(buffer, offset)
+    inline PublicationReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
+        : common::Flyweight<PublicationReadyDefn>(buffer, offset)
     {
     }
 
@@ -254,16 +254,16 @@ public:
         return *this;
     }
 
-	inline std::int32_t mtuLength() const
-	{
-		return m_struct.mtuLength;
-	}
+    inline std::int32_t mtuLength() const
+    {
+        return m_struct.mtuLength;
+    }
 
-	inline this_t& mtuLength(std::int32_t value)
-	{
-		m_struct.mtuLength = value;
-		return *this;
-	}
+    inline this_t& mtuLength(std::int32_t value)
+    {
+        m_struct.mtuLength = value;
+        return *this;
+    }
 
     std::int32_t length()
     {

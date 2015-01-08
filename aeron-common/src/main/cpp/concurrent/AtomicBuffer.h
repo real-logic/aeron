@@ -286,12 +286,25 @@ public:
         return length;
     }
 
-
     inline util::index_t getCapacity() const
     {
         return m_length;
     }
-
+    
+    inline void setCapacity(util::index_t length)
+    {
+        m_length = length;
+    }
+    
+    inline std::uint8_t * getBuffer() const
+    {
+        return m_buffer;
+    }
+        
+    inline void setBuffer(std::uint8_t *buffer)
+    {
+        m_buffer = buffer;
+    }
 private:
     std::uint8_t *m_buffer;
     util::index_t m_length;

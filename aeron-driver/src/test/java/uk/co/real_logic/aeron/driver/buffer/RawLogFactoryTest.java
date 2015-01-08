@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class RawLogPartitionFactoryTest
+public class RawLogFactoryTest
 {
     private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;

@@ -48,7 +48,7 @@ Publication* ClientConductor::addPublication(const std::string& channel, std::in
 
     if (SIZE_MAX == element)
     {
-        std::int64_t correlationId = 0;
+        std::int64_t correlationId = m_driverProxy.addPublication(channel, streamId, sessionId);
 
         publication = new Publication(*this, channel, streamId, sessionId, correlationId);
 

@@ -25,21 +25,23 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  * Layout description for log buffers which contains partitions of terms with associated term meta data,
  * plus ending with overall log meta data.
  *
- * +----------------------------+
- * |           Term 0           |
- * +----------------------------+
- * |           Term 1           |
- * +----------------------------+
- * |           Term 2           |
- * +----------------------------+
- * |      Term Meta Data 0      |
- * +----------------------------+
- * |      Term Meta Data 1      |
- * +----------------------------+
- * |      Term Meta Data 2      |
- * +----------------------------+
- * |        Log Meta Data       |
- * +----------------------------+
+ * <pre>
+ *  +----------------------------+
+ *  |           Term 0           |
+ *  +----------------------------+
+ *  |           Term 1           |
+ *  +----------------------------+
+ *  |           Term 2           |
+ *  +----------------------------+
+ *  |      Term Meta Data 0      |
+ *  +----------------------------+
+ *  |      Term Meta Data 1      |
+ *  +----------------------------+
+ *  |      Term Meta Data 2      |
+ *  +----------------------------+
+ *  |        Log Meta Data       |
+ *  +----------------------------+
+ * </pre>
  */
 public class LogBufferDescriptor
 {
@@ -97,7 +99,12 @@ public class LogBufferDescriptor
     /**
      * Offset within the log meta data where the active term id is stored.
      */
-    public static final int LOG_ACTIVE_TERM_ID_OFFSET = 0;
+    public static final int LOG_INITIAL_TERM_ID_OFFSET = 0;
+
+    /**
+     * Offset within the log meta data where the active term id is stored.
+     */
+    public static final int LOG_ACTIVE_TERM_ID_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
 
     /**
      * Total length of the log meta buffer in bytes.

@@ -581,7 +581,7 @@ public class DriverConductor implements Agent
 
         final GapScanner[] gapScanners = rawLog
             .stream()
-            .map((rawLogFragment) -> new GapScanner(rawLogFragment.termBuffer(), rawLogFragment.metaDataBuffer()))
+            .map((partition) -> new GapScanner(partition.termBuffer(), partition.metaDataBuffer()))
             .toArray(GapScanner[]::new);
 
         final LossHandler lossHandler = new LossHandler(

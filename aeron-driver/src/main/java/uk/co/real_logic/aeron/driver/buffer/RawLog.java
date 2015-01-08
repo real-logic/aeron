@@ -26,18 +26,18 @@ import java.util.stream.Stream;
 public interface RawLog extends AutoCloseable
 {
     /**
-     * A {@link Stream} of the {@link RawLogFragment} buffers.
+     * A {@link Stream} of the {@link RawLogPartition} buffers.
      *
-     * @return a {@link Stream} of the {@link RawLogFragment} buffers.
+     * @return a {@link Stream} of the {@link RawLogPartition} buffers.
      */
-    Stream<? extends RawLogFragment> stream();
+    Stream<? extends RawLogPartition> stream();
 
     /**
-     * An array of the {@link RawLogFragment} buffers.
+     * An array of the {@link RawLogPartition} buffers.
      *
-     * @return an array of the {@link RawLogFragment} buffers.
+     * @return an array of the {@link RawLogPartition} buffers.
      */
-    RawLogFragment[] fragments();
+    RawLogPartition[] partitions();
 
     /**
      * Write the buffer location details to the flyweight.

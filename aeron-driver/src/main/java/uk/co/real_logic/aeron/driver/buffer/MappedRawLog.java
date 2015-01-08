@@ -42,7 +42,7 @@ class MappedRawLog implements RawLog
     private final int termBufferLength;
     private final EventLogger logger;
     private final File logFile;
-    private final MappedRawLogFragment[] buffers;
+    private final MappedRawLogPartition[] buffers;
 
     MappedRawLog(
         final File directory, final FileChannel blankTemplate, final int termBufferLength, final EventLogger logger)
@@ -61,7 +61,7 @@ class MappedRawLog implements RawLog
             final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
             blankTemplate.transferTo(0, totalLogLength, logChannel);
 
-            buffers = new MappedRawLogFragment[BUFFER_COUNT];
+            buffers = new MappedRawLogPartition[BUFFER_COUNT];
             for (int i = 0; i < BUFFER_COUNT; i++)
             {
                 final long termBufferOffset = i * termBufferLength;
@@ -70,7 +70,7 @@ class MappedRawLog implements RawLog
                 final long metaDataOffset = metaDataStartingOffset + (i * TERM_META_DATA_LENGTH);
                 final MappedByteBuffer mappedMetaDataBuffer = logChannel.map(READ_WRITE, metaDataOffset, TERM_META_DATA_LENGTH);
 
-                buffers[i] = new MappedRawLogFragment(mappedTermBuffer, mappedMetaDataBuffer);
+                buffers[i] = new MappedRawLogPartition(mappedTermBuffer, mappedMetaDataBuffer);
             }
 
             logChannel.close();
@@ -83,7 +83,7 @@ class MappedRawLog implements RawLog
 
     public void close()
     {
-        stream().forEach(MappedRawLogFragment::close);
+        stream().forEach(MappedRawLogPartition::close);
 
         if (logFile.delete())
         {
@@ -96,12 +96,12 @@ class MappedRawLog implements RawLog
         }
     }
 
-    public Stream<MappedRawLogFragment> stream()
+    public Stream<MappedRawLogPartition> stream()
     {
         return Stream.of(buffers);
     }
 
-    public MappedRawLogFragment[] fragments()
+    public MappedRawLogPartition[] partitions()
     {
         return buffers;
     }

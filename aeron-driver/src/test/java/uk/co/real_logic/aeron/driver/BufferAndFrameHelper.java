@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.driver.buffer.RawLogFragment;
+import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.nio.ByteBuffer;
@@ -31,17 +31,17 @@ public class BufferAndFrameHelper
     {
         return new RawLog()
         {
-            private RawLogFragment clean = newTestLogBuffer(logBufferSize, metaDataBufferSize);
-            private RawLogFragment dirty = newTestLogBuffer(logBufferSize, metaDataBufferSize);
-            private RawLogFragment active = newTestLogBuffer(logBufferSize, metaDataBufferSize);
-            private RawLogFragment[] buffers = new RawLogFragment[]{active, clean, dirty};
+            private RawLogPartition clean = newTestLogBuffer(logBufferSize, metaDataBufferSize);
+            private RawLogPartition dirty = newTestLogBuffer(logBufferSize, metaDataBufferSize);
+            private RawLogPartition active = newTestLogBuffer(logBufferSize, metaDataBufferSize);
+            private RawLogPartition[] buffers = new RawLogPartition[]{active, clean, dirty};
 
-            public Stream<RawLogFragment> stream()
+            public Stream<RawLogPartition> stream()
             {
                 return Stream.of(buffers);
             }
 
-            public RawLogFragment[] fragments()
+            public RawLogPartition[] partitions()
             {
                 return buffers;
             }
@@ -69,9 +69,9 @@ public class BufferAndFrameHelper
         };
     }
 
-    public static RawLogFragment newTestLogBuffer(final long termBufferSize, final long metaDataBufferSize)
+    public static RawLogPartition newTestLogBuffer(final long termBufferSize, final long metaDataBufferSize)
     {
-        return new RawLogFragment()
+        return new RawLogPartition()
         {
             private final UnsafeBuffer termBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)termBufferSize)));
             private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer((ByteBuffer.allocate((int)metaDataBufferSize)));

@@ -13,13 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.agrona.status.PositionIndicator;
@@ -91,7 +90,7 @@ public class DriverConnection implements AutoCloseable
         final int initialTermOffset,
         final int initialWindowSize,
         final long statusMessageTimeout,
-        final RawLog rawLogTriplet,
+        final RawLog rawLog,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
         final List<PositionIndicator> subscriberPositions,
@@ -106,7 +105,7 @@ public class DriverConnection implements AutoCloseable
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.rawLog = rawLogTriplet;
+        this.rawLog = rawLog;
         this.subscriberPositions = subscriberPositions;
         this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
@@ -122,9 +121,9 @@ public class DriverConnection implements AutoCloseable
         this.hwmIndex = this.activeIndex = bufferIndex(initialTermId, initialTermId);
         this.hwmTermId = initialTermId;
 
-        rebuilders = rawLogTriplet
+        rebuilders = rawLog
             .stream()
-            .map((rawLogFragment) -> new LogRebuilder(rawLogFragment.termBuffer(), rawLogFragment.metaDataBuffer()))
+            .map((partition) -> new LogRebuilder(partition.termBuffer(), partition.metaDataBuffer()))
             .toArray(LogRebuilder[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
@@ -275,11 +274,11 @@ public class DriverConnection implements AutoCloseable
     {
         int workCount = 0;
 
-        for (final LogBuffer logBuffer : rebuilders)
+        for (final LogBufferPartition logBufferPartition : rebuilders)
         {
-            if (logBuffer.status() == NEEDS_CLEANING)
+            if (logBufferPartition.status() == NEEDS_CLEANING)
             {
-                logBuffer.clean();
+                logBufferPartition.clean();
                 workCount = 1;
             }
         }

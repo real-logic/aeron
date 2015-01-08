@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -26,7 +25,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  *
  * <b>Note:</b> Reading from the log is thread safe, but each thread needs its own instance of this class.
  */
-public class LogReader extends LogBuffer
+public class LogReader extends LogBufferPartition
 {
     private final Header header;
     private int offset = 0;

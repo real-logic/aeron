@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
@@ -30,7 +29,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  * <b>Note:</b> Only one rebuilder should rebuild a log at any given time. This is not thread safe
  * by rebuilder instance or across rebuilder instances.
  */
-public class LogRebuilder extends LogBuffer
+public class LogRebuilder extends LogBufferPartition
 {
     /**
      * Construct a rebuilder over a log and state buffer.

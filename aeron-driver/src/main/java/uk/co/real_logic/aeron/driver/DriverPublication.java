@@ -19,12 +19,12 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.agrona.status.PositionReporter;
-import uk.co.real_logic.aeron.driver.buffer.RawLogFragment;
+import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.net.InetSocketAddress;
@@ -115,12 +115,12 @@ public class DriverPublication implements AutoCloseable
         this.mtuLength = mtuLength;
         this.activeIndex = bufferIndex(initialTermId, initialTermId);
 
-        final RawLogFragment[] rawLogFragments = rawLog.fragments();
-        for (int i = 0; i < rawLogFragments.length; i++)
+        final RawLogPartition[] rawLogPartitions = rawLog.partitions();
+        for (int i = 0; i < rawLogPartitions.length; i++)
         {
-            logScanners[i] = newScanner(rawLogFragments[i]);
-            retransmitLogScanners[i] = newScanner(rawLogFragments[i]);
-            sendBuffers[i] = duplicateLogBuffer(rawLogFragments[i]);
+            logScanners[i] = newScanner(rawLogPartitions[i]);
+            retransmitLogScanners[i] = newScanner(rawLogPartitions[i]);
+            sendBuffers[i] = duplicateLogBuffer(rawLogPartitions[i]);
         }
 
         termCapacity = logScanners[0].capacity();
@@ -207,11 +207,11 @@ public class DriverPublication implements AutoCloseable
     {
         int workCount = 0;
 
-        for (final LogBuffer logBuffer : logScanners)
+        for (final LogBufferPartition logBufferPartition : logScanners)
         {
-            if (logBuffer.status() == NEEDS_CLEANING)
+            if (logBufferPartition.status() == NEEDS_CLEANING)
             {
-                logBuffer.clean();
+                logBufferPartition.clean();
                 workCount = 1;
             }
         }
@@ -378,7 +378,7 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private ByteBuffer duplicateLogBuffer(final RawLogFragment log)
+    private ByteBuffer duplicateLogBuffer(final RawLogPartition log)
     {
         final ByteBuffer buffer = log.termBuffer().duplicateByteBuffer();
         buffer.clear();
@@ -386,7 +386,7 @@ public class DriverPublication implements AutoCloseable
         return buffer;
     }
 
-    private LogScanner newScanner(final RawLogFragment log)
+    private LogScanner newScanner(final RawLogPartition log)
     {
         return new LogScanner(log.termBuffer(), log.metaDataBuffer(), headerLength);
     }

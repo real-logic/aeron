@@ -20,15 +20,15 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
- * Base log buffer implementation containing common functionality.
+ * Base log buffer implementation containing common functionality for dealing with fragment terms.
  */
-public class LogBuffer
+public class LogBufferPartition
 {
     private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer metaDataBuffer;
     private final int capacity;
 
-    protected LogBuffer(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
+    protected LogBufferPartition(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
         checkTermBuffer(termBuffer);
         checkMetaDataBuffer(metaDataBuffer);

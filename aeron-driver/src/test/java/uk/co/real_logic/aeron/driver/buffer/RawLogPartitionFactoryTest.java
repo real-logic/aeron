@@ -32,7 +32,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class RawLogFragmentFactoryTest
+public class RawLogPartitionFactoryTest
 {
     private static final String CHANNEL = "udp://localhost:4321";
     private static final int SESSION_ID = 100;
@@ -62,22 +62,22 @@ public class RawLogFragmentFactoryTest
     public void shouldCreateCorrectLengthAndZeroedFilesForPublication() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLogTriplet = rawLogFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
+        final RawLog rawLog = rawLogFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
 
-        rawLogTriplet.stream().forEach(
-            (rawLogFragment) ->
+        rawLog.stream().forEach(
+            (partition) ->
             {
-                final UnsafeBuffer log = rawLogFragment.termBuffer();
+                final UnsafeBuffer term = partition.termBuffer();
 
-                assertThat(log.capacity(), is(TERM_BUFFER_LENGTH));
-                assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
+                assertThat(term.capacity(), is(TERM_BUFFER_LENGTH));
+                assertThat(term.getByte(0), is((byte)0));
+                assertThat(term.getByte(TERM_BUFFER_LENGTH - 1), is((byte)0));
 
-                final UnsafeBuffer state = rawLogFragment.metaDataBuffer();
+                final UnsafeBuffer metaData = partition.metaDataBuffer();
 
-                assertThat(state.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
-                assertThat(state.getByte(0), is((byte)0));
-                assertThat(state.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
+                assertThat(metaData.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
+                assertThat(metaData.getByte(0), is((byte)0));
+                assertThat(metaData.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
             });
     }
 
@@ -86,23 +86,23 @@ public class RawLogFragmentFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int maxConnectionTermBufferSize = TERM_BUFFER_LENGTH / 2;
-        final RawLog rawLogTriplet = rawLogFactory.newConnection(
+        final RawLog rawLog = rawLogFactory.newConnection(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, maxConnectionTermBufferSize);
 
-        rawLogTriplet.stream().forEach(
-            (rawLogFragment) ->
+        rawLog.stream().forEach(
+            (partition) ->
             {
-                final UnsafeBuffer log = rawLogFragment.termBuffer();
+                final UnsafeBuffer term = partition.termBuffer();
 
-                assertThat(log.capacity(), is(maxConnectionTermBufferSize));
-                assertThat(log.getByte(0), is((byte)0));
-                assertThat(log.getByte(maxConnectionTermBufferSize - 1), is((byte)0));
+                assertThat(term.capacity(), is(maxConnectionTermBufferSize));
+                assertThat(term.getByte(0), is((byte)0));
+                assertThat(term.getByte(maxConnectionTermBufferSize - 1), is((byte)0));
 
-                final UnsafeBuffer state = rawLogFragment.metaDataBuffer();
+                final UnsafeBuffer metaData = partition.metaDataBuffer();
 
-                assertThat(state.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
-                assertThat(state.getByte(0), is((byte)0));
-                assertThat(state.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
+                assertThat(metaData.capacity(), is(LogBufferDescriptor.TERM_META_DATA_LENGTH));
+                assertThat(metaData.getByte(0), is((byte)0));
+                assertThat(metaData.getByte(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1), is((byte)0));
             });
     }
 

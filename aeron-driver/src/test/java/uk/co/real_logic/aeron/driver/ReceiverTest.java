@@ -147,7 +147,7 @@ public class ReceiverTest
 
         logReaders = rawLog
             .stream()
-            .map((rawLogFragment) -> new LogReader(rawLogFragment.termBuffer(), rawLogFragment.metaDataBuffer()))
+            .map((partition) -> new LogReader(partition.termBuffer(), partition.metaDataBuffer()))
             .toArray(LogReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(

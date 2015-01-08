@@ -38,7 +38,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  * A message of type {@link FrameDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.
  */
-public class LogAppender extends LogBuffer
+public class LogAppender extends LogBufferPartition
 {
     public enum ActionStatus
     {

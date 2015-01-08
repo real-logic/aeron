@@ -28,7 +28,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  *
  * <b>Note:</b> An instance of this class is not threadsafe. Each thread must have its own instance.
  */
-public class LogScanner extends LogBuffer
+public class LogScanner extends LogBufferPartition
 {
     /**
      * Handler for notifying an available chuck from latest offset.

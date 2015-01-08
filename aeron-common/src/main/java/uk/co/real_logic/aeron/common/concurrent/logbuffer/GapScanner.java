@@ -27,7 +27,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  *
  * <b>Note:</b> This class is threadsafe to be used across multiple threads.
  */
-public class GapScanner extends LogBuffer
+public class GapScanner extends LogBufferPartition
 {
     /**
      * Handler for notifying of gaps in the log.
@@ -49,12 +49,12 @@ public class GapScanner extends LogBuffer
     /**
      * Construct a gap scanner over a log and state buffer.
      *
-     * @param logBuffer containing the sequence of frames.
+     * @param termBuffer     containing the sequence of frames.
      * @param metaDataBuffer containing the state of the rebuild process.
      */
-    public GapScanner(final UnsafeBuffer logBuffer, final UnsafeBuffer metaDataBuffer)
+    public GapScanner(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
-        super(logBuffer, metaDataBuffer);
+        super(termBuffer, metaDataBuffer);
     }
 
     /**
@@ -68,18 +68,18 @@ public class GapScanner extends LogBuffer
         int count = 0;
         final int highWaterMark = highWaterMarkVolatile();
         int offset = tailVolatile();
-        final UnsafeBuffer logBuffer = termBuffer();
+        final UnsafeBuffer termBuffer = termBuffer();
 
         while (offset < highWaterMark)
         {
-            final int frameLength = alignedFrameLength(logBuffer, offset);
+            final int frameLength = alignedFrameLength(termBuffer, offset);
             if (frameLength > 0)
             {
                 offset += frameLength;
             }
             else
             {
-                offset = scanGap(logBuffer, handler, offset, highWaterMark);
+                offset = scanGap(termBuffer, handler, offset, highWaterMark);
                 ++count;
             }
         }
@@ -98,22 +98,22 @@ public class GapScanner extends LogBuffer
     }
 
     private static int scanGap(
-        final UnsafeBuffer logBuffer, final GapHandler handler, final int offset, final int highWaterMark)
+        final UnsafeBuffer termBuffer, final GapHandler handler, final int offset, final int highWaterMark)
     {
         int gapLength = 0;
         int alignedFrameLength;
         do
         {
             gapLength += FRAME_ALIGNMENT;
-            alignedFrameLength = alignedFrameLength(logBuffer, offset + gapLength);
+            alignedFrameLength = alignedFrameLength(termBuffer, offset + gapLength);
         }
         while (0 == alignedFrameLength);
 
-        return handler.onGap(logBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
+        return handler.onGap(termBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
     }
 
-    private static int alignedFrameLength(final UnsafeBuffer logBuffer, final int offset)
+    private static int alignedFrameLength(final UnsafeBuffer termBuffer, final int offset)
     {
-        return BitUtil.align(frameLengthVolatile(logBuffer, offset), FRAME_ALIGNMENT);
+        return BitUtil.align(frameLengthVolatile(termBuffer, offset), FRAME_ALIGNMENT);
     }
 }

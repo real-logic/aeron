@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron.driver.buffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
- * Encapsulates the pair of buffers used to hold a term and associated state for publication/subscription
+ * Encapsulates the pair of buffers used to hold a term log partition and associated state for publication/subscription
  */
-public interface RawLogFragment extends AutoCloseable
+public interface RawLogPartition extends AutoCloseable
 {
     /**
      * Get the buffer holding the recorded log of messages for a term.

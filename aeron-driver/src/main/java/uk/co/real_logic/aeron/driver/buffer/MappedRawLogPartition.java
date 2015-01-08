@@ -23,7 +23,7 @@ import java.nio.MappedByteBuffer;
 /**
  * Memory mapped raw logs to make up a term log buffer.
  */
-class MappedRawLogFragment implements RawLogFragment
+class MappedRawLogPartition implements RawLogPartition
 {
     private final MappedByteBuffer mappedTermBuffer;
     private final MappedByteBuffer mappedMetaDataBuffer;
@@ -31,7 +31,7 @@ class MappedRawLogFragment implements RawLogFragment
     private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer metaDataBuffer;
 
-    MappedRawLogFragment(final MappedByteBuffer termBuffer, final MappedByteBuffer metaDataBuffer)
+    MappedRawLogPartition(final MappedByteBuffer termBuffer, final MappedByteBuffer metaDataBuffer)
     {
         this.mappedTermBuffer = termBuffer;
         this.mappedMetaDataBuffer = metaDataBuffer;

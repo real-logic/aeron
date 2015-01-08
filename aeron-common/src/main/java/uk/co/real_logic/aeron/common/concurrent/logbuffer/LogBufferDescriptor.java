@@ -22,7 +22,8 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
- * Layout description for log buffers which contain terms, term meta data, and log meta data.
+ * Layout description for log buffers which contains partitions of terms with associated term meta data,
+ * plus ending with overall log meta data.
  *
  * +----------------------------+
  * |           Term 0           |

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import org.junit.After;
@@ -64,7 +63,7 @@ public class DriverConductorTest
     private static final long CORRELATION_ID_3 = 1431;
     private static final long CORRELATION_ID_4 = 1432;
     private static final long CLIENT_ID = 1433;
-    public static final int BUFFER_SIZE = 1024 * 1024;
+    public static final int BUFFER_LENGTH = 1024 * 1024;
 
     private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(
         Configuration.COMMAND_BUFFER_SZ + RingBufferDescriptor.TRAILER_LENGTH);
@@ -114,8 +113,8 @@ public class DriverConductorTest
 
         currentTime = 0;
 
-        final UnsafeBuffer counterBuffer = new UnsafeBuffer(new byte[BUFFER_SIZE]);
-        final CountersManager countersManager = new CountersManager(new UnsafeBuffer(new byte[BUFFER_SIZE]), counterBuffer);
+        final UnsafeBuffer counterBuffer = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
+        final CountersManager countersManager = new CountersManager(new UnsafeBuffer(new byte[BUFFER_LENGTH]), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(transportPoller)

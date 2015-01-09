@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Subscription;
@@ -61,7 +60,7 @@ public class SamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized event loop that calls a default idler when no messages are received
+     * Return a reusable, parameterised event loop that calls a default idler when no messages are received
      *
      * @param limit        passed to {@link Subscription#poll(int)}
      * @param running      indication for loop

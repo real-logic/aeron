@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.samples.raw;
 
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
@@ -34,7 +33,7 @@ import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 /**
  * Benchmark used to calculate latency of underlying system.
  *
- * @see uk.co.real_logic.aeron.examples.raw.SendHackSelectReceiveUdpPing
+ * @see uk.co.real_logic.aeron.samples.raw.SendHackSelectReceiveUdpPing
  */
 public class SelectReceiveSendUdpPong
 {

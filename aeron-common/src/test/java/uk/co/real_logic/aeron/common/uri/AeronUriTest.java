@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.uri;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -103,9 +102,8 @@ public class AeronUriTest
             AeronUri.parse(string);
             fail(IllegalArgumentException.class.getName() + " not thrown");
         }
-        catch (final IllegalArgumentException e)
+        catch (final IllegalArgumentException ignore)
         {
-            // No-op
         }
     }
 }

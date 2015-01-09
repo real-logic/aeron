@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common;
 
 import java.net.InterfaceAddress;
@@ -30,23 +29,19 @@ interface NetworkInterfaceShim
 
     NetworkInterfaceShim DEFAULT = new NetworkInterfaceShim()
     {
-        @Override
         public Enumeration<NetworkInterface> getNetworkInterfaces() throws SocketException
         {
             return NetworkInterface.getNetworkInterfaces();
         }
 
-        @Override
-        public List<InterfaceAddress> getInterfaceAddresses(NetworkInterface ifc)
+        public List<InterfaceAddress> getInterfaceAddresses(final NetworkInterface ifc)
         {
             return ifc.getInterfaceAddresses();
         }
 
-        @Override
-        public boolean isLoopback(NetworkInterface ifc) throws SocketException
+        public boolean isLoopback(final NetworkInterface ifc) throws SocketException
         {
             return ifc.isLoopback();
         }
     };
-
 }

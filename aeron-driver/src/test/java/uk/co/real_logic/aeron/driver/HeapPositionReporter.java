@@ -13,17 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.status.PositionReporter;
 
 /**
-* .
+* {@link PositionReporter} that exists in the Java heap.
 */
 class HeapPositionReporter implements PositionReporter
 {
-
     private long position;
 
     public void position(final long value)
@@ -38,12 +36,10 @@ class HeapPositionReporter implements PositionReporter
 
     public void close()
     {
-
     }
 
     public int id()
     {
         return 0;
     }
-
 }

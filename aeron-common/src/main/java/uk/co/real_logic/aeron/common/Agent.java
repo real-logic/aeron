@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common;
 
 public interface Agent
@@ -42,5 +41,4 @@ public interface Agent
      * @return the name of this agent's role.
      */
     String roleName();
-
 }

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common;
 
 import java.net.URI;
@@ -22,7 +21,7 @@ import java.util.Map;
 
 public class UriUtil
 {
-    public static <M extends Map<String, String>> M parseQueryString(URI uri, M queryParams)
+    public static <M extends Map<String, String>> M parseQueryString(final URI uri, final M queryParams)
         throws URISyntaxException
     {
         final String query = uri.getQuery();

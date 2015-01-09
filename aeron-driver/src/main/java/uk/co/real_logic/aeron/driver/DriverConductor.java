@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
@@ -374,8 +373,7 @@ public class DriverConductor implements Agent
         {
             final int initialTermId = BitUtil.generateRandomisedId();
             final String canonicalForm = udpChannel.canonicalForm();
-            final RawLog rawLog = rawLogFactory.newPublication(
-                canonicalForm, sessionId, streamId, correlationId);
+            final RawLog rawLog = rawLogFactory.newPublication(canonicalForm, sessionId, streamId, correlationId);
 
             final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId);
             final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId);
@@ -426,7 +424,6 @@ public class DriverConductor implements Agent
             channel,
             streamId,
             sessionId,
-            publication.initialTermId(),
             publication.rawLogBuffers(),
             correlationId,
             publication.publisherLimitCounterId(),

@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import org.junit.After;
@@ -56,11 +55,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static uk.co.real_logic.agrona.BitUtil.align;
-import static uk.co.real_logic.aeron.driver.BufferAndFrameHelper.newTestLogBuffers;
+import static uk.co.real_logic.aeron.driver.LogBufferHelper.newTestLogBuffers;
 
 public class ReceiverTest
 {
-    private static final int TERM_BUFFER_SIZE = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final long CORRELATION_ID = 20;
@@ -95,7 +94,7 @@ public class ReceiverTest
     private long currentTime = 0;
     private final NanoClock clock = () -> currentTime;
 
-    private final RawLog rawLog = newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.TERM_META_DATA_LENGTH);
+    private final RawLog rawLog = newTestLogBuffers(TERM_BUFFER_LENGTH, LogBufferDescriptor.TERM_META_DATA_LENGTH);
     private final EventLogger mockLogger = mock(EventLogger.class);
     private final TimerWheel timerWheel = new TimerWheel(
         clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
@@ -116,7 +115,7 @@ public class ReceiverTest
     public void setUp() throws Exception
     {
         when(POSITION_INDICATOR.position())
-            .thenReturn(TermHelper.calculatePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_SIZE), TERM_ID));
+            .thenReturn(TermHelper.calculatePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), TERM_ID));
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));
@@ -419,7 +418,7 @@ public class ReceiverTest
     @Test
     public void shouldHandleNonZeroTermOffsetCorrectly() throws Exception
     {
-        final int initialTermOffset = align(TERM_BUFFER_SIZE / 16, FrameDescriptor.FRAME_ALIGNMENT);
+        final int initialTermOffset = align(TERM_BUFFER_LENGTH / 16, FrameDescriptor.FRAME_ALIGNMENT);
         final int alignedDataFrameLength =
             align(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 

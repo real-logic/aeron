@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -59,14 +60,14 @@ public class DriverPublication implements AutoCloseable
     private final PositionReporter publisherLimit;
     private final PositionReporter senderPosition;
 
+    private final SystemCounters systemCounters;
     private final SendChannelEndpoint channelEndpoint;
+    private final InetSocketAddress dstAddress;
     private final RawLog rawLog;
     private final int positionBitsToShift;
     private final int initialTermId;
-    private final SystemCounters systemCounters;
-    private final int termWindowSize;
+    private final int termWindowLength;
     private final int termCapacity;
-    private final InetSocketAddress dstAddress;
 
     private final AvailabilityHandler sendTransmissionUnitFunc;
     private final AvailabilityHandler onSendRetransmitFunc;
@@ -126,13 +127,14 @@ public class DriverPublication implements AutoCloseable
         termCapacity = logScanners[0].capacity();
         senderLimit = new AtomicLong(initialPositionLimit);
         activeTermId = initialTermId;
+        LogBufferDescriptor.initialTermId(rawLog.logMetaData(), initialTermId);
 
         timeOfLastSendOrHeartbeat = clock.time();
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        termWindowSize = Configuration.publicationTermWindowSize(termCapacity);
-        publisherLimit.position(termWindowSize);
+        termWindowLength = Configuration.publicationTermWindowSize(termCapacity);
+        publisherLimit.position(termWindowLength);
 
         sendTransmissionUnitFunc = this::onSendTransmissionUnit;
         onSendRetransmitFunc = this::onSendRetransmit;
@@ -282,11 +284,6 @@ public class DriverPublication implements AutoCloseable
         return isFlushed;
     }
 
-    public int initialTermId()
-    {
-        return initialTermId;
-    }
-
     public RawLog rawLogBuffers()
     {
         return rawLog;
@@ -304,7 +301,7 @@ public class DriverPublication implements AutoCloseable
      */
     public int updatePublishersLimit()
     {
-        final long candidatePublisherLimit = senderPosition.position() + termWindowSize;
+        final long candidatePublisherLimit = senderPosition.position() + termWindowLength;
         if (publisherLimit.position() != candidatePublisherLimit)
         {
             publisherLimit.position(candidatePublisherLimit);

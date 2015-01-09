@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.status.PositionIndicator;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -41,10 +42,9 @@ public class Publication implements AutoCloseable
     private final long registrationId;
     private final LogAppender[] logAppenders;
     private final PositionIndicator limit;
+    private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
-    private final int initialTermId;
 
-    private volatile int activeTermId;
     private int refCount = 1;
 
     Publication(
@@ -52,10 +52,10 @@ public class Publication implements AutoCloseable
         final String channel,
         final int streamId,
         final int sessionId,
-        final int initialTermId,
         final LogAppender[] logAppenders,
         final PositionIndicator limit,
         final ManagedBuffer[] managedBuffers,
+        final UnsafeBuffer logMetaDataBuffer,
         final long registrationId)
     {
         this.clientConductor = clientConductor;
@@ -63,13 +63,13 @@ public class Publication implements AutoCloseable
         this.streamId = streamId;
         this.sessionId = sessionId;
         this.managedBuffers = managedBuffers;
+        this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
-        this.activeTermId = initialTermId;
         this.logAppenders = logAppenders;
         this.limit = limit;
 
+        LogBufferDescriptor.activeTermId(logMetaDataBuffer, LogBufferDescriptor.initialTermId(logMetaDataBuffer));
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
-        this.initialTermId = initialTermId;
     }
 
     /**
@@ -140,8 +140,8 @@ public class Publication implements AutoCloseable
     public boolean offer(final DirectBuffer buffer, final int offset, final int length)
     {
         boolean succeeded = false;
-        final int initialTermId = this.initialTermId;
-        final int activeTermId = this.activeTermId;
+        final int initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
+        final int activeTermId = LogBufferDescriptor.activeTermId(logMetaDataBuffer);
         final int activeIndex = bufferIndex(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
@@ -200,8 +200,8 @@ public class Publication implements AutoCloseable
     public boolean tryClaim(final int length, final BufferClaim bufferClaim)
     {
         boolean succeeded = false;
-        final int initialTermId = this.initialTermId;
-        final int activeTermId = this.activeTermId;
+        final int initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
+        final int activeTermId = LogBufferDescriptor.activeTermId(logMetaDataBuffer);
         final int activeIndex = bufferIndex(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
@@ -247,7 +247,7 @@ public class Publication implements AutoCloseable
         logAppenders[nextIndex].defaultHeader().putInt(DataHeaderFlyweight.TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
         logAppenders[rotatePrevious(activeIndex)].statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
 
-        this.activeTermId = newTermId;
+        LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
     }
 
     private boolean isWithinFlowControlLimit(final int initialTermId, final int activeTermId, final int currentTail)

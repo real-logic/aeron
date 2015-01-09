@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -183,20 +184,22 @@ class ClientConductor implements Agent, DriverListener
         final String channel,
         final int streamId,
         final int sessionId,
-        final int termId,
         final int limitPositionIndicatorOffset,
         final int mtuLength,
         final BuffersReadyFlyweight message,
         final long correlationId)
     {
-        final LogAppender[] logs = new LogAppender[BUFFER_COUNT];
-        final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
+        final LogAppender[] logs = new LogAppender[TermHelper.BUFFER_COUNT];
+        final ManagedBuffer[] managedBuffers = new ManagedBuffer[(TermHelper.BUFFER_COUNT * 2) + 1];
+        final ManagedBuffer logMetaDataBuffer = mapBuffer(message, TermHelper.BUFFER_COUNT * 2);
+        managedBuffers[TermHelper.BUFFER_COUNT * 2] = logMetaDataBuffer;
+        final int initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer.buffer());
 
-        for (int i = 0; i < BUFFER_COUNT; i++)
+        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
         {
             final ManagedBuffer termBuffer = mapBuffer(message, i);
             final ManagedBuffer metaDataBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
-            final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, termId);
+            final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
 
             logs[i] = new LogAppender(termBuffer.buffer(), metaDataBuffer.buffer(), header, mtuLength);
             managedBuffers[i * 2] = termBuffer;
@@ -204,8 +207,9 @@ class ClientConductor implements Agent, DriverListener
         }
 
         final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
+
         addedPublication = new Publication(
-            this, channel, streamId, sessionId, termId, logs, limit, managedBuffers, correlationId);
+            this, channel, streamId, sessionId, logs, limit, managedBuffers, logMetaDataBuffer.buffer(), correlationId);
 
         correlationSignal.signal();
     }

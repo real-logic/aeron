@@ -34,6 +34,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
 import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 import static uk.co.real_logic.agrona.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
@@ -77,14 +78,26 @@ public class PublicationTest
             when(appenders[i].capacity()).thenReturn(TERM_MIN_LENGTH);
         }
 
-        managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
-        for (int i = 0; i < BUFFER_COUNT * 2; i++)
+        final int totalLogBuffers = (BUFFER_COUNT * 2) + 1;
+        managedBuffers = new ManagedBuffer[totalLogBuffers];
+        for (int i = 0; i < totalLogBuffers; i++)
         {
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
+        final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]));
+        LogBufferDescriptor.initialTermId(logMetaDataBuffer, TERM_ID_1);
+
         publication = new Publication(
-            conductor, CHANNEL, STREAM_ID_1, SESSION_ID_1, TERM_ID_1, appenders, limit, managedBuffers, CORRELATION_ID);
+            conductor,
+            CHANNEL,
+            STREAM_ID_1,
+            SESSION_ID_1,
+            appenders,
+            limit,
+            managedBuffers,
+            logMetaDataBuffer,
+            CORRELATION_ID);
     }
 
     @Test
@@ -119,12 +132,8 @@ public class PublicationTest
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
         inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
+        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]).append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
 
-        // written data to the next record
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)])
-               .append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
-
-        // updated the term id in the header
         dataHeaderFlyweight.wrap(headers[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
@@ -142,12 +151,8 @@ public class PublicationTest
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
         inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
+        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]).claim(SEND_BUFFER_CAPACITY, bufferClaim);
 
-        // written data to the next record
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)])
-               .claim(SEND_BUFFER_CAPACITY, bufferClaim);
-
-        // updated the term id in the header
         dataHeaderFlyweight.wrap(headers[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }

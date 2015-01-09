@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import org.junit.Test;
@@ -69,7 +68,7 @@ public class FragmentedMessageTest
 
         final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockDataHandler);
 
-        try (final MediaDriver driver = MediaDriver.launch(ctx);
+        try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron publisherClient = Aeron.connect(new Aeron.Context());
              final Aeron subscriberClient = Aeron.connect(new Aeron.Context());
              final Publication publication = publisherClient.addPublication(channel, STREAM_ID);

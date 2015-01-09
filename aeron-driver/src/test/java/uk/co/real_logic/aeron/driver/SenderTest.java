@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.driver;
 
 import org.junit.After;
@@ -67,7 +66,7 @@ public class SenderTest
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final RawLog rawLog =
-        BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.TERM_META_DATA_LENGTH);
+        LogBufferHelper.newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.TERM_META_DATA_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;
@@ -428,5 +427,4 @@ public class SenderTest
     {
         return (offset - 1) * align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
     }
-
 }

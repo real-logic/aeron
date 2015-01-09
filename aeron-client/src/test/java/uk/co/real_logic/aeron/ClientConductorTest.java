@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron;
 
 import org.junit.Before;
@@ -35,7 +34,6 @@ import uk.co.real_logic.aeron.exceptions.RegistrationException;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
@@ -44,6 +42,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_CONNECTION_READY;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_PUBLICATION_READY;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
 public class ClientConductorTest extends MockBufferUsage
@@ -284,12 +283,11 @@ public class ClientConductorTest extends MockBufferUsage
         return conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
     }
 
-    private void sendPublicationReady(final int sessionId, final int termId, final int streamId, final long correlationId)
+    private void sendPublicationReady(final int sessionId, final int streamId, final long correlationId)
     {
         publicationReady.streamId(streamId)
                         .sessionId(sessionId)
-                        .correlationId(correlationId)
-                        .termId(termId);
+                        .correlationId(correlationId);
 
         addBuffers(sessionId, publicationReady);
         publicationReady.channel(CHANNEL);
@@ -317,21 +315,25 @@ public class ClientConductorTest extends MockBufferUsage
 
     private static void addBuffers(final int sessionId, final BuffersReadyFlyweight message)
     {
-        IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                message.bufferLocation(i, sessionId + "-log-" + i);
-                message.bufferOffset(i, 0);
-                message.bufferLength(i, TERM_BUFFER_LENGTH);
-            });
+        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        {
+            message.bufferLocation(i, sessionId + "-termBuffer" + i);
+            message.bufferOffset(i, 0);
+            message.bufferLength(i, TERM_BUFFER_LENGTH);
+        }
 
-        IntStream.range(0, TermHelper.BUFFER_COUNT).forEach(
-            (i) ->
-            {
-                message.bufferLocation(i + TermHelper.BUFFER_COUNT, sessionId + "-state-" + i);
-                message.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
-                message.bufferLength(i + TermHelper.BUFFER_COUNT, TERM_META_DATA_LENGTH);
-            });
+        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        {
+            message.bufferLocation(i + TermHelper.BUFFER_COUNT, sessionId + "-metaDataBuffer" + i);
+            message.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
+            message.bufferLength(i + TermHelper.BUFFER_COUNT, TERM_META_DATA_LENGTH);
+        }
+
+        final int i = TermHelper.BUFFER_COUNT * 2;
+        message.bufferLocation(i, sessionId + "-logMetaDataBuffer");
+        message.bufferOffset(i, 0);
+        message.bufferLength(i, LOG_META_DATA_LENGTH);
+
     }
 
     private void willSignalTimeOut()
@@ -357,9 +359,9 @@ public class ClientConductorTest extends MockBufferUsage
     private void willNotifyNewBuffer(final int streamId, final int sessionId, final long correlationId)
     {
         doAnswer(
-            invocation ->
+            (invocation) ->
             {
-                sendPublicationReady(sessionId, TERM_ID_1, streamId, correlationId);
+                sendPublicationReady(sessionId, streamId, correlationId);
                 conductor.doWork();
                 return null;
             }).when(signal).await(anyLong());

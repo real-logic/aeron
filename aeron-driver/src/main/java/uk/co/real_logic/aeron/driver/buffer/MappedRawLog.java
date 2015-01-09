@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
 /**
@@ -37,26 +39,26 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 class MappedRawLog implements RawLog
 {
     private static final int MAX_TREE_DEPTH = 3;
-    private static final String LOG_NAME = "stream.log";
+    private static final String LOG_FILE_NAME = "stream.log";
 
-    private final int termBufferLength;
+    private final MappedRawLogPartition[] buffers;
     private final EventLogger logger;
     private final File logFile;
-    private final MappedRawLogPartition[] buffers;
+    private final MappedByteBuffer mappedLogMetaDataBuffer;
+    private final UnsafeBuffer logMetaDataBuffer;
 
     MappedRawLog(
         final File directory, final FileChannel blankTemplate, final int termBufferLength, final EventLogger logger)
     {
-        this.termBufferLength = termBufferLength;
         this.logger = logger;
 
         IoUtil.ensureDirectoryExists(directory, "log buffer directory");
-        logFile = new File(directory, LOG_NAME);
+        logFile = new File(directory, LOG_FILE_NAME);
 
         try
         {
             final long metaDataStartingOffset = termBufferLength * BUFFER_COUNT;
-            final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3);
+            final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
 
             final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
             blankTemplate.transferTo(0, totalLogLength, logChannel);
@@ -73,6 +75,9 @@ class MappedRawLog implements RawLog
                 buffers[i] = new MappedRawLogPartition(mappedTermBuffer, mappedMetaDataBuffer);
             }
 
+            mappedLogMetaDataBuffer = logChannel.map(READ_WRITE, totalLogLength - LOG_META_DATA_LENGTH, LOG_META_DATA_LENGTH);
+            logMetaDataBuffer = new UnsafeBuffer(mappedLogMetaDataBuffer);
+
             logChannel.close();
         }
         catch (final IOException ex)
@@ -84,6 +89,7 @@ class MappedRawLog implements RawLog
     public void close()
     {
         stream().forEach(MappedRawLogPartition::close);
+        IoUtil.unmap(mappedLogMetaDataBuffer);
 
         if (logFile.delete())
         {
@@ -106,10 +112,15 @@ class MappedRawLog implements RawLog
         return buffers;
     }
 
+    public UnsafeBuffer logMetaData()
+    {
+        return logMetaDataBuffer;
+    }
+
     public void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight)
     {
         final String absoluteFilePath = logFile.getAbsolutePath();
-        final int termBufferLength = this.termBufferLength;
+        final int termBufferLength = buffers[0].termBuffer().capacity();
 
         for (int i = 0; i < BUFFER_COUNT; i++)
         {
@@ -127,24 +138,25 @@ class MappedRawLog implements RawLog
             buffersReadyFlyweight.bufferLength(index, termBufferLength);
             buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
         }
+
+        final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
+        final int index = BUFFER_COUNT * 2;
+        buffersReadyFlyweight.bufferOffset(index, totalLogLength - LOG_META_DATA_LENGTH);
+        buffersReadyFlyweight.bufferLength(index, LOG_META_DATA_LENGTH);
+        buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
     }
 
-    private void recursivelyDeleteUpTree(final File directory, int remainingTreeDepth)
+    private void recursivelyDeleteUpTree(final File directory, final int remainingTreeDepth)
     {
-        if (remainingTreeDepth == 0)
+        if (remainingTreeDepth > 0 && directory.list().length == 0)
         {
-            return;
-        }
-
-        if (directory.list().length == 0)
-        {
-            if (directory.delete())
+            if (!directory.delete())
             {
-                recursivelyDeleteUpTree(directory.getParentFile(), remainingTreeDepth - 1);
+                logger.log(EventCode.ERROR_DELETING_FILE, directory);
             }
             else
             {
-                logger.log(EventCode.ERROR_DELETING_FILE, directory);
+                recursivelyDeleteUpTree(directory.getParentFile(), remainingTreeDepth - 1);
             }
         }
     }

@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import java.io.File;
 import java.nio.channels.FileChannel;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
@@ -61,7 +62,8 @@ public class RawLogFactory implements AutoCloseable
 
         final long blankTemplateLength =
             (maxTermLength * TermHelper.BUFFER_COUNT) +
-            (LogBufferDescriptor.TERM_META_DATA_LENGTH * TermHelper.BUFFER_COUNT);
+            (LogBufferDescriptor.TERM_META_DATA_LENGTH * TermHelper.BUFFER_COUNT) +
+            LOG_META_DATA_LENGTH;
 
         blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
     }
@@ -119,10 +121,10 @@ public class RawLogFactory implements AutoCloseable
 
     private static FileChannel createTemplateFile(final String dataDir, final String name, final long length)
     {
-        final File templateFile = new File(dataDir, name);
-        templateFile.deleteOnExit();
+        final File file = new File(dataDir, name);
+        file.deleteOnExit();
 
-        return IoUtil.createEmptyFile(templateFile, length);
+        return IoUtil.createEmptyFile(file, length);
     }
 
     private RawLog newInstance(

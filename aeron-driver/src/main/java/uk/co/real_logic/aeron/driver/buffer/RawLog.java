@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.util.stream.Stream;
 
@@ -38,6 +39,13 @@ public interface RawLog extends AutoCloseable
      * @return an array of the {@link RawLogPartition} buffers.
      */
     RawLogPartition[] partitions();
+
+    /**
+     * The meta data storage for the overall log.
+     *
+     * @return the meta data storage for the overall log.
+     */
+    UnsafeBuffer logMetaData();
 
     /**
      * Write the buffer location details to the flyweight.

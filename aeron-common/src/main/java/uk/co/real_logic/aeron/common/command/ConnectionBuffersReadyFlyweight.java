@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package uk.co.real_logic.aeron.common.command;
 
 import uk.co.real_logic.aeron.common.Flyweight;
-import uk.co.real_logic.aeron.common.TermHelper;
 
 import java.nio.ByteOrder;
 
@@ -65,6 +63,9 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                          File Offset 5                        |
  * |                                                               |
  * +---------------------------------------------------------------+
+ * |                          File Offset 6                        |
+ * |                                                               |
+ * +---------------------------------------------------------------+
  * |                             Length 0                          |
  * +---------------------------------------------------------------+
  * |                             Length 1                          |
@@ -77,6 +78,8 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                             Length 5                          |
  * +---------------------------------------------------------------+
+ * |                             Length 6                          |
+ * +---------------------------------------------------------------+
  * |                          Location 1 Start                     |
  * +---------------------------------------------------------------+
  * |                          Location 2 Start                     |
@@ -86,6 +89,8 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                          Location 4 Start                     |
  * +---------------------------------------------------------------+
  * |                          Location 5 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Location 6 Start                     |
  * +---------------------------------------------------------------+
  * |                     Source Information Start                  |
  * +---------------------------------------------------------------+
@@ -111,6 +116,9 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                            Location 5                       ...
  * |                                                             ...
  * +---------------------------------------------------------------+
+ * |                            Location 6                       ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
  * |                            Channel                          ...
  * |                                                             ...
  * +---------------------------------------------------------------+
@@ -129,7 +137,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class ConnectionBuffersReadyFlyweight extends Flyweight implements BuffersReadyFlyweight
 {
-    private static final int NUM_FILES = 6;
+    private static final int NUM_FILES = 7;
 
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
@@ -140,18 +148,13 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
     private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_LONG);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
-    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (9 * SIZE_OF_INT);
+    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (10 * SIZE_OF_INT);
     private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
-
-    /**
-     * Contains both term buffers and state buffers
-     */
-    public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
 
     /**
      * The Source Information sits after the location strings, but before the Channel
      */
-    public static final int SOURCE_INFORMATION_INDEX = PAYLOAD_BUFFER_COUNT;
+    public static final int SOURCE_INFORMATION_INDEX = NUM_FILES;
 
     /**
      * The Channel sits after the source name and location strings for both the term and state buffers.

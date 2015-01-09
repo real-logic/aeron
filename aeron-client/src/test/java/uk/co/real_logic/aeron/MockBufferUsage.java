@@ -42,6 +42,8 @@ public class MockBufferUsage
     protected UnsafeBuffer[] termBuffersSession2 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
     protected UnsafeBuffer[] metaDataBuffersSession1 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
     protected UnsafeBuffer[] metaDataBuffersSession2 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
+    protected UnsafeBuffer logMetaDataBufferSession1 = new UnsafeBuffer(new byte[LogBufferDescriptor.LOG_META_DATA_LENGTH]);
+    protected UnsafeBuffer logMetaDataBufferSession2 = new UnsafeBuffer(new byte[LogBufferDescriptor.LOG_META_DATA_LENGTH]);
     protected LogAppender[] appendersSession1 = new LogAppender[TermHelper.BUFFER_COUNT];
     protected LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
     protected BufferManager mockBufferUsage = mock(BufferManager.class);
@@ -56,13 +58,13 @@ public class MockBufferUsage
             termBuffersSession2[i] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
             metaDataBuffersSession2[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.TERM_META_DATA_LENGTH]);
 
-            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-log-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-termBuffer" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(termBuffersSession1[i]));
-            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-state-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-metaDataBuffer" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(metaDataBuffersSession1[i]));
-            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_2 + "-log-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_2 + "-termBuffer" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(termBuffersSession2[i]));
-            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_2 + "-state-" + i), anyInt(), anyInt()))
+            when(mockBufferUsage.mapBuffer(eq(SESSION_ID_2 + "-metaDataBuffer" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(metaDataBuffersSession2[i]));
 
             appendersSession1[i] = new LogAppender(
@@ -72,6 +74,11 @@ public class MockBufferUsage
                 termBuffersSession2[i], metaDataBuffersSession2[i],
                 DataHeaderFlyweight.createDefaultHeader(0, 0, 0), MAX_FRAME_LENGTH);
         }
+
+        when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-logMetaDataBuffer"), anyInt(), anyInt()))
+            .thenAnswer(answer(logMetaDataBufferSession1));
+        when(mockBufferUsage.mapBuffer(eq(SESSION_ID_2 + "-logMetaDataBuffer"), anyInt(), anyInt()))
+            .thenAnswer(answer(logMetaDataBufferSession2));
     }
 
     public Answer<ManagedBuffer> answer(final UnsafeBuffer buffer)

@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.common.command;
 
 import uk.co.real_logic.aeron.common.Flyweight;
-import uk.co.real_logic.aeron.common.TermHelper;
 
 import java.nio.ByteOrder;
 
@@ -38,8 +37,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                           Stream ID                           |
- * +---------------------------------------------------------------+
- * |                           Term ID                             |
  * +---------------------------------------------------------------+
  * |                   Position Indicator Offset                   |
  * +---------------------------------------------------------------+
@@ -63,6 +60,9 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                          File Offset 5                        |
  * |                                                               |
  * +---------------------------------------------------------------+
+ * |                          File Offset 6                        |
+ * |                                                               |
+ * +---------------------------------------------------------------+
  * |                             Length 0                          |
  * +---------------------------------------------------------------+
  * |                             Length 1                          |
@@ -75,6 +75,8 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                             Length 5                          |
  * +---------------------------------------------------------------+
+ * |                             Length 6                          |
+ * +---------------------------------------------------------------+
  * |                          Location 1 Start                     |
  * +---------------------------------------------------------------+
  * |                          Location 2 Start                     |
@@ -84,6 +86,8 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                          Location 4 Start                     |
  * +---------------------------------------------------------------+
  * |                          Location 5 Start                     |
+ * +---------------------------------------------------------------+
+ * |                          Location 6 Start                     |
  * +---------------------------------------------------------------+
  * |                           Channel Start                       |
  * +---------------------------------------------------------------+
@@ -107,35 +111,32 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                            Location 5                       ...
  * |                                                             ...
  * +---------------------------------------------------------------+
+ * |                            Location 6                       ...
+ * |                                                             ...
+ * +---------------------------------------------------------------+
  * |                            Channel                          ...
  * |                                                             ...
  * +---------------------------------------------------------------+
  */
 public class PublicationBuffersReadyFlyweight extends Flyweight implements BuffersReadyFlyweight
 {
-    private static final int NUM_FILES = 6;
+    private static final int NUM_FILES = 7;
 
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int POSITION_COUNTER_ID_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int POSITION_COUNTER_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int MTU_LENGTH_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
     private static final int FILE_OFFSETS_FIELDS_OFFSET = MTU_LENGTH_OFFSET + SIZE_OF_INT;
     private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_LONG);
     private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
-    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (8 * SIZE_OF_INT);
-
-    /**
-     * Contains both term buffers and state buffers
-     */
-    public static final int PAYLOAD_BUFFER_COUNT = TermHelper.BUFFER_COUNT * 2;
+    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (9 * SIZE_OF_INT);
 
     /**
      * The Channel sits at the end of the message, after the location strings for both the
      * term and state buffers.
      */
-    private static final int CHANNEL_INDEX = PAYLOAD_BUFFER_COUNT;
+    private static final int CHANNEL_INDEX = NUM_FILES;
 
     public long bufferOffset(final int index)
     {
@@ -224,29 +225,6 @@ public class PublicationBuffersReadyFlyweight extends Flyweight implements Buffe
     public PublicationBuffersReadyFlyweight streamId(final int streamId)
     {
         buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * return termId field
-     *
-     * @return termId field
-     */
-    public int termId()
-    {
-        return buffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
-    }
-
-    /**
-     * set termId field
-     *
-     * @param termId field value
-     * @return flyweight
-     */
-    public PublicationBuffersReadyFlyweight termId(final int termId)
-    {
-        buffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }

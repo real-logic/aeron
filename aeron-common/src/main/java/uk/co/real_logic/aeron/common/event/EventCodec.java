@@ -511,11 +511,10 @@ public class EventCodec
                      .collect(Collectors.joining("\n    "));
 
         return String.format(
-            "%s %x:%x:%x %x [%x]\n    %s",
+            "%s %x:%x:%x [%x]\n    %s",
             command.channel(),
             command.sessionId(),
             command.streamId(),
-            command.termId(),
             command.positionCounterId(),
             command.correlationId(),
             locations);

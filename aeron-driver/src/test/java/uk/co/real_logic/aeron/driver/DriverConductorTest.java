@@ -110,7 +110,7 @@ public class DriverConductorTest
     public void setUp() throws Exception
     {
         when(mockRawLogFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
-            .thenReturn(BufferAndFrameHelper.newTestLogBuffers(TERM_BUFFER_SZ, TERM_META_DATA_LENGTH));
+            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_SZ, TERM_META_DATA_LENGTH));
 
         currentTime = 0;
 
@@ -163,7 +163,7 @@ public class DriverConductorTest
         verifySenderNotifiedOfNewPublication();
 
         verify(mockClientProxy).onPublicationReady(
-            eq(CHANNEL_URI + 4000), eq(2), eq(1), anyInt(),
+            eq(CHANNEL_URI + 4000), eq(2), anyInt(),
             any(), anyLong(), anyInt(), anyInt());
     }
 

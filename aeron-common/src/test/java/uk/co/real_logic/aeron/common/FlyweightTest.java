@@ -270,7 +270,6 @@ public class FlyweightTest
 
         encodeNewBuffer.streamId(1)
                        .sessionId(2)
-                       .termId(3)
                        .bufferOffset(0, 1)
                        .bufferOffset(1, 2)
                        .bufferOffset(2, 3)
@@ -283,6 +282,7 @@ public class FlyweightTest
                        .bufferLocation(3, "def")
                        .bufferLocation(4, "ghi")
                        .bufferLocation(5, "jkl")
+                       .bufferLocation(6, "xyz")
                        .channel("abc");
 
         assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
@@ -290,7 +290,6 @@ public class FlyweightTest
 
         assertThat(decodeNewBuffer.streamId(), is(1));
         assertThat(decodeNewBuffer.sessionId(), is(2));
-        assertThat(decodeNewBuffer.termId(), is(3));
 
         assertThat(decodeNewBuffer.bufferOffset(0), is(1L));
         assertThat(decodeNewBuffer.bufferOffset(1), is(2L));
@@ -307,6 +306,7 @@ public class FlyweightTest
         assertThat(decodeNewBuffer.bufferLocation(3), is("def"));
         assertThat(decodeNewBuffer.bufferLocation(4), is("ghi"));
         assertThat(decodeNewBuffer.bufferLocation(5), is("jkl"));
+        assertThat(decodeNewBuffer.bufferLocation(6), is("xyz"));
 
         assertThat(decodeNewBuffer.channel(), is("abc"));
     }

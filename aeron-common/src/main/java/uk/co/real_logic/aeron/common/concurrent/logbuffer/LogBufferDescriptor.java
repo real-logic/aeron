@@ -157,4 +157,50 @@ public class LogBufferDescriptor
             throw new IllegalStateException(s);
         }
     }
+
+    /**
+     * Get the value of the initial Term id used for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of the initial Term id used for this log.
+     */
+    public static int initialTermId(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getInt(LOG_INITIAL_TERM_ID_OFFSET);
+    }
+
+    /**
+     * Set the initial term at which this log begins. Initial should be randomised so that stream does not get
+     * reused accidentally.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param initialTermId value to be set.
+     */
+    public static void initialTermId(final UnsafeBuffer logMetaDataBuffer, final int initialTermId)
+    {
+        logMetaDataBuffer.putInt(LOG_INITIAL_TERM_ID_OFFSET, initialTermId);
+    }
+
+    /**
+     * Get the value of the active Term id used by the producer of this log. Consumers may have a different active term if
+     * they are running behind. The read is done with volatile semantics.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of the active Term id used by the producer of this log.
+     */
+    public static int activeTermId(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getIntVolatile(LOG_ACTIVE_TERM_ID_OFFSET);
+    }
+
+    /**
+     * Set the value of the current active term id for the producer using memory ordered semantics.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param activeTermId value of the active Term id used by the producer of this log.
+     */
+    public static void activeTermId(final UnsafeBuffer logMetaDataBuffer, final int activeTermId)
+    {
+        logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, activeTermId);
+    }
 }

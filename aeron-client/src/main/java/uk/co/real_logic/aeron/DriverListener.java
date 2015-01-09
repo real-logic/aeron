@@ -30,7 +30,6 @@ interface DriverListener
         String channel,
         int streamId,
         int sessionId,
-        int termId,
         int positionIndicatorId,
         final int mtuLength,
         BuffersReadyFlyweight message,

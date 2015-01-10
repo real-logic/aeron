@@ -17,10 +17,8 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.mockito.stubbing.Answer;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.io.IOException;
@@ -29,34 +27,35 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 public class MockBufferUsage
 {
     protected static final int MAX_FRAME_LENGTH = 1024;
-    protected static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    protected static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
 
     protected static final int SESSION_ID_1 = 13;
     protected static final int SESSION_ID_2 = 15;
 
-    protected UnsafeBuffer[] termBuffersSession1 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
-    protected UnsafeBuffer[] termBuffersSession2 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
-    protected UnsafeBuffer[] metaDataBuffersSession1 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
-    protected UnsafeBuffer[] metaDataBuffersSession2 = new UnsafeBuffer[TermHelper.BUFFER_COUNT];
-    protected UnsafeBuffer logMetaDataBufferSession1 = new UnsafeBuffer(new byte[LogBufferDescriptor.LOG_META_DATA_LENGTH]);
-    protected UnsafeBuffer logMetaDataBufferSession2 = new UnsafeBuffer(new byte[LogBufferDescriptor.LOG_META_DATA_LENGTH]);
-    protected LogAppender[] appendersSession1 = new LogAppender[TermHelper.BUFFER_COUNT];
-    protected LogAppender[] appendersSession2 = new LogAppender[TermHelper.BUFFER_COUNT];
+    protected UnsafeBuffer[] termBuffersSession1 = new UnsafeBuffer[PARTITION_COUNT];
+    protected UnsafeBuffer[] termBuffersSession2 = new UnsafeBuffer[PARTITION_COUNT];
+    protected UnsafeBuffer[] metaDataBuffersSession1 = new UnsafeBuffer[PARTITION_COUNT];
+    protected UnsafeBuffer[] metaDataBuffersSession2 = new UnsafeBuffer[PARTITION_COUNT];
+    protected UnsafeBuffer logMetaDataBufferSession1 = new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]);
+    protected UnsafeBuffer logMetaDataBufferSession2 = new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]);
+    protected LogAppender[] appendersSession1 = new LogAppender[PARTITION_COUNT];
+    protected LogAppender[] appendersSession2 = new LogAppender[PARTITION_COUNT];
     protected BufferManager mockBufferUsage = mock(BufferManager.class);
 
     @Before
     public void setupBuffers() throws IOException
     {
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
             termBuffersSession1[i] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-            metaDataBuffersSession1[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.TERM_META_DATA_LENGTH]);
+            metaDataBuffersSession1[i] = new UnsafeBuffer(new byte[TERM_META_DATA_LENGTH]);
             termBuffersSession2[i] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-            metaDataBuffersSession2[i] = new UnsafeBuffer(new byte[LogBufferDescriptor.TERM_META_DATA_LENGTH]);
+            metaDataBuffersSession2[i] = new UnsafeBuffer(new byte[TERM_META_DATA_LENGTH]);
 
             when(mockBufferUsage.mapBuffer(eq(SESSION_ID_1 + "-termBuffer" + i), anyInt(), anyInt()))
                 .thenAnswer(answer(termBuffersSession1[i]));

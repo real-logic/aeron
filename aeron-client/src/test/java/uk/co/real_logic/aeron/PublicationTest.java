@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.PositionIndicator;
 
@@ -32,12 +31,9 @@ import java.nio.ByteBuffer;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
-import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 
 public class PublicationTest
 {
@@ -65,9 +61,9 @@ public class PublicationTest
         limit = mock(PositionIndicator.class);
         when(limit.position()).thenReturn(2L * SEND_BUFFER_CAPACITY);
 
-        appenders = new LogAppender[BUFFER_COUNT];
-        headers = new MutableDirectBuffer[BUFFER_COUNT];
-        for (int i = 0; i < BUFFER_COUNT; i++)
+        appenders = new LogAppender[PARTITION_COUNT];
+        headers = new MutableDirectBuffer[PARTITION_COUNT];
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
             appenders[i] = mock(LogAppender.class);
             final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(0, 0, 0);
@@ -78,7 +74,7 @@ public class PublicationTest
             when(appenders[i].capacity()).thenReturn(TERM_MIN_LENGTH);
         }
 
-        final int totalLogBuffers = (BUFFER_COUNT * 2) + 1;
+        final int totalLogBuffers = (PARTITION_COUNT * 2) + 1;
         managedBuffers = new ManagedBuffer[totalLogBuffers];
         for (int i = 0; i < totalLogBuffers; i++)
         {
@@ -86,7 +82,7 @@ public class PublicationTest
         }
 
         final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]));
-        LogBufferDescriptor.initialTermId(logMetaDataBuffer, TERM_ID_1);
+        initialTermId(logMetaDataBuffer, TERM_ID_1);
 
         publication = new Publication(
             conductor,
@@ -116,33 +112,34 @@ public class PublicationTest
     @Test
     public void shouldFailToOfferWhenAppendFails()
     {
-        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILURE);
+        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILURE);
         assertFalse(publication.offer(atomicSendBuffer));
     }
 
     @Test
     public void shouldRotateWhenAppendTrips()
     {
-        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
-        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
+        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         assertFalse(publication.offer(atomicSendBuffer));
         assertTrue(publication.offer(atomicSendBuffer));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]).append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
+        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
+        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)])
+               .append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
 
-        dataHeaderFlyweight.wrap(headers[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]);
+        dataHeaderFlyweight.wrap(headers[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
 
     @Test
     public void shouldRotateWhenClaimTrips()
     {
-        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TRIPPED);
-        when(appenders[bufferIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TRIPPED);
+        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         final BufferClaim bufferClaim = new BufferClaim();
@@ -150,10 +147,10 @@ public class PublicationTest
         assertTrue(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(LogBufferDescriptor.NEEDS_CLEANING);
-        inOrder.verify(appenders[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]).claim(SEND_BUFFER_CAPACITY, bufferClaim);
+        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
+        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]).claim(SEND_BUFFER_CAPACITY, bufferClaim);
 
-        dataHeaderFlyweight.wrap(headers[bufferIndex(TERM_ID_1, TERM_ID_1 + 1)]);
+        dataHeaderFlyweight.wrap(headers[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
 

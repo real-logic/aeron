@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
@@ -29,8 +28,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.common.TermHelper.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
@@ -75,7 +73,7 @@ public class DriverConnection implements AutoCloseable
     private long lastSmPosition;
     private long lastSmTimestamp;
     private int lastSmTermId;
-    private int currentWindowSize;
+    private int currentWindowLength;
     private int currentGain;
 
     private volatile boolean statusMessagesEnabled = false;
@@ -118,7 +116,7 @@ public class DriverConnection implements AutoCloseable
         this.clock = clock;
         activeTermId = initialTermId;
         timeOfLastFrame.lazySet(clock.time());
-        this.hwmIndex = this.activeIndex = bufferIndex(initialTermId, initialTermId);
+        this.hwmIndex = this.activeIndex = partitionIndex(initialTermId, initialTermId);
         this.hwmTermId = initialTermId;
 
         rebuilders = rawLog
@@ -133,13 +131,12 @@ public class DriverConnection implements AutoCloseable
 
         final int termCapacity = rebuilders[0].capacity();
 
-        this.currentWindowSize = Math.min(termCapacity, initialWindowSize);
-        this.currentGain = Math.min(currentWindowSize / 4, termCapacity / 4);
+        this.currentWindowLength = Math.min(termCapacity, initialWindowSize);
+        this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        final long initialPosition = TermHelper.calculatePosition(
-            initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
+        final long initialPosition = computePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition;
 
         rebuilders[activeIndex].tail(initialTermOffset);
@@ -325,8 +322,9 @@ public class DriverConnection implements AutoCloseable
         final int initialTermId = this.initialTermId;
         final int activeTermId = this.activeTermId;
 
-        final long packetPosition = calculatePosition(initialTermId, termId, termOffset);
-        final long currentPosition = calculatePosition(initialTermId, activeTermId, currentRebuilder.tail());
+        final int leftShift = positionBitsToShift;
+        final long packetPosition = computePosition(termId, termOffset, leftShift, initialTermId);
+        final long currentPosition = computePosition(activeTermId, currentRebuilder.tail(), leftShift, initialTermId);
         final long proposedPosition = packetPosition + length;
 
         if (isHeartbeat(currentPosition, proposedPosition) ||
@@ -347,7 +345,7 @@ public class DriverConnection implements AutoCloseable
 
             if (currentRebuilder.isComplete())
             {
-                activeIndex = hwmIndex = rotateTermBuffers(activeIndex);
+                activeIndex = hwmIndex = rotatePartition(activeIndex);
                 this.activeTermId = activeTermId + 1;
             }
         }
@@ -355,7 +353,7 @@ public class DriverConnection implements AutoCloseable
         {
             if (termId != hwmTermId)
             {
-                hwmIndex = rotateTermBuffers(activeIndex);
+                hwmIndex = rotatePartition(activeIndex);
                 hwmTermId = termId;
             }
 
@@ -388,13 +386,13 @@ public class DriverConnection implements AutoCloseable
         if (statusMessagesEnabled)
         {
             final long position = subscribersPosition.get();
-            final int currentSmTermId = TermHelper.calculateTermIdFromPosition(position, positionBitsToShift, initialTermId);
-            final int currentSmTail = TermHelper.calculateTermOffsetFromPosition(position, positionBitsToShift);
+            final int currentSmTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+            final int currentSmTail = computeTermOffsetFromPosition(position, positionBitsToShift);
 
             if (0 == lastSmTimestamp || currentSmTermId != lastSmTermId ||
                 (position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
             {
-                sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowSize, now);
+                sendStatusMessage(currentSmTermId, currentSmTail, position, currentWindowLength, now);
 
                 // invert the work count logic. We want to appear to be less busy once we send an SM
                 workCount = 0;
@@ -518,11 +516,6 @@ public class DriverConnection implements AutoCloseable
         systemCounters.statusMessagesSent().orderedIncrement();
     }
 
-    private long calculatePosition(final int initialTermId, final int termId, final int tail)
-    {
-        return TermHelper.calculatePosition(termId, tail, positionBitsToShift, initialTermId);
-    }
-
     private boolean isHeartbeat(final long currentPosition, final long proposedPosition)
     {
         final boolean isHeartbeat = proposedPosition == currentPosition;
@@ -549,22 +542,22 @@ public class DriverConnection implements AutoCloseable
 
     private boolean isFlowControlOverRun(final long proposedPosition)
     {
-        long subscribersPosition = this.subscribersPosition.get();
-        boolean isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowSize);
+        final long subscribersPosition = this.subscribersPosition.get();
+        boolean isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowLength);
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, subscribersPosition, currentWindowSize);
+            logger.logOverRun(proposedPosition, subscribersPosition, currentWindowLength);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 
         return isFlowControlOverRun;
     }
 
-    private int rotateTermBuffers(final int activeIndex)
+    private int rotatePartition(final int activeIndex)
     {
-        rebuilders[rotatePrevious(activeIndex)].statusOrdered(NEEDS_CLEANING);
+        rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
 
-        return TermHelper.rotateNext(activeIndex);
+        return nextPartitionIndex(activeIndex);
     }
 }

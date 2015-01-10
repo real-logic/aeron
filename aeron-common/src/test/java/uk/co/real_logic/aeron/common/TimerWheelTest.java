@@ -48,7 +48,7 @@ public class TimerWheelTest
     {
         final TimerWheel wheel = new TimerWheel(100, TimeUnit.MILLISECONDS, 512);
 
-        assertThat(wheel.calculateDelayInMs(), allOf(greaterThanOrEqualTo(90L), lessThanOrEqualTo(110L)));
+        assertThat(wheel.computeDelayInMs(), allOf(greaterThanOrEqualTo(90L), lessThanOrEqualTo(110L)));
     }
 
     @Test
@@ -57,7 +57,7 @@ public class TimerWheelTest
         controlTimestamp = 0;
         final TimerWheel wheel = new TimerWheel(this::getControlTimestamp, 1, TimeUnit.MILLISECONDS, 512);
 
-        assertThat(wheel.calculateDelayInMs(), is(1L));
+        assertThat(wheel.computeDelayInMs(), is(1L));
     }
 
     @Test(timeout = 1000)
@@ -265,7 +265,7 @@ public class TimerWheelTest
 
         while (!condition.getAsBoolean())
         {
-            if (wheel.calculateDelayInMs() > 0)
+            if (wheel.computeDelayInMs() > 0)
             {
                 controlTimestamp += increment;
             }

@@ -255,7 +255,7 @@ public class RetransmitHandlerTest
 
         while (!condition.getAsBoolean())
         {
-            if (wheel.calculateDelayInMs() > 0)
+            if (wheel.computeDelayInMs() > 0)
             {
                 currentTime += TimeUnit.MICROSECONDS.toNanos(Configuration.CONDUCTOR_TICK_DURATION_US);
             }

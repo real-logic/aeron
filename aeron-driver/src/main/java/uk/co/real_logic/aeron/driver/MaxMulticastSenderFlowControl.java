@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 
 import java.net.InetSocketAddress;
 
@@ -38,7 +38,7 @@ public class MaxMulticastSenderFlowControl implements SenderFlowControl
         final int termId, final int completedTermOffset, final int receiverWindowSize, final InetSocketAddress address)
     {
         final long position =
-            TermHelper.calculatePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
+            LogBufferDescriptor.computePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowSize;
 
         positionLimit = Math.max(positionLimit, newPositionLimit);
@@ -54,7 +54,7 @@ public class MaxMulticastSenderFlowControl implements SenderFlowControl
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
 
-        positionLimit = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
+        positionLimit = LogBufferDescriptor.computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
 
         return positionLimit;
     }

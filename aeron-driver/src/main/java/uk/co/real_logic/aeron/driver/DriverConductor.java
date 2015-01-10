@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
@@ -338,7 +339,7 @@ public class DriverConductor implements Agent
     {
         int workCount = 0;
 
-        if (timerWheel.calculateDelayInMs() <= 0)
+        if (timerWheel.computeDelayInMs() <= 0)
         {
             workCount = timerWheel.expireTimers();
         }
@@ -543,7 +544,7 @@ public class DriverConductor implements Agent
 
         final RawLog rawLog = rawLogFactory.newConnection(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferSize);
-        final long joiningPosition = TermHelper.calculatePosition(
+        final long joiningPosition = LogBufferDescriptor.computePosition(
             initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
 
         final List<SubscriberPosition> subscriberPositions = subscriptions

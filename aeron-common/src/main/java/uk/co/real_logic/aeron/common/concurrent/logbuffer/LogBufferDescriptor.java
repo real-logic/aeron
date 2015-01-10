@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -46,6 +47,11 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 public class LogBufferDescriptor
 {
     /**
+     * The number of partitions the log is divided into with pairs of term and term meta data buffers.
+     */
+    public static final int PARTITION_COUNT = 3;
+
+    /**
      * Minimum buffer length for a log term
      */
     public static final int TERM_MIN_LENGTH = 64 * 1024; // TODO: make a sensible default
@@ -55,12 +61,12 @@ public class LogBufferDescriptor
     // ********************************
 
     /**
-     * The term is currently clean or in use.
+     * A term is currently clean or in use.
      */
     public static final int CLEAN = 0;
 
     /**
-     * The term is dirty and requires cleaning.
+     * A term is dirty and requires cleaning.
      */
     public static final int NEEDS_CLEANING = 1;
 
@@ -174,7 +180,7 @@ public class LogBufferDescriptor
      * reused accidentally.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @param initialTermId value to be set.
+     * @param initialTermId     value to be set.
      */
     public static void initialTermId(final UnsafeBuffer logMetaDataBuffer, final int initialTermId)
     {
@@ -197,10 +203,88 @@ public class LogBufferDescriptor
      * Set the value of the current active term id for the producer using memory ordered semantics.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @param activeTermId value of the active Term id used by the producer of this log.
+     * @param activeTermId      value of the active Term id used by the producer of this log.
      */
     public static void activeTermId(final UnsafeBuffer logMetaDataBuffer, final int activeTermId)
     {
         logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, activeTermId);
+    }
+
+    /**
+     * Rotate to the next partition in sequence for the term id.
+     *
+     * @param current partition index
+     * @return the next partition index
+     */
+    public static int nextPartitionIndex(final int current)
+    {
+        return BitUtil.next(current, PARTITION_COUNT);
+    }
+
+    /**
+     * Rotate to the previous partition in sequence for the term id.
+     *
+     * @param current partition index
+     * @return the previous partition index
+     */
+    public static int previousPartitionIndex(final int current)
+    {
+        return BitUtil.previous(current, PARTITION_COUNT);
+    }
+
+    /**
+     * Determine the buffer index to be used given the initial term and active term ids.
+     *
+     * @param initialTermId at which the log buffer usage began
+     * @param activeTermId  that is in current usage
+     * @return the index of which buffer should be used
+     */
+    public static int partitionIndex(final int initialTermId, final int activeTermId)
+    {
+        return (activeTermId - initialTermId) % PARTITION_COUNT;
+    }
+
+    /**
+     * Compute the current position in absolute number of bytes.
+     *
+     * @param activeTermId        active term id.
+     * @param currentTail         in the term.
+     * @param positionBitsToShift number of times to left shift the term count
+     * @param initialTermId       the initial term id that this stream started on
+     * @return the absolute position in bytes
+     */
+    public static long computePosition(
+        final int activeTermId, final int currentTail, final int positionBitsToShift, final int initialTermId)
+    {
+        final long termCount = activeTermId - initialTermId; // copes with negative activeTermId on rollover
+
+        return (termCount << positionBitsToShift) + currentTail;
+    }
+
+    /**
+     * Compute the term id from a position.
+     *
+     * @param position            to calculate from
+     * @param positionBitsToShift number of times to right shift the position
+     * @param initialTermId       the initial term id that this stream started on
+     * @return the term id according to the position
+     */
+    public static int computeTermIdFromPosition(final long position, final int positionBitsToShift, final int initialTermId)
+    {
+        return ((int)(position >>> positionBitsToShift) + initialTermId);
+    }
+
+    /**
+     * Compute the term offset from a given position.
+     *
+     * @param position            to calculate from
+     * @param positionBitsToShift number of times to right shift the position
+     * @return the offset within the term that represents the position
+     */
+    public static int computeTermOffsetFromPosition(final long position, final int positionBitsToShift)
+    {
+        final int mask = (1 << positionBitsToShift) - 1;
+
+        return (int)(position & mask);
     }
 }

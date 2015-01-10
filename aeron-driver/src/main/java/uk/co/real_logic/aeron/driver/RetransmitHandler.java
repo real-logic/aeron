@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -105,7 +105,7 @@ public class RetransmitHandler
             return;
         }
 
-        final long position = TermHelper.calculatePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final long position = LogBufferDescriptor.computePosition(termId, termOffset, positionBitsToShift, initialTermId);
 
         if (!retransmitActionPool.isEmpty() && null == activeRetransmitByPositionMap.get(position))
         {
@@ -140,7 +140,7 @@ public class RetransmitHandler
      */
     public void onRetransmitReceived(final int termId, final int termOffset)
     {
-        final long position = TermHelper.calculatePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final long position = LogBufferDescriptor.computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final RetransmitAction retransmitAction = activeRetransmitByPositionMap.get(position);
 
         if (null != retransmitAction && State.DELAYED == retransmitAction.state)

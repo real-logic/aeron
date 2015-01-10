@@ -112,12 +112,12 @@ public class FrameDescriptor
     public static final int PADDING_FRAME_TYPE = 0;
 
     /**
-     * Calculate the maximum supported message length for a buffer of given capacity.
+     * Compute the maximum supported message length for a buffer of given capacity.
      *
      * @param capacity of the log buffer.
      * @return the maximum supported size for a message.
      */
-    public static int calculateMaxMessageLength(final int capacity)
+    public static int computeMaxMessageLength(final int capacity)
     {
         return capacity / 8;
     }

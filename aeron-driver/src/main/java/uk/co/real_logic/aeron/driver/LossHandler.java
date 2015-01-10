@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -25,7 +24,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapHandler;
 
 /**
@@ -81,8 +80,8 @@ public class LossHandler
         this.nakMessageSender = nakMessageSender;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
         this.hwmPosition = new AtomicLong(
-                TermHelper.calculatePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId));
-        this.activeIndex = bufferIndex(initialTermId, initialTermId);
+            computePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId));
+        this.activeIndex = partitionIndex(initialTermId, initialTermId);
         this.activeTermId = initialTermId;
         this.initialTermId = initialTermId;
         onGapFunc = this::onGap;
@@ -113,7 +112,7 @@ public class LossHandler
         }
         else if (scanner.isComplete())
         {
-            activeIndex = TermHelper.rotateNext(activeIndex);
+            activeIndex = nextPartitionIndex(activeIndex);
             activeTermId = activeTermId + 1;
 
             return 1;
@@ -121,7 +120,7 @@ public class LossHandler
         else
         {
             final int tail = scanner.tailVolatile();
-            final long tailPosition = TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+            final long tailPosition = computePosition(activeTermId, tail, positionBitsToShift, initialTermId);
             final long currentHwmPosition = hwmPosition.get();
 
             if (currentHwmPosition > tailPosition)
@@ -196,7 +195,7 @@ public class LossHandler
     public long completedPosition()
     {
         final int tail = scanners[activeIndex].tailVolatile();
-        return TermHelper.calculatePosition(activeTermId, tail, positionBitsToShift, initialTermId);
+        return computePosition(activeTermId, tail, positionBitsToShift, initialTermId);
     }
 
     private void suppressNak()
@@ -251,7 +250,7 @@ public class LossHandler
         wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, onTimerExpireFunc);
     }
 
-    private static final class Gap
+    static final class Gap
     {
         int termId;
         int termOffset;

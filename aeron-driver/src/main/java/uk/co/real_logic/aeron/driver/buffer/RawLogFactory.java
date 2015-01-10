@@ -15,15 +15,13 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.TermHelper;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
@@ -61,8 +59,8 @@ public class RawLogFactory implements AutoCloseable
         final int maxTermLength = Math.max(publicationTermBufferLength, connectionTermBufferMaxLength);
 
         final long blankTemplateLength =
-            (maxTermLength * TermHelper.BUFFER_COUNT) +
-            (LogBufferDescriptor.TERM_META_DATA_LENGTH * TermHelper.BUFFER_COUNT) +
+            (maxTermLength * PARTITION_COUNT) +
+            (TERM_META_DATA_LENGTH * PARTITION_COUNT) +
             LOG_META_DATA_LENGTH;
 
         blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);

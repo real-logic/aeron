@@ -19,7 +19,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -34,7 +33,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class ConnectionTest
@@ -58,23 +57,23 @@ public class ConnectionTest
     private static final int STREAM_ID = 0xC400E;
     private static final int INITIAL_TERM_ID = 0xEE81D;
     private static final long ZERO_INITIAL_POSITION =
-        TermHelper.calculatePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHandler mockDataHandler = mock(DataHandler.class);
     private final PositionReporter mockPositionReporter = mock(PositionReporter.class);
 
-    private LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
-    private LogReader[] readers = new LogReader[TermHelper.BUFFER_COUNT];
-    private ManagedBuffer[] managedBuffers = new ManagedBuffer[TermHelper.BUFFER_COUNT * 2];
+    private LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
+    private LogReader[] readers = new LogReader[PARTITION_COUNT];
+    private ManagedBuffer[] managedBuffers = new ManagedBuffer[PARTITION_COUNT * 2];
     private Connection connection;
     private int activeIndex;
 
     @Before
     public void setUp()
     {
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
             final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
             final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
@@ -83,12 +82,12 @@ public class ConnectionTest
             readers[i] = new LogReader(logBuffer, metaDataBuffer);
         }
 
-        for (int i = 0; i < TermHelper.BUFFER_COUNT * 2; i++)
+        for (int i = 0; i < PARTITION_COUNT * 2; i++)
         {
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
-        activeIndex = TermHelper.bufferIndex(INITIAL_TERM_ID, INITIAL_TERM_ID);
+        activeIndex = LogBufferDescriptor.partitionIndex(INITIAL_TERM_ID, INITIAL_TERM_ID);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -119,7 +118,7 @@ public class ConnectionTest
         final int initialMessageIndex = 5;
         final int initialTermOffset = offsetOfFrame(initialMessageIndex);
         final long initialPosition =
-            TermHelper.calculatePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+            computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
         rebuilders[activeIndex].tail(initialTermOffset);
 
@@ -148,9 +147,9 @@ public class ConnectionTest
         final int initialMessageIndex = 5;
         final int initialTermOffset = offsetOfFrame(initialMessageIndex);
         final long initialPosition =
-            TermHelper.calculatePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+            computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        activeIndex = TermHelper.bufferIndex(INITIAL_TERM_ID, activeTermId);
+        activeIndex = LogBufferDescriptor.partitionIndex(INITIAL_TERM_ID, activeTermId);
         rebuilders[activeIndex].tail(initialTermOffset);
 
         connection = createConnection(initialPosition);

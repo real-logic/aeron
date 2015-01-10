@@ -17,11 +17,11 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
@@ -315,21 +315,21 @@ public class ClientConductorTest extends MockBufferUsage
 
     private static void addBuffers(final int sessionId, final BuffersReadyFlyweight message)
     {
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        for (int i = 0; i < LogBufferDescriptor.PARTITION_COUNT; i++)
         {
             message.bufferLocation(i, sessionId + "-termBuffer" + i);
             message.bufferOffset(i, 0);
             message.bufferLength(i, TERM_BUFFER_LENGTH);
         }
 
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        for (int i = 0; i < LogBufferDescriptor.PARTITION_COUNT; i++)
         {
-            message.bufferLocation(i + TermHelper.BUFFER_COUNT, sessionId + "-metaDataBuffer" + i);
-            message.bufferOffset(i + TermHelper.BUFFER_COUNT, 0);
-            message.bufferLength(i + TermHelper.BUFFER_COUNT, TERM_META_DATA_LENGTH);
+            message.bufferLocation(i + LogBufferDescriptor.PARTITION_COUNT, sessionId + "-metaDataBuffer" + i);
+            message.bufferOffset(i + LogBufferDescriptor.PARTITION_COUNT, 0);
+            message.bufferLength(i + LogBufferDescriptor.PARTITION_COUNT, TERM_META_DATA_LENGTH);
         }
 
-        final int i = TermHelper.BUFFER_COUNT * 2;
+        final int i = LogBufferDescriptor.PARTITION_COUNT * 2;
         message.bufferLocation(i, sessionId + "-logMetaDataBuffer");
         message.bufferOffset(i, 0);
         message.bufferLength(i, LOG_META_DATA_LENGTH);

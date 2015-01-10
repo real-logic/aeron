@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.TermHelper;
-
 import java.net.InetSocketAddress;
+
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.computePosition;
 
 public class UnicastSenderFlowControl implements SenderFlowControl
 {
@@ -25,29 +25,21 @@ public class UnicastSenderFlowControl implements SenderFlowControl
     private int positionBitsToShift;
     private int initialTermId;
 
-    /**
-     * {@inheritDoc}
-     */
     public long onStatusMessage(
         final int termId, final int completedTermOffset, final int receiverWindowSize, final InetSocketAddress address)
     {
-        final long position = TermHelper.calculatePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
+        final long position = computePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowSize;
-
         positionLimit = Math.max(positionLimit, newPositionLimit);
 
         return positionLimit;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
     {
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
-
-        positionLimit = TermHelper.calculatePosition(initialTermId, 0, positionBitsToShift, initialTermId);
+        positionLimit = computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
 
         return positionLimit;
     }

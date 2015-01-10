@@ -18,13 +18,11 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -38,12 +36,12 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class LossHandlerTest
 {
-    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int LOG_BUFFER_SIZE = TERM_MIN_LENGTH;
     private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE);
     private static final byte[] DATA = new byte[36];
 
@@ -68,8 +66,8 @@ public class LossHandlerTest
     private static final StaticDelayGenerator DELAY_GENERATOR_WITH_IMMEDIATE = new StaticDelayGenerator(
         TimeUnit.MILLISECONDS.toNanos(20), true);
 
-    private final LogRebuilder[] rebuilders = new LogRebuilder[TermHelper.BUFFER_COUNT];
-    private final GapScanner[] scanners = new GapScanner[TermHelper.BUFFER_COUNT];
+    private final LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
+    private final GapScanner[] scanners = new GapScanner[PARTITION_COUNT];
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -78,14 +76,14 @@ public class LossHandlerTest
     private LossHandler handler;
     private NakMessageSender nakMessageSender;
     private long currentTime = 0;
-    private int activeIndex = TermHelper.bufferIndex(TERM_ID, TERM_ID);
+    private int activeIndex = partitionIndex(TERM_ID, TERM_ID);
     private SystemCounters mockSystemCounters = mock(SystemCounters.class);
 
     public LossHandlerTest()
     {
         when(mockSystemCounters.naksSent()).thenReturn(mock(AtomicCounter.class));
 
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
             final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
             final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
@@ -261,7 +259,7 @@ public class LossHandlerTest
         assertTrue(rebuilders[activeIndex].isComplete());
         assertThat(handler.scan(), is(1));
 
-        activeIndex = TermHelper.rotateNext(activeIndex);
+        activeIndex = nextPartitionIndex(activeIndex);
         assertThat(handler.activeIndex(), is(activeIndex));
 
         insertDataFrame(offsetOfMessage(0));
@@ -290,7 +288,7 @@ public class LossHandlerTest
         assertTrue(rebuilders[activeIndex].isComplete());
         assertThat(handler.scan(), is(1));
 
-        activeIndex = TermHelper.rotateNext(activeIndex);
+        activeIndex = nextPartitionIndex(activeIndex);
         assertThat(handler.activeIndex(), is(activeIndex));
 
         insertDataFrame(offsetOfMessage(0));
@@ -327,7 +325,7 @@ public class LossHandlerTest
         assertTrue(rebuilders[activeIndex].isComplete());
         assertThat(handler.scan(), is(1));
 
-        activeIndex = TermHelper.rotateNext(activeIndex);
+        activeIndex = nextPartitionIndex(activeIndex);
         assertThat(handler.activeIndex(), is(activeIndex));
 
         insertDataFrame(offsetOfMessage(0));
@@ -345,7 +343,7 @@ public class LossHandlerTest
 
         insertDataFrame(offsetOfMessage(0));
 
-        final long highPosition = TermHelper.calculatePosition(TERM_ID, offsetOfMessage(2), POSITION_BITS_TO_SHIFT, TERM_ID);
+        final long highPosition = computePosition(TERM_ID, offsetOfMessage(2), POSITION_BITS_TO_SHIFT, TERM_ID);
 
         handler.hwmCandidate(highPosition);
         assertThat(handler.scan(), is(0));
@@ -371,15 +369,15 @@ public class LossHandlerTest
         assertFalse(rebuilders[activeIndex].isComplete());
         assertThat(handler.scan(), is(0));
 
-        activeIndex = TermHelper.rotateNext(activeIndex);
-        assertThat(handler.activeIndex(), is(TermHelper.rotatePrevious(activeIndex)));
+        activeIndex = nextPartitionIndex(activeIndex);
+        assertThat(handler.activeIndex(), is(previousPartitionIndex(activeIndex)));
 
         insertDataFrame(offsetOfMessage(0));
 
         assertThat(handler.scan(), is(0));
         verifyZeroInteractions(nakMessageSender);
 
-        final long highPosition = TermHelper.calculatePosition(TERM_ID + 1, offsetOfMessage(0), POSITION_BITS_TO_SHIFT, TERM_ID);
+        final long highPosition = computePosition(TERM_ID + 1, offsetOfMessage(0), POSITION_BITS_TO_SHIFT, TERM_ID);
 
         handler.hwmCandidate(highPosition);
         assertThat(handler.scan(), is(0));
@@ -468,7 +466,7 @@ public class LossHandlerTest
 
         while (!condition.getAsBoolean())
         {
-            if (wheel.calculateDelayInMs() > 0)
+            if (wheel.computeDelayInMs() > 0)
             {
                 currentTime += TimeUnit.MICROSECONDS.toNanos(Configuration.CONDUCTOR_TICK_DURATION_US);
             }

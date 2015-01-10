@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
-import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 
 public class LogBufferHelper
@@ -59,21 +59,21 @@ public class LogBufferHelper
 
             public void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight)
             {
-                for (int i = 0; i < BUFFER_COUNT; i++)
+                for (int i = 0; i < PARTITION_COUNT; i++)
                 {
                     buffersReadyFlyweight.bufferOffset(i, 0);
                     buffersReadyFlyweight.bufferLength(i, (int)logBufferSize);
                     buffersReadyFlyweight.bufferLocation(i, "termBuffer-" + i);
                 }
 
-                for (int i = 0; i < BUFFER_COUNT; i++)
+                for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    buffersReadyFlyweight.bufferOffset(i + BUFFER_COUNT, 0);
-                    buffersReadyFlyweight.bufferLength(i + BUFFER_COUNT, (int)metaDataBufferSize);
-                    buffersReadyFlyweight.bufferLocation(i + BUFFER_COUNT, "metaDataBuffer-" + i);
+                    buffersReadyFlyweight.bufferOffset(i + PARTITION_COUNT, 0);
+                    buffersReadyFlyweight.bufferLength(i + PARTITION_COUNT, (int)metaDataBufferSize);
+                    buffersReadyFlyweight.bufferLocation(i + PARTITION_COUNT, "metaDataBuffer-" + i);
                 }
 
-                final int index = BUFFER_COUNT * 2;
+                final int index = PARTITION_COUNT * 2;
                 buffersReadyFlyweight.bufferOffset(index, 0);
                 buffersReadyFlyweight.bufferLength(index, LOG_META_DATA_LENGTH);
                 buffersReadyFlyweight.bufferLocation(index, "logMetaDataBuffer");

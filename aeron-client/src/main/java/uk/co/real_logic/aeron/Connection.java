@@ -15,15 +15,13 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.agrona.status.PositionReporter;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static uk.co.real_logic.aeron.common.TermHelper.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * A Connection from a publisher to a subscriber within a given session.
@@ -61,10 +59,10 @@ class Connection
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].capacity());
         this.initialTermId = initialTermId;
 
-        final int currentTermId = TermHelper.calculateTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
-        final int initialTermOffset = TermHelper.calculateTermOffsetFromPosition(initialPosition, positionBitsToShift);
+        final int currentTermId = computeTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
+        final int initialTermOffset = computeTermOffsetFromPosition(initialPosition, positionBitsToShift);
         this.activeTermId = new AtomicInteger(currentTermId);
-        this.activeIndex = TermHelper.bufferIndex(initialTermId, currentTermId);
+        this.activeIndex = partitionIndex(initialTermId, currentTermId);
 
         logReaders[activeIndex].seek(initialTermOffset);
         subscriberPosition.position(initialPosition);
@@ -87,9 +85,9 @@ class Connection
 
         if (logReader.isComplete())
         {
-            final int nextIndex = rotateNext(activeIndex);
+            final int nextIndex = nextPartitionIndex(activeIndex);
             logReader = logReaders[nextIndex];
-            if (logReader.status() != LogBufferDescriptor.CLEAN)
+            if (logReader.status() != CLEAN)
             {
                 return 0;
             }
@@ -102,7 +100,7 @@ class Connection
         final int messagesRead = logReader.read(dataHandler, fragmentCountLimit);
         if (messagesRead > 0)
         {
-            final long position = calculatePosition(activeTermId, logReader.offset(), positionBitsToShift, initialTermId);
+            final long position = computePosition(activeTermId, logReader.offset(), positionBitsToShift, initialTermId);
             subscriberPosition.position(position);
         }
 

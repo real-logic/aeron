@@ -38,7 +38,7 @@ import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them.
@@ -189,16 +189,16 @@ class ClientConductor implements Agent, DriverListener
         final BuffersReadyFlyweight message,
         final long correlationId)
     {
-        final LogAppender[] logs = new LogAppender[TermHelper.BUFFER_COUNT];
-        final ManagedBuffer[] managedBuffers = new ManagedBuffer[(TermHelper.BUFFER_COUNT * 2) + 1];
-        final ManagedBuffer logMetaDataBuffer = mapBuffer(message, TermHelper.BUFFER_COUNT * 2);
-        managedBuffers[TermHelper.BUFFER_COUNT * 2] = logMetaDataBuffer;
+        final LogAppender[] logs = new LogAppender[PARTITION_COUNT];
+        final ManagedBuffer[] managedBuffers = new ManagedBuffer[(PARTITION_COUNT * 2) + 1];
+        final ManagedBuffer logMetaDataBuffer = mapBuffer(message, PARTITION_COUNT * 2);
+        managedBuffers[PARTITION_COUNT * 2] = logMetaDataBuffer;
         final int initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer.buffer());
 
-        for (int i = 0; i < TermHelper.BUFFER_COUNT; i++)
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
             final ManagedBuffer termBuffer = mapBuffer(message, i);
-            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + PARTITION_COUNT);
             final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
 
             logs[i] = new LogAppender(termBuffer.buffer(), metaDataBuffer.buffer(), header, mtuLength);
@@ -244,13 +244,13 @@ class ClientConductor implements Agent, DriverListener
 
                     if (null != positionReporter)
                     {
-                        final LogReader[] logs = new LogReader[BUFFER_COUNT];
-                        final ManagedBuffer[] managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
+                        final LogReader[] logs = new LogReader[PARTITION_COUNT];
+                        final ManagedBuffer[] managedBuffers = new ManagedBuffer[PARTITION_COUNT * 2];
 
-                        for (int i = 0; i < BUFFER_COUNT; i++)
+                        for (int i = 0; i < PARTITION_COUNT; i++)
                         {
                             final ManagedBuffer termBuffer = mapBuffer(message, i);
-                            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + TermHelper.BUFFER_COUNT);
+                            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + PARTITION_COUNT);
 
                             logs[i] = new LogReader(termBuffer.buffer(), metaDataBuffer.buffer());
                             managedBuffers[i * 2] = termBuffer;
@@ -353,7 +353,7 @@ class ClientConductor implements Agent, DriverListener
     {
         int workCount = 0;
 
-        if (timerWheel.calculateDelayInMs() <= 0)
+        if (timerWheel.computeDelayInMs() <= 0)
         {
             workCount = timerWheel.expireTimers();
         }

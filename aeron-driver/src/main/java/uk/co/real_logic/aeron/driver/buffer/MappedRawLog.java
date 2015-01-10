@@ -29,7 +29,7 @@ import java.nio.channels.FileChannel;
 import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
@@ -57,14 +57,14 @@ class MappedRawLog implements RawLog
 
         try
         {
-            final long metaDataStartingOffset = termBufferLength * BUFFER_COUNT;
+            final long metaDataStartingOffset = termBufferLength * PARTITION_COUNT;
             final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
 
             final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
             blankTemplate.transferTo(0, totalLogLength, logChannel);
 
-            buffers = new MappedRawLogPartition[BUFFER_COUNT];
-            for (int i = 0; i < BUFFER_COUNT; i++)
+            buffers = new MappedRawLogPartition[PARTITION_COUNT];
+            for (int i = 0; i < PARTITION_COUNT; i++)
             {
                 final long termBufferOffset = i * termBufferLength;
                 final MappedByteBuffer mappedTermBuffer = logChannel.map(READ_WRITE, termBufferOffset, termBufferLength);
@@ -122,25 +122,25 @@ class MappedRawLog implements RawLog
         final String absoluteFilePath = logFile.getAbsolutePath();
         final int termBufferLength = buffers[0].termBuffer().capacity();
 
-        for (int i = 0; i < BUFFER_COUNT; i++)
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
             buffersReadyFlyweight.bufferOffset(i, i * (long)termBufferLength);
             buffersReadyFlyweight.bufferLength(i, termBufferLength);
             buffersReadyFlyweight.bufferLocation(i, absoluteFilePath);
         }
 
-        final long metaDataStartingOffset = termBufferLength * BUFFER_COUNT;
+        final long metaDataStartingOffset = termBufferLength * PARTITION_COUNT;
 
-        for (int i = 0; i < BUFFER_COUNT; i++)
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final int index = i + BUFFER_COUNT;
+            final int index = i + PARTITION_COUNT;
             buffersReadyFlyweight.bufferOffset(index, metaDataStartingOffset + (i * TERM_META_DATA_LENGTH));
             buffersReadyFlyweight.bufferLength(index, termBufferLength);
             buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
         }
 
         final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
-        final int index = BUFFER_COUNT * 2;
+        final int index = PARTITION_COUNT * 2;
         buffersReadyFlyweight.bufferOffset(index, totalLogLength - LOG_META_DATA_LENGTH);
         buffersReadyFlyweight.bufferLength(index, LOG_META_DATA_LENGTH);
         buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);

@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
@@ -32,8 +30,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static uk.co.real_logic.aeron.common.TermHelper.bufferIndex;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogScanner.AvailabilityHandler;
 
 /**
@@ -52,9 +49,9 @@ public class DriverPublication implements AutoCloseable
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
 
-    private final LogScanner[] logScanners = new LogScanner[TermHelper.BUFFER_COUNT];
-    private final LogScanner[] retransmitLogScanners = new LogScanner[TermHelper.BUFFER_COUNT];
-    private final ByteBuffer[] sendBuffers = new ByteBuffer[TermHelper.BUFFER_COUNT];
+    private final LogScanner[] logScanners = new LogScanner[PARTITION_COUNT];
+    private final LogScanner[] retransmitLogScanners = new LogScanner[PARTITION_COUNT];
+    private final ByteBuffer[] sendBuffers = new ByteBuffer[PARTITION_COUNT];
 
     private final AtomicLong senderLimit;
     private final PositionReporter publisherLimit;
@@ -114,7 +111,7 @@ public class DriverPublication implements AutoCloseable
         this.streamId = streamId;
         this.headerLength = headerLength;
         this.mtuLength = mtuLength;
-        this.activeIndex = bufferIndex(initialTermId, initialTermId);
+        this.activeIndex = partitionIndex(initialTermId, initialTermId);
 
         final RawLogPartition[] rawLogPartitions = rawLog.partitions();
         for (int i = 0; i < rawLogPartitions.length; i++)
@@ -127,7 +124,7 @@ public class DriverPublication implements AutoCloseable
         termCapacity = logScanners[0].capacity();
         senderLimit = new AtomicLong(initialPositionLimit);
         activeTermId = initialTermId;
-        LogBufferDescriptor.initialTermId(rawLog.logMetaData(), initialTermId);
+        initialTermId(rawLog.logMetaData(), initialTermId);
 
         timeOfLastSendOrHeartbeat = clock.time();
 
@@ -323,13 +320,13 @@ public class DriverPublication implements AutoCloseable
 
         if (scanner.isComplete())
         {
-            activeIndex = BitUtil.next(activeIndex, TermHelper.BUFFER_COUNT);
+            activeIndex = BitUtil.next(activeIndex, PARTITION_COUNT);
             activeTermId++;
             scanner = logScanners[activeIndex];
             scanner.seek(0);
         }
 
-        final long position = TermHelper.calculatePosition(activeTermId, scanner.offset(), positionBitsToShift, initialTermId);
+        final long position = computePosition(activeTermId, scanner.offset(), positionBitsToShift, initialTermId);
         bytesSent = (int)(position - lastSentPosition);
 
         senderPosition.position(position);
@@ -397,7 +394,7 @@ public class DriverPublication implements AutoCloseable
         }
         else if (termId == activeTermId - 1)
         {
-            return TermHelper.rotatePrevious(activeIndex);
+            return previousPartitionIndex(activeIndex);
         }
 
         return -1;

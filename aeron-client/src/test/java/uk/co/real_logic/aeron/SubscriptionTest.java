@@ -17,12 +17,8 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.TermHelper;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.agrona.status.PositionReporter;
 
 import java.nio.ByteBuffer;
@@ -31,7 +27,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.TermHelper.BUFFER_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 public class SubscriptionTest
 {
@@ -40,7 +36,7 @@ public class SubscriptionTest
     private static final int SESSION_ID_1 = 13;
     private static final int SESSION_ID_2 = 14;
     private static final int TERM_ID_1 = 1;
-    private static final int ACTIVE_INDEX = TermHelper.bufferIndex(TERM_ID_1, TERM_ID_1);
+    private static final int ACTIVE_INDEX = LogBufferDescriptor.partitionIndex(TERM_ID_1, TERM_ID_1);
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
     private static final long CONNECTION_CORRELATION_ID = 101;
     private static final int READ_BUFFER_CAPACITY = 1024;
@@ -65,16 +61,16 @@ public class SubscriptionTest
         when(header.flags()).thenReturn(FLAGS);
         when(header.sessionId()).thenReturn(SESSION_ID_1);
 
-        readers = new LogReader[BUFFER_COUNT];
-        for (int i = 0; i < BUFFER_COUNT; i++)
+        readers = new LogReader[PARTITION_COUNT];
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
             readers[i] = mock(LogReader.class);
             when(readers[i].isComplete()).thenReturn(false);
             when(readers[i].read(any(), anyInt())).thenReturn(0);
         }
 
-        managedBuffers = new ManagedBuffer[BUFFER_COUNT * 2];
-        for (int i = 0; i < BUFFER_COUNT * 2; i++)
+        managedBuffers = new ManagedBuffer[PARTITION_COUNT * 2];
+        for (int i = 0; i < PARTITION_COUNT * 2; i++)
         {
             managedBuffers[i] = mock(ManagedBuffer.class);
         }

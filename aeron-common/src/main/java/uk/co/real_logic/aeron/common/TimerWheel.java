@@ -194,11 +194,11 @@ public class TimerWheel
     }
 
     /**
-     * Calculate delay in milliseconds until next tick.
+     * Compute delay in milliseconds until next tick.
      *
      * @return number of milliseconds to next tick of the wheel.
      */
-    public long calculateDelayInMs()
+    public long computeDelayInMs()
     {
         final long deadline = tickDurationInNs * (currentTick + 1);
 

@@ -18,14 +18,12 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.TermHelper;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -54,12 +52,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.driver.LogBufferHelper.newTestLogBuffers;
 
 public class ReceiverTest
 {
-    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
     private static final String URI = "udp://localhost:45678";
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final long CORRELATION_ID = 20;
@@ -67,7 +66,7 @@ public class ReceiverTest
     private static final int TERM_ID = 3;
     private static final int SESSION_ID = 1;
     private static final int INITIAL_TERM_OFFSET = 0;
-    private static final int ACTIVE_INDEX = TermHelper.bufferIndex(TERM_ID, TERM_ID);
+    private static final int ACTIVE_INDEX = partitionIndex(TERM_ID, TERM_ID);
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final int INITIAL_WINDOW_SIZE = Configuration.INITIAL_WINDOW_SIZE_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
@@ -94,7 +93,7 @@ public class ReceiverTest
     private long currentTime = 0;
     private final NanoClock clock = () -> currentTime;
 
-    private final RawLog rawLog = newTestLogBuffers(TERM_BUFFER_LENGTH, LogBufferDescriptor.TERM_META_DATA_LENGTH);
+    private final RawLog rawLog = newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH);
     private final EventLogger mockLogger = mock(EventLogger.class);
     private final TimerWheel timerWheel = new TimerWheel(
         clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
@@ -115,7 +114,7 @@ public class ReceiverTest
     public void setUp() throws Exception
     {
         when(POSITION_INDICATOR.position())
-            .thenReturn(TermHelper.calculatePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), TERM_ID));
+            .thenReturn(computePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), TERM_ID));
         when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));

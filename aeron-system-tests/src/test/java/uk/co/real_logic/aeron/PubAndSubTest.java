@@ -131,12 +131,12 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldContinueAfterBufferRollover(final String channel) throws Exception
     {
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -170,12 +170,12 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessageOneForOneWithDataLoss(final String channel) throws Exception
     {
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xdeadbeefL);         // predictable seed
 
@@ -211,14 +211,14 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessageBatchedWithDataLoss(final String channel) throws Exception
     {
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
         final int numBatches = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatches;
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xcafebabeL);         // predictable seed
 
@@ -257,14 +257,14 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldContinueAfterBufferRolloverBatched(final String channel) throws Exception
     {
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int numBatchesPerTerm = 4;
         final int numMessagesPerBatch = 16;
         final int numMessagesInTermBuffer = numMessagesPerBatch * numBatchesPerTerm;
-        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -323,11 +323,11 @@ public class PubAndSubTest
          * 65536 - 65016 = 520 bytes padding at the end
          * so, sending 64 messages causes last to overflow
          */
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int messageLength = 1032 - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = 64;
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -367,13 +367,13 @@ public class PubAndSubTest
          * 65536 - 65016 = 520 bytes padding at the end
          * so, sending 64 messages causes last to overflow
          */
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int messageLength = 1032 - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSend = 64;
         final int numBatchesPerTerm = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatchesPerTerm;
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -414,13 +414,13 @@ public class PubAndSubTest
          * The subscriber will flow control before an entire term buffer. So, send until can't send no 'more.
          * Then start up subscriber to drain.
          */
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int numMessagesPerTerm = 64;
-        final int messageLength = (termBufferSize / numMessagesPerTerm) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesPerTerm) - DataHeaderFlyweight.HEADER_LENGTH;
         final int maxFails = 10000;
         int messagesSent = 0;
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -468,15 +468,15 @@ public class PubAndSubTest
     @Test(timeout = 10000)
     public void shouldReceivePublishedMessageOneForOneWithReSubscription(final String channel) throws Exception
     {
-        final int termBufferSize = 64 * 1024;
+        final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferSize / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
         final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
         final CountDownLatch newConnectionLatch = new CountDownLatch(1);
         final int stage[] = { 1 };
 
-        context.termBufferLength(termBufferSize);
+        context.termBufferLength(termBufferLength);
         subscribingAeronContext.newConnectionHandler(
             (c, streamId, sessionId, info) ->
             {

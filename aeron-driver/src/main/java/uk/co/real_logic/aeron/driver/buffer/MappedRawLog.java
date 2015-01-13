@@ -56,7 +56,7 @@ class MappedRawLog implements RawLog
         try
         {
             final long metaDataSectionOffset = termBufferLength * PARTITION_COUNT;
-            final long logLength = metaDataSectionOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
+            final long logLength = computeLogLength(termBufferLength);
 
             final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
             blankTemplate.transferTo(0, logLength, logChannel);

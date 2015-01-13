@@ -127,10 +127,10 @@ public class RawLogFactory implements AutoCloseable
         final int sessionId,
         final int streamId,
         final long correlationId,
-        final int termBufferSize)
+        final int termBufferLength)
     {
         final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
 
-        return new MappedRawLog(dir, blankTemplate, termBufferSize, logger);
+        return new MappedRawLog(dir, blankTemplate, termBufferLength, logger);
     }
 }

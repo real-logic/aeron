@@ -528,7 +528,7 @@ public class DriverConductor implements Agent
         final int streamId,
         final int initialTermId,
         final int initialTermOffset,
-        final int termBufferSize,
+        final int termBufferLength,
         final int senderMtuLength,
         final InetSocketAddress controlAddress,
         final InetSocketAddress sourceAddress,
@@ -543,9 +543,9 @@ public class DriverConductor implements Agent
         final long correlationId = generateCreationCorrelationId();
 
         final RawLog rawLog = rawLogFactory.newConnection(
-            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferSize);
+            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
         final long joiningPosition = LogBufferDescriptor.computePosition(
-            initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferSize), initialTermId);
+            initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
 
         final List<SubscriberPosition> subscriberPositions = subscriptions
             .stream()

@@ -57,7 +57,8 @@ public:
     /*
      * non-blocking API semantics
      * - addPublication, addSubscription do NOT return objects, but instead return correlationIds
-     * - onReadyFlyweight -> deliver notification via handler(correlationId, Publication) (2 handlers 1 Pub + 1 Sub)
+     * - addPublication/addSubscription should take futures for completion?
+     * - onReadyFlyweight -> deliver notification via handler(correlationId, Publication) (2 handlers: 1 Pub + 1 Sub)
      *      - Publication/Subscription created on reception of Flyweight
      * - onError [timeout or error return] -> deliver notification via errorHandler (should call handler with NULL Pub/Sub?)
      * - app can poll for usage of Publication/Subscription (concurrent array/map)

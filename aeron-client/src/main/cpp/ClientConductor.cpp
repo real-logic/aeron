@@ -18,45 +18,30 @@
 
 using namespace aeron;
 
-template <typename A>
-inline static std::size_t findInVector(std::vector<A>& container, std::function<int(A)> compare)
-{
-    std::size_t result = SIZE_MAX;
-
-    for (std::size_t i = 0; i < container.size(); i++)
-    {
-        if (compare(container[i]) == 0)
-        {
-            result = i;
-            break;
-        }
-    }
-
-    return result;
-}
-
 Publication* ClientConductor::addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
-    std::size_t element = findInVector<Publication*>(m_publications, [&](Publication* pub)
-    {
-        return (streamId == pub->streamId() && sessionId == pub->sessionId() && channel == pub->channel());
-    });
+    std::vector<Publication*>::const_iterator it = std::find_if(m_publications.begin(), m_publications.end(),
+        [&](Publication *pub)
+        {
+            return (streamId == pub->streamId() && sessionId == pub->sessionId() && channel == pub->channel());
+        });
 
     Publication* publication = nullptr;
 
-    if (SIZE_MAX == element)
+    if (it == m_publications.end())
     {
         std::int64_t correlationId = m_driverProxy.addPublication(channel, streamId, sessionId);
+        Publication::Identification ident(channel, correlationId, streamId, sessionId);
 
-        publication = new Publication(*this, channel, streamId, sessionId, correlationId);
+        publication = new Publication(*this, ident);
 
         m_publications.push_back(publication);
     }
     else
     {
-        publication = m_publications[element];
+        publication = *it;
     }
 
     return publication;
@@ -68,14 +53,15 @@ void ClientConductor::releasePublication(Publication* publication)
 
     // TODO: send command to driver?
 
-    std::size_t element = findInVector<Publication*>(m_publications, [&](Publication* pub)
-    {
-        return pub == publication;
-    });
+    std::vector<Publication*>::const_iterator it = std::find_if(m_publications.begin(), m_publications.end(),
+        [&](Publication *pub)
+        {
+            return (publication == pub);
+        });
 
-    if (SIZE_MAX != element)
+    if (it != m_publications.end())
     {
-        m_publications.erase(m_publications.begin() + element);
+        m_publications.erase(it);
     }
 }
 
@@ -83,14 +69,15 @@ Subscription* ClientConductor::addSubscription(const std::string& channel, std::
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
 
-    std::size_t element = findInVector<Subscription*>(m_subscriptions, [&](Subscription* sub)
-    {
-        return (streamId == sub->streamId() && channel == sub->channel());
-    });
+    std::vector<Subscription*>::const_iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](Subscription* sub)
+        {
+            return (streamId == sub->streamId() && channel == sub->channel());
+        });
 
     Subscription* subscription = nullptr;
 
-    if (SIZE_MAX == element)
+    if (it == m_subscriptions.end())
     {
         subscription = new Subscription(*this, channel, streamId);
 
@@ -99,7 +86,7 @@ Subscription* ClientConductor::addSubscription(const std::string& channel, std::
     }
     else
     {
-        subscription = m_subscriptions[element];
+        subscription = *it;
     }
 
     return subscription;
@@ -111,14 +98,15 @@ void ClientConductor::releaseSubscription(Subscription* subscription)
 
     // TODO: send command to driver?
 
-    std::size_t element = findInVector<Subscription*>(m_subscriptions, [&](Subscription* sub)
-    {
-        return sub == subscription;
-    });
+    std::vector<Subscription*>::const_iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](Subscription* sub)
+        {
+            return (subscription == sub);
+        });
 
-    if (SIZE_MAX != element)
+    if (it != m_subscriptions.end())
     {
-        m_subscriptions.erase(m_subscriptions.begin() + element);
+        m_subscriptions.erase(it);
     }
 }
 

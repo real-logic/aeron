@@ -132,7 +132,7 @@ class MappedRawLog implements RawLog
         {
             final int index = i + PARTITION_COUNT;
             buffersReadyFlyweight.bufferOffset(index, metaDataSectionOffset + (i * TERM_META_DATA_LENGTH));
-            buffersReadyFlyweight.bufferLength(index, termLength);
+            buffersReadyFlyweight.bufferLength(index, TERM_META_DATA_LENGTH);
             buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
         }
 

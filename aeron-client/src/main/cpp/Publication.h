@@ -32,21 +32,34 @@ class Publication
 friend class ClientConductor;
 public:
 
+    struct Identification
+    {
+        const std::string channel;
+        std::int64_t correlationId;
+        std::int32_t streamId;
+        std::int32_t sessionId;
+
+        Identification(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, std::int32_t sessionId) :
+            channel(channel), correlationId(correlationId), streamId(streamId), sessionId(sessionId)
+        {
+        }
+    };
+
     virtual ~Publication();
 
     inline const std::string& channel() const
     {
-        return m_channel;
+        return m_ident.channel;
     }
 
     inline std::int32_t streamId() const
     {
-        return m_streamId;
+        return m_ident.streamId;
     }
 
     inline std::int32_t sessionId() const
     {
-        return m_sessionId;
+        return m_ident.sessionId;
     }
 
     inline bool offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
@@ -70,18 +83,12 @@ public:
 
 private:
     ClientConductor& m_conductor;
-    const std::string& m_channel;
-    std::int64_t m_correlationId;
-    std::int32_t m_streamId;
-    std::int32_t m_sessionId;
+    struct Identification m_ident;
 
     // ClientConductor should only be the one constructing these
     Publication(
         ClientConductor& conductor,
-        const std::string& channel,
-        std::int32_t streamId,
-        std::int32_t sessionId,
-        std::int64_t correlationid);
+        struct Identification& ident);
 };
 
 }

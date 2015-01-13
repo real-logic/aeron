@@ -21,15 +21,10 @@ using namespace aeron;
 
 Publication::Publication(
     ClientConductor& conductor,
-    const std::string& channel,
-    std::int32_t streamId,
-    std::int32_t sessionId,
-    std::int64_t correlationId) :
+    struct Identification& ident)
+    :
     m_conductor(conductor),
-    m_channel(channel),
-    m_correlationId(correlationId),
-    m_streamId(streamId),
-    m_sessionId(sessionId)
+    m_ident(ident)
 {
 
 }

@@ -287,4 +287,17 @@ public class LogBufferDescriptor
 
         return (int)(position & mask);
     }
+
+    /**
+     * Compute the total length of a log file given the term length.
+     *
+     * @param termLength on which to base the calculation.
+     * @return the total length of the log file.
+     */
+    public static long computeLogLength(final int termLength)
+    {
+        return (termLength * PARTITION_COUNT) +
+        (TERM_META_DATA_LENGTH * PARTITION_COUNT) +
+        LOG_META_DATA_LENGTH;
+    }
 }

@@ -55,7 +55,7 @@ class ActiveSubscriptions
             .add(subscription);
     }
 
-    public void remove(final Subscription subscription)
+    public synchronized void remove(final Subscription subscription)
     {
         final String channel = subscription.channel();
         final int streamId = subscription.streamId();

@@ -29,19 +29,17 @@ import java.nio.channels.FileChannel;
 import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
- * Encapsulates responsibility for mapping the files into memory used by the log buffers.
+ * Encapsulates responsibility for mapping the files into memory used by the log partitions.
  */
 class MappedRawLog implements RawLog
 {
     private static final int MAX_TREE_DEPTH = 3;
     private static final String LOG_FILE_NAME = "stream.log";
 
-    private final MappedRawLogPartition[] buffers;
+    private final MappedRawLogPartition[] partitions;
     private final EventLogger logger;
     private final File logFile;
     private final MappedByteBuffer mappedLogMetaDataBuffer;
@@ -57,25 +55,25 @@ class MappedRawLog implements RawLog
 
         try
         {
-            final long metaDataStartingOffset = termBufferLength * PARTITION_COUNT;
-            final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
+            final long metaDataSectionOffset = termBufferLength * PARTITION_COUNT;
+            final long logLength = metaDataSectionOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
 
             final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
-            blankTemplate.transferTo(0, totalLogLength, logChannel);
+            blankTemplate.transferTo(0, logLength, logChannel);
 
-            buffers = new MappedRawLogPartition[PARTITION_COUNT];
+            partitions = new MappedRawLogPartition[PARTITION_COUNT];
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
                 final long termBufferOffset = i * termBufferLength;
                 final MappedByteBuffer mappedTermBuffer = logChannel.map(READ_WRITE, termBufferOffset, termBufferLength);
 
-                final long metaDataOffset = metaDataStartingOffset + (i * TERM_META_DATA_LENGTH);
+                final long metaDataOffset = metaDataSectionOffset + (i * TERM_META_DATA_LENGTH);
                 final MappedByteBuffer mappedMetaDataBuffer = logChannel.map(READ_WRITE, metaDataOffset, TERM_META_DATA_LENGTH);
 
-                buffers[i] = new MappedRawLogPartition(mappedTermBuffer, mappedMetaDataBuffer);
+                partitions[i] = new MappedRawLogPartition(mappedTermBuffer, mappedMetaDataBuffer);
             }
 
-            mappedLogMetaDataBuffer = logChannel.map(READ_WRITE, totalLogLength - LOG_META_DATA_LENGTH, LOG_META_DATA_LENGTH);
+            mappedLogMetaDataBuffer = logChannel.map(READ_WRITE, logLength - LOG_META_DATA_LENGTH, LOG_META_DATA_LENGTH);
             logMetaDataBuffer = new UnsafeBuffer(mappedLogMetaDataBuffer);
 
             logChannel.close();
@@ -104,12 +102,12 @@ class MappedRawLog implements RawLog
 
     public Stream<MappedRawLogPartition> stream()
     {
-        return Stream.of(buffers);
+        return Stream.of(partitions);
     }
 
     public MappedRawLogPartition[] partitions()
     {
-        return buffers;
+        return partitions;
     }
 
     public UnsafeBuffer logMetaData()
@@ -120,28 +118,27 @@ class MappedRawLog implements RawLog
     public void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight)
     {
         final String absoluteFilePath = logFile.getAbsolutePath();
-        final int termBufferLength = buffers[0].termBuffer().capacity();
+        final int termLength = partitions[0].termBuffer().capacity();
+        final long metaDataSectionOffset = termLength * PARTITION_COUNT;
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            buffersReadyFlyweight.bufferOffset(i, i * (long)termBufferLength);
-            buffersReadyFlyweight.bufferLength(i, termBufferLength);
+            buffersReadyFlyweight.bufferOffset(i, i * (long)termLength);
+            buffersReadyFlyweight.bufferLength(i, termLength);
             buffersReadyFlyweight.bufferLocation(i, absoluteFilePath);
         }
-
-        final long metaDataStartingOffset = termBufferLength * PARTITION_COUNT;
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
             final int index = i + PARTITION_COUNT;
-            buffersReadyFlyweight.bufferOffset(index, metaDataStartingOffset + (i * TERM_META_DATA_LENGTH));
-            buffersReadyFlyweight.bufferLength(index, termBufferLength);
+            buffersReadyFlyweight.bufferOffset(index, metaDataSectionOffset + (i * TERM_META_DATA_LENGTH));
+            buffersReadyFlyweight.bufferLength(index, TERM_META_DATA_LENGTH);
             buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
         }
 
-        final long totalLogLength = metaDataStartingOffset + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH;
+        final long logLength = computeLogLength(termLength);
         final int index = PARTITION_COUNT * 2;
-        buffersReadyFlyweight.bufferOffset(index, totalLogLength - LOG_META_DATA_LENGTH);
+        buffersReadyFlyweight.bufferOffset(index, logLength - LOG_META_DATA_LENGTH);
         buffersReadyFlyweight.bufferLength(index, LOG_META_DATA_LENGTH);
         buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
     }

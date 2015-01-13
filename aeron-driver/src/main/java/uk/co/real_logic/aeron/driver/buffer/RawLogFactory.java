@@ -57,11 +57,7 @@ public class RawLogFactory implements AutoCloseable
         this.connectionTermBufferMaxLength = connectionTermBufferMaxLength;
 
         final int maxTermLength = Math.max(publicationTermBufferLength, connectionTermBufferMaxLength);
-
-        final long blankTemplateLength =
-            (maxTermLength * PARTITION_COUNT) +
-            (TERM_META_DATA_LENGTH * PARTITION_COUNT) +
-            LOG_META_DATA_LENGTH;
+        final long blankTemplateLength = computeLogLength(maxTermLength);
 
         blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
     }

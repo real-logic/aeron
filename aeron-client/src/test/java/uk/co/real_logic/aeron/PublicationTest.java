@@ -48,6 +48,8 @@ public class PublicationTest
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
     private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
+    private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]));
+
     private Publication publication;
     private PositionIndicator limit;
     private LogAppender[] appenders;
@@ -81,7 +83,6 @@ public class PublicationTest
             managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
-        final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]));
         initialTermId(logMetaDataBuffer, TERM_ID_1);
 
         publication = new Publication(
@@ -126,8 +127,9 @@ public class PublicationTest
         assertFalse(publication.offer(atomicSendBuffer));
         assertTrue(publication.offer(atomicSendBuffer));
 
-        final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
+        final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2], logMetaDataBuffer);
         inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
+        inOrder.verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1 + 1);
         inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)])
                .append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
 
@@ -146,8 +148,9 @@ public class PublicationTest
         assertFalse(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
         assertTrue(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
 
-        final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2]);
+        final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2], logMetaDataBuffer);
         inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
+        inOrder.verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1 + 1);
         inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]).claim(SEND_BUFFER_CAPACITY, bufferClaim);
 
         dataHeaderFlyweight.wrap(headers[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]);

@@ -51,7 +51,7 @@ public class DriverPublication implements AutoCloseable
 
     private final LogScanner[] logScanners = new LogScanner[PARTITION_COUNT];
     private final LogScanner[] retransmitLogScanners = new LogScanner[PARTITION_COUNT];
-    private final ByteBuffer[] sendBuffers = new ByteBuffer[PARTITION_COUNT];
+    private final ByteBuffer[] sendBuffers;
 
     private final AtomicLong senderLimit;
     private final PositionReporter publisherLimit;
@@ -118,9 +118,9 @@ public class DriverPublication implements AutoCloseable
         {
             logScanners[i] = newScanner(rawLogPartitions[i]);
             retransmitLogScanners[i] = newScanner(rawLogPartitions[i]);
-            sendBuffers[i] = duplicateLogBuffer(rawLogPartitions[i]);
         }
 
+        sendBuffers = rawLog.sliceTerms();
         termCapacity = logScanners[0].capacity();
         senderLimit = new AtomicLong(initialPositionLimit);
         activeTermId = initialTermId;
@@ -206,11 +206,11 @@ public class DriverPublication implements AutoCloseable
     {
         int workCount = 0;
 
-        for (final LogBufferPartition logBufferPartition : logScanners)
+        for (final LogBufferPartition partition : logScanners)
         {
-            if (logBufferPartition.status() == NEEDS_CLEANING)
+            if (partition.status() == NEEDS_CLEANING)
             {
-                logBufferPartition.clean();
+                partition.clean();
                 workCount = 1;
             }
         }
@@ -372,17 +372,9 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private ByteBuffer duplicateLogBuffer(final RawLogPartition log)
+    private LogScanner newScanner(final RawLogPartition partition)
     {
-        final ByteBuffer buffer = log.termBuffer().duplicateByteBuffer();
-        buffer.clear();
-
-        return buffer;
-    }
-
-    private LogScanner newScanner(final RawLogPartition log)
-    {
-        return new LogScanner(log.termBuffer(), log.metaDataBuffer(), headerLength);
+        return new LogScanner(partition.termBuffer(), partition.metaDataBuffer(), headerLength);
     }
 
     private int determineIndexByTermId(final int termId)

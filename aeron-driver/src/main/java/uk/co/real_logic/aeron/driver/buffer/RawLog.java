@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver.buffer;
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
 /**
@@ -46,6 +47,13 @@ public interface RawLog extends AutoCloseable
      * @return the meta data storage for the overall log.
      */
     UnsafeBuffer logMetaData();
+
+    /**
+     * Slice the underlying buffer to provide an array of term buffers in order.
+     *
+     * @return slices of the underlying buffer to provide an array of term buffers in order.
+     */
+    ByteBuffer[] sliceTerms();
 
     /**
      * Write the buffer location details to the flyweight.

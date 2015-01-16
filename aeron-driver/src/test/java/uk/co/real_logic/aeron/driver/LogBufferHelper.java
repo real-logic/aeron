@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
@@ -29,27 +28,27 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 
 public class LogBufferHelper
 {
-    public static RawLog newTestLogBuffers(final long logBufferSize, final long metaDataBufferSize)
+    public static RawLog newTestLogBuffers(final int termLength, final int metaDataLength)
     {
         return new RawLog()
         {
-            private final RawLogPartition[] buffers = new RawLogPartition[]
+            private final RawLogPartition[] partitions = new RawLogPartition[]
             {
-                newTestLogBuffer(logBufferSize, metaDataBufferSize),
-                newTestLogBuffer(logBufferSize, metaDataBufferSize),
-                newTestLogBuffer(logBufferSize, metaDataBufferSize),
+                newTestLogBuffer(termLength, metaDataLength),
+                newTestLogBuffer(termLength, metaDataLength),
+                newTestLogBuffer(termLength, metaDataLength),
             };
 
-            private final UnsafeBuffer logMetaData = new UnsafeBuffer(new byte[LogBufferDescriptor.LOG_META_DATA_LENGTH]);
+            private final UnsafeBuffer logMetaData = new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]);
 
             public Stream<RawLogPartition> stream()
             {
-                return Stream.of(buffers);
+                return Stream.of(partitions);
             }
 
             public RawLogPartition[] partitions()
             {
-                return buffers;
+                return partitions;
             }
 
             public UnsafeBuffer logMetaData()
@@ -57,19 +56,30 @@ public class LogBufferHelper
                 return logMetaData;
             }
 
+            public ByteBuffer[] sliceTerms()
+            {
+                final ByteBuffer[] terms = new ByteBuffer[PARTITION_COUNT];
+                for (int i = 0; i < PARTITION_COUNT; i++)
+                {
+                    terms[i] = partitions[i].termBuffer().byteBuffer().duplicate();
+                }
+
+                return terms;
+            }
+
             public void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight)
             {
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
                     buffersReadyFlyweight.bufferOffset(i, 0);
-                    buffersReadyFlyweight.bufferLength(i, (int)logBufferSize);
+                    buffersReadyFlyweight.bufferLength(i, termLength);
                     buffersReadyFlyweight.bufferLocation(i, "termBuffer-" + i);
                 }
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
                     buffersReadyFlyweight.bufferOffset(i + PARTITION_COUNT, 0);
-                    buffersReadyFlyweight.bufferLength(i + PARTITION_COUNT, (int)metaDataBufferSize);
+                    buffersReadyFlyweight.bufferLength(i + PARTITION_COUNT, metaDataLength);
                     buffersReadyFlyweight.bufferLocation(i + PARTITION_COUNT, "metaDataBuffer-" + i);
                 }
 
@@ -85,26 +95,10 @@ public class LogBufferHelper
         };
     }
 
-    private static RawLogPartition newTestLogBuffer(final long termBufferLength, final long metaDataBufferSize)
+    private static RawLogPartition newTestLogBuffer(final int termBufferLength, final int metaDataBufferSize)
     {
-        return new RawLogPartition()
-        {
-            private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocate((int)termBufferLength));
-            private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocate((int)metaDataBufferSize));
-
-            public UnsafeBuffer termBuffer()
-            {
-                return termBuffer;
-            }
-
-            public UnsafeBuffer metaDataBuffer()
-            {
-                return metaDataBuffer;
-            }
-
-            public void close()
-            {
-            }
-        };
+        return new RawLogPartition(
+            new UnsafeBuffer(ByteBuffer.allocate(termBufferLength)),
+            new UnsafeBuffer(ByteBuffer.allocate(metaDataBufferSize)));
     }
 }

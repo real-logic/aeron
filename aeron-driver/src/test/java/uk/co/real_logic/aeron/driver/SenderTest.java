@@ -51,7 +51,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.Act
 
 public class SenderTest
 {
-    private static final long TERM_BUFFER_SIZE = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int SESSION_ID = 1;
     private static final int STREAM_ID = 2;
@@ -66,13 +66,13 @@ public class SenderTest
     private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final RawLog rawLog =
-        LogBufferHelper.newTestLogBuffers(TERM_BUFFER_SIZE, LogBufferDescriptor.TERM_META_DATA_LENGTH);
+        LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, LogBufferDescriptor.TERM_META_DATA_LENGTH);
 
     private LogAppender[] logAppenders;
     private DriverPublication publication;
     private Sender sender;
 
-    private final SenderFlowControl spySenderFlowControl = spy(new UnicastSenderFlowControl());
+    private final SenderFlowControl senderFlowControl = spy(new UnicastSenderFlowControl());
 
     private long currentTimestamp = 0;
 
@@ -136,7 +136,7 @@ public class SenderTest
             INITIAL_TERM_ID,
             HEADER.capacity(),
             MAX_FRAME_LENGTH,
-            spySenderFlowControl.initialPositionLimit(INITIAL_TERM_ID, (int)TERM_BUFFER_SIZE),
+            senderFlowControl.initialPositionLimit(INITIAL_TERM_ID, TERM_BUFFER_LENGTH),
             mockSystemCounters);
 
         senderCommandQueue.offer(new NewPublicationCmd(publication));
@@ -191,7 +191,7 @@ public class SenderTest
     {
         currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
-        publication.updatePositionLimitFromStatusMessage(spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
+        publication.updatePositionLimitFromStatusMessage(senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));
@@ -201,7 +201,7 @@ public class SenderTest
     public void shouldBeAbleToSendOnChannel() throws Exception
     {
         publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
+            senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -227,7 +227,7 @@ public class SenderTest
     public void shouldBeAbleToSendOnChannelTwice() throws Exception
     {
         publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
+            senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -265,7 +265,7 @@ public class SenderTest
     public void shouldBeAbleToSendOnChannelTwiceAsBatch() throws Exception
     {
         publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
+            senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -309,7 +309,7 @@ public class SenderTest
         assertThat(receivedFrames.size(), is(0));
 
         publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
+            senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -333,7 +333,7 @@ public class SenderTest
         buffer.putBytes(0, PAYLOAD);
         assertThat(logAppenders[0].append(buffer, 0, PAYLOAD.length), is(SUCCESS));
         publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
+            senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         sender.doWork();
 
@@ -360,7 +360,7 @@ public class SenderTest
     public void shouldSendLastDataFrameAsHeartbeatWhenIdle() throws Exception
     {
         publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
+            senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
@@ -389,7 +389,7 @@ public class SenderTest
     public void shouldSendMultipleDataFramesAsHeartbeatsWhenIdle()
     {
         publication.updatePositionLimitFromStatusMessage(
-            spySenderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
+            senderFlowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);

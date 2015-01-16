@@ -20,19 +20,34 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 /**
  * Encapsulates the pair of buffers used to hold a term log partition and associated state for publication/subscription
  */
-public interface RawLogPartition extends AutoCloseable
+public class RawLogPartition
 {
+    private final UnsafeBuffer termBuffer;
+    private final UnsafeBuffer metaDataBuffer;
+
+    public RawLogPartition(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
+    {
+        this.termBuffer = termBuffer;
+        this.metaDataBuffer = metaDataBuffer;
+    }
+
     /**
      * Get the buffer holding the recorded log of messages for a term.
      *
      * @return the buffer holding the recorded log of messages for a term.
      */
-    UnsafeBuffer termBuffer();
+    public UnsafeBuffer termBuffer()
+    {
+        return termBuffer;
+    }
 
     /**
      * Get the buffer holding the meta data about the recorded log of messages for a term.
      *
      * @return the buffer holding the state information about the recorded log of messages for a term.
      */
-    UnsafeBuffer metaDataBuffer();
+    public UnsafeBuffer metaDataBuffer()
+    {
+        return metaDataBuffer;
+    }
 }

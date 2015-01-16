@@ -26,7 +26,7 @@ public class CreateConnectionCmd implements DriverConductorCmd
     private final int streamId;
     private final int termId;
     private final int termOffset;
-    private final int termSize;
+    private final int termLength;
     private final int senderMtuLength;
     private final InetSocketAddress controlAddress;
     private final InetSocketAddress srcAddress;
@@ -37,7 +37,7 @@ public class CreateConnectionCmd implements DriverConductorCmd
         final int streamId,
         final int termId,
         final int termOffet,
-        final int termSize,
+        final int termLength,
         final int senderMtuLength,
         final InetSocketAddress controlAddress,
         final InetSocketAddress srcAddress,
@@ -47,7 +47,7 @@ public class CreateConnectionCmd implements DriverConductorCmd
         this.streamId = streamId;
         this.termId = termId;
         this.termOffset = termOffet;
-        this.termSize = termSize;
+        this.termLength = termLength;
         this.senderMtuLength = senderMtuLength;
         this.controlAddress = controlAddress;
         this.srcAddress = srcAddress;
@@ -61,7 +61,7 @@ public class CreateConnectionCmd implements DriverConductorCmd
             streamId,
             termId,
             termOffset,
-            termSize,
+            termLength,
             senderMtuLength,
             controlAddress,
             srcAddress,

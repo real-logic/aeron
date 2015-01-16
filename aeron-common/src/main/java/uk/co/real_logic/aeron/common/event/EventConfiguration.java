@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.common.event.EventCode.*;
 public class EventConfiguration
 {
     /**
-     * Event Buffer size system property name
+     * Event Buffer length system property name
      */
     public static final String BUFFER_LENGTH_PROPERTY_NAME = "aeron.event.buffer.length";
 
@@ -74,7 +74,7 @@ public class EventConfiguration
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 
     /**
-     * Event Buffer default size (in bytes)
+     * Event Buffer default length (in bytes)
      */
     public static final int BUFFER_LENGTH_DEFAULT = 65536;
 

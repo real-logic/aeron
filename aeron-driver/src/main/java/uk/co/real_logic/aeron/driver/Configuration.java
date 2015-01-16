@@ -36,44 +36,44 @@ import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 public class Configuration
 {
     /**
-     * Byte buffer size (in bytes) for reads
+     * Byte buffer length (in bytes) for reads
      */
-    public static final String READ_BUFFER_SZ_PROP_NAME = "aeron.rcv.buffer.size";
+    public static final String READ_BUFFER_LENGTH_PROP_NAME = "aeron.rcv.buffer.length";
 
     /**
-     * Size (in bytes) of the log buffers for publication terms
+     * Length (in bytes) of the log buffers for publication terms
      */
-    public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.size";
+    public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
 
     /**
-     * Size (in bytes) of the log buffers for terms for incoming connections
+     * Length (in bytes) of the log buffers for terms for incoming connections
      */
-    public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.size.max";
+    public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
 
     /**
-     * Size (in bytes) of the command buffers between threads
+     * Length (in bytes) of the command buffers between threads
      */
-    public static final String COMMAND_BUFFER_SZ_PROP_NAME = "aeron.command.buffer.size";
+    public static final String COMMAND_BUFFER_LENGTH_PROP_NAME = "aeron.command.buffer.length";
 
     /**
-     * Size (in bytes) of the conductor buffers between the media driver and the client
+     * Length (in bytes) of the conductor buffers between the media driver and the client
      */
-    public static final String CONDUCTOR_BUFFER_SZ_PROP_NAME = "aeron.conductor.buffer.size";
+    public static final String CONDUCTOR_BUFFER_LENGTH_PROP_NAME = "aeron.conductor.buffer.length";
 
     /**
-     * Size (in bytes) of the broadcast buffers from the media driver to the clients
+     * Length (in bytes) of the broadcast buffers from the media driver to the clients
      */
-    public static final String TO_CLIENTS_BUFFER_SZ_PROP_NAME = "aeron.clients.buffer.size";
+    public static final String TO_CLIENTS_BUFFER_LENGTH_PROP_NAME = "aeron.clients.buffer.length";
 
     /**
-     * Property name for size of the memory mapped buffers for the counters file
+     * Property name for length of the memory mapped buffers for the counters file
      */
-    public static final String COUNTER_BUFFERS_SZ_PROP_NAME = "aeron.dir.counters.size";
+    public static final String COUNTER_BUFFERS_LENGTH_PROP_NAME = "aeron.dir.counters.length";
 
     /**
-     * Property name for size of the initial window
+     * Property name for length of the initial window
      */
-    public static final String INITIAL_WINDOW_SIZE_PROP_NAME = "aeron.rcv.initial.window.size";
+    public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
 
     /**
      * Property name for status message timeout in nanoseconds
@@ -83,12 +83,12 @@ public class Configuration
     /**
      * Property name for SO_RCVBUF setting on UDP sockets
      */
-    public static final String SOCKET_RCVBUF_SZ_PROP_NAME = "aeron.socket.so_rcvbuf";
+    public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
 
     /**
      * Property name for SO_SNDBUF setting on UDP sockets
      */
-    public static final String SOCKET_SNDBUF_SZ_PROP_NAME = "aeron.socket.so_sndbuf";
+    public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 
     /**
      * Property name for linger timeout for publications
@@ -98,14 +98,14 @@ public class Configuration
     /**
      * Property name for window limit on publication side
      */
-    public static final String PUBLICATION_TERM_WINDOW_SIZE_PROP_NAME = "aeron.publication.term.window.size";
-    public static final int PUBLICATION_TERM_WINDOW_SZ = getInteger(PUBLICATION_TERM_WINDOW_SIZE_PROP_NAME, 0);
+    public static final String PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.publication.term.window.length";
+    public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
      * Property name for window limit on subscription side
      */
-    public static final String SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME = "aeron.subscription.term.window.size";
-    public static final int SUBSCRIPTION_TERM_WINDOW_SZ = getInteger(SUBSCRIPTION_TERM_WINDOW_SIZE_PROP_NAME, 0);
+    public static final String SUBSCRIPTION_TERM_WINDOW_ENGTH_PROP_NAME = "aeron.subscription.term.window.length";
+    public static final int SUBSCRIPTION_TERM_WINDOW_LENGTH = getInteger(SUBSCRIPTION_TERM_WINDOW_ENGTH_PROP_NAME, 0);
 
     /**
      * Property name for client liveness timeout
@@ -138,44 +138,46 @@ public class Configuration
     public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
 
     /**
-     * Default byte buffer size for reads
+     * Default byte buffer length for reads
      */
-    public static final int READ_BYTE_BUFFER_SZ_DEFAULT = 4096;
-    public static final int READ_BYTE_BUFFER_SZ = getInteger(READ_BUFFER_SZ_PROP_NAME, READ_BYTE_BUFFER_SZ_DEFAULT);
+    public static final int READ_BYTE_BUFFER_LENGTH_DEFAULT = 4096;
+    public static final int READ_BYTE_BUFFER_LENGTH = getInteger(READ_BUFFER_LENGTH_PROP_NAME, READ_BYTE_BUFFER_LENGTH_DEFAULT);
 
     /**
-     * Default term buffer size.
+     * Default term buffer length.
      */
     public static final int TERM_BUFFER_LENGTH_DEFAULT = 16 * 1024 * 1024;
 
     /**
-     * Default term buffer size max.
+     * Default term max buffer length.
      */
     public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 16 * 1024 * 1024;
 
     /**
-     * Default buffer size for command buffers between threads
+     * Default buffer length for command buffers between threads
      */
-    public static final int COMMAND_BUFFER_SZ_DEFAULT = 1024 * 1024;
-    public static final int COMMAND_BUFFER_SZ = getInteger(COMMAND_BUFFER_SZ_PROP_NAME, COMMAND_BUFFER_SZ_DEFAULT);
+    public static final int COMMAND_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+    public static final int COMMAND_BUFFER_LENGTH = getInteger(COMMAND_BUFFER_LENGTH_PROP_NAME, COMMAND_BUFFER_LENGTH_DEFAULT);
 
     /**
-     * Default buffer size for conductor buffers between the media driver and the client
+     * Default buffer length for conductor buffers between the media driver and the client
      */
-    public static final int CONDUCTOR_BUFFER_SZ_DEFAULT = 1024 * 1024 + RingBufferDescriptor.TRAILER_LENGTH;
-    public static final int CONDUCTOR_BUFFER_SZ = getInteger(CONDUCTOR_BUFFER_SZ_PROP_NAME, CONDUCTOR_BUFFER_SZ_DEFAULT);
+    public static final int CONDUCTOR_BUFFER_LENGTH_DEFAULT = 1024 * 1024 + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final int CONDUCTOR_BUFFER_LENGTH = getInteger(
+        CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
 
     /**
-     * Default buffer size for broadcast buffers from the media driver to the clients
+     * Default buffer length for broadcast buffers from the media driver to the clients
      */
-    public static final int TO_CLIENTS_BUFFER_SZ_DEFAULT = 1024 * 1024 + BroadcastBufferDescriptor.TRAILER_LENGTH;
-    public static final int TO_CLIENTS_BUFFER_SZ = getInteger(TO_CLIENTS_BUFFER_SZ_PROP_NAME, TO_CLIENTS_BUFFER_SZ_DEFAULT);
+    public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = 1024 * 1024 + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    public static final int TO_CLIENTS_BUFFER_LENGTH = getInteger(
+        TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
 
     /**
-     * Size of the memory mapped buffers for the counters file
+     * Length of the memory mapped buffers for the counters file
      */
-    public static final int COUNTERS_BUFFER_SZ_DEFAULT = 64 * 1024 * 1024;
-    public static final int COUNTER_BUFFERS_SZ = getInteger(COUNTER_BUFFERS_SZ_PROP_NAME, COUNTERS_BUFFER_SZ_DEFAULT);
+    public static final int COUNTERS_BUFFER_LENGTH_DEFAULT = 64 * 1024 * 1024;
+    public static final int COUNTER_BUFFERS_LENGTH = getInteger(COUNTER_BUFFERS_LENGTH_PROP_NAME, COUNTERS_BUFFER_LENGTH_DEFAULT);
 
     /**
      * Default group size estimate for NAK delay randomization
@@ -213,9 +215,9 @@ public class Configuration
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     /**
-     * Default initial window size for flow control sender to receiver purposes
+     * Default initial window length for flow control sender to receiver purposes
      * <p>
-     * Sizing of Initial Window
+     * Length of Initial Window
      * <p>
      * RTT (LAN) = 100 usec
      * Throughput = 10 Gbps
@@ -224,7 +226,7 @@ public class Configuration
      * Buffer = (10*1000*1000*1000/8) * 0.0001 = 125000
      * Round to 128KB
      */
-    public static final int INITIAL_WINDOW_SIZE_DEFAULT = 128 * 1024;
+    public static final int INITIAL_WINDOW_LENGTH_DEFAULT = 128 * 1024;
 
     /**
      * Max timeout between SMs.
@@ -234,14 +236,14 @@ public class Configuration
     /**
      * 0 means use OS default.
      */
-    public static final int SOCKET_RCVBUF_SZ_DEFAULT = 128 * 1024;
-    public static final int SOCKET_RCVBUF_SZ = getInteger(SOCKET_RCVBUF_SZ_PROP_NAME, SOCKET_RCVBUF_SZ_DEFAULT);
+    public static final int SOCKET_RCVBUF_LENGTH_DEFAULT = 128 * 1024;
+    public static final int SOCKET_RCVBUF_LENGTH = getInteger(SOCKET_RCVBUF_LENGTH_PROP_NAME, SOCKET_RCVBUF_LENGTH_DEFAULT);
 
     /**
      * 0 means use OS default.
      */
-    public static final int SOCKET_SNDBUF_SZ_DEFAULT = 0;
-    public static final int SOCKET_SNDBUF_SZ = getInteger(SOCKET_SNDBUF_SZ_PROP_NAME, SOCKET_SNDBUF_SZ_DEFAULT);
+    public static final int SOCKET_SNDBUF_LENGTH_DEFAULT = 0;
+    public static final int SOCKET_SNDBUF_LENGTH = getInteger(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 
     /**
      * Time for publications to linger before cleanup
@@ -322,49 +324,49 @@ public class Configuration
     /**
      * How far ahead the receiver can get from the subscriber position.
      *
-     * @param termCapacity to be used when {@link #SUBSCRIPTION_TERM_WINDOW_SZ} is not set.
-     * @return the size to be used for the subscription window.
+     * @param termCapacity to be used when {@link #SUBSCRIPTION_TERM_WINDOW_LENGTH} is not set.
+     * @return the length to be used for the subscription window.
      */
-    public static int subscriptionTermWindowSize(final int termCapacity)
+    public static int subscriptionTermWindowLength(final int termCapacity)
     {
-        return 0 != SUBSCRIPTION_TERM_WINDOW_SZ ? SUBSCRIPTION_TERM_WINDOW_SZ : termCapacity / 2;
+        return 0 != SUBSCRIPTION_TERM_WINDOW_LENGTH ? SUBSCRIPTION_TERM_WINDOW_LENGTH : termCapacity / 2;
     }
 
     /**
      * How far ahead the publisher can get from the sender position.
      *
-     * @param termCapacity to be used when {@link #PUBLICATION_TERM_WINDOW_SZ} is not set.
-     * @return the size to be used for the publication window.
+     * @param termCapacity to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
+     * @return the length to be used for the publication window.
      */
-    public static int publicationTermWindowSize(final int termCapacity)
+    public static int publicationTermWindowLength(final int termCapacity)
     {
-        return 0 != PUBLICATION_TERM_WINDOW_SZ ? PUBLICATION_TERM_WINDOW_SZ : termCapacity / 2;
+        return 0 != PUBLICATION_TERM_WINDOW_LENGTH ? PUBLICATION_TERM_WINDOW_LENGTH : termCapacity / 2;
     }
 
     /**
-     * Validate the the term buffer size is a power of two.
+     * Validate the the term buffer length is a power of two.
      *
-     * @param size of the term buffer
+     * @param length of the term buffer
      */
-    public static void validateTermBufferLength(final int size)
+    public static void validateTermBufferLength(final int length)
     {
-        if (!BitUtil.isPowerOfTwo(size))
+        if (!BitUtil.isPowerOfTwo(length))
         {
-            throw new IllegalStateException("Term buffer size must be a positive power of 2: " + size);
+            throw new IllegalStateException("Term buffer length must be a positive power of 2: " + length);
         }
     }
 
     /**
-     * Validate that the initial window size is suitably greater than MTU.
+     * Validate that the initial window length is suitably greater than MTU.
      *
-     * @param initialWindowSize to be validated.
+     * @param initialWindowLength to be validated.
      * @param mtuLength against which to validate.
      */
-    public static void validateInitialWindowLength(final int initialWindowSize, final int mtuLength)
+    public static void validateInitialWindowLength(final int initialWindowLength, final int mtuLength)
     {
-        if (mtuLength > initialWindowSize)
+        if (mtuLength > initialWindowLength)
         {
-            throw new IllegalStateException("Initial window size must be >= to MTU length: " + mtuLength);
+            throw new IllegalStateException("Initial window length must be >= to MTU length: " + mtuLength);
         }
     }
 
@@ -434,7 +436,7 @@ public class Configuration
 
     public static int initialWindowLength()
     {
-        return getInteger(INITIAL_WINDOW_SIZE_PROP_NAME, INITIAL_WINDOW_SIZE_DEFAULT);
+        return getInteger(INITIAL_WINDOW_LENGTH_PROP_NAME, INITIAL_WINDOW_LENGTH_DEFAULT);
     }
 
     public static long statusMessageTimeout()

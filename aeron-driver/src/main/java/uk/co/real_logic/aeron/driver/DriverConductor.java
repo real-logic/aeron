@@ -104,7 +104,7 @@ public class DriverConductor implements Agent
 
     private final int mtuLength;
     private final int capacity;
-    private final int initialWindowSize;
+    private final int initialWindowLength;
     private final long statusMessageTimeout;
     private final long dataLossSeed;
     private final long controlLossSeed;
@@ -129,7 +129,7 @@ public class DriverConductor implements Agent
         this.rawLogFactory = ctx.rawLogBuffersFactory();
         this.transportPoller = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
-        this.initialWindowSize = ctx.initialWindowLength();
+        this.initialWindowLength = ctx.initialWindowLength();
         this.capacity = ctx.termBufferLength();
         this.statusMessageTimeout = ctx.statusMessageTimeout();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
@@ -535,8 +535,7 @@ public class DriverConductor implements Agent
         final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.validateSenderMtuLength(senderMtuLength);
-        // window size is static at the moment. This needs to change to max once it is adjustable.
-        channelEndpoint.validateWindowSizeMax(initialWindowSize);
+        channelEndpoint.validateWindowMaxLength(initialWindowLength);
 
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();
@@ -598,7 +597,7 @@ public class DriverConductor implements Agent
             streamId,
             initialTermId,
             initialTermOffset,
-            initialWindowSize,
+            initialWindowLength,
             statusMessageTimeout,
             rawLog,
             lossHandler,

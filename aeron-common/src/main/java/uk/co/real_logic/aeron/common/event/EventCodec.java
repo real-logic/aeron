@@ -450,7 +450,7 @@ public class EventCodec
             header.streamId(),
             header.termId(),
             header.completedTermOffset(),
-            header.receiverWindowSize());
+            header.receiverWindowLength());
     }
 
     private static String dissect(final NakFlyweight header)
@@ -476,7 +476,7 @@ public class EventCodec
             header.streamId(),
             header.termId(),
             header.termOffset(),
-            header.termSize(),
+            header.termLength(),
             header.mtuLength());
     }
 

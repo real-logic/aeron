@@ -147,7 +147,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
             if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {
                 createConnection(
-                    srcAddress, streamId, sessionId, termId, header.termOffset(), header.termSize(), header.mtuLength());
+                    srcAddress, streamId, sessionId, termId, header.termOffset(), header.termLength(), header.mtuLength());
             }
         }
     }
@@ -168,7 +168,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
         final int sessionId,
         final int termId,
         final int termOffset,
-        final int termSize,
+        final int termLength,
         final int mtuLength)
     {
         final UdpChannelTransport transport = channelEndpoint.transport();
@@ -177,6 +177,6 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
 
         initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createConnection(
-            sessionId, streamId, termId, termOffset, termSize, mtuLength, controlAddress, srcAddress, channelEndpoint);
+            sessionId, streamId, termId, termOffset, termLength, mtuLength, controlAddress, srcAddress, channelEndpoint);
     }
 }

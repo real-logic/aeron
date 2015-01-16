@@ -95,10 +95,10 @@ public class LogBufferHelper
         };
     }
 
-    private static RawLogPartition newTestLogBuffer(final int termBufferLength, final int metaDataBufferSize)
+    private static RawLogPartition newTestLogBuffer(final int termBufferLength, final int metaDataBufferLength)
     {
         return new RawLogPartition(
             new UnsafeBuffer(ByteBuffer.allocate(termBufferLength)),
-            new UnsafeBuffer(ByteBuffer.allocate(metaDataBufferSize)));
+            new UnsafeBuffer(ByteBuffer.allocate(metaDataBufferLength)));
     }
 }

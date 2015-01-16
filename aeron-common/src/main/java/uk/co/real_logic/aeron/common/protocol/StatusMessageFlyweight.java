@@ -24,7 +24,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class StatusMessageFlyweight extends HeaderFlyweight
 {
-    /** Size of the Status Message Packet */
+    /** Length of the Status Message Packet */
     public static final int HEADER_LENGTH = 28;
 
     /** Publisher should send SETUP frame */
@@ -131,7 +131,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      *
      * @return receiver window field
      */
-    public int receiverWindowSize()
+    public int receiverWindowLength()
     {
         return buffer().getInt(offset() + RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
     }
@@ -139,12 +139,12 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     /**
      * set receiver window field
      *
-     * @param receiverWindowSize field value
+     * @param receiverWindowLength field value
      * @return flyweight
      */
-    public StatusMessageFlyweight receiverWindowSize(final int receiverWindowSize)
+    public StatusMessageFlyweight receiverWindowLength(final int receiverWindowLength)
     {
-        buffer().putInt(offset() + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowSize, LITTLE_ENDIAN);
+        buffer().putInt(offset() + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowLength, LITTLE_ENDIAN);
 
         return this;
     }

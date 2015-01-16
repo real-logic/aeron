@@ -25,19 +25,19 @@ public interface SenderFlowControl
     /**
      * Update the sender flow control strategy based on a status message from the receiver.
      *
-     * @param termId currently active for the receiver.
-     * @param completedTermOffset within the current active term for the receiver.
-     * @param receiverWindowSize supported by the receiver.
-     * @param address of the receiver.
+     * @param termId               currently active for the receiver.
+     * @param completedTermOffset  within the current active term for the receiver.
+     * @param receiverWindowLength supported by the receiver.
+     * @param address              of the receiver.
      * @return the new position limit to be employed by the sender.
      */
-    long onStatusMessage(int termId, int completedTermOffset, int receiverWindowSize, InetSocketAddress address);
+    long onStatusMessage(int termId, int completedTermOffset, int receiverWindowLength, InetSocketAddress address);
 
     /**
      * Initial limit to which the {@link Sender} position can progress.
      *
      * @param initialTermId      for the term buffers
-     * @param termBufferCapacity to use as the size of each term buffer
+     * @param termBufferCapacity to use as the length of each term buffer
      * @return limit to which the position can go.
      */
     long initialPositionLimit(int initialTermId, int termBufferCapacity);

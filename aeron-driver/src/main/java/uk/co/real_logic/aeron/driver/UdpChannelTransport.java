@@ -35,7 +35,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
 {
     private final DatagramChannel datagramChannel;
     private final UdpChannel udpChannel;
-    private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_SZ);
+    private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final EventLogger logger;
@@ -77,29 +77,29 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 multicast = false;
             }
 
-            if (0 != Configuration.SOCKET_SNDBUF_SZ)
+            if (0 != Configuration.SOCKET_SNDBUF_LENGTH)
             {
-                datagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_SZ);
+                datagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
                 final int soSendbuf = datagramChannel.getOption(StandardSocketOptions.SO_SNDBUF);
 
-                if (soSendbuf != Configuration.SOCKET_SNDBUF_SZ)
+                if (soSendbuf != Configuration.SOCKET_SNDBUF_LENGTH)
                 {
                     throw new IllegalStateException(
                         String.format("Failed to set SO_SNDBUF: attempted=%d, actual=%d",
-                                      Configuration.SOCKET_SNDBUF_SZ, soSendbuf));
+                                      Configuration.SOCKET_SNDBUF_LENGTH, soSendbuf));
                 }
             }
 
-            if (0 != Configuration.SOCKET_RCVBUF_SZ)
+            if (0 != Configuration.SOCKET_RCVBUF_LENGTH)
             {
-                datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_SZ);
+                datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_LENGTH);
                 final int soRcvbuf = datagramChannel.getOption(StandardSocketOptions.SO_RCVBUF);
 
-                if (soRcvbuf != Configuration.SOCKET_RCVBUF_SZ)
+                if (soRcvbuf != Configuration.SOCKET_RCVBUF_LENGTH)
                 {
                     throw new IllegalStateException(
                         String.format("Failed to set SO_RCVBUF: attempted=%d, actual=%d",
-                                      Configuration.SOCKET_RCVBUF_SZ, soRcvbuf));
+                                      Configuration.SOCKET_RCVBUF_LENGTH, soRcvbuf));
                 }
             }
 

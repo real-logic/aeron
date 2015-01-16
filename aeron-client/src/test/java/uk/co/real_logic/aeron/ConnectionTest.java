@@ -38,8 +38,8 @@ import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class ConnectionTest
 {
-    private static final int LOG_BUFFER_SIZE = LogBufferDescriptor.TERM_MIN_LENGTH;
-    private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE);
+    private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
+    private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH);
     private static final byte[] DATA = new byte[36];
 
     static
@@ -75,7 +75,7 @@ public class ConnectionTest
     {
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
+            final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
             final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
 
             rebuilders[i] = new LogRebuilder(logBuffer, metaDataBuffer);

@@ -57,9 +57,9 @@ import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_PROP_NAME;
  * </code>
  * Properties
  * <ul>
- * <li><code>aeron.rcv.buffer.size</code>: Use int value as size of buffer for receiving from network.</li>
- * <li><code>aeron.command.buffer.size</code>: Use int value as size of the command buffers between threads.</li>
- * <li><code>aeron.conductor.buffer.size</code>: Use int value as size of the conductor buffers between the media
+ * <li><code>aeron.rcv.buffer.length</code>: Use int value as length of buffer for receiving from network.</li>
+ * <li><code>aeron.command.buffer.length</code>: Use int value as length of the command buffers between threads.</li>
+ * <li><code>aeron.conductor.buffer.length</code>: Use int value as length of the conductor buffers between the media
  * driver and the client.</li>
  * </ul>
  */
@@ -335,12 +335,12 @@ public final class MediaDriver implements AutoCloseable
                     toDriverFile().deleteOnExit();
                 }
 
-                toClientsBuffer = mapNewFile(toClientsFile(), Configuration.TO_CLIENTS_BUFFER_SZ);
+                toClientsBuffer = mapNewFile(toClientsFile(), Configuration.TO_CLIENTS_BUFFER_LENGTH);
 
                 final BroadcastTransmitter transmitter = new BroadcastTransmitter(new UnsafeBuffer(toClientsBuffer));
                 clientProxy(new ClientProxy(transmitter, eventLogger));
 
-                toDriverBuffer = mapNewFile(toDriverFile(), Configuration.CONDUCTOR_BUFFER_SZ);
+                toDriverBuffer = mapNewFile(toDriverFile(), Configuration.CONDUCTOR_BUFFER_LENGTH);
 
                 toDriverCommands(new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer)));
 
@@ -804,7 +804,7 @@ public final class MediaDriver implements AutoCloseable
                         counterLabelsFile.deleteOnExit();
                     }
 
-                    counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_SZ);
+                    counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_LENGTH);
                     counterLabelsBuffer(new UnsafeBuffer(counterLabelsByteBuffer));
                 }
 
@@ -818,7 +818,7 @@ public final class MediaDriver implements AutoCloseable
                         counterValuesFile.deleteOnExit();
                     }
 
-                    counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_SZ);
+                    counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_LENGTH);
                     countersBuffer(new UnsafeBuffer(counterValuesByteBuffer));
                 }
 

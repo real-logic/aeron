@@ -140,15 +140,15 @@ public class EventLogger
         }
     }
 
-    public void logOverRun(final long proposedPos, final long subscriberPos, final long windowSize)
+    public void logOverRun(final long proposedPos, final long subscriberPos, final long windowLength)
     {
         if (isEnabled(EventCode.FLOW_CONTROL_OVERRUN, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.FLOW_CONTROL_OVERRUN, String.format("%x > %x + %d", proposedPos, subscriberPos, windowSize));
+            logString(EventCode.FLOW_CONTROL_OVERRUN, String.format("%x > %x + %d", proposedPos, subscriberPos, windowLength));
         }
     }
 
-    public void logChannelCreated(String description)
+    public void logChannelCreated(final String description)
     {
         if (isEnabled(EventCode.CHANNEL_CREATION, ENABLED_EVENT_CODES))
         {

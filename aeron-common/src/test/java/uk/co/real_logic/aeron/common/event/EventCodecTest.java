@@ -29,9 +29,9 @@ public class EventCodecTest
     private static final String FILE = EventCodecTest.class.getSimpleName() + ".java";
     private static final int LINE_NUMBER = 10;
 
-    private static final int BUFFER_SIZE = 1024 * 10;
+    private static final int BUFFER_LENGTH = 1024 * 10;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[BUFFER_SIZE]);
+    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
 
     @Test
     public void dissectAsExceptionShouldContainTheValuesEncoded()

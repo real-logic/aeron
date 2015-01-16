@@ -159,15 +159,15 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
     }
 
-    public void validateWindowSizeMax(final int windowSizeMax)
+    public void validateWindowMaxLength(final int windowMaxLength)
     {
         final int soRcvbuf = transport.getOption(StandardSocketOptions.SO_RCVBUF);
 
-        if (windowSizeMax > soRcvbuf)
+        if (windowMaxLength > soRcvbuf)
         {
             throw new ConfigurationException(
-                String.format("Max Window Size greater than socket SO_RCVBUF: windowSizeMax=%d, SO_RCVBUF=%d",
-                    windowSizeMax, soRcvbuf));
+                String.format("Max Window length greater than socket SO_RCVBUF: windowMaxLength=%d, SO_RCVBUF=%d",
+                    windowMaxLength, soRcvbuf));
         }
     }
 
@@ -207,7 +207,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
                     .streamId(streamId)
                     .termId(termId)
                     .completedTermOffset(termOffset)
-                    .receiverWindowSize(window)
+                    .receiverWindowLength(window)
                     .headerType(HeaderFlyweight.HDR_TYPE_SM)
                     .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
                     .flags(flags)

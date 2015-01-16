@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
  * buffer for reassembly before delegation.
  *
- * Session based buffers will be allocated and grown as necessary based on the size of messages to be assembled.
+ * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
  *
  * When sessions go inactive {@see InactiveConnectionHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
@@ -57,13 +57,13 @@ public class FragmentAssemblyAdapter implements DataHandler
     /**
      * Construct an adapter to reassembly message fragments and delegate on only whole messages.
      *
-     * @param delegate          onto which whole messages are forwarded.
-     * @param initialBufferSize to be used for each session.
+     * @param delegate            onto which whole messages are forwarded.
+     * @param initialBufferLength to be used for each session.
      */
-    public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferSize)
+    public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
-        builderSupplier = () -> new BufferBuilder(initialBufferSize);
+        builderSupplier = () -> new BufferBuilder(initialBufferLength);
     }
 
     public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)

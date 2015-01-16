@@ -97,11 +97,11 @@ public class SenderTest
             final Object args[] = invocation.getArguments();
             final ByteBuffer buffer = (ByteBuffer)args[0];
 
-            final int size = buffer.limit() - buffer.position();
-            receivedFrames.add(ByteBuffer.allocate(size).put(buffer));
+            final int length = buffer.limit() - buffer.position();
+            receivedFrames.add(ByteBuffer.allocate(length).put(buffer));
 
             // we don't pass on the args, so don't reset buffer.position() back
-            return size;
+            return length;
         };
 
     @Before

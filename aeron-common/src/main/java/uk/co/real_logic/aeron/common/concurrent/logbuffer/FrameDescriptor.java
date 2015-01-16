@@ -115,7 +115,7 @@ public class FrameDescriptor
      * Compute the maximum supported message length for a buffer of given capacity.
      *
      * @param capacity of the log buffer.
-     * @return the maximum supported size for a message.
+     * @return the maximum supported length for a message.
      */
     public static int computeMaxMessageLength(final int capacity)
     {
@@ -123,7 +123,7 @@ public class FrameDescriptor
     }
 
     /**
-     * Check the the default header is greater than or equal in size to
+     * Check the the default header is greater than or equal in length to
      * {@link #BASE_HEADER_LENGTH} and a multiple of {@link #WORD_ALIGNMENT}.
      *
      * @param length to check.

@@ -86,7 +86,7 @@ public class DriverConnection implements AutoCloseable
         final int streamId,
         final int initialTermId,
         final int initialTermOffset,
-        final int initialWindowSize,
+        final int initialWindowLength,
         final long statusMessageTimeout,
         final RawLog rawLog,
         final LossHandler lossHandler,
@@ -131,7 +131,7 @@ public class DriverConnection implements AutoCloseable
 
         final int termCapacity = rebuilders[0].capacity();
 
-        this.currentWindowLength = Math.min(termCapacity, initialWindowSize);
+        this.currentWindowLength = Math.min(termCapacity, initialWindowLength);
         this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
@@ -506,9 +506,9 @@ public class DriverConnection implements AutoCloseable
     }
 
     private void sendStatusMessage(
-        final int termId, final int termOffset, final long position, final int windowSize, final long now)
+        final int termId, final int termOffset, final long position, final int windowLength, final long now)
     {
-        statusMessageSender.send(termId, termOffset, windowSize);
+        statusMessageSender.send(termId, termOffset, windowLength);
 
         lastSmTermId = termId;
         lastSmTimestamp = now;

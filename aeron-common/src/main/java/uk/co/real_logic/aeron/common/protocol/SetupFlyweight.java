@@ -31,7 +31,7 @@ public class SetupFlyweight extends HeaderFlyweight
     private static final int SESSION_ID_FIELD_OFFSET = 12;
     private static final int STREAM_ID_FIELD_OFFSET = 16;
     private static final int TERM_ID_FIELD_OFFSET = 20;
-    private static final int TERM_SIZE_FIELD_OFFSET = 24;
+    private static final int TERM_LENGTH_FIELD_OFFSET = 24;
     private static final int MTU_LENGTH_FIELD_OFFSET = 28;
 
     /**
@@ -125,24 +125,24 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return term size field
+     * return term length field
      *
-     * @return term size field value
+     * @return term length field value
      */
-    public int termSize()
+    public int termLength()
     {
-        return buffer().getInt(offset() + TERM_SIZE_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + TERM_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set term size field
+     * set term length field
      *
-     * @param termSize field value
+     * @param termLength field value
      * @return flyweight
      */
-    public SetupFlyweight termSize(final int termSize)
+    public SetupFlyweight termLength(final int termLength)
     {
-        buffer().putInt(offset() + TERM_SIZE_FIELD_OFFSET, termSize, LITTLE_ENDIAN);
+        buffer().putInt(offset() + TERM_LENGTH_FIELD_OFFSET, termLength, LITTLE_ENDIAN);
 
         return this;
     }

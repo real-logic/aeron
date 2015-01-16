@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Publisher that sends as fast as possible a given number of messages at a given size
+ * Publisher that sends as fast as possible a given number of messages at a given length.
  */
 public class StreamingPublisher
 {

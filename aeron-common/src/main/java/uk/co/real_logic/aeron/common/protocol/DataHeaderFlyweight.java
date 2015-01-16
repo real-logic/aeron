@@ -29,7 +29,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class DataHeaderFlyweight extends HeaderFlyweight
 {
-    /** Size of the Data Header */
+    /** Length of the Data Header */
     public static final int HEADER_LENGTH = 24;
 
     /** Begin Flag */

@@ -73,7 +73,7 @@ public class Subscription implements AutoCloseable
     /**
      * Read waiting data and deliver to {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler}s.
      *
-     * Each fragment read will be a whole message if it is under MTU size. If larger than MTU side then it will come
+     * Each fragment read will be a whole message if it is under MTU length. If larger than MTU side then it will come
      * as a series of fragments ordered withing a session.
      *
      * @param fragmentCountLimit number of message fragments to limit for a single poll operation.

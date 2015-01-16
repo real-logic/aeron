@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
  */
 class DriverProxy
 {
-    /** Maximum size of the write buffer */
+    /** Maximum capacity of the write buffer */
     public static final int MSG_BUFFER_CAPACITY = 4096;
 
     private final UnsafeBuffer writeBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(MSG_BUFFER_CAPACITY));

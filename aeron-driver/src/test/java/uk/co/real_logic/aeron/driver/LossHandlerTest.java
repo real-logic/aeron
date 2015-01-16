@@ -41,8 +41,8 @@ import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class LossHandlerTest
 {
-    private static final int LOG_BUFFER_SIZE = TERM_MIN_LENGTH;
-    private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(LOG_BUFFER_SIZE);
+    private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
+    private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH);
     private static final byte[] DATA = new byte[36];
 
     static
@@ -85,7 +85,7 @@ public class LossHandlerTest
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_BUFFER_SIZE));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
             final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
             rebuilders[i] = new LogRebuilder(termBuffer, metaDataBuffer);
             scanners[i] = new GapScanner(termBuffer, metaDataBuffer);
@@ -249,13 +249,13 @@ public class LossHandlerTest
 
         // fill term buffer (making sure to be exact, i.e. no padding)
         int offset = 0, i = 0;
-        while (LOG_BUFFER_SIZE > offset)
+        while (TERM_BUFFER_LENGTH > offset)
         {
             insertDataFrame(offsetOfMessage(i++));
             offset += ALIGNED_FRAME_LENGTH;
         }
 
-        assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
+        assertThat(offset, is(TERM_BUFFER_LENGTH));  // sanity check the fill to make sure it doesn't need padding
         assertTrue(rebuilders[activeIndex].isComplete());
         assertThat(handler.scan(), is(1));
 
@@ -278,7 +278,7 @@ public class LossHandlerTest
 
         // fill term buffer except the padding frame
         int offset = 0, i = 0;
-        while ((LOG_BUFFER_SIZE - 1024) > offset)
+        while ((TERM_BUFFER_LENGTH - 1024) > offset)
         {
             insertDataFrame(offsetOfMessage(i++));
             offset += ALIGNED_FRAME_LENGTH;
@@ -308,13 +308,13 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         // fill term buffer except the padding frame
         int offset = offsetOfMessage(2), i = 2;
-        while (LOG_BUFFER_SIZE > offset)
+        while (TERM_BUFFER_LENGTH > offset)
         {
             insertDataFrame(offsetOfMessage(i++));
             offset += ALIGNED_FRAME_LENGTH;
         }
 
-        assertThat(offset, is(LOG_BUFFER_SIZE));  // sanity check the fill to make sure it doesn't need padding
+        assertThat(offset, is(TERM_BUFFER_LENGTH));  // sanity check the fill to make sure it doesn't need padding
         assertFalse(rebuilders[activeIndex].isComplete());
         assertThat(handler.scan(), is(0));
 
@@ -360,7 +360,7 @@ public class LossHandlerTest
 
         // fill term buffer except the padding frame
         int offset = 0, i = 0;
-        while ((LOG_BUFFER_SIZE - 1024) > offset)
+        while ((TERM_BUFFER_LENGTH - 1024) > offset)
         {
             insertDataFrame(offsetOfMessage(i++));
             offset += ALIGNED_FRAME_LENGTH;
@@ -382,7 +382,7 @@ public class LossHandlerTest
         handler.hwmCandidate(highPosition);
         assertThat(handler.scan(), is(0));
 
-        verify(nakMessageSender).send(TERM_ID, offset, LOG_BUFFER_SIZE - offset);
+        verify(nakMessageSender).send(TERM_ID, offset, TERM_BUFFER_LENGTH - offset);
     }
 
     @Test
@@ -442,7 +442,7 @@ public class LossHandlerTest
                   .streamId(STREAM_ID)
                   .sessionId(SESSION_ID)
                   .termOffset(offset)
-                  .frameLength(LOG_BUFFER_SIZE - offset)
+                  .frameLength(TERM_BUFFER_LENGTH - offset)
                   .headerType(FrameDescriptor.PADDING_FRAME_TYPE)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);

@@ -130,7 +130,7 @@ public class DriverPublication implements AutoCloseable
 
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
-        termWindowLength = Configuration.publicationTermWindowSize(termCapacity);
+        termWindowLength = Configuration.publicationTermWindowLength(termCapacity);
         publisherLimit.position(termWindowLength);
 
         sendTransmissionUnitFunc = this::onSendTransmissionUnit;
@@ -444,7 +444,7 @@ public class DriverPublication implements AutoCloseable
                    .streamId(streamId)
                    .termId(activeTermId)
                    .termOffset(0)
-                   .termSize(termCapacity)
+                   .termLength(termCapacity)
                    .mtuLength(mtuLength)
                    .frameLength(SetupFlyweight.HEADER_LENGTH)
                    .headerType(HeaderFlyweight.HDR_TYPE_SETUP)

@@ -102,32 +102,32 @@ public class BufferBuilderTest
     @Test
     public void shouldFillBufferWithoutResizing()
     {
-        final int bufferSize = 128;
-        final byte[] buffer = new byte[bufferSize];
+        final int bufferLength = 128;
+        final byte[] buffer = new byte[bufferLength];
         Arrays.fill(buffer, (byte)7);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
-        final BufferBuilder bufferBuilder = new BufferBuilder(bufferSize);
+        final BufferBuilder bufferBuilder = new BufferBuilder(bufferLength);
 
-        bufferBuilder.append(srcBuffer, 0, bufferSize);
+        bufferBuilder.append(srcBuffer, 0, bufferLength);
 
-        final byte[] temp = new byte[bufferSize];
-        bufferBuilder.buffer().getBytes(0, temp, 0, bufferSize);
+        final byte[] temp = new byte[bufferLength];
+        bufferBuilder.buffer().getBytes(0, temp, 0, bufferLength);
 
-        assertThat(bufferBuilder.limit(), is(bufferSize));
-        assertThat(bufferBuilder.capacity(), is(bufferSize));
+        assertThat(bufferBuilder.limit(), is(bufferLength));
+        assertThat(bufferBuilder.capacity(), is(bufferLength));
         assertArrayEquals(temp, buffer);
     }
 
     @Test
     public void shouldResizeWhenBufferJustDoesNotFit()
     {
-        final int bufferSize = 128;
-        final byte[] buffer = new byte[bufferSize + 1];
+        final int bufferLength = 128;
+        final byte[] buffer = new byte[bufferLength + 1];
         Arrays.fill(buffer, (byte)7);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
-        final BufferBuilder bufferBuilder = new BufferBuilder(bufferSize);
+        final BufferBuilder bufferBuilder = new BufferBuilder(bufferLength);
 
         bufferBuilder.append(srcBuffer, 0, buffer.length);
 
@@ -135,21 +135,21 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, buffer.length);
 
         assertThat(bufferBuilder.limit(), is(buffer.length));
-        assertThat(bufferBuilder.capacity(), is(bufferSize * 2));
+        assertThat(bufferBuilder.capacity(), is(bufferLength * 2));
         assertArrayEquals(temp, buffer);
     }
 
     @Test
     public void shouldAppendTwoBuffersAndResize()
     {
-        final int bufferSize = 128;
-        final byte[] buffer = new byte[bufferSize];
+        final int bufferLength = 128;
+        final byte[] buffer = new byte[bufferLength];
         final int firstLength = buffer.length / 4;
         final int secondLength = buffer.length / 2;
         Arrays.fill(buffer, 0, firstLength + secondLength, (byte)7);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
-        final BufferBuilder bufferBuilder = new BufferBuilder(bufferSize / 2);
+        final BufferBuilder bufferBuilder = new BufferBuilder(bufferLength / 2);
 
         bufferBuilder.append(srcBuffer, 0, firstLength);
         bufferBuilder.append(srcBuffer, firstLength, secondLength);
@@ -158,15 +158,15 @@ public class BufferBuilderTest
         bufferBuilder.buffer().getBytes(0, temp, 0, secondLength + firstLength);
 
         assertThat(bufferBuilder.limit(), is(firstLength + secondLength));
-        assertThat(bufferBuilder.capacity(), is(bufferSize));
+        assertThat(bufferBuilder.capacity(), is(bufferLength));
         assertArrayEquals(temp, buffer);
     }
 
     @Test
     public void shouldCompactBufferToLowerLimit()
     {
-        final int bufferSize = INITIAL_CAPACITY / 2;
-        final byte[] buffer = new byte[bufferSize];
+        final int bufferLength = INITIAL_CAPACITY / 2;
+        final byte[] buffer = new byte[bufferLength];
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(buffer);
 
         final BufferBuilder bufferBuilder = new BufferBuilder();

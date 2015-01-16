@@ -68,7 +68,7 @@ public class ReceiverTest
     private static final int INITIAL_TERM_OFFSET = 0;
     private static final int ACTIVE_INDEX = partitionIndex(TERM_ID, TERM_ID);
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
-    private static final int INITIAL_WINDOW_SIZE = Configuration.INITIAL_WINDOW_SIZE_DEFAULT;
+    private static final int INITIAL_WINDOW_LENGTH = Configuration.INITIAL_WINDOW_LENGTH_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
@@ -178,7 +178,7 @@ public class ReceiverTest
             STREAM_ID,
             TERM_ID,
             INITIAL_TERM_OFFSET,
-            INITIAL_WINDOW_SIZE,
+            INITIAL_WINDOW_LENGTH,
             STATUS_MESSAGE_TIMEOUT,
             rawLog,
             mockLossHandler,
@@ -250,7 +250,7 @@ public class ReceiverTest
                         STREAM_ID,
                         TERM_ID,
                         INITIAL_TERM_OFFSET,
-                        INITIAL_WINDOW_SIZE,
+                        INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
@@ -311,7 +311,7 @@ public class ReceiverTest
                         STREAM_ID,
                         TERM_ID,
                         INITIAL_TERM_OFFSET,
-                        INITIAL_WINDOW_SIZE,
+                        INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
@@ -375,7 +375,7 @@ public class ReceiverTest
                         STREAM_ID,
                         TERM_ID,
                         INITIAL_TERM_OFFSET,
-                        INITIAL_WINDOW_SIZE,
+                        INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
@@ -447,7 +447,7 @@ public class ReceiverTest
                         STREAM_ID,
                         TERM_ID,
                         initialTermOffset,
-                        INITIAL_WINDOW_SIZE,
+                        INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,

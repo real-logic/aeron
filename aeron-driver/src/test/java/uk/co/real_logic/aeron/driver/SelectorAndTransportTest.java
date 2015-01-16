@@ -244,7 +244,7 @@ public class SelectorAndTransportTest
         statusMessage.streamId(STREAM_ID)
                      .sessionId(SESSION_ID)
                      .termId(TERM_ID)
-                     .receiverWindowSize(1000)
+                     .receiverWindowLength(1000)
                      .completedTermOffset(0)
                      .version(HeaderFlyweight.CURRENT_VERSION)
                      .flags((short)0)

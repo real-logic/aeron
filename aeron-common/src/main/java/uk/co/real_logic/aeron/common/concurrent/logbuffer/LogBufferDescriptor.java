@@ -146,7 +146,7 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Check that meta data buffer is of sufficient size.
+     * Check that meta data buffer is of sufficient length.
      *
      * @param buffer to be checked.
      * @throws IllegalStateException if the buffer is not as expected.

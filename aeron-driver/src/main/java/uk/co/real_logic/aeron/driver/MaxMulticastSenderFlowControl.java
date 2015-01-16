@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-
 import java.net.InetSocketAddress;
+
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Default multicast sender flow control strategy.
@@ -35,11 +35,10 @@ public class MaxMulticastSenderFlowControl implements SenderFlowControl
      * {@inheritDoc}
      */
     public long onStatusMessage(
-        final int termId, final int completedTermOffset, final int receiverWindowSize, final InetSocketAddress address)
+        final int termId, final int completedTermOffset, final int receiverWindowLength, final InetSocketAddress address)
     {
-        final long position =
-            LogBufferDescriptor.computePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
-        final long newPositionLimit = position + receiverWindowSize;
+        final long position = computePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
+        final long newPositionLimit = position + receiverWindowLength;
 
         positionLimit = Math.max(positionLimit, newPositionLimit);
 
@@ -54,7 +53,7 @@ public class MaxMulticastSenderFlowControl implements SenderFlowControl
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
 
-        positionLimit = LogBufferDescriptor.computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
+        positionLimit = computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
 
         return positionLimit;
     }

@@ -25,7 +25,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class ErrorFlyweight extends HeaderFlyweight
 {
-    /** Size of the Error Header */
+    /** Length of the Error Header */
     public static final int HEADER_LENGTH = 12;
 
     private static final int ERROR_CODE_FIELD_OFFSET = 1;

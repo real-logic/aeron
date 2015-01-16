@@ -60,10 +60,15 @@ public class ClientProxy
 
     public void onError(
         final ErrorCode errorCode,
-        final String errorMessage,
+        String errorMessage,
         final Flyweight offendingFlyweight,
         final int offendingFlyweightLength)
     {
+        if (null == errorMessage)
+        {
+            errorMessage = "";
+        }
+
         final byte[] errorBytes = errorMessage.getBytes();
         final int frameLength = ErrorFlyweight.HEADER_LENGTH + offendingFlyweightLength + errorBytes.length;
 

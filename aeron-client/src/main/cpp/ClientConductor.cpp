@@ -53,7 +53,7 @@ void ClientConductor::releasePublication(Publication* publication)
 
     // TODO: send command to driver?
 
-    std::vector<Publication*>::const_iterator it = std::find_if(m_publications.begin(), m_publications.end(),
+    std::vector<Publication*>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
         [&](Publication *pub)
         {
             return (publication == pub);
@@ -98,7 +98,7 @@ void ClientConductor::releaseSubscription(Subscription* subscription)
 
     // TODO: send command to driver?
 
-    std::vector<Subscription*>::const_iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+    std::vector<Subscription*>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](Subscription* sub)
         {
             return (subscription == sub);

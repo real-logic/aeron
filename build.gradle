@@ -134,7 +134,7 @@ subprojects {
 
 project(':aeron-common') {
     dependencies {
-        compile 'uk.co.real-logic:Agrona:1.0-SNAPSHOT'
+        compile 'uk.co.real-logic:Agrona:0.1'
     }
 }
 

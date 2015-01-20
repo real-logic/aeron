@@ -300,4 +300,16 @@ public class LogBufferDescriptor
         (TERM_META_DATA_LENGTH * PARTITION_COUNT) +
         LOG_META_DATA_LENGTH;
     }
+
+    /**
+     * Compute the term length based on the total length of the log.
+     *
+     * @param logLength the total length of the log.
+     * @return length of an individual term buffer in the log.
+     */
+    public static int computeTermLength(final long logLength)
+    {
+        final long metaDataSectionLength = (TERM_META_DATA_LENGTH * (long)PARTITION_COUNT) + LOG_META_DATA_LENGTH;
+        return (int)((logLength - metaDataSectionLength) / 3);
+    }
 }

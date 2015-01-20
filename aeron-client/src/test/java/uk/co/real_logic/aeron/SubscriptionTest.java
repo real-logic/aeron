@@ -53,7 +53,7 @@ public class SubscriptionTest
 
     private Subscription subscription;
     private LogReader[] readers;
-    private ManagedBuffer[] managedBuffers;
+    private LogBuffers logBuffers = mock(LogBuffers.class);
 
     @Before
     public void setUp()
@@ -67,12 +67,6 @@ public class SubscriptionTest
             readers[i] = mock(LogReader.class);
             when(readers[i].isComplete()).thenReturn(false);
             when(readers[i].read(any(), anyInt())).thenReturn(0);
-        }
-
-        managedBuffers = new ManagedBuffer[PARTITION_COUNT * 2];
-        for (int i = 0; i < PARTITION_COUNT * 2; i++)
-        {
-            managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
         subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
@@ -135,6 +129,6 @@ public class SubscriptionTest
     private void onTermBuffersMapped(final int sessionId1)
     {
         subscription.onConnectionReady(
-            sessionId1, TERM_ID_1, 0, CONNECTION_CORRELATION_ID, readers, reporter, managedBuffers);
+            sessionId1, TERM_ID_1, 0, CONNECTION_CORRELATION_ID, readers, reporter, logBuffers);
     }
 }

@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.TERM_ID
 public class Publication implements AutoCloseable
 {
     private final ClientConductor clientConductor;
-    private final ManagedBuffer[] managedBuffers;
+    private final LogBuffers logBuffers;
     private final String channel;
     private final int streamId;
     private final int sessionId;
@@ -53,7 +53,7 @@ public class Publication implements AutoCloseable
         final int sessionId,
         final LogAppender[] logAppenders,
         final PositionIndicator limit,
-        final ManagedBuffer[] managedBuffers,
+        final LogBuffers logBuffers,
         final UnsafeBuffer logMetaDataBuffer,
         final long registrationId)
     {
@@ -61,7 +61,7 @@ public class Publication implements AutoCloseable
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
-        this.managedBuffers = managedBuffers;
+        this.logBuffers = logBuffers;
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.logAppenders = logAppenders;
@@ -108,11 +108,7 @@ public class Publication implements AutoCloseable
             if (--refCount == 0)
             {
                 clientConductor.releasePublication(this);
-
-                for (final ManagedBuffer managedBuffer : managedBuffers)
-                {
-                    managedBuffer.close();
-                }
+                logBuffers.close();
             }
         }
     }

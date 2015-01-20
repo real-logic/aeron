@@ -16,17 +16,12 @@
 package uk.co.real_logic.aeron;
 
 /**
- * Interface for encapsulating the strategy of mapping {@link ManagedBuffer}s at a giving file location.
+ * Default mapping byteBuffer lifecycle strategy for the client
  */
-interface BufferManager
+class MappedLogBuffersFactory implements LogBuffersFactory
 {
-    /**
-     * Map a buffer for a given region located in a file.
-     *
-     * @param fileName fully qualified to file containing the region to be mapped.
-     * @param offset   within the file at which the mapping should begin.
-     * @param length   of the region in the file to be mapped.
-     * @return a {@link ManagedBuffer} representing the mapped buffer.
-     */
-    ManagedBuffer mapBuffer(String fileName, long offset, int length);
+    public LogBuffers map(final String logFileName)
+    {
+        return new LogBuffers(logFileName);
+    }
 }

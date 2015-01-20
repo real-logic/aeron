@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -54,7 +53,7 @@ public class PublicationTest
     private PositionIndicator limit;
     private LogAppender[] appenders;
     private MutableDirectBuffer[] headers;
-    private ManagedBuffer[] managedBuffers;
+    private LogBuffers logBuffers = mock(LogBuffers.class);
 
     @Before
     public void setUp()
@@ -76,13 +75,6 @@ public class PublicationTest
             when(appenders[i].capacity()).thenReturn(TERM_MIN_LENGTH);
         }
 
-        final int totalLogBuffers = (PARTITION_COUNT * 2) + 1;
-        managedBuffers = new ManagedBuffer[totalLogBuffers];
-        for (int i = 0; i < totalLogBuffers; i++)
-        {
-            managedBuffers[i] = mock(ManagedBuffer.class);
-        }
-
         initialTermId(logMetaDataBuffer, TERM_ID_1);
 
         publication = new Publication(
@@ -92,7 +84,7 @@ public class PublicationTest
             SESSION_ID_1,
             appenders,
             limit,
-            managedBuffers,
+            logBuffers,
             logMetaDataBuffer,
             CORRELATION_ID);
     }
@@ -161,7 +153,7 @@ public class PublicationTest
     public void shouldUnmapBuffersWhenReleased() throws Exception
     {
         publication.close();
-        verifyBuffersUnmapped(times(1));
+        verify(logBuffers, times(1)).close();
     }
 
     @Test
@@ -169,7 +161,7 @@ public class PublicationTest
     {
         publication.incRef();
         publication.close();
-        verifyBuffersUnmapped(never());
+        verify(logBuffers, never()).close();
     }
 
     @Test
@@ -179,14 +171,6 @@ public class PublicationTest
         publication.close();
 
         publication.close();
-        verifyBuffersUnmapped(times(1));
-    }
-
-    private void verifyBuffersUnmapped(final VerificationMode times) throws Exception
-    {
-        for (final ManagedBuffer buffer : managedBuffers)
-        {
-            verify(buffer, times).close();
-        }
+        verify(logBuffers, times(1)).close();
     }
 }

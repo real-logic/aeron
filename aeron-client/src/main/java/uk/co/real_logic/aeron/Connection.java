@@ -33,7 +33,7 @@ class Connection
     private final long correlationId;
     private final DataHandler dataHandler;
     private final PositionReporter subscriberPosition;
-    private final ManagedBuffer[] managedBuffers;
+    private final LogBuffers logBuffers;
     private final AtomicInteger activeTermId;
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -48,14 +48,14 @@ class Connection
         final long correlationId,
         final DataHandler dataHandler,
         final PositionReporter subscriberPosition,
-        final ManagedBuffer[] managedBuffers)
+        final LogBuffers logBuffers)
     {
         this.logReaders = readers;
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         this.subscriberPosition = subscriberPosition;
-        this.managedBuffers = managedBuffers;
+        this.logBuffers = logBuffers;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].capacity());
         this.initialTermId = initialTermId;
 
@@ -109,9 +109,6 @@ class Connection
 
     public void close()
     {
-        for (final ManagedBuffer managedBuffer : managedBuffers)
-        {
-            managedBuffer.close();
-        }
+        logBuffers.close();
     }
 }

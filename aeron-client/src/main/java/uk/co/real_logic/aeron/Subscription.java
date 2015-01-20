@@ -110,7 +110,7 @@ public class Subscription implements AutoCloseable
         final long correlationId,
         final LogReader[] logReaders,
         final PositionReporter positionReporter,
-        final ManagedBuffer[] managedBuffers)
+        final LogBuffers logBuffers)
     {
         connections.add(
             new Connection(
@@ -121,7 +121,7 @@ public class Subscription implements AutoCloseable
                 correlationId,
                 dataHandler,
                 positionReporter,
-                managedBuffers));
+                logBuffers));
     }
 
     boolean isConnected(final int sessionId)

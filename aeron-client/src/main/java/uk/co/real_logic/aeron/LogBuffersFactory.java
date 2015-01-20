@@ -15,22 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 /**
- * Management wrapper for a buffer that can be closed to the underlying resource can be released.
+ * Interface for encapsulating the strategy of mapping {@link LogBuffers} at a giving file location.
  */
-interface ManagedBuffer extends AutoCloseable
+interface LogBuffersFactory
 {
     /**
-     * Get the managed buffer.
+     * Map a log file into memory and wrap each section with a {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer}.
      *
-     * @return the managed buffer.
+     * @param logFileName to be mapped into memory.
+     * @return a representation of the mapped log buffer.
      */
-    UnsafeBuffer buffer();
-
-    /**
-     * Close the resources underlying the buffer.
-     */
-    void close();
+    LogBuffers map(String logFileName);
 }

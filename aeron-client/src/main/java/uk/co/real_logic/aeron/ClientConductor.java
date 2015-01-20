@@ -17,9 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
-import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -50,7 +48,7 @@ class ClientConductor implements Agent, DriverListener
     private static final long NO_CORRELATION_ID = -1;
 
     private final DriverListenerAdapter driverListenerAdapter;
-    private final BufferManager bufferManager;
+    private final LogBuffersFactory logBuffersFactory;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
@@ -75,7 +73,7 @@ class ClientConductor implements Agent, DriverListener
 
     public ClientConductor(
         final CopyBroadcastReceiver broadcastReceiver,
-        final BufferManager bufferManager,
+        final LogBuffersFactory logBuffersFactory,
         final UnsafeBuffer counterValuesBuffer,
         final DriverProxy driverProxy,
         final Signal correlationSignal,
@@ -89,7 +87,7 @@ class ClientConductor implements Agent, DriverListener
         this.counterValuesBuffer = counterValuesBuffer;
         this.correlationSignal = correlationSignal;
         this.driverProxy = driverProxy;
-        this.bufferManager = bufferManager;
+        this.logBuffersFactory = logBuffersFactory;
         this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
         this.inactiveConnectionHandler = inactiveConnectionHandler;
@@ -186,30 +184,25 @@ class ClientConductor implements Agent, DriverListener
         final int sessionId,
         final int limitPositionIndicatorOffset,
         final int mtuLength,
-        final BuffersReadyFlyweight message,
+        final String logFileName,
         final long correlationId)
     {
-        final LogAppender[] logs = new LogAppender[PARTITION_COUNT];
-        final ManagedBuffer[] managedBuffers = new ManagedBuffer[(PARTITION_COUNT * 2) + 1];
-        final ManagedBuffer logMetaDataBuffer = mapBuffer(message, PARTITION_COUNT * 2);
-        managedBuffers[PARTITION_COUNT * 2] = logMetaDataBuffer;
-        final int initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer.buffer());
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+        final LogAppender[] appenders = new LogAppender[PARTITION_COUNT];
+        final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[PARTITION_COUNT * 2];
+        final int initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final ManagedBuffer termBuffer = mapBuffer(message, i);
-            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + PARTITION_COUNT);
             final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
-
-            logs[i] = new LogAppender(termBuffer.buffer(), metaDataBuffer.buffer(), header, mtuLength);
-            managedBuffers[i * 2] = termBuffer;
-            managedBuffers[i * 2 + 1] = metaDataBuffer;
+            appenders[i] = new LogAppender(buffers[i], buffers[i + PARTITION_COUNT], header, mtuLength);
         }
 
         final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
 
         addedPublication = new Publication(
-            this, channel, streamId, sessionId, logs, limit, managedBuffers, logMetaDataBuffer.buffer(), correlationId);
+            this, channel, streamId, sessionId, appenders, limit, logBuffers, logMetaDataBuffer, correlationId);
 
         correlationSignal.signal();
     }
@@ -220,6 +213,7 @@ class ClientConductor implements Agent, DriverListener
         final int sessionId,
         final int initialTermId,
         final long initialPosition,
+        final String logFileName,
         final ConnectionBuffersReadyFlyweight message,
         final long correlationId)
     {
@@ -244,21 +238,17 @@ class ClientConductor implements Agent, DriverListener
 
                     if (null != positionReporter)
                     {
-                        final LogReader[] logs = new LogReader[PARTITION_COUNT];
-                        final ManagedBuffer[] managedBuffers = new ManagedBuffer[PARTITION_COUNT * 2];
+                        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+                        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+                        final LogReader[] readers = new LogReader[PARTITION_COUNT];
 
                         for (int i = 0; i < PARTITION_COUNT; i++)
                         {
-                            final ManagedBuffer termBuffer = mapBuffer(message, i);
-                            final ManagedBuffer metaDataBuffer = mapBuffer(message, i + PARTITION_COUNT);
-
-                            logs[i] = new LogReader(termBuffer.buffer(), metaDataBuffer.buffer());
-                            managedBuffers[i * 2] = termBuffer;
-                            managedBuffers[i * 2 + 1] = metaDataBuffer;
+                            readers[i] = new LogReader(buffers[i], buffers[i + PARTITION_COUNT]);
                         }
 
                         subscription.onConnectionReady(
-                            sessionId, initialTermId, initialPosition, correlationId, logs, positionReporter, managedBuffers);
+                            sessionId, initialTermId, initialPosition, correlationId, readers, positionReporter, logBuffers);
 
                         if (null != newConnectionHandler)
                         {
@@ -281,12 +271,7 @@ class ClientConductor implements Agent, DriverListener
         correlationSignal.signal();
     }
 
-    public void onInactiveConnection(
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final ConnectionMessageFlyweight message,
-        final long correlationId)
+    public void onInactiveConnection(final String channel, final int streamId, final int sessionId, final long correlationId)
     {
         activeSubscriptions.forEach(
             channel,
@@ -338,15 +323,6 @@ class ClientConductor implements Agent, DriverListener
             final String msg = String.format("No response from media driver within %d ms", driverTimeoutMs);
             throw new DriverTimeoutException(msg);
         }
-    }
-
-    private ManagedBuffer mapBuffer(final BuffersReadyFlyweight buffersReadyFlyweight, final int index)
-    {
-        final String fullyQualifiedFileName = buffersReadyFlyweight.bufferLocation(index);
-        final long offset = buffersReadyFlyweight.bufferOffset(index);
-        final int length = buffersReadyFlyweight.bufferLength(index);
-
-        return bufferManager.mapBuffer(fullyQualifiedFileName, offset, length);
     }
 
     private int processTimers()

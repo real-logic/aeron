@@ -73,9 +73,10 @@ class DriverListenerAdapter implements MessageHandler
                     final int streamId = publicationReady.streamId();
                     final int positionCounterId = publicationReady.positionCounterId();
                     final int mtuLength = publicationReady.mtuLength();
+                    final String logFileName = publicationReady.bufferLocation(0);
 
                     listener.onNewPublication(
-                        channel, streamId, sessionId, positionCounterId, mtuLength, publicationReady, correlationId);
+                        channel, streamId, sessionId, positionCounterId, mtuLength, logFileName, correlationId);
 
                 }
                 break;
@@ -90,9 +91,11 @@ class DriverListenerAdapter implements MessageHandler
                 final int streamId = connectionReady.streamId();
                 final int termId = connectionReady.termId();
                 final long joiningPosition = connectionReady.joiningPosition();
+                final String logFileName = connectionReady.bufferLocation(0);
                 final long correlationId = connectionReady.correlationId();
 
-                listener.onNewConnection(channel, streamId, sessionId, termId, joiningPosition, connectionReady, correlationId);
+                listener.onNewConnection(
+                    channel, streamId, sessionId, termId, joiningPosition, logFileName, connectionReady, correlationId);
                 break;
             }
 
@@ -110,7 +113,6 @@ class DriverListenerAdapter implements MessageHandler
                     connectionMessage.channel(),
                     connectionMessage.streamId(),
                     connectionMessage.sessionId(),
-                    connectionMessage,
                     connectionMessage.correlationId());
                 break;
 

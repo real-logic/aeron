@@ -73,7 +73,7 @@ public final class Aeron implements AutoCloseable
 
         conductor = new ClientConductor(
             ctx.toClientBuffer,
-            ctx.bufferManager,
+            ctx.logBuffersFactory,
             ctx.countersBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
             new Signal(),
@@ -208,7 +208,7 @@ public final class Aeron implements AutoCloseable
         private MappedByteBuffer defaultCounterLabelsBuffer;
         private MappedByteBuffer defaultCounterValuesBuffer;
 
-        private BufferManager bufferManager;
+        private LogBuffersFactory logBuffersFactory;
 
         private Consumer<Throwable> errorHandler;
         private NewConnectionHandler newConnectionHandler;
@@ -256,9 +256,9 @@ public final class Aeron implements AutoCloseable
                     countersBuffer(new UnsafeBuffer(defaultCounterValuesBuffer));
                 }
 
-                if (null == bufferManager)
+                if (null == logBuffersFactory)
                 {
-                    bufferManager = new MappedBufferManager();
+                    logBuffersFactory = new MappedLogBuffersFactory();
                 }
 
                 if (null == errorHandler)
@@ -294,9 +294,9 @@ public final class Aeron implements AutoCloseable
             return this;
         }
 
-        public Context bufferManager(final BufferManager bufferManager)
+        public Context bufferManager(final LogBuffersFactory logBuffersFactory)
         {
-            this.bufferManager = bufferManager;
+            this.logBuffersFactory = logBuffersFactory;
             return this;
         }
 

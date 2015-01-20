@@ -42,19 +42,26 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_CONNECTION_READY;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_PUBLICATION_READY;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 
-public class ClientConductorTest extends MockBufferUsage
+public class ClientConductorTest
 {
-    private static final int COUNTER_BUFFER_SZ = 1024;
+    private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
+    private static final int NUM_BUFFERS = (PARTITION_COUNT * 2) + 1;
+
+    protected static final int SESSION_ID_1 = 13;
+    protected static final int SESSION_ID_2 = 15;
+
+    private static final int COUNTER_BUFFER_LENGTH = 1024;
     private static final String CHANNEL = "udp://localhost:40124";
     private static final int STREAM_ID_1 = 2;
     private static final int STREAM_ID_2 = 4;
     private static final int TERM_ID_1 = 1;
     private static final int SEND_BUFFER_CAPACITY = 1024;
 
-    private static final int BROADCAST_BUFFER_SZ = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    private static final int BROADCAST_BUFFER_LENGTH = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     private static final long CORRELATION_ID = 2000;
     private static final long CORRELATION_ID_2 = 2002;
 
@@ -69,11 +76,11 @@ public class ClientConductorTest extends MockBufferUsage
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
 
-    private final UnsafeBuffer toClientBuffer = new UnsafeBuffer(new byte[BROADCAST_BUFFER_SZ]);
+    private final UnsafeBuffer toClientBuffer = new UnsafeBuffer(new byte[BROADCAST_BUFFER_LENGTH]);
     private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
-    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_SZ]);
+    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_LENGTH]);
 
     private final TimerWheel timerWheel = mock(TimerWheel.class);
     private final Consumer<Throwable> mockClientErrorHandler = Throwable::printStackTrace;
@@ -83,6 +90,7 @@ public class ClientConductorTest extends MockBufferUsage
     private ClientConductor conductor;
     private DataHandler dataHandler = mock(DataHandler.class);
     private InactiveConnectionHandler mockInactiveConnectionHandler = mock(InactiveConnectionHandler.class);
+    private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
 
     @Before
     public void setUp() throws Exception
@@ -98,7 +106,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         conductor = new ClientConductor(
             toClientReceiver,
-            mockBufferUsage,
+            logBuffersFactory,
             counterValuesBuffer,
             driverProxy,
             signal,
@@ -111,6 +119,34 @@ public class ClientConductorTest extends MockBufferUsage
         publicationReady.wrap(atomicSendBuffer, 0);
         connectionReady.wrap(atomicSendBuffer, 0);
         errorHeader.wrap(atomicSendBuffer, 0);
+
+        final UnsafeBuffer[] atomicBuffersSession1 = new UnsafeBuffer[NUM_BUFFERS];
+        final UnsafeBuffer[] atomicBuffersSession2 = new UnsafeBuffer[NUM_BUFFERS];
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            final UnsafeBuffer termBuffersSession1 = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+            final UnsafeBuffer metaDataBuffersSession1 = new UnsafeBuffer(new byte[TERM_META_DATA_LENGTH]);
+            final UnsafeBuffer termBuffersSession2 = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+            final UnsafeBuffer metaDataBuffersSession2 = new UnsafeBuffer(new byte[TERM_META_DATA_LENGTH]);
+
+            atomicBuffersSession1[i] = termBuffersSession1;
+            atomicBuffersSession1[i + PARTITION_COUNT] = metaDataBuffersSession1;
+            atomicBuffersSession2[i] = termBuffersSession2;
+            atomicBuffersSession2[i + PARTITION_COUNT] = metaDataBuffersSession2;
+        }
+
+        atomicBuffersSession1[NUM_BUFFERS - 1] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+        atomicBuffersSession2[NUM_BUFFERS - 1] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+
+        final LogBuffers logBuffersSession1 = mock(LogBuffers.class);
+        final LogBuffers logBuffersSession2 = mock(LogBuffers.class);
+
+        when(logBuffersFactory.map(eq(SESSION_ID_1 + "-log"))).thenReturn(logBuffersSession1);
+        when(logBuffersFactory.map(eq(SESSION_ID_2 + "-log"))).thenReturn(logBuffersSession2);
+
+        when(logBuffersSession1.atomicBuffers()).thenReturn(atomicBuffersSession1);
+        when(logBuffersSession2.atomicBuffers()).thenReturn(atomicBuffersSession2);
     }
 
     // --------------------------------
@@ -271,7 +307,7 @@ public class ClientConductorTest extends MockBufferUsage
 
         assertFalse(subscription.hasNoConnections());
 
-        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, null, CORRELATION_ID);
+        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
 
         verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1);
         assertTrue(subscription.hasNoConnections());
@@ -315,25 +351,12 @@ public class ClientConductorTest extends MockBufferUsage
 
     private static void addBuffers(final int sessionId, final BuffersReadyFlyweight message)
     {
-        for (int i = 0; i < LogBufferDescriptor.PARTITION_COUNT; i++)
+        for (int i = 0; i < ((LogBufferDescriptor.PARTITION_COUNT * 2) + 1); i++)
         {
-            message.bufferLocation(i, sessionId + "-termBuffer" + i);
+            message.bufferLocation(i, sessionId + "-log");
             message.bufferOffset(i, 0);
-            message.bufferLength(i, TERM_BUFFER_LENGTH);
+            message.bufferLength(i, 0);
         }
-
-        for (int i = 0; i < LogBufferDescriptor.PARTITION_COUNT; i++)
-        {
-            message.bufferLocation(i + LogBufferDescriptor.PARTITION_COUNT, sessionId + "-metaDataBuffer" + i);
-            message.bufferOffset(i + LogBufferDescriptor.PARTITION_COUNT, 0);
-            message.bufferLength(i + LogBufferDescriptor.PARTITION_COUNT, TERM_META_DATA_LENGTH);
-        }
-
-        final int i = LogBufferDescriptor.PARTITION_COUNT * 2;
-        message.bufferLocation(i, sessionId + "-logMetaDataBuffer");
-        message.bufferOffset(i, 0);
-        message.bufferLength(i, LOG_META_DATA_LENGTH);
-
     }
 
     private void willSignalTimeOut()

@@ -55,10 +55,9 @@ class MappedRawLog implements RawLog
         logFile = new File(directory, LOG_FILE_NAME);
         partitions = new RawLogPartition[PARTITION_COUNT];
 
-        try
+        try (final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel())
         {
             final long logLength = computeLogLength(termLength);
-            final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel();
             blankTemplate.transferTo(0, logLength, logChannel);
 
             if (logLength <= Integer.MAX_VALUE)
@@ -100,8 +99,6 @@ class MappedRawLog implements RawLog
                 logMetaDataBuffer = new UnsafeBuffer(
                     metaDataMappedBuffer, metaDataSectionLength - LOG_META_DATA_LENGTH, LOG_META_DATA_LENGTH);
             }
-
-            logChannel.close();
         }
         catch (final IOException ex)
         {

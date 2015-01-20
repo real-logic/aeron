@@ -63,10 +63,10 @@ public class ConnectionTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHandler mockDataHandler = mock(DataHandler.class);
     private final PositionReporter mockPositionReporter = mock(PositionReporter.class);
+    private final LogBuffers logBuffers = mock(LogBuffers.class);
 
     private LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
     private LogReader[] readers = new LogReader[PARTITION_COUNT];
-    private ManagedBuffer[] managedBuffers = new ManagedBuffer[PARTITION_COUNT * 2];
     private Connection connection;
     private int activeIndex;
 
@@ -80,11 +80,6 @@ public class ConnectionTest
 
             rebuilders[i] = new LogRebuilder(logBuffer, metaDataBuffer);
             readers[i] = new LogReader(logBuffer, metaDataBuffer);
-        }
-
-        for (int i = 0; i < PARTITION_COUNT * 2; i++)
-        {
-            managedBuffers[i] = mock(ManagedBuffer.class);
         }
 
         activeIndex = LogBufferDescriptor.partitionIndex(INITIAL_TERM_ID, INITIAL_TERM_ID);
@@ -174,7 +169,7 @@ public class ConnectionTest
     {
         return new Connection(
             readers, SESSION_ID, INITIAL_TERM_ID, initialPosition,
-            CORRELATION_ID, mockDataHandler, mockPositionReporter, managedBuffers);
+            CORRELATION_ID, mockDataHandler, mockPositionReporter, logBuffers);
     }
 
     private void insertDataFrame(final int offset)

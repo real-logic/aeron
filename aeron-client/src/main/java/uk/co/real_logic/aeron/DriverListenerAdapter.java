@@ -68,12 +68,12 @@ class DriverListenerAdapter implements MessageHandler
 
                 if (activeCorrelationId == correlationId)
                 {
-                    final String channel = publicationReady.channel();
                     final int sessionId = publicationReady.sessionId();
                     final int streamId = publicationReady.streamId();
                     final int positionCounterId = publicationReady.positionCounterId();
                     final int mtuLength = publicationReady.mtuLength();
-                    final String logFileName = publicationReady.bufferLocation(0);
+                    final String channel = publicationReady.channel();
+                    final String logFileName = publicationReady.logFileName();
 
                     listener.onNewPublication(
                         channel, streamId, sessionId, positionCounterId, mtuLength, logFileName, correlationId);
@@ -86,12 +86,12 @@ class DriverListenerAdapter implements MessageHandler
             {
                 connectionReady.wrap(buffer, index);
 
-                final String channel = connectionReady.channel();
                 final int sessionId = connectionReady.sessionId();
                 final int streamId = connectionReady.streamId();
                 final int termId = connectionReady.termId();
                 final long joiningPosition = connectionReady.joiningPosition();
-                final String logFileName = connectionReady.bufferLocation(0);
+                final String channel = connectionReady.channel();
+                final String logFileName = connectionReady.logFileName();
                 final long correlationId = connectionReady.correlationId();
 
                 listener.onNewConnection(

@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -166,32 +165,9 @@ class MappedRawLog implements RawLog
         return terms;
     }
 
-    public void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight)
+    public String logFileName()
     {
-        final String absoluteFilePath = logFile.getAbsolutePath();
-        final int termLength = partitions[0].termBuffer().capacity();
-        final long metaDataSectionOffset = termLength * PARTITION_COUNT;
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            buffersReadyFlyweight.bufferOffset(i, i * (long)termLength);
-            buffersReadyFlyweight.bufferLength(i, termLength);
-            buffersReadyFlyweight.bufferLocation(i, absoluteFilePath);
-        }
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            final int index = i + PARTITION_COUNT;
-            buffersReadyFlyweight.bufferOffset(index, metaDataSectionOffset + (i * TERM_META_DATA_LENGTH));
-            buffersReadyFlyweight.bufferLength(index, TERM_META_DATA_LENGTH);
-            buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
-        }
-
-        final long logLength = computeLogLength(termLength);
-        final int index = PARTITION_COUNT * 2;
-        buffersReadyFlyweight.bufferOffset(index, logLength - LOG_META_DATA_LENGTH);
-        buffersReadyFlyweight.bufferLength(index, LOG_META_DATA_LENGTH);
-        buffersReadyFlyweight.bufferLocation(index, absoluteFilePath);
+        return logFile.getAbsolutePath();
     }
 
     private void recursivelyDeleteUpTree(final File directory, final int remainingTreeDepth)

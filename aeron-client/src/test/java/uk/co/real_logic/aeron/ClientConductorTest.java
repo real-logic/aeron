@@ -20,8 +20,6 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
@@ -325,8 +323,8 @@ public class ClientConductorTest
                         .sessionId(sessionId)
                         .correlationId(correlationId);
 
-        addBuffers(sessionId, publicationReady);
         publicationReady.channel(CHANNEL);
+        publicationReady.logFileName(sessionId + "-log");
 
         toClientTransmitter.transmit(ON_PUBLICATION_READY, atomicSendBuffer, 0, publicationReady.length());
     }
@@ -338,25 +336,15 @@ public class ClientConductorTest
                        .correlationId(correlationId)
                        .termId(termId);
 
-        addBuffers(sessionId, connectionReady);
-        connectionReady.sourceInfo(SOURCE_NAME);
         connectionReady.channel(CHANNEL);
+        connectionReady.logFileName(sessionId + "-log");
+        connectionReady.sourceInfo(SOURCE_NAME);
 
         connectionReady.positionIndicatorCount(1);
         connectionReady.positionIndicatorCounterId(0, 0);
         connectionReady.positionIndicatorRegistrationId(0, correlationId);
 
         toClientTransmitter.transmit(ON_CONNECTION_READY, atomicSendBuffer, 0, connectionReady.length());
-    }
-
-    private static void addBuffers(final int sessionId, final BuffersReadyFlyweight message)
-    {
-        for (int i = 0; i < ((LogBufferDescriptor.PARTITION_COUNT * 2) + 1); i++)
-        {
-            message.bufferLocation(i, sessionId + "-log");
-            message.bufferOffset(i, 0);
-            message.bufferLength(i, 0);
-        }
     }
 
     private void willSignalTimeOut()

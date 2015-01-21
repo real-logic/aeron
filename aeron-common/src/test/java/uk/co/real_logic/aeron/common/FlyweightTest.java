@@ -16,16 +16,14 @@
 package uk.co.real_logic.aeron.common;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.stream.IntStream;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -43,8 +41,6 @@ public class FlyweightTest
     private final PublicationMessageFlyweight decodePublication = new PublicationMessageFlyweight();
     private final ErrorFlyweight encodeError = new ErrorFlyweight();
     private final ErrorFlyweight decodeError = new ErrorFlyweight();
-    private final PublicationBuffersReadyFlyweight encodeNewBuffer = new PublicationBuffersReadyFlyweight();
-    private final PublicationBuffersReadyFlyweight decodeNewBuffer = new PublicationBuffersReadyFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
     private final NakFlyweight decodeNakHeader = new NakFlyweight();
 
@@ -259,60 +255,5 @@ public class FlyweightTest
         assertThat(decodeError.errorMessageOffset(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
         assertThat(decodeError.errorStringLength(), is(errorString.length()));
         assertThat(decodeError.errorMessageAsBytes(), is(errorString.getBytes()));
-    }
-
-    @Test
-    public void newBufferMessagesSupportMultipleVariableLengthFields()
-    {
-        // given the buffers are clean to begin with
-        assertLengthFindsNonZeroedBytes(0);
-        encodeNewBuffer.wrap(aBuff, 0);
-
-        encodeNewBuffer.streamId(1)
-                       .sessionId(2)
-                       .bufferOffset(0, 1)
-                       .bufferOffset(1, 2)
-                       .bufferOffset(2, 3)
-                       .bufferLength(0, 1)
-                       .bufferLength(1, 2)
-                       .bufferLength(2, 3)
-                       .bufferLocation(0, "def")
-                       .bufferLocation(1, "ghi")
-                       .bufferLocation(2, "jkl")
-                       .bufferLocation(3, "def")
-                       .bufferLocation(4, "ghi")
-                       .bufferLocation(5, "jkl")
-                       .bufferLocation(6, "xyz")
-                       .channel("abc");
-
-        assertLengthFindsNonZeroedBytes(encodeNewBuffer.length());
-        decodeNewBuffer.wrap(aBuff, 0);
-
-        assertThat(decodeNewBuffer.streamId(), is(1));
-        assertThat(decodeNewBuffer.sessionId(), is(2));
-
-        assertThat(decodeNewBuffer.bufferOffset(0), is(1L));
-        assertThat(decodeNewBuffer.bufferOffset(1), is(2L));
-        assertThat(decodeNewBuffer.bufferOffset(2), is(3L));
-
-        assertThat(decodeNewBuffer.bufferLength(0), is(1));
-        assertThat(decodeNewBuffer.bufferLength(1), is(2));
-        assertThat(decodeNewBuffer.bufferLength(2), is(3));
-
-        assertThat(decodeNewBuffer.bufferLocation(0), is("def"));
-        assertThat(decodeNewBuffer.bufferLocation(1), is("ghi"));
-        assertThat(decodeNewBuffer.bufferLocation(2), is("jkl"));
-
-        assertThat(decodeNewBuffer.bufferLocation(3), is("def"));
-        assertThat(decodeNewBuffer.bufferLocation(4), is("ghi"));
-        assertThat(decodeNewBuffer.bufferLocation(5), is("jkl"));
-        assertThat(decodeNewBuffer.bufferLocation(6), is("xyz"));
-
-        assertThat(decodeNewBuffer.channel(), is("abc"));
-    }
-
-    private void assertLengthFindsNonZeroedBytes(final int length)
-    {
-        IntStream.range(aBuff.capacity() - 1, length).forEach(i -> assertThat(aBuff.getByte(i), is((byte)0)));
     }
 }

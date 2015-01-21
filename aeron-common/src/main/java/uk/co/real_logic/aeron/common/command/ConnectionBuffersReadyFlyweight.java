@@ -45,99 +45,36 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                   Position Indicators Count                   |
  * +---------------------------------------------------------------+
- * |                          File Offset 0                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          File Offset 1                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          File Offset 2                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          File Offset 3                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          File Offset 4                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          File Offset 5                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                          File Offset 6                        |
- * |                                                               |
- * +---------------------------------------------------------------+
- * |                             Length 0                          |
- * +---------------------------------------------------------------+
- * |                             Length 1                          |
- * +---------------------------------------------------------------+
- * |                             Length 2                          |
- * +---------------------------------------------------------------+
- * |                             Length 3                          |
- * +---------------------------------------------------------------+
- * |                             Length 4                          |
- * +---------------------------------------------------------------+
- * |                             Length 5                          |
- * +---------------------------------------------------------------+
- * |                             Length 6                          |
- * +---------------------------------------------------------------+
- * |                          Location 1 Start                     |
- * +---------------------------------------------------------------+
- * |                          Location 2 Start                     |
- * +---------------------------------------------------------------+
- * |                          Location 3 Start                     |
- * +---------------------------------------------------------------+
- * |                          Location 4 Start                     |
- * +---------------------------------------------------------------+
- * |                          Location 5 Start                     |
- * +---------------------------------------------------------------+
- * |                          Location 6 Start                     |
- * +---------------------------------------------------------------+
- * |                     Source Information Start                  |
- * +---------------------------------------------------------------+
- * |                           Channel Start                       |
- * +---------------------------------------------------------------+
- * |                           Channel End                         |
- * +---------------------------------------------------------------+
- * |                            Location 0                       ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                            Location 1                       ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                            Location 2                       ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                            Location 3                       ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                            Location 4                       ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                            Location 5                       ...
- * |                                                             ...
- * +---------------------------------------------------------------+
- * |                            Location 6                       ...
- * |                                                             ...
+ * |                         Channel Length                        |
  * +---------------------------------------------------------------+
  * |                            Channel                          ...
- * |                                                             ...
+ * ...                                                             |
  * +---------------------------------------------------------------+
- * |                     Position Indicator Id 0                 ...
+ * |                         Log File Length                       |
  * +---------------------------------------------------------------+
- * |                         Registration Id 0                   ...
- * |                                                             ...
+ * |                          Log File Name                      ...
+ * ...                                                             |
  * +---------------------------------------------------------------+
- * |                     Position Indicator Id 1                 ...
+ * |                         source info Length                    |
  * +---------------------------------------------------------------+
- * |                         Registration Id 1                   ...
- * |                                                             ...
+ * |                         source info Name                    ...
+ * ...                                                             |
+ * +---------------------------------------------------------------+
+ * |                     Position Indicator Id 0                   |
+ * +---------------------------------------------------------------+
+ * |                         Registration Id 0                     |
+ * |                                                               |
+ * +---------------------------------------------------------------+
+ * |                     Position Indicator Id 1                   |
+ * +---------------------------------------------------------------+
+ * |                         Registration Id 1                     |
+ * |                                                               |
  * +---------------------------------------------------------------+
  * |                                                             ...
  * Up to "Position Indicators Count" entries of this form
  */
-public class ConnectionBuffersReadyFlyweight extends Flyweight implements BuffersReadyFlyweight
+public class ConnectionBuffersReadyFlyweight extends Flyweight
 {
-    private static final int NUM_FILES = 7;
 
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
@@ -145,43 +82,9 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int POSITION_INDICATOR_COUNT_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int FILE_OFFSETS_FIELDS_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
-    private static final int BUFFER_LENGTHS_FIELDS_OFFSET = FILE_OFFSETS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_LONG);
-    private static final int LOCATION_POINTER_FIELDS_OFFSET = BUFFER_LENGTHS_FIELDS_OFFSET + (NUM_FILES * SIZE_OF_INT);
-    private static final int LOCATION_0_FIELD_OFFSET = LOCATION_POINTER_FIELDS_OFFSET + (10 * SIZE_OF_INT);
+    private static final int CHANNEL_FIELD_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
+
     private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
-
-    /**
-     * The Source Information sits after the location strings, but before the Channel
-     */
-    public static final int SOURCE_INFORMATION_INDEX = NUM_FILES;
-
-    /**
-     * The Channel sits after the source name and location strings for both the term and state buffers.
-     */
-    private static final int CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
-
-    public long bufferOffset(final int index)
-    {
-        return buffer().getLong(FILE_OFFSETS_FIELDS_OFFSET + (index * SIZE_OF_LONG), ByteOrder.LITTLE_ENDIAN);
-    }
-
-    public ConnectionBuffersReadyFlyweight bufferOffset(final int index, final long value)
-    {
-        buffer().putLong(FILE_OFFSETS_FIELDS_OFFSET + (index * SIZE_OF_LONG), value, ByteOrder.LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    public int bufferLength(final int index)
-    {
-        return relativeIntField(index, BUFFER_LENGTHS_FIELDS_OFFSET);
-    }
-
-    public ConnectionBuffersReadyFlyweight bufferLength(final int index, final int value)
-    {
-        return relativeIntField(index, value, BUFFER_LENGTHS_FIELDS_OFFSET);
-    }
 
     /**
      * return correlation id field
@@ -320,78 +223,60 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
         return this;
     }
 
-    private int relativeIntField(final int index, final int fieldOffset)
+    /**
+     * return channel field
+     *
+     * @return channel field
+     */
+    public String channel()
     {
-        return buffer().getInt(relativeOffset(index, fieldOffset), LITTLE_ENDIAN);
+        return buffer().getStringUtf8(offset() + CHANNEL_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
-    private ConnectionBuffersReadyFlyweight relativeIntField(final int index, final int value, final int fieldOffset)
+    /**
+     * set channel field
+     *
+     * @param channel field value
+     * @return flyweight
+     */
+    public ConnectionBuffersReadyFlyweight channel(final String channel)
     {
-        buffer().putInt(relativeOffset(index, fieldOffset), value, LITTLE_ENDIAN);
-
+        buffer().putStringUtf8(offset() + CHANNEL_FIELD_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
-    private int relativeOffset(final int index, final int fieldOffset)
+    public String logFileName()
     {
-        return offset() + fieldOffset + index * SIZE_OF_INT;
+        return buffer().getStringUtf8(logFileNameOffset(), LITTLE_ENDIAN);
     }
 
-    private int locationPointer(final int index)
+    public ConnectionBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        if (index == 0)
-        {
-            return LOCATION_0_FIELD_OFFSET;
-        }
-
-        return relativeIntField(index, LOCATION_POINTER_FIELDS_OFFSET);
-    }
-
-    private ConnectionBuffersReadyFlyweight locationPointer(final int index, final int value)
-    {
-        return relativeIntField(index, value, LOCATION_POINTER_FIELDS_OFFSET);
-    }
-
-    public String bufferLocation(final int index)
-    {
-        final int start = locationPointer(index);
-        final int length = locationPointer(index + 1) - start;
-
-        return buffer().getStringWithoutLengthUtf8(offset() + start, length);
-    }
-
-    public ConnectionBuffersReadyFlyweight bufferLocation(final int index, final String value)
-    {
-        final int start = locationPointer(index);
-        if (start == 0)
-        {
-            throw new IllegalStateException("Previous location been hasn't been set yet at index " + index);
-        }
-
-        final int length = buffer().putStringWithoutLengthUtf8(offset() + start, value);
-        locationPointer(index + 1, start + length);
-
+        buffer().putStringUtf8(logFileNameOffset(), logFileName, ByteOrder.LITTLE_ENDIAN);
         return this;
+    }
+
+    private int logFileNameOffset()
+    {
+        final int channelStart = offset() + CHANNEL_FIELD_OFFSET;
+        return buffer().getInt(channelStart) + channelStart + SIZE_OF_INT;
     }
 
     public String sourceInfo()
     {
-        return bufferLocation(SOURCE_INFORMATION_INDEX);
+        return buffer().getStringUtf8(sourceInfoOffset(), LITTLE_ENDIAN);
     }
 
     public ConnectionBuffersReadyFlyweight sourceInfo(final String value)
     {
-        return bufferLocation(SOURCE_INFORMATION_INDEX, value);
+        buffer().putStringUtf8(sourceInfoOffset(), value, ByteOrder.LITTLE_ENDIAN);
+        return this;
     }
 
-    public String channel()
+    private int sourceInfoOffset()
     {
-        return bufferLocation(CHANNEL_INDEX);
-    }
-
-    public ConnectionBuffersReadyFlyweight channel(final String value)
-    {
-        return bufferLocation(CHANNEL_INDEX, value);
+        final int logFileNameOffset = logFileNameOffset();
+        return buffer().getInt(logFileNameOffset) + logFileNameOffset + SIZE_OF_INT;
     }
 
     public ConnectionBuffersReadyFlyweight positionIndicatorCounterId(final int index, final int id)
@@ -420,12 +305,9 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
 
     private int positionIndicatorOffset(final int index)
     {
-        return endOfChannel() + index * POSITION_INDICATOR_FIELD_SIZE;
-    }
-
-    private int endOfChannel()
-    {
-        return locationPointer(CHANNEL_INDEX + 1);
+        final int sourceInfoOffset = sourceInfoOffset();
+        final int endOfSourceInfo = buffer().getInt(sourceInfoOffset) + sourceInfoOffset + SIZE_OF_INT;
+        return endOfSourceInfo + index * POSITION_INDICATOR_FIELD_SIZE;
     }
 
     /**
@@ -437,6 +319,6 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight implements Buffer
      */
     public int length()
     {
-        return positionIndicatorOffset(positionIndicatorCount() + 1);
+        return positionIndicatorOffset(positionIndicatorCount() - 1) + POSITION_INDICATOR_FIELD_SIZE;
     }
 }

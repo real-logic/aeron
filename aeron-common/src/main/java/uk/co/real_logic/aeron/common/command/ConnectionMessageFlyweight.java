@@ -35,8 +35,10 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
  * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |      Channel   Length       |   Channel                     ...
- * |                                                             ...
+ * |                         Channel Length                        |
+ * +---------------------------------------------------------------+
+ * |                           Channel                           ...
+ * ...                                                             |
  * +---------------------------------------------------------------+
  */
 public class ConnectionMessageFlyweight extends Flyweight

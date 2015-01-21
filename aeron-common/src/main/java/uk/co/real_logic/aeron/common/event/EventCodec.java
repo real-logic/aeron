@@ -23,8 +23,6 @@ import uk.co.real_logic.aeron.common.protocol.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
@@ -504,12 +502,6 @@ public class EventCodec
 
     private static String dissect(final PublicationBuffersReadyFlyweight command)
     {
-        final String locations =
-            IntStream.range(0, 6)
-                     .mapToObj((i) -> String.format(
-                         "{%s, %d@%x}", command.bufferLocation(i), command.bufferLength(i), command.bufferOffset(i)))
-                     .collect(Collectors.joining("\n    "));
-
         return String.format(
             "%s %x:%x:%x [%x]\n    %s",
             command.channel(),
@@ -517,17 +509,11 @@ public class EventCodec
             command.streamId(),
             command.positionCounterId(),
             command.correlationId(),
-            locations);
+            command.logFileName());
     }
 
     private static String dissect(final ConnectionBuffersReadyFlyweight command)
     {
-        final String locations =
-            IntStream.range(0, 6)
-                     .mapToObj((i) -> String.format(
-                         "{%s, %d@%x}", command.bufferLocation(i), command.bufferLength(i), command.bufferOffset(i)))
-                     .collect(Collectors.joining("\n    "));
-
         return String.format(
             "%s %x:%x:%x %x %s [%x]\n    %s",
              command.channel(),
@@ -537,7 +523,7 @@ public class EventCodec
              command.positionIndicatorCount(),
              command.sourceInfo(),
              command.correlationId(),
-             locations);
+             command.logFileName());
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)

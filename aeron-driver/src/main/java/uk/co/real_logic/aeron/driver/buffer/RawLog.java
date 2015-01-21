@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -56,11 +55,11 @@ public interface RawLog extends AutoCloseable
     ByteBuffer[] sliceTerms();
 
     /**
-     * Write the buffer location details to the flyweight.
+     * Get the fully qualified file name for the log file.
      *
-     * @param buffersReadyFlyweight to which the buffer locations will be written.
+     * @return the fully qualified file name for the log file.
      */
-    void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight);
+    String logFileName();
 
     void close();
 }

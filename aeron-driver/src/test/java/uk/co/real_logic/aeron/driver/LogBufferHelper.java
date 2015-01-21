@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.command.BuffersReadyFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
@@ -67,26 +66,9 @@ public class LogBufferHelper
                 return terms;
             }
 
-            public void writeBufferLocations(final BuffersReadyFlyweight buffersReadyFlyweight)
+            public String logFileName()
             {
-                for (int i = 0; i < PARTITION_COUNT; i++)
-                {
-                    buffersReadyFlyweight.bufferOffset(i, 0);
-                    buffersReadyFlyweight.bufferLength(i, termLength);
-                    buffersReadyFlyweight.bufferLocation(i, "termBuffer-" + i);
-                }
-
-                for (int i = 0; i < PARTITION_COUNT; i++)
-                {
-                    buffersReadyFlyweight.bufferOffset(i + PARTITION_COUNT, 0);
-                    buffersReadyFlyweight.bufferLength(i + PARTITION_COUNT, metaDataLength);
-                    buffersReadyFlyweight.bufferLocation(i + PARTITION_COUNT, "metaDataBuffer-" + i);
-                }
-
-                final int index = PARTITION_COUNT * 2;
-                buffersReadyFlyweight.bufferOffset(index, 0);
-                buffersReadyFlyweight.bufferLength(index, LOG_META_DATA_LENGTH);
-                buffersReadyFlyweight.bufferLocation(index, "logMetaDataBuffer");
+                return "stream.log";
             }
 
             public void close()

@@ -98,9 +98,9 @@ public class ClientProxy
                        .joiningPosition(joiningPosition)
                        .correlationId(correlationId)
                        .termId(termId);
-        rawLog.writeBufferLocations(connectionReady);
-        connectionReady.sourceInfo(sourceInfo);
         connectionReady.channel(channel);
+        connectionReady.logFileName(rawLog.logFileName());
+        connectionReady.sourceInfo(sourceInfo);
 
         final int size = subscriberPositions.size();
         connectionReady.positionIndicatorCount(size);
@@ -131,8 +131,8 @@ public class ClientProxy
                         .positionCounterId(positionCounterId)
                         .mtuLength(mtuLength);
 
-        rawLog.writeBufferLocations(publicationReady);
         publicationReady.channel(channel);
+        publicationReady.logFileName(rawLog.logFileName());
 
         logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());
 

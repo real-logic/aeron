@@ -56,26 +56,26 @@ public:
         return *this;
     }
 
-    inline this_t& toDriverBuffer(ManyToOneRingBuffer *toDriverBuffer)
+    inline this_t& toDriverBuffer(std::unique_ptr<ManyToOneRingBuffer> toDriverBuffer)
     {
-        m_toDriverBuffer = toDriverBuffer;
+        m_toDriverBuffer = std::move(toDriverBuffer);
         return *this;
     }
 
-    inline ManyToOneRingBuffer* toDriverBuffer() const
+    inline std::unique_ptr<ManyToOneRingBuffer> toDriverBuffer()
     {
-        return m_toDriverBuffer;
+        return std::move(m_toDriverBuffer);
     }
 
-    inline this_t& toClientsBuffer(CopyBroadcastReceiver *toClientsBuffer)
+    inline this_t& toClientsBuffer(std::unique_ptr<CopyBroadcastReceiver> toClientsBuffer)
     {
-        m_toClientsBuffer = toClientsBuffer;
+        m_toClientsBuffer = std::move(toClientsBuffer);
         return *this;
     }
 
-    inline CopyBroadcastReceiver* toClientsBuffer() const
+    inline std::unique_ptr<CopyBroadcastReceiver> toClientsBuffer()
     {
-        return m_toClientsBuffer;
+        return std::move(m_toClientsBuffer);
     }
 
     inline void dataDirName(const std::string& name)
@@ -121,8 +121,8 @@ public:
     }
 
 private:
-    ManyToOneRingBuffer *m_toDriverBuffer = nullptr;
-    CopyBroadcastReceiver *m_toClientsBuffer = nullptr;
+    std::unique_ptr<ManyToOneRingBuffer> m_toDriverBuffer;
+    std::unique_ptr<CopyBroadcastReceiver> m_toClientsBuffer;
     std::string m_dataDirName = "";
     std::string m_adminDirName = "";
     std::string m_countersDirName = "";

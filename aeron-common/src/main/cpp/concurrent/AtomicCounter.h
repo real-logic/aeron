@@ -18,7 +18,11 @@
 
 #include <cstdint>
 #include <memory>
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-register"
 #include <mintomic/mintomic.h>
+#pragma clang diagnostic pop
 
 #include <util/Index.h>
 #include "AtomicBuffer.h"

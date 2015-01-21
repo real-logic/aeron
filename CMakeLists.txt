@@ -15,16 +15,40 @@
 #
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
+include(ExternalProject)
+
 project("aeron")
 
 enable_testing()
 
 ##########################################################
+# gmock usage
+
+ExternalProject_Add(
+    gmock
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/aeron-common/src/main/cpp/3rdparty/gmock-1.7.0.zip
+    URL_MD5 073b984d8798ea1594f5e44d85b20d66
+    INSTALL_COMMAND ""
+)
+
+ExternalProject_Get_Property(gmock source_dir)
+set(GMOCK_SOURCE_DIR ${source_dir})
+ExternalProject_Get_Property(gmock binary_dir)
+set(GMOCK_BINARY_DIR ${binary_dir})
+
+set(GMOCK_LIBS
+    ${GMOCK_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock${CMAKE_STATIC_LIBRARY_SUFFIX}
+    ${GMOCK_BINARY_DIR}/${CMAKE_STATIC_LIBRARY_PREFIX}gmock_main${CMAKE_STATIC_LIBRARY_SUFFIX}
+)
+
+##########################################################
 # Platform flags, etc.
+
+find_package(Threads)
 
 # all UNIX-based platform compiler flags
 if(UNIX)
-    set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -fexceptions -pthread -g -m64")
+    set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -fexceptions -g -m64")
     set(CMAKE_CXX_FLAGS_DEBUG "-O0")
     set(CMAKE_CXX_FLAGS_RELEASE "-Os")
 endif()
@@ -58,9 +82,10 @@ set(AERON_CLIENT_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 # 3rd party libs
 
 # gmock - includes gtest
-include_directories(${AERON_3RDPARTY_PATH}/gmock-1.7.0/include)
-include_directories(${AERON_3RDPARTY_PATH}/gmock-1.7.0/gtest/include)
-add_subdirectory(${AERON_3RDPARTY_PATH}/gmock-1.7.0)
+#include_directories(${AERON_3RDPARTY_PATH}/gmock-1.7.0/include)
+include_directories(${GMOCK_SOURCE_DIR}/include)
+include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
+#add_subdirectory(${AERON_3RDPARTY_PATH}/gmock-1.7.0)
 
 # mintomic - header only
 include_directories(${AERON_3RDPARTY_PATH}/mintomic/include)
@@ -69,10 +94,8 @@ include_directories(${AERON_3RDPARTY_PATH}/mintomic/include)
 
 include_directories(${AERON_COMMON_PATH} ${AERON_CLIENT_PATH})
 
-add_subdirectory(${AERON_COMMON_PATH}/util)
-add_subdirectory(${AERON_COMMON_PATH}/concurrent)
-add_subdirectory(${AERON_COMMON_PATH}/common)
-add_subdirectory(${AERON_COMMON_PATH}/command)
+add_subdirectory(${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp)
+add_subdirectory(${CMAKE_SOURCE_DIR}/aeron-common/src/test/cpp)
 add_subdirectory(${AERON_SAMPLES_PATH})
 add_subdirectory(${AERON_CLIENT_PATH})
 

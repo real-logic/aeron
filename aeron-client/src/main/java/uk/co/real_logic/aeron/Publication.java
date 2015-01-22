@@ -239,15 +239,17 @@ public class Publication implements AutoCloseable
         final int newTermId = activeTermId + 1;
         final int nextIndex = nextPartitionIndex(activeIndex);
 
+        final LogAppender[] logAppenders = this.logAppenders;
         logAppenders[nextIndex].defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
 
         final int previousIndex = previousPartitionIndex(activeIndex);
+        final LogAppender previousAppender = logAppenders[previousIndex];
 
         // Need to advance the term id in case a publication takes an interrupt between reading the active term
         // and incrementing the tail. This covers the case of interrupt talking over one term in duration.
-        logAppenders[previousIndex].defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId + 1, LITTLE_ENDIAN);
+        previousAppender.defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId + 1, LITTLE_ENDIAN);
 
-        logAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
+        previousAppender.statusOrdered(NEEDS_CLEANING);
 
         LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
     }

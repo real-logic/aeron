@@ -19,7 +19,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Busy spin strategy targeted at lowest possible latency. This strategy will monopolise a thread to achieve the lowest
- * possible latency.
+ * possible latency. Useful for creating bubbles in the execution pipeline of tight busy spin loops with no other logic than
+ * status checks on progress.
  */
 public class BusySpinIdleStrategy implements IdleStrategy
 {

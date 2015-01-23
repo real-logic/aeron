@@ -33,8 +33,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 class LogBuffers implements AutoCloseable
 {
-    private static final int ONE_GIG = 1 << 30;
-
     private final MappedByteBuffer[] mappedByteBuffers;
     private final UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
 
@@ -45,7 +43,7 @@ class LogBuffers implements AutoCloseable
             final long logLength = logChannel.size();
             final int termLength = computeTermLength(logLength);
 
-            if (termLength < ONE_GIG)
+            if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
                 mappedByteBuffers = new MappedByteBuffer[]{ mappedBuffer };

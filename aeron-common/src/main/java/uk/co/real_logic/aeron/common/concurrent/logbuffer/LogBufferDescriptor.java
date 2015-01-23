@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_LENGTH;
@@ -105,6 +105,11 @@ public class LogBufferDescriptor
     /**
      * Offset within the log meta data where the active term id is stored.
      */
+    public static final int LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
+
+    /**
+     * Offset within the log meta data where the active term id is stored.
+     */
     public static final int LOG_INITIAL_TERM_ID_OFFSET = 0;
 
     /**
@@ -113,9 +118,48 @@ public class LogBufferDescriptor
     public static final int LOG_ACTIVE_TERM_ID_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
 
     /**
-     * Total length of the log meta buffer in bytes.
+     * Offset within the log meta data which the length field for the frame header is stored.
      */
-    public static final int LOG_META_DATA_LENGTH = CACHE_LINE_LENGTH;
+    public static final int LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_ACTIVE_TERM_ID_OFFSET + SIZE_OF_INT;
+
+    /**
+     * Offset at which the default frame headers begin.
+     */
+    public static final int LOG_DEFAULT_FRAME_HEADERS_OFFSET = CACHE_LINE_LENGTH;
+
+    /**
+     * Offset at which the default frame headers begin.
+     */
+    public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH;
+
+    /**
+     * Total length of the log meta buffer in bytes.
+     *
+     * <pre>
+     *   0                   1                   2                   3
+     *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+     *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+     *  |                        Initial Term Id                        |
+     *  +---------------------------------------------------------------+
+     *  |                        Active Term Id                         |
+     *  +---------------------------------------------------------------+
+     *  |                  Default Frame Header Length                  |
+     *  +---------------------------------------------------------------+
+     *  |                      Cache Line Padding                      ...
+     * ...                                                              |
+     *  +---------------------------------------------------------------+
+     *  |                    Default Frame Header 0                    ...
+     * ...                                                              |
+     *  +---------------------------------------------------------------+
+     *  |                    Default Frame Header 1                    ...
+     * ...                                                              |
+     *  +---------------------------------------------------------------+
+     *  |                    Default Frame Header 2                    ...
+     * ...                                                              |
+     *  +---------------------------------------------------------------+
+     * </pre>
+     */
+    public static final int LOG_META_DATA_LENGTH = CACHE_LINE_LENGTH * 4;
 
     /**
      * Check that term buffer is the correct length and alignment.
@@ -213,23 +257,34 @@ public class LogBufferDescriptor
     /**
      * Rotate to the next partition in sequence for the term id.
      *
-     * @param current partition index
+     * @param currentIndex partition index
      * @return the next partition index
      */
-    public static int nextPartitionIndex(final int current)
+    public static int nextPartitionIndex(final int currentIndex)
     {
-        return BitUtil.next(current, PARTITION_COUNT);
+        int nextIndex = currentIndex + 1;
+        if (nextIndex == PARTITION_COUNT)
+        {
+            nextIndex = 0;
+        }
+
+        return nextIndex;
     }
 
     /**
      * Rotate to the previous partition in sequence for the term id.
      *
-     * @param current partition index
+     * @param currentIndex partition index
      * @return the previous partition index
      */
-    public static int previousPartitionIndex(final int current)
+    public static int previousPartitionIndex(final int currentIndex)
     {
-        return BitUtil.previous(current, PARTITION_COUNT);
+        if (0 == currentIndex)
+        {
+            return PARTITION_COUNT - 1;
+        }
+
+        return currentIndex - 1;
     }
 
     /**
@@ -311,5 +366,49 @@ public class LogBufferDescriptor
     {
         final long metaDataSectionLength = (TERM_META_DATA_LENGTH * (long)PARTITION_COUNT) + LOG_META_DATA_LENGTH;
         return (int)((logLength - metaDataSectionLength) / 3);
+    }
+
+    /**
+     * Store the default frame headers to the log meta data buffer.
+     *
+     * @param logMetaDataBuffer into which the default headers should be stored.
+     * @param defaultHeader     to be stored.
+     * @throws IllegalArgumentException if the default header is larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}
+     */
+    public static void storeDefaultFrameHeaders(final UnsafeBuffer logMetaDataBuffer, final DirectBuffer defaultHeader)
+    {
+        final int defaultHeaderLength = defaultHeader.capacity();
+        if (defaultHeaderLength > LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH)
+        {
+            throw new IllegalArgumentException("Default header larger than: " + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+        }
+
+        logMetaDataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, defaultHeaderLength);
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            final int offset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (i * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+            logMetaDataBuffer.putBytes(offset, defaultHeader, 0, defaultHeaderLength);
+        }
+    }
+
+    /**
+     * Get the default frame headers from the log meta data. There is one default header per partition.
+     *
+     * @param logMetaDataBuffer containing the raw bytes for the default frame headers.
+     * @return and array of buffers wrapping the raw bytes.
+     */
+    public static UnsafeBuffer[] defaultFrameHeaders(final UnsafeBuffer logMetaDataBuffer)
+    {
+        final UnsafeBuffer[] defaultFrameHeaders = new UnsafeBuffer[PARTITION_COUNT];
+        final int defaultHeaderLength = logMetaDataBuffer.getInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET);
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            final int offset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (i * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+            defaultFrameHeaders[i] = new UnsafeBuffer(logMetaDataBuffer, offset, defaultHeaderLength);
+        }
+
+        return defaultFrameHeaders;
     }
 }

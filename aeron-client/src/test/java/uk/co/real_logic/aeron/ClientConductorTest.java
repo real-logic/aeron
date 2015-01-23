@@ -20,6 +20,9 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
@@ -40,9 +43,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_CONNECTION_READY;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ON_PUBLICATION_READY;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 public class ClientConductorTest
 {
@@ -134,8 +135,14 @@ public class ClientConductorTest
             atomicBuffersSession2[i + PARTITION_COUNT] = metaDataBuffersSession2;
         }
 
-        atomicBuffersSession1[NUM_BUFFERS - 1] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-        atomicBuffersSession2[NUM_BUFFERS - 1] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+        atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+        atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+
+        final MutableDirectBuffer header1 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_1, STREAM_ID_1, 0);
+        final MutableDirectBuffer header2 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_2, STREAM_ID_2, 0);
+
+        LogBufferDescriptor.storeDefaultFrameHeaders(atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX], header1);
+        LogBufferDescriptor.storeDefaultFrameHeaders(atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX], header2);
 
         final LogBuffers logBuffersSession1 = mock(LogBuffers.class);
         final LogBuffers logBuffersSession2 = mock(LogBuffers.class);

@@ -19,13 +19,11 @@ import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.BufferPositionIndicator;
 import uk.co.real_logic.agrona.status.BufferPositionReporter;
 import uk.co.real_logic.agrona.status.PositionIndicator;
@@ -190,13 +188,12 @@ class ClientConductor implements Agent, DriverListener
         final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         final LogAppender[] appenders = new LogAppender[PARTITION_COUNT];
-        final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[PARTITION_COUNT * 2];
-        final int initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
+        final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
+        final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
-            appenders[i] = new LogAppender(buffers[i], buffers[i + PARTITION_COUNT], header, mtuLength);
+            appenders[i] = new LogAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
         }
 
         final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);

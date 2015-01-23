@@ -15,8 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
+import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
@@ -30,10 +29,10 @@ public class LowLatencyMediaDriver
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
-            .sharedNetworkIdleStrategy(new BusySpinIdleStrategy())
-            .sharedIdleStrategy(new BusySpinIdleStrategy())
-            .receiverIdleStrategy(new BusySpinIdleStrategy())
-            .senderIdleStrategy(new BusySpinIdleStrategy());
+            .sharedNetworkIdleStrategy(new NoOpIdleStrategy())
+            .sharedIdleStrategy(new NoOpIdleStrategy())
+            .receiverIdleStrategy(new NoOpIdleStrategy())
+            .senderIdleStrategy(new NoOpIdleStrategy());
 
         try (final MediaDriver ignored = MediaDriver.launch(ctx))
         {

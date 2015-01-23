@@ -124,7 +124,6 @@ public class DriverPublication implements AutoCloseable
         termCapacity = logScanners[0].capacity();
         senderLimit = new AtomicLong(initialPositionLimit);
         activeTermId = initialTermId;
-        initialTermId(rawLog.logMetaData(), initialTermId);
 
         timeOfLastSendOrHeartbeat = clock.time();
 

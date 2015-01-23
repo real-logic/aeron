@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.LockSupport;
 
 /**
@@ -39,7 +38,6 @@ public class BackoffIdleStrategy implements IdleStrategy
 
     private State state;
 
-    private int dummyCounter;
     private long spins;
     private long yields;
     private long parkPeriodNs;
@@ -52,8 +50,7 @@ public class BackoffIdleStrategy implements IdleStrategy
      * @param minParkPeriodNs to use when initiating parking
      * @param maxParkPeriodNs to use when parking
      */
-    public BackoffIdleStrategy(
-        final long maxSpins, final long maxYields, final long minParkPeriodNs, final long maxParkPeriodNs)
+    public BackoffIdleStrategy(final long maxSpins, final long maxYields, final long minParkPeriodNs, final long maxParkPeriodNs)
     {
         this.maxSpins = maxSpins;
         this.maxYields = maxYields;
@@ -86,21 +83,6 @@ public class BackoffIdleStrategy implements IdleStrategy
                 {
                     state = State.YIELDING;
                     yields = 0;
-                }
-                else
-                {
-                    // Trick speculative execution into not progressing
-                    if (dummyCounter > 0)
-                    {
-                        if (ThreadLocalRandom.current().nextInt() > 0)
-                        {
-                            --dummyCounter;
-                        }
-                    }
-                    else
-                    {
-                        dummyCounter = 64;
-                    }
                 }
                 break;
 

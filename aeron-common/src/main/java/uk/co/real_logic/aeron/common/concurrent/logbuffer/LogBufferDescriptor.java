@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -258,23 +257,34 @@ public class LogBufferDescriptor
     /**
      * Rotate to the next partition in sequence for the term id.
      *
-     * @param current partition index
+     * @param currentIndex partition index
      * @return the next partition index
      */
-    public static int nextPartitionIndex(final int current)
+    public static int nextPartitionIndex(final int currentIndex)
     {
-        return BitUtil.next(current, PARTITION_COUNT);
+        int nextIndex = currentIndex + 1;
+        if (nextIndex == PARTITION_COUNT)
+        {
+            nextIndex = 0;
+        }
+
+        return nextIndex;
     }
 
     /**
      * Rotate to the previous partition in sequence for the term id.
      *
-     * @param current partition index
+     * @param currentIndex partition index
      * @return the previous partition index
      */
-    public static int previousPartitionIndex(final int current)
+    public static int previousPartitionIndex(final int currentIndex)
     {
-        return BitUtil.previous(current, PARTITION_COUNT);
+        if (0 == currentIndex)
+        {
+            return PARTITION_COUNT - 1;
+        }
+
+        return currentIndex - 1;
     }
 
     /**

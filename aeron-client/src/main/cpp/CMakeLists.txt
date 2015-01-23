@@ -32,4 +32,4 @@ SET(HEADERS
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
 
-target_link_libraries(aeron_client aeron_util)
+target_link_libraries(aeron_client aeron_common)

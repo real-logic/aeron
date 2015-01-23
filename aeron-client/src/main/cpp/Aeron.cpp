@@ -31,30 +31,6 @@ Aeron::~Aeron()
 {
     m_conductorRunner.close();
 
-    if (nullptr != m_driverProxy)
-    {
-        delete m_driverProxy;
-        m_driverProxy = nullptr;
-    }
-
-    if (nullptr != m_toDriverRingBuffer)
-    {
-        delete m_toDriverRingBuffer;
-        m_toDriverRingBuffer = nullptr;
-    }
-
-    if (nullptr != m_toClientsCopyReceiver)
-    {
-        delete m_toClientsCopyReceiver;
-        m_toClientsCopyReceiver = nullptr;
-    }
-
-    if (nullptr != m_toClientsBroadcastReceiver)
-    {
-        delete m_toClientsBroadcastReceiver;
-        m_toClientsBroadcastReceiver = nullptr;
-    }
-
     // memory mapped files should be free'd by the destructor of the shared_ptr
 
     // TODO: do cleanup of anything created
@@ -62,9 +38,9 @@ Aeron::~Aeron()
 
 DriverProxy& Aeron::createDriverProxy(Context& context)
 {
-    ManyToOneRingBuffer* toDriverRingBuffer = context.toDriverBuffer();
+    m_toDriverRingBuffer = context.toDriverBuffer();
 
-    if (nullptr == toDriverRingBuffer)
+    if (nullptr == m_toDriverRingBuffer)
     {
         // create buffer from mapped file for location specified in context. Managed by shared_ptr.
         m_toDriverBuffer = util::MemoryMappedFile::mapExisting(context.toDriverFileName().c_str());
@@ -72,29 +48,27 @@ DriverProxy& Aeron::createDriverProxy(Context& context)
         // stack temporary for AtomicBuffer. AtomicBuffer within ring buffer will be copy-constructed
         AtomicBuffer buffer(m_toDriverBuffer->getMemoryPtr(), m_toDriverBuffer->getMemorySize());
 
-        toDriverRingBuffer = new ManyToOneRingBuffer(buffer);
-        m_toDriverRingBuffer = toDriverRingBuffer;  // keep for cleanup
+        m_toDriverRingBuffer = std::unique_ptr<ManyToOneRingBuffer>(new ManyToOneRingBuffer(buffer));
     }
 
-    m_driverProxy = new DriverProxy(*toDriverRingBuffer);  // keep for cleanup
+    m_driverProxy = std::unique_ptr<DriverProxy>(new DriverProxy(*m_toDriverRingBuffer));
 
     return *m_driverProxy;
 }
 
 CopyBroadcastReceiver& Aeron::createDriverReceiver(Context &context)
 {
-    CopyBroadcastReceiver* toClientsCopyReceiver = context.toClientsBuffer();
+    m_toClientsCopyReceiver = context.toClientsBuffer();
 
-    if (nullptr == toClientsCopyReceiver)
+    if (nullptr == m_toClientsCopyReceiver)
     {
         m_toClientsBuffer = util::MemoryMappedFile::mapExisting(context.toClientsFileName().c_str());
 
         AtomicBuffer buffer(m_toClientsBuffer->getMemoryPtr(), m_toClientsBuffer->getMemorySize());
 
-        m_toClientsBroadcastReceiver = new BroadcastReceiver(buffer);
-        toClientsCopyReceiver = new CopyBroadcastReceiver(*m_toClientsBroadcastReceiver);
-        m_toClientsCopyReceiver = toClientsCopyReceiver;
+        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(new BroadcastReceiver(buffer));
+        m_toClientsCopyReceiver = std::unique_ptr<CopyBroadcastReceiver>(new CopyBroadcastReceiver(*m_toClientsBroadcastReceiver));
     }
 
-    return *toClientsCopyReceiver;
+    return *m_toClientsCopyReceiver;
 }

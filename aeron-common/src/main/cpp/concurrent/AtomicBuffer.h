@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <string.h>
 #include <string>
+
 #include <mintomic/mintomic.h>
 
 #include <util/Exceptions.h>

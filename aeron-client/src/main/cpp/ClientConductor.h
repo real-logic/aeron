@@ -33,6 +33,8 @@ using namespace aeron::common::concurrent;
 class ClientConductor
 {
 public:
+    typedef std::function<void(Publication*)> add_publication_future_t;
+
     ClientConductor(DriverProxy& driverProxy, CopyBroadcastReceiver& broadcastReceiver) :
         m_driverProxy(driverProxy),
         m_broadcastReceiver(broadcastReceiver),
@@ -56,17 +58,21 @@ public:
 
     /*
      * non-blocking API semantics
-     * - addPublication, addSubscription do NOT return objects, but instead return correlationIds
-     * - addPublication/addSubscription should take futures for completion?
-     * - onReadyFlyweight -> deliver notification via handler(correlationId, Publication) (2 handlers: 1 Pub + 1 Sub)
+     * - addPublication, addSubscription do NOT return objects, but instead return correlationIds (registrationIds)
+     * - addPublication/addSubscription should take futures for completion
+     *      - onReadyFlyweight -> deliver notification via handler(correlationId, Publication) (2 handlers: 1 Pub + 1 Sub)
      *      - Publication/Subscription created on reception of Flyweight
-     * - onError [timeout or error return] -> deliver notification via errorHandler (should call handler with NULL Pub/Sub?)
+     *      - not called if error occurs (like timeout)
+     * - on error [timeout or error return] -> deliver notification via errorHandler of Aeron
      * - app can poll for usage of Publication/Subscription (concurrent array/map)
      *      - use correlationId as key
      */
 
     Publication* addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
     void releasePublication(Publication* publication);
+
+    std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, add_publication_future_t& future);
+    void releasePublication(std::int64_t registrationId);
 
     Subscription* addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler);
     void releaseSubscription(Subscription* subscription);
@@ -78,7 +84,7 @@ public:
         std::int32_t sessionId,
         std::int32_t termId,
         std::int32_t positionCounterId,
-        std::int32_t mtuLengt,
+        std::int32_t mtuLength,
         const PublicationReadyFlyweight& publicationReady);
 
 private:

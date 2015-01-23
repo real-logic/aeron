@@ -59,7 +59,7 @@ public final class Aeron implements AutoCloseable
     private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
     private static final long NULL_TIMEOUT = -1;
-    private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT = 10_000;
+    private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10_000;
 
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -213,7 +213,7 @@ public final class Aeron implements AutoCloseable
         private Consumer<Throwable> errorHandler;
         private NewConnectionHandler newConnectionHandler;
         private InactiveConnectionHandler inactiveConnectionHandler;
-        private long mediaDriverTimeout = NULL_TIMEOUT;
+        private long mediaDriverTimeoutMs = NULL_TIMEOUT;
 
         public Context conclude()
         {
@@ -221,9 +221,9 @@ public final class Aeron implements AutoCloseable
 
             try
             {
-                if (mediaDriverTimeout == NULL_TIMEOUT)
+                if (mediaDriverTimeoutMs == NULL_TIMEOUT)
                 {
-                    mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT;
+                    mediaDriverTimeoutMs = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
                 }
 
                 if (null == idleStrategy)
@@ -320,13 +320,13 @@ public final class Aeron implements AutoCloseable
 
         public Context mediaDriverTimeout(final long value)
         {
-            this.mediaDriverTimeout = value;
+            this.mediaDriverTimeoutMs = value;
             return this;
         }
 
         public long mediaDriverTimeout()
         {
-            return mediaDriverTimeout;
+            return mediaDriverTimeoutMs;
         }
 
         public void close()

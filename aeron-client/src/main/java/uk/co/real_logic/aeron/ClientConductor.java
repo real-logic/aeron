@@ -219,37 +219,33 @@ class ClientConductor implements Agent, DriverListener
             streamId,
             (subscription) ->
             {
-                if (null != subscription && !subscription.isConnected(sessionId))
+                if (!subscription.isConnected(sessionId))
                 {
-                    PositionReporter positionReporter = null;
                     for (int i = 0, size = message.positionIndicatorCount(); i < size; i++)
                     {
                         if (subscription.registrationId() == message.positionIndicatorRegistrationId(i))
                         {
-                            positionReporter = new BufferPositionReporter(
+                            final PositionReporter positionReporter = new BufferPositionReporter(
                                 counterValuesBuffer, message.positionIndicatorCounterId(i));
 
+                            final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+                            final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+                            final LogReader[] readers = new LogReader[PARTITION_COUNT];
+
+                            for (int p = 0; p < PARTITION_COUNT; p++)
+                            {
+                                readers[p] = new LogReader(buffers[p], buffers[p + PARTITION_COUNT]);
+                            }
+
+                            subscription.onConnectionReady(
+                                sessionId, initialTermId, initialPosition, correlationId, readers, positionReporter, logBuffers);
+
+                            if (null != newConnectionHandler)
+                            {
+                                newConnectionHandler.onNewConnection(channel, streamId, sessionId, message.sourceInfo());
+                            }
+
                             break;
-                        }
-                    }
-
-                    if (null != positionReporter)
-                    {
-                        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
-                        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-                        final LogReader[] readers = new LogReader[PARTITION_COUNT];
-
-                        for (int i = 0; i < PARTITION_COUNT; i++)
-                        {
-                            readers[i] = new LogReader(buffers[i], buffers[i + PARTITION_COUNT]);
-                        }
-
-                        subscription.onConnectionReady(
-                            sessionId, initialTermId, initialPosition, correlationId, readers, positionReporter, logBuffers);
-
-                        if (null != newConnectionHandler)
-                        {
-                            newConnectionHandler.onNewConnection(channel, streamId, sessionId, message.sourceInfo());
                         }
                     }
                 }

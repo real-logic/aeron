@@ -56,6 +56,7 @@ endif()
 # platform specific flags
 if(APPLE)
     add_definitions(-DDarwin)
+    add_definitions(-Wno-deprecated-register)
 elseif(WIN32)
     add_definitions(-DWIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)

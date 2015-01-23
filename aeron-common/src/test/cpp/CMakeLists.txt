@@ -16,7 +16,7 @@
 
 function(aeron_common_test name file)
     add_executable(${name} ${file} concurrent/MockAtomicBuffer.h)
-    target_link_libraries(${name} aeron_common ${GMOCK_LIBS})
+    target_link_libraries(${name} aeron_common ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 

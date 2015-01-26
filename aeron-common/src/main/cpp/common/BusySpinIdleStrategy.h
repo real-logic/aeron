@@ -43,7 +43,9 @@ public:
 
     inline static void pause()
     {
-#if MINT_CPU_X86 || MINT_CPU_X64
+#if WIN32
+        __asm pause;
+#elif MINT_CPU_X86 || MINT_CPU_X64
         asm volatile("pause");
 #else
         #error Unsupported platform!

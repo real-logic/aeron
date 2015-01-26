@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_CONTEXT__
 #define INCLUDED_AERON_CONTEXT__
 
+#include <memory>
 #include <util/Exceptions.h>
 #include <common/AgentRunner.h>
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>

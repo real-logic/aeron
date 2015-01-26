@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <cstdint>
 #include <signal.h>
 #include <util/CommandOptionParser.h>
 #include <thread>
@@ -94,7 +95,11 @@ int main(int argc, char** argv)
 
         for (int i = 0; i < settings.numberOfMessages && running; i++)
         {
+#if WIN32
+            const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %d", i);
+#else
             const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %d", i);
+#endif
 
             srcBuffer.putBytes(0, reinterpret_cast<std::uint8_t *>(message), messageLen);
 

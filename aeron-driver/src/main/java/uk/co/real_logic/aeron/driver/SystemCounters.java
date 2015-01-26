@@ -39,6 +39,7 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter setupFrameShortSends;
     private final AtomicCounter nakFrameShortSends;
     private final AtomicCounter smFrameShortSends;
+    private final AtomicCounter clientKeepAlives;
 
     public SystemCounters(final CountersManager countersManager)
     {
@@ -61,6 +62,7 @@ public class SystemCounters implements AutoCloseable
         setupFrameShortSends = countersManager.newCounter("Setup Frame short sends");
         nakFrameShortSends = countersManager.newCounter("NAK Frame short sends");
         smFrameShortSends = countersManager.newCounter("SM Frame short sends");
+        clientKeepAlives = countersManager.newCounter("Client Keep Alives");
     }
 
     public void close()
@@ -84,6 +86,7 @@ public class SystemCounters implements AutoCloseable
         setupFrameShortSends.close();
         nakFrameShortSends.close();
         smFrameShortSends.close();
+        clientKeepAlives.close();
     }
 
     public AtomicCounter bytesSent()
@@ -179,5 +182,10 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter smFrameShortSends()
     {
         return smFrameShortSends;
+    }
+
+    public AtomicCounter clientKeepAlives()
+    {
+        return clientKeepAlives;
     }
 }

@@ -63,7 +63,7 @@ public class DriverConductorTest
     private static final long CORRELATION_ID_3 = 1431;
     private static final long CORRELATION_ID_4 = 1432;
     private static final long CLIENT_ID = 1433;
-    public static final int BUFFER_LENGTH = 1024 * 1024;
+    private static final int BUFFER_LENGTH = 1024 * 1024;
 
     private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(
         Configuration.COMMAND_BUFFER_LENGTH + RingBufferDescriptor.TRAILER_LENGTH);
@@ -136,6 +136,7 @@ public class DriverConductorTest
         final SystemCounters mockSystemCounters = mock(SystemCounters.class);
         ctx.systemCounters(mockSystemCounters);
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.clientKeepAlives()).thenReturn(mock(AtomicCounter.class));
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
@@ -408,7 +409,7 @@ public class DriverConductorTest
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
         verifyReceiverSubscribes();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS / 1);
+        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
         writeKeepaliveClientMessage();
 
@@ -448,11 +449,7 @@ public class DriverConductorTest
     }
 
     private void writePublicationMessage(
-        final int msgTypeId,
-        final int sessionId,
-        final int streamId,
-        final int port,
-        final long correlationId)
+        final int msgTypeId, final int sessionId, final int streamId, final int port, final long correlationId)
     {
         publicationMessage.wrap(writeBuffer, 0);
         publicationMessage.streamId(streamId);

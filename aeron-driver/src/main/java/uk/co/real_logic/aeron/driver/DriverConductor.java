@@ -626,6 +626,8 @@ public class DriverConductor implements Agent
 
     private void onClientKeepalive(final long clientId)
     {
+        systemCounters.clientKeepAlives().addOrdered(1);
+
         final AeronClient aeronClient = findClient(clients, clientId);
         if (null != aeronClient)
         {
@@ -832,16 +834,19 @@ public class DriverConductor implements Agent
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
     {
+        AeronClient aeronClient = null;
+
         for (int i = 0, size = clients.size(); i < size; i++)
         {
-            final AeronClient aeronClient = clients.get(i);
-            if (aeronClient.clientId() == clientId)
+            final AeronClient client = clients.get(i);
+            if (client.clientId() == clientId)
             {
-                return aeronClient;
+                aeronClient = client;
+                break;
             }
         }
 
-        return null;
+        return aeronClient;
     }
 
     private int allocatePositionCounter(final String type, final String dirName, final int sessionId, final int streamId)

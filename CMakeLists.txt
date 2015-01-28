@@ -77,7 +77,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/lib")
 set(AERON_COMMON_PATH "${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp")
 set(AERON_3RDPARTY_PATH "${AERON_COMMON_PATH}/3rdparty")
 set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
-set(AERON_CLIENT_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
+set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
+set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
 
 ##########################################################
 # 3rd party libs
@@ -93,11 +94,12 @@ include_directories(${AERON_3RDPARTY_PATH}/mintomic/include)
 
 ##########################################################
 
-include_directories(${AERON_COMMON_PATH} ${AERON_CLIENT_PATH})
+include_directories(${AERON_COMMON_PATH} ${AERON_CLIENT_SOURCE_PATH})
 
 add_subdirectory(${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp)
 add_subdirectory(${CMAKE_SOURCE_DIR}/aeron-common/src/test/cpp)
+add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
+add_subdirectory(${AERON_CLIENT_TEST_PATH})
 add_subdirectory(${AERON_SAMPLES_PATH})
-add_subdirectory(${AERON_CLIENT_PATH})
 
 

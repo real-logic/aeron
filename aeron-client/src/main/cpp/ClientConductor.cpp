@@ -85,7 +85,7 @@ void ClientConductor::releasePublication(std::int64_t correlationId)
 
     if (it != m_publications.end())
     {
-        // TODO: send command to driver?
+        m_driverProxy.removePublication(correlationId);
         m_publications.erase(it);
     }
 }

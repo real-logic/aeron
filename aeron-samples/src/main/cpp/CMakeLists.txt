@@ -21,9 +21,11 @@ add_executable(AeronStat AeronStat.cpp ${HEADERS})
 add_executable(BasicPublisher BasicPublisher.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
-    aeron_common)
+    aeron_common
+    ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(BasicPublisher
     aeron_common
-    aeron_client)
+    aeron_client
+    ${CMAKE_THREAD_LIBS_INIT})
 

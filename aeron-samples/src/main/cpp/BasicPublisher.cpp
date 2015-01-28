@@ -86,8 +86,16 @@ int main(int argc, char** argv)
 
         aeron::Context context;
         Aeron aeron(context.useSharedMemoryOnLinux());
-        // shared so that it will be deleted when going out of scope
-        std::shared_ptr<Publication> publication(aeron.addPublication(settings.channel, settings.streamId));
+        // add the publication to start the process
+        std::int64_t id = aeron.addPublication(settings.channel, settings.streamId);
+        std::shared_ptr<Publication> publication = aeron.findPublication(id);
+
+        // wait for the publication to be valid
+        while (!publication)
+        {
+            std::this_thread::yield();
+            publication = aeron.findPublication(id);
+        }
 
         MINT_DECL_ALIGNED(buffer_t buffer, 16);
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());

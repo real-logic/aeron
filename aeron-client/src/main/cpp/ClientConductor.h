@@ -25,6 +25,7 @@
 #include "DriverProxy.h"
 #include "Context.h"
 #include "DriverListenerAdapter.h"
+#include "LogBuffers.h"
 
 namespace aeron {
 
@@ -33,7 +34,6 @@ using namespace aeron::common::concurrent;
 class ClientConductor
 {
 public:
-    typedef std::function<void(Publication*)> add_publication_future_t;
 
     ClientConductor(DriverProxy& driverProxy, CopyBroadcastReceiver& broadcastReceiver) :
         m_driverProxy(driverProxy),
@@ -58,24 +58,30 @@ public:
 
     /*
      * non-blocking API semantics
-     * - addPublication, addSubscription do NOT return objects, but instead return correlationIds (registrationIds)
-     * - addPublication/addSubscription should take futures for completion
-     *      - onReadyFlyweight -> deliver notification via handler(correlationId, Publication) (2 handlers: 1 Pub + 1 Sub)
-     *      - Publication/Subscription created on reception of Flyweight
-     *      - not called if error occurs (like timeout)
+     * - addPublication, addSubscription do NOT return objects, but instead return a correlationId
+     * - addPublication/addSubscription should NOT take futures for completion
+     * - onNewPublication -> deliver notification via Aeron to inform app (but not hand back Publication, just id)
+     * - onNewSubscription -> deliver notification via Aeron to inform app (but not hand back Subscription, just id)
+     * - onNewConnection -> deliver notification (as is done currently in Java)
      * - on error [timeout or error return] -> deliver notification via errorHandler of Aeron
      * - app can poll for usage of Publication/Subscription (concurrent array/map)
      *      - use correlationId as key
      */
 
-    Publication* addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
-    void releasePublication(Publication* publication);
+    /*
+     * addPublication - create unique_ptr<state entry> (if doesn't exist), send command, etc.
+     * onNewPublication - create buffers, save them to state entry
+     * findPublication - create Publication (if it doesn't exist), returning shared_ptr, keep weak_ptr.
+     * releasePublication - delete unique_ptr<state entry> (should be called by Publication dtor) (should only delete once operation success from driver?)
+     */
 
-    std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, add_publication_future_t& future);
-    void releasePublication(std::int64_t registrationId);
+    std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
+    std::shared_ptr<Publication> findPublication(std::int64_t correlationId);
+    void releasePublication(std::int64_t correlationId);
 
-    Subscription* addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler);
-    void releaseSubscription(Subscription* subscription);
+    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler);
+    std::shared_ptr<Subscription> findSubscription(std::int64_t correlationId);
+    void releaseSubscription(std::int64_t correlationId);
 
     void onNewPublication(
         std::int64_t correlationId,
@@ -88,10 +94,39 @@ public:
         const PublicationReadyFlyweight& publicationReady);
 
 private:
+    struct PublicationStateDefn
+    {
+        std::string m_channel;
+        std::int64_t m_correlationId;
+        std::int32_t m_streamId;
+        std::int32_t m_sessionId;
+        std::unique_ptr<LogBuffers> m_buffers;
+        std::weak_ptr<Publication> m_publication;
+
+        PublicationStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, std::int32_t sessionId) :
+            m_channel(channel), m_correlationId(correlationId), m_streamId(streamId), m_sessionId(sessionId)
+        {
+        }
+    };
+
+    struct SubscriptionStateDefn
+    {
+        std::string m_channel;
+        std::int64_t m_correlationId;
+        std::int32_t m_streamId;
+        logbuffer::handler_t m_handler;
+        std::weak_ptr<Subscription> m_subscription;
+
+        SubscriptionStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, logbuffer::handler_t& handler) :
+            m_channel(channel), m_correlationId(correlationId), m_streamId(streamId), m_handler(handler)
+        {
+        }
+    };
+
     std::mutex m_publicationsLock;
     std::mutex m_subscriptionsLock;
-    std::vector<Publication*> m_publications;
-    std::vector<Subscription*> m_subscriptions;
+    std::vector<PublicationStateDefn> m_publications;
+    std::vector<SubscriptionStateDefn> m_subscriptions;
     DriverProxy& m_driverProxy;
     CopyBroadcastReceiver& m_broadcastReceiver;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;

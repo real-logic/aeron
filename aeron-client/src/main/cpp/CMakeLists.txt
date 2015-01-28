@@ -27,7 +27,8 @@ SET(HEADERS
     Publication.h
     Subscription.h
     DriverProxy.h
-    DriverListenerAdapter.h)
+    DriverListenerAdapter.h
+    LogBuffers.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

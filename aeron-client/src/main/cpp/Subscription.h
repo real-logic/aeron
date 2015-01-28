@@ -41,12 +41,18 @@ public:
         return m_streamId;
     }
 
+    inline std::int64_t correlationId() const
+    {
+        return m_correlationId;
+    }
+
 private:
     ClientConductor& m_conductor;
     const std::string& m_channel;
+    std::int64_t m_correlationId;
     std::int32_t m_streamId;
 
-    Subscription(ClientConductor& conductor, const std::string& channel, std::int32_t streamId);
+    Subscription(ClientConductor& conductor, std::int64_t correlationId, const std::string& channel, std::int32_t streamId);
 };
 
 }

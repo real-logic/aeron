@@ -14,21 +14,24 @@
  * limitations under the License.
  */
 
-#include "Subscription.h"
-#include "ClientConductor.h"
+#ifndef INCLUDED_AERON_LOG_BUFFERS__
+#define INCLUDED_AERON_LOG_BUFFERS__
 
-using namespace aeron;
+namespace aeron {
 
-Subscription::Subscription(ClientConductor& conductor, std::int64_t correlationId, const std::string& channel, std::int32_t streamId) :
-    m_conductor(conductor),
-    m_channel(channel),
-    m_correlationId(correlationId),
-    m_streamId(streamId)
+using namespace aeron::common;
+
+class LogBuffers
 {
+public:
+
+    virtual ~LogBuffers()
+    {
+    }
+
+private:
+};
 
 }
 
-Subscription::~Subscription()
-{
-    m_conductor.releaseSubscription(m_correlationId);
-}
+#endif

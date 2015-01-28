@@ -44,7 +44,7 @@ public:
     Aeron(Context& context);
     virtual ~Aeron();
 
-    inline Publication* addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
+    inline std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
     {
         std::int32_t sessionIdToRequest = sessionId;
 
@@ -56,9 +56,19 @@ public:
         return m_conductor.addPublication(channel, streamId, sessionIdToRequest);
     }
 
-    inline Subscription* addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
+    inline std::shared_ptr<Publication> findPublication(std::int64_t id)
+    {
+        return m_conductor.findPublication(id);
+    }
+
+    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
     {
         return m_conductor.addSubscription(channel, streamId, handler);
+    }
+
+    inline std::shared_ptr<Subscription> findSubscription(std::int64_t id)
+    {
+        return m_conductor.findSubscription(id);
     }
 
 private:

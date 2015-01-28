@@ -18,94 +18,138 @@
 
 using namespace aeron;
 
-Publication* ClientConductor::addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)
+std::int64_t ClientConductor::addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
+    std::int64_t id;
 
-    std::vector<Publication*>::const_iterator it = std::find_if(m_publications.begin(), m_publications.end(),
-        [&](Publication *pub)
+    std::vector<PublicationStateDefn>::const_iterator it = std::find_if(m_publications.begin(), m_publications.end(),
+        [&](PublicationStateDefn & entry)
         {
-            return (streamId == pub->streamId() && sessionId == pub->sessionId() && channel == pub->channel());
+            return (streamId == entry.m_streamId && sessionId == entry.m_sessionId && channel == entry.m_channel);
         });
-
-    Publication* publication = nullptr;
 
     if (it == m_publications.end())
     {
         std::int64_t correlationId = m_driverProxy.addPublication(channel, streamId, sessionId);
-        Publication::Identification ident(channel, correlationId, streamId, sessionId);
 
-        publication = new Publication(*this, ident);
-
-        m_publications.push_back(publication);
+        m_publications.push_back(PublicationStateDefn(channel, correlationId, streamId, sessionId));
+        id = correlationId;
     }
     else
     {
-        publication = *it;
+        id = (*it).m_correlationId;
     }
 
-    return publication;
+    return id;
 }
 
-void ClientConductor::releasePublication(Publication* publication)
+std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t correlationId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
-    // TODO: send command to driver?
-
-    std::vector<Publication*>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
-        [&](Publication *pub)
+    std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
+        [&](PublicationStateDefn & entry)
         {
-            return (publication == pub);
+            return (correlationId == entry.m_correlationId);
+        });
+
+    if (it == m_publications.end())
+    {
+        return std::shared_ptr<Publication>();
+    }
+
+    std::shared_ptr<Publication> pub((*it).m_publication.lock());
+
+    // construct Publication if we've heard from the driver and have the log buffers around
+    if (!pub && ((*it).m_buffers))
+    {
+        pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_correlationId, (*it).m_streamId, (*it).m_sessionId, *((*it).m_buffers));
+
+        (*it).m_publication = std::weak_ptr<Publication>(pub);
+        return pub;
+    }
+
+    return pub;
+}
+
+void ClientConductor::releasePublication(std::int64_t correlationId)
+{
+    std::lock_guard<std::mutex> lock(m_publicationsLock);
+
+    std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
+        [&](PublicationStateDefn & entry)
+        {
+            return (correlationId == entry.m_correlationId);
         });
 
     if (it != m_publications.end())
     {
+        // TODO: send command to driver?
         m_publications.erase(it);
     }
 }
 
-Subscription* ClientConductor::addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
+std::int64_t ClientConductor::addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+    std::int64_t id;
 
-    std::vector<Subscription*>::const_iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
-        [&](Subscription* sub)
+    std::vector<SubscriptionStateDefn>::const_iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn& entry)
         {
-            return (streamId == sub->streamId() && channel == sub->channel());
+            return (streamId == entry.m_streamId && channel == entry.m_channel);
         });
 
-    Subscription* subscription = nullptr;
 
     if (it == m_subscriptions.end())
     {
-        subscription = new Subscription(*this, channel, streamId);
+        std::int64_t correlationId = m_driverProxy.addSubscription(channel, streamId);
 
-        m_subscriptions.push_back(subscription);
-        // TODO: send command to driver
+        m_subscriptions.push_back(SubscriptionStateDefn(channel, correlationId, streamId, handler));
+        id = correlationId;
     }
     else
     {
-        subscription = *it;
+        id = (*it).m_correlationId;
     }
 
-    return subscription;
+    return id;
 }
 
-void ClientConductor::releaseSubscription(Subscription* subscription)
+std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t correlationId)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
 
-    // TODO: send command to driver?
-
-    std::vector<Subscription*>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
-        [&](Subscription* sub)
+    std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn& entry)
         {
-            return (subscription == sub);
+            return (correlationId == entry.m_correlationId);
+        });
+
+    if (it == m_subscriptions.end())
+    {
+        return std::shared_ptr<Subscription>();
+    }
+
+    // TODO: construct initial Subscription if it has been acked by driver
+
+    return (*it).m_subscription.lock();
+}
+
+void ClientConductor::releaseSubscription(std::int64_t correlationId)
+{
+    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+
+    std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn& entry)
+        {
+            return (correlationId == entry.m_correlationId);
         });
 
     if (it != m_subscriptions.end())
     {
+        // TODO: send command to driver?
         m_subscriptions.erase(it);
     }
 }
@@ -117,8 +161,20 @@ void ClientConductor::onNewPublication(
     std::int32_t sessionId,
     std::int32_t termId,
     std::int32_t positionCounterId,
-    std::int32_t mtuLengt,
+    std::int32_t mtuLength,
     const PublicationReadyFlyweight& publicationReady)
 {
+    std::lock_guard<std::mutex> lock(m_publicationsLock);
 
+    std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
+        [&](PublicationStateDefn& entry)
+        {
+            return (correlationId == entry.m_correlationId);
+        });
+
+    if (it != m_publications.end())
+    {
+        // TODO: create log buffers, etc. and set (*it).m_buffers to hold them
+        (*it).m_buffers = std::unique_ptr<LogBuffers>(new LogBuffers);
+    }
 }

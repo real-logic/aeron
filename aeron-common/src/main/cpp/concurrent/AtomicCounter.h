@@ -18,7 +18,6 @@
 
 #include <cstdint>
 #include <memory>
-#include <mintomic/mintomic.h>
 
 #include <util/Index.h>
 #include "AtomicBuffer.h"

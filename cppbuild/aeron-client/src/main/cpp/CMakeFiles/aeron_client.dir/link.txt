@@ -1,0 +1,2 @@
+/usr/bin/ar cr ../../../../lib/libaeron_client.a  CMakeFiles/aeron_client.dir/Publication.cpp.o CMakeFiles/aeron_client.dir/Subscription.cpp.o CMakeFiles/aeron_client.dir/ClientConductor.cpp.o CMakeFiles/aeron_client.dir/Aeron.cpp.o
+/usr/bin/ranlib ../../../../lib/libaeron_client.a

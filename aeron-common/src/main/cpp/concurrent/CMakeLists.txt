@@ -19,6 +19,7 @@ SET(SOURCE
     CountersManager.cpp)
 
 SET(HEADERS
+    Atomic64.h
     AtomicBuffer.h
     AtomicCounter.h
     CountersManager.h

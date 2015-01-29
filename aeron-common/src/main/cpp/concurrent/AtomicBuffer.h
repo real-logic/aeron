@@ -20,13 +20,14 @@
 #include <cstdint>
 #include <string.h>
 #include <string>
-#include <mintomic/mintomic.h>
-
+//#include <mintomic/mintomic.h>
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
 #include <util/Index.h>
 
 #include <util/MacroUtil.h>
+
+#include "Atomic64.h"
 
 namespace aeron { namespace common { namespace concurrent {
 
@@ -113,81 +114,64 @@ public:
     {
 //        printf("putInt64 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
-        mint_thread_fence_release();
-        mint_store_64_relaxed((mint_atomic64_t*)(m_buffer + offset), v);
+        ::putInt64Ordered((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
     inline COND_MOCK_VIRTUAL std::int64_t getInt64Ordered(util::index_t offset) const
     {
 //        printf("getInt64Ordered %d\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
-        std::int64_t v = mint_load_64_relaxed((mint_atomic64_t*)(m_buffer + offset));
-        mint_thread_fence_acquire();
-        return v;
+        return ::getInt64Ordered((volatile std::int32_t*)(m_buffer + offset));
     }
 
     inline void COND_MOCK_VIRTUAL putInt32Ordered(util::index_t offset, std::int32_t v)
     {
 //        printf("putInt32 %d %d Ordered\n", offset, v);
         boundsCheck(offset, sizeof(std::int32_t));
-        mint_thread_fence_release();
-        mint_store_32_relaxed((mint_atomic32_t*)(m_buffer + offset), v);
+        ::putInt32Ordered((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
     inline COND_MOCK_VIRTUAL std::int32_t getInt32Ordered(util::index_t offset) const
     {
 //        printf("getInt32 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
-        std::int32_t v = mint_load_32_relaxed((mint_atomic32_t*)(m_buffer + offset));
-        mint_thread_fence_acquire();
-        return v;
+        return ::getInt32Ordered((volatile std::int32_t*)(m_buffer + offset));
     }
 
     inline void putInt64Atomic(util::index_t offset, std::int64_t v)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        mint_thread_fence_release();
-        mint_store_64_relaxed((mint_atomic64_t*)(m_buffer + offset), v);
-        mint_thread_fence_seq_cst();
+        ::putInt64Atomic((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
     inline std::int64_t getInt64Atomic(util::index_t offset) const
     {
-        boundsCheck(offset, sizeof(std::int64_t));
-        mint_thread_fence_seq_cst();
-        std::int64_t v = mint_load_64_relaxed((mint_atomic64_t*)(m_buffer + offset));
-        mint_thread_fence_acquire();
-        return v;
+        return ::getInt64Volatile((volatile std::int32_t*)(m_buffer + offset));
     }
 
     inline void putInt32Atomic(util::index_t offset, std::int32_t v)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        mint_thread_fence_release();
-        mint_store_32_relaxed((mint_atomic32_t*)(m_buffer + offset), v);
-        mint_thread_fence_seq_cst();
+        ::putInt32Atomic((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
     inline std::int32_t getInt32Atomic(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        mint_thread_fence_seq_cst();
-        std::int32_t v = mint_load_32_relaxed((mint_atomic32_t*)(m_buffer + offset));
-        mint_thread_fence_acquire();
-        return v;
+        return ::getInt32Volatile((volatile std::int32_t*)(m_buffer + offset));
     }
 
     inline void addInt64Ordered(util::index_t offset, std::int64_t increment)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        mint_fetch_add_64_relaxed((mint_atomic64_t*)(m_buffer + offset), increment);
+        ::addInt64Ordered((volatile std::int32_t*)(m_buffer + offset), increment);
     }
 
     inline bool compareAndSetInt64(util::index_t offset, std::int64_t expectedValue, std::int64_t updateValue)
     {
 //        printf("compareAndSetInt64 %d %d == %d\n", offset, expectedValue, updateValue);
         boundsCheck(offset, sizeof(std::int64_t));
-        std::int64_t original = mint_compare_exchange_strong_64_relaxed((mint_atomic64_t*)(m_buffer + offset), expectedValue, updateValue);
+        std::int64_t original = cmpxchg((volatile std::int32_t*)(m_buffer + offset), expectedValue, updateValue);
         return (original == expectedValue);
     }
 
@@ -200,20 +184,20 @@ public:
     inline std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        return mint_fetch_add_64_relaxed((mint_atomic64_t*)(m_buffer + offset), delta);
+        return ::getAndAddInt64((volatile std::int32_t*)(m_buffer + offset), delta);
     }
 
     inline void addInt32Ordered(util::index_t offset, std::int32_t increment)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        mint_fetch_add_32_relaxed((mint_atomic32_t*)(m_buffer + offset), increment);
+        ::addInt32Ordered((volatile std::int32_t*)(m_buffer + offset), increment);
     }
 
     inline bool compareAndSetInt32(util::index_t offset, std::int32_t expectedValue, std::int32_t updateValue)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        mint_compare_exchange_strong_32_relaxed((mint_atomic32_t*)(m_buffer + offset), expectedValue, updateValue);
-        return true; // always works??
+        std::int32_t original = cmpxchg((volatile std::int32_t*)(m_buffer + offset), expectedValue, updateValue);
+        return (original == expectedValue);
     }
 
     inline std::int32_t getAndSetInt32(util::index_t offset, std::int32_t value) const
@@ -225,7 +209,7 @@ public:
     inline COND_MOCK_VIRTUAL std::int32_t getAndAddInt32(util::index_t offset, std::int32_t delta)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        return mint_fetch_add_32_relaxed((mint_atomic32_t*)(m_buffer + offset), delta);
+        return ::getAndAddInt32((volatile std::int32_t*)(m_buffer + offset), delta);
     }
 
     inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
@@ -233,7 +217,6 @@ public:
 //        printf("putBytes %d %d\n", index, length);
         boundsCheck(index, length);
         srcBuffer.boundsCheck(srcIndex, length);
-
         ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
     }
 
@@ -286,12 +269,25 @@ public:
         return length;
     }
 
-
     inline util::index_t getCapacity() const
     {
         return m_length;
     }
-
+    
+    inline void setCapacity(util::index_t length)
+    {
+        m_length = length;
+    }
+    
+    inline std::uint8_t * getBuffer() const
+    {
+        return m_buffer;
+    }
+        
+    inline void setBuffer(std::uint8_t *buffer)
+    {
+        m_buffer = buffer;
+    }
 private:
     std::uint8_t *m_buffer;
     util::index_t m_length;

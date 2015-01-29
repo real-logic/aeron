@@ -118,7 +118,7 @@ private:
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
-    std::int64_t m_recordOffset;
+    util::index_t m_recordOffset;
     std::int64_t m_cursor;
     std::int64_t m_nextRecord;
     std::atomic<long> m_lappedCount;

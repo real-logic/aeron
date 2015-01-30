@@ -34,8 +34,10 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |      Channel Length         |           Channel             ...
- * |                                                             ...
+ * |                        Channel Length                         |
+ * +---------------------------------------------------------------+
+ * |                           Channel                            ...
+ *...                                                              |
  * +---------------------------------------------------------------+
  */
 public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight

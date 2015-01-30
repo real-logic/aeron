@@ -65,6 +65,14 @@ public:
         return *this;
     }
 
+    inline this_t& prefixDir(const std::string& prefix)
+    {
+        m_dataDirName = prefix + "/data";
+        m_adminDirName = prefix + "/conductor";
+        m_countersDirName = prefix + "/counters";
+        return *this;
+    }
+
     inline this_t& toDriverBuffer(std::unique_ptr<ManyToOneRingBuffer> toDriverBuffer)
     {
         m_toDriverBuffer = std::move(toDriverBuffer);

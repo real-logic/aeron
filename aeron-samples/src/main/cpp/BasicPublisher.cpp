@@ -33,6 +33,7 @@ void sigIntHandler (int param)
 }
 
 static const char optHelp     = 'h';
+static const char optPrefix   = 'p';
 static const char optChannel  = 'c';
 static const char optStreamId = 's';
 static const char optMessages = 'm';
@@ -40,6 +41,7 @@ static const char optLinger   = 'l';
 
 struct Settings
 {
+    std::string dirPrefix = "";
     std::string channel = samples::configuration::DEFAULT_CHANNEL;
     std::int32_t streamId = samples::configuration::DEFAULT_STREAM_ID;
     int numberOfMessages = samples::configuration::DEFAULT_NUMBER_OF_MESSAGES;
@@ -59,6 +61,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
 
     Settings s;
 
+    s.dirPrefix = cp.getOption(optPrefix).getParam(0, s.dirPrefix);
     s.channel = cp.getOption(optChannel).getParam(0, s.channel);
     s.streamId = cp.getOption(optStreamId).getParamAsInt(0, 1, INT32_MAX, s.streamId);
     s.numberOfMessages = cp.getOption(optMessages).getParamAsInt(0, 0, INT32_MAX, s.numberOfMessages);
@@ -71,6 +74,7 @@ int main(int argc, char** argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption (optHelp,     0, 0, "                Displays help information."));
+    cp.addOption(CommandOption (optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
     cp.addOption(CommandOption (optChannel,  1, 1, "channel         Channel."));
     cp.addOption(CommandOption (optStreamId, 1, 1, "streamId        Stream ID."));
     cp.addOption(CommandOption (optMessages, 1, 1, "number          Number of Messages."));
@@ -85,11 +89,18 @@ int main(int argc, char** argv)
         std::cout << "Publishing to channel " << settings.channel << " on Stream ID " << settings.streamId << std::endl;
 
         aeron::Context context;
+
+        if (settings.dirPrefix != "")
+        {
+            context.prefixDir(settings.dirPrefix);
+        }
+
         Aeron aeron(context.useSharedMemoryOnLinux());
+
         // add the publication to start the process
         std::int64_t id = aeron.addPublication(settings.channel, settings.streamId);
-        std::shared_ptr<Publication> publication = aeron.findPublication(id);
 
+        std::shared_ptr<Publication> publication = aeron.findPublication(id);
         // wait for the publication to be valid
         while (!publication)
         {

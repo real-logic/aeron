@@ -84,14 +84,13 @@ public:
     void releaseSubscription(std::int64_t correlationId);
 
     void onNewPublication(
-        std::int64_t correlationId,
         const std::string& channel,
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int32_t termId,
-        std::int32_t positionCounterId,
+        std::int32_t limitPositionIndicatorOffset,
         std::int32_t mtuLength,
-        const PublicationReadyFlyweight& publicationReady);
+        const std::string& logFileName,
+        std::int64_t correlationId);
 
 private:
     struct PublicationStateDefn
@@ -100,7 +99,7 @@ private:
         std::int64_t m_correlationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId;
-        std::unique_ptr<LogBuffers> m_buffers;
+        std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<Publication> m_publication;
 
         PublicationStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, std::int32_t sessionId) :

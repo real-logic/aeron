@@ -37,7 +37,7 @@ SET(HEADERS
     command/ControlProtocolEvents.h
     command/CorrelatedMessageFlyweight.h
     command/PublicationMessageFlyweight.h
-    command/PublicationReadyFlyweight.h
+    command/PublicationBuffersReadyFlyweight.h
     command/ReadyFlyweight.h
     command/RemoveMessageFlyweight.h
     command/SubscriptionMessageFlyweight.h

@@ -19,7 +19,7 @@
 
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <command/ControlProtocolEvents.h>
-#include <command/PublicationReadyFlyweight.h>
+#include <command/PublicationBuffersReadyFlyweight.h>
 
 namespace aeron {
 
@@ -47,17 +47,16 @@ public:
                 {
                     case ControlProtocolEvents::ON_PUBLICATION_READY:
                     {
-                        const PublicationReadyFlyweight publicationReady(buffer, offset);
+                        const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
 
                         m_driverListener.onNewPublication(
-                            publicationReady.correlationId(),
                             publicationReady.channel(),
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
-                            publicationReady.termId(),
-                            publicationReady.positionIndicatorsCount(),
+                            publicationReady.positionIndicatorOffset(),
                             publicationReady.mtuLength(),
-                            publicationReady);
+                            publicationReady.logFileName(),
+                            publicationReady.correlationId());
                     };
 
                     case ControlProtocolEvents::ON_CONNECTION_READY:

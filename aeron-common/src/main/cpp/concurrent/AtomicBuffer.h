@@ -265,6 +265,11 @@ public:
         return std::string(m_buffer + offset, m_buffer + offset + length);
     }
 
+    inline std::int32_t getStringUtf8Length(util::index_t offset) const
+    {
+        return getInt32(offset);
+    }
+
     std::int32_t putStringUtf8(util::index_t offset, const std::string& value)
     {
         std::int32_t length = static_cast<std::int32_t>(value.length());

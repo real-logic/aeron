@@ -24,7 +24,7 @@
 #include <command/RemoveMessageFlyweight.h>
 #include <command/SubscriptionMessageFlyweight.h>
 #include <command/PublicationMessageFlyweight.h>
-#include <command/PublicationReadyFlyweight.h>
+#include <command/PublicationBuffersReadyFlyweight.h>
 
 using namespace aeron::common::util;
 using namespace aeron::common::command;
@@ -66,7 +66,7 @@ TEST (commandTests, testInstantiateFlyweights)
     });
 
     ASSERT_NO_THROW({
-        PublicationReadyFlyweight cmd(ab, BASEOFFSET);
+        PublicationBuffersReadyFlyweight cmd(ab, BASEOFFSET);
     });
 }
 
@@ -101,26 +101,38 @@ TEST (commandTests, testPublicationReadyFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
-    const index_t BASEOFFSET = 0;
+    const index_t BASEOFFSET = 256;
+
+    std::string channelData = "channeldata";
+    std::string logFileNameData = "logfilenamedata";
 
     ASSERT_NO_THROW({
-        PublicationReadyFlyweight cmd(ab, BASEOFFSET);
+        PublicationBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
-        cmd.correlationId(-1).streamId(0x01010101).sessionId(0x02020202).termId(0x03030303);
-        cmd.mtuLength(0x10101010);
-        cmd.bufferOffset(0, 0x04040404).bufferOffset(1, 0x05050505).bufferOffset(2, 0x06060606).bufferOffset(3, 0x07070707).bufferOffset(4, 0x08080808).bufferOffset(5, 0x09090909);
-        cmd.bufferLength(0, 0x0a0a0a0a).bufferLength(1, 0x0b0b0b0b).bufferLength(2, 0x0c0c0c0c).bufferLength(3, 0x0d0d0d0d).bufferLength(4, 0x0e0e0e0e).bufferLength(5, 0x0f0f0f0f);
-        cmd.location(0, "aaaa").location(1, "bbbb").location(2, "cccc").location(3, "dddd").location(4, "eeee").location(5, "ffff").channel("gggg");
+        cmd.correlationId(-1).streamId(0x01010101).sessionId(0x02020202).positionIndicatorOffset(10);
+        cmd.mtuLength(0x10101010).channel(channelData).logFileName(logFileNameData);
 
-        ASSERT_EQ(cmd.length(), sizeof(PublicationReadyDefn) + 7 * 4);
+        ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 0x02020202);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 0x01010101);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 10);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 0x10101010);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), channelData.length());
+        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 24), channelData);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 28 + channelData.length()), logFileNameData.length());
+        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 28 + channelData.length()), logFileNameData);
+
+        ASSERT_EQ(cmd.correlationId(), -1);
+        ASSERT_EQ(cmd.streamId(), 0x01010101);
+        ASSERT_EQ(cmd.sessionId(), 0x02020202);
+        ASSERT_EQ(cmd.positionIndicatorOffset(), 10);
+        ASSERT_EQ(cmd.mtuLength(), 0x10101010);
+        ASSERT_EQ(cmd.channel(), channelData);
+        ASSERT_EQ(cmd.logFileName(), logFileNameData);
+
+        ASSERT_EQ(cmd.length(), offsetof(PublicationBuffersReadyDefn, channel.channelData) + channelData.length() +
+            sizeof(std::int32_t) + logFileNameData.length());
     });
-
-    ASSERT_THROW({
-        clearBuffer();
-        PublicationReadyFlyweight cmd(ab, BASEOFFSET);
-
-        cmd.location(1, "aaaa");
-    }, IllegalStateException);
 }
 
 TEST (commandTests, testConnectionReadyFlyweight)

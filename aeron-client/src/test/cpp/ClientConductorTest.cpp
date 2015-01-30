@@ -42,9 +42,9 @@ typedef std::array<std::uint8_t, BROADCAST_BUFFER_SZ> broadcast_buffer_t;
 static const std::string CHANNEL = "udp://localhost:40123";
 static const std::int32_t STREAM_ID = 10;
 static const std::int32_t SESSION_ID = 200;
-static const std::int32_t TERM_ID = 0xdeaddaed;
-static const std::int32_t POSITION_COUNTER_ID = 0;
+static const std::int32_t POSITION_COUNTER_OFFSET = 0;
 static const std::int32_t MTU_LENGTH = 16 * 1024;
+static const std::string LOG_FILE_NAME = "";
 
 class ClientConductorTest : public testing::Test
 {
@@ -123,9 +123,8 @@ TEST_F(ClientConductorTest, shouldSendAddPublicationToDriver)
 TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
-    const PublicationReadyFlyweight message(m_toClientsBuffer, 0);
 
-    m_conductor.onNewPublication(id, CHANNEL, STREAM_ID, SESSION_ID, TERM_ID, POSITION_COUNTER_ID, MTU_LENGTH, message);
+    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, LOG_FILE_NAME, id);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -139,7 +138,6 @@ TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
 TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
-    const PublicationReadyFlyweight message(m_toClientsBuffer, 0);
     static std::int32_t REMOVE_PUBLICATION = ControlProtocolEvents::REMOVE_PUBLICATION;
 
     // drain ring buffer
@@ -148,7 +146,7 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
         {
         });
 
-    m_conductor.onNewPublication(id, CHANNEL, STREAM_ID, SESSION_ID, TERM_ID, POSITION_COUNTER_ID, MTU_LENGTH, message);
+    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, LOG_FILE_NAME, id);
 
     {
         std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
@@ -169,4 +167,27 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
 
     std::shared_ptr<Publication> pubPost = m_conductor.findPublication(id);
     ASSERT_TRUE(pubPost == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldReturnSameIdForDuplicateAddPublication)
+{
+    std::int64_t id1 = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id2 = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+
+    EXPECT_EQ(id1, id2);
+}
+
+TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
+{
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    const PublicationBuffersReadyFlyweight message(m_toClientsBuffer, 0);
+
+    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, LOG_FILE_NAME, id);
+
+    std::shared_ptr<Publication> pub1 = m_conductor.findPublication(id);
+    std::shared_ptr<Publication> pub2 = m_conductor.findPublication(id);
+
+    ASSERT_TRUE(pub1 != nullptr);
+    ASSERT_TRUE(pub2 != nullptr);
+    ASSERT_TRUE(pub1 == pub2);
 }

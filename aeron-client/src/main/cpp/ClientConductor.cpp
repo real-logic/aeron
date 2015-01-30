@@ -155,14 +155,13 @@ void ClientConductor::releaseSubscription(std::int64_t correlationId)
 }
 
 void ClientConductor::onNewPublication(
-    std::int64_t correlationId,
     const std::string& channel,
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int32_t termId,
-    std::int32_t positionCounterId,
+    std::int32_t limitPositionIndicatorOffset,
     std::int32_t mtuLength,
-    const PublicationReadyFlyweight& publicationReady)
+    const std::string& logFileName,
+    std::int64_t correlationId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
@@ -175,6 +174,6 @@ void ClientConductor::onNewPublication(
     if (it != m_publications.end())
     {
         // TODO: create log buffers, etc. and set (*it).m_buffers to hold them
-        (*it).m_buffers = std::unique_ptr<LogBuffers>(new LogBuffers);
+        (*it).m_buffers = std::make_shared<LogBuffers>();
     }
 }

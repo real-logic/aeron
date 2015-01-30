@@ -39,6 +39,11 @@ protected:
         return m_buffer.getStringUtf8(m_baseOffset + offset);
     }
 
+    inline util::index_t stringGetLength(util::index_t offset) const
+    {
+        return m_buffer.getStringUtf8Length(m_baseOffset + offset);
+    }
+
     inline util::index_t stringPut(util::index_t offset, const std::string& s)
     {
         return m_buffer.putStringUtf8(m_baseOffset + offset, s);

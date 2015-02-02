@@ -35,10 +35,14 @@ class ClientConductor
 {
 public:
 
-    ClientConductor(DriverProxy& driverProxy, CopyBroadcastReceiver& broadcastReceiver) :
+    ClientConductor(
+        DriverProxy& driverProxy,
+        CopyBroadcastReceiver& broadcastReceiver,
+        const on_new_publication_t& newPublicationHandler) :
         m_driverProxy(driverProxy),
         m_broadcastReceiver(broadcastReceiver),
-        m_driverListenerAdapter(broadcastReceiver, *this)
+        m_driverListenerAdapter(broadcastReceiver, *this),
+        m_onNewPublicationHandler(newPublicationHandler)
     {
 
     }
@@ -129,6 +133,7 @@ private:
     DriverProxy& m_driverProxy;
     CopyBroadcastReceiver& m_broadcastReceiver;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
+    on_new_publication_t m_onNewPublicationHandler;
 };
 
 }

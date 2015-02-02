@@ -46,6 +46,10 @@ static const std::int32_t POSITION_COUNTER_OFFSET = 0;
 static const std::int32_t MTU_LENGTH = 16 * 1024;
 static const std::string LOG_FILE_NAME = "";
 
+void onNewPub(const std::string&, std::int32_t, std::int32_t, std::int64_t)
+{
+}
+
 class ClientConductorTest : public testing::Test
 {
 public:
@@ -56,7 +60,7 @@ public:
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
-        m_conductor(m_driverProxy, m_copyBroadcastReceiver)
+        m_conductor(m_driverProxy, m_copyBroadcastReceiver, onNewPub)
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);

@@ -176,4 +176,6 @@ void ClientConductor::onNewPublication(
         // TODO: create log buffers, etc. and set (*it).m_buffers to hold them
         (*it).m_buffers = std::make_shared<LogBuffers>();
     }
+
+    m_onNewPublicationHandler(channel, streamId, sessionId, correlationId);
 }

@@ -95,6 +95,12 @@ int main(int argc, char** argv)
             context.prefixDir(settings.dirPrefix);
         }
 
+        context.newPublicationHandler(
+            [](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)
+            {
+                std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
+            });
+
         Aeron aeron(context.useSharedMemoryOnLinux());
 
         // add the publication to start the process

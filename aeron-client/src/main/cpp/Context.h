@@ -40,6 +40,10 @@ inline static void defaultErrorHandler(util::SourcedException& exception)
     ::exit(-1);
 }
 
+inline static void defaultOnNewPublicationHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t)
+{
+}
+
 inline static void defaultOnNewConnectionHandler(const std::string&, std::int32_t, std::int32_t, const std::string&)
 {
 }
@@ -137,6 +141,18 @@ public:
         return m_toClientsFileName;
     }
 
+    inline this_t& newPublicationHandler(const on_new_publication_t& handler)
+    {
+        m_onNewPublicationHandler = handler;
+        return *this;
+    }
+
+    inline this_t& newConnectionHandler(const on_new_connection_t& handler)
+    {
+        m_onNewConnectionHandler = handler;
+        return *this;
+    }
+
 private:
     std::unique_ptr<ManyToOneRingBuffer> m_toDriverBuffer;
     std::unique_ptr<CopyBroadcastReceiver> m_toClientsBuffer;
@@ -146,6 +162,7 @@ private:
     std::string m_toDriverFileName = "";
     std::string m_toClientsFileName = "";
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
+    on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
     on_new_connection_t m_onNewConnectionHandler = defaultOnNewConnectionHandler;
 };
 

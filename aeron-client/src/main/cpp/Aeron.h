@@ -78,10 +78,12 @@ private:
     AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
 
     util::MemoryMappedFile::ptr_t m_toDriverBuffer;
+    std::unique_ptr<AtomicBuffer> m_toDriverAtomicBuffer;
     std::unique_ptr<ManyToOneRingBuffer> m_toDriverRingBuffer;
     std::unique_ptr<DriverProxy> m_driverProxy;
 
     util::MemoryMappedFile::ptr_t m_toClientsBuffer;
+    std::unique_ptr<AtomicBuffer> m_toClientsAtomicBuffer;
     std::unique_ptr<BroadcastReceiver> m_toClientsBroadcastReceiver;
     std::unique_ptr<CopyBroadcastReceiver> m_toClientsCopyReceiver;
 

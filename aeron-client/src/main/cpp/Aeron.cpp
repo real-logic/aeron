@@ -20,7 +20,7 @@ using namespace aeron;
 
 Aeron::Aeron(Context& context) :
     m_context(context.conclude()),
-    m_conductor(createDriverProxy(m_context), createDriverReceiver(m_context)),
+    m_conductor(createDriverProxy(m_context), createDriverReceiver(m_context), context.m_onNewPublicationHandler),
     m_idleStrategy(),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
 {
@@ -44,11 +44,8 @@ DriverProxy& Aeron::createDriverProxy(Context& context)
     {
         // create buffer from mapped file for location specified in context. Managed by shared_ptr.
         m_toDriverBuffer = util::MemoryMappedFile::mapExisting(context.toDriverFileName().c_str());
-
-        // stack temporary for AtomicBuffer. AtomicBuffer within ring buffer will be copy-constructed
-        AtomicBuffer buffer(m_toDriverBuffer->getMemoryPtr(), m_toDriverBuffer->getMemorySize());
-
-        m_toDriverRingBuffer = std::unique_ptr<ManyToOneRingBuffer>(new ManyToOneRingBuffer(buffer));
+        m_toDriverAtomicBuffer = std::unique_ptr<AtomicBuffer>(new AtomicBuffer(m_toDriverBuffer->getMemoryPtr(), m_toDriverBuffer->getMemorySize()));
+        m_toDriverRingBuffer = std::unique_ptr<ManyToOneRingBuffer>(new ManyToOneRingBuffer(*m_toDriverAtomicBuffer));
     }
 
     m_driverProxy = std::unique_ptr<DriverProxy>(new DriverProxy(*m_toDriverRingBuffer));
@@ -63,10 +60,8 @@ CopyBroadcastReceiver& Aeron::createDriverReceiver(Context &context)
     if (nullptr == m_toClientsCopyReceiver)
     {
         m_toClientsBuffer = util::MemoryMappedFile::mapExisting(context.toClientsFileName().c_str());
-
-        AtomicBuffer buffer(m_toClientsBuffer->getMemoryPtr(), m_toClientsBuffer->getMemorySize());
-
-        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(new BroadcastReceiver(buffer));
+        m_toClientsAtomicBuffer = std::unique_ptr<AtomicBuffer>(new AtomicBuffer(m_toClientsBuffer->getMemoryPtr(), m_toClientsBuffer->getMemorySize()));
+        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(new BroadcastReceiver(*m_toClientsAtomicBuffer));
         m_toClientsCopyReceiver = std::unique_ptr<CopyBroadcastReceiver>(new CopyBroadcastReceiver(*m_toClientsBroadcastReceiver));
     }
 

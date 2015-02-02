@@ -107,6 +107,9 @@ public:
     inline bool validate()
     {
         // TODO: full fence
+#if !WIN32
+        __asm__ volatile ("lock; addl $0,0(%%rsp)" : : : "cc", "memory");  // TODO: temp!!
+#endif
 
         return validate(m_buffer, m_cursor);
     }

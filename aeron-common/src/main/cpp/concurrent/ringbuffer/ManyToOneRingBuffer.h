@@ -144,7 +144,7 @@ private:
 
     static const util::index_t INSUFFICIENT_CAPACITY = -1;
 
-    concurrent::AtomicBuffer m_buffer;
+    concurrent::AtomicBuffer &m_buffer;
     util::index_t m_capacity;
     util::index_t m_mask;
     util::index_t m_maxMsgLength;

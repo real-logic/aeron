@@ -45,6 +45,7 @@ SET(HEADERS
     common/BusySpinIdleStrategy.h
     common/Flyweight.h
     common/TermHelper.h
+    concurrent/Atomic64.h
     concurrent/AtomicBuffer.h
     concurrent/AtomicCounter.h
     concurrent/CountersManager.h

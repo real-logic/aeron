@@ -17,6 +17,7 @@
 #define INCLUDED_AERON_COMMAND_CONNECTIONMESSAGEFLYWEIGHT__
 
 #include <cstdint>
+#include <stddef.h>
 #include <common/Flyweight.h>
 
 namespace aeron { namespace common { namespace command {

@@ -17,6 +17,7 @@
 #define INCLUDED_AERON_COMMAND_CONNECTIONREADYFLYWEIGHT__
 
 #include <cstdint>
+#include <stddef.h>
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
 #include <common/Flyweight.h>

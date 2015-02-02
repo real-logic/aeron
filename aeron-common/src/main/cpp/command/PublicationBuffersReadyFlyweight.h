@@ -17,6 +17,7 @@
 #define INCLUDED_AERON_COMMAND_PUBLICATIONREADYFLYWEIGHT__
 
 #include <cstdint>
+#include <stddef.h>
 #include <common/Flyweight.h>
 #include <common/TermHelper.h>
 

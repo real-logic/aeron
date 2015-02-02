@@ -17,6 +17,7 @@
 #define INCLUDED_AERON_COMMAND_READYFLYWEIGHT__
 
 #include <cstdint>
+#include <stddef.h>
 #include <string>
 
 namespace aeron { namespace common { namespace command {

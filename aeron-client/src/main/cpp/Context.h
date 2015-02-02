@@ -48,6 +48,10 @@ inline static void defaultOnNewConnectionHandler(const std::string&, std::int32_
 {
 }
 
+inline static void defaultOnNewSubscriptionHandler(const std::string&, std::int32_t, std::int64_t)
+{
+}
+
 class Context
 {
     friend class Aeron;
@@ -147,6 +151,12 @@ public:
         return *this;
     }
 
+    inline this_t& newSubscriptionHandler(const on_new_subscription_t& handler)
+    {
+        m_onNewSubscriptionHandler = handler;
+        return *this;
+    }
+
     inline this_t& newConnectionHandler(const on_new_connection_t& handler)
     {
         m_onNewConnectionHandler = handler;
@@ -163,6 +173,7 @@ private:
     std::string m_toClientsFileName = "";
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
+    on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;
     on_new_connection_t m_onNewConnectionHandler = defaultOnNewConnectionHandler;
 };
 

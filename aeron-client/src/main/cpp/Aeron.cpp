@@ -20,7 +20,11 @@ using namespace aeron;
 
 Aeron::Aeron(Context& context) :
     m_context(context.conclude()),
-    m_conductor(createDriverProxy(m_context), createDriverReceiver(m_context), context.m_onNewPublicationHandler),
+    m_conductor(
+        createDriverProxy(m_context),
+        createDriverReceiver(m_context),
+        context.m_onNewPublicationHandler,
+        context.m_onNewSubscriptionHandler),
     m_idleStrategy(),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
 {

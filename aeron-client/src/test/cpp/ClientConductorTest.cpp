@@ -50,6 +50,10 @@ void onNewPub(const std::string&, std::int32_t, std::int32_t, std::int64_t)
 {
 }
 
+void onNewSub(const std::string&, std::int32_t, std::int64_t)
+{
+}
+
 class ClientConductorTest : public testing::Test
 {
 public:
@@ -60,7 +64,7 @@ public:
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
-        m_conductor(m_driverProxy, m_copyBroadcastReceiver, onNewPub)
+        m_conductor(m_driverProxy, m_copyBroadcastReceiver, onNewPub, onNewSub)
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);

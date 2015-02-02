@@ -38,11 +38,12 @@ public:
     ClientConductor(
         DriverProxy& driverProxy,
         CopyBroadcastReceiver& broadcastReceiver,
-        const on_new_publication_t& newPublicationHandler) :
+        const on_new_publication_t& newPublicationHandler,
+        const on_new_subscription_t& newSubscriptionHandler) :
         m_driverProxy(driverProxy),
-        m_broadcastReceiver(broadcastReceiver),
         m_driverListenerAdapter(broadcastReceiver, *this),
-        m_onNewPublicationHandler(newPublicationHandler)
+        m_onNewPublicationHandler(newPublicationHandler),
+        m_onNewSubscpriptionHandler(newSubscriptionHandler)
     {
 
     }
@@ -131,9 +132,9 @@ private:
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
     DriverProxy& m_driverProxy;
-    CopyBroadcastReceiver& m_broadcastReceiver;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
     on_new_publication_t m_onNewPublicationHandler;
+    on_new_subscription_t m_onNewSubscpriptionHandler;
 };
 
 }

@@ -61,7 +61,6 @@ public:
 
     inline COND_MOCK_VIRTUAL void putInt64(util::index_t offset, std::int64_t v)
     {
-//        printf("putInt64 %d\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
         *reinterpret_cast<std::int64_t *>(m_buffer + offset) = v;
     }
@@ -74,14 +73,12 @@ public:
 
     inline COND_MOCK_VIRTUAL void putInt32(util::index_t offset, std::int32_t v)
     {
-//        printf("putInt32 %d\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
         *reinterpret_cast<std::int32_t *>(m_buffer + offset) = v;
     }
 
     inline COND_MOCK_VIRTUAL std::int32_t getInt32(util::index_t offset) const
     {
-//        printf("getInt32 %d\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
         return *reinterpret_cast<std::int32_t *>(m_buffer + offset);
     }
@@ -112,28 +109,24 @@ public:
 
     inline COND_MOCK_VIRTUAL void putInt64Ordered(util::index_t offset, std::int64_t v)
     {
-//        printf("putInt64 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
         ::putInt64Ordered((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
     inline COND_MOCK_VIRTUAL std::int64_t getInt64Ordered(util::index_t offset) const
     {
-//        printf("getInt64Ordered %d\n", offset);
         boundsCheck(offset, sizeof(std::int64_t));
         return ::getInt64Ordered((volatile std::int32_t*)(m_buffer + offset));
     }
 
     inline void COND_MOCK_VIRTUAL putInt32Ordered(util::index_t offset, std::int32_t v)
     {
-//        printf("putInt32 %d %d Ordered\n", offset, v);
         boundsCheck(offset, sizeof(std::int32_t));
         ::putInt32Ordered((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
     inline COND_MOCK_VIRTUAL std::int32_t getInt32Ordered(util::index_t offset) const
     {
-//        printf("getInt32 %d Ordered\n", offset);
         boundsCheck(offset, sizeof(std::int32_t));
         return ::getInt32Ordered((volatile std::int32_t*)(m_buffer + offset));
     }
@@ -169,16 +162,9 @@ public:
 
     inline bool compareAndSetInt64(util::index_t offset, std::int64_t expectedValue, std::int64_t updateValue)
     {
-//        printf("compareAndSetInt64 %d %d == %d\n", offset, expectedValue, updateValue);
         boundsCheck(offset, sizeof(std::int64_t));
         std::int64_t original = cmpxchg((volatile std::int32_t*)(m_buffer + offset), expectedValue, updateValue);
         return (original == expectedValue);
-    }
-
-    inline std::int64_t getAndSetInt64(util::index_t offset, std::int64_t value)
-    {
-        // TODO: no idea how to implement this with mintomic....
-        return 0;
     }
 
     inline std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta)
@@ -200,12 +186,6 @@ public:
         return (original == expectedValue);
     }
 
-    inline std::int32_t getAndSetInt32(util::index_t offset, std::int32_t value) const
-    {
-        // TODO: no idea how to implement this with mintomic....
-        return 0;
-    }
-
     inline COND_MOCK_VIRTUAL std::int32_t getAndAddInt32(util::index_t offset, std::int32_t delta)
     {
         boundsCheck(offset, sizeof(std::int32_t));
@@ -214,7 +194,6 @@ public:
 
     inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
-//        printf("putBytes %d %d\n", index, length);
         boundsCheck(index, length);
         srcBuffer.boundsCheck(srcIndex, length);
         ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
@@ -228,9 +207,8 @@ public:
 
     inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)
     {
-//        printf("setMemory %d %d\n", offset, length);
         boundsCheck(offset, length);
-        memset(m_buffer + offset, value, length);
+        ::memset(m_buffer + offset, value, length);
     }
 
     // Note: I am assuming that std::string is utf8 encoded

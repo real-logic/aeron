@@ -69,11 +69,10 @@ public:
             return false;
         }
 
-        msgLength(m_buffer, recordIndex, length);
-        msgType(m_buffer, recordIndex, msgTypeId);
         writeMsg(m_buffer, recordIndex, srcBuffer, srcIndex, length);
 
-        recordLengthOrdered(m_buffer, recordIndex, requiredCapacity);
+        msgType(m_buffer, recordIndex, msgTypeId);
+        msgLengthOrdered(m_buffer, recordIndex, length);
 
         return true;
     }
@@ -94,17 +93,16 @@ public:
             while ((bytesRead < contiguousBlockSize) && (messagesRead < messageCountLimit))
             {
                 const std::int32_t recordIndex = headIndex + bytesRead;
-                const std::int32_t recordLength = waitForRecordLengthVolatile(m_buffer, recordIndex);
+                const std::int32_t msgLength = waitForMsgLengthVolatile(m_buffer, recordIndex);
 
-                const std::int32_t messageLength = msgLength(m_buffer, recordIndex);
                 const std::int32_t msgTypeId = msgType(m_buffer, recordIndex);
 
-                bytesRead += recordLength;
+                bytesRead += util::BitUtil::align(msgLength + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
 
                 if (msgTypeId != RecordDescriptor::PADDING_MSG_TYPE_ID)
                 {
                     ++messagesRead;
-                    handler(msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex), messageLength);
+                    handler(msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex), msgLength);
                 }
             }
             // TODO: RAII for catching exceptions from handler call
@@ -142,7 +140,7 @@ public:
 
 private:
 
-    static const util::index_t INSUFFICIENT_CAPACITY = -1;
+    static const util::index_t INSUFFICIENT_CAPACITY = -2;
 
     concurrent::AtomicBuffer &m_buffer;
     util::index_t m_capacity;
@@ -223,17 +221,12 @@ private:
     inline static void writePaddingRecord(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, util::index_t padding)
     {
         msgType(buffer, recordIndex, RecordDescriptor::PADDING_MSG_TYPE_ID);
-        recordLengthOrdered(buffer, recordIndex, padding);
+        msgLengthOrdered(buffer, recordIndex, padding);
     }
 
-    inline static void recordLengthOrdered(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, util::index_t length)
+    inline static void msgLengthOrdered(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, util::index_t length)
     {
-        buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), length);
-    }
-
-    inline static void msgLength(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, std::int32_t length)
-    {
-        buffer.putInt32(RecordDescriptor::msgLengthOffset(recordIndex), length);
+        buffer.putInt32Ordered(RecordDescriptor::msgLengthOffset(recordIndex), length);
     }
 
     inline static void msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, std::int32_t msgTypeId)
@@ -247,22 +240,17 @@ private:
         buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
     }
 
-    inline static std::int32_t waitForRecordLengthVolatile(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
+    inline static std::int32_t waitForMsgLengthVolatile(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
     {
-        std::int32_t recordLength;
+        std::int32_t msgLength;
 
         do
         {
-            recordLength = buffer.getInt32Ordered(RecordDescriptor::lengthOffset(recordIndex));
+            msgLength = buffer.getInt32Ordered(RecordDescriptor::msgLengthOffset(recordIndex));
         }
-        while (0 == recordLength);
+        while (0 == msgLength);
 
-        return recordLength;
-    }
-
-    inline static std::int32_t msgLength(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
-    {
-        return buffer.getInt32(RecordDescriptor::msgLengthOffset(recordIndex));
+        return msgLength;
     }
 
     inline static std::int32_t msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)

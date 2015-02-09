@@ -23,37 +23,37 @@
 namespace aeron { namespace common { namespace concurrent { namespace ringbuffer {
 
 /**
-* Header length made up of fields for record length, message length, message type, and reserved,
-* and then the encoded message.
+* Header length made up of fields for message length, message type, and then the encoded message.
 * <p>
 * Writing of the record length signals the message recording is complete.
 * <pre>
-*   0        4        8        12       16 -byte position
-*   +--------+--------+--------+--------+------------------------+
-*   |rec len |msg len |msg type|reserve |encoded message.........|
-*   +--------+--------+--------+--------+------------------------+
+*   0                   1                   2                   3
+*   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+*  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*  |R|                      Message Length                         |
+*  +-+-------------------------------------------------------------+
+*  |                         Message Type                          |
+*  +---------------------------------------------------------------+
+*  |                       Encoded Message                        ...
+* ...                                                              |
+*  +---------------------------------------------------------------+
 * </pre>
 */
 
 namespace RecordDescriptor {
 
-    static const util::index_t HEADER_LENGTH = sizeof(std::int32_t) * 4;
-    static const util::index_t ALIGNMENT = 32;
+    static const util::index_t HEADER_LENGTH = sizeof(std::int32_t) * 2;
+    static const util::index_t ALIGNMENT = HEADER_LENGTH;
     static const std::int32_t PADDING_MSG_TYPE_ID = -1;
 
-    inline static util::index_t lengthOffset(util::index_t recordOffset)
+    inline static util::index_t msgLengthOffset(util::index_t recordOffset)
     {
         return recordOffset;
     }
 
-    inline static util::index_t msgLengthOffset(util::index_t recordOffset)
-    {
-        return recordOffset + sizeof(std::int32_t);
-    }
-
     inline static util::index_t msgTypeOffset(util::index_t recordOffset)
     {
-        return recordOffset + (sizeof(std::int32_t) * 2);
+        return recordOffset + sizeof(std::int32_t);
     }
 
     inline static util::index_t encodedMsgOffset(util::index_t recordOffset)

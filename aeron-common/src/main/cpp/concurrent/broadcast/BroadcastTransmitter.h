@@ -31,7 +31,8 @@ public:
         m_buffer(buffer),
         m_capacity(buffer.getCapacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),
-        m_maxMsgLength(m_capacity),
+        m_maxMsgLength(RecordDescriptor::calculateMaxMessageLength(m_capacity)),
+        m_tailIntentCountIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
         m_tailCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_COUNTER_OFFSET),
         m_latestCounterIndex(m_capacity + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET)
     {
@@ -53,27 +54,33 @@ public:
         RecordDescriptor::checkMsgTypeId(msgTypeId);
         checkMessageLength(length);
 
-        std::int64_t tail = m_buffer.getInt64(m_tailCounterIndex);
-        std::int32_t recordOffset = (std::int32_t)tail & m_mask;
+        std::int64_t currentTail = m_buffer.getInt64(m_tailCounterIndex);
+        std::int32_t recordOffset = (std::int32_t) currentTail & m_mask;
         const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
+        const std::int64_t newTail = currentTail + recordLength;
+        const std::int32_t toEndOfBuffer = m_capacity - recordOffset;
 
-        const std::int32_t remainingBuffer = m_capacity - recordOffset;
-        if (remainingBuffer < recordLength)
+        if (toEndOfBuffer < recordLength)
         {
-            insertPaddingRecord(m_buffer, tail, recordOffset, remainingBuffer);
-            tail += remainingBuffer;
+            signalTailIntent(m_buffer, newTail + toEndOfBuffer);
+
+            insertPaddingRecord(m_buffer, recordOffset, toEndOfBuffer - RecordDescriptor::HEADER_LENGTH);
+
+            currentTail += toEndOfBuffer;
             recordOffset = 0;
         }
+        else
+        {
+            signalTailIntent(m_buffer, newTail);
+        }
 
-        m_buffer.putInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset), tail);
-        m_buffer.putInt32(RecordDescriptor::recLengthOffset(recordOffset), recordLength);
         m_buffer.putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length);
         m_buffer.putInt32(RecordDescriptor::msgTypeOffset(recordOffset), msgTypeId);
 
         m_buffer.putBytes(RecordDescriptor::msgOffset(recordOffset), srcBuffer, srcIndex, length);
 
-        putLatestCounter(m_buffer, tail);
-        incrementTailOrdered(m_buffer, tail, recordLength);
+        m_buffer.putInt64(m_latestCounterIndex, currentTail);
+        m_buffer.putInt64Ordered(m_tailCounterIndex, currentTail + recordLength);
     }
 
 private:
@@ -81,6 +88,7 @@ private:
     util::index_t m_capacity;
     util::index_t m_mask;
     util::index_t m_maxMsgLength;
+    util::index_t m_tailIntentCountIndex;
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
@@ -93,21 +101,20 @@ private:
         }
     }
 
-    inline void putLatestCounter(AtomicBuffer& buffer, std::int64_t tail)
+    inline void signalTailIntent(AtomicBuffer& buffer, std::int64_t newTail)
     {
-        buffer.putInt64(m_latestCounterIndex, tail);
+        buffer.putInt64Ordered(m_tailIntentCountIndex, newTail);
+        // TODO: store fence = release()
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+        // Avoid hitting the same cache-line from different threads.
+        volatile std::int64_t dummy = 0;
+#pragma GCC diagnostic pop
     }
 
-    inline void incrementTailOrdered(AtomicBuffer& buffer, std::int64_t tail, util::index_t recordLength)
+    inline static void insertPaddingRecord(AtomicBuffer& buffer, std::int32_t recordOffset, std::int32_t length)
     {
-        buffer.putInt64Ordered(m_tailCounterIndex, tail + recordLength);
-    }
-
-    inline static void insertPaddingRecord(AtomicBuffer& buffer, std::int64_t tail, std::int32_t recordOffset, std::int32_t remainingBuffer)
-    {
-        buffer.putInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset), tail);
-        buffer.putInt32(RecordDescriptor::recLengthOffset(recordOffset), remainingBuffer);
-        buffer.putInt32(RecordDescriptor::msgLengthOffset(recordOffset), 0);
+        buffer.putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length);
         buffer.putInt32(RecordDescriptor::msgTypeOffset(recordOffset), RecordDescriptor::PADDING_MSG_TYPE_ID);
     }
 };

@@ -25,7 +25,8 @@ namespace aeron { namespace common { namespace concurrent { namespace broadcast 
 
 namespace BroadcastBufferDescriptor {
 
-static const util::index_t TAIL_COUNTER_OFFSET = util::BitUtil::CACHE_LINE_SIZE;
+static const util::index_t TAIL_INTENT_COUNTER_OFFSET = 0;
+static const util::index_t TAIL_COUNTER_OFFSET = TAIL_INTENT_COUNTER_OFFSET + sizeof(std::int64_t);
 static const util::index_t LATEST_COUNTER_OFFSET = TAIL_COUNTER_OFFSET + sizeof(std::int64_t);
 static const util::index_t TRAILER_LENGTH = util::BitUtil::CACHE_LINE_SIZE * 2;
 

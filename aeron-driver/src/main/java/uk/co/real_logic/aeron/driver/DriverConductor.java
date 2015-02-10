@@ -155,9 +155,13 @@ public class DriverConductor implements Agent
 
         onDriverConductorCmdFunc = this::onDriverConductorCmd;
         onClientCommandFunc = this::onClientCommand;
+
+        final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc =
             (typeId, buffer, offset, length) ->
-                ctx.eventConsumer().accept(EventCode.get(typeId).decode(buffer, offset, length));
+            {
+                eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset, length));
+            };
 
         final AtomicBuffer buffer = toDriverCommands.buffer();
         publicationMessage.wrap(buffer, 0);

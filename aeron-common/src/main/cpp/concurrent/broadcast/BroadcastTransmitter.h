@@ -105,11 +105,7 @@ private:
     {
         buffer.putInt64Ordered(m_tailIntentCountIndex, newTail);
         // TODO: store fence = release()
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunused-variable"
-        // Avoid hitting the same cache-line from different threads.
-        volatile std::int64_t dummy = 0;
-#pragma GCC diagnostic pop
+        atomic::release();
     }
 
     inline static void insertPaddingRecord(AtomicBuffer& buffer, std::int32_t recordOffset, std::int32_t length)

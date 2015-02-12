@@ -18,8 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <mintomic/mintomic.h>
-
 #include <atomic>
 
 #include <concurrent/ringbuffer/RingBufferDescriptor.h>
@@ -56,8 +54,8 @@ public:
     }
 
 protected:
-    MINT_DECL_ALIGNED(buffer_t m_buffer, 16);
-    MINT_DECL_ALIGNED(buffer_t m_srcBuffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_srcBuffer, 16);
     AtomicBuffer m_ab;
     AtomicBuffer m_srcAb;
     ManyToOneRingBuffer m_ringBuffer;
@@ -77,7 +75,7 @@ TEST_F(ManyToOneRingBufferTest, shouldCalculateCapacityForBuffer)
 
 TEST_F(ManyToOneRingBufferTest, shouldThrowForCapacityNotPowerOfTwo)
 {
-    MINT_DECL_ALIGNED(odd_sized_buffer_t testBuffer, 16);
+    AERON_DECL_ALIGNED(odd_sized_buffer_t testBuffer, 16);
 
     testBuffer.fill(0);
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
@@ -303,7 +301,7 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
 
 TEST(ManyToOneRingBufferConcurrentTest, shouldProvideCcorrelationIds)
 {
-    MINT_DECL_ALIGNED(buffer_t mpscBuffer, 16);
+    AERON_DECL_ALIGNED(buffer_t mpscBuffer, 16);
     mpscBuffer.fill(0);
     AtomicBuffer mpscAb(&mpscBuffer[0], mpscBuffer.size());
     ManyToOneRingBuffer ringBuffer(mpscAb);
@@ -340,7 +338,7 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldProvideCcorrelationIds)
 
 TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
 {
-    MINT_DECL_ALIGNED(buffer_t mpscBuffer, 16);
+    AERON_DECL_ALIGNED(buffer_t mpscBuffer, 16);
     mpscBuffer.fill(0);
     AtomicBuffer mpscAb(&mpscBuffer[0], mpscBuffer.size());
     ManyToOneRingBuffer ringBuffer(mpscAb);
@@ -354,7 +352,7 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
     {
         threads.push_back(std::thread([&]()
         {
-            MINT_DECL_ALIGNED(buffer_t srcBuffer, 16);
+            AERON_DECL_ALIGNED(buffer_t srcBuffer, 16);
             srcBuffer.fill(0);
             AtomicBuffer srcAb(&srcBuffer[0], srcBuffer.size());
             int id = publisherId.fetch_add(1);

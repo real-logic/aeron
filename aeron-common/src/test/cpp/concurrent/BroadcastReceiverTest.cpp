@@ -18,8 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <mintomic/mintomic.h>
-
 #include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/broadcast/BroadcastBufferDescriptor.h>
@@ -55,7 +53,7 @@ public:
     }
 
 protected:
-    MINT_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
     MockAtomicBuffer m_mockBuffer;
     BroadcastReceiver m_broadcastReceiver;
 };
@@ -68,7 +66,7 @@ TEST_F(BroadcastReceiverTest, shouldCalculateCapacityForBuffer)
 TEST_F(BroadcastReceiverTest, shouldThrowExceptionForCapacityThatIsNotPowerOfTwo)
 {
     typedef std::array<std::uint8_t, (777 + BroadcastBufferDescriptor::TRAILER_LENGTH)> non_power_of_two_buffer_t;
-    MINT_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16);
+    AERON_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16);
     AtomicBuffer buffer(&non_power_of_two_buffer[0], non_power_of_two_buffer.size());
 
     ASSERT_THROW(
@@ -84,7 +82,7 @@ TEST_F(BroadcastReceiverTest, shouldNotBeLappedBeforeReception)
 
 TEST_F(BroadcastReceiverTest, shouldNotReceiveFromEmptyBuffer)
 {
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(1)
         .WillOnce(testing::Return(0));
 
@@ -100,11 +98,11 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
     const std::int32_t recordOffset = (std::int32_t)latestRecord;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_INTENT_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))
         .Times(2)
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(tail));
@@ -135,10 +133,10 @@ TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
     const std::int32_t recordOffsetOne = 0;
     const std::int32_t recordOffsetTwo = (std::int32_t)latestRecord;
 
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(2)
         .WillRepeatedly(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_INTENT_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))
         .Times(4)
         .WillRepeatedly(testing::Return(tail));
     EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
@@ -183,10 +181,10 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
     const std::int64_t latestRecord = tail - recordLength;
     const std::int32_t recordOffset = (std::int32_t)latestRecord & (CAPACITY - 1);
 
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(1)
         .WillOnce(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_INTENT_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))
         .Times(2)
         .WillRepeatedly(testing::Return(tail));
     EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
@@ -219,11 +217,11 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
     const std::int32_t catchupOffset = (std::int32_t)latestRecord & (CAPACITY - 1);
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(2)
         .WillOnce(testing::Return(catchupTail))
         .WillOnce(testing::Return(postPaddingTail));
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_INTENT_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))
         .Times(3)
         .WillOnce(testing::Return(catchupTail))
         .WillRepeatedly(testing::Return(postPaddingTail));
@@ -272,11 +270,11 @@ TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
     const std::int32_t recordOffset = (std::int32_t)latestRecord;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_INTENT_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_INTENT_COUNTER_INDEX))
         .Times(2)
         .WillOnce(testing::Return(tail))
         .WillOnce(testing::Return(tail + (CAPACITY - recordLength)));
-    EXPECT_CALL(m_mockBuffer, getInt64Ordered(TAIL_COUNTER_INDEX))
+    EXPECT_CALL(m_mockBuffer, getInt64Volatile(TAIL_COUNTER_INDEX))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));

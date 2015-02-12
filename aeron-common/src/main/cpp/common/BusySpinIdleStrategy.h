@@ -20,7 +20,7 @@
 #include <util/Exceptions.h>
 #include <iostream>
 #include <thread>
-#include <mintomic/mintomic.h>
+#include <concurrent/Atomic64.h>
 
 namespace aeron { namespace common { namespace common {
 
@@ -43,13 +43,7 @@ public:
 
     inline static void pause()
     {
-#if WIN32
-        __asm pause;
-#elif MINT_CPU_X86 || MINT_CPU_X64
-        asm volatile("pause");
-#else
-        #error Unsupported platform!
-#endif
+        concurrent::atomic::cpu_pause();
     }
 
 private:

@@ -18,8 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <mintomic/mintomic.h>
-
 #include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/broadcast/BroadcastBufferDescriptor.h>
@@ -57,7 +55,7 @@ public:
     }
 
 protected:
-    MINT_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
     MockAtomicBuffer m_mockBuffer;
     BroadcastTransmitter m_broadcastTransmitter;
 };
@@ -70,7 +68,7 @@ TEST_F(BroadcastTransmitterTest, shouldCalculateCapacityForBuffer)
 TEST_F(BroadcastTransmitterTest, shouldThrowExceptionForCapacityThatIsNotPowerOfTwo)
 {
     typedef std::array<std::uint8_t, (777 + BroadcastBufferDescriptor::TRAILER_LENGTH)> non_power_of_two_buffer_t;
-    MINT_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16);
+    AERON_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16);
     AtomicBuffer buffer(&non_power_of_two_buffer[0], non_power_of_two_buffer.size());
 
     ASSERT_THROW(
@@ -81,7 +79,7 @@ TEST_F(BroadcastTransmitterTest, shouldThrowExceptionForCapacityThatIsNotPowerOf
 
 TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMaxMessageLengthExceeded)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
 
     ASSERT_THROW(
@@ -92,7 +90,7 @@ TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMaxMessageLengthExceede
 
 TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMessageTypeIdInvalid)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int32_t invalidMsgTypeId = -1;
 
@@ -104,7 +102,7 @@ TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMessageTypeIdInvalid)
 
 TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int64_t tail = 0;
     const std::int32_t recordOffset = (std::int32_t)tail;
@@ -142,7 +140,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
 
 TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int64_t tail = RecordDescriptor::RECORD_ALIGNMENT * 3;
     const std::int32_t recordOffset = (std::int32_t)tail;
@@ -180,7 +178,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
 
 TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int32_t length = 8;
     const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
@@ -218,7 +216,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
 
 TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     std::int64_t tail = CAPACITY - RecordDescriptor::RECORD_ALIGNMENT;
     std::int32_t recordOffset = (std::int32_t)tail;

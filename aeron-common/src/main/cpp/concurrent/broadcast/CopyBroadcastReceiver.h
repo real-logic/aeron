@@ -80,7 +80,7 @@ public:
     }
 
 private:
-    MINT_DECL_ALIGNED(scratch_buffer_t m_scratch, 16);
+    AERON_DECL_ALIGNED(scratch_buffer_t m_scratch, 16);
     BroadcastReceiver& m_receiver;
     AtomicBuffer m_scratchBuffer;
 };

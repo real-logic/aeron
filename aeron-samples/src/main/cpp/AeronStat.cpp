@@ -90,7 +90,7 @@ int main (int argc, char** argv)
 
             counters.forEach([&](int id, const std::string l)
             {
-                std::int64_t value = countersBuffer.getInt64Atomic(counters.counterOffset(id));
+                std::int64_t value = countersBuffer.getInt64Volatile(counters.counterOffset(id));
                 std::cout << std::fixed << ms.count() / 1000.0 << ": " << l << ": " << value << std::endl;
             });
 

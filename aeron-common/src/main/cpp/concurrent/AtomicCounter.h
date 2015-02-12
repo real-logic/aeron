@@ -50,7 +50,7 @@ public:
 
     void setOrdered(long value)
     {
-        m_buffer.putInt64Atomic(m_offset, value);
+        m_buffer.putInt64Ordered(m_offset, value);
     }
 
     void addOrdered(long increment)
@@ -60,7 +60,7 @@ public:
 
     std::int64_t get()
     {
-        return m_buffer.getInt64Atomic(m_offset);
+        return m_buffer.getInt64Volatile(m_offset);
     }
 
     typedef std::shared_ptr<AtomicCounter> ptr_t;

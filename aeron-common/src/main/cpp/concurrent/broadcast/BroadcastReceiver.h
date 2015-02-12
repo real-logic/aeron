@@ -76,7 +76,7 @@ public:
     bool receiveNext()
     {
         bool isAvailable = false;
-        const std::int64_t tail = m_buffer.getInt64Ordered(m_tailCounterIndex);
+        const std::int64_t tail = m_buffer.getInt64Volatile(m_tailCounterIndex);
         std::int64_t cursor = m_nextRecord;
 
         if (tail > cursor)
@@ -114,9 +114,7 @@ public:
     inline bool validate()
     {
         // TODO: load fence = acquire()
-#if !WIN32
-        __asm__ volatile ("lock; addl $0,0(%%rsp)" : : : "cc", "memory");  // TODO: temp!!
-#endif
+        atomic::acquire();
 
         return validate(m_cursor);
     }
@@ -136,7 +134,7 @@ private:
 
     inline bool validate(std::int64_t cursor)
     {
-        return (cursor + m_capacity) > m_buffer.getInt64Ordered(m_tailIntentCountIndex);
+        return (cursor + m_capacity) > m_buffer.getInt64Volatile(m_tailIntentCountIndex);
     }
 };
 

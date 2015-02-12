@@ -151,7 +151,7 @@ inline static bool isPaddingFrame(AtomicBuffer& logBuffer, util::index_t frameOf
 inline static std::int32_t frameLengthVolatile(AtomicBuffer& logBuffer, util::index_t frameOffset)
 {
     // TODO: need to byte order to LITTLE_ENDIAN
-    return logBuffer.getInt32Ordered(lengthOffset(frameOffset));
+    return logBuffer.getInt32Volatile(lengthOffset(frameOffset));
 }
 
 inline static void frameLengthOrdered(AtomicBuffer& logBuffer, util::index_t frameOffset, std::int32_t frameLength)

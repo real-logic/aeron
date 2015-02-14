@@ -151,7 +151,7 @@ public class LogAppenderTest
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCESS));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
@@ -176,8 +176,8 @@ public class LogAppenderTest
             .thenReturn(0)
             .thenReturn(alignedFrameLength);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCESS));
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCESS));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
@@ -230,7 +230,7 @@ public class LogAppenderTest
 
         assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(FAILURE));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(FAILED));
 
         verify(termBuffer, never()).putBytes(anyInt(), eq(buffer), eq(0), eq(msgLength));
     }
@@ -293,7 +293,7 @@ public class LogAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredCapacity))
             .thenReturn(0);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCESS));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
 
         int tail  = 0;
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
@@ -325,7 +325,7 @@ public class LogAppenderTest
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0);
 
-        assertThat(logAppender.claim(msgLength, bufferClaim), is(SUCCESS));
+        assertThat(logAppender.claim(msgLength, bufferClaim), is(SUCCEEDED));
 
         assertThat(bufferClaim.buffer(), is(termBuffer));
         assertThat(bufferClaim.offset(), is(tail + headerLength));

@@ -69,8 +69,8 @@ public class PublicationTest
             appenders[i] = mock(LogAppender.class);
             final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(0, 0, 0);
             headers[i] = header;
-            when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCESS);
-            when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCESS);
+            when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCEEDED);
+            when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCEEDED);
             when(appenders[i].defaultHeader()).thenReturn(header);
             when(appenders[i].capacity()).thenReturn(TERM_MIN_LENGTH);
         }
@@ -105,7 +105,7 @@ public class PublicationTest
     @Test
     public void shouldFailToOfferWhenAppendFails()
     {
-        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILURE);
+        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILED);
         assertFalse(publication.offer(atomicSendBuffer));
     }
 

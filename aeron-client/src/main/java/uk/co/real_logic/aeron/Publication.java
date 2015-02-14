@@ -145,7 +145,7 @@ public class Publication implements AutoCloseable
         {
             switch (logAppender.append(buffer, offset, length))
             {
-                case SUCCESS:
+                case SUCCEEDED:
                     succeeded = true;
                     break;
 
@@ -153,7 +153,7 @@ public class Publication implements AutoCloseable
                     nextPartition(activeTermId, activeIndex);
                     break;
 
-                case FAILURE:
+                case FAILED:
                     break;
             }
         }
@@ -205,7 +205,7 @@ public class Publication implements AutoCloseable
         {
             switch (logAppender.claim(length, bufferClaim))
             {
-                case SUCCESS:
+                case SUCCEEDED:
                     succeeded = true;
                     break;
 
@@ -213,7 +213,7 @@ public class Publication implements AutoCloseable
                     nextPartition(activeTermId, activeIndex);
                     break;
 
-                case FAILURE:
+                case FAILED:
                     break;
             }
         }

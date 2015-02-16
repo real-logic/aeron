@@ -38,6 +38,8 @@ static const util::index_t STATE_BUFFER_LENGTH = util::BitUtil::CACHE_LINE_SIZE 
 
 static const util::index_t MIN_LOG_SIZE = 64 * 1024;
 
+static const int PARTITION_COUNT = 3;
+
 inline static void checkLogBuffer(AtomicBuffer& buffer)
 {
     const util::index_t capacity = buffer.getCapacity();

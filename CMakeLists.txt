@@ -21,6 +21,7 @@ project("aeron")
 
 enable_testing()
 
+# default built type is Release
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
@@ -88,13 +89,8 @@ set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
 # 3rd party libs
 
 # gmock - includes gtest
-#include_directories(${AERON_3RDPARTY_PATH}/gmock-1.7.0/include)
 include_directories(${GMOCK_SOURCE_DIR}/include)
 include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
-#add_subdirectory(${AERON_3RDPARTY_PATH}/gmock-1.7.0)
-
-# mintomic - header only
-include_directories(${AERON_3RDPARTY_PATH}/mintomic/include)
 
 ##########################################################
 

@@ -31,8 +31,9 @@ class MemoryMappedFile
 public:
     typedef std::shared_ptr<MemoryMappedFile> ptr_t;
 
-    static ptr_t createNew (const char* filename, size_t size);
-    static ptr_t mapExisting (const char* filename);
+    static ptr_t createNew(const char* filename, size_t length);
+    static ptr_t mapExisting(const char* filename);
+    static ptr_t mapExisting(const char *filename, size_t offset, size_t length);
 
     ~MemoryMappedFile ();
 
@@ -42,30 +43,35 @@ public:
     MemoryMappedFile(MemoryMappedFile const&) = delete;
     MemoryMappedFile& operator=(MemoryMappedFile const&) = delete;
 
+    // some OS specific utility methods
+    static size_t getPageSize();
+    static std::int64_t getFileSize(const char *filename);
+
 private:
-    MemoryMappedFile (const char* filename, size_t size);
-    MemoryMappedFile (const char* filename);
+    MemoryMappedFile(const char* filename, size_t length);
+    MemoryMappedFile(const char* filename);
+    MemoryMappedFile(const char* filename, size_t offset, size_t length);
 
-	struct FileHandle
-	{
+    struct FileHandle
+    {
 #ifdef _WIN32
-		HANDLE handle;
+        HANDLE handle;
 #else
-		int handle;
+        int handle;
 #endif
-	};
+    };
 
-	bool fill(FileHandle fd, size_t sz, std::uint8_t);
-    uint8_t* doMapping(size_t size, FileHandle fd);
+    bool fill(FileHandle fd, size_t sz, std::uint8_t);
+    static uint8_t* doMapping(size_t size, FileHandle fd, size_t offset);
 
     std::uint8_t* m_memory = 0;
     size_t m_memorySize = 0;
-    const static size_t PAGE_SIZE = 4096; // TODO: Get this programaticaly?
+    static size_t PAGE_SIZE;
 
 #ifdef _WIN32
-	HANDLE m_file = NULL;
-	HANDLE m_mapping = NULL;
-	void cleanUp();
+    HANDLE m_file = NULL;
+    HANDLE m_mapping = NULL;
+    void cleanUp();
 #endif
 
 };

@@ -20,10 +20,8 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
+import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
@@ -61,10 +59,10 @@ public class EmbeddedPingPong
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
-            .sharedNetworkIdleStrategy(new BusySpinIdleStrategy())
-            .sharedIdleStrategy(new BusySpinIdleStrategy())
-            .receiverIdleStrategy(new BusySpinIdleStrategy())
-            .senderIdleStrategy(new BusySpinIdleStrategy());
+            .sharedNetworkIdleStrategy(new NoOpIdleStrategy())
+            .sharedIdleStrategy(new NoOpIdleStrategy())
+            .receiverIdleStrategy(new NoOpIdleStrategy())
+            .senderIdleStrategy(new NoOpIdleStrategy());
 
         try (final MediaDriver ignored = MediaDriver.launch(ctx))
         {

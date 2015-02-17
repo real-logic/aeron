@@ -67,17 +67,20 @@ public class EmbeddedThroughput
                     "\nStreaming %,d messages of size %d bytes to %s on stream Id %d\n",
                     NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
 
+                long backPressureCount = 0;
+
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
                     ATOMIC_BUFFER.putLong(0, i);
 
                     while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
                     {
+                        backPressureCount++;
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
                 }
 
-                System.out.println("Done streaming.");
+                System.out.println("Done streaming. backPressureRatio=" + ((double)backPressureCount / NUMBER_OF_MESSAGES));
 
                 if (0 < LINGER_TIMEOUT_MS)
                 {

@@ -58,6 +58,16 @@ public class GapScanner extends LogBufferPartition
     }
 
     /**
+     * Is the log complete with ticks gaps?
+     *
+     * @return true is he log is complete with no gaps otherwise false.
+     */
+    public boolean isComplete()
+    {
+        return tailVolatile() >= capacity();
+    }
+
+    /**
      * Scan for gaps from the tail up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
      *
      * @param handler to be notified of gaps.
@@ -85,16 +95,6 @@ public class GapScanner extends LogBufferPartition
         }
 
         return count;
-    }
-
-    /**
-     * Is the log complete with ticks gaps?
-     *
-     * @return true is he log is complete with no gaps otherwise false.
-     */
-    public boolean isComplete()
-    {
-        return tailVolatile() >= capacity();
     }
 
     private static int scanGap(

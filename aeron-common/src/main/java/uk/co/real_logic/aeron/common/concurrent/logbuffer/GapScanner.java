@@ -72,7 +72,7 @@ public class GapScanner extends LogBufferPartition
 
         while (offset < highWaterMark)
         {
-            final int frameLength = alignedFrameLength(termBuffer, offset);
+            final int frameLength = BitUtil.align(frameLengthVolatile(termBuffer, offset), FRAME_ALIGNMENT);
             if (frameLength > 0)
             {
                 offset += frameLength;
@@ -105,15 +105,10 @@ public class GapScanner extends LogBufferPartition
         do
         {
             gapLength += FRAME_ALIGNMENT;
-            alignedFrameLength = alignedFrameLength(termBuffer, offset + gapLength);
+            alignedFrameLength = BitUtil.align(frameLengthVolatile(termBuffer, offset + gapLength), FRAME_ALIGNMENT);
         }
         while (0 == alignedFrameLength);
 
         return handler.onGap(termBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
-    }
-
-    private static int alignedFrameLength(final UnsafeBuffer termBuffer, final int offset)
-    {
-        return BitUtil.align(frameLengthVolatile(termBuffer, offset), FRAME_ALIGNMENT);
     }
 }

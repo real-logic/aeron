@@ -18,8 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <mintomic/mintomic.h>
-
 #include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/logbuffer/LogReader.h>
@@ -58,8 +56,8 @@ public:
     }
 
 protected:
-    MINT_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
-    MINT_DECL_ALIGNED(state_buffer_t m_stateBuffer, 16);
+    AERON_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
+    AERON_DECL_ALIGNED(state_buffer_t m_stateBuffer, 16);
     MockAtomicBuffer m_log;
     MockAtomicBuffer m_state;
     LogReader m_logReader;
@@ -73,7 +71,7 @@ public:
 
 TEST_F(LogReaderTest, shouldThrowExceptionWhenCapacityNotMultipleOfAlignment)
 {
-    MINT_DECL_ALIGNED(log_buffer_unaligned_t logBuffer, 16);
+    AERON_DECL_ALIGNED(log_buffer_unaligned_t logBuffer, 16);
     MockAtomicBuffer mockLog(&logBuffer[0], logBuffer.size());
 
     ASSERT_THROW(
@@ -90,7 +88,7 @@ TEST_F(LogReaderTest, shouldReadFirstMessage)
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(0)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(0)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(frameLength));
@@ -101,7 +99,7 @@ TEST_F(LogReaderTest, shouldReadFirstMessage)
     EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(alignedFrameLength)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
@@ -120,7 +118,7 @@ TEST_F(LogReaderTest, shouldNotReadWhenLimitIsZero)
     const util::index_t msgLength = 1;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(0)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(0)))
         .Times(0);
     EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
         .Times(0);
@@ -139,7 +137,7 @@ TEST_F(LogReaderTest, shouldNotReadPastTail)
     const util::index_t msgLength = 1;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(0)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(0)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
@@ -163,7 +161,7 @@ TEST_F(LogReaderTest, shouldReadOneLimitedMessage)
     const util::index_t frameLength = DataHeader::LENGTH + msgLength;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_log, getInt32Ordered(testing::_))
+    EXPECT_CALL(m_log, getInt32Volatile(testing::_))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(frameLength));
@@ -191,7 +189,7 @@ TEST_F(LogReaderTest, shouldReadMultipleMessages)
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(0)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(0)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(frameLength));
@@ -202,7 +200,7 @@ TEST_F(LogReaderTest, shouldReadMultipleMessages)
     EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(alignedFrameLength)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(frameLength));
@@ -213,7 +211,7 @@ TEST_F(LogReaderTest, shouldReadMultipleMessages)
     EXPECT_CALL(handler, onData(testing::Ref(m_log), alignedFrameLength + DataHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(alignedFrameLength * 2)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength * 2)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
@@ -235,7 +233,7 @@ TEST_F(LogReaderTest, shouldReadLastMessage)
     const util::index_t startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(startOfMessage)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(startOfMessage)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(frameLength));
@@ -265,7 +263,7 @@ TEST_F(LogReaderTest, shouldNotReadLastMessageWhenPadding)
     const util::index_t startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_log, getInt32Ordered(FrameDescriptor::lengthOffset(startOfMessage)))
+    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(startOfMessage)))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(frameLength));

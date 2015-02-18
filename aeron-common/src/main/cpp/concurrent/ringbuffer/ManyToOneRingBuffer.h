@@ -135,7 +135,7 @@ public:
 
     inline std::int64_t consumerHeartbeatTimeNs() const
     {
-        return m_buffer.getInt64Ordered(m_consumerHeartbeatIndex);
+        return m_buffer.getInt64Volatile(m_consumerHeartbeatIndex);
     }
 
 private:
@@ -196,12 +196,12 @@ private:
 
     inline std::int64_t tailVolatile() const
     {
-        return m_buffer.getInt64Ordered(m_tailCounterIndex);
+        return m_buffer.getInt64Volatile(m_tailCounterIndex);
     }
 
     inline std::int64_t headVolatile() const
     {
-        return m_buffer.getInt64Ordered(m_headCounterIndex);
+        return m_buffer.getInt64Volatile(m_headCounterIndex);
     }
 
     inline void headOrdered(std::int64_t value)
@@ -246,7 +246,7 @@ private:
 
         do
         {
-            msgLength = buffer.getInt32Ordered(RecordDescriptor::msgLengthOffset(recordIndex));
+            msgLength = buffer.getInt32Volatile(RecordDescriptor::msgLengthOffset(recordIndex));
         }
         while (0 == msgLength);
 

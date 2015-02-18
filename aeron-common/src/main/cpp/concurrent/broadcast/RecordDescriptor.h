@@ -27,18 +27,11 @@ namespace aeron { namespace common { namespace concurrent { namespace broadcast 
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |R|                        Record Length                        |
+ *  |R|                      Message Length                         |
  *  +-+-------------------------------------------------------------+
- *  |R|                       Message Length                        |
- *  +-+-------------------------------------------------------------+
- *  |                          Message Type                         |
+ *  |                         Message Type                          |
  *  +---------------------------------------------------------------+
- *  |                           Reserved                            |
- *  +-+-------------------------------------------------------------+
- *  |R|                       Tail Sequence                         |
- *  |                                                               |
- *  +---------------------------------------------------------------+
- *  |                       Encoded Message                       ...
+ *  |                       Encoded Message                        ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  */
@@ -47,22 +40,15 @@ namespace RecordDescriptor {
 
 static const std::int32_t PADDING_MSG_TYPE_ID = -1;
 
-static const util::index_t REC_LENGTH_OFFSET = 0;
-static const util::index_t MSG_LENGTH_OFFSET = 4;
-static const util::index_t MSG_TYPE_OFFSET = 8;
-static const util::index_t TAIL_SEQUENCE_OFFSET = 16;
+static const util::index_t MSG_LENGTH_OFFSET = 0;
+static const util::index_t MSG_TYPE_OFFSET = 4;
 
-static const util::index_t HEADER_LENGTH = 24;
-static const util::index_t RECORD_ALIGNMENT = 32;
+static const util::index_t HEADER_LENGTH = 8;
+static const util::index_t RECORD_ALIGNMENT = HEADER_LENGTH;
 
 inline static std::int32_t calculateMaxMessageLength(util::index_t capacity)
 {
-    return std::min(capacity / 8, 1 << 16);
-}
-
-inline static util::index_t recLengthOffset(util::index_t recordOffset)
-{
-    return recordOffset + REC_LENGTH_OFFSET;
+    return capacity / 8;
 }
 
 inline static util::index_t msgLengthOffset(util::index_t recordOffset)
@@ -73,11 +59,6 @@ inline static util::index_t msgLengthOffset(util::index_t recordOffset)
 inline static util::index_t msgTypeOffset(util::index_t recordOffset)
 {
     return recordOffset + MSG_TYPE_OFFSET;
-}
-
-inline static util::index_t tailSequenceOffset(util::index_t recordOffset)
-{
-    return recordOffset + TAIL_SEQUENCE_OFFSET;
 }
 
 inline static util::index_t msgOffset(util::index_t recordOffset)

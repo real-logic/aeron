@@ -114,7 +114,7 @@ int main(int argc, char** argv)
             publication = aeron.findPublication(id);
         }
 
-        MINT_DECL_ALIGNED(buffer_t buffer, 16);
+        AERON_DECL_ALIGNED(buffer_t buffer, 16);
         concurrent::AtomicBuffer srcBuffer(&buffer[0], buffer.size());
         char message[256];
 

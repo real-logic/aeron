@@ -23,15 +23,13 @@
 
 #include <concurrent/AtomicBuffer.h>
 #include <util/Exceptions.h>
-#include <mintomic/mintomic.h>
-
 
 using namespace aeron::common::concurrent;
 using namespace aeron::common::util;
 
 
 typedef std::array<std::uint8_t, 1024> buffer_t;
-static MINT_DECL_ALIGNED(buffer_t testBuffer, 16);
+static AERON_DECL_ALIGNED(buffer_t testBuffer, 16);
 
 static void clearBuffer()
 {
@@ -123,7 +121,7 @@ TEST (atomicBufferTests, concurrentTest)
         threads.push_back(std::thread([&]() 
         {
             for (size_t n = 0; n < incCount; n++)
-                ab.addInt64Ordered(0, 1);
+                ab.getAndAddInt64(0, 1);
         }));
     }
     

@@ -42,9 +42,9 @@ public class LogAppender extends LogBufferPartition
 {
     public enum ActionStatus
     {
-        SUCCESS,
+        SUCCEEDED,
         TRIPPED,
-        FAILURE,
+        FAILED,
     }
 
     private final MutableDirectBuffer defaultHeader;
@@ -125,7 +125,7 @@ public class LogAppender extends LogBufferPartition
      * @param srcBuffer containing the encoded message.
      * @param srcOffset at which the encoded message begins.
      * @param length    of the message in bytes.
-     * @return SUCCESS if append was successful, FAILURE if beyond end of the log in the log, TRIPPED if first failure.
+     * @return SUCCEEDED if append was successful, FAILED if beyond end of the log in the log, TRIPPED if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
     public ActionStatus append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -145,7 +145,7 @@ public class LogAppender extends LogBufferPartition
      *
      * @param length      of the message payload
      * @param bufferClaim to be completed for the claim if successful.
-     * @return SUCCESS if claim was successful, FAILURE if beyond end of the log in the log, TRIPPED if first failure.
+     * @return SUCCEEDED if claim was successful, FAILED if beyond end of the log in the log, TRIPPED if first failure.
      */
     public ActionStatus claim(final int length, final BufferClaim bufferClaim)
     {
@@ -174,7 +174,7 @@ public class LogAppender extends LogBufferPartition
                 return ActionStatus.TRIPPED;
             }
 
-            return ActionStatus.FAILURE;
+            return ActionStatus.FAILED;
         }
 
         termBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
@@ -187,7 +187,7 @@ public class LogAppender extends LogBufferPartition
                    .frameLengthOffset(lengthOffset(frameOffset))
                    .frameLength(frameLength);
 
-        return ActionStatus.SUCCESS;
+        return ActionStatus.SUCCEEDED;
     }
 
     private ActionStatus appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -211,7 +211,7 @@ public class LogAppender extends LogBufferPartition
                 return ActionStatus.TRIPPED;
             }
 
-            return ActionStatus.FAILURE;
+            return ActionStatus.FAILED;
         }
 
         termBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
@@ -221,7 +221,7 @@ public class LogAppender extends LogBufferPartition
         frameTermOffset(termBuffer, frameOffset, frameOffset);
         frameLengthOrdered(termBuffer, frameOffset, frameLength);
 
-        return ActionStatus.SUCCESS;
+        return ActionStatus.SUCCEEDED;
     }
 
     private ActionStatus appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -246,7 +246,7 @@ public class LogAppender extends LogBufferPartition
                 return ActionStatus.TRIPPED;
             }
 
-            return ActionStatus.FAILURE;
+            return ActionStatus.FAILED;
         }
 
         byte flags = BEGIN_FRAG;
@@ -279,7 +279,7 @@ public class LogAppender extends LogBufferPartition
         }
         while (remaining > 0);
 
-        return ActionStatus.SUCCESS;
+        return ActionStatus.SUCCEEDED;
     }
 
     private boolean isBeyondLogBufferCapacity(final int frameOffset, final int alignedFrameLength, final int capacity)

@@ -32,6 +32,7 @@ SET(HEADERS
     util/ScopeUtils.h
     util/BitUtil.h
     util/Index.h
+    util/Platform.h
     command/ConnectionMessageFlyweight.h
     command/ConnectionReadyFlyweight.h
     command/ControlProtocolEvents.h
@@ -49,6 +50,8 @@ SET(HEADERS
     concurrent/AtomicBuffer.h
     concurrent/AtomicCounter.h
     concurrent/CountersManager.h
+    concurrent/atomic/Atomic64_gcc_x86_64.h
+    concurrent/atomic/Atomic64_msvc.h
     concurrent/broadcast/BroadcastBufferDescriptor.h
     concurrent/broadcast/BroadcastReceiver.h
     concurrent/broadcast/BroadcastTransmitter.h

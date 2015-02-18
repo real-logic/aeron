@@ -133,7 +133,7 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH;
 
     /**
-     * Total length of the log meta buffer in bytes.
+     * Total length of the log meta data buffer in bytes.
      *
      * <pre>
      *   0                   1                   2                   3

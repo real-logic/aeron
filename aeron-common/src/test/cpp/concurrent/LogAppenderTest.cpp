@@ -18,8 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <mintomic/mintomic.h>
-
 #include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/logbuffer/LogAppender.h>
@@ -63,9 +61,9 @@ public:
     }
 
 protected:
-    MINT_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
-    MINT_DECL_ALIGNED(state_buffer_t m_stateBuffer, 16);
-    MINT_DECL_ALIGNED(hdr_t m_hdr, 16);
+    AERON_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
+    AERON_DECL_ALIGNED(state_buffer_t m_stateBuffer, 16);
+    AERON_DECL_ALIGNED(hdr_t m_hdr, 16);
     MockAtomicBuffer m_log;
     MockAtomicBuffer m_state;
     LogAppender m_logAppender;
@@ -93,7 +91,7 @@ TEST_F(LogAppenderTest, shouldThrowExceptionOnInsufficientLogBufferCapacity)
 
 TEST_F(LogAppenderTest, shouldThrowExceptionWhenCapacityNotMultipleOfAlignment)
 {
-    MINT_DECL_ALIGNED(log_buffer_unaligned_t logBuffer, 16);
+    AERON_DECL_ALIGNED(log_buffer_unaligned_t logBuffer, 16);
     MockAtomicBuffer mockLog(&logBuffer[0], logBuffer.size());
 
     ASSERT_THROW(
@@ -139,7 +137,7 @@ TEST_F(LogAppenderTest, shouldThrowExceptionOnMaxFrameSizeNotOnWordSizeBoundary)
 TEST_F(LogAppenderTest, shouldThrowExceptionWhenMaxMessageLengthExceeded)
 {
     const util::index_t maxMessageLength = m_logAppender.maxMessageLength();
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
 
     ASSERT_THROW(
@@ -152,7 +150,7 @@ TEST_F(LogAppenderTest, shouldReportCurrentTail)
 {
     const std::int32_t tailValue = 64;
 
-    EXPECT_CALL(m_state, getInt32Ordered(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+    EXPECT_CALL(m_state, getInt32Volatile(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
@@ -163,7 +161,7 @@ TEST_F(LogAppenderTest, shouldReportCurrentTailAtCapacity)
 {
     const std::int32_t tailValue = LOG_BUFFER_CAPACITY + 64;
 
-    EXPECT_CALL(m_state, getInt32Ordered(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+    EXPECT_CALL(m_state, getInt32Volatile(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
@@ -177,7 +175,7 @@ TEST_F(LogAppenderTest, shouldReportCurrentTailAtCapacity)
 
 TEST_F(LogAppenderTest, shouldAppendFrameToEmptyLog)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 20;
     const util::index_t frameLength = m_hdr.size() + msgLength;
@@ -211,7 +209,7 @@ TEST_F(LogAppenderTest, shouldAppendFrameToEmptyLog)
 
 TEST_F(LogAppenderTest, shouldAppendFrameTwiceToLog)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 20;
     const util::index_t frameLength = m_hdr.size() + msgLength;
@@ -266,7 +264,7 @@ TEST_F(LogAppenderTest, shouldAppendFrameTwiceToLog)
 
 TEST_F(LogAppenderTest, shouldTripWhenAppendingToLogAtCapacity)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 20;
     const util::index_t frameLength = m_hdr.size() + msgLength;
@@ -281,7 +279,7 @@ TEST_F(LogAppenderTest, shouldTripWhenAppendingToLogAtCapacity)
 
 TEST_F(LogAppenderTest, shouldFailWhenTheLogIsAlreadyTripped)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 20;
     const util::index_t frameLength = m_hdr.size() + msgLength;
@@ -301,7 +299,7 @@ TEST_F(LogAppenderTest, shouldFailWhenTheLogIsAlreadyTripped)
 
 TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacity)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 120;
     const util::index_t frameLength = m_hdr.size() + msgLength;
@@ -334,7 +332,7 @@ TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainin
 
 TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacityIncludingHeader)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 120;
     const util::index_t frameLength = m_hdr.size() + msgLength;
@@ -367,7 +365,7 @@ TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainin
 
 TEST_F(LogAppenderTest, shouldFragmentMessageOverTwoFrames)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = m_logAppender.maxPayloadLength() + 1;
     const util::index_t frameLength = m_hdr.size() + 1;
@@ -419,7 +417,7 @@ TEST_F(LogAppenderTest, shouldFragmentMessageOverTwoFrames)
 
 TEST_F(LogAppenderTest, shouldClaimRegionForZeroCopyEncoding)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 20;
     const util::index_t frameLength = m_hdr.size() + msgLength;

@@ -32,6 +32,7 @@ public:
         m_buffer(buffer),
         m_capacity(buffer.getCapacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),
+        m_tailIntentCountIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
         m_tailCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_COUNTER_OFFSET),
         m_latestCounterIndex(m_capacity + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET),
         m_recordOffset(0),
@@ -74,50 +75,55 @@ public:
 
     bool receiveNext()
     {
-        const std::int64_t tail = m_buffer.getInt64Ordered(m_tailCounterIndex);
+        bool isAvailable = false;
+        const std::int64_t tail = m_buffer.getInt64Volatile(m_tailCounterIndex);
         std::int64_t cursor = m_nextRecord;
 
         if (tail > cursor)
         {
-            m_recordOffset = (std::int32_t)cursor & m_mask;
+            util::index_t recordOffset = (std::int32_t)cursor & m_mask;
 
-            if (!validate(m_buffer, cursor))
+            if (!validate(cursor))
             {
                 m_lappedCount += 1;
-                cursor = m_buffer.getInt64Ordered(m_latestCounterIndex);
-                m_recordOffset = (std::int32_t)cursor & m_mask;
+                cursor = m_buffer.getInt64(m_latestCounterIndex);
+                recordOffset = (std::int32_t)cursor & m_mask;
             }
 
             m_cursor = cursor;
-            m_nextRecord = cursor + m_buffer.getInt32(RecordDescriptor::recLengthOffset(m_recordOffset));
+            m_nextRecord = cursor +
+                util::BitUtil::align(RecordDescriptor::HEADER_LENGTH +
+                    m_buffer.getInt32(RecordDescriptor::msgLengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
 
-            if (RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::msgTypeOffset(m_recordOffset)))
+            if (RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
             {
-                m_recordOffset = 0;
+                recordOffset = 0;
                 m_cursor = m_nextRecord;
-                m_nextRecord += m_buffer.getInt32(RecordDescriptor::recLengthOffset(m_recordOffset));
+                m_nextRecord +=
+                    util::BitUtil::align(RecordDescriptor::HEADER_LENGTH +
+                        m_buffer.getInt32(RecordDescriptor::msgLengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
             }
 
-            return true;
+            m_recordOffset = recordOffset;
+            isAvailable = true;
         }
 
-        return false;
+        return isAvailable;
     }
 
     inline bool validate()
     {
-        // TODO: full fence
-#if !WIN32
-        __asm__ volatile ("lock; addl $0,0(%%rsp)" : : : "cc", "memory");  // TODO: temp!!
-#endif
+        // TODO: load fence = acquire()
+        atomic::acquire();
 
-        return validate(m_buffer, m_cursor);
+        return validate(m_cursor);
     }
 
 private:
     AtomicBuffer& m_buffer;
     util::index_t m_capacity;
     util::index_t m_mask;
+    util::index_t m_tailIntentCountIndex;
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
@@ -126,9 +132,9 @@ private:
     std::int64_t m_nextRecord;
     std::atomic<long> m_lappedCount;
 
-    inline bool validate(AtomicBuffer& buffer, std::int64_t cursor)
+    inline bool validate(std::int64_t cursor)
     {
-        return cursor == buffer.getInt64Ordered(RecordDescriptor::tailSequenceOffset(m_recordOffset));
+        return (cursor + m_capacity) > m_buffer.getInt64Volatile(m_tailIntentCountIndex);
     }
 };
 

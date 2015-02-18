@@ -52,7 +52,7 @@ public:
 
     inline int status() const
     {
-        return m_stateBuffer.getInt32Ordered(LogBufferDescriptor::STATUS_OFFSET);
+        return m_stateBuffer.getInt32Volatile(LogBufferDescriptor::STATUS_OFFSET);
     }
 
     inline bool compareAndSetStatus(std::int32_t expectedStatus, std::int32_t updateStatus)
@@ -67,12 +67,12 @@ public:
 
     inline std::int32_t tailVolatile()
     {
-        return std::min(m_stateBuffer.getInt32Ordered(LogBufferDescriptor::TAIL_COUNTER_OFFSET), m_capacity);
+        return std::min(m_stateBuffer.getInt32Volatile(LogBufferDescriptor::TAIL_COUNTER_OFFSET), m_capacity);
     }
 
     inline std::int32_t highWaterMarkVolatile()
     {
-        return m_stateBuffer.getInt32Ordered(LogBufferDescriptor::HIGH_WATER_MARK_OFFSET);
+        return m_stateBuffer.getInt32Volatile(LogBufferDescriptor::HIGH_WATER_MARK_OFFSET);
     }
 
     inline std::int32_t tail()

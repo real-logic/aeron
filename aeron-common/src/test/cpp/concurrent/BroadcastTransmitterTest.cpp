@@ -18,8 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <mintomic/mintomic.h>
-
 #include <thread>
 #include "MockAtomicBuffer.h"
 #include <concurrent/broadcast/BroadcastBufferDescriptor.h>
@@ -31,13 +29,14 @@ using namespace aeron::common::concurrent;
 using namespace aeron::common;
 
 #define CAPACITY (1024)
-#define TOTAL_BUFFER_SIZE (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
+#define TOTAL_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
 #define SRC_BUFFER_SIZE (1024)
 #define MSG_TYPE_ID (7)
+#define TAIL_INTENT_COUNTER_INDEX (CAPACITY + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET)
 #define TAIL_COUNTER_INDEX (CAPACITY + BroadcastBufferDescriptor::TAIL_COUNTER_OFFSET)
 #define LATEST_COUNTER_INDEX (CAPACITY + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET)
 
-typedef std::array<std::uint8_t, TOTAL_BUFFER_SIZE> buffer_t;
+typedef std::array<std::uint8_t, TOTAL_BUFFER_LENGTH> buffer_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_SIZE> src_buffer_t;
 
 class BroadcastTransmitterTest : public testing::Test
@@ -56,7 +55,7 @@ public:
     }
 
 protected:
-    MINT_DECL_ALIGNED(buffer_t m_buffer, 16);
+    AERON_DECL_ALIGNED(buffer_t m_buffer, 16);
     MockAtomicBuffer m_mockBuffer;
     BroadcastTransmitter m_broadcastTransmitter;
 };
@@ -69,7 +68,7 @@ TEST_F(BroadcastTransmitterTest, shouldCalculateCapacityForBuffer)
 TEST_F(BroadcastTransmitterTest, shouldThrowExceptionForCapacityThatIsNotPowerOfTwo)
 {
     typedef std::array<std::uint8_t, (777 + BroadcastBufferDescriptor::TRAILER_LENGTH)> non_power_of_two_buffer_t;
-    MINT_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16);
+    AERON_DECL_ALIGNED(non_power_of_two_buffer_t non_power_of_two_buffer, 16);
     AtomicBuffer buffer(&non_power_of_two_buffer[0], non_power_of_two_buffer.size());
 
     ASSERT_THROW(
@@ -78,9 +77,9 @@ TEST_F(BroadcastTransmitterTest, shouldThrowExceptionForCapacityThatIsNotPowerOf
     }, util::IllegalStateException);
 }
 
-TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMaxMessageSizeExceeded)
+TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMaxMessageLengthExceeded)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
 
     ASSERT_THROW(
@@ -91,7 +90,7 @@ TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMaxMessageSizeExceeded)
 
 TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMessageTypeIdInvalid)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int32_t invalidMsgTypeId = -1;
 
@@ -103,7 +102,7 @@ TEST_F(BroadcastTransmitterTest, shouldThrowExceptionWhenMessageTypeIdInvalid)
 
 TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int64_t tail = 0;
     const std::int32_t recordOffset = (std::int32_t)tail;
@@ -116,10 +115,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, putInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset), tail))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::recLengthOffset(recordOffset), recordLength))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_INTENT_COUNTER_INDEX, tail + recordLength))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length))
@@ -144,7 +140,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEmptyBuffer)
 
 TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const std::int64_t tail = RecordDescriptor::RECORD_ALIGNMENT * 3;
     const std::int32_t recordOffset = (std::int32_t)tail;
@@ -157,10 +153,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, putInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset), tail))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::recLengthOffset(recordOffset), recordLength))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_INTENT_COUNTER_INDEX, tail + recordLength))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length))
@@ -185,12 +178,12 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoUsedBuffer)
 
 TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
-    const std::int64_t tail = CAPACITY - RecordDescriptor::RECORD_ALIGNMENT;
-    const std::int32_t recordOffset = (std::int32_t)tail;
     const std::int32_t length = 8;
     const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
+    const std::int64_t tail = CAPACITY - recordLength;
+    const std::int32_t recordOffset = (std::int32_t)tail;
     const util::index_t srcIndex = 0;
     testing::Sequence sequence;
 
@@ -198,10 +191,7 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
-    EXPECT_CALL(m_mockBuffer, putInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset), tail))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::recLengthOffset(recordOffset), recordLength))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_INTENT_COUNTER_INDEX, tail + recordLength))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length))
@@ -226,12 +216,13 @@ TEST_F(BroadcastTransmitterTest, shouldTransmitIntoEndOfBuffer)
 
 TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfBuffer)
 {
-    MINT_DECL_ALIGNED(src_buffer_t buffer, 16);
+    AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     std::int64_t tail = CAPACITY - RecordDescriptor::RECORD_ALIGNMENT;
     std::int32_t recordOffset = (std::int32_t)tail;
     const std::int32_t length = RecordDescriptor::RECORD_ALIGNMENT + 8;
     const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
+    const std::int32_t toEndOfBuffer = CAPACITY - recordOffset;
     const util::index_t srcIndex = 0;
     testing::Sequence sequence;
 
@@ -240,10 +231,7 @@ TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfB
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
 
-    EXPECT_CALL(m_mockBuffer, putInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset), tail))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::recLengthOffset(recordOffset), CAPACITY - recordOffset))
+    EXPECT_CALL(m_mockBuffer, putInt64Ordered(TAIL_INTENT_COUNTER_INDEX, tail + recordLength + toEndOfBuffer))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::msgLengthOffset(recordOffset), 0))
@@ -253,15 +241,9 @@ TEST_F(BroadcastTransmitterTest, shouldApplyPaddingWhenInsufficientSpaceAtEndOfB
         .Times(1)
         .InSequence(sequence);
 
-    tail += (CAPACITY - recordOffset);
+    tail += toEndOfBuffer;
     recordOffset = 0;
 
-    EXPECT_CALL(m_mockBuffer, putInt64Ordered(RecordDescriptor::tailSequenceOffset(recordOffset), tail))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::recLengthOffset(recordOffset), recordLength))
-        .Times(1)
-        .InSequence(sequence);
     EXPECT_CALL(m_mockBuffer, putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length))
         .Times(1)
         .InSequence(sequence);

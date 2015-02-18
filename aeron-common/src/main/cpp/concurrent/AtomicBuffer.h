@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <string.h>
 #include <string>
-//#include <mintomic/mintomic.h>
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
 #include <util/Index.h>
@@ -110,86 +109,83 @@ public:
     inline COND_MOCK_VIRTUAL void putInt64Ordered(util::index_t offset, std::int64_t v)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        ::putInt64Ordered((volatile std::int32_t*)(m_buffer + offset), v);
+        atomic::putInt64Ordered((volatile std::int64_t*)(m_buffer + offset), v);
     }
 
-    inline COND_MOCK_VIRTUAL std::int64_t getInt64Ordered(util::index_t offset) const
+    inline COND_MOCK_VIRTUAL std::int64_t getInt64Volatile(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        return ::getInt64Ordered((volatile std::int32_t*)(m_buffer + offset));
+        return atomic::getInt64Volatile((volatile std::int64_t*)(m_buffer + offset));
     }
 
-    inline void COND_MOCK_VIRTUAL putInt32Ordered(util::index_t offset, std::int32_t v)
+    inline COND_MOCK_VIRTUAL void putInt32Ordered(util::index_t offset, std::int32_t v)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        ::putInt32Ordered((volatile std::int32_t*)(m_buffer + offset), v);
+        atomic::putInt32Ordered((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
-    inline COND_MOCK_VIRTUAL std::int32_t getInt32Ordered(util::index_t offset) const
+    inline COND_MOCK_VIRTUAL std::int32_t getInt32Volatile(util::index_t offset) const
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        return ::getInt32Ordered((volatile std::int32_t*)(m_buffer + offset));
+        return atomic::getInt32Volatile((volatile std::int32_t*)(m_buffer + offset));
     }
 
     inline void putInt64Atomic(util::index_t offset, std::int64_t v)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        ::putInt64Atomic((volatile std::int32_t*)(m_buffer + offset), v);
-    }
-
-    inline std::int64_t getInt64Atomic(util::index_t offset) const
-    {
-        return ::getInt64Volatile((volatile std::int32_t*)(m_buffer + offset));
+        atomic::putInt64Atomic((volatile std::int64_t*)(m_buffer + offset), v);
     }
 
     inline void putInt32Atomic(util::index_t offset, std::int32_t v)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        ::putInt32Atomic((volatile std::int32_t*)(m_buffer + offset), v);
+        atomic::putInt32Atomic((volatile std::int32_t*)(m_buffer + offset), v);
     }
 
-    inline std::int32_t getInt32Atomic(util::index_t offset) const
-    {
-        boundsCheck(offset, sizeof(std::int32_t));
-        return ::getInt32Volatile((volatile std::int32_t*)(m_buffer + offset));
-    }
-
+    // increment from single thread
     inline void addInt64Ordered(util::index_t offset, std::int64_t increment)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        ::addInt64Ordered((volatile std::int32_t*)(m_buffer + offset), increment);
+
+        const std::int64_t value = getInt64(offset);
+        atomic::putInt64Ordered((volatile std::int64_t*)(m_buffer + offset), value + increment);
     }
 
     inline bool compareAndSetInt64(util::index_t offset, std::int64_t expectedValue, std::int64_t updateValue)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        std::int64_t original = cmpxchg((volatile std::int32_t*)(m_buffer + offset), expectedValue, updateValue);
+        std::int64_t original = atomic::cmpxchg((volatile std::int64_t*)(m_buffer + offset), expectedValue, updateValue);
         return (original == expectedValue);
     }
 
+    // increment from multiple threads
     inline std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta)
     {
         boundsCheck(offset, sizeof(std::int64_t));
-        return ::getAndAddInt64((volatile std::int32_t*)(m_buffer + offset), delta);
+        return atomic::getAndAddInt64((volatile std::int64_t*)(m_buffer + offset), delta);
     }
 
+    // increment from single thread
     inline void addInt32Ordered(util::index_t offset, std::int32_t increment)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        ::addInt32Ordered((volatile std::int32_t*)(m_buffer + offset), increment);
+
+        const std::int32_t value = getInt32(offset);
+        atomic::putInt32Ordered((volatile std::int32_t*)(m_buffer + offset), value + increment);
     }
 
     inline bool compareAndSetInt32(util::index_t offset, std::int32_t expectedValue, std::int32_t updateValue)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        std::int32_t original = cmpxchg((volatile std::int32_t*)(m_buffer + offset), expectedValue, updateValue);
+        std::int32_t original = atomic::cmpxchg((volatile std::int32_t*)(m_buffer + offset), expectedValue, updateValue);
         return (original == expectedValue);
     }
 
+    // increment from multiple threads
     inline COND_MOCK_VIRTUAL std::int32_t getAndAddInt32(util::index_t offset, std::int32_t delta)
     {
         boundsCheck(offset, sizeof(std::int32_t));
-        return ::getAndAddInt32((volatile std::int32_t*)(m_buffer + offset), delta);
+        return atomic::getAndAddInt32((volatile std::int32_t*)(m_buffer + offset), delta);
     }
 
     inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)

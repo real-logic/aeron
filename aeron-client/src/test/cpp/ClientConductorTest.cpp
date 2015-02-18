@@ -18,8 +18,6 @@
 
 #include <gtest/gtest.h>
 
-#include <mintomic/mintomic.h>
-
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <command/ControlProtocolEvents.h>
@@ -77,8 +75,8 @@ public:
     }
 
 protected:
-    MINT_DECL_ALIGNED(many_to_one_ring_buffer_t m_toDriver, 16);
-    MINT_DECL_ALIGNED(broadcast_buffer_t m_toClients, 16);
+    AERON_DECL_ALIGNED(many_to_one_ring_buffer_t m_toDriver, 16);
+    AERON_DECL_ALIGNED(broadcast_buffer_t m_toClients, 16);
 
     AtomicBuffer m_toDriverBuffer;
     AtomicBuffer m_toClientsBuffer;

@@ -21,6 +21,10 @@ project("aeron")
 
 enable_testing()
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build" FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
+
 ##########################################################
 # gmock usage
 
@@ -50,7 +54,7 @@ find_package(Threads)
 if(UNIX)
     set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -fexceptions -g -m64")
     set(CMAKE_CXX_FLAGS_DEBUG "-O0")
-    set(CMAKE_CXX_FLAGS_RELEASE "-Os")
+    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
 endif()
 
 # platform specific flags

@@ -58,6 +58,16 @@ public class GapScanner extends LogBufferPartition
     }
 
     /**
+     * Is the log complete with ticks gaps?
+     *
+     * @return true is he log is complete with no gaps otherwise false.
+     */
+    public boolean isComplete()
+    {
+        return tailVolatile() >= capacity();
+    }
+
+    /**
      * Scan for gaps from the tail up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
      *
      * @param handler to be notified of gaps.
@@ -72,7 +82,7 @@ public class GapScanner extends LogBufferPartition
 
         while (offset < highWaterMark)
         {
-            final int frameLength = alignedFrameLength(termBuffer, offset);
+            final int frameLength = BitUtil.align(frameLengthVolatile(termBuffer, offset), FRAME_ALIGNMENT);
             if (frameLength > 0)
             {
                 offset += frameLength;
@@ -87,16 +97,6 @@ public class GapScanner extends LogBufferPartition
         return count;
     }
 
-    /**
-     * Is the log complete with ticks gaps?
-     *
-     * @return true is he log is complete with no gaps otherwise false.
-     */
-    public boolean isComplete()
-    {
-        return tailVolatile() >= capacity();
-    }
-
     private static int scanGap(
         final UnsafeBuffer termBuffer, final GapHandler handler, final int offset, final int highWaterMark)
     {
@@ -105,15 +105,10 @@ public class GapScanner extends LogBufferPartition
         do
         {
             gapLength += FRAME_ALIGNMENT;
-            alignedFrameLength = alignedFrameLength(termBuffer, offset + gapLength);
+            alignedFrameLength = BitUtil.align(frameLengthVolatile(termBuffer, offset + gapLength), FRAME_ALIGNMENT);
         }
         while (0 == alignedFrameLength);
 
         return handler.onGap(termBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
-    }
-
-    private static int alignedFrameLength(final UnsafeBuffer termBuffer, final int offset)
-    {
-        return BitUtil.align(frameLengthVolatile(termBuffer, offset), FRAME_ALIGNMENT);
     }
 }

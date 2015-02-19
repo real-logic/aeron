@@ -2,7 +2,7 @@ Aeron
 =====
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/real-logic/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-Efficient reliable unicast and multicast transport protocol.
+Efficient reliable unicast and multicast message transport.
 
 For details of usage, protocol specification, FAQ, etc. please check out the
 [Wiki](https://github.com/real-logic/Aeron/wiki).

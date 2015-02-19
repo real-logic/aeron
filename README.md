@@ -7,8 +7,25 @@ Efficient reliable unicast and multicast transport protocol.
 For details of usage, protocol specification, FAQ, etc. please check out the
 [Wiki](https://github.com/real-logic/Aeron/wiki).
 
-For those who prefer to watch a video then try [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from StrangeLoop 2014.
-Things have moved on quite a bit with performance and some features but the basic design still applies.
+For those who prefer to watch a video then try [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from StrangeLoop 2014. Things have moved on quite a bit with performance and some features but the basic design still applies.
+
+### How do I use Aeron?
+
+1. [Java Programming Guide](https://github.com/real-logic/Aeron/wiki/Java-Programming-Guide)
+1. [Best Practices Guide](https://github.com/real-logic/Aeron/wiki/Best-Practices-Guide)
+
+### How does Aeron work?
+
+1. [Protocol Specification](https://github.com/real-logic/Aeron/wiki/Protocol-Specification)
+1. [Design Overview](https://github.com/real-logic/Aeron/wiki/Design-Overview)
+1. [Design Principles](https://github.com/real-logic/Aeron/wiki/Design-Principles)
+1. [Flow Control Semantics](https://github.com/real-logic/Aeron/wiki/Flow-Control)
+1. [Media Driver Operation](https://github.com/real-logic/Aeron/wiki/Media-Driver-Operation)
+
+### How do I hack on Aeron?
+
+1. [Hacking on Aeron](https://github.com/real-logic/Aeron/wiki/Hacking-on-Aeron)
+1. [Performance Testing](https://github.com/real-logic/Aeron/wiki/Performance-Testing)
 
 License (See LICENSE file for full license)
 -------------------------------------------

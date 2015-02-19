@@ -27,12 +27,12 @@ namespace aeron { namespace common { namespace concurrent { namespace ringbuffer
 namespace RingBufferDescriptor {
 
     static const util::index_t TAIL_COUNTER_OFFSET = 0;
-    static const util::index_t HEAD_COUNTER_OFFSET = util::BitUtil::CACHE_LINE_SIZE;
-    static const util::index_t CORRELATION_COUNTER_OFFSET = util::BitUtil::CACHE_LINE_SIZE * 2;
-    static const util::index_t CONSUMER_HEARTBEAT_OFFSET = util::BitUtil::CACHE_LINE_SIZE * 3;
+    static const util::index_t HEAD_COUNTER_OFFSET = util::BitUtil::CACHE_LINE_LENGTH;
+    static const util::index_t CORRELATION_COUNTER_OFFSET = util::BitUtil::CACHE_LINE_LENGTH * 2;
+    static const util::index_t CONSUMER_HEARTBEAT_OFFSET = util::BitUtil::CACHE_LINE_LENGTH * 3;
 
     /** Total length of the trailer in bytes. */
-    static const util::index_t TRAILER_LENGTH = util::BitUtil::CACHE_LINE_SIZE * 4;
+    static const util::index_t TRAILER_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 4;
 
     inline static void checkCapacity(util::index_t capacity)
     {

@@ -35,6 +35,11 @@ namespace aeron { namespace common { namespace concurrent {
 class AtomicBuffer
 {
 public:
+    AtomicBuffer()
+        : m_buffer(nullptr), m_length(0)
+    {
+    }
+
     AtomicBuffer(std::uint8_t *buffer, util::index_t length)
         : m_buffer (buffer), m_length(length)
     {
@@ -42,6 +47,13 @@ public:
 
     virtual ~AtomicBuffer()
     {
+        // this class does not own the memory. It simply overlays it.
+    }
+
+    inline void wrap(std::uint8_t* buffer, util::index_t length)
+    {
+        m_buffer = buffer;
+        m_length = length;
     }
 
     template <typename struct_t>

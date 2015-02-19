@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,19 +17,33 @@
 #ifndef INCLUDED_AERON_LOG_BUFFERS__
 #define INCLUDED_AERON_LOG_BUFFERS__
 
+#include <memory>
+#include <vector>
+
+#include <util/MemoryMappedFile.h>
+#include <concurrent/logbuffer/LogBufferDescriptor.h>
+
 namespace aeron {
 
-using namespace aeron::common;
+using namespace aeron::common::util;
+using namespace aeron::common::concurrent;
+using namespace aeron::common::concurrent::logbuffer;
 
 class LogBuffers
 {
 public:
+    LogBuffers(const char *filename);
 
-    virtual ~LogBuffers()
+    virtual ~LogBuffers();
+
+    inline AtomicBuffer& atomicBuffer(int index)
     {
+        return m_buffers[index];
     }
 
 private:
+    std::vector<MemoryMappedFile::ptr_t> m_memoryMappedFiles;
+    AtomicBuffer m_buffers[(2 * LogBufferDescriptor::PARTITION_COUNT) + 1];
 };
 
 }

@@ -18,7 +18,8 @@ SET(SOURCE
     Publication.cpp
     Subscription.cpp
     ClientConductor.cpp
-    Aeron.cpp)
+    Aeron.cpp
+    LogBuffers.cpp)
 
 SET(HEADERS
     ClientConductor.h

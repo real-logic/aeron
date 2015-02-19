@@ -20,12 +20,12 @@
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include "LogBufferDescriptor.h"
-#include "LogBuffer.h"
+#include "LogBufferPartition.h"
 #include "BufferClaim.h"
 
 namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
 
-class LogAppender : public LogBuffer
+class LogAppender : public LogBufferPartition
 {
 public:
     enum ActionStatus
@@ -35,9 +35,9 @@ public:
         FAILURE
     };
 
-    LogAppender(AtomicBuffer& logBuffer, AtomicBuffer& stateBuffer,
+    LogAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer,
         std::uint8_t *defaultHdr, util::index_t defaultHdrLength, util::index_t maxFrameLength)
-    : LogBuffer(logBuffer, stateBuffer),
+    : LogBufferPartition(termBuffer, metaDataBuffer),
         m_defaultHdr(defaultHdr),
         m_defaultHdrLength(defaultHdrLength),
         m_maxMessageLength(FrameDescriptor::calculateMaxMessageLength(capacity())),
@@ -87,7 +87,7 @@ public:
         {
             if (frameOffset < capacity())
             {
-                appendPaddingFrame(logBuffer(), frameOffset);
+                appendPaddingFrame(termBuffer(), frameOffset);
                 return ActionStatus::TRIPPED;
             }
             else if (frameOffset == capacity())
@@ -98,11 +98,11 @@ public:
             return ActionStatus::FAILURE;
         }
 
-        logBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
-        FrameDescriptor::frameFlags(logBuffer(), frameOffset, FrameDescriptor::UNFRAGMENTED);
-        FrameDescriptor::frameTermOffset(logBuffer(), frameOffset, frameOffset);
+        termBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
+        FrameDescriptor::frameFlags(termBuffer(), frameOffset, FrameDescriptor::UNFRAGMENTED);
+        FrameDescriptor::frameTermOffset(termBuffer(), frameOffset, frameOffset);
 
-        bufferClaim.buffer(&logBuffer())
+        bufferClaim.buffer(&termBuffer())
             .offset(frameOffset + m_defaultHdrLength)
             .length(length)
             .frameLengthOffset(FrameDescriptor::lengthOffset(frameOffset))
@@ -128,7 +128,7 @@ private:
         {
             if (frameOffset < capacity())
             {
-                appendPaddingFrame(logBuffer(), frameOffset);
+                appendPaddingFrame(termBuffer(), frameOffset);
                 return ActionStatus::TRIPPED;
             }
             else if (frameOffset == capacity())
@@ -139,12 +139,12 @@ private:
             return ActionStatus::FAILURE;
         }
 
-        logBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
-        logBuffer().putBytes(frameOffset + m_defaultHdrLength, srcBuffer, srcOffset, length);
+        termBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
+        termBuffer().putBytes(frameOffset + m_defaultHdrLength, srcBuffer, srcOffset, length);
 
-        FrameDescriptor::frameFlags(logBuffer(), frameOffset, FrameDescriptor::UNFRAGMENTED);
-        FrameDescriptor::frameTermOffset(logBuffer(), frameOffset, frameOffset);
-        FrameDescriptor::frameLengthOrdered(logBuffer(), frameOffset, frameLength);
+        FrameDescriptor::frameFlags(termBuffer(), frameOffset, FrameDescriptor::UNFRAGMENTED);
+        FrameDescriptor::frameTermOffset(termBuffer(), frameOffset, frameOffset);
+        FrameDescriptor::frameLengthOrdered(termBuffer(), frameOffset, frameLength);
 
         return ActionStatus::SUCCESS;
     }
@@ -162,7 +162,7 @@ private:
         {
             if (frameOffset < capacity())
             {
-                appendPaddingFrame(logBuffer(), frameOffset);
+                appendPaddingFrame(termBuffer(), frameOffset);
                 return ActionStatus::TRIPPED;
             }
             else if (frameOffset == capacity())
@@ -182,17 +182,17 @@ private:
             const util::index_t frameLength = bytesToWrite + m_defaultHdrLength;
             const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
-            logBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
-            logBuffer().putBytes(frameOffset + m_defaultHdrLength, srcBuffer, srcOffset + (length - remaining), bytesToWrite);
+            termBuffer().putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
+            termBuffer().putBytes(frameOffset + m_defaultHdrLength, srcBuffer, srcOffset + (length - remaining), bytesToWrite);
 
             if (remaining <= m_maxPayloadLength)
             {
                 flags |= FrameDescriptor::END_FRAG;
             }
 
-            FrameDescriptor::frameFlags(logBuffer(), frameOffset, flags);
-            FrameDescriptor::frameTermOffset(logBuffer(), frameOffset, frameOffset);
-            FrameDescriptor::frameLengthOrdered(logBuffer(), frameOffset, frameLength);
+            FrameDescriptor::frameFlags(termBuffer(), frameOffset, flags);
+            FrameDescriptor::frameTermOffset(termBuffer(), frameOffset, frameOffset);
+            FrameDescriptor::frameLengthOrdered(termBuffer(), frameOffset, frameLength);
 
             flags = 0;
             frameOffset += alignedLength;
@@ -208,19 +208,19 @@ private:
         return (frameOffset + alignedFrameLength + m_defaultHdrLength) > capacity;
     }
 
-    inline void appendPaddingFrame(AtomicBuffer& logBuffer, util::index_t frameOffset)
+    inline void appendPaddingFrame(AtomicBuffer& termBuffer, util::index_t frameOffset)
     {
-        logBuffer.putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
+        termBuffer.putBytes(frameOffset, m_defaultHdr, m_defaultHdrLength);
 
-        FrameDescriptor::frameType(logBuffer, frameOffset, FrameDescriptor::PADDING_FRAME_TYPE);
-        FrameDescriptor::frameFlags(logBuffer, frameOffset, FrameDescriptor::UNFRAGMENTED);
-        FrameDescriptor::frameTermOffset(logBuffer, frameOffset, frameOffset);
-        FrameDescriptor::frameLengthOrdered(logBuffer, frameOffset, capacity() - frameOffset);
+        FrameDescriptor::frameType(termBuffer, frameOffset, FrameDescriptor::PADDING_FRAME_TYPE);
+        FrameDescriptor::frameFlags(termBuffer, frameOffset, FrameDescriptor::UNFRAGMENTED);
+        FrameDescriptor::frameTermOffset(termBuffer, frameOffset, frameOffset);
+        FrameDescriptor::frameLengthOrdered(termBuffer, frameOffset, capacity() - frameOffset);
     }
 
     inline std::int32_t getTailAndAdd(std::int32_t delta)
     {
-        return stateBuffer().getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, delta);
+        return metaDataBuffer().getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, delta);
     }
 
     inline void checkMessageLength(util::index_t length)

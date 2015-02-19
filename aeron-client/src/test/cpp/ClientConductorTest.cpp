@@ -21,6 +21,7 @@
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <command/ControlProtocolEvents.h>
+#include <concurrent/logbuffer/LogBufferDescriptor.h>
 #include "DriverProxy.h"
 #include "ClientConductor.h"
 
@@ -42,7 +43,17 @@ static const std::int32_t STREAM_ID = 10;
 static const std::int32_t SESSION_ID = 200;
 static const std::int32_t POSITION_COUNTER_OFFSET = 0;
 static const std::int32_t MTU_LENGTH = 16 * 1024;
-static const std::string LOG_FILE_NAME = "";
+static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
+static const std::int64_t LOG_FILE_LENGTH = LogBufferDescriptor::computeLogLength(TERM_LENGTH);
+
+std::string makeTempFileName ()
+{
+    char* rawname = tempnam(nullptr, "aeron");
+    std::string name = rawname;
+    free(rawname);
+
+    return name;
+}
 
 void onNewPub(const std::string&, std::int32_t, std::int32_t, std::int64_t)
 {
@@ -62,7 +73,8 @@ public:
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
-        m_conductor(m_driverProxy, m_copyBroadcastReceiver, onNewPub, onNewSub)
+        m_conductor(m_driverProxy, m_copyBroadcastReceiver, onNewPub, onNewSub),
+        m_logFileName(makeTempFileName())
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
@@ -72,6 +84,12 @@ public:
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
+        MemoryMappedFile::createNew(m_logFileName.c_str(), LOG_FILE_LENGTH);
+    }
+
+    virtual void TearDown()
+    {
+        ::unlink(m_logFileName.c_str());
     }
 
 protected:
@@ -88,6 +106,8 @@ protected:
     CopyBroadcastReceiver m_copyBroadcastReceiver;
 
     ClientConductor m_conductor;
+
+    std::string m_logFileName;
 };
 
 TEST_F(ClientConductorTest, shouldReturnNullForUnknownPublication)
@@ -130,7 +150,7 @@ TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
 
-    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, LOG_FILE_NAME, id);
+    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, m_logFileName, id);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -152,7 +172,7 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
         {
         });
 
-    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, LOG_FILE_NAME, id);
+    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, m_logFileName, id);
 
     {
         std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
@@ -188,7 +208,7 @@ TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
     const PublicationBuffersReadyFlyweight message(m_toClientsBuffer, 0);
 
-    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, LOG_FILE_NAME, id);
+    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, m_logFileName, id);
 
     std::shared_ptr<Publication> pub1 = m_conductor.findPublication(id);
     std::shared_ptr<Publication> pub2 = m_conductor.findPublication(id);

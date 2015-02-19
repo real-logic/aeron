@@ -27,17 +27,17 @@ using namespace aeron::common::concurrent::mock;
 using namespace aeron::common::concurrent;
 using namespace aeron::common;
 
-#define LOG_BUFFER_CAPACITY (LogBufferDescriptor::MIN_LOG_SIZE)
-#define STATE_BUFFER_CAPACITY (LogBufferDescriptor::STATE_BUFFER_LENGTH)
+#define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
+#define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::TERM_META_DATA_LENGTH)
 #define HDR_LENGTH (FrameDescriptor::BASE_HEADER_LENGTH + sizeof(std::int32_t))
 #define MAX_FRAME_LENGTH (1024)
-#define LOG_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::MIN_LOG_SIZE + FrameDescriptor::FRAME_ALIGNMENT - 1)
+#define TERM_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH + FrameDescriptor::FRAME_ALIGNMENT - 1)
 #define SRC_BUFFER_CAPACITY (2 * 1024)
 
-typedef std::array<std::uint8_t, LOG_BUFFER_CAPACITY> log_buffer_t;
-typedef std::array<std::uint8_t, STATE_BUFFER_CAPACITY> state_buffer_t;
+typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> log_buffer_t;
+typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> state_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
-typedef std::array<std::uint8_t, LOG_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
+typedef std::array<std::uint8_t, TERM_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_CAPACITY> src_buffer_t;
 
 class LogAppenderTest : public testing::Test
@@ -71,7 +71,7 @@ protected:
 
 TEST_F(LogAppenderTest, shouldReportCapacity)
 {
-    EXPECT_EQ(m_logAppender.capacity(), LOG_BUFFER_CAPACITY);
+    EXPECT_EQ(m_logAppender.capacity(), TERM_BUFFER_CAPACITY);
 }
 
 TEST_F(LogAppenderTest, shouldReportMaxFrameLength)
@@ -81,7 +81,7 @@ TEST_F(LogAppenderTest, shouldReportMaxFrameLength)
 
 TEST_F(LogAppenderTest, shouldThrowExceptionOnInsufficientLogBufferCapacity)
 {
-    MockAtomicBuffer mockLog(&m_logBuffer[0], LogBufferDescriptor::MIN_LOG_SIZE - 1);
+    MockAtomicBuffer mockLog(&m_logBuffer[0], LogBufferDescriptor::TERM_MIN_LENGTH - 1);
 
     ASSERT_THROW(
     {
@@ -102,7 +102,7 @@ TEST_F(LogAppenderTest, shouldThrowExceptionWhenCapacityNotMultipleOfAlignment)
 
 TEST_F(LogAppenderTest, shouldThrowExceptionOnInsufficientStateBufferCapacity)
 {
-    MockAtomicBuffer mockState(&m_stateBuffer[0], LogBufferDescriptor::STATE_BUFFER_LENGTH - 1);
+    MockAtomicBuffer mockState(&m_stateBuffer[0], LogBufferDescriptor::TERM_META_DATA_LENGTH - 1);
 
     ASSERT_THROW(
     {
@@ -150,7 +150,7 @@ TEST_F(LogAppenderTest, shouldReportCurrentTail)
 {
     const std::int32_t tailValue = 64;
 
-    EXPECT_CALL(m_state, getInt32Volatile(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+    EXPECT_CALL(m_state, getInt32Volatile(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET))
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
@@ -159,18 +159,18 @@ TEST_F(LogAppenderTest, shouldReportCurrentTail)
 
 TEST_F(LogAppenderTest, shouldReportCurrentTailAtCapacity)
 {
-    const std::int32_t tailValue = LOG_BUFFER_CAPACITY + 64;
+    const std::int32_t tailValue = TERM_BUFFER_CAPACITY + 64;
 
-    EXPECT_CALL(m_state, getInt32Volatile(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+    EXPECT_CALL(m_state, getInt32Volatile(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET))
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
-    EXPECT_CALL(m_state, getInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET))
+    EXPECT_CALL(m_state, getInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET))
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
-    EXPECT_EQ(m_logAppender.tailVolatile(), LOG_BUFFER_CAPACITY);
-    EXPECT_EQ(m_logAppender.tail(), LOG_BUFFER_CAPACITY);
+    EXPECT_EQ(m_logAppender.tailVolatile(), TERM_BUFFER_CAPACITY);
+    EXPECT_EQ(m_logAppender.tail(), TERM_BUFFER_CAPACITY);
 }
 
 TEST_F(LogAppenderTest, shouldAppendFrameToEmptyLog)
@@ -183,7 +183,7 @@ TEST_F(LogAppenderTest, shouldAppendFrameToEmptyLog)
     util::index_t tail = 0;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
@@ -218,7 +218,7 @@ TEST_F(LogAppenderTest, shouldAppendFrameTwiceToLog)
     testing::Sequence sequence1;
     testing::Sequence sequence2;
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
         .Times(2)
         .WillOnce(testing::Return(0))
         .WillOnce(testing::Return(alignedFrameLength));
@@ -270,7 +270,7 @@ TEST_F(LogAppenderTest, shouldTripWhenAppendingToLogAtCapacity)
     const util::index_t frameLength = m_hdr.size() + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
         .Times(1)
         .WillOnce(testing::Return(m_logAppender.capacity()));
 
@@ -285,7 +285,7 @@ TEST_F(LogAppenderTest, shouldFailWhenTheLogIsAlreadyTripped)
     const util::index_t frameLength = m_hdr.size() + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
         .Times(2)
         .WillOnce(testing::Return(m_logAppender.capacity()))
         .WillOnce(testing::Return(m_logAppender.capacity() + alignedFrameLength));
@@ -307,7 +307,7 @@ TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainin
     const util::index_t tailValue = m_logAppender.capacity() - util::BitUtil::align(msgLength, FrameDescriptor::FRAME_ALIGNMENT);
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, requiredFrameSize))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
@@ -323,7 +323,7 @@ TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainin
     EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tailValue), tailValue))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), LOG_BUFFER_CAPACITY - tailValue))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), TERM_BUFFER_CAPACITY - tailValue))
         .Times(1)
         .InSequence(sequence);
 
@@ -340,7 +340,7 @@ TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainin
     const util::index_t tailValue = m_logAppender.capacity() - (requiredFrameSize + (m_hdr.size() - FrameDescriptor::FRAME_ALIGNMENT));
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, requiredFrameSize))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
@@ -356,7 +356,7 @@ TEST_F(LogAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainin
     EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tailValue), tailValue))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), LOG_BUFFER_CAPACITY - tailValue))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), TERM_BUFFER_CAPACITY - tailValue))
         .Times(1)
         .InSequence(sequence);
 
@@ -373,7 +373,7 @@ TEST_F(LogAppenderTest, shouldFragmentMessageOverTwoFrames)
     util::index_t tail = 0;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, requiredCapacity))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredCapacity))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
@@ -426,7 +426,7 @@ TEST_F(LogAppenderTest, shouldClaimRegionForZeroCopyEncoding)
     BufferClaim bufferClaim;
     testing::Sequence sequence;
 
-    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET, alignedFrameLength))
+    EXPECT_CALL(m_state, getAndAddInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));

@@ -61,7 +61,7 @@ SET(HEADERS
     concurrent/logbuffer/FrameDescriptor.h
     concurrent/logbuffer/Header.h
     concurrent/logbuffer/LogAppender.h
-    concurrent/logbuffer/LogBuffer.h
+    concurrent/logbuffer/LogBufferPartition.h
     concurrent/logbuffer/LogBufferDescriptor.h
     concurrent/logbuffer/LogReader.h
     concurrent/ringbuffer/ManyToOneRingBuffer.h

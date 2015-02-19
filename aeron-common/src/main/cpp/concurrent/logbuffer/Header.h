@@ -48,8 +48,8 @@ static const util::index_t LENGTH = DATA_OFFSET;
 class Header
 {
 public:
-    Header(AtomicBuffer& logBuffer) :
-        m_buffer(logBuffer), m_offset(0)
+    Header(AtomicBuffer& termBuffer) :
+        m_buffer(termBuffer), m_offset(0)
     {
     }
 

@@ -29,43 +29,98 @@ namespace LogBufferDescriptor {
 
 static const std::int32_t CLEAN = 0;
 static const std::int32_t NEEDS_CLEANING = 1;
-static const std::int32_t IN_CLEANING = 2;
 
-static const util::index_t HIGH_WATER_MARK_OFFSET = 0;
-static const util::index_t TAIL_COUNTER_OFFSET = sizeof(std::int32_t);
-static const util::index_t STATUS_OFFSET = sizeof(std::int32_t) + util::BitUtil::CACHE_LINE_SIZE;
-static const util::index_t STATE_BUFFER_LENGTH = util::BitUtil::CACHE_LINE_SIZE * 2;
+//static const util::index_t HIGH_WATER_MARK_OFFSET = 0;
+//static const util::index_t TAIL_COUNTER_OFFSET = sizeof(std::int32_t);
+//static const util::index_t STATUS_OFFSET = sizeof(std::int32_t) + util::BitUtil::CACHE_LINE_LENGTH;
+//static const util::index_t STATE_BUFFER_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
 
-static const util::index_t MIN_LOG_SIZE = 64 * 1024;
+static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
 
 static const int PARTITION_COUNT = 3;
 
-inline static void checkLogBuffer(AtomicBuffer& buffer)
+/*
+ * Layout description for log buffers which contains partitions of terms with associated term meta data,
+ * plus ending with overall log meta data.
+ *
+ * <pre>
+ *  +----------------------------+
+ *  |           Term 0           |
+ *  +----------------------------+
+ *  |           Term 1           |
+ *  +----------------------------+
+ *  |           Term 2           |
+ *  +----------------------------+
+ *  |      Term Meta Data 0      |
+ *  +----------------------------+
+ *  |      Term Meta Data 1      |
+ *  +----------------------------+
+ *  |      Term Meta Data 2      |
+ *  +----------------------------+
+ *  |        Log Meta Data       |
+ *  +----------------------------+
+ * </pre>
+ */
+
+static const util::index_t TERM_HIGH_WATER_MARK_OFFSET = 0;
+static const util::index_t TERM_TAIL_COUNTER_OFFSET = sizeof(std::int32_t);
+static const util::index_t TERM_STATUS_OFFSET = sizeof(std::int32_t) + util::BitUtil::CACHE_LINE_LENGTH;
+static const util::index_t TERM_META_DATA_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
+
+/**
+ * <pre>
+ *   0                   1                   2                   3
+ *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |                        Initial Term Id                        |
+ *  +---------------------------------------------------------------+
+ *  |                        Active Term Id                         |
+ *  +---------------------------------------------------------------+
+ *  |                  Default Frame Header Length                  |
+ *  +---------------------------------------------------------------+
+ *  |                      Cache Line Padding                      ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                    Default Frame Header 0                    ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                    Default Frame Header 1                    ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                    Default Frame Header 2                    ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ * </pre>
+ */
+
+static const util::index_t LOG_META_DATA_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 4;
+
+inline static void checkTermBuffer(AtomicBuffer &buffer)
 {
     const util::index_t capacity = buffer.getCapacity();
-    if (capacity < MIN_LOG_SIZE)
+    if (capacity < TERM_MIN_LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Log buffer capacity less than min size of %d, capacity=%d",
-                MIN_LOG_SIZE, capacity), SOURCEINFO);
+            util::strPrintf("Term buffer capacity less than min size of %d, capacity=%d",
+                TERM_MIN_LENGTH, capacity), SOURCEINFO);
     }
 
     if ((capacity & (FrameDescriptor::FRAME_ALIGNMENT - 1)) != 0)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Log buffer capacity not a multiple of %d, capacity=%d",
+            util::strPrintf("Term buffer capacity not a multiple of %d, capacity=%d",
                 FrameDescriptor::FRAME_ALIGNMENT, capacity), SOURCEINFO);
     }
 }
 
-inline static void checkStateBuffer(AtomicBuffer& buffer)
+inline static void checkMetaDataBuffer(AtomicBuffer &buffer)
 {
     const util::index_t capacity = buffer.getCapacity();
-    if (capacity < STATE_BUFFER_LENGTH)
+    if (capacity < TERM_META_DATA_LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("State buffer capacity less than min size of %d, capacity=%d",
-                STATE_BUFFER_LENGTH, capacity), SOURCEINFO);
+            util::strPrintf("Meta Data buffer capacity less than min size of %d, capacity=%d",
+                TERM_META_DATA_LENGTH, capacity), SOURCEINFO);
     }
 }
 
@@ -77,6 +132,18 @@ inline static void checkMsgTypeId(std::int32_t msgTypeId)
             util::strPrintf("Message type id must be greater than zero, msgTypeId=%d", msgTypeId), SOURCEINFO);
     }
 }
+
+inline static std::int64_t computeLogLength(std::int64_t termLength)
+{
+    return (termLength * PARTITION_COUNT) + (TERM_META_DATA_LENGTH * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
+}
+
+inline static std::int64_t computeTermLength(std::int64_t logLength)
+{
+    const std::int64_t metaDataSectionLength = (TERM_META_DATA_LENGTH * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
+    return (logLength - metaDataSectionLength) / 3;
+}
+
 };
 
 }}}}

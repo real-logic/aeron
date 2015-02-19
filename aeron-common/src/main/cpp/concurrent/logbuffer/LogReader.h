@@ -21,7 +21,7 @@
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include "LogBufferDescriptor.h"
-#include "LogBuffer.h"
+#include "LogBufferPartition.h"
 #include "Header.h"
 
 namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
@@ -29,11 +29,11 @@ namespace aeron { namespace common { namespace concurrent { namespace logbuffer 
 /** The data handler function signature */
 typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index_t, Header&)> handler_t;
 
-class LogReader : public LogBuffer
+class LogReader : public LogBufferPartition
 {
 public:
-    LogReader(AtomicBuffer& logBuffer, AtomicBuffer& stateBuffer) :
-        LogBuffer(logBuffer, stateBuffer), m_header(logBuffer), m_offset(0)
+    LogReader(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer) :
+        LogBufferPartition(termBuffer, metaDataBuffer), m_header(termBuffer), m_offset(0)
     {
     }
 
@@ -67,16 +67,16 @@ public:
 
         while (offset < capacity() && framesCounter < framesCountLimit)
         {
-            std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(logBuffer(), offset);
+            std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer(), offset);
             if (0 == frameLength)
             {
                 break;
             }
 
-            if (!FrameDescriptor::isPaddingFrame(logBuffer(), offset))
+            if (!FrameDescriptor::isPaddingFrame(termBuffer(), offset))
             {
                 m_header.offset(offset);
-                handler(logBuffer(), offset + DataHeader::LENGTH, frameLength - DataHeader::LENGTH, m_header);
+                handler(termBuffer(), offset + DataHeader::LENGTH, frameLength - DataHeader::LENGTH, m_header);
 
                 ++framesCounter;
             }

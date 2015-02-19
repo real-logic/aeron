@@ -27,15 +27,15 @@ using namespace aeron::common::concurrent::mock;
 using namespace aeron::common::concurrent;
 using namespace aeron::common;
 
-#define LOG_BUFFER_CAPACITY (LogBufferDescriptor::MIN_LOG_SIZE)
-#define STATE_BUFFER_CAPACITY (LogBufferDescriptor::STATE_BUFFER_LENGTH)
+#define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
+#define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::TERM_META_DATA_LENGTH)
 #define HDR_LENGTH (DataHeader::LENGTH)
-#define LOG_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::MIN_LOG_SIZE + FrameDescriptor::FRAME_ALIGNMENT - 1)
+#define TERM_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH + FrameDescriptor::FRAME_ALIGNMENT - 1)
 
-typedef std::array<std::uint8_t, LOG_BUFFER_CAPACITY> log_buffer_t;
-typedef std::array<std::uint8_t, STATE_BUFFER_CAPACITY> state_buffer_t;
+typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> log_buffer_t;
+typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> state_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
-typedef std::array<std::uint8_t, LOG_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
+typedef std::array<std::uint8_t, TERM_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
 
 class LogReaderTest : public testing::Test
 {
@@ -230,7 +230,7 @@ TEST_F(LogReaderTest, shouldReadLastMessage)
     const util::index_t msgLength = 1;
     const util::index_t frameLength = DataHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const util::index_t startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
+    const util::index_t startOfMessage = TERM_BUFFER_CAPACITY - alignedFrameLength;
     testing::Sequence sequence;
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(startOfMessage)))
@@ -260,7 +260,7 @@ TEST_F(LogReaderTest, shouldNotReadLastMessageWhenPadding)
     const util::index_t msgLength = 1;
     const util::index_t frameLength = DataHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const util::index_t startOfMessage = LOG_BUFFER_CAPACITY - alignedFrameLength;
+    const util::index_t startOfMessage = TERM_BUFFER_CAPACITY - alignedFrameLength;
     testing::Sequence sequence;
 
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(startOfMessage)))

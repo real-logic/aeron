@@ -24,18 +24,18 @@
 
 namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
 
-class LogBuffer
+class LogBufferPartition
 {
 public:
 
-    inline AtomicBuffer& logBuffer() const
+    inline AtomicBuffer& termBuffer() const
     {
-        return m_logBuffer;
+        return m_termBuffer;
     }
 
-    inline AtomicBuffer& stateBuffer() const
+    inline AtomicBuffer& metaDataBuffer() const
     {
-        return m_stateBuffer;
+        return m_metaDataBuffer;
     }
 
     inline util::index_t capacity() const
@@ -45,59 +45,59 @@ public:
 
     inline void clean()
     {
-        m_logBuffer.setMemory(0, m_logBuffer.getCapacity(), 0);
-        m_stateBuffer.setMemory(0, m_stateBuffer.getCapacity(), 0);
+        m_termBuffer.setMemory(0, m_termBuffer.getCapacity(), 0);
+        m_metaDataBuffer.setMemory(0, m_metaDataBuffer.getCapacity(), 0);
         statusOrdered(LogBufferDescriptor::CLEAN);
     }
 
     inline int status() const
     {
-        return m_stateBuffer.getInt32Volatile(LogBufferDescriptor::STATUS_OFFSET);
+        return m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_STATUS_OFFSET);
     }
 
     inline bool compareAndSetStatus(std::int32_t expectedStatus, std::int32_t updateStatus)
     {
-        return m_stateBuffer.compareAndSetInt32(LogBufferDescriptor::STATUS_OFFSET, expectedStatus, updateStatus);
+        return m_metaDataBuffer.compareAndSetInt32(LogBufferDescriptor::TERM_STATUS_OFFSET, expectedStatus, updateStatus);
     }
 
     inline void statusOrdered(std::int32_t status)
     {
-        m_stateBuffer.putInt32Ordered(LogBufferDescriptor::STATUS_OFFSET, status);
+        m_metaDataBuffer.putInt32Ordered(LogBufferDescriptor::TERM_STATUS_OFFSET, status);
     }
 
     inline std::int32_t tailVolatile()
     {
-        return std::min(m_stateBuffer.getInt32Volatile(LogBufferDescriptor::TAIL_COUNTER_OFFSET), m_capacity);
+        return std::min(m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET), m_capacity);
     }
 
     inline std::int32_t highWaterMarkVolatile()
     {
-        return m_stateBuffer.getInt32Volatile(LogBufferDescriptor::HIGH_WATER_MARK_OFFSET);
+        return m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_HIGH_WATER_MARK_OFFSET);
     }
 
     inline std::int32_t tail()
     {
-        return std::min(m_stateBuffer.getInt32(LogBufferDescriptor::TAIL_COUNTER_OFFSET), m_capacity);
+        return std::min(m_metaDataBuffer.getInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET), m_capacity);
     }
 
     inline std::int32_t highWaterMark()
     {
-        return m_stateBuffer.getInt32(LogBufferDescriptor::HIGH_WATER_MARK_OFFSET);
+        return m_metaDataBuffer.getInt32(LogBufferDescriptor::TERM_HIGH_WATER_MARK_OFFSET);
     }
 
 protected:
-    inline LogBuffer(AtomicBuffer& logBuffer, AtomicBuffer& stateBuffer)
-    : m_logBuffer(logBuffer), m_stateBuffer(stateBuffer)
+    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer)
+        : m_termBuffer(termBuffer), m_metaDataBuffer(metaDataBuffer)
     {
-        LogBufferDescriptor::checkLogBuffer(logBuffer);
-        LogBufferDescriptor::checkStateBuffer(stateBuffer);
+        LogBufferDescriptor::checkTermBuffer(termBuffer);
+        LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
 
-        m_capacity = logBuffer.getCapacity();
+        m_capacity = termBuffer.getCapacity();
     }
 
 private:
-    AtomicBuffer& m_logBuffer;
-    AtomicBuffer& m_stateBuffer;
+    AtomicBuffer&m_termBuffer;
+    AtomicBuffer&m_metaDataBuffer;
     util::index_t m_capacity;
 };
 

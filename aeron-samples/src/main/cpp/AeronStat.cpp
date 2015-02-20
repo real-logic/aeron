@@ -94,13 +94,13 @@ int main (int argc, char** argv)
             time_t rawtime;
             char currentTime[80];
 
-            ::time(&rawtime);
-            ::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", localtime(&rawtime));
+            std::time(&rawtime);
+            std::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", localtime(&rawtime));
 
-            ::printf("\033[H\033[2J");
+            std::printf("\033[H\033[2J");
 
-            ::printf("%s - Aeron Stat\n", currentTime);
-            ::printf("===========================\n");
+            std::printf("%s - Aeron Stat\n", currentTime);
+            std::printf("===========================\n");
 
             ::setlocale(LC_NUMERIC, "");
 
@@ -108,7 +108,7 @@ int main (int argc, char** argv)
             {
                 std::int64_t value = valuesBuffer.getInt64Volatile(counters.counterOffset(id));
 
-                ::printf("%3d: %'20" PRId64 " - %s\n", id, value, l.c_str());
+                std::printf("%3d: %'20" PRId64 " - %s\n", id, value, l.c_str());
             });
 
             std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalms));

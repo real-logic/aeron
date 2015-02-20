@@ -92,7 +92,7 @@ int main(int argc, char** argv)
 
         if (settings.dirPrefix != "")
         {
-            context.prefixDir(settings.dirPrefix);
+            context.aeronDir(settings.dirPrefix);
         }
 
         context.newPublicationHandler(
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
 
-        Aeron aeron(context.useSharedMemoryOnLinux());
+        Aeron aeron(context);
 
         // add the publication to start the process
         std::int64_t id = aeron.addPublication(settings.channel, settings.streamId);

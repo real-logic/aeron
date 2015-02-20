@@ -22,10 +22,12 @@
 #include <common/AgentRunner.h>
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
+#include <CncFileDescriptor.h>
 #include <iostream>
 
 namespace aeron {
 
+using namespace aeron::common;
 using namespace aeron::common::common;
 using namespace aeron::common::concurrent::ringbuffer;
 using namespace aeron::common::concurrent::broadcast;
@@ -63,21 +65,10 @@ public:
         return *this;
     }
 
-    this_t& useSharedMemoryOnLinux()
+    inline this_t& aeronDir(const std::string &base)
     {
-#if defined(__linux__)
-        m_dataDirName = "/dev/shm/aeron/data";
-        m_adminDirName = "/dev/shm/aeron/conductor";
-        m_countersDirName = "/dev/shm/aeron/counters";
-#endif
-        return *this;
-    }
-
-    inline this_t& prefixDir(const std::string& prefix)
-    {
-        m_dataDirName = prefix + "/data";
-        m_adminDirName = prefix + "/conductor";
-        m_countersDirName = prefix + "/counters";
+        m_dataDirName = base + "/data";
+        m_adminDirName = base + "/conductor";
         return *this;
     }
 
@@ -123,26 +114,9 @@ public:
         return m_adminDirName;
     }
 
-    inline void countersDirName(const std::string& name)
+    inline const std::string cncFileName()
     {
-        m_countersDirName = name;
-    }
-
-    inline const std::string& countersDirName() const
-    {
-        return m_countersDirName;
-    }
-
-    inline const std::string& toDriverFileName()
-    {
-        m_toDriverFileName = m_adminDirName + "/" + "to-driver";
-        return m_toDriverFileName;
-    }
-
-    inline const std::string& toClientsFileName()
-    {
-        m_toClientsFileName = m_adminDirName + "/" + "to-clients";
-        return m_toClientsFileName;
+        return m_adminDirName + "/" + CncFileDescriptor::CNC_FILE;
     }
 
     inline this_t& newPublicationHandler(const on_new_publication_t& handler)
@@ -163,14 +137,44 @@ public:
         return *this;
     }
 
+    inline static std::string tmpDir()
+    {
+#if defined(WIN32)
+        static char buff[MAX_PATH+1];
+        std::string dir = "";
+
+        if (::GetTempPath(MAX_PATH, &buff) > 0)
+        {
+            dir = buff;
+        }
+
+        return dir;
+#else
+        std::string dir = "/tmp";
+
+        if (::getenv("TMPDIR"))
+        {
+            dir = ::getenv("TMPDIR");
+        }
+
+        return dir;
+#endif
+    }
+
+    inline static std::string defaultAeronPath()
+    {
+#if defined(__linux__)
+        return "/dev/shm/aeron";
+#else
+        return tmpDir() + "/aeron";
+#endif
+    }
+
 private:
     std::unique_ptr<ManyToOneRingBuffer> m_toDriverBuffer;
     std::unique_ptr<CopyBroadcastReceiver> m_toClientsBuffer;
-    std::string m_dataDirName = "";
-    std::string m_adminDirName = "";
-    std::string m_countersDirName = "";
-    std::string m_toDriverFileName = "";
-    std::string m_toClientsFileName = "";
+    std::string m_dataDirName = defaultAeronPath() + "/data";
+    std::string m_adminDirName = defaultAeronPath() + "/conductor";
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;

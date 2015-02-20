@@ -40,16 +40,24 @@ Aeron::~Aeron()
     // TODO: do cleanup of anything created
 }
 
+
+inline void Aeron::mapCncFile(Context& context)
+{
+    if (!m_cncBuffer)
+    {
+        m_cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
+    }
+}
+
 DriverProxy& Aeron::createDriverProxy(Context& context)
 {
     m_toDriverRingBuffer = context.toDriverBuffer();
 
     if (nullptr == m_toDriverRingBuffer)
     {
-        // create buffer from mapped file for location specified in context. Managed by shared_ptr.
-        m_toDriverBuffer = util::MemoryMappedFile::mapExisting(context.toDriverFileName().c_str());
-        m_toDriverAtomicBuffer = std::unique_ptr<AtomicBuffer>(new AtomicBuffer(m_toDriverBuffer->getMemoryPtr(), m_toDriverBuffer->getMemorySize()));
-        m_toDriverRingBuffer = std::unique_ptr<ManyToOneRingBuffer>(new ManyToOneRingBuffer(*m_toDriverAtomicBuffer));
+        mapCncFile(context);
+        m_toDriverAtomicBuffer = CncFileDescriptor::createToDriverBuffer(m_cncBuffer);
+        m_toDriverRingBuffer = std::unique_ptr<ManyToOneRingBuffer>(new ManyToOneRingBuffer(m_toDriverAtomicBuffer));
     }
 
     m_driverProxy = std::unique_ptr<DriverProxy>(new DriverProxy(*m_toDriverRingBuffer));
@@ -63,9 +71,9 @@ CopyBroadcastReceiver& Aeron::createDriverReceiver(Context &context)
 
     if (nullptr == m_toClientsCopyReceiver)
     {
-        m_toClientsBuffer = util::MemoryMappedFile::mapExisting(context.toClientsFileName().c_str());
-        m_toClientsAtomicBuffer = std::unique_ptr<AtomicBuffer>(new AtomicBuffer(m_toClientsBuffer->getMemoryPtr(), m_toClientsBuffer->getMemorySize()));
-        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(new BroadcastReceiver(*m_toClientsAtomicBuffer));
+        mapCncFile(context);
+        m_toClientsAtomicBuffer = CncFileDescriptor::createToClientsBuffer(m_cncBuffer);
+        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(new BroadcastReceiver(m_toClientsAtomicBuffer));
         m_toClientsCopyReceiver = std::unique_ptr<CopyBroadcastReceiver>(new CopyBroadcastReceiver(*m_toClientsBroadcastReceiver));
     }
 

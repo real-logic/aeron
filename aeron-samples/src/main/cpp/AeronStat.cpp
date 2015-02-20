@@ -22,7 +22,11 @@
 #include <atomic>
 #include <thread>
 #include <signal.h>
+#include <Context.h>
+#include <inttypes.h>
 
+using namespace aeron;
+using namespace aeron::common;
 using namespace aeron::common::util;
 using namespace aeron::common::concurrent;
 using namespace std::chrono;
@@ -41,7 +45,7 @@ static const char optPeriod = 'u';
 
 struct Settings 
 {
-    std::string basePath = "/dev/shm/aeron";
+    std::string basePath = Context::defaultAeronPath();
     int updateIntervalms = 1000;
 };
 
@@ -66,7 +70,7 @@ int main (int argc, char** argv)
 {
     CommandOptionParser cp;
     cp.addOption(CommandOption (optHelp,   0, 0, "                Displays help information."));
-    cp.addOption(CommandOption (optPath,   1, 1, "basePath        Base Path to shared memory. Default: /dev/shm/aeron"));
+    cp.addOption(CommandOption (optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
     cp.addOption(CommandOption (optPeriod, 1, 1, "update period   Update period in millseconds. Default: 1000ms"));
 
     signal (SIGINT, sigIntHandler);
@@ -74,24 +78,35 @@ int main (int argc, char** argv)
     try
     {
         Settings settings = parseCmdLine(cp, argc, argv);
-        
-        MemoryMappedFile::ptr_t labelsFile   = MemoryMappedFile::mapExisting((settings.basePath + "/counters/labels").c_str());
-        MemoryMappedFile::ptr_t countersFile = MemoryMappedFile::mapExisting((settings.basePath + "/counters/values").c_str());
 
-        AtomicBuffer labelsBuffer(labelsFile->getMemoryPtr(), labelsFile->getMemorySize());
-        AtomicBuffer countersBuffer(countersFile->getMemoryPtr(), countersFile->getMemorySize());
+        MemoryMappedFile::ptr_t cncFile =
+            MemoryMappedFile::mapExisting((settings.basePath + "/conductor/" + CncFileDescriptor::CNC_FILE).c_str());
 
-        CountersManager counters(labelsBuffer, countersBuffer);
+        AtomicBuffer labelsBuffer = CncFileDescriptor::createCounterLabelsBuffer(cncFile);
+        AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);
+
+        CountersManager counters(labelsBuffer, valuesBuffer);
 
         while(running)
         {
-            steady_clock::time_point now = steady_clock::now();
-            milliseconds ms = duration_cast<milliseconds>(now.time_since_epoch());
+            time_t rawtime;
+            char currentTime[80];
+
+            ::time(&rawtime);
+            ::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", localtime(&rawtime));
+
+            ::printf("\033[H\033[2J");
+
+            ::printf("%s - Aeron Stat\n", currentTime);
+            ::printf("===========================\n");
+
+            ::setlocale(LC_NUMERIC, "");
 
             counters.forEach([&](int id, const std::string l)
             {
-                std::int64_t value = countersBuffer.getInt64Volatile(counters.counterOffset(id));
-                std::cout << std::fixed << ms.count() / 1000.0 << ": " << l << ": " << value << std::endl;
+                std::int64_t value = valuesBuffer.getInt64Volatile(counters.counterOffset(id));
+
+                ::printf("%3d: %'20" PRId64 " - %s\n", id, value, l.c_str());
             });
 
             std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalms));

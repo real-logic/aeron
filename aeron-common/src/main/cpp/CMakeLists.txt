@@ -23,6 +23,7 @@ SET(SOURCE
     concurrent/CountersManager.cpp)
 
 SET(HEADERS
+    CncFileDescriptor.h
     util/MemoryMappedFile.h
     util/CommandOption.h
     util/CommandOptionParser.h

@@ -32,6 +32,7 @@
 
 namespace aeron {
 
+using namespace aeron::common::util;
 using namespace aeron::common::common;
 using namespace aeron::common::concurrent;
 using namespace aeron::common::concurrent::broadcast;
@@ -77,16 +78,17 @@ private:
     BusySpinIdleStrategy m_idleStrategy;
     AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
 
-    util::MemoryMappedFile::ptr_t m_toDriverBuffer;
-    std::unique_ptr<AtomicBuffer> m_toDriverAtomicBuffer;
+    MemoryMappedFile::ptr_t m_cncBuffer;
+
+    AtomicBuffer m_toDriverAtomicBuffer;
     std::unique_ptr<ManyToOneRingBuffer> m_toDriverRingBuffer;
     std::unique_ptr<DriverProxy> m_driverProxy;
 
-    util::MemoryMappedFile::ptr_t m_toClientsBuffer;
-    std::unique_ptr<AtomicBuffer> m_toClientsAtomicBuffer;
+    AtomicBuffer m_toClientsAtomicBuffer;
     std::unique_ptr<BroadcastReceiver> m_toClientsBroadcastReceiver;
     std::unique_ptr<CopyBroadcastReceiver> m_toClientsCopyReceiver;
 
+    void mapCncFile(Context& context);
     DriverProxy& createDriverProxy(Context& context);
     CopyBroadcastReceiver& createDriverReceiver(Context& context);
 };

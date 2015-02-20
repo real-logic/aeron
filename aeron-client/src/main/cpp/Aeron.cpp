@@ -46,6 +46,14 @@ inline void Aeron::mapCncFile(Context& context)
     if (!m_cncBuffer)
     {
         m_cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
+
+        std::int32_t cncVersion = CncFileDescriptor::cncVersion(m_cncBuffer);
+
+        if (CncFileDescriptor::CNC_VERSION != cncVersion)
+        {
+            throw util::IllegalStateException(
+                util::strPrintf("aeron cnc file version not understood: version=%d", cncVersion), SOURCEINFO);
+        }
     }
 }
 

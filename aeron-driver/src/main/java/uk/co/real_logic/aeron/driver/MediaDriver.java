@@ -16,10 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.*;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
@@ -31,6 +28,9 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -42,10 +42,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.Integer.getInteger;
+import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.agrona.IoUtil.deleteIfExists;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
-import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
-import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_PROP_NAME;
 
 /**
  * Main class for JVM-based media driver
@@ -67,7 +66,6 @@ public final class MediaDriver implements AutoCloseable
 {
     private final File adminDirectory;
     private final File dataDirectory;
-    private final File countersDirectory;
     private final List<AgentRunner> runners;
     private final Context ctx;
 
@@ -97,7 +95,6 @@ public final class MediaDriver implements AutoCloseable
 
         adminDirectory = new File(ctx.adminDirName());
         dataDirectory = new File(ctx.dataDirName());
-        countersDirectory = new File(ctx.countersDirName());
 
         ensureDirectoriesAreRecreated();
 
@@ -221,7 +218,6 @@ public final class MediaDriver implements AutoCloseable
 
         IoUtil.ensureDirectoryIsRecreated(adminDirectory, "conductor", callback);
         IoUtil.ensureDirectoryIsRecreated(dataDirectory, "data", callback);
-        IoUtil.ensureDirectoryIsRecreated(countersDirectory, "counters", callback);
     }
 
     private void deleteDirectories() throws Exception
@@ -230,7 +226,6 @@ public final class MediaDriver implements AutoCloseable
         {
             IoUtil.delete(adminDirectory, false);
             IoUtil.delete(dataDirectory, false);
-            IoUtil.delete(countersDirectory, false);
         }
     }
 
@@ -257,10 +252,9 @@ public final class MediaDriver implements AutoCloseable
         private RingBuffer toDriverCommands;
         private RingBuffer toEventReader;
 
-        private MappedByteBuffer toClientsBuffer;
-        private MappedByteBuffer toDriverBuffer;
-        private MappedByteBuffer counterLabelsByteBuffer;
-        private MappedByteBuffer counterValuesByteBuffer;
+        private MappedByteBuffer cncByteBuffer;
+        private UnsafeBuffer cncMetaDataBuffer;
+
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
@@ -325,24 +319,34 @@ public final class MediaDriver implements AutoCloseable
                 Configuration.validateTermBufferLength(termBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
 
-                // clean out existing files. We've warned about them already.
-                deleteIfExists(toClientsFile());
-                deleteIfExists(toDriverFile());
+                deleteIfExists(cncFile());
 
                 if (dirsDeleteOnExit())
                 {
-                    toClientsFile().deleteOnExit();
-                    toDriverFile().deleteOnExit();
+                    cncFile().deleteOnExit();
                 }
 
-                toClientsBuffer = mapNewFile(toClientsFile(), Configuration.TO_CLIENTS_BUFFER_LENGTH);
+                cncByteBuffer = mapNewFile(
+                    cncFile(),
+                    CncFileDescriptor.computeCncFileLength(
+                        CONDUCTOR_BUFFER_LENGTH + TO_CLIENTS_BUFFER_LENGTH +
+                            COUNTER_BUFFERS_LENGTH + COUNTER_BUFFERS_LENGTH));
 
-                final BroadcastTransmitter transmitter = new BroadcastTransmitter(new UnsafeBuffer(toClientsBuffer));
+                cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+                CncFileDescriptor.fillMetaData(
+                    cncMetaDataBuffer,
+                    CONDUCTOR_BUFFER_LENGTH,
+                    TO_CLIENTS_BUFFER_LENGTH,
+                    COUNTER_BUFFERS_LENGTH,
+                    COUNTER_BUFFERS_LENGTH);
+
+                final BroadcastTransmitter transmitter =
+                    new BroadcastTransmitter(CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
+
                 clientProxy(new ClientProxy(transmitter, eventLogger));
 
-                toDriverBuffer = mapNewFile(toDriverFile(), Configuration.CONDUCTOR_BUFFER_LENGTH);
-
-                toDriverCommands(new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer)));
+                toDriverCommands(
+                    new ManyToOneRingBuffer(CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
                 concludeCounters();
 
@@ -762,29 +766,14 @@ public final class MediaDriver implements AutoCloseable
 
         public void close()
         {
-            if (null != toClientsBuffer)
-            {
-                IoUtil.unmap(toClientsBuffer);
-            }
-
-            if (null != toDriverBuffer)
-            {
-                IoUtil.unmap(toDriverBuffer);
-            }
-
             if (null != systemCounters)
             {
                 systemCounters.close();
             }
 
-            if (null != counterLabelsByteBuffer)
+            if (null != cncByteBuffer)
             {
-                IoUtil.unmap(counterLabelsByteBuffer);
-            }
-
-            if (null != counterValuesByteBuffer)
-            {
-                IoUtil.unmap(counterValuesByteBuffer);
+                IoUtil.unmap(cncByteBuffer);
             }
 
             super.close();
@@ -796,30 +785,12 @@ public final class MediaDriver implements AutoCloseable
             {
                 if (counterLabelsBuffer() == null)
                 {
-                    final File counterLabelsFile = new File(countersDirName(), LABELS_FILE);
-                    deleteIfExists(counterLabelsFile);
-
-                    if (dirsDeleteOnExit())
-                    {
-                        counterLabelsFile.deleteOnExit();
-                    }
-
-                    counterLabelsByteBuffer = mapNewFile(counterLabelsFile, Configuration.COUNTER_BUFFERS_LENGTH);
-                    counterLabelsBuffer(new UnsafeBuffer(counterLabelsByteBuffer));
+                    counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 if (countersBuffer() == null)
                 {
-                    final File counterValuesFile = new File(countersDirName(), VALUES_FILE);
-                    deleteIfExists(counterValuesFile);
-
-                    if (dirsDeleteOnExit())
-                    {
-                        counterValuesFile.deleteOnExit();
-                    }
-
-                    counterValuesByteBuffer = mapNewFile(counterValuesFile, Configuration.COUNTER_BUFFERS_LENGTH);
-                    countersBuffer(new UnsafeBuffer(counterValuesByteBuffer));
+                    countersBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));

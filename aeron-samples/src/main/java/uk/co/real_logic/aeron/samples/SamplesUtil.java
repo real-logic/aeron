@@ -27,7 +27,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.common.CommonContext.ADMIN_DIR_PROP_NAME;
-import static uk.co.real_logic.aeron.common.CommonContext.COUNTERS_DIR_PROP_NAME;
 import static uk.co.real_logic.aeron.common.CommonContext.DATA_DIR_PROP_NAME;
 
 /**
@@ -45,11 +44,6 @@ public class SamplesUtil
             if (null == System.getProperty(ADMIN_DIR_PROP_NAME))
             {
                 System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
-            }
-
-            if (null == System.getProperty(COUNTERS_DIR_PROP_NAME))
-            {
-                System.setProperty(COUNTERS_DIR_PROP_NAME, "/dev/shm/aeron/counters");
             }
 
             if (null == System.getProperty(DATA_DIR_PROP_NAME))

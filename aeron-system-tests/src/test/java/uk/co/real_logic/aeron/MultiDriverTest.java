@@ -76,21 +76,17 @@ public class MultiDriverTest
         driverAContext.dirsDeleteOnExit(true);
         driverAContext.adminDirName(baseDirA + File.separator + "conductor");
         driverAContext.dataDirName(baseDirA + File.separator + "data");
-        driverAContext.countersDirName(baseDirA + File.separator + "counters");
 
         aeronAContext.adminDirName(driverAContext.adminDirName());
         aeronAContext.dataDirName(driverAContext.dataDirName());
-        aeronAContext.countersDirName(driverAContext.countersDirName());
 
         driverBContext.termBufferLength(TERM_BUFFER_SIZE);
         driverBContext.dirsDeleteOnExit(true);
         driverBContext.adminDirName(baseDirB + File.separator + "conductor");
         driverBContext.dataDirName(baseDirB + File.separator + "data");
-        driverBContext.countersDirName(baseDirB + File.separator + "counters");
 
         aeronBContext.adminDirName(driverBContext.adminDirName());
         aeronBContext.dataDirName(driverBContext.dataDirName());
-        aeronBContext.countersDirName(driverBContext.countersDirName());
 
         driverA = MediaDriver.launch(driverAContext);
         driverB = MediaDriver.launch(driverBContext);

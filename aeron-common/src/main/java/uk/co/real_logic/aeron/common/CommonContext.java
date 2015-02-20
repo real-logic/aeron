@@ -51,29 +51,16 @@ public class CommonContext implements AutoCloseable
     /** Default directory for conductor buffers */
     public static final String ADMIN_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + CONDUCTOR_DIR_NAME;
 
-    /** Directory for the counters */
-    public static final String COUNTERS_DIR_PROP_NAME = "aeron.dir.counters";
-    /** Default directory for conductor buffers */
-    public static final String COUNTERS_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + COUNTERS_DIR_NAME;
-
     /** Name of the default multicast interface */
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
-
-    public static final String TO_DRIVER_FILE = "to-driver";
-    public static final String TO_CLIENTS_FILE = "to-clients";
-
-    public static final String LABELS_FILE = "labels";
-    public static final String VALUES_FILE = "values";
 
     /** Attempt to delete directories on exit */
     public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
 
     private String dataDirName;
     private String adminDirName;
-    private String countersDirName;
     private boolean dirsDeleteOnExit;
-    private File toDriverFile;
-    private File toClientsFile;
+    private File cncFile;
     private UnsafeBuffer counterLabelsBuffer;
     private UnsafeBuffer countersBuffer;
 
@@ -85,13 +72,11 @@ public class CommonContext implements AutoCloseable
         {
             dataDirName(getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT));
             adminDirName(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT));
-            countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT));
         }
         else
         {
             dataDirName(getProperty(DATA_DIR_PROP_NAME, aeronDir + File.separator + DATA_DIR_NAME));
             adminDirName(getProperty(ADMIN_DIR_PROP_NAME, aeronDir + File.separator + CONDUCTOR_DIR_NAME));
-            countersDirName(getProperty(COUNTERS_DIR_PROP_NAME, aeronDir + File.separator + COUNTERS_DIR_NAME));
         }
 
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
@@ -99,8 +84,7 @@ public class CommonContext implements AutoCloseable
 
     public CommonContext conclude()
     {
-        toDriverFile(new File(adminDirName(), TO_DRIVER_FILE));
-        toClientsFile(new File(adminDirName(), TO_CLIENTS_FILE));
+        cncFile = new File(adminDirName(), CncFileDescriptor.CNC_FILE);
 
         return this;
     }
@@ -116,25 +100,9 @@ public class CommonContext implements AutoCloseable
         return this;
     }
 
-    public String countersDirName()
+    public static File newDefaultCncFile()
     {
-        return countersDirName;
-    }
-
-    public CommonContext countersDirName(final String countersDirName)
-    {
-        this.countersDirName = countersDirName;
-        return this;
-    }
-
-    public static File newDefaultValuesFile()
-    {
-        return new File(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT), VALUES_FILE);
-    }
-
-    public static File newDefaultLabelsFile()
-    {
-        return new File(getProperty(COUNTERS_DIR_PROP_NAME, COUNTERS_DIR_PROP_DEFAULT), LABELS_FILE);
+        return new File(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT), CncFileDescriptor.CNC_FILE);
     }
 
     public boolean dirsDeleteOnExit()
@@ -145,28 +113,6 @@ public class CommonContext implements AutoCloseable
     public CommonContext dirsDeleteOnExit(final boolean dirsDeleteOnExit)
     {
         this.dirsDeleteOnExit = dirsDeleteOnExit;
-        return this;
-    }
-
-    public File toDriverFile()
-    {
-        return toDriverFile;
-    }
-
-    public CommonContext toDriverFile(final File toDriverFile)
-    {
-        this.toDriverFile = toDriverFile;
-        return this;
-    }
-
-    public File toClientsFile()
-    {
-        return toClientsFile;
-    }
-
-    public CommonContext toClientsFile(final File toClientsFile)
-    {
-        this.toClientsFile = toClientsFile;
         return this;
     }
 
@@ -201,6 +147,11 @@ public class CommonContext implements AutoCloseable
     {
         this.countersBuffer = countersBuffer;
         return this;
+    }
+
+    public File cncFile()
+    {
+        return cncFile;
     }
 
     public void close()

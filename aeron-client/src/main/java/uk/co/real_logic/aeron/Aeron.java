@@ -16,17 +16,16 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
-import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
+import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
@@ -203,10 +202,13 @@ public final class Aeron implements AutoCloseable
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
 
-        private MappedByteBuffer defaultToClientBuffer;
-        private MappedByteBuffer defaultToDriverBuffer;
-        private MappedByteBuffer defaultCounterLabelsBuffer;
-        private MappedByteBuffer defaultCounterValuesBuffer;
+//        private MappedByteBuffer defaultToClientBuffer;
+//        private MappedByteBuffer defaultToDriverBuffer;
+//        private MappedByteBuffer defaultCounterLabelsBuffer;
+//        private MappedByteBuffer defaultCounterValuesBuffer;
+
+        private MappedByteBuffer cncByteBuffer;
+        private DirectBuffer cncMetaDataBuffer;
 
         private LogBuffersFactory logBuffersFactory;
 
@@ -231,29 +233,41 @@ public final class Aeron implements AutoCloseable
                     idleStrategy = new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
                 }
 
+                if (cncFile() != null)
+                {
+                    cncByteBuffer = mapExistingFile(cncFile(), CncFileDescriptor.CNC_FILE);
+                    cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+
+                    final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+                    if (CncFileDescriptor.CNC_VERSION != cncVersion)
+                    {
+                        throw new IllegalStateException(
+                            String.format("aeron cnc file version not understood: version=" + cncVersion));
+                    }
+                }
+
                 if (null == toClientBuffer)
                 {
-                    defaultToClientBuffer = mapExistingFile(toClientsFile(), TO_CLIENTS_FILE);
-                    final BroadcastReceiver receiver = new BroadcastReceiver(new UnsafeBuffer(defaultToClientBuffer));
+                    final BroadcastReceiver receiver = new BroadcastReceiver(
+                        CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
                     toClientBuffer = new CopyBroadcastReceiver(receiver);
                 }
 
                 if (null == toDriverBuffer)
                 {
-                    defaultToDriverBuffer = mapExistingFile(toDriverFile(), TO_DRIVER_FILE);
-                    toDriverBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(defaultToDriverBuffer));
+                    toDriverBuffer = new ManyToOneRingBuffer(
+                        CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 if (counterLabelsBuffer() == null)
                 {
-                    defaultCounterLabelsBuffer = mapExistingFile(new File(countersDirName(), LABELS_FILE), LABELS_FILE);
-                    counterLabelsBuffer(new UnsafeBuffer(defaultCounterLabelsBuffer));
+                    counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 if (countersBuffer() == null)
                 {
-                    defaultCounterValuesBuffer = mapExistingFile(new File(countersDirName(), VALUES_FILE), VALUES_FILE);
-                    countersBuffer(new UnsafeBuffer(defaultCounterValuesBuffer));
+                    countersBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 if (null == logBuffersFactory)
@@ -331,10 +345,7 @@ public final class Aeron implements AutoCloseable
 
         public void close()
         {
-            IoUtil.unmap(defaultToDriverBuffer);
-            IoUtil.unmap(defaultToClientBuffer);
-            IoUtil.unmap(defaultCounterLabelsBuffer);
-            IoUtil.unmap(defaultCounterValuesBuffer);
+            IoUtil.unmap(cncByteBuffer);
 
             super.close();
         }

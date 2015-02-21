@@ -59,6 +59,11 @@ size_t MemoryMappedFile::getMemorySize() const
 
 size_t MemoryMappedFile::PAGE_SIZE = getPageSize();
 
+MemoryMappedFile::MemoryMappedFile(const char *filename)
+    : MemoryMappedFile(filename, 0, 0)
+{
+}
+
 #ifdef _WIN32
 MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
     : m_file(NULL), m_mapping(NULL), m_memory(NULL)
@@ -67,15 +72,18 @@ MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
     fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (fd.handle == INVALID_HANDLE_VALUE)
+    {
         throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+    }
 
     if (!fill(fd, size, 0))
     {
         cleanUp();
         throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
+
     m_memorySize = size;
-    m_memory = doMapping(m_memorySize, fd);
+    m_memory = doMapping(m_memorySize, fd, 0);
 
     if (!m_memory)
     {
@@ -84,36 +92,37 @@ MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
     }
 }
 
-MemoryMappedFile::MemoryMappedFile(const char *filename)
+MemoryMappedFile::MemoryMappedFile(const char *filename, size_t offset, size_t length)
     : m_file(NULL), m_mapping(NULL)
 {
     FileHandle fd;
     fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
 
     if (fd.handle == INVALID_HANDLE_VALUE)
-        throw IOException(std::string("Failed to open existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
-
-    LARGE_INTEGER fileSize;
-    if (!GetFileSizeEx(fd.handle, &fileSize))
     {
-        cleanUp();
-        throw IOException(std::string("Failed query size of existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+        throw IOException(std::string("Failed to open existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
 
-    m_memorySize = (size_t)fileSize.QuadPart;
-    m_memory = doMapping(m_memorySize, fd);
+    if (0 == length && 0 == offset)
+    {
+        LARGE_INTEGER fileSize;
+        if (!GetFileSizeEx(fd.handle, &fileSize))
+        {
+            cleanUp();
+            throw IOException(std::string("Failed query size of existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+        }
+
+        length = (size_t)fileSize.QuadPart;
+    }
+
+    m_memorySize = length;
+    m_memory = doMapping(m_memorySize, fd, offset);
 
     if (!m_memory)
     {
         cleanUp();
         throw IOException(std::string("Failed to Map Memory: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
     }
-}
-
-MemoryMappedFile(const char* filename, size_t offset, size_t length)
-    : m_file(NULL), m_mapping(NULL)
-{
-
 }
 
 void MemoryMappedFile::cleanUp()
@@ -133,20 +142,22 @@ MemoryMappedFile::~MemoryMappedFile()
     cleanUp();
 }
 
-uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd)
+uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset)
 {
     m_mapping = CreateFileMapping(fd.handle, NULL, PAGE_READWRITE, 0, size, NULL);
     if (m_mapping == NULL)
+    {
         return NULL;
+    }
 
-    void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0,	0, size);
+    void* memory = (LPTSTR)MapViewOfFile(m_mapping, FILE_MAP_ALL_ACCESS, 0,	offset, size);
 
     return static_cast<uint8_t*>(memory);
 }
 
 bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
-    uint8_t buffer[PAGE_SIZE];
+    uint8_t buffer[8196];
     memset(buffer, value, PAGE_SIZE);
  
     DWORD written = 0;
@@ -214,11 +225,6 @@ MemoryMappedFile::MemoryMappedFile(const char *filename, size_t length)
     }
 
     m_memory = doMapping(length, fd, 0);
-}
-
-MemoryMappedFile::MemoryMappedFile(const char *filename)
-    : MemoryMappedFile(filename, 0, 0)
-{
 }
 
 MemoryMappedFile::MemoryMappedFile(const char *filename, size_t length, size_t offset)

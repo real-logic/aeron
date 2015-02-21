@@ -94,8 +94,8 @@ int main (int argc, char** argv)
             time_t rawtime;
             char currentTime[80];
 
-            std::time(&rawtime);
-            std::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", localtime(&rawtime));
+            ::time(&rawtime);
+            ::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", localtime(&rawtime));
 
             std::printf("\033[H\033[2J");
 

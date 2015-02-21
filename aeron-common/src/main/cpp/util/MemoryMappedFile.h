@@ -62,7 +62,7 @@ private:
     };
 
     bool fill(FileHandle fd, size_t sz, std::uint8_t);
-    static uint8_t* doMapping(size_t size, FileHandle fd, size_t offset);
+    uint8_t* doMapping(size_t size, FileHandle fd, size_t offset);
 
     std::uint8_t* m_memory = 0;
     size_t m_memorySize = 0;

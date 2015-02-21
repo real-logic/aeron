@@ -143,7 +143,7 @@ public:
         static char buff[MAX_PATH+1];
         std::string dir = "";
 
-        if (::GetTempPath(MAX_PATH, &buff) > 0)
+        if (::GetTempPath(MAX_PATH, &buff[0]) > 0)
         {
             dir = buff;
         }

@@ -85,7 +85,7 @@ public class LogRebuilder extends LogBufferPartition
 
             final UnsafeBuffer termBuffer = termBuffer();
             termBuffer.putBytes(termOffset, packet, srcOffset, length);
-            FrameDescriptor.frameLengthOrdered(termBuffer, termOffset, frameLength);
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
 
             updateCompetitionStatus(termBuffer, termOffset, length, tail);
         }

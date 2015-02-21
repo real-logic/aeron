@@ -313,40 +313,36 @@ public class DriverConnection implements AutoCloseable
      *
      * @param buffer for the data frame
      * @param length of the data frame on the wire
-     * @return number of bytes inserted
+     * @return number of bytes completed as a result of this insertion.
      */
     public int insertIntoTerm(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
-        int bytesInserted = 0;
-        final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-        final int initialTermId = this.initialTermId;
-        final int activeTermId = this.activeTermId;
+        int bytesCompleted = 0;
 
-        final int leftShift = positionBitsToShift;
-        final long packetPosition = computePosition(termId, termOffset, leftShift, initialTermId);
-        final long currentPosition = computePosition(activeTermId, currentRebuilder.tail(), leftShift, initialTermId);
-        final long proposedPosition = packetPosition + length;
+        final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final long proposedPosition = packetBeginPosition + length;
+        final long completedPosition = this.completedPosition.position();
 
-        if (isHeartbeat(currentPosition, proposedPosition) ||
-            isFlowControlUnderRun(packetPosition, currentPosition) ||
+        if (isHeartbeat(completedPosition, proposedPosition) ||
+            isFlowControlUnderRun(completedPosition, packetBeginPosition) ||
             isFlowControlOverRun(proposedPosition))
         {
-            return 0;
+            return bytesCompleted;
         }
 
         if (termId == activeTermId)
         {
-            final long oldCompletedPosition = completedPosition.position();
+            final LogRebuilder currentRebuilder = rebuilders[activeIndex];
             currentRebuilder.insert(termOffset, buffer, 0, length);
 
             final long newCompletedPosition = lossHandler.completedPosition();
-            bytesInserted = (int)(newCompletedPosition - oldCompletedPosition);
-            completedPosition.position(newCompletedPosition);
+            bytesCompleted = (int)(newCompletedPosition - completedPosition);
+            this.completedPosition.position(newCompletedPosition);
 
             if (currentRebuilder.isComplete())
             {
                 activeIndex = hwmIndex = rotatePartition(activeIndex);
-                this.activeTermId = activeTermId + 1;
+                activeTermId = activeTermId + 1;
             }
         }
         else if (termId == (activeTermId + 1))
@@ -362,7 +358,7 @@ public class DriverConnection implements AutoCloseable
 
         hwmCandidate(proposedPosition);
 
-        return bytesInserted;
+        return bytesCompleted;
     }
 
     /*
@@ -528,9 +524,9 @@ public class DriverConnection implements AutoCloseable
         return isHeartbeat;
     }
 
-    private boolean isFlowControlUnderRun(final long packetPosition, final long position)
+    private boolean isFlowControlUnderRun(final long completedPosition, final long packetPosition)
     {
-        final boolean isFlowControlUnderRun = packetPosition < position;
+        final boolean isFlowControlUnderRun = packetPosition < completedPosition;
 
         if (isFlowControlUnderRun)
         {

@@ -771,10 +771,7 @@ public final class MediaDriver implements AutoCloseable
                 systemCounters.close();
             }
 
-            if (null != cncByteBuffer)
-            {
-                IoUtil.unmap(cncByteBuffer);
-            }
+            IoUtil.unmap(cncByteBuffer);
 
             super.close();
         }

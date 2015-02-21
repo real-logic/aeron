@@ -185,7 +185,7 @@ public class ConnectionTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), DATA);
 
-        rebuilders[activeIndex].insert(rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
+        rebuilders[activeIndex].insert(offset, rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
     }
 
     private int offsetOfFrame(final int index)

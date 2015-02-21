@@ -49,7 +49,7 @@ public class LogRebuilder extends LogBufferPartition
      */
     public void tail(final int offset)
     {
-        putTailOrdered(metaDataBuffer(), offset);
+        metaDataBuffer().putIntOrdered(TERM_TAIL_COUNTER_OFFSET, offset);
     }
 
     /**
@@ -68,13 +68,13 @@ public class LogRebuilder extends LogBufferPartition
      * The tail and high-water-mark will be updated as appropriate. Data can be consumed up to the the tail. The
      * high-water-mark can be used to detect loss.
      *
-     * @param packet    containing a sequence of frames.
-     * @param srcOffset in the packet at which the frames begin.
-     * @param length    of the sequence of frames in bytes.
+     * @param termOffset offset in the term at which the packet should be inserted.
+     * @param packet     containing a sequence of frames.
+     * @param srcOffset  in the packet at which the frames begin.
+     * @param length     of the sequence of frames in bytes.
      */
-    public void insert(final UnsafeBuffer packet, final int srcOffset, final int length)
+    public void insert(final int termOffset, final UnsafeBuffer packet, final int srcOffset, final int length)
     {
-        final int termOffset = packet.getInt(termOffsetOffset(srcOffset), LITTLE_ENDIAN);
         final int tail = tail();
 
         if (termOffset >= tail)
@@ -102,22 +102,12 @@ public class LogRebuilder extends LogBufferPartition
         }
 
         final UnsafeBuffer metaDataBuffer = metaDataBuffer();
-        putTailOrdered(metaDataBuffer, tail);
+        metaDataBuffer.putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
 
         final int endOfFrame = termOffset + length;
         if (endOfFrame > highWaterMark())
         {
-            putHighWaterMark(metaDataBuffer, endOfFrame);
+            metaDataBuffer.putIntOrdered(TERM_HIGH_WATER_MARK_OFFSET, endOfFrame);
         }
-    }
-
-    private static void putTailOrdered(final UnsafeBuffer metaDataBuffer, final int tail)
-    {
-        metaDataBuffer.putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
-    }
-
-    private static void putHighWaterMark(final UnsafeBuffer metaDataBuffer, final int highWaterMark)
-    {
-        metaDataBuffer.putIntOrdered(TERM_HIGH_WATER_MARK_OFFSET, highWaterMark);
     }
 }

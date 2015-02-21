@@ -72,12 +72,13 @@ public class LogRebuilderTest
     public void shouldInsertIntoEmptyBuffer()
     {
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(256));
+        final int termOffset = 0;
         final int srcOffset = 0;
         final int length = 256;
 
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
-        logRebuilder.insert(packet, srcOffset, length);
+        logRebuilder.insert(termOffset, packet, srcOffset, length);
         assertFalse(logRebuilder.isComplete());
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
@@ -92,9 +93,9 @@ public class LogRebuilderTest
         final int frameLength = BitUtil.align(256, FRAME_ALIGNMENT);
         final int srcOffset = 0;
         final int tail = TERM_BUFFER_CAPACITY - frameLength;
+        final int termOffset = tail;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(frameLength));
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
-        packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
         packet.putInt(lengthOffset(srcOffset), frameLength, LITTLE_ENDIAN);
 
         when(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET)).thenReturn(tail);
@@ -102,7 +103,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
-        logRebuilder.insert(packet, srcOffset, frameLength);
+        logRebuilder.insert(termOffset, packet, srcOffset, frameLength);
         assertTrue(logRebuilder.isComplete());
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
@@ -118,8 +119,8 @@ public class LogRebuilderTest
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
         final int tail = alignedFrameLength;
+        final int termOffset = tail;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
-        packet.putInt(termOffsetOffset(srcOffset), tail, LITTLE_ENDIAN);
 
         metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         metaDataBuffer.putInt(TERM_HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
@@ -127,7 +128,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        logRebuilder.insert(packet, srcOffset, alignedFrameLength);
+        logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
 
         assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength * 3));
         assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
@@ -144,14 +145,14 @@ public class LogRebuilderTest
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
-        packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
+        final int termOffset = alignedFrameLength * 2;
 
         metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, 0);
         metaDataBuffer.putInt(TERM_HIGH_WATER_MARK_OFFSET, alignedFrameLength * 2);
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        logRebuilder.insert(packet, srcOffset, alignedFrameLength);
+        logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
 
         assertThat(metaDataViewer.tailVolatile(), is(0));
         assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
@@ -168,14 +169,14 @@ public class LogRebuilderTest
         final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
         final int srcOffset = 0;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
-        packet.putInt(termOffsetOffset(srcOffset), alignedFrameLength * 2, LITTLE_ENDIAN);
+        final int termOffset = alignedFrameLength * 2;
 
         metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         metaDataBuffer.putInt(TERM_HIGH_WATER_MARK_OFFSET, alignedFrameLength * 4);
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
 
-        logRebuilder.insert(packet, srcOffset, alignedFrameLength);
+        logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
 
         assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength));
         assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 4));

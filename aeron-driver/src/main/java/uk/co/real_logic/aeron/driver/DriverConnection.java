@@ -337,7 +337,7 @@ public class DriverConnection implements AutoCloseable
         if (termId == activeTermId)
         {
             final long oldCompletedPosition = completedPosition.position();
-            currentRebuilder.insert(buffer, 0, length);
+            currentRebuilder.insert(termOffset, buffer, 0, length);
 
             final long newCompletedPosition = lossHandler.completedPosition();
             bytesInserted = (int)(newCompletedPosition - oldCompletedPosition);
@@ -357,7 +357,7 @@ public class DriverConnection implements AutoCloseable
                 hwmTermId = termId;
             }
 
-            rebuilders[hwmIndex].insert(buffer, 0, length);
+            rebuilders[hwmIndex].insert(termOffset, buffer, 0, length);
         }
 
         hwmCandidate(proposedPosition);

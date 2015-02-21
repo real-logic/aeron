@@ -433,7 +433,7 @@ public class LossHandlerTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
 
-        rebuilders[activeIndex].insert(rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+        rebuilders[activeIndex].insert(offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 
     private void insertPaddingFrame(final int offset)
@@ -447,7 +447,7 @@ public class LossHandlerTest
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        rebuilders[activeIndex].insert(rcvBuffer, 0, FrameDescriptor.BASE_HEADER_LENGTH);
+        rebuilders[activeIndex].insert(offset, rcvBuffer, 0, FrameDescriptor.BASE_HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)

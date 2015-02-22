@@ -344,7 +344,7 @@ public class LogBufferDescriptor
      */
     public static int computeTermOffsetFromPosition(final long position, final int positionBitsToShift)
     {
-        final int mask = (int)((1L << positionBitsToShift) - 1);
+        final long mask = (1L << positionBitsToShift) - 1L;
 
         return (int)(position & mask);
     }

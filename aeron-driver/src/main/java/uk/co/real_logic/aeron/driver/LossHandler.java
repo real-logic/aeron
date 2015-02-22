@@ -75,7 +75,7 @@ public class LossHandler
 
         final int capacity = termBuffers[0].capacity();
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
-        this.mask = (int)((long)capacity - 1);
+        this.mask = capacity - 1;
 
         this.initialTermId = initialTermId;
     }

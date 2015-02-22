@@ -311,22 +311,19 @@ public class DriverConnection implements AutoCloseable
     public int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
         int bytesCompleted = 0;
-
         final int initialTermId = this.initialTermId;
         final int positionBitsToShift = this.positionBitsToShift;
-
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
-        final long completedPosition = this.completedPosition.position();
+        final long oldCompletedPosition = completedPosition.position();
 
-        if (isHeartbeat(completedPosition, proposedPosition) ||
-            isFlowControlUnderRun(completedPosition, packetBeginPosition) ||
-            isFlowControlOverRun(proposedPosition))
+        if (isHeartbeat(oldCompletedPosition, proposedPosition) ||
+            isFlowControlUnderRun(oldCompletedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
         {
             return bytesCompleted;
         }
 
-        final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
+        final int activeTermId = computeTermIdFromPosition(oldCompletedPosition, positionBitsToShift, initialTermId);
         final int activeIndex = partitionIndex(initialTermId, activeTermId);
 
         if (termId == activeTermId)
@@ -339,8 +336,8 @@ public class DriverConnection implements AutoCloseable
             }
 
             final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
-            bytesCompleted = (int)(newCompletedPosition - completedPosition);
-            this.completedPosition.position(newCompletedPosition);
+            bytesCompleted = (int)(newCompletedPosition - oldCompletedPosition);
+            completedPosition.position(newCompletedPosition);
         }
         else
         {

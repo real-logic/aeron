@@ -334,7 +334,7 @@ public class DriverConnection implements AutoCloseable
             final int newTail = currentRebuilder.insert(termOffset, buffer, 0, length);
             if (newTail >= currentRebuilder.capacity())
             {
-                advancePartition(activeIndex, activeTermId);
+                advancePartition(activeTermId);
             }
 
             final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
@@ -548,10 +548,9 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlOverRun;
     }
 
-    private void advancePartition(final int activeIndex, final int activeTermId)
+    private void advancePartition(final int activeTermId)
     {
         rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
-
         this.activeIndex = nextPartitionIndex(activeIndex);
         this.activeTermId = activeTermId + 1;
     }

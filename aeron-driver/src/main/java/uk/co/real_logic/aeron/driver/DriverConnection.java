@@ -55,8 +55,6 @@ public class DriverConnection implements AutoCloseable
     private final EventLogger logger;
 
     private final AtomicLong timeOfLastFrame = new AtomicLong();
-    private int activeTermId;
-    private int activeIndex;
     private Status status;
     private long timeOfLastStatusChange;
 
@@ -112,9 +110,7 @@ public class DriverConnection implements AutoCloseable
         this.timeOfLastStatusChange = clock.time();
 
         this.clock = clock;
-        activeTermId = initialTermId;
         timeOfLastFrame.lazySet(clock.time());
-        this.activeIndex = partitionIndex(initialTermId, initialTermId);
 
         rebuilders = rawLog
             .stream()
@@ -136,7 +132,7 @@ public class DriverConnection implements AutoCloseable
         final long initialPosition = computePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition;
 
-        rebuilders[activeIndex].tail(initialTermOffset);
+        rebuilders[0].tail(initialTermOffset);
         this.completedPosition.position(initialPosition);
         this.hwmPosition.position(initialPosition);
     }
@@ -316,6 +312,9 @@ public class DriverConnection implements AutoCloseable
     {
         int bytesCompleted = 0;
 
+        final int initialTermId = this.initialTermId;
+        final int positionBitsToShift = this.positionBitsToShift;
+
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
         final long completedPosition = this.completedPosition.position();
@@ -327,14 +326,16 @@ public class DriverConnection implements AutoCloseable
             return bytesCompleted;
         }
 
-        final int activeTermId = this.activeTermId;
+        final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
+        final int activeIndex = partitionIndex(initialTermId, activeTermId);
+
         if (termId == activeTermId)
         {
             final LogRebuilder currentRebuilder = rebuilders[activeIndex];
             final int newTail = currentRebuilder.insert(termOffset, buffer, 0, length);
             if (newTail >= currentRebuilder.capacity())
             {
-                advancePartition(activeTermId);
+                rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
             }
 
             final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
@@ -546,12 +547,5 @@ public class DriverConnection implements AutoCloseable
         }
 
         return isFlowControlOverRun;
-    }
-
-    private void advancePartition(final int activeTermId)
-    {
-        rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
-        this.activeIndex = nextPartitionIndex(activeIndex);
-        this.activeTermId = activeTermId + 1;
     }
 }

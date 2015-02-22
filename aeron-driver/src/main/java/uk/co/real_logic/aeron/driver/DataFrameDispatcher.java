@@ -121,7 +121,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
 
             if (null != connection)
             {
-                return connection.insertIntoTerm(termId, header.termOffset(), buffer, length);
+                return connection.insertPacket(termId, header.termOffset(), buffer, length);
             }
             else if (null == initialisationInProgressMap.get(sessionId, streamId))
             {

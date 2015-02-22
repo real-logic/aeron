@@ -311,11 +311,11 @@ public class DriverConnection implements AutoCloseable
     /**
      * Insert frame into term buffer.
      *
-     * @param buffer for the data frame
-     * @param length of the data frame on the wire
+     * @param buffer for the data packet to insert into the appropriate term.
+     * @param length of the data packet
      * @return number of bytes completed as a result of this insertion.
      */
-    public int insertIntoTerm(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
+    public int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
         int bytesCompleted = 0;
 

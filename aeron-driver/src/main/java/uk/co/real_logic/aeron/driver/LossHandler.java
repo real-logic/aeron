@@ -121,13 +121,13 @@ public class LossHandler
         {
             final int tail = scanner.tailVolatile();
             final long tailPosition = computePosition(activeTermId, tail, positionBitsToShift, initialTermId);
-            final long currentHwmPosition = hwmPosition.get();
+            final long hwmPosition = this.hwmPosition.get();
 
-            if (currentHwmPosition > tailPosition)
+            if (hwmPosition > tailPosition)
             {
                 if (!timer.isActive() || !activeGap.matches(activeTermId, tail))
                 {
-                    activateGap(activeTermId, tail, (int)(currentHwmPosition - tailPosition));
+                    activateGap(activeTermId, tail, (int)(hwmPosition - tailPosition));
                 }
             }
             else if (timer.isActive())

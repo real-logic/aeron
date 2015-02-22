@@ -38,7 +38,6 @@ public class LogRebuilderTest
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final UnsafeBuffer metaDataBuffer = spy(new UnsafeBuffer(new byte[META_DATA_BUFFER_CAPACITY]));
-    private final MetaDataViewer metaDataViewer = new MetaDataViewer(metaDataBuffer);
 
     private LogRebuilder logRebuilder;
 
@@ -127,9 +126,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
-
-        assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength * 3));
+        assertThat(logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength), is(alignedFrameLength * 3));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
@@ -149,9 +146,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
-
-        assertThat(metaDataViewer.tailVolatile(), is(0));
+        assertThat(logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength), is(0));
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
@@ -169,9 +164,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
 
-        logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
-
-        assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength));
+        assertThat(logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength), is(alignedFrameLength));
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }

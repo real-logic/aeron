@@ -332,15 +332,14 @@ public class DriverConnection implements AutoCloseable
         {
             final LogRebuilder currentRebuilder = rebuilders[activeIndex];
             final int newTail = currentRebuilder.insert(termOffset, buffer, 0, length);
+            if (newTail >= currentRebuilder.capacity())
+            {
+                advancePartition(activeIndex, activeTermId);
+            }
 
             final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
             bytesCompleted = (int)(newCompletedPosition - completedPosition);
             this.completedPosition.position(newCompletedPosition);
-
-            if (currentRebuilder.isComplete())
-            {
-                advancePartition(activeIndex, activeTermId);
-            }
         }
         else
         {

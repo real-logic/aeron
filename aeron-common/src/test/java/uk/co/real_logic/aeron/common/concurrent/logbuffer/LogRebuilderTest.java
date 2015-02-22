@@ -78,7 +78,6 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(termOffset, packet, srcOffset, length);
-        assertFalse(logRebuilder.isComplete());
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(termOffset, packet, srcOffset, length);
@@ -103,8 +102,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
-        logRebuilder.insert(termOffset, packet, srcOffset, frameLength);
-        assertTrue(logRebuilder.isComplete());
+        assertThat(logRebuilder.insert(termOffset, packet, srcOffset, frameLength), is(TERM_BUFFER_CAPACITY));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);

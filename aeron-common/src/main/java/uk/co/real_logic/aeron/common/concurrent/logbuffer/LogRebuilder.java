@@ -52,16 +52,6 @@ public class LogRebuilder extends LogBufferPartition
     }
 
     /**
-     * Is the rebuild of this log complete?
-     *
-     * @return true if it is complete otherwise false.
-     */
-    public boolean isComplete()
-    {
-        return metaDataBuffer().getInt(TERM_TAIL_COUNTER_OFFSET) >= capacity();
-    }
-
-    /**
      * Insert a packet of frames into the log at the appropriate offset as indicated by the term offset header.
      *
      * The tail and high-water-mark will be updated as appropriate. Data can be consumed up to the the tail. The

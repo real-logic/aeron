@@ -57,8 +57,6 @@ public class DriverConnection implements AutoCloseable
     private final AtomicLong timeOfLastFrame = new AtomicLong();
     private int activeTermId;
     private int activeIndex;
-    private int hwmTermId;
-    private int hwmIndex;
     private Status status;
     private long timeOfLastStatusChange;
 
@@ -116,8 +114,7 @@ public class DriverConnection implements AutoCloseable
         this.clock = clock;
         activeTermId = initialTermId;
         timeOfLastFrame.lazySet(clock.time());
-        this.hwmIndex = this.activeIndex = partitionIndex(initialTermId, initialTermId);
-        this.hwmTermId = initialTermId;
+        this.activeIndex = partitionIndex(initialTermId, initialTermId);
 
         rebuilders = rawLog
             .stream()
@@ -292,7 +289,7 @@ public class DriverConnection implements AutoCloseable
     {
         if (scanForGapsEnabled)
         {
-            return lossHandler.scan();
+            return lossHandler.scan(completedPosition.position(), hwmPosition.position());
         }
 
         return 0;
@@ -330,30 +327,28 @@ public class DriverConnection implements AutoCloseable
             return bytesCompleted;
         }
 
+        final int activeTermId = this.activeTermId;
         if (termId == activeTermId)
         {
             final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-            currentRebuilder.insert(termOffset, buffer, 0, length);
+            final int newTail = currentRebuilder.insert(termOffset, buffer, 0, length);
 
-            final long newCompletedPosition = lossHandler.completedPosition();
+            final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
             bytesCompleted = (int)(newCompletedPosition - completedPosition);
             this.completedPosition.position(newCompletedPosition);
 
             if (currentRebuilder.isComplete())
             {
-                activeIndex = hwmIndex = rotatePartition(activeIndex);
-                activeTermId = activeTermId + 1;
+                advancePartition(activeIndex, activeTermId);
             }
         }
-        else if (termId == (activeTermId + 1))
+        else
         {
-            if (termId != hwmTermId)
+            final LogRebuilder nextRebuilder = rebuilders[nextPartitionIndex(activeIndex)];
+            if (nextRebuilder.status() == CLEAN)
             {
-                hwmIndex = rotatePartition(activeIndex);
-                hwmTermId = termId;
+                nextRebuilder.insert(termOffset, buffer, 0, length);
             }
-
-            rebuilders[hwmIndex].insert(termOffset, buffer, 0, length);
         }
 
         hwmCandidate(proposedPosition);
@@ -367,7 +362,11 @@ public class DriverConnection implements AutoCloseable
     private void hwmCandidate(final long proposedPosition)
     {
         timeOfLastFrame.lazySet(clock.time());
-        hwmPosition.position(lossHandler.hwmCandidate(proposedPosition));
+
+        if (proposedPosition > hwmPosition.position())
+        {
+            hwmPosition.position(proposedPosition);
+        }
     }
 
     /**
@@ -550,10 +549,11 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlOverRun;
     }
 
-    private int rotatePartition(final int activeIndex)
+    private void advancePartition(final int activeIndex, final int activeTermId)
     {
         rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
 
-        return nextPartitionIndex(activeIndex);
+        this.activeIndex = nextPartitionIndex(activeIndex);
+        this.activeTermId = activeTermId + 1;
     }
 }

@@ -75,10 +75,6 @@ public class LogBufferDescriptor
      */
     public static final int TERM_TAIL_COUNTER_OFFSET;
 
-    /**
-     * Offset within the term meta data where the high water mark is stored.
-     */
-    public static final int TERM_HIGH_WATER_MARK_OFFSET;
 
     /**
      * Offset within the term meta data where current status is stored
@@ -92,8 +88,7 @@ public class LogBufferDescriptor
 
     static
     {
-        TERM_HIGH_WATER_MARK_OFFSET = 0;
-        TERM_TAIL_COUNTER_OFFSET = TERM_HIGH_WATER_MARK_OFFSET + SIZE_OF_INT;
+        TERM_TAIL_COUNTER_OFFSET = 0;
         TERM_STATUS_OFFSET = TERM_TAIL_COUNTER_OFFSET + CACHE_LINE_LENGTH;
         TERM_META_DATA_LENGTH = CACHE_LINE_LENGTH * 2;
     }
@@ -288,7 +283,7 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Determine the buffer index to be used given the initial term and active term ids.
+     * Determine the partition index to be used given the initial term and active term ids.
      *
      * @param initialTermId at which the log buffer usage began
      * @param activeTermId  that is in current usage
@@ -297,6 +292,17 @@ public class LogBufferDescriptor
     public static int partitionIndex(final int initialTermId, final int activeTermId)
     {
         return (activeTermId - initialTermId) % PARTITION_COUNT;
+    }
+
+    /**
+     * Determine the partition index given a number of terms that have rolled.
+     *
+     * @param terms which have rolled forward.
+     * @return the partition index for the current term roll.
+     */
+    public static int partitionIndex(final int terms)
+    {
+        return terms % PARTITION_COUNT;
     }
 
     /**
@@ -338,7 +344,7 @@ public class LogBufferDescriptor
      */
     public static int computeTermOffsetFromPosition(final long position, final int positionBitsToShift)
     {
-        final int mask = (1 << positionBitsToShift) - 1;
+        final int mask = (int)((1L << positionBitsToShift) - 1);
 
         return (int)(position & mask);
     }

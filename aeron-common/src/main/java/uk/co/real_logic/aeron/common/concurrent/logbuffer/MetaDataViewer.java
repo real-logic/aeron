@@ -49,16 +49,6 @@ public class MetaDataViewer
     }
 
     /**
-     * Get the current high-water-mark value in a volatile memory ordering fashion.
-     *
-     * @return the current high-water-mark value.
-     */
-    public int highWaterMarkVolatile()
-    {
-        return buffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
-    }
-
-    /**
      * Get the current tail value.
      *
      * @return the current tail value.
@@ -66,15 +56,5 @@ public class MetaDataViewer
     public int tail()
     {
         return buffer.getInt(TERM_TAIL_COUNTER_OFFSET);
-    }
-
-    /**
-     * Get the current high-water-mark value.
-     *
-     * @return the current high-water-mark value.
-     */
-    public int highWaterMark()
-    {
-        return buffer.getInt(TERM_HIGH_WATER_MARK_OFFSET);
     }
 }

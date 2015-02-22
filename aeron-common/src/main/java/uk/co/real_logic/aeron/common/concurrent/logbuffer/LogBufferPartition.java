@@ -109,16 +109,6 @@ public class LogBufferPartition
     }
 
     /**
-     * Get the current high-water-mark value in a volatile memory ordering fashion.
-     *
-     * @return the current high-water-mark value.
-     */
-    public int highWaterMarkVolatile()
-    {
-        return metaDataBuffer.getIntVolatile(TERM_HIGH_WATER_MARK_OFFSET);
-    }
-
-    /**
      * Get the current tail value.
      *
      * @return the current tail value.
@@ -126,15 +116,5 @@ public class LogBufferPartition
     public int tail()
     {
         return Math.min(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET), capacity);
-    }
-
-    /**
-     * Get the current high-water-mark value.
-     *
-     * @return the current high-water-mark value.
-     */
-    public int highWaterMark()
-    {
-        return metaDataBuffer.getInt(TERM_HIGH_WATER_MARK_OFFSET);
     }
 }

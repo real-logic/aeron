@@ -75,16 +75,16 @@ public class LogRebuilderTest
         final int termOffset = 0;
         final int srcOffset = 0;
         final int length = 256;
-
+        packet.putInt(lengthOffset(srcOffset), length, LITTLE_ENDIAN);
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(termOffset, packet, srcOffset, length);
         assertFalse(logRebuilder.isComplete());
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
-        inOrder.verify(termBuffer).putBytes(0, packet, srcOffset, length);
+        inOrder.verify(termBuffer).putBytes(termOffset, packet, srcOffset, length);
+        inOrder.verify(termBuffer).putIntOrdered(lengthOffset(termOffset), length);
         inOrder.verify(metaDataBuffer).putIntOrdered(TERM_TAIL_COUNTER_OFFSET, length);
-        inOrder.verify(metaDataBuffer).putIntOrdered(TERM_HIGH_WATER_MARK_OFFSET, length);
     }
 
     @Test
@@ -98,8 +98,9 @@ public class LogRebuilderTest
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         packet.putInt(lengthOffset(srcOffset), frameLength, LITTLE_ENDIAN);
 
-        when(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET)).thenReturn(tail);
-        when(metaDataBuffer.getInt(TERM_HIGH_WATER_MARK_OFFSET)).thenReturn(tail);
+        when(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET))
+            .thenReturn(tail)
+            .thenReturn(TERM_BUFFER_CAPACITY);
         when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
@@ -109,7 +110,6 @@ public class LogRebuilderTest
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);
         inOrder.verify(metaDataBuffer).putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail + frameLength);
-        inOrder.verify(metaDataBuffer).putIntOrdered(TERM_HIGH_WATER_MARK_OFFSET, tail + frameLength);
     }
 
     @Test
@@ -123,7 +123,6 @@ public class LogRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocate(alignedFrameLength));
 
         metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        metaDataBuffer.putInt(TERM_HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
         when(termBuffer.getInt(lengthOffset(0))).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
@@ -131,7 +130,6 @@ public class LogRebuilderTest
         logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
 
         assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength * 3));
-        assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
@@ -148,18 +146,14 @@ public class LogRebuilderTest
         final int termOffset = alignedFrameLength * 2;
 
         metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, 0);
-        metaDataBuffer.putInt(TERM_HIGH_WATER_MARK_OFFSET, alignedFrameLength * 2);
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
 
         logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
 
         assertThat(metaDataViewer.tailVolatile(), is(0));
-        assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 3));
 
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
-        inOrder.verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
-        inOrder.verify(metaDataBuffer).putIntOrdered(TERM_HIGH_WATER_MARK_OFFSET, alignedFrameLength * 3);
+        verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
 
     @Test
@@ -172,14 +166,12 @@ public class LogRebuilderTest
         final int termOffset = alignedFrameLength * 2;
 
         metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        metaDataBuffer.putInt(TERM_HIGH_WATER_MARK_OFFSET, alignedFrameLength * 4);
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
 
         logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
 
         assertThat(metaDataViewer.tailVolatile(), is(alignedFrameLength));
-        assertThat(metaDataViewer.highWaterMarkVolatile(), is(alignedFrameLength * 4));
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }

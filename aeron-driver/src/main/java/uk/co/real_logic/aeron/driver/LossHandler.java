@@ -22,7 +22,6 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapHandler;
@@ -34,58 +33,52 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapH
  */
 public class LossHandler
 {
-    private final GapScanner[] scanners;
+    private final UnsafeBuffer[] termBuffers;
     private final TimerWheel wheel;
     private final AtomicCounter naksSent;
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
-    private final AtomicLong hwmPosition;
     private final int positionBitsToShift;
+    private final int mask;
     private final int initialTermId;
 
     private final NakMessageSender nakMessageSender;
     private final TimerWheel.Timer timer;
-    private final GapHandler onGapFunc;
-    private final Runnable onTimerExpireFunc;
+    private final GapHandler onGapFunc = this::onGap;
+    private final Runnable onTimerExpireFunc = this::onTimerExpire;
 
-    private int activeIndex = 0;
-    private int activeTermId;
 
     /**
      * Create a loss handler for a channel.
      *
-     * @param scanners          for the gaps attached to LogBuffers
+     * @param termBuffers       for the gaps attached to LogBuffers
      * @param wheel             for timer management
      * @param delayGenerator    to use for delay determination
      * @param nakMessageSender  to call when sending a NAK is indicated
      * @param initialTermId     to use
-     * @param initialTermOffset to use
      * @param systemCounters    to use for tracking purposes
      */
     public LossHandler(
-        final GapScanner[] scanners,
+        final UnsafeBuffer[] termBuffers,
         final TimerWheel wheel,
         final FeedbackDelayGenerator delayGenerator,
         final NakMessageSender nakMessageSender,
         final int initialTermId,
-        final int initialTermOffset,
         final SystemCounters systemCounters)
     {
-        this.scanners = scanners;
+        this.termBuffers = termBuffers;
         this.wheel = wheel;
         this.naksSent = systemCounters.naksSent();
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(scanners[0].capacity());
-        this.hwmPosition = new AtomicLong(
-            computePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId));
-        this.activeIndex = partitionIndex(initialTermId, initialTermId);
-        this.activeTermId = initialTermId;
+
+        final int capacity = termBuffers[0].capacity();
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
+        this.mask = (int)((long)capacity - 1);
+
         this.initialTermId = initialTermId;
-        onGapFunc = this::onGap;
-        onTimerExpireFunc = this::onTimerExpire;
     }
 
     /**
@@ -95,10 +88,29 @@ public class LossHandler
      *
      * @return whether a scan should be done soon or could wait
      */
-    public int scan()
+    public int scan(final long completedPosition, final long hwmPosition)
     {
-        final GapScanner scanner = scanners[activeIndex];
-        final int numGaps = scanner.scan(onGapFunc);
+        if (completedPosition >= hwmPosition)
+        {
+            if (timer.isActive())
+            {
+                timer.cancel();
+            }
+
+            return 0;
+        }
+
+        final int partitionCompleted = mask & (int)completedPosition;
+        final int partitionHwm = mask & (int)hwmPosition;
+        final int completedTerms = (int)(completedPosition >>> positionBitsToShift);
+        final int hwmTerms = (int)(hwmPosition >>> positionBitsToShift);
+
+        final int activeIndex = partitionIndex(completedTerms);
+        final int activeTermId = initialTermId + completedTerms;
+
+        final UnsafeBuffer termBuffer = termBuffers[activeIndex];
+        final int activePartitionHwm = (completedTerms == hwmTerms) ? partitionHwm : partitionCompleted;
+        final int numGaps = GapScanner.scan(termBuffer, activeTermId, partitionCompleted, activePartitionHwm, onGapFunc);
 
         if (numGaps > 0)
         {
@@ -110,33 +122,12 @@ public class LossHandler
 
             return 0;
         }
-        else if (scanner.isComplete())
+        else if (!timer.isActive() || !activeGap.matches(activeTermId, partitionCompleted))
         {
-            activeIndex = nextPartitionIndex(activeIndex);
-            activeTermId = activeTermId + 1;
-
-            return 1;
-        }
-        else
-        {
-            final int tail = scanner.tailVolatile();
-            final long tailPosition = computePosition(activeTermId, tail, positionBitsToShift, initialTermId);
-            final long hwmPosition = this.hwmPosition.get();
-
-            if (hwmPosition > tailPosition)
-            {
-                if (!timer.isActive() || !activeGap.matches(activeTermId, tail))
-                {
-                    activateGap(activeTermId, tail, (int)(hwmPosition - tailPosition));
-                }
-            }
-            else if (timer.isActive())
-            {
-                timer.cancel();
-            }
+            activateGap(activeTermId, partitionCompleted, (int)(hwmPosition - completedPosition));
         }
 
-        return 0;
+        return 1;
     }
 
     /**
@@ -153,59 +144,14 @@ public class LossHandler
         }
     }
 
-    /**
-     * Return the active Term Id being used.
-     *
-     * @return active Term Id
-     */
-    public int activeTermId()
-    {
-        return activeTermId;
-    }
-
-    /**
-     * Return the active scanner index
-     *
-     * @return active scanner index
-     */
-    public int activeIndex()
-    {
-        return activeIndex;
-    }
-
-    /**
-     * A new high position may have been seen, handle that accordingly
-     *
-     * @param position new position in the stream
-     * @return the highest position after checking the new candidate
-     */
-    public long hwmCandidate(final long position)
-    {
-        final long highestPosition = Math.max(this.hwmPosition.get(), position);
-        this.hwmPosition.lazySet(highestPosition);
-
-        return highestPosition;
-    }
-
-    /**
-     * Return the current position of the tail
-     *
-     * @return current tail position
-     */
-    public long completedPosition()
-    {
-        final int tail = scanners[activeIndex].tailVolatile();
-        return computePosition(activeTermId, tail, positionBitsToShift, initialTermId);
-    }
-
     private void suppressNak()
     {
         scheduleTimer();
     }
 
-    private boolean onGap(final UnsafeBuffer buffer, final int offset, final int length)
+    private boolean onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
     {
-        scannedGap.reset(activeTermId, offset, length);
+        scannedGap.reset(termId, offset, length);
 
         return false;
     }

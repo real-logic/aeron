@@ -235,7 +235,7 @@ public class FrameDescriptor
      */
     public static int frameType(final UnsafeBuffer termBuffer, final int frameOffset)
     {
-        return termBuffer.getShort(typeOffset(frameOffset), ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+        return termBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN) & 0xFFFF;
     }
 
     /**
@@ -261,7 +261,7 @@ public class FrameDescriptor
     {
         int frameLength = termBuffer.getIntVolatile(lengthOffset(frameOffset));
 
-        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
+        if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
         {
             frameLength = Integer.reverseBytes(frameLength);
         }
@@ -278,7 +278,7 @@ public class FrameDescriptor
      */
     public static void frameLengthOrdered(final UnsafeBuffer termBuffer, final int frameOffset, int frameLength)
     {
-        if (ByteOrder.nativeOrder() != ByteOrder.LITTLE_ENDIAN)
+        if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
         {
             frameLength = Integer.reverseBytes(frameLength);
         }

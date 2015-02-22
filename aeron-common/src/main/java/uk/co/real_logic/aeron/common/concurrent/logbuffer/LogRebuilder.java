@@ -20,7 +20,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_HIGH_WATER_MARK_OFFSET;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
 /**
@@ -59,7 +58,7 @@ public class LogRebuilder extends LogBufferPartition
      */
     public boolean isComplete()
     {
-        return metaDataBuffer().getIntVolatile(TERM_TAIL_COUNTER_OFFSET) >= capacity();
+        return metaDataBuffer().getInt(TERM_TAIL_COUNTER_OFFSET) >= capacity();
     }
 
     /**
@@ -73,9 +72,9 @@ public class LogRebuilder extends LogBufferPartition
      * @param srcOffset  in the packet at which the frames begin.
      * @param length     of the sequence of frames in bytes.
      */
-    public void insert(final int termOffset, final UnsafeBuffer packet, final int srcOffset, final int length)
+    public int insert(final int termOffset, final UnsafeBuffer packet, final int srcOffset, final int length)
     {
-        final int tail = tail();
+        int tail = tail();
 
         if (termOffset >= tail)
         {
@@ -87,11 +86,13 @@ public class LogRebuilder extends LogBufferPartition
             termBuffer.putBytes(termOffset, packet, srcOffset, length);
             frameLengthOrdered(termBuffer, termOffset, frameLength);
 
-            updateCompetitionStatus(termBuffer, termOffset, length, tail);
+            tail = updateCompetitionStatus(termBuffer, tail);
         }
+
+        return tail;
     }
 
-    private void updateCompetitionStatus(final UnsafeBuffer termBuffer, final int termOffset, final int length, int tail)
+    private int updateCompetitionStatus(final UnsafeBuffer termBuffer, int tail)
     {
         final int capacity = capacity();
         int frameLength;
@@ -101,13 +102,8 @@ public class LogRebuilder extends LogBufferPartition
             tail += alignedFrameLength;
         }
 
-        final UnsafeBuffer metaDataBuffer = metaDataBuffer();
-        metaDataBuffer.putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
+        metaDataBuffer().putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
 
-        final int endOfFrame = termOffset + length;
-        if (endOfFrame > highWaterMark())
-        {
-            metaDataBuffer.putIntOrdered(TERM_HIGH_WATER_MARK_OFFSET, endOfFrame);
-        }
+        return tail;
     }
 }

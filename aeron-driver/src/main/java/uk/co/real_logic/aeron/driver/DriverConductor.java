@@ -17,13 +17,13 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.driver.buffer.*;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
@@ -31,8 +31,6 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.BufferPositionIndicator;
 import uk.co.real_logic.agrona.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
@@ -585,18 +583,12 @@ public class DriverConductor implements Agent
             subscriberPositions,
             sourceInfo);
 
-        final GapScanner[] gapScanners = rawLog
-            .stream()
-            .map((partition) -> new GapScanner(partition.termBuffer(), partition.metaDataBuffer()))
-            .toArray(GapScanner[]::new);
-
         final LossHandler lossHandler = new LossHandler(
-            gapScanners,
+            rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new),
             timerWheel,
             udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
             initialTermId,
-            initialTermOffset,
             systemCounters);
 
         final DriverConnection connection = new DriverConnection(

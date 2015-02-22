@@ -15,19 +15,19 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameLengthVolatile;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
- * Scans for gaps in the sequence of bytes in a replicated term buffer between the tail and the
+ * Scans for gaps in the sequence of bytes in a replicated term buffer between the completed and the
  * high-water-mark. This can be used for detecting loss and generating a NACK message to the source.
  *
  * <b>Note:</b> This class is threadsafe to be used across multiple threads.
  */
-public class GapScanner extends LogBufferPartition
+public class GapScanner
 {
     /**
      * Handler for notifying of gaps in the log.
@@ -38,58 +38,36 @@ public class GapScanner extends LogBufferPartition
         /**
          * Gap detected in log buffer that is being rebuilt.
          *
+         * @param termId active term being scanned.
          * @param buffer containing the gap.
          * @param offset at which the gap begins.
          * @param length of the gap in bytes.
          * @return true if scanning should continue otherwise false to halt scanning.
          */
-        boolean onGap(UnsafeBuffer buffer, int offset, int length);
+        boolean onGap(final int termId, UnsafeBuffer buffer, int offset, int length);
     }
 
     /**
-     * Construct a gap scanner over a log and state buffer.
-     *
-     * @param termBuffer     containing the sequence of frames.
-     * @param metaDataBuffer containing the state of the rebuild process.
-     */
-    public GapScanner(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
-    {
-        super(termBuffer, metaDataBuffer);
-    }
-
-    /**
-     * Is the log complete with ticks gaps?
-     *
-     * @return true is he log is complete with no gaps otherwise false.
-     */
-    public boolean isComplete()
-    {
-        return tailVolatile() >= capacity();
-    }
-
-    /**
-     * Scan for gaps from the tail up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
+     * Scan for gaps from the completedOffset up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
      *
      * @param handler to be notified of gaps.
      * @return the number of gaps founds.
      */
-    public int scan(final GapHandler handler)
+    public static int scan(
+        final UnsafeBuffer termBuffer, final int termId, int completedOffset, final int highWaterMark, final GapHandler handler)
     {
         int count = 0;
-        final int highWaterMark = highWaterMarkVolatile();
-        int offset = tailVolatile();
-        final UnsafeBuffer termBuffer = termBuffer();
 
-        while (offset < highWaterMark)
+        while (completedOffset < highWaterMark)
         {
-            final int frameLength = BitUtil.align(frameLengthVolatile(termBuffer, offset), FRAME_ALIGNMENT);
+            final int frameLength = align(termBuffer.getInt(lengthOffset(completedOffset), LITTLE_ENDIAN), FRAME_ALIGNMENT);
             if (frameLength > 0)
             {
-                offset += frameLength;
+                completedOffset += frameLength;
             }
             else
             {
-                offset = scanGap(termBuffer, handler, offset, highWaterMark);
+                completedOffset = scanGap(termId, termBuffer, handler, completedOffset, highWaterMark);
                 ++count;
             }
         }
@@ -98,17 +76,22 @@ public class GapScanner extends LogBufferPartition
     }
 
     private static int scanGap(
-        final UnsafeBuffer termBuffer, final GapHandler handler, final int offset, final int highWaterMark)
+        final int termId,
+        final UnsafeBuffer termBuffer,
+        final GapHandler handler,
+        final int completedOffset,
+        final int highWaterMark)
     {
         int gapLength = 0;
-        int alignedFrameLength;
+        int frameLength;
         do
         {
             gapLength += FRAME_ALIGNMENT;
-            alignedFrameLength = BitUtil.align(frameLengthVolatile(termBuffer, offset + gapLength), FRAME_ALIGNMENT);
+            final int lengthOffset = lengthOffset(completedOffset + gapLength);
+            frameLength = align(termBuffer.getInt(lengthOffset, LITTLE_ENDIAN), FRAME_ALIGNMENT);
         }
-        while (0 == alignedFrameLength);
+        while (0 == frameLength);
 
-        return handler.onGap(termBuffer, offset, gapLength) ? (offset + gapLength) : highWaterMark;
+        return handler.onGap(termId, termBuffer, completedOffset, gapLength) ? (completedOffset + gapLength) : highWaterMark;
     }
 }

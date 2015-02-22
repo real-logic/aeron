@@ -115,7 +115,6 @@ public class ReceiverTest
     {
         when(POSITION_INDICATOR.position())
             .thenReturn(computePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), TERM_ID));
-        when(mockLossHandler.activeTermId()).thenReturn(TERM_ID);
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
@@ -421,10 +420,6 @@ public class ReceiverTest
         final int alignedDataFrameLength =
             align(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 
-        when(mockLossHandler.completedPosition()).thenReturn((long)(initialTermOffset + alignedDataFrameLength));
-        when(mockLossHandler.hwmCandidate(
-            initialTermOffset + alignedDataFrameLength)).thenReturn((long)(initialTermOffset + alignedDataFrameLength));
-
         receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
@@ -470,8 +465,6 @@ public class ReceiverTest
 
         fillDataFrame(dataHeader, initialTermOffset, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress);
-
-        verify(mockLossHandler).hwmCandidate(initialTermOffset + alignedDataFrameLength);
 
         verify(mockCompletedReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
         verify(mockHighestReceivedPosition).position(initialTermOffset + alignedDataFrameLength);

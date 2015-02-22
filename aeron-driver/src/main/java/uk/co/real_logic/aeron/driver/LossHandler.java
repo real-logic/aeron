@@ -48,7 +48,6 @@ public class LossHandler
     private final GapHandler onGapFunc = this::onGap;
     private final Runnable onTimerExpireFunc = this::onTimerExpire;
 
-
     /**
      * Create a loss handler for a channel.
      *

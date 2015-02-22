@@ -74,7 +74,8 @@ public class LogRebuilder extends LogBufferPartition
      */
     public int insert(final int termOffset, final UnsafeBuffer packet, final int srcOffset, final int length)
     {
-        int tail = tail();
+        final UnsafeBuffer metaDataBuffer = metaDataBuffer();
+        int tail = metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET);
 
         if (termOffset >= tail)
         {
@@ -86,13 +87,13 @@ public class LogRebuilder extends LogBufferPartition
             termBuffer.putBytes(termOffset, packet, srcOffset, length);
             frameLengthOrdered(termBuffer, termOffset, frameLength);
 
-            tail = updateCompetitionStatus(termBuffer, tail);
+            tail = updateCompetitionStatus(metaDataBuffer, termBuffer, tail);
         }
 
         return tail;
     }
 
-    private int updateCompetitionStatus(final UnsafeBuffer termBuffer, int tail)
+    private int updateCompetitionStatus(final UnsafeBuffer metaDataBuffer, final UnsafeBuffer termBuffer, int tail)
     {
         final int capacity = capacity();
         int frameLength;
@@ -102,7 +103,7 @@ public class LogRebuilder extends LogBufferPartition
             tail += alignedFrameLength;
         }
 
-        metaDataBuffer().putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
+        metaDataBuffer.putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
 
         return tail;
     }

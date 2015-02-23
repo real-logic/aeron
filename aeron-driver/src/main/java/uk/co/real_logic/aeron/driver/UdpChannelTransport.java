@@ -152,7 +152,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        logger.log(EventCode.FRAME_OUT, buffer, remoteAddress);
+        logger.logFrameOut(buffer, remoteAddress);
 
         try
         {
@@ -245,11 +245,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
             final int length = receiveByteBuffer.position();
             if (lossGenerator.shouldDropFrame(srcAddress, length))
             {
-                logger.log(EventCode.FRAME_IN_DROPPED, receiveByteBuffer, 0, length, srcAddress);
+                logger.logFrameInDropped(receiveByteBuffer, 0, length, srcAddress);
             }
             else
             {
-                logger.log(EventCode.FRAME_IN, receiveByteBuffer, 0, length, srcAddress);
+                logger.logFrameIn(receiveByteBuffer, 0, length, srcAddress);
 
                 if (isValidFrame(receiveBuffer, length))
                 {

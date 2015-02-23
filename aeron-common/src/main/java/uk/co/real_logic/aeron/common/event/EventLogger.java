@@ -23,8 +23,7 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.common.event.EventCode.EXCEPTION;
-import static uk.co.real_logic.aeron.common.event.EventCode.INVOCATION;
+import static uk.co.real_logic.aeron.common.event.EventCode.*;
 
 /**
  * Event logger interface for applications/libraries
@@ -35,6 +34,18 @@ public class EventLogger
         () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
     private static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledEventCodes();
+
+    private static final boolean IS_FRAME_IN_ENABLED =
+        (ENABLED_EVENT_CODES & FRAME_IN.tagBit()) == FRAME_IN.tagBit();
+
+    private static final boolean IS_FRAME_IN_DROPPED_ENABLED =
+        (ENABLED_EVENT_CODES & FRAME_IN_DROPPED.tagBit()) == FRAME_IN_DROPPED.tagBit();
+
+    private static final boolean IS_FRAME_OUT_ENABLED =
+        (ENABLED_EVENT_CODES & FRAME_OUT.tagBit()) == FRAME_OUT.tagBit();
+
+    private static final boolean IS_FRAME_OUT_INCOMPLETE_SEND_ENABLED =
+        (ENABLED_EVENT_CODES & FRAME_OUT_INCOMPLETE_SEND.tagBit()) == FRAME_OUT_INCOMPLETE_SEND.tagBit();
 
     /**
      *  The index in the stack trace of the method that called logException().
@@ -69,37 +80,6 @@ public class EventLogger
         }
     }
 
-    public void log(
-        final EventCode code,
-        final ByteBuffer buffer,
-        final int offset,
-        final int length,
-        final InetSocketAddress dstAddress)
-    {
-        if (isEnabled(code, ENABLED_EVENT_CODES))
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
-
-            ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
-        }
-    }
-
-    public void log(
-        final EventCode code,
-        final ByteBuffer buffer,
-        final InetSocketAddress dstAddress)
-    {
-        if (isEnabled(code, ENABLED_EVENT_CODES))
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength =
-                EventCodec.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
-
-            ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
-        }
-    }
-
     public void log(final EventCode code, final File file)
     {
         if (isEnabled(code, ENABLED_EVENT_CODES))
@@ -108,9 +88,53 @@ public class EventLogger
         }
     }
 
+    public void logFrameIn(
+        final ByteBuffer buffer,
+        final int offset,
+        final int length,
+        final InetSocketAddress dstAddress)
+    {
+        if (IS_FRAME_IN_ENABLED)
+        {
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
+
+            ringBuffer.write(FRAME_IN.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
+
+    public void logFrameInDropped(
+        final ByteBuffer buffer,
+        final int offset,
+        final int length,
+        final InetSocketAddress dstAddress)
+    {
+        if (IS_FRAME_IN_DROPPED_ENABLED)
+        {
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
+
+            ringBuffer.write(FRAME_IN_DROPPED.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
+
+    public void logFrameOut(
+        final ByteBuffer buffer,
+        final InetSocketAddress dstAddress)
+    {
+        if (IS_FRAME_OUT_ENABLED)
+        {
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final int encodedLength =
+                EventCodec.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
+
+            ringBuffer.write(FRAME_OUT.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
+
     public void logIncompleteSend(final CharSequence type, final int sent, final int expected)
     {
-        if (isEnabled(EventCode.FRAME_OUT_INCOMPLETE_SEND, ENABLED_EVENT_CODES))
+        if (IS_FRAME_OUT_INCOMPLETE_SEND_ENABLED)
         {
             logString(EventCode.FRAME_OUT_INCOMPLETE_SEND, String.format("%s %d/%d", type, sent, expected));
         }

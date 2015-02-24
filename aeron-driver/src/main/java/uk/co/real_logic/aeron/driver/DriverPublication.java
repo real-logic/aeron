@@ -66,8 +66,8 @@ public class DriverPublication implements AutoCloseable
     private final int termWindowLength;
     private final int termCapacity;
 
-    private final AvailabilityHandler sendTransmissionUnitFunc;
-    private final AvailabilityHandler onSendRetransmitFunc;
+    private final AvailabilityHandler sendTransmissionUnitFunc = this::onSendTransmissionUnit;
+    private final AvailabilityHandler onSendRetransmitFunc = this::onSendRetransmit;
 
     private volatile boolean shouldSendSetupFrame = true;
     private volatile boolean isActive = true;
@@ -131,9 +131,6 @@ public class DriverPublication implements AutoCloseable
         this.initialTermId = initialTermId;
         termWindowLength = Configuration.publicationTermWindowLength(termCapacity);
         publisherLimit.position(termWindowLength);
-
-        sendTransmissionUnitFunc = this::onSendTransmissionUnit;
-        onSendRetransmitFunc = this::onSendRetransmit;
 
         lastSentTermId = initialTermId;
         lastSentTermOffset = 0;

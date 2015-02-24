@@ -40,34 +40,32 @@ public class DriverConnection implements AutoCloseable
         ACTIVE, INACTIVE, LINGER
     }
 
-    private final ReceiveChannelEndpoint channelEndpoint;
     private final long correlationId;
+    private final long statusMessageTimeout;
     private final int sessionId;
     private final int streamId;
-    private final RawLog rawLog;
-    private final AtomicLong subscribersPosition = new AtomicLong();
-    private final List<PositionIndicator> subscriberPositions;
+    private final int positionBitsToShift;
+    private final int termLengthMask;
+    private final int initialTermId;
+
+    private final LogRebuilder[] rebuilders;
+    private final ReceiveChannelEndpoint channelEndpoint;
+    private final AtomicLong timeOfLastFrame = new AtomicLong();
     private final NanoClock clock;
     private final PositionReporter completedPosition;
     private final PositionReporter hwmPosition;
     private final SystemCounters systemCounters;
     private final InetSocketAddress sourceAddress;
-    private final EventLogger logger;
-
-    private final AtomicLong timeOfLastFrame = new AtomicLong();
-    private Status status = Status.ACTIVE;
-    private long timeOfLastStatusChange;
-
-    private final LogRebuilder[] rebuilders;
+    private final List<PositionIndicator> subscriberPositions;
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
+    private final AtomicLong subscribersPosition = new AtomicLong();
+    private final RawLog rawLog;
+    private final EventLogger logger;
 
-    private final int positionBitsToShift;
-    private final int termLengthMask;
-    private final int initialTermId;
-    private final long statusMessageTimeout;
-
+    private Status status = Status.ACTIVE;
     private long lastSmPosition;
+    private long timeOfLastStatusChange;
     private long lastSmTimestamp;
     private int lastSmTermId;
     private int currentWindowLength;
@@ -286,7 +284,16 @@ public class DriverConnection implements AutoCloseable
     {
         if (scanForGapsEnabled)
         {
-            return lossHandler.scan(completedPosition.position(), hwmPosition.position());
+            final long completedPosition = this.completedPosition.position();
+            final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
+
+            return lossHandler.scan(
+                rebuilders[partitionIndex(initialTermId, activeTermId)].termBuffer(),
+                completedPosition,
+                hwmPosition.position(),
+                termLengthMask,
+                positionBitsToShift,
+                initialTermId);
         }
 
         return 0;
@@ -333,7 +340,7 @@ public class DriverConnection implements AutoCloseable
             currentRebuilder.insert(termOffset, buffer, 0, length);
 
             bytesCompleted = updateCompletionStatus(
-                initialTermId, positionBitsToShift, completedPosition, activeTermId, activeIndex, currentRebuilder.termBuffer());
+                currentRebuilder.termBuffer(), completedPosition, initialTermId, positionBitsToShift, activeTermId, activeIndex);
         }
         else
         {
@@ -350,12 +357,12 @@ public class DriverConnection implements AutoCloseable
     }
 
     private int updateCompletionStatus(
+        final UnsafeBuffer termBuffer,
+        final long currentCompletedPosition,
         final int initialTermId,
         final int positionBitsToShift,
-        final long currentCompletedPosition,
         final int activeTermId,
-        final int activeIndex,
-        final UnsafeBuffer termBuffer)
+        final int activeIndex)
     {
         final int bytesCompleted;
         final int currentTail = (int)(currentCompletedPosition & termLengthMask);

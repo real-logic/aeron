@@ -584,11 +584,9 @@ public class DriverConductor implements Agent
             sourceInfo);
 
         final LossHandler lossHandler = new LossHandler(
-            rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new),
             timerWheel,
             udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-            initialTermId,
             systemCounters);
 
         final DriverConnection connection = new DriverConnection(

@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapHandler;
 
 /**
@@ -33,51 +32,36 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapH
  */
 public class LossHandler
 {
-    private final UnsafeBuffer[] termBuffers;
-    private final TimerWheel wheel;
-    private final AtomicCounter naksSent;
-    private final Gap scannedGap = new Gap();
-    private final Gap activeGap = new Gap();
     private final FeedbackDelayGenerator delayGenerator;
-    private final int positionBitsToShift;
-    private final int mask;
-    private final int initialTermId;
-
+    private final AtomicCounter naksSent;
     private final NakMessageSender nakMessageSender;
     private final TimerWheel.Timer timer;
+    private final TimerWheel wheel;
+
+    private final Gap scannedGap = new Gap();
+    private final Gap activeGap = new Gap();
     private final GapHandler onGapFunc = this::onGap;
     private final Runnable onTimerExpireFunc = this::onTimerExpire;
 
     /**
      * Create a loss handler for a channel.
      *
-     * @param termBuffers       for the gaps attached to LogBuffers
      * @param wheel             for timer management
      * @param delayGenerator    to use for delay determination
      * @param nakMessageSender  to call when sending a NAK is indicated
-     * @param initialTermId     to use
      * @param systemCounters    to use for tracking purposes
      */
     public LossHandler(
-        final UnsafeBuffer[] termBuffers,
         final TimerWheel wheel,
         final FeedbackDelayGenerator delayGenerator,
         final NakMessageSender nakMessageSender,
-        final int initialTermId,
         final SystemCounters systemCounters)
     {
-        this.termBuffers = termBuffers;
         this.wheel = wheel;
         this.naksSent = systemCounters.naksSent();
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
-
-        final int capacity = termBuffers[0].capacity();
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
-        this.mask = capacity - 1;
-
-        this.initialTermId = initialTermId;
     }
 
     /**
@@ -87,7 +71,13 @@ public class LossHandler
      *
      * @return whether a scan should be done soon or could wait
      */
-    public int scan(final long completedPosition, final long hwmPosition)
+    public int scan(
+        final UnsafeBuffer termBuffer,
+        final long completedPosition,
+        final long hwmPosition,
+        final int termLengthMask,
+        final int positionBitsToShift,
+        final int initialTermId)
     {
         if (completedPosition >= hwmPosition)
         {
@@ -99,15 +89,13 @@ public class LossHandler
             return 0;
         }
 
-        final int partitionCompleted = mask & (int)completedPosition;
-        final int partitionHwm = mask & (int)hwmPosition;
+        final int partitionCompleted = termLengthMask & (int)completedPosition;
+        final int partitionHwm = termLengthMask & (int)hwmPosition;
         final int completedTerms = (int)(completedPosition >>> positionBitsToShift);
         final int hwmTerms = (int)(hwmPosition >>> positionBitsToShift);
 
-        final int activeIndex = partitionIndex(completedTerms);
         final int activeTermId = initialTermId + completedTerms;
 
-        final UnsafeBuffer termBuffer = termBuffers[activeIndex];
         final int activePartitionHwm = (completedTerms == hwmTerms) ? partitionHwm : partitionCompleted;
         final int numGaps = GapScanner.scan(termBuffer, activeTermId, partitionCompleted, activePartitionHwm, onGapFunc);
 

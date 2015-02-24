@@ -78,7 +78,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
         logRebuilder.insert(termOffset, packet, srcOffset, length);
-        logRebuilder.scanForCompletion(termOffset, TERM_BUFFER_CAPACITY);
+        LogRebuilder.scanForCompletion(termBuffer, termOffset, TERM_BUFFER_CAPACITY);
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(termOffset, packet, srcOffset, length);
@@ -100,7 +100,7 @@ public class LogRebuilderTest
         when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
         logRebuilder.insert(termOffset, packet, srcOffset, frameLength);
-        assertThat(logRebuilder.scanForCompletion(tail, TERM_BUFFER_CAPACITY), is(TERM_BUFFER_CAPACITY));
+        assertThat(LogRebuilder.scanForCompletion(termBuffer, tail, TERM_BUFFER_CAPACITY), is(TERM_BUFFER_CAPACITY));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);
@@ -121,7 +121,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
 
         logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
-        assertThat(logRebuilder.scanForCompletion(tail, TERM_BUFFER_CAPACITY), is(alignedFrameLength * 3));
+        assertThat(LogRebuilder.scanForCompletion(termBuffer, tail, TERM_BUFFER_CAPACITY), is(alignedFrameLength * 3));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
@@ -140,7 +140,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
 
         logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
-        assertThat(logRebuilder.scanForCompletion(0, TERM_BUFFER_CAPACITY), is(0));
+        assertThat(LogRebuilder.scanForCompletion(termBuffer, 0, TERM_BUFFER_CAPACITY), is(0));
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
@@ -158,7 +158,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
 
         logRebuilder.insert(termOffset, packet, srcOffset, alignedFrameLength);
-        assertThat(logRebuilder.scanForCompletion(alignedFrameLength, TERM_BUFFER_CAPACITY), is(alignedFrameLength));
+        assertThat(LogRebuilder.scanForCompletion(termBuffer, alignedFrameLength, TERM_BUFFER_CAPACITY), is(alignedFrameLength));
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }

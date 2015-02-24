@@ -316,15 +316,15 @@ public class DriverConnection implements AutoCloseable
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
-        final long oldCompletedPosition = completedPosition.position();
+        final long completedPosition = this.completedPosition.position();
 
-        if (isHeartbeat(oldCompletedPosition, proposedPosition) ||
-            isFlowControlUnderRun(oldCompletedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
+        if (isHeartbeat(completedPosition, proposedPosition) ||
+            isFlowControlUnderRun(completedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
         {
             return bytesCompleted;
         }
 
-        final int activeTermId = computeTermIdFromPosition(oldCompletedPosition, positionBitsToShift, initialTermId);
+        final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
         final int activeIndex = partitionIndex(initialTermId, activeTermId);
 
         if (termId == activeTermId)
@@ -333,7 +333,7 @@ public class DriverConnection implements AutoCloseable
             currentRebuilder.insert(termOffset, buffer, 0, length);
 
             bytesCompleted = updateCompletionStatus(
-                initialTermId, positionBitsToShift, oldCompletedPosition, activeTermId, activeIndex, currentRebuilder);
+                initialTermId, positionBitsToShift, completedPosition, activeTermId, activeIndex, currentRebuilder.termBuffer());
         }
         else
         {
@@ -355,12 +355,12 @@ public class DriverConnection implements AutoCloseable
         final long currentCompletedPosition,
         final int activeTermId,
         final int activeIndex,
-        final LogRebuilder rebuilder)
+        final UnsafeBuffer termBuffer)
     {
         final int bytesCompleted;
         final int currentTail = (int)(currentCompletedPosition & termLengthMask);
-        final int capacity = rebuilder.capacity();
-        final int newTail = rebuilder.scanForCompletion(currentTail, capacity);
+        final int capacity = termBuffer.capacity();
+        final int newTail = LogRebuilder.scanForCompletion(termBuffer, currentTail, capacity);
 
         if (newTail >= capacity)
         {

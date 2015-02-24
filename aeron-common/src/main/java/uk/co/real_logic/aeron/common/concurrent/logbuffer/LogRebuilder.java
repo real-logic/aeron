@@ -73,14 +73,13 @@ public class LogRebuilder extends LogBufferPartition
     /**
      * Scan from the current tail forward to find the new tail indicating the contiguous completion offset.
      *
+     * @param termBuffer  to be scanned.
      * @param currentTail from which to scan
      * @param limit       at which the scan should stop.
      * @return the new tail or the existing tail if log is not advanced.
      */
-    public int scanForCompletion(int currentTail, final int limit)
+    public static int scanForCompletion(final UnsafeBuffer termBuffer, int currentTail, final int limit)
     {
-        final UnsafeBuffer termBuffer = termBuffer();
-
         while (currentTail < limit)
         {
             final int frameLength = termBuffer.getInt(lengthOffset(currentTail), LITTLE_ENDIAN);

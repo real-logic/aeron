@@ -25,11 +25,10 @@ import java.util.function.Consumer;
 /**
  * Agent that iterates over publications for sending them to registered subscribers.
  */
-public class Sender implements Agent
+public class Sender implements Agent, Consumer<SenderCmd>
 {
     private static final DriverPublication[] EMPTY_DRIVER_PUBLICATIONS = new DriverPublication[0];
 
-    private final Consumer<SenderCmd> processSenderCmdsFunc = this::processSenderCmds;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final AtomicCounter totalBytesSent;
 
@@ -46,7 +45,7 @@ public class Sender implements Agent
     {
         int workCount = 0;
 
-        workCount += commandQueue.drain(processSenderCmdsFunc);
+        workCount += commandQueue.drain(this);
         workCount += doSend();
 
         return workCount;
@@ -91,7 +90,7 @@ public class Sender implements Agent
         publication.close();
     }
 
-    private void processSenderCmds(final SenderCmd cmd)
+    public void accept(final SenderCmd cmd)
     {
         cmd.execute(this);
     }

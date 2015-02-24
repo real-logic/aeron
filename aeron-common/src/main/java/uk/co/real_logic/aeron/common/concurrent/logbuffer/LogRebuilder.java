@@ -54,47 +54,44 @@ public class LogRebuilder extends LogBufferPartition
     /**
      * Insert a packet of frames into the log at the appropriate offset as indicated by the term offset header.
      *
-     * The tail and high-water-mark will be updated as appropriate. Data can be consumed up to the the tail. The
-     * high-water-mark can be used to detect loss.
-     *
      * @param termOffset offset in the term at which the packet should be inserted.
      * @param packet     containing a sequence of frames.
      * @param srcOffset  in the packet at which the frames begin.
      * @param length     of the sequence of frames in bytes.
      */
-    public int insert(final int termOffset, final UnsafeBuffer packet, final int srcOffset, final int length)
+    public void insert(final int termOffset, final UnsafeBuffer packet, final int srcOffset, final int length)
     {
-        final UnsafeBuffer metaDataBuffer = metaDataBuffer();
-        int tail = metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET);
+        final int lengthOffset = lengthOffset(srcOffset);
+        final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
+        packet.putInt(lengthOffset, 0, LITTLE_ENDIAN);
 
-        if (termOffset >= tail)
-        {
-            final int lengthOffset = lengthOffset(srcOffset);
-            final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
-            packet.putInt(lengthOffset, 0, LITTLE_ENDIAN);
-
-            final UnsafeBuffer termBuffer = termBuffer();
-            termBuffer.putBytes(termOffset, packet, srcOffset, length);
-            frameLengthOrdered(termBuffer, termOffset, frameLength);
-
-            tail = updateCompetitionStatus(metaDataBuffer, termBuffer, tail);
-        }
-
-        return tail;
+        final UnsafeBuffer termBuffer = termBuffer();
+        termBuffer.putBytes(termOffset, packet, srcOffset, length);
+        frameLengthOrdered(termBuffer, termOffset, frameLength);
     }
 
-    private int updateCompetitionStatus(final UnsafeBuffer metaDataBuffer, final UnsafeBuffer termBuffer, int tail)
+    /**
+     * Scan from the current tail forward to find the new tail indicating the contiguous completion offset.
+     *
+     * @param currentTail from which to scan
+     * @param limit       at which the scan should stop.
+     * @return the new tail or the existing tail if log is not advanced.
+     */
+    public int scanForCompletion(int currentTail, final int limit)
     {
-        final int capacity = capacity();
-        int frameLength;
-        while ((tail < capacity) && (frameLength = termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)) != 0)
+        final UnsafeBuffer termBuffer = termBuffer();
+
+        while (currentTail < limit)
         {
-            final int alignedFrameLength = BitUtil.align(frameLength, FRAME_ALIGNMENT);
-            tail += alignedFrameLength;
+            final int frameLength = termBuffer.getInt(lengthOffset(currentTail), LITTLE_ENDIAN);
+            if (0 == frameLength)
+            {
+                break;
+            }
+
+            currentTail += BitUtil.align(frameLength, FRAME_ALIGNMENT);
         }
 
-        metaDataBuffer.putIntOrdered(TERM_TAIL_COUNTER_OFFSET, tail);
-
-        return tail;
+        return currentTail;
     }
 }

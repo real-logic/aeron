@@ -55,7 +55,7 @@ public class DriverConnection implements AutoCloseable
     private final EventLogger logger;
 
     private final AtomicLong timeOfLastFrame = new AtomicLong();
-    private Status status;
+    private Status status = Status.ACTIVE;
     private long timeOfLastStatusChange;
 
     private final LogRebuilder[] rebuilders;
@@ -63,6 +63,7 @@ public class DriverConnection implements AutoCloseable
     private final StatusMessageSender statusMessageSender;
 
     private final int positionBitsToShift;
+    private final int termLengthMask;
     private final int initialTermId;
     private final long statusMessageTimeout;
 
@@ -106,11 +107,11 @@ public class DriverConnection implements AutoCloseable
         this.systemCounters = systemCounters;
         this.sourceAddress = sourceAddress;
         this.logger = logger;
-        this.status = Status.ACTIVE;
-        this.timeOfLastStatusChange = clock.time();
 
         this.clock = clock;
-        timeOfLastFrame.lazySet(clock.time());
+        final long time = clock.time();
+        this.timeOfLastStatusChange = time;
+        timeOfLastFrame.lazySet(time);
 
         rebuilders = rawLog
             .stream()
@@ -127,12 +128,12 @@ public class DriverConnection implements AutoCloseable
         this.currentWindowLength = Math.min(termCapacity, initialWindowLength);
         this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);
 
+        this.termLengthMask = termCapacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
+
         final long initialPosition = computePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition;
-
-        rebuilders[0].tail(initialTermOffset);
         this.completedPosition.position(initialPosition);
         this.hwmPosition.position(initialPosition);
     }
@@ -329,8 +330,12 @@ public class DriverConnection implements AutoCloseable
         if (termId == activeTermId)
         {
             final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-            final int newTail = currentRebuilder.insert(termOffset, buffer, 0, length);
-            if (newTail >= currentRebuilder.capacity())
+            currentRebuilder.insert(termOffset, buffer, 0, length);
+
+            final int currentTail = (int)(oldCompletedPosition & termLengthMask);
+            final int capacity = currentRebuilder.capacity();
+            final int newTail = currentRebuilder.scanForCompletion(currentTail, capacity);
+            if (newTail >= capacity)
             {
                 rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
             }

@@ -187,7 +187,7 @@ public class DriverConnection implements AutoCloseable
      * Does this connection match a given {@link ReceiveChannelEndpoint} and stream id?
      *
      * @param channelEndpoint to match by identity.
-     * @param streamId to match on value.
+     * @param streamId        to match on value.
      * @return true on a match otherwise false.
      */
     public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
@@ -332,17 +332,8 @@ public class DriverConnection implements AutoCloseable
             final LogRebuilder currentRebuilder = rebuilders[activeIndex];
             currentRebuilder.insert(termOffset, buffer, 0, length);
 
-            final int currentTail = (int)(oldCompletedPosition & termLengthMask);
-            final int capacity = currentRebuilder.capacity();
-            final int newTail = currentRebuilder.scanForCompletion(currentTail, capacity);
-            if (newTail >= capacity)
-            {
-                rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
-            }
-
-            final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
-            bytesCompleted = (int)(newCompletedPosition - oldCompletedPosition);
-            completedPosition.position(newCompletedPosition);
+            bytesCompleted = updateCompletionStatus(
+                initialTermId, positionBitsToShift, oldCompletedPosition, activeTermId, activeIndex, currentRebuilder);
         }
         else
         {
@@ -358,9 +349,31 @@ public class DriverConnection implements AutoCloseable
         return bytesCompleted;
     }
 
-    /*
-     * Inform the loss handler that a potentially new high position in the stream has been reached.
-     */
+    private int updateCompletionStatus(
+        final int initialTermId,
+        final int positionBitsToShift,
+        final long currentCompletedPosition,
+        final int activeTermId,
+        final int activeIndex,
+        final LogRebuilder rebuilder)
+    {
+        final int bytesCompleted;
+        final int currentTail = (int)(currentCompletedPosition & termLengthMask);
+        final int capacity = rebuilder.capacity();
+        final int newTail = rebuilder.scanForCompletion(currentTail, capacity);
+
+        if (newTail >= capacity)
+        {
+            rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
+        }
+
+        final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
+        bytesCompleted = (int)(newCompletedPosition - currentCompletedPosition);
+        completedPosition.position(newCompletedPosition);
+
+        return bytesCompleted;
+    }
+
     private void hwmCandidate(final long proposedPosition)
     {
         timeOfLastFrame.lazySet(clock.time());
@@ -402,6 +415,7 @@ public class DriverConnection implements AutoCloseable
 
         return workCount;
     }
+
     /**
      * Called from the {@link Receiver} thread once added to dispatcher
      */

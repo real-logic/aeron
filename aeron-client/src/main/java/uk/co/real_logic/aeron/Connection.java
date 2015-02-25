@@ -84,14 +84,9 @@ class Connection
         {
             final int nextIndex = nextPartitionIndex(activeIndex);
             logReader = logReaders[nextIndex];
-            if (logReader.status() != CLEAN)
-            {
-                return 0;
-            }
-
-            ++activeTermId;
-            this.activeIndex = nextIndex;
             logReader.seek(0);
+            ++activeTermId;
+            activeIndex = nextIndex;
         }
 
         final int messagesRead = logReader.read(dataHandler, fragmentCountLimit);

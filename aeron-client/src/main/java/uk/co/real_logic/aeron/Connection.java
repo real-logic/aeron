@@ -19,8 +19,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
 import uk.co.real_logic.agrona.status.PositionReporter;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -28,17 +26,17 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 class Connection
 {
+    private final LogBuffers logBuffers;
     private final LogReader[] logReaders;
-    private final int sessionId;
-    private final long correlationId;
     private final DataHandler dataHandler;
     private final PositionReporter subscriberPosition;
-    private final LogBuffers logBuffers;
-    private final AtomicInteger activeTermId;
+    private final long correlationId;
+    private final int sessionId;
     private final int positionBitsToShift;
     private final int initialTermId;
 
     private int activeIndex;
+    private int activeTermId;
 
     public Connection(
         final LogReader[] readers,
@@ -61,7 +59,7 @@ class Connection
 
         final int currentTermId = computeTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
         final int initialTermOffset = computeTermOffsetFromPosition(initialPosition, positionBitsToShift);
-        this.activeTermId = new AtomicInteger(currentTermId);
+        this.activeTermId = currentTermId;
         this.activeIndex = partitionIndex(initialTermId, currentTermId);
 
         logReaders[activeIndex].seek(initialTermOffset);
@@ -81,7 +79,6 @@ class Connection
     public int poll(final int fragmentCountLimit)
     {
         LogReader logReader = logReaders[activeIndex];
-        int activeTermId = this.activeTermId.get();
 
         if (logReader.isComplete())
         {
@@ -92,7 +89,7 @@ class Connection
                 return 0;
             }
 
-            this.activeTermId.lazySet(++activeTermId);
+            ++activeTermId;
             this.activeIndex = nextIndex;
             logReader.seek(0);
         }

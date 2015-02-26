@@ -27,13 +27,13 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 
-public class GapScannerTest
+public class TermGapScannerTest
 {
     private static final int LOG_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int TERM_ID = 1;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
-    private final GapScanner.GapHandler gapHandler = mock(GapScanner.GapHandler.class);
+    private final TermGapScanner.GapHandler gapHandler = mock(TermGapScanner.GapHandler.class);
 
     @Before
     public void setUp()
@@ -44,7 +44,7 @@ public class GapScannerTest
     @Test
     public void shouldReportNoGapsOnEmptyBuffer()
     {
-        assertThat(GapScanner.scan(termBuffer, TERM_ID, 0, 0, gapHandler), is(0));
+        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, 0, 0, gapHandler), is(0));
 
         verifyZeroInteractions(gapHandler);
     }
@@ -54,7 +54,7 @@ public class GapScannerTest
     {
         final int fillLevel = FRAME_ALIGNMENT * 4;
 
-        assertThat(GapScanner.scan(termBuffer, TERM_ID, fillLevel, fillLevel, gapHandler), is(0));
+        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, fillLevel, fillLevel, gapHandler), is(0));
 
         verifyZeroInteractions(gapHandler);
     }
@@ -68,7 +68,7 @@ public class GapScannerTest
         when(termBuffer.getInt(lengthOffset(frameOffset), LITTLE_ENDIAN))
             .thenReturn(FRAME_ALIGNMENT);
 
-        assertThat(GapScanner.scan(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(1));
+        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(1));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, 0, frameOffset);
     }
@@ -86,7 +86,7 @@ public class GapScannerTest
         when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn(FRAME_ALIGNMENT);
 
-        assertThat(GapScanner.scan(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(1));
+        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(1));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, tail, FRAME_ALIGNMENT);
     }
@@ -104,7 +104,7 @@ public class GapScannerTest
         when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn(FRAME_ALIGNMENT);
 
-        assertThat(GapScanner.scan(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(1));
+        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(1));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, tail, FRAME_ALIGNMENT);
     }
@@ -129,7 +129,7 @@ public class GapScannerTest
         when(gapHandler.onGap(TERM_ID, termBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT))
             .thenReturn(true);
 
-        assertThat(GapScanner.scan(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(2));
+        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(2));
 
         final InOrder inOrder = inOrder(gapHandler);
         inOrder.verify(gapHandler).onGap(TERM_ID, termBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT);

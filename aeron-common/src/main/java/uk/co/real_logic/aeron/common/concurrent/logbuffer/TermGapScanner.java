@@ -27,7 +27,7 @@ import static uk.co.real_logic.agrona.BitUtil.align;
  *
  * <b>Note:</b> This class is threadsafe to be used across multiple threads.
  */
-public class GapScanner
+public class TermGapScanner
 {
     /**
      * Handler for notifying of gaps in the log.
@@ -53,7 +53,7 @@ public class GapScanner
      * @param handler to be notified of gaps.
      * @return the number of gaps founds.
      */
-    public static int scan(
+    public static int scanForGaps(
         final UnsafeBuffer termBuffer, final int termId, int completedOffset, final int highWaterMark, final GapHandler handler)
     {
         int count = 0;

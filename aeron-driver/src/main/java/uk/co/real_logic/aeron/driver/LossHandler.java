@@ -19,11 +19,11 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner;
 
 import java.util.concurrent.TimeUnit;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.GapScanner.GapHandler;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.GapHandler;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.scanForGaps;
 
 /**
  * Tracking and handling of gaps in a stream
@@ -97,7 +97,7 @@ public class LossHandler
         final int activeTermId = initialTermId + completedTerms;
 
         final int activePartitionHwm = (completedTerms == hwmTerms) ? partitionHwm : partitionCompleted;
-        final int numGaps = GapScanner.scan(termBuffer, activeTermId, partitionCompleted, activePartitionHwm, onGapFunc);
+        final int numGaps = scanForGaps(termBuffer, activeTermId, partitionCompleted, activePartitionHwm, onGapFunc);
 
         if (numGaps > 0)
         {

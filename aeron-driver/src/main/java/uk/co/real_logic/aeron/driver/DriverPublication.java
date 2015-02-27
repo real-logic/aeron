@@ -306,7 +306,6 @@ public class DriverPublication implements AutoCloseable
 
     private int sendData()
     {
-        final int bytesSent;
         final long lastSentPosition = senderPosition.position();
         final int availableWindow = (int)(senderLimit.get() - lastSentPosition);
         final int scanLimit = Math.min(availableWindow, mtuLength);
@@ -323,7 +322,7 @@ public class DriverPublication implements AutoCloseable
         }
 
         final long position = computePosition(activeTermId, scanner.offset(), positionBitsToShift, initialTermId);
-        bytesSent = (int)(position - lastSentPosition);
+        final int bytesSent = (int)(position - lastSentPosition);
 
         senderPosition.position(position);
 

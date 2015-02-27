@@ -404,7 +404,7 @@ public class DriverConnection implements AutoCloseable
         {
             final long position = subscribersPosition.get();
             final int currentSmTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-            final int currentSmTail = computeTermOffsetFromPosition(position, positionBitsToShift);
+            final int currentSmTail = (int)position & termLengthMask;
 
             if (0 == lastSmTimestamp || currentSmTermId != lastSmTermId ||
                 (position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))

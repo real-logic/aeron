@@ -171,7 +171,7 @@ public class LossHandlerTest
     @Test
     public void shouldHandleMoreThan2Gaps()
     {
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        long completedPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 7);
 
         insertDataFrame(offsetOfMessage(0));
@@ -182,8 +182,8 @@ public class LossHandlerTest
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
         insertDataFrame(offsetOfMessage(1));
-        handler.scan(termBuffer, completedPosition + (3 * ALIGNED_FRAME_LENGTH),
-                     hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        completedPosition += (3 * ALIGNED_FRAME_LENGTH);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(80));
 
         final InOrder inOrder = inOrder(nakMessageSender);

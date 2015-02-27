@@ -62,8 +62,9 @@ public class LossHandlerTest
     private static final StaticDelayGenerator DELAY_GENERATOR_WITH_IMMEDIATE = new StaticDelayGenerator(
         TimeUnit.MILLISECONDS.toNanos(20), true);
 
-    private final LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
-    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
+    private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
+    private final LogRebuilder rebuilder = new LogRebuilder(termBuffer, metaDataBuffer);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -72,20 +73,11 @@ public class LossHandlerTest
     private LossHandler handler;
     private NakMessageSender nakMessageSender;
     private long currentTime = 0;
-    private int activeIndex = partitionIndex(TERM_ID, TERM_ID);
     private SystemCounters mockSystemCounters = mock(SystemCounters.class);
 
     public LossHandlerTest()
     {
         when(mockSystemCounters.naksSent()).thenReturn(mock(AtomicCounter.class));
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-            final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
-            rebuilders[i] = new LogRebuilder(termBuffer, metaDataBuffer);
-            termBuffers[i] = termBuffer;
-        }
 
         wheel = new TimerWheel(
             () -> currentTime,
@@ -105,7 +97,7 @@ public class LossHandlerTest
         final long completedPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION;
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
         verifyZeroInteractions(nakMessageSender);
@@ -120,7 +112,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
@@ -135,7 +127,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(60));
 
         verify(nakMessageSender, atLeast(2)).send(TERM_ID, offsetOfMessage(1), gapLength());
@@ -150,7 +142,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         handler.onNak(TERM_ID, offsetOfMessage(1));
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
@@ -167,10 +159,10 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         insertDataFrame(offsetOfMessage(1));
-        handler.scan(termBuffers[0], hwmPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, hwmPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verifyZeroInteractions(nakMessageSender);
@@ -187,10 +179,10 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(6));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
         insertDataFrame(offsetOfMessage(1));
-        handler.scan(termBuffers[0], completedPosition + (3 * ALIGNED_FRAME_LENGTH),
+        handler.scan(termBuffer, completedPosition + (3 * ALIGNED_FRAME_LENGTH),
                      hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(80));
 
@@ -209,7 +201,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
 
         insertDataFrame(offsetOfMessage(4));
@@ -217,7 +209,7 @@ public class LossHandlerTest
         completedPosition += (ALIGNED_FRAME_LENGTH * 3);
         hwmPosition = (ALIGNED_FRAME_LENGTH * 5);
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(3), gapLength());
@@ -234,7 +226,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -248,7 +240,7 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verifyZeroInteractions(nakMessageSender);
     }
@@ -264,8 +256,8 @@ public class LossHandlerTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        handler.scan(termBuffers[0], completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -457,7 +449,7 @@ public class LossHandlerTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
 
-        rebuilders[activeIndex].insert(offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+        rebuilder.insert(offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)

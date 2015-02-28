@@ -26,16 +26,14 @@ public class LogBufferPartition
 {
     private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer metaDataBuffer;
-    private final int capacity;
 
-    protected LogBufferPartition(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
+    public LogBufferPartition(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
         checkTermBuffer(termBuffer);
         checkMetaDataBuffer(metaDataBuffer);
 
         this.termBuffer = termBuffer;
         this.metaDataBuffer = metaDataBuffer;
-        this.capacity = termBuffer.capacity();
     }
 
     /**
@@ -65,7 +63,7 @@ public class LogBufferPartition
      */
     public int capacity()
     {
-        return capacity;
+        return termBuffer.capacity();
     }
 
     /**
@@ -105,7 +103,7 @@ public class LogBufferPartition
      */
     public int tailVolatile()
     {
-        return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), capacity());
     }
 
     /**
@@ -115,6 +113,6 @@ public class LogBufferPartition
      */
     public int tail()
     {
-        return Math.min(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET), capacity);
+        return Math.min(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET), capacity());
     }
 }

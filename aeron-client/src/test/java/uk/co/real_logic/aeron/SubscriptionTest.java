@@ -36,7 +36,7 @@ public class SubscriptionTest
     private static final int SESSION_ID_1 = 13;
     private static final int SESSION_ID_2 = 14;
     private static final int TERM_ID_1 = 1;
-    private static final int ACTIVE_INDEX = LogBufferDescriptor.partitionIndex(TERM_ID_1, TERM_ID_1);
+    private static final int ACTIVE_INDEX = LogBufferDescriptor.indexByTerm(TERM_ID_1, TERM_ID_1);
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
     private static final long CONNECTION_CORRELATION_ID = 101;
     private static final int READ_BUFFER_CAPACITY = 1024;

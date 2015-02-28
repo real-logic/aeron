@@ -49,7 +49,7 @@ public class SenderProxy
 
     public void retransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             sender.onRetransmit(publication, termId, termOffset, length);
         }
@@ -61,7 +61,7 @@ public class SenderProxy
 
     public void closePublication(final DriverPublication publication)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             sender.onClosePublication(publication);
         }
@@ -73,7 +73,7 @@ public class SenderProxy
 
     public void newPublication(final DriverPublication publication)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             sender.onNewPublication(publication);
         }
@@ -83,7 +83,7 @@ public class SenderProxy
         }
     }
 
-    private boolean isShared()
+    private boolean isSharedThread()
     {
         return threadingMode == SHARED;
     }

@@ -288,7 +288,7 @@ public class DriverConnection implements AutoCloseable
             final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
 
             return lossHandler.scan(
-                rebuilders[partitionIndex(initialTermId, activeTermId)].termBuffer(),
+                rebuilders[indexByTerm(initialTermId, activeTermId)].termBuffer(),
                 completedPosition,
                 hwmPosition.position(),
                 termLengthMask,
@@ -332,7 +332,7 @@ public class DriverConnection implements AutoCloseable
         }
 
         final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
-        final int activeIndex = partitionIndex(initialTermId, activeTermId);
+        final int activeIndex = indexByTerm(initialTermId, activeTermId);
 
         if (termId == activeTermId)
         {

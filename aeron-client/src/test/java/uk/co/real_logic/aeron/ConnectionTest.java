@@ -82,7 +82,7 @@ public class ConnectionTest
             readers[i] = new LogReader(logBuffer, metaDataBuffer);
         }
 
-        activeIndex = LogBufferDescriptor.partitionIndex(INITIAL_TERM_ID, INITIAL_TERM_ID);
+        activeIndex = LogBufferDescriptor.indexByTerm(INITIAL_TERM_ID, INITIAL_TERM_ID);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -144,7 +144,7 @@ public class ConnectionTest
         final long initialPosition =
             computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        activeIndex = LogBufferDescriptor.partitionIndex(INITIAL_TERM_ID, activeTermId);
+        activeIndex = LogBufferDescriptor.indexByTerm(INITIAL_TERM_ID, activeTermId);
         rebuilders[activeIndex].tail(initialTermOffset);
 
         connection = createConnection(initialPosition);

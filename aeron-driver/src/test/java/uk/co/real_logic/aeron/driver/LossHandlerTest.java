@@ -72,7 +72,7 @@ public class LossHandlerTest
     private LossHandler handler;
     private NakMessageSender nakMessageSender;
     private long currentTime = 0;
-    private int activeIndex = partitionIndex(TERM_ID, TERM_ID);
+    private int activeIndex = indexByTerm(TERM_ID, TERM_ID);
     private SystemCounters mockSystemCounters = mock(SystemCounters.class);
 
     public LossHandlerTest()

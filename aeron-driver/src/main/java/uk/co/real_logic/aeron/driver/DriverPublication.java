@@ -38,15 +38,12 @@ public class DriverPublication implements AutoCloseable
     private final RawLog rawLog;
     private final NanoClock clock;
     private final SetupFlyweight setupHeader = new SetupFlyweight();
-
     private final TermScanner scanner;
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final LogBufferPartition[] logPartitions;
-
     private final ByteBuffer[] sendBuffers;
     private final AtomicLong senderLimit;
     private final PositionReporter publisherLimit;
-
     private final PositionReporter senderPosition;
     private final SystemCounters systemCounters;
     private final SendChannelEndpoint channelEndpoint;
@@ -55,7 +52,6 @@ public class DriverPublication implements AutoCloseable
     private final long id;
     private final int sessionId;
     private final int streamId;
-
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
@@ -317,16 +313,16 @@ public class DriverPublication implements AutoCloseable
     {
         final int availableWindow = (int)(senderLimit.get() - senderPosition);
         final int scanLimit = Math.min(availableWindow, mtuLength);
-        final int partitionOffset = (int)senderPosition & termLengthMask;
+        final int termOffset = (int)senderPosition & termLengthMask;
         final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-        if (scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), partitionOffset, scanLimit))
+        if (scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit))
         {
             final int available = scanner.available();
 
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-            sendBuffer.limit(partitionOffset + available);
-            sendBuffer.position(partitionOffset);
+            sendBuffer.limit(termOffset + available);
+            sendBuffer.position(termOffset);
 
             final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
             if (available != bytesSent)

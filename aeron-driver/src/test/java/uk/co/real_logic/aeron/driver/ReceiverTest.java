@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;

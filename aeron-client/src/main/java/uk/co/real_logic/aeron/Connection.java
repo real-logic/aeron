@@ -60,7 +60,7 @@ class Connection
         final int currentTermId = computeTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
         final int initialTermOffset = computeTermOffsetFromPosition(initialPosition, positionBitsToShift);
         this.activeTermId = currentTermId;
-        this.activeIndex = partitionIndex(initialTermId, currentTermId);
+        this.activeIndex = indexByTerm(initialTermId, currentTermId);
 
         logReaders[activeIndex].seek(initialTermOffset);
         subscriberPosition.position(initialPosition);

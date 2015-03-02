@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -64,7 +65,7 @@ public class ReceiverTest
     private static final int TERM_ID = 3;
     private static final int SESSION_ID = 1;
     private static final int INITIAL_TERM_OFFSET = 0;
-    private static final int ACTIVE_INDEX = partitionIndex(TERM_ID, TERM_ID);
+    private static final int ACTIVE_INDEX = indexByTerm(TERM_ID, TERM_ID);
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final int INITIAL_WINDOW_LENGTH = Configuration.INITIAL_WINDOW_LENGTH_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;

@@ -13,25 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.common;
 
 import uk.co.real_logic.agrona.status.PositionReporter;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
 * {@link PositionReporter} that exists in the Java heap.
 */
-class HeapPositionReporter implements PositionReporter
+public class HeapPositionReporter implements PositionReporter
 {
-    private long position;
+    private final AtomicLong position = new AtomicLong();
 
     public void position(final long value)
     {
-        position = value;
+        position.lazySet(value);
     }
 
     public long position()
     {
-        return position;
+        return position.get();
     }
 
     public void close()

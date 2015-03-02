@@ -261,6 +261,33 @@ public class LossHandlerTest
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
+
+    /*
+     * TODO:
+     * - cancel active timer when completed advanced to hwm
+     * - NAK when no gap in buffer, but completed < HWM
+     * - NAK when buffer is complete, but HWM > buffer
+     * - NAK when buffer is not complete (only missing padding frame), but HWM > buffer
+     */
+
+    @Test
+    public void shouldHandleNonZeroInitialTermOffset()
+    {
+        handler = getLossHandlerWithImmediate();
+
+        long completedPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 5);
+
+        rebuilder.tail(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(4));
+
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(3), gapLength());
+        verifyNoMoreInteractions(nakMessageSender);
+    }
+
 /*
     @Test
     public void shouldRotateToNewTermIdCorrectlyOnNoGapsNoPadding()

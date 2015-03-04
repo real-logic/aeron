@@ -30,7 +30,6 @@ import static uk.co.real_logic.agrona.BitUtil.align;
 public final class TermScanner
 {
     private final int alignedHeaderLength;
-    private int available;
     private int padding;
 
     /**
@@ -84,26 +83,15 @@ public final class TermScanner
         }
         while ((available + padding) < maxLength);
 
-        this.available = available;
         this.padding = padding;
 
         return available;
     }
 
     /**
-     * The count of bytes available containing completed messages.
+     * The count of bytes that should be added for padding to the position on top of what is available
      *
-     * @return count of bytes available containing completed messages.
-     */
-    public int available()
-    {
-        return available;
-    }
-
-    /**
-     * The count of bytes that should be added for padding to the position on top of what is {@link #available()}.
-     *
-     * @return the count of bytes that should be added for padding to the position on top of what is {@link #available()}.
+     * @return the count of bytes that should be added for padding to the position on top of what is available.
      */
     public int padding()
     {

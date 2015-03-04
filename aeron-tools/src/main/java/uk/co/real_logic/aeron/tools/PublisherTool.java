@@ -4,14 +4,23 @@ import org.apache.commons.cli.ParseException;
 
 public class PublisherTool
 {
-    public static void main(String[] args) {
+    PublisherTool(String[] args)
+    {
         PubSubOptions opts = new PubSubOptions();
         opts.printHelp("PublisherTool");
-        try {
+        try
+        {
             opts.parseArgs(args);
-        } catch (ParseException ex) {
+        }
+        catch (ParseException ex)
+        {
             System.out.println(ex.getMessage());
             System.exit(-1);
         }
+    }
+
+    public static void main(String[] args)
+    {
+        final PublisherTool app = new PublisherTool(args);
     }
 }

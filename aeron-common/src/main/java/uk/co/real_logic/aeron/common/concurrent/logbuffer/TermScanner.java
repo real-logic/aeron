@@ -49,9 +49,9 @@ public final class TermScanner
      * @param termBuffer to be scanned for new messages
      * @param offset     at which the scan should begin.
      * @param maxLength  in bytes of how much should be scanned.
-     * @return true if there is availability otherwise false.
+     * @return number of bytes available
      */
-    public boolean scanForAvailability(final UnsafeBuffer termBuffer, final int offset, int maxLength)
+    public int scanForAvailability(final UnsafeBuffer termBuffer, final int offset, int maxLength)
     {
         maxLength = Math.min(maxLength, termBuffer.capacity() - offset);
         int available = 0;
@@ -87,7 +87,7 @@ public final class TermScanner
         this.available = available;
         this.padding = padding;
 
-        return available > 0;
+        return available;
     }
 
     /**

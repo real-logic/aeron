@@ -217,10 +217,9 @@ public class DriverPublication implements AutoCloseable
             {
                 termOffset += totalBytesSent;
 
-                int available = 0;
-                if (scanner.scanForAvailability(termBuffer, termOffset, mtuLength))
+                final int available = scanner.scanForAvailability(termBuffer, termOffset, mtuLength);
+                if (available > 0)
                 {
-                    available = scanner.available();
                     sendBuffer.limit(termOffset + available);
                     sendBuffer.position(termOffset);
 
@@ -316,10 +315,9 @@ public class DriverPublication implements AutoCloseable
         final int termOffset = (int)senderPosition & termLengthMask;
         final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-        if (scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit))
+        final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+        if (available > 0)
         {
-            final int available = scanner.available();
-
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
             sendBuffer.limit(termOffset + available);
             sendBuffer.position(termOffset);
@@ -336,7 +334,7 @@ public class DriverPublication implements AutoCloseable
             this.senderPosition.position(senderPosition + available + scanner.padding());
         }
 
-        return scanner.available();
+        return available;
     }
 
     private void sendSetupFrame(final long now, final int activeTermId, final long position)

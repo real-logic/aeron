@@ -153,7 +153,7 @@ public class LossHandlerTest
     @Test
     public void shouldStopNakOnReceivingData()
     {
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        long completedPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
@@ -162,7 +162,8 @@ public class LossHandlerTest
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         insertDataFrame(offsetOfMessage(1));
-        handler.scan(termBuffer, hwmPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        completedPosition += (ALIGNED_FRAME_LENGTH * 3);
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verifyZeroInteractions(nakMessageSender);
@@ -262,13 +263,44 @@ public class LossHandlerTest
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
-    /*
-     * TODO:
-     * - cancel active timer when completed advanced to hwm
-     * - NAK when no gap in buffer, but completed < HWM
-     * - NAK when buffer is complete, but HWM > buffer
-     * - NAK when buffer is not complete (only missing padding frame), but HWM > buffer
-     */
+    @Test
+    public void shouldHandleHwmGreaterThanCompletedBuffer()
+    {
+        handler = getLossHandlerWithImmediate();
+
+        long completedPosition = ACTIVE_TERM_POSITION;
+        long hwmPosition = ACTIVE_TERM_POSITION + TERM_BUFFER_LENGTH + ALIGNED_FRAME_LENGTH;
+
+        insertDataFrame(offsetOfMessage(0));
+        completedPosition += ALIGNED_FRAME_LENGTH;
+
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+
+        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH);
+    }
+
+    @Test
+    public void shouldHandleHwmGreaterThanCompletedBufferWithFullTermBuffer()
+    {
+        handler = getLossHandlerWithImmediate();
+
+        long completedPosition = ACTIVE_TERM_POSITION;
+        long hwmPosition = ACTIVE_TERM_POSITION + TERM_BUFFER_LENGTH + ALIGNED_FRAME_LENGTH;
+        int offset = 0, i = 0;
+
+        // fill term buffer completely
+        while (TERM_BUFFER_LENGTH > offset)
+        {
+            insertDataFrame(offsetOfMessage(i));
+            i++;
+            offset += ALIGNED_FRAME_LENGTH;
+            completedPosition += ALIGNED_FRAME_LENGTH;
+        }
+
+        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+
+        verify(nakMessageSender).send(TERM_ID + 1, offsetOfMessage(0), gapLength());
+    }
 
     @Test
     public void shouldHandleNonZeroInitialTermOffset()
@@ -288,171 +320,6 @@ public class LossHandlerTest
         verifyNoMoreInteractions(nakMessageSender);
     }
 
-/*
-    @Test
-    public void shouldRotateToNewTermIdCorrectlyOnNoGapsNoPadding()
-    {
-        // use immediate NAKs for simplicity
-        handler = getLossHandlerWithImmediate();
-
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        // fill term buffer (making sure to be exact, i.e. no padding)
-        int offset = 0, i = 0;
-        while (TERM_BUFFER_LENGTH > offset)
-        {
-            insertDataFrame(offsetOfMessage(i++));
-            offset += ALIGNED_FRAME_LENGTH;
-        }
-
-        assertThat(offset, is(TERM_BUFFER_LENGTH));  // sanity check the fill to make sure it doesn't need padding
-        assertTrue(rebuilders[activeIndex].isComplete());
-        assertThat(handler.scan(), is(1));
-
-        activeIndex = nextPartitionIndex(activeIndex);
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        insertDataFrame(offsetOfMessage(0));
-
-        assertThat(handler.scan(), is(0));
-        verifyZeroInteractions(nakMessageSender);
-    }
-
-    @Test
-    public void shouldRotateToNewTermIdCorrectlyOnNoGaps()
-    {
-        // use immediate NAKs for simplicity
-        handler = getLossHandlerWithImmediate();
-
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        // fill term buffer except the padding frame
-        int offset = 0, i = 0;
-        while ((TERM_BUFFER_LENGTH - 1024) > offset)
-        {
-            insertDataFrame(offsetOfMessage(i++));
-            offset += ALIGNED_FRAME_LENGTH;
-        }
-        insertPaddingFrame(offsetOfMessage(i));  // and ticks pad to end of buffer
-
-        assertTrue(rebuilders[activeIndex].isComplete());
-        assertThat(handler.scan(), is(1));
-
-        activeIndex = nextPartitionIndex(activeIndex);
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        insertDataFrame(offsetOfMessage(0));
-
-        assertThat(handler.scan(), is(0));
-        verifyZeroInteractions(nakMessageSender);
-    }
-
-    @Test
-    public void shouldRotateToNewTermIdCorrectlyOnReceivingDataAfterGap()
-    {
-        // use immediate NAKs for simplicity
-        handler = getLossHandlerWithImmediate();
-
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        insertDataFrame(offsetOfMessage(0));
-        // fill term buffer except the padding frame
-        int offset = offsetOfMessage(2), i = 2;
-        while (TERM_BUFFER_LENGTH > offset)
-        {
-            insertDataFrame(offsetOfMessage(i++));
-            offset += ALIGNED_FRAME_LENGTH;
-        }
-
-        assertThat(offset, is(TERM_BUFFER_LENGTH));  // sanity check the fill to make sure it doesn't need padding
-        assertFalse(rebuilders[activeIndex].isComplete());
-        assertThat(handler.scan(), is(0));
-
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
-
-        insertDataFrame(offsetOfMessage(1));
-
-        assertTrue(rebuilders[activeIndex].isComplete());
-        assertThat(handler.scan(), is(1));
-
-        activeIndex = nextPartitionIndex(activeIndex);
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        insertDataFrame(offsetOfMessage(0));
-
-        assertThat(handler.scan(), is(0));
-        verifyNoMoreInteractions(nakMessageSender);
-    }
-
-    @Test
-    public void shouldDetectGapOnPotentialHighPositionChange()
-    {
-        handler = getLossHandlerWithImmediate();
-
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        insertDataFrame(offsetOfMessage(0));
-
-        final long highPosition = computePosition(TERM_ID, offsetOfMessage(2), POSITION_BITS_TO_SHIFT, TERM_ID);
-
-        handler.hwmCandidate(highPosition);
-        assertThat(handler.scan(), is(0));
-
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
-    }
-
-    @Test
-    public void shouldDetectGapOnPotentialHighPositionChangeFromRollover()
-    {
-        handler = getLossHandlerWithImmediate();
-
-        assertThat(handler.activeIndex(), is(activeIndex));
-
-        // fill term buffer except the padding frame
-        int offset = 0, i = 0;
-        while ((TERM_BUFFER_LENGTH - 1024) > offset)
-        {
-            insertDataFrame(offsetOfMessage(i++));
-            offset += ALIGNED_FRAME_LENGTH;
-        }
-
-        assertFalse(rebuilders[activeIndex].isComplete());
-        assertThat(handler.scan(), is(0));
-
-        activeIndex = nextPartitionIndex(activeIndex);
-        assertThat(handler.activeIndex(), is(previousPartitionIndex(activeIndex)));
-
-        insertDataFrame(offsetOfMessage(0));
-
-        assertThat(handler.scan(), is(0));
-        verifyZeroInteractions(nakMessageSender);
-
-        final long highPosition = computePosition(TERM_ID + 1, offsetOfMessage(0), POSITION_BITS_TO_SHIFT, TERM_ID);
-
-        handler.hwmCandidate(highPosition);
-        assertThat(handler.scan(), is(0));
-
-        verify(nakMessageSender).send(TERM_ID, offset, TERM_BUFFER_LENGTH - offset);
-    }
-
-    @Test
-    public void shouldHandleNonZeroInitialTermOffset()
-    {
-        rebuilders[activeIndex].tail(offsetOfMessage(2));
-        handler = getLossHandlerWithImmediateAndTermOffset(offsetOfMessage(2));
-
-        insertDataFrame(offsetOfMessage(2));
-        insertDataFrame(offsetOfMessage(4));
-
-        handler.scan();
-
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(3), gapLength());
-        verifyNoMoreInteractions(nakMessageSender);
-
-        assertThat(handler.completedPosition(), is((long)offsetOfMessage(3)));
-        assertThat(handler.hwmCandidate((long)offsetOfMessage(5)), is((long)offsetOfMessage(5)));
-    }
-*/
     private LossHandler getLossHandlerWithImmediate()
     {
         return new LossHandler(wheel, DELAY_GENERATOR_WITH_IMMEDIATE, nakMessageSender, mockSystemCounters);

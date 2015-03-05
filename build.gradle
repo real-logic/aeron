@@ -196,6 +196,14 @@ project(':aeron-system-tests') {
     }
 }
 
+project(':aeron-tools') {
+    dependencies {
+        compile project(':aeron-client'), project(':aeron-driver')
+        compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
+        testCompile project(path: ':aeron-common', configuration: 'tests')
+    }
+}
+
 uploadArchives {
     repositories {
         mavenDeployer {

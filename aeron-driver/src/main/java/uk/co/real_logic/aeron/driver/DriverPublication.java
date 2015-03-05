@@ -339,7 +339,8 @@ public class DriverPublication implements AutoCloseable
 
     private void sendSetupFrame(final long now, final int activeTermId, final long position)
     {
-        setupHeader.termId(activeTermId);
+        setupHeader.initialTermId(initialTermId);
+        setupHeader.activeTermId(activeTermId);
         setupHeader.termOffset((int)position & termLengthMask);
 
         setupFrameBuffer.limit(setupHeader.frameLength());
@@ -400,7 +401,8 @@ public class DriverPublication implements AutoCloseable
     {
         setupHeader.sessionId(sessionId)
                    .streamId(streamId)
-                   .termId(activeTermId)
+                   .initialTermId(initialTermId)
+                   .activeTermId(activeTermId)
                    .termOffset(0)
                    .termLength(termLength)
                    .mtuLength(mtuLength)

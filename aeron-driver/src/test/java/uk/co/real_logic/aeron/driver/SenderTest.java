@@ -161,7 +161,8 @@ public class SenderTest
 
         setupHeader.wrap(receivedFrames.remove(), 0);
         assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
-        assertThat(setupHeader.termId(), is(INITIAL_TERM_ID));
+        assertThat(setupHeader.initialTermId(), is(INITIAL_TERM_ID));
+        assertThat(setupHeader.activeTermId(), is(INITIAL_TERM_ID));
         assertThat(setupHeader.streamId(), is(STREAM_ID));
         assertThat(setupHeader.sessionId(), is(SESSION_ID));
         assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));

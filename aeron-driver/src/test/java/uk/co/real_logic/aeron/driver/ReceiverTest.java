@@ -513,7 +513,8 @@ public class ReceiverTest
         header.wrap(setupBuffer, 0);
         header.streamId(STREAM_ID)
               .sessionId(SESSION_ID)
-              .termId(TERM_ID)
+              .initialTermId(TERM_ID)
+              .activeTermId(TERM_ID)
               .termOffset(termOffset)
               .frameLength(SetupFlyweight.HEADER_LENGTH)
               .headerType(HeaderFlyweight.HDR_TYPE_SETUP)

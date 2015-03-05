@@ -1,9 +1,8 @@
-package uk.co.real_logic.aeron.samples;
+package uk.co.real_logic.aeron.tools;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.zip.CRC32;
 
 public class MessageStream
@@ -224,20 +223,20 @@ public class MessageStream
 		}
 		
 		/* Use a random message length. */
-		int lenleft = ThreadLocalRandom.current().nextInt(maxSize - minSize + 1) + minSize - message_offset - pos;
+		int lenleft = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize - message_offset - pos;
 
 		//System.out.println("lenleft is " + lenleft);
 		
 		/* Write random bytes until the end of the message. */
 		while (lenleft >= 4)
 		{
-			buffer.putInt(pos, ThreadLocalRandom.current().nextInt());
+			buffer.putInt(pos, TLRandom.current().nextInt());
 			pos += 4;
 			lenleft -= 4;
 		}
 		while (lenleft > 0)
 		{
-			int lastnum = ThreadLocalRandom.current().nextInt();
+			int lastnum = TLRandom.current().nextInt();
 			buffer.putByte(pos, (byte)(lastnum >> (lenleft << 3)));
 			lenleft--;
 			pos++;

@@ -19,6 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -32,6 +33,7 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
@@ -62,7 +64,7 @@ public class ConnectionTest
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHandler mockDataHandler = mock(DataHandler.class);
-    private final PositionReporter mockPositionReporter = mock(PositionReporter.class);
+    private final PositionReporter positionReporter = spy(new HeapPositionReporter());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
 
     private LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
@@ -82,7 +84,7 @@ public class ConnectionTest
             readers[i] = new LogReader(logBuffer, metaDataBuffer);
         }
 
-        activeIndex = LogBufferDescriptor.partitionIndex(INITIAL_TERM_ID, INITIAL_TERM_ID);
+        activeIndex = LogBufferDescriptor.indexByTerm(INITIAL_TERM_ID, INITIAL_TERM_ID);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -102,9 +104,9 @@ public class ConnectionTest
             eq(DATA.length),
             any(Header.class));
 
-        final InOrder inOrder = Mockito.inOrder(mockPositionReporter);
-        inOrder.verify(mockPositionReporter).position(ZERO_INITIAL_POSITION);
-        inOrder.verify(mockPositionReporter).position(ZERO_INITIAL_POSITION + ALIGNED_FRAME_LENGTH);
+        final InOrder inOrder = Mockito.inOrder(positionReporter);
+        inOrder.verify(positionReporter).position(ZERO_INITIAL_POSITION);
+        inOrder.verify(positionReporter).position(ZERO_INITIAL_POSITION + ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -130,9 +132,9 @@ public class ConnectionTest
             eq(DATA.length),
             any(Header.class));
 
-        final InOrder inOrder = Mockito.inOrder(mockPositionReporter);
-        inOrder.verify(mockPositionReporter).position(initialPosition);
-        inOrder.verify(mockPositionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
+        final InOrder inOrder = Mockito.inOrder(positionReporter);
+        inOrder.verify(positionReporter).position(initialPosition);
+        inOrder.verify(positionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -144,7 +146,7 @@ public class ConnectionTest
         final long initialPosition =
             computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        activeIndex = LogBufferDescriptor.partitionIndex(INITIAL_TERM_ID, activeTermId);
+        activeIndex = LogBufferDescriptor.indexByTerm(INITIAL_TERM_ID, activeTermId);
         rebuilders[activeIndex].tail(initialTermOffset);
 
         connection = createConnection(initialPosition);
@@ -160,16 +162,16 @@ public class ConnectionTest
             eq(DATA.length),
             any(Header.class));
 
-        final InOrder inOrder = Mockito.inOrder(mockPositionReporter);
-        inOrder.verify(mockPositionReporter).position(initialPosition);
-        inOrder.verify(mockPositionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
+        final InOrder inOrder = Mockito.inOrder(positionReporter);
+        inOrder.verify(positionReporter).position(initialPosition);
+        inOrder.verify(positionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
     }
 
     public Connection createConnection(final long initialPosition)
     {
         return new Connection(
             readers, SESSION_ID, INITIAL_TERM_ID, initialPosition,
-            CORRELATION_ID, mockDataHandler, mockPositionReporter, logBuffers);
+            CORRELATION_ID, mockDataHandler, positionReporter, logBuffers);
     }
 
     private void insertDataFrame(final int offset)

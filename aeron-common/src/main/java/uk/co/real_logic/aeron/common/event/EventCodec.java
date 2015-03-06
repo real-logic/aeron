@@ -467,12 +467,13 @@ public class EventCodec
     private static String dissect(final SetupFlyweight header)
     {
         return String.format(
-            "SETUP %x len %d %x:%x:%x @%x %d MTU %d",
+            "SETUP %x len %d %x:%x:%x %x @%x %d MTU %d",
             header.flags(),
             header.frameLength(),
             header.sessionId(),
             header.streamId(),
-            header.termId(),
+            header.activeTermId(),
+            header.initialTermId(),
             header.termOffset(),
             header.termLength(),
             header.mtuLength());

@@ -137,7 +137,7 @@ public class Publication implements AutoCloseable
         boolean succeeded = false;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = partitionIndex(initialTermId, activeTermId);
+        final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
@@ -197,7 +197,7 @@ public class Publication implements AutoCloseable
         boolean succeeded = false;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = partitionIndex(initialTermId, activeTermId);
+        final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 

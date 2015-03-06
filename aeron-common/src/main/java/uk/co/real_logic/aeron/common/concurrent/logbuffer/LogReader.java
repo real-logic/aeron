@@ -81,9 +81,9 @@ public class LogReader extends LogBufferPartition
     {
         int framesCounter = 0;
         int offset = this.offset;
-        final int capacity = capacity();
-        final UnsafeBuffer termBuffer = termBuffer();
         final Header header = this.header;
+        final UnsafeBuffer termBuffer = termBuffer();
+        final int capacity = termBuffer.capacity();
 
         while (offset < capacity && framesCounter < framesCountLimit)
         {

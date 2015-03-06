@@ -208,6 +208,30 @@ public class MessageStream
 			throw new Exception("Buffer capacity must be at least " + maxSize + " bytes.");
 		}
 
+		int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
+		getNext(buffer, size);
+		
+		return size;
+	}
+	
+	/** Generates a message of the desired size (size must be at least 12 bytes for
+	 * verifiable message headers if verifiable messages are on).
+	 * @throws Exception */
+	public void getNext(UnsafeBuffer buffer, int size) throws Exception
+	{
+		if (verifiable)
+		{
+			if (size < HEADER_LENGTH)
+			{
+				throw new Exception("Size must be at least " + HEADER_LENGTH + " when verifiable messages are used.");
+			}
+		}
+		
+		if (buffer.capacity() < size)
+		{
+			throw new Exception("Buffer capacity must be at least " + size + " bytes.");
+		}
+
 		int pos;
 
 		/* If checksums are on, begin with a message header. */
@@ -222,11 +246,8 @@ public class MessageStream
 			pos = 0;
 		}
 		
-		/* Use a random message length. */
-		int lenleft = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize - message_offset - pos;
+		int lenleft = size - pos;
 
-		//System.out.println("lenleft is " + lenleft);
-		
 		/* Write random bytes until the end of the message. */
 		while (lenleft >= 4)
 		{
@@ -258,9 +279,6 @@ public class MessageStream
 			buffer.putInt(MESSAGE_CHECKSUM_OFFSET, (int)(msgCksum.getValue()));
 		}
 
-		//System.out.println("After checksums, returning pos " + pos + ":");
-		//printHex(buffer, pos);
 		messageCount++;
-		return pos;
 	}
 }

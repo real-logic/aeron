@@ -30,7 +30,7 @@ public class ChannelDescriptor
         return streamIds;
     }
 
-    public void setStreamIds(int[] ids)
+    public void setStreamIdentifiers(int[] ids)
     {
         streamIds = ids;
     }

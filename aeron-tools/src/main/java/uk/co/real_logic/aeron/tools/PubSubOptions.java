@@ -120,6 +120,7 @@ public class PubSubOptions
         opt = command.getOptionValue("channels", "udp://localhost:31111#1");
         parseChannels(opt);
 
+        opt = command.getOptionValue("size", "32");
     }
 
     public List<ChannelDescriptor> getChannels()
@@ -336,7 +337,7 @@ public class PubSubOptions
 
     /**
      * Function to add ChannelDescriptor objects to the channels list.
-     * @param baseAddress Channel address without port
+     * @param baseAddress Channel address without :port
      * @param portLow
      * @param portHigh
      * @param streamIdLow
@@ -357,7 +358,7 @@ public class PubSubOptions
                 // set all the Ids in the array
                 idArray[i] = currentStream++;
             }
-            cd.setStreamIds(idArray);
+            cd.setStreamIdentifiers(idArray);
             channels.add(cd);
             currentPort++;
         }

@@ -29,7 +29,7 @@ public class Receiver implements Agent
 {
     private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
-    private final Consumer<ReceiverCmd> onReceiverCmdFunc;
+    private final Consumer<ReceiverCmd> onReceiverCmdFunc = this::onReceiverCmd;
     private final AtomicCounter totalBytesReceived;
 
     public Receiver(final MediaDriver.Context ctx)
@@ -37,8 +37,6 @@ public class Receiver implements Agent
         this.transportPoller = ctx.receiverNioSelector();
         this.commandQueue = ctx.receiverCommandQueue();
         this.totalBytesReceived = ctx.systemCounters().bytesReceived();
-
-        onReceiverCmdFunc = this::onReceiverCmd;
     }
 
     public String roleName()

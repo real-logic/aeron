@@ -110,13 +110,13 @@ public class StreamingPublisher
     }
 
     public static void printRate(
-        final double messagesPerSec, final double bytesPerSec, final long totalMessages, final long totalBytes)
+        final double messagesPerSec, final double bytesPerSec, final long totalFragments, final long totalBytes)
     {
         if (printingActive)
         {
             System.out.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
-                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024));
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d message fragments %d MB\n",
+                messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
         }
     }
 }

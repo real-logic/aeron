@@ -56,8 +56,8 @@ public class SamplesUtil
     /**
      * Return a reusable, parameterised event loop that calls a default idler when no messages are received
      *
-     * @param limit        passed to {@link Subscription#poll(int)}
-     * @param running      indication for loop
+     * @param limit   passed to {@link Subscription#poll(int)}
+     * @param running indication for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
@@ -153,19 +153,19 @@ public class SamplesUtil
      *
      * @param messagesPerSec being reported
      * @param bytesPerSec    being reported
-     * @param totalMessages  being reported
+     * @param totalFragments being reported
      * @param totalBytes     being reported
      */
     public static void printRate(
         final double messagesPerSec,
         final double bytesPerSec,
-        final long totalMessages,
+        final long totalFragments,
         final long totalBytes)
     {
         System.out.println(
             String.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
-                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d message fragments %d MB",
+                messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024)));
     }
 
     /**

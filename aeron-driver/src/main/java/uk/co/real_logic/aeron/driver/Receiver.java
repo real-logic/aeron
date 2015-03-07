@@ -95,11 +95,6 @@ public class Receiver implements Agent
         transportPoller.selectNowWithoutProcessing();
     }
 
-    public void onCloseSubscription(final DriverSubscription subscription)
-    {
-        subscription.close();
-    }
-
     private void onReceiverCmd(final ReceiverCmd cmd)
     {
         cmd.execute(this);

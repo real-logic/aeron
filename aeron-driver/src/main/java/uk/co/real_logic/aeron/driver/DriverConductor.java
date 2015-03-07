@@ -114,8 +114,8 @@ public class DriverConductor implements Agent
     private final EventLogger logger;
 
     private final SystemCounters systemCounters;
-    private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc;
-    private final MessageHandler onClientCommandFunc;
+    private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
+    private final MessageHandler onClientCommandFunc  = this::onClientCommand;
     private final MessageHandler onEventFunc;
     private final NanoClock clock;
 
@@ -151,15 +151,9 @@ public class DriverConductor implements Agent
 
         systemCounters = ctx.systemCounters();
 
-        onDriverConductorCmdFunc = this::onDriverConductorCmd;
-        onClientCommandFunc = this::onClientCommand;
-
         final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc =
-            (typeId, buffer, offset, length) ->
-            {
-                eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset, length));
-            };
+            (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset, length));
 
         final AtomicBuffer buffer = toDriverCommands.buffer();
         publicationMessage.wrap(buffer, 0);
@@ -507,7 +501,7 @@ public class DriverConductor implements Agent
             throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription: " + registrationId);
         }
 
-        receiverProxy.closeSubscription(subscription);
+        subscription.close();
         final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
 
         final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
@@ -692,7 +686,7 @@ public class DriverConductor implements Agent
                     subscription.registrationId());
 
                 subscriptions.remove(i);
-                receiverProxy.closeSubscription(subscription);
+                subscription.close();
 
                 if (0 == channelEndpoint.decRefToStream(subscription.streamId()))
                 {

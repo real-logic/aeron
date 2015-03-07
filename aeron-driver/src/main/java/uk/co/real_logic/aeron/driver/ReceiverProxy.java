@@ -129,18 +129,6 @@ public class ReceiverProxy
         }
     }
 
-    public void closeSubscription(final DriverSubscription subscription)
-    {
-        if (isSharedThread())
-        {
-            receiver.onCloseSubscription(subscription);
-        }
-        else
-        {
-            offer(new CloseSubscriptionCmd(subscription));
-        }
-    }
-
     private boolean isSharedThread()
     {
         return threadingMode == SHARED;

@@ -62,7 +62,6 @@ public class SenderTest
     private static final MutableDirectBuffer HEADER =
         DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
     private static final int ALIGNED_FRAME_LENGTH = align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
-    private static final long PUBLICATION_ID = 7L;
 
     private final EventLogger mockLogger = mock(EventLogger.class);
 
@@ -126,7 +125,6 @@ public class SenderTest
             .toArray(LogAppender[]::new);
 
         publication = new DriverPublication(
-            PUBLICATION_ID,
             mockSendChannelEndpoint,
             wheel.clock(),
             rawLog,

@@ -469,7 +469,6 @@ public class DriverConductorTest
         final DriverPublication publication = captor.getValue();
         assertThat(publication.sessionId(), is(1));
         assertThat(publication.streamId(), is(2));
-        assertThat(publication.id(), is(CORRELATION_ID_1));
     }
 
     private void writeSubscriptionMessage(

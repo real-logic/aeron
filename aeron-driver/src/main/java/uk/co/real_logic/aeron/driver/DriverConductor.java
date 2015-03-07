@@ -383,7 +383,6 @@ public class DriverConductor implements Agent
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
             publication = new DriverPublication(
-                correlationId,
                 channelEndpoint,
                 clock,
                 rawLog,

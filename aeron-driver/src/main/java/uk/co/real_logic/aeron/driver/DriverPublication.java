@@ -49,7 +49,6 @@ public class DriverPublication implements AutoCloseable
     private final SendChannelEndpoint channelEndpoint;
     private final InetSocketAddress dstAddress;
 
-    private final long id;
     private final int sessionId;
     private final int streamId;
     private final int positionBitsToShift;
@@ -69,7 +68,6 @@ public class DriverPublication implements AutoCloseable
     private volatile boolean shouldSendSetupFrame = true;
 
     public DriverPublication(
-        final long id,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
         final RawLog rawLog,
@@ -83,7 +81,6 @@ public class DriverPublication implements AutoCloseable
         final long initialPositionLimit,
         final SystemCounters systemCounters)
     {
-        this.id = id;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.senderPosition = senderPosition;
@@ -115,11 +112,6 @@ public class DriverPublication implements AutoCloseable
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
         constructSetupFrame(initialTermId);
-    }
-
-    public long id()
-    {
-        return id;
     }
 
     public void close()

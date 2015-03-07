@@ -117,7 +117,6 @@ public class DriverConnection implements AutoCloseable
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
         this.statusMessageTimeout = statusMessageTimeout;
-        this.lastSmTimestamp = 0;
 
         final int termCapacity = rebuilders[0].capacity();
 

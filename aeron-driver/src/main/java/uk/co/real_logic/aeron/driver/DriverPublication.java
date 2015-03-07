@@ -379,9 +379,9 @@ public class DriverPublication implements AutoCloseable
     private void sendHeartbeat(final long now, final long senderPosition)
     {
         final int length = lastSendLength;
-        final long lastSentPosition = senderPosition - length;
-        final int termOffset = (int)lastSentPosition & termLengthMask;
-        final int activeIndex = indexByPosition(lastSentPosition, positionBitsToShift);
+        final long lastSendPosition = senderPosition - length;
+        final int termOffset = (int)lastSendPosition & termLengthMask;
+        final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
 
         final ByteBuffer sendBuffer = sendBuffers[activeIndex];
         sendBuffer.limit(termOffset + length);

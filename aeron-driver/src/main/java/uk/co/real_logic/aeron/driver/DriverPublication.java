@@ -337,6 +337,19 @@ public class DriverPublication implements AutoCloseable
         return available;
     }
 
+    private void setupFrameCheck(final long now, final int activeTermId, final int termOffset)
+    {
+        if (0 != lastSendLength || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
+        {
+            sendSetupFrame(now, activeTermId, termOffset);
+        }
+
+        if (statusMessagesReceivedCount > 0)
+        {
+            shouldSendSetupFrame = false;
+        }
+    }
+
     private void sendSetupFrame(final long now, final int activeTermId, final int termOffset)
     {
         setupHeader.activeTermId(activeTermId)
@@ -353,19 +366,6 @@ public class DriverPublication implements AutoCloseable
         }
 
         timeOfLastSendOrHeartbeat = now;
-    }
-
-    private void setupFrameCheck(final long now, final int activeTermId, final int termOffset)
-    {
-        if (0 != lastSendLength || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
-        {
-            sendSetupFrame(now, activeTermId, termOffset);
-        }
-
-        if (statusMessagesReceivedCount > 0)
-        {
-            shouldSendSetupFrame = false;
-        }
     }
 
     private void heartbeatCheck(final long now, final long senderPosition)

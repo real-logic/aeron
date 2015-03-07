@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.samples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
@@ -49,6 +50,11 @@ public class StreamingPublisher
 
     public static void main(final String[] args) throws Exception
     {
+        if (MESSAGE_LENGTH < BitUtil.SIZE_OF_LONG)
+        {
+            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", MESSAGE_LENGTH));
+        }
+
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;

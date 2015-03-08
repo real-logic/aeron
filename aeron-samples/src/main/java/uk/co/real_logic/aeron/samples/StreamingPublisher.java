@@ -52,7 +52,7 @@ public class StreamingPublisher
     {
         if (MESSAGE_LENGTH < BitUtil.SIZE_OF_LONG)
         {
-            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", MESSAGE_LENGTH));
+            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", BitUtil.SIZE_OF_LONG));
         }
 
         SamplesUtil.useSharedMemoryOnLinux();

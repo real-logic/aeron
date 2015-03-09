@@ -1,7 +1,6 @@
 package uk.co.real_logic.aeron.tools;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.tools.MessageSizePattern;
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;

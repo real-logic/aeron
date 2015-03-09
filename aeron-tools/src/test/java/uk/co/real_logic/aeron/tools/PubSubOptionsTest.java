@@ -1,6 +1,5 @@
 package uk.co.real_logic.aeron.tools;
 
-import com.sun.tools.classfile.Exceptions_attribute;
 import org.apache.commons.cli.ParseException;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,9 +9,6 @@ import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
-
-import uk.co.real_logic.aeron.tools.ChannelDescriptor;
-import uk.co.real_logic.aeron.tools.PubSubOptions;
 
 /**
  * Created by bhorst on 3/3/15.
@@ -24,6 +20,20 @@ public class PubSubOptionsTest
     public void setUp()
     {
         opts = new PubSubOptions();
+    }
+
+    @Test
+    public void help() throws Exception
+    {
+        String[] args = {"--help"};
+        assertThat(opts.parseArgs(args), is(1));
+    }
+
+    @Test
+    public void helpShorthand() throws Exception
+    {
+        String[] args = { "-h" };
+        assertThat(opts.parseArgs(args), is(1));
     }
 
     @Test
@@ -57,6 +67,96 @@ public class PubSubOptionsTest
     }
 
     @Test
+    public void iterations() throws Exception
+    {
+        String[] args = { "--iterations", "1234" };
+        opts.parseArgs(args);
+        assertThat(opts.getIterations(), is(1234L));
+    }
+
+    @Test
+    public void iterationsShorthand() throws Exception
+    {
+        String[] args = { "-i", "1234" };
+        opts.parseArgs(args);
+        assertThat(opts.getIterations(), is(1234L));
+    }
+
+    @Test
+    public void messages() throws Exception
+    {
+        String[] args = { "--messages", "1234" };
+        opts.parseArgs(args);
+        assertThat(opts.getMessages(), is(1234L));
+    }
+
+    @Test
+    public void messagesShorthand() throws Exception
+    {
+        String[] args = { "-m", "1234" };
+        opts.parseArgs(args);
+        assertThat(opts.getMessages(), is(1234L));
+    }
+
+    @Test
+    public void randomSeed() throws Exception
+    {
+        String[] args = { "--seed", "1234" };
+        opts.parseArgs(args);
+        assertThat(opts.getRandomSeed(), is(1234L));
+    }
+
+    @Test
+    public void driverEmbedded() throws Exception
+    {
+        String[] args = { "--driver", "embedded" };
+        opts.parseArgs(args);
+        assertThat(opts.getUseEmbeddedDriver(), is(true));
+    }
+
+    @Test
+    public void driverExternal() throws Exception
+    {
+        String[] args = { "--driver", "external" };
+        opts.parseArgs(args);
+        assertThat(opts.getUseEmbeddedDriver(), is(false));
+    }
+
+    @Test
+    public void dataVerifiable() throws Exception
+    {
+        String[] args = { "--data", "verifiable" };
+        opts.parseArgs(args);
+        assertThat(opts.getUseVerifiableData(), is(true));
+    }
+
+    @Test
+    public void dataVerifiableShorthand() throws Exception
+    {
+        String[] args = { "-d", "verifiable" };
+        opts.parseArgs(args);
+        assertThat(opts.getUseVerifiableData(), is(true));
+    }
+
+    @Test
+    public void dataFilename() throws Exception
+    {
+        String[] args = { "--data", "/home/user/file_name" };
+        opts.parseArgs(args);
+        assertThat(opts.getUseVerifiableData(), is(false));
+        assertThat(opts.getDataFilename(), is("/home/user/file_name"));
+    }
+
+    @Test
+    public void dataFilenameShorthand() throws Exception
+    {
+        String[] args = { "--d", "/home/user/file_name" };
+        opts.parseArgs(args);
+        assertThat(opts.getUseVerifiableData(), is(false));
+        assertThat(opts.getDataFilename(), is("/home/user/file_name"));
+    }
+
+    @Test
     public void channel() throws Exception
     {
         String[] args = { "--channels", "udp://127.0.0.1:12345" };
@@ -74,6 +174,7 @@ public class PubSubOptionsTest
         assertThat("FAIL: Stream ID is 1",
                 cd.getStreamIdentifiers()[0], is(1));
     }
+
 
     @Test
     public void channelWithStreamId() throws Exception
@@ -189,7 +290,7 @@ public class PubSubOptionsTest
         String[] args = { "--size", "100" };
         opts.parseArgs(args);
         MessageSizePattern p = opts.getMessageSizePattern();
-        assertThat(p.getNext(), is (100));
+        assertThat(p.getNext(), is(100));
     }
 
     @Test
@@ -198,7 +299,7 @@ public class PubSubOptionsTest
         String[] args = { "-s", "100" };
         opts.parseArgs(args);
         MessageSizePattern p = opts.getMessageSizePattern();
-        assertThat(p.getNext(), is (100));
+        assertThat(p.getNext(), is(100));
     }
 
     @Test

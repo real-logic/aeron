@@ -6,34 +6,49 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Created by bhorst on 3/3/15.
+ * This is a class to hold information about what an Aeron publisher or subscriber
+ * application should do. It's main purpose is to parse command line options.
  */
 public class PubSubOptions
 {
+    /** Apache Commons CLI options */
     final Options options;
 
+    /** Application should create an embedded Aeron media driver */
     boolean useEmbeddedDriver;
+    /** Application should send or expect verifiable data */
+    boolean useVerifiableData;
+    /** The seed for the random number generator */
     long randomSeed;
+    /** The number of messages an Application should send before exiting */
     long messages;
+    /** The number of threads to use when sending or receiving in an application */
     long threads;
+    /** The number of times to repeat the sending rate pattern */
     long iterations;
-    final List<ChannelDescriptor> channels;
+    /** When not using verifiable data, use this file */
+    String datafile;
+    /** The Aeron channels to open */
+    List<ChannelDescriptor> channels;
+    /** The {@link MessageSizePattern} used to determine next message size */
     MessageSizePattern sizePattern;
+
 
     public PubSubOptions()
     {
         // TODO: Add more detail to the descriptions
         options = new Options();
-        options.addOption("c",  "channels",   true, "Create the given channels.");
-        options.addOption("d",  "data",       true, "Send data file or verifiable stream.");
-        options.addOption(null, "driver",     true, " Use 'external' or 'embedded' Aeron driver.");
-        options.addOption("i",  "iterations", true, "Run the rate sequence n times.");
-        options.addOption("m",  "messages",   true, "Send n messages before exiting.");
-        options.addOption("r",  "rate",       true, "Send rate pattern.");
-        options.addOption(null, "seed",       true, "Random number generator seed.");
-        options.addOption(null, "session",    true, "Use session id for all publishers.");
-        options.addOption("s",  "size",       true, "Message payload size sequence, in bytes.");
-        options.addOption("t",  "threads",    true, "Number of threads.");
+        options.addOption("c",  "channels",   true,  "Create the given channels.");
+        options.addOption("d",  "data",       true,  "Send data file or verifiable stream.");
+        options.addOption(null, "driver",     true,  "Use 'external' or 'embedded' Aeron driver.");
+        options.addOption("h",  "help",       false, "Display help message.");
+        options.addOption("i",  "iterations", true,  "Run the rate sequence n times.");
+        options.addOption("m",  "messages",   true,  "Send n messages before exiting.");
+        options.addOption("r",  "rate",       true,  "Send rate pattern.");
+        options.addOption(null, "seed",       true,  "Random number generator seed.");
+        options.addOption(null, "session",    true,  "Use session id for all publishers.");
+        options.addOption("s",  "size",       true,  "Message payload size sequence, in bytes.");
+        options.addOption("t",  "threads",    true,  "Number of threads.");
 
         // these will all be overridden in parseArgs
         randomSeed = 0;
@@ -41,95 +56,63 @@ public class PubSubOptions
         messages = 0;
         iterations = 0;
         useEmbeddedDriver = false;
+        useVerifiableData = true;
         sizePattern = null;
+        datafile = null;
         channels = new ArrayList<ChannelDescriptor>();
     }
 
     /**
      * Parse command line arguments into usable objects.
-     * @param args
+     * @param args Command line arguments
+     * @return 0 when options parsed, 1 if program should call {@link #printHelp(String)}.
      * @throws ParseException
      */
-    public void parseArgs(String[] args) throws ParseException
+    public int parseArgs(String[] args) throws ParseException
     {
         CommandLineParser parser = new GnuParser();
         CommandLine command = parser.parse(options, args);
 
         String opt;
 
-        // threads, default = 1
+        if(command.hasOption("help"))
+        {
+            // Don't do anything, just signal the caller that they should call printHelp
+            return 1;
+        }
+        // threads
         opt = command.getOptionValue("t", "1");
-        try
-        {
-            setThreads(Long.parseLong(opt));
-        }
-        catch (NumberFormatException threadsEx)
-        {
-            throw new ParseException("Couldn't parse threads value '" + opt + "' as type long.");
-        }
+        setThreads(parseLongCheckPositive(opt));
 
-        // seed, default = 0
+        // Random number seed
         opt = command.getOptionValue("seed", "0");
-        try
-        {
-            randomSeed = Long.parseLong(opt);
-        }
-        catch (NumberFormatException seedEx)
-        {
-            throw new ParseException("Couldn't parse randomSeed value '" + opt + "' as type long.");
-        }
+        setRandomSeed(parseLongCheckPositive(opt));
 
-        // messages, default = unlimited (max long value)
+        // messages
         opt = command.getOptionValue("messages", "unlimited");
-        try
-        {
-            if (opt.equalsIgnoreCase("unlimited"))
-            {
-                messages = Long.MAX_VALUE;
-            }
-            else
-            {
-                messages = Long.parseLong(opt);
-            }
-        }
-        catch (NumberFormatException messagesEx)
-        {
-            throw new ParseException("Couldn't parse messages value '" + opt + "' as type long.");
-        }
+        setMessages(parseNumberOfMessages(opt));
 
-        // iterations, default = 1
+        // iterations
         opt = command.getOptionValue("iterations", "1");
-        try
-        {
-            iterations = Long.parseLong(opt);
-        }
-        catch (NumberFormatException iterationsEx)
-        {
-            throw new ParseException("Couldn't parse iterations value '" + opt + "' as type long.");
-        }
+        setIterations(parseIterations(opt));
 
-        // driver, default = external
+        // driver
         opt = command.getOptionValue("driver", "external");
-        if (opt.equalsIgnoreCase("external"))
-        {
-            useEmbeddedDriver = false;
-        }
-        else if (opt.equalsIgnoreCase("embedded"))
-        {
-            useEmbeddedDriver = true;
-        }
+        setUseEmbeddedDriver(parseDriver(opt));
 
-        // channels, default = udp://localhost:31111
+        // data
+        opt = command.getOptionValue("data", "verifiable");
+        parseData(opt);
+
+        // channels
         opt = command.getOptionValue("channels", "udp://localhost:31111#1");
         parseChannels(opt);
 
+        // message size
         opt = command.getOptionValue("size", "32");
         parseMessageSizes(opt);
-    }
 
-    public List<ChannelDescriptor> getChannels()
-    {
-        return channels;
+        return 0;
     }
 
     /**
@@ -140,6 +123,24 @@ public class PubSubOptions
     {
         HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(program, options);
+    }
+
+    /**
+     * Get the list of channels on which to publish or subscribe.
+     * @return
+     */
+    public List<ChannelDescriptor> getChannels()
+    {
+        return channels;
+    }
+
+    /**
+     * Set the list of channels on which to publish or subscribe
+     * @param channels
+     */
+    public void setChannels(List<ChannelDescriptor> channels)
+    {
+        this.channels = channels;
     }
 
     /**
@@ -160,15 +161,170 @@ public class PubSubOptions
         threads = t;
     }
 
+    /**
+     * Get the total number of messages an application will send or receive before exiting.
+     * @return Total number of messages
+     */
+    public long getMessages()
+    {
+        return this.messages;
+    }
+
+    /**
+     * Set the total number of messages an application will send or receive before exiting.
+     * @param messages
+     */
+    public void setMessages(long messages)
+    {
+        this.messages = messages;
+    }
+
+    /**
+     * The number of times to run the rate sequence.
+     * @return
+     */
+    public long getIterations()
+    {
+        return iterations;
+    }
+
+    /**
+     * The seed for a random number generator.
+     * @return
+     */
+    public long getRandomSeed()
+    {
+        return randomSeed;
+    }
+
+    /**
+     * Set the seed for a random number generator.
+     * @param value
+     */
+    public void setRandomSeed(long value)
+    {
+        randomSeed = value;
+    }
+
+    /**
+     * Set the number of times to run the rate sequence.
+     * @param value
+     */
+    public void setIterations(long value)
+    {
+        iterations = value;
+    }
+
+    /**
+     * True when application should use an embedded Aeron media driver.
+     * @return
+     */
     public boolean getUseEmbeddedDriver()
     {
         return useEmbeddedDriver;
     }
 
+    /**
+     * Set the use of an embedded Aeron media driver.
+     * @param embedded
+     */
+    public void setUseEmbeddedDriver(boolean embedded)
+    {
+        useEmbeddedDriver = embedded;
+    }
+
+    /**
+     * Get the use verifiable data option.
+     * @return
+     */
+    public boolean getUseVerifiableData()
+    {
+        return useVerifiableData;
+    }
+
+    /**
+     * Set the use verifiable data option to the given value.
+     * @param value
+     */
+    public void setUseVerifiableData(boolean value)
+    {
+        useVerifiableData = value;
+    }
+
+    /**
+     * When not using verifiable data, this will return a file name containing the data to be used.
+     * @return
+     */
+    public String getDataFilename()
+    {
+        return datafile;
+    }
+
+    /**
+     * Set the data file to be sent.
+     * @param filename
+     */
+    public void setDataFilename(String filename)
+    {
+        datafile = filename;
+    }
+
+    /**
+     * Get the message size pattern used to determine what each messages size should be.
+     * @return
+     */
     public MessageSizePattern getMessageSizePattern()
     {
         return this.sizePattern;
     }
+
+    /**
+     * Set the message size pattern used to determine what each message size should be.
+     * @param pattern
+     */
+    public void setMessageSizePattern(MessageSizePattern pattern)
+    {
+        this.sizePattern = pattern;
+    }
+
+    private long parseNumberOfMessages(String m) throws ParseException
+    {
+        long value = Long.MAX_VALUE;
+        if (!m.equalsIgnoreCase("unlimited"))
+        {
+            value = parseLongCheckPositive(m);
+        }
+        return value;
+    }
+
+    private long parseIterations(String iterationsStr) throws ParseException
+    {
+        long value = Long.MAX_VALUE;
+        if (!iterationsStr.equalsIgnoreCase("unlimited"))
+        {
+            value = parseLongCheckPositive(iterationsStr);
+        }
+        return value;
+    }
+
+    private boolean parseDriver(String useEmbeddedStr) throws ParseException
+    {
+        boolean embedded;
+        if (useEmbeddedStr.equalsIgnoreCase("external"))
+        {
+            embedded = false;
+        }
+        else if (useEmbeddedStr.equalsIgnoreCase("embedded"))
+        {
+            embedded = true;
+        }
+        else
+        {
+            throw new ParseException("Invalid driver option '" + useEmbeddedStr + "'. Must be 'embedded' or 'external'");
+        }
+        return embedded;
+    }
+
     /**
      * Parses a comma separated list of channels. The channels can use ranges for ports and
      * stream-id on a per address basis. Channel Example: udp://192.168.0.100:21000-21004#1-10
@@ -372,6 +528,22 @@ public class PubSubOptions
         }
     }
 
+    /**
+     *
+     * @param dataStr
+     */
+    private void parseData(String dataStr)
+    {
+        boolean verify = true;
+        if (!dataStr.equalsIgnoreCase("verifiable"))
+        {
+            // dataStr is a file name
+            verify = false;
+            datafile = dataStr;
+        }
+        setUseVerifiableData(verify);
+    }
+
     private void parseMessageSizes(String cvs) throws ParseException
     {
         long numMessages = 0;
@@ -497,7 +669,6 @@ public class PubSubOptions
         return (int)size;
     }
 
-
     private void addSizeRange(long messages, int minSize, int maxSize) throws ParseException
     {
         try
@@ -515,5 +686,24 @@ public class PubSubOptions
         {
             throw new ParseException(ex.getMessage());
         }
+    }
+
+    private long parseLongCheckPositive(String longStr) throws ParseException
+    {
+        long value;
+
+        try
+        {
+            value = Long.parseLong(longStr);
+        }
+        catch (NumberFormatException ex)
+        {
+            throw new ParseException("Could not parse '" + longStr + "' as a long value.");
+        }
+        if (value < 0)
+        {
+            throw new ParseException("Long value '" + longStr + "' must be greater than zero.");
+        }
+        return value;
     }
 }

@@ -2,13 +2,12 @@ package uk.co.real_logic.aeron.tools;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Create a pattern for determining message payload size. Use the constructors to start the pattern,
  * then use the addPatternEntry overloads to add more if necessary.
  * #getNext() will return the next size in the pattern.
- * Not thread safe, use the copy constructor to duplicate the pattern other threads.
+ * Not thread safe, use the copy constructor to duplicate the pattern for other threads.
  */
 public class MessageSizePattern
 {
@@ -34,7 +33,7 @@ public class MessageSizePattern
     /* minimum size starts at max value so it can be set lower */
     private int patternMinSize = Integer.MAX_VALUE;
     /* maximum size starts at min value so it can be set higher */
-    private int patternMaxSize = Integer.MIN_VALUE;
+    private int patternMaxSize = 0;
     private final List<MessageSizeEntry> entries = new ArrayList<MessageSizeEntry>();
 
     /**

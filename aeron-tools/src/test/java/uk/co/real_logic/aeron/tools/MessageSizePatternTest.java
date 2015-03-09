@@ -1,4 +1,4 @@
-package co.uk.real_logic.aeron.tools;
+package uk.co.real_logic.aeron.tools;
 
 import org.junit.Test;
 import uk.co.real_logic.aeron.tools.MessageSizePattern;
@@ -39,6 +39,20 @@ public class MessageSizePatternTest
     }
 
     @Test
+    public void copyConstructor() throws Exception
+    {
+        p = new MessageSizePattern(1, 1000);
+        p.addPatternEntry(1, 1001, 1002);
+
+        assertThat(p.getNext(), is(1000));
+
+        MessageSizePattern p2 = new MessageSizePattern(p);
+        assertThat("FAIL: Copied pattern didn't start at the beginning", p2.getNext(), is(1000));
+        assertThat(p.getNext(), both(greaterThanOrEqualTo(1001)).and(lessThanOrEqualTo(1002)));
+        assertThat(p2.getNext(), both(greaterThanOrEqualTo(1001)).and(lessThanOrEqualTo(1002)));
+    }
+
+    @Test
     public void addSizeEntry() throws Exception
     {
         p = new MessageSizePattern(1, 1000);
@@ -61,9 +75,9 @@ public class MessageSizePatternTest
     @Test
     public void repeatPattern() throws Exception
     {
-        p = new MessageSizePattern(1,1000);
-        p.addPatternEntry(1,2000);
-        p.addPatternEntry(1,3000);
+        p = new MessageSizePattern(1, 1000);
+        p.addPatternEntry(1, 2000);
+        p.addPatternEntry(1, 3000);
 
         assertThat(p.getNext(), is(1000));
         assertThat(p.getNext(), is(2000));
@@ -76,9 +90,9 @@ public class MessageSizePatternTest
     @Test
     public void checkPatternMinMax() throws Exception
     {
-        p = new MessageSizePattern(1,1000);
-        p.addPatternEntry(1,500);
-        p.addPatternEntry(1,1500);
+        p = new MessageSizePattern(1, 1000);
+        p.addPatternEntry(1, 500);
+        p.addPatternEntry(1, 1500);
 
         assertThat("FAIL: Pattern minimum value is wrong",
                 p.getMinimum(), is(500));

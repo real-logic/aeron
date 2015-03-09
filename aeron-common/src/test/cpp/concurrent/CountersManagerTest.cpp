@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ TEST(testCountersManager, checkInvalidFree)
     ASSERT_THROW({
         cm.free(2);
     }, IllegalArgumentException);
-    
+
     ASSERT_NO_THROW({
         for (auto& l: labels)
         {

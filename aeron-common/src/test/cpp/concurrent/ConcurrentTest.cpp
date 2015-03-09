@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -115,16 +115,16 @@ TEST (atomicBufferTests, concurrentTest)
 
     std::vector<std::thread> threads;
     const size_t incCount = 10000000;
-    
+
     for (int i = 0; i < 8; i++)
     {
-        threads.push_back(std::thread([&]() 
+        threads.push_back(std::thread([&]()
         {
             for (size_t n = 0; n < incCount; n++)
                 ab.getAndAddInt64(0, 1);
         }));
     }
-    
+
     for (std::thread& t: threads)
     {
         t.join();

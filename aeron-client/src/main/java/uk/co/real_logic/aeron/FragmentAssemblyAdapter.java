@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,26 +76,25 @@ public class FragmentAssemblyAdapter implements DataHandler
         }
         else
         {
-            final int sessionId = header.sessionId();
-
             if ((flags & BEGIN_FRAG) == BEGIN_FRAG)
             {
-                final BufferBuilder builder = builderBySessionIdMap.getOrDefault(sessionId, builderSupplier);
+                final BufferBuilder builder = builderBySessionIdMap.getOrDefault(header.sessionId(), builderSupplier);
                 builder.reset().append(buffer, offset, length);
-            }
-            else if ((flags & END_FRAG) == END_FRAG)
-            {
-                final BufferBuilder builder = getExistingBuilder(sessionId);
-                builder.append(buffer, offset, length);
-
-                final int msgLength = builder.limit();
-                delegate.onData(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
-                builder.reset();
             }
             else
             {
-                final BufferBuilder builder = getExistingBuilder(sessionId);
-                builder.append(buffer, offset, length);
+                final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
+                if (null != builder && builder.limit() != 0)
+                {
+                    builder.append(buffer, offset, length);
+
+                    if ((flags & END_FRAG) == END_FRAG)
+                    {
+                        final int msgLength = builder.limit();
+                        delegate.onData(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
+                        builder.reset();
+                    }
+                }
             }
         }
     }
@@ -110,17 +109,6 @@ public class FragmentAssemblyAdapter implements DataHandler
     public boolean freeSessionBuffer(final int sessionId)
     {
         return null != builderBySessionIdMap.remove(sessionId);
-    }
-
-    private BufferBuilder getExistingBuilder(final int sessionId)
-    {
-        final BufferBuilder builder = builderBySessionIdMap.get(sessionId);
-        if (null == builder || builder.limit() == 0)
-        {
-            throw new IllegalStateException("Begin frag not seen on session id: " + sessionId);
-        }
-
-        return builder;
     }
 
     private static class AssemblyHeader extends Header

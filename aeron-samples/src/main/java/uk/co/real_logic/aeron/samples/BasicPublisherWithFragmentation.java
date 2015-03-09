@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2015 Real Logic Ltd.
+ * Copyright 2014 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,15 +27,17 @@ import java.util.concurrent.TimeUnit;
 /**
  * Basic Aeron publisher application
  */
-public class BasicPublisher
+public class BasicPublisherWithFragmentation
 {
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+    private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
 
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
+    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
 
     public static void main(final String[] args) throws Exception
     {
@@ -47,23 +49,46 @@ public class BasicPublisher
         final Aeron.Context ctx = new Aeron.Context();
 
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
+             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 777);
+        	 final Publication publication_2 = aeron.addPublication(CHANNEL, STREAM_ID_2, 999))
         {
-            for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
+            for (int i = 0; i < 5; i++)
             {
                 final String message = "Hello World! " + i;
                 BUFFER.putBytes(0, message.getBytes());
 
+                final String message_2 = "Hello World from Second Publisher ! " + i;
+                BUFFER_2.putBytes(0, message_2.getBytes());
+                
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
-                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
-
-                if (!result)
+                boolean offerStatus = false;
+                while (!offerStatus)
                 {
-                    System.out.println(" ah?!");
-                }
-                else
-                {
-                    System.out.println(" yay!");
+	                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
+	
+	                if (!result)
+	                {
+	                    System.out.println(" ah? from first publisher!");
+	                    offerStatus = false;
+	                }
+	                else
+	                {
+	                	offerStatus = true;
+	                    System.out.println(" yay!");
+	                }
+	                
+	                final boolean result_2 = publication_2.offer(BUFFER_2, 0, message_2.getBytes().length);
+	            	
+	                if (!result_2)
+	                {
+	                    System.out.println(" ah? from second publisher!");
+	                    offerStatus = false;
+	                }
+	                else
+	                {
+	                	offerStatus = true;                
+	                    System.out.println(" yay!");
+	                }
                 }
 
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));

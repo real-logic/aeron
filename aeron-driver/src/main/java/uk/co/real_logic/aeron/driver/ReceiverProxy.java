@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,18 +126,6 @@ public class ReceiverProxy
         else
         {
             offer(new RemovePendingSetupCmd(channelEndpoint, sessionId, streamId));
-        }
-    }
-
-    public void closeSubscription(final DriverSubscription subscription)
-    {
-        if (isSharedThread())
-        {
-            receiver.onCloseSubscription(subscription);
-        }
-        else
-        {
-            offer(new CloseSubscriptionCmd(subscription));
         }
     }
 

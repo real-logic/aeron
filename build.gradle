@@ -1,7 +1,7 @@
 import org.gradle.plugins.ide.eclipse.model.Classpath
 
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -103,7 +103,7 @@ subprojects {
     javadoc {
         title = '<h1>Aeron Transport Protocol</h1>'
 
-        options.bottom = '<i>Copyright &#169; 2014 Real Logic Ltd. All Rights Reserved.</i>'
+        options.bottom = '<i>Copyright &#169; 2015 Real Logic Ltd. All Rights Reserved.</i>'
         options.addStringOption('XDignore.symbol.file', '-quiet')
     }
 
@@ -255,12 +255,6 @@ uploadArchives {
                         name = 'Richard Warburton'
                         email = 'richard.warburton@gmail.com'
                         url = 'https://github.com/RichardWarburton'
-                    }
-                    developer {
-                        id = 'SimulatedSimian'
-                        name = 'Lee Witek'
-                        email = 'leewitek@gmail.com'
-                        url = 'https://github.com/SimulatedSimian'
                     }
                 }
             }

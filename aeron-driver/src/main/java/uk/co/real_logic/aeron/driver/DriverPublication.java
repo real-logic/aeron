@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,6 @@ public class DriverPublication implements AutoCloseable
     private final SendChannelEndpoint channelEndpoint;
     private final InetSocketAddress dstAddress;
 
-    private final long id;
     private final int sessionId;
     private final int streamId;
     private final int positionBitsToShift;
@@ -69,7 +68,6 @@ public class DriverPublication implements AutoCloseable
     private volatile boolean shouldSendSetupFrame = true;
 
     public DriverPublication(
-        final long id,
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
         final RawLog rawLog,
@@ -83,7 +81,6 @@ public class DriverPublication implements AutoCloseable
         final long initialPositionLimit,
         final SystemCounters systemCounters)
     {
-        this.id = id;
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.senderPosition = senderPosition;
@@ -117,11 +114,6 @@ public class DriverPublication implements AutoCloseable
         constructSetupFrame(initialTermId);
     }
 
-    public long id()
-    {
-        return id;
-    }
-
     public void close()
     {
         rawLog.close();
@@ -137,14 +129,15 @@ public class DriverPublication implements AutoCloseable
         {
             final long senderPosition = this.senderPosition.position();
             final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
+            final int termOffset = (int)senderPosition & termLengthMask;
             final long now = clock.time();
 
             if (shouldSendSetupFrame)
             {
-                setupFrameCheck(now, activeTermId, senderPosition);
+                setupFrameCheck(now, activeTermId, termOffset);
             }
 
-            bytesSent = sendData(now, senderPosition);
+            bytesSent = sendData(now, senderPosition, termOffset);
 
             if (0 == bytesSent)
             {
@@ -308,11 +301,10 @@ public class DriverPublication implements AutoCloseable
         return 0;
     }
 
-    private int sendData(final long now, final long senderPosition)
+    private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         final int availableWindow = (int)(senderLimit.get() - senderPosition);
         final int scanLimit = Math.min(availableWindow, mtuLength);
-        final int termOffset = (int)senderPosition & termLengthMask;
         final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
         final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
@@ -337,35 +329,35 @@ public class DriverPublication implements AutoCloseable
         return available;
     }
 
-    private void sendSetupFrame(final long now, final int activeTermId, final long position)
-    {
-        setupHeader.initialTermId(initialTermId);
-        setupHeader.activeTermId(activeTermId);
-        setupHeader.termOffset((int)position & termLengthMask);
-
-        setupFrameBuffer.limit(setupHeader.frameLength());
-        setupFrameBuffer.position(0);
-
-        final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
-        if (setupHeader.frameLength() != bytesSent)
-        {
-            systemCounters.setupFrameShortSends().orderedIncrement();
-        }
-
-        timeOfLastSendOrHeartbeat = now;
-    }
-
-    private void setupFrameCheck(final long now, final int activeTermId, final long position)
+    private void setupFrameCheck(final long now, final int activeTermId, final int termOffset)
     {
         if (0 != lastSendLength || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
         {
-            sendSetupFrame(now, activeTermId, position);
+            sendSetupFrame(now, activeTermId, termOffset);
         }
 
         if (statusMessagesReceivedCount > 0)
         {
             shouldSendSetupFrame = false;
         }
+    }
+
+    private void sendSetupFrame(final long now, final int activeTermId, final int termOffset)
+    {
+        setupHeader.activeTermId(activeTermId)
+                   .termOffset(termOffset);
+
+        final int frameLength = setupHeader.frameLength();
+        setupFrameBuffer.limit(frameLength)
+                        .position(0);
+
+        final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
+        if (frameLength != bytesSent)
+        {
+            systemCounters.setupFrameShortSends().orderedIncrement();
+        }
+
+        timeOfLastSendOrHeartbeat = now;
     }
 
     private void heartbeatCheck(final long now, final long senderPosition)
@@ -379,9 +371,9 @@ public class DriverPublication implements AutoCloseable
     private void sendHeartbeat(final long now, final long senderPosition)
     {
         final int length = lastSendLength;
-        final long lastSentPosition = senderPosition - length;
-        final int termOffset = (int)lastSentPosition & termLengthMask;
-        final int activeIndex = indexByPosition(lastSentPosition, positionBitsToShift);
+        final long lastSendPosition = senderPosition - length;
+        final int termOffset = (int)lastSendPosition & termLengthMask;
+        final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
 
         final ByteBuffer sendBuffer = sendBuffers[activeIndex];
         sendBuffer.limit(termOffset + length);

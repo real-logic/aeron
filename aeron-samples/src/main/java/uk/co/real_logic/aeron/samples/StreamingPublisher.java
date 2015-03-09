@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.samples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
@@ -49,6 +50,11 @@ public class StreamingPublisher
 
     public static void main(final String[] args) throws Exception
     {
+        if (MESSAGE_LENGTH < BitUtil.SIZE_OF_LONG)
+        {
+            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", BitUtil.SIZE_OF_LONG));
+        }
+
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
@@ -104,13 +110,13 @@ public class StreamingPublisher
     }
 
     public static void printRate(
-        final double messagesPerSec, final double bytesPerSec, final long totalMessages, final long totalBytes)
+        final double messagesPerSec, final double bytesPerSec, final long totalFragments, final long totalBytes)
     {
         if (printingActive)
         {
             System.out.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
-                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024));
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d message fragments %d MB\n",
+                messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
         }
     }
 }

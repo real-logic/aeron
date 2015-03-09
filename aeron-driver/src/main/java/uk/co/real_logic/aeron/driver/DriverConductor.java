@@ -471,7 +471,7 @@ public class DriverConductor implements Agent
             if (connection.matches(channelEndpoint, streamId))
             {
                 final int subscriberPositionCounterId = allocatePositionCounter(
-                    "subscriber", channel, connection.sessionId(), streamId);
+                    "subscriber pos", channel, connection.sessionId(), streamId);
                 final BufferPositionIndicator indicator = new BufferPositionIndicator(
                     countersBuffer, subscriberPositionCounterId, countersManager);
                 final String sourceInfo = generateSourceInfo(connection.sourceAddress());

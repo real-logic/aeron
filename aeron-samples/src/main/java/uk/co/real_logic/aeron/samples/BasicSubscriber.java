@@ -19,12 +19,13 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
 
 /**
  * Basic Aeron subscriber application
@@ -36,8 +37,6 @@ public class BasicSubscriber
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    static final MessageStream MS = new MessageStream();
-    
     public static void main(final String[] args) throws Exception
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
@@ -73,41 +72,5 @@ public class BasicSubscriber
         }
 
         CloseHelper.quietClose(driver);
-    }
-
-    private static void handleMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
-    {
-    	if (MessageStream.isVerifiable(buffer, offset))
-    	{
-    	//	System.out.println("Yep, a verifiable message! Of length " + length + " bytes");
-    		try
-    		{
-				MS.putNext(buffer, offset, length);
-			}
-    		catch (Exception e)
-    		{
-				e.printStackTrace();
-			}
-    		
-    		if (MS.getMessageCount() % 1000 == 0)
-    		{
-    			System.out.println("Got " + MS.getMessageCount() + " messages so far...");
-    		}
-    		
-    	//	MessageStream.printHex(buffer, offset, length);
-    	}
-    	else
-    	{
-//    		final byte[] data = new byte[length];
-//    		buffer.getBytes(offset, data);
-//
-//    		System.out.println(
-//    				String.format(
-//    						"message to stream %d from session %x (%d@%d) <<%s>>",
-//    						streamId, header.sessionId(), length, offset, new String(data)));
-    		System.out.println("Got some weird crap:");
-    	//	MessageStream.printHex(buffer, offset, length);
-    	}
-
     }
 }

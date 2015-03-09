@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
@@ -56,8 +55,7 @@ public class RateSubscriber
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
-        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(rateReporterHandler); 
-        
+
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(
             () ->
@@ -67,7 +65,7 @@ public class RateSubscriber
             });
 
         try (final Aeron aeron = Aeron.connect(ctx, executor);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
             executor.execute(() -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 

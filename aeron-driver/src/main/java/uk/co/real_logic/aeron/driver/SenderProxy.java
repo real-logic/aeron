@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ public class SenderProxy
 
     public void retransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             sender.onRetransmit(publication, termId, termOffset, length);
         }
@@ -61,7 +61,7 @@ public class SenderProxy
 
     public void closePublication(final DriverPublication publication)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             sender.onClosePublication(publication);
         }
@@ -73,7 +73,7 @@ public class SenderProxy
 
     public void newPublication(final DriverPublication publication)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             sender.onNewPublication(publication);
         }
@@ -83,7 +83,7 @@ public class SenderProxy
         }
     }
 
-    private boolean isShared()
+    private boolean isSharedThread()
     {
         return threadingMode == SHARED;
     }

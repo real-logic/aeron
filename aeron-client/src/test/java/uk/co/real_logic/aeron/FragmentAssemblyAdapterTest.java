@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,8 +65,9 @@ public class FragmentAssemblyAdapterTest
     @Test
     public void shouldAssembleTwoPartMessage()
     {
-        when(header.flags()).thenReturn(FrameDescriptor.BEGIN_FRAG)
-                            .thenReturn(FrameDescriptor.END_FRAG);
+        when(header.flags())
+            .thenReturn(FrameDescriptor.BEGIN_FRAG)
+            .thenReturn(FrameDescriptor.END_FRAG);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
@@ -98,10 +99,11 @@ public class FragmentAssemblyAdapterTest
     @Test
     public void shouldAssembleFourPartMessage()
     {
-        when(header.flags()).thenReturn(FrameDescriptor.BEGIN_FRAG)
-                            .thenReturn((byte)0)
-                            .thenReturn((byte)0)
-                            .thenReturn(FrameDescriptor.END_FRAG);
+        when(header.flags())
+            .thenReturn(FrameDescriptor.BEGIN_FRAG)
+            .thenReturn((byte)0)
+            .thenReturn((byte)0)
+            .thenReturn(FrameDescriptor.END_FRAG);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
@@ -137,8 +139,9 @@ public class FragmentAssemblyAdapterTest
     @Test
     public void shouldFreeSessionBuffer()
     {
-        when(header.flags()).thenReturn(FrameDescriptor.BEGIN_FRAG)
-                            .thenReturn(FrameDescriptor.END_FRAG);
+        when(header.flags())
+            .thenReturn(FrameDescriptor.BEGIN_FRAG)
+            .thenReturn(FrameDescriptor.END_FRAG);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
@@ -156,8 +159,8 @@ public class FragmentAssemblyAdapterTest
         assertFalse(adapter.freeSessionBuffer(SESSION_ID));
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionIfEndFragComesBeforeBeginFrag()
+    @Test
+    public void shouldDoNotingIfEndArrivesWithoutBegin()
     {
         when(header.flags()).thenReturn(FrameDescriptor.END_FRAG);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
@@ -165,15 +168,24 @@ public class FragmentAssemblyAdapterTest
         final int length = srcBuffer.capacity() / 2;
 
         adapter.onData(srcBuffer, offset, length, header);
+
+        verify(delegateDataHandler, never()).onData(anyObject(), anyInt(), anyInt(), anyObject());
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionIfMidFragComesBeforeBeginFrag()
+    @Test
+    public void shouldDoNotingIfMidArrivesWithoutBegin()
     {
+        when(header.flags())
+            .thenReturn((byte)0)
+            .thenReturn(FrameDescriptor.END_FRAG);
+
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
         final int length = srcBuffer.capacity() / 2;
 
         adapter.onData(srcBuffer, offset, length, header);
+        adapter.onData(srcBuffer, offset, length, header);
+
+        verify(delegateDataHandler, never()).onData(anyObject(), anyInt(), anyInt(), anyObject());
     }
 }

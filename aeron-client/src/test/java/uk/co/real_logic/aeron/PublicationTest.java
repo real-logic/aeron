@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -105,35 +105,35 @@ public class PublicationTest
     @Test
     public void shouldFailToOfferWhenAppendFails()
     {
-        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILED);
         assertFalse(publication.offer(atomicSendBuffer));
     }
 
     @Test
     public void shouldRotateWhenAppendTrips()
     {
-        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
-        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         assertFalse(publication.offer(atomicSendBuffer));
         assertTrue(publication.offer(atomicSendBuffer));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2], logMetaDataBuffer);
-        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
+        inOrder.verify(appenders[indexByTerm(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
         inOrder.verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1 + 1);
-        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)])
+        inOrder.verify(appenders[indexByTerm(TERM_ID_1, TERM_ID_1 + 1)])
                .append(atomicSendBuffer, 0, atomicSendBuffer.capacity());
 
-        dataHeaderFlyweight.wrap(headers[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]);
+        dataHeaderFlyweight.wrap(headers[indexByTerm(TERM_ID_1, TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
 
     @Test
     public void shouldRotateWhenClaimTrips()
     {
-        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TRIPPED);
-        when(appenders[partitionIndex(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TRIPPED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         final BufferClaim bufferClaim = new BufferClaim();
@@ -141,11 +141,11 @@ public class PublicationTest
         assertTrue(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2], logMetaDataBuffer);
-        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
+        inOrder.verify(appenders[indexByTerm(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
         inOrder.verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1 + 1);
-        inOrder.verify(appenders[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]).claim(SEND_BUFFER_CAPACITY, bufferClaim);
+        inOrder.verify(appenders[indexByTerm(TERM_ID_1, TERM_ID_1 + 1)]).claim(SEND_BUFFER_CAPACITY, bufferClaim);
 
-        dataHeaderFlyweight.wrap(headers[partitionIndex(TERM_ID_1, TERM_ID_1 + 1)]);
+        dataHeaderFlyweight.wrap(headers[indexByTerm(TERM_ID_1, TERM_ID_1 + 1)]);
         assertThat(dataHeaderFlyweight.termId(), is(TERM_ID_1 + 1));
     }
 

@@ -1,9 +1,13 @@
-package co.uk.real_logic.aeron.tools;
+package uk.co.real_logic.aeron.tools;
 
+import com.sun.tools.classfile.Exceptions_attribute;
 import org.apache.commons.cli.ParseException;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -177,5 +181,105 @@ public class PubSubOptionsTest
                 cd.getChannel(), is("udp://192.168.0.1:7001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 6",
                 cd.getStreamIdentifiers().length, is(2));
+    }
+
+    @Test
+    public void messageSizes() throws Exception
+    {
+        String[] args = { "--size", "100" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), is (100));
+    }
+
+    @Test
+    public void messageSizeShortHand() throws Exception
+    {
+        String[] args = { "-s", "100" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), is (100));
+    }
+
+    @Test
+    public void messageSizeRange() throws Exception
+    {
+        String[] args = { "--size", "101-102" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), both(greaterThanOrEqualTo(101)).and(lessThanOrEqualTo(102)));
+    }
+
+    @Test
+    public void messageNumberAndSize() throws Exception
+    {
+        String[] args = { "--size", "1@100" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), is(100));
+    }
+
+    @Test
+    public void messageNumberAndRange() throws Exception
+    {
+        String[] args = { "--size", "1@101-102" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), both(greaterThanOrEqualTo(101)).and(lessThanOrEqualTo(102)));
+    }
+
+    @Test
+    public void messageNumberAndRangeCsv() throws Exception
+    {
+        String[] args = { "--size", "1@100,1@101-102,98@1000" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), is(100));
+        assertThat(p.getNext(), both(greaterThanOrEqualTo(101)).and(lessThanOrEqualTo(102)));
+        assertThat(p.getNext(), is(1000));
+    }
+
+    @Test
+    public void messageSizeBytesSuffix() throws Exception
+    {
+        String[] args = { "--size", "1@100B,1@101b" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), is(100));
+        assertThat(p.getNext(), is(101));
+    }
+
+    @Test
+    public void messageSizeKilobytesSuffix() throws Exception
+    {
+        String[] args = { "--size", "1@100K,1@101k,1@102KB,1@103kb" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), is(100*1024));
+        assertThat(p.getNext(), is(101*1024));
+        assertThat(p.getNext(), is(102*1024));
+        assertThat(p.getNext(), is(103*1024));
+    }
+
+    @Test
+    public void messageSizeMegabytesSuffix() throws Exception
+    {
+        String[] args = { "--size", "1@100M,1@101m,1@102MB,1@103mb" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), is(100*1024*1024));
+        assertThat(p.getNext(), is(101*1024*1024));
+        assertThat(p.getNext(), is(102*1024*1024));
+        assertThat(p.getNext(), is(103*1024*1024));
+    }
+
+    @Test
+    public void messageSizeRangesWithSuffixes() throws Exception
+    {
+        String[] args = { "--size", "1@1023B-1KB,1@1023KB-1MB" };
+        opts.parseArgs(args);
+        MessageSizePattern p = opts.getMessageSizePattern();
+        assertThat(p.getNext(), both(greaterThanOrEqualTo(1023)).and(lessThanOrEqualTo((1024))));
+        assertThat(p.getNext(), both(greaterThanOrEqualTo(1023*1024)).and(lessThanOrEqualTo(1024*1024)));
     }
 }

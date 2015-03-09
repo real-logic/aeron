@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import static uk.co.real_logic.agrona.BitUtil.align;
 public final class TermScanner
 {
     private final int alignedHeaderLength;
-    private int available;
     private int padding;
 
     /**
@@ -49,9 +48,9 @@ public final class TermScanner
      * @param termBuffer to be scanned for new messages
      * @param offset     at which the scan should begin.
      * @param maxLength  in bytes of how much should be scanned.
-     * @return true if there is availability otherwise false.
+     * @return number of bytes available
      */
-    public boolean scanForAvailability(final UnsafeBuffer termBuffer, final int offset, int maxLength)
+    public int scanForAvailability(final UnsafeBuffer termBuffer, final int offset, int maxLength)
     {
         maxLength = Math.min(maxLength, termBuffer.capacity() - offset);
         int available = 0;
@@ -84,26 +83,15 @@ public final class TermScanner
         }
         while ((available + padding) < maxLength);
 
-        this.available = available;
         this.padding = padding;
 
-        return available > 0;
-    }
-
-    /**
-     * The count of bytes available containing completed messages.
-     *
-     * @return count of bytes available containing completed messages.
-     */
-    public int available()
-    {
         return available;
     }
 
     /**
-     * The count of bytes that should be added for padding to the position on top of what is {@link #available()}.
+     * The count of bytes that should be added for padding to the position on top of what is available
      *
-     * @return the count of bytes that should be added for padding to the position on top of what is {@link #available()}.
+     * @return the count of bytes that should be added for padding to the position on top of what is available.
      */
     public int padding()
     {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.aeron.common.TimerWheel;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -61,7 +62,6 @@ public class SenderTest
     private static final MutableDirectBuffer HEADER =
         DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
     private static final int ALIGNED_FRAME_LENGTH = align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
-    private static final long PUBLICATION_ID = 7L;
 
     private final EventLogger mockLogger = mock(EventLogger.class);
 
@@ -125,7 +125,6 @@ public class SenderTest
             .toArray(LogAppender[]::new);
 
         publication = new DriverPublication(
-            PUBLICATION_ID,
             mockSendChannelEndpoint,
             wheel.clock(),
             rawLog,
@@ -160,7 +159,8 @@ public class SenderTest
 
         setupHeader.wrap(receivedFrames.remove(), 0);
         assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
-        assertThat(setupHeader.termId(), is(INITIAL_TERM_ID));
+        assertThat(setupHeader.initialTermId(), is(INITIAL_TERM_ID));
+        assertThat(setupHeader.activeTermId(), is(INITIAL_TERM_ID));
         assertThat(setupHeader.streamId(), is(STREAM_ID));
         assertThat(setupHeader.sessionId(), is(SESSION_ID));
         assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));

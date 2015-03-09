@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -289,20 +289,20 @@ public class LogBufferDescriptor
      * @param activeTermId  that is in current usage
      * @return the index of which buffer should be used
      */
-    public static int partitionIndex(final int initialTermId, final int activeTermId)
+    public static int indexByTerm(final int initialTermId, final int activeTermId)
     {
         return (activeTermId - initialTermId) % PARTITION_COUNT;
     }
 
     /**
-     * Determine the partition index given a number of terms that have rolled.
+     * Determine the partition index given a stream position.
      *
-     * @param terms which have rolled forward.
+     * @param position in the stream in bytes.
      * @return the partition index for the current term roll.
      */
-    public static int partitionIndex(final int terms)
+    public static int indexByPosition(final long position, final int positionBitsToShift)
     {
-        return terms % PARTITION_COUNT;
+        return (int)((position >>> positionBitsToShift) % PARTITION_COUNT);
     }
 
     /**

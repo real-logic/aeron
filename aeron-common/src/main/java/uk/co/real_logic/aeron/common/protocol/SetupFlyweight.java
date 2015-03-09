@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,14 +25,15 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class SetupFlyweight extends HeaderFlyweight
 {
     /** Size of the Setup Header */
-    public static final int HEADER_LENGTH = 32;
+    public static final int HEADER_LENGTH = 36;
 
     private static final int TERM_OFFSET_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;
     private static final int STREAM_ID_FIELD_OFFSET = 16;
-    private static final int TERM_ID_FIELD_OFFSET = 20;
-    private static final int TERM_LENGTH_FIELD_OFFSET = 24;
-    private static final int MTU_LENGTH_FIELD_OFFSET = 28;
+    private static final int INITIAL_TERM_ID_FIELD_OFFSET = 20;
+    private static final int ACTIVE_TERM_ID_FIELD_OFFSET = 24;
+    private static final int TERM_LENGTH_FIELD_OFFSET = 28;
+    private static final int MTU_LENGTH_FIELD_OFFSET = 32;
 
     /**
      * return term offset field
@@ -102,24 +103,47 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return term id field
+     * return initial term id field
      *
-     * @return term id field
+     * @return initial term id field
      */
-    public int termId()
+    public int initialTermId()
     {
-        return buffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + INITIAL_TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set term id field
+     * set initial term id field
      *
      * @param termId field value
      * @return flyweight
      */
-    public SetupFlyweight termId(final int termId)
+    public SetupFlyweight initialTermId(final int termId)
     {
-        buffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + INITIAL_TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * return active term id field
+     *
+     * @return term id field
+     */
+    public int activeTermId()
+    {
+        return buffer().getInt(offset() + ACTIVE_TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * set active term id field
+     *
+     * @param termId field value
+     * @return flyweight
+     */
+    public SetupFlyweight activeTermId(final int termId)
+    {
+        buffer().putInt(offset() + ACTIVE_TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }

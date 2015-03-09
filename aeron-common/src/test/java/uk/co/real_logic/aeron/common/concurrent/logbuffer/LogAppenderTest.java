@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -206,7 +206,7 @@ public class LogAppenderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
-            .thenReturn(logAppender.capacity());
+            .thenReturn(TERM_BUFFER_CAPACITY);
 
         assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
 
@@ -225,8 +225,8 @@ public class LogAppenderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
-            .thenReturn(logAppender.capacity())
-            .thenReturn(logAppender.capacity() + alignedFrameLength);
+            .thenReturn(TERM_BUFFER_CAPACITY)
+            .thenReturn(TERM_BUFFER_CAPACITY + alignedFrameLength);
 
         assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
 

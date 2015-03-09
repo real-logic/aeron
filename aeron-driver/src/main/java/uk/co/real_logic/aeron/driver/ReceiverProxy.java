@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,7 +47,7 @@ public class ReceiverProxy
 
     public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             receiver.onAddSubscription(mediaEndpoint, streamId);
         }
@@ -59,7 +59,7 @@ public class ReceiverProxy
 
     public void removeSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             receiver.onRemoveSubscription(mediaEndpoint, streamId);
         }
@@ -71,7 +71,7 @@ public class ReceiverProxy
 
     public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             receiver.onNewConnection(channelEndpoint, connection);
         }
@@ -83,7 +83,7 @@ public class ReceiverProxy
 
     public void removeConnection(final DriverConnection connection)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             receiver.onRemoveConnection(connection);
         }
@@ -95,7 +95,7 @@ public class ReceiverProxy
 
     public void registerMediaEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             receiver.onRegisterMediaChannelEndpoint(channelEndpoint);
         }
@@ -107,7 +107,7 @@ public class ReceiverProxy
 
     public void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             receiver.onCloseReceiveChannelEndpoint(channelEndpoint);
         }
@@ -119,7 +119,7 @@ public class ReceiverProxy
 
     public void removePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        if (isShared())
+        if (isSharedThread())
         {
             receiver.onRemovePendingSetup(channelEndpoint, sessionId, streamId);
         }
@@ -129,19 +129,7 @@ public class ReceiverProxy
         }
     }
 
-    public void closeSubscription(final DriverSubscription subscription)
-    {
-        if (isShared())
-        {
-            receiver.onCloseSubscription(subscription);
-        }
-        else
-        {
-            offer(new CloseSubscriptionCmd(subscription));
-        }
-    }
-
-    private boolean isShared()
+    private boolean isSharedThread()
     {
         return threadingMode == SHARED;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -137,7 +137,7 @@ public class Publication implements AutoCloseable
         boolean succeeded = false;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = partitionIndex(initialTermId, activeTermId);
+        final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
@@ -197,7 +197,7 @@ public class Publication implements AutoCloseable
         boolean succeeded = false;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = partitionIndex(initialTermId, activeTermId);
+        final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 

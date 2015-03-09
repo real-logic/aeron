@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,13 +141,13 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
         if (null != connectionBySessionIdMap)
         {
             final int sessionId = header.sessionId();
-            final int termId = header.termId();
+            final int activeTermId = header.activeTermId();
             final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
 
             if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {
                 createConnection(
-                    srcAddress, streamId, sessionId, termId, header.termOffset(), header.termLength(), header.mtuLength());
+                    srcAddress, streamId, sessionId, activeTermId, header.termOffset(), header.termLength(), header.mtuLength());
             }
         }
     }

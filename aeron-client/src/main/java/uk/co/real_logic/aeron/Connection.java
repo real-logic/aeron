@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ class Connection
         final int currentTermId = computeTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
         final int initialTermOffset = computeTermOffsetFromPosition(initialPosition, positionBitsToShift);
         this.activeTermId = currentTermId;
-        this.activeIndex = partitionIndex(initialTermId, currentTermId);
+        this.activeIndex = indexByTerm(initialTermId, currentTermId);
 
         logReaders[activeIndex].seek(initialTermOffset);
         subscriberPosition.position(initialPosition);

@@ -17,21 +17,23 @@ public class PubSubOptions
     long messages;
     long threads;
     long iterations;
-    List<ChannelDescriptor> channels;
+    final List<ChannelDescriptor> channels;
+    MessageSizePattern sizePattern;
 
     public PubSubOptions()
     {
         // TODO: Add more detail to the descriptions
         options = new Options();
-        options.addOption("r", "rate", true, "Send rate pattern.");
-        options.addOption("m", "messages", true, "Send n messages before exiting.");
-        options.addOption("i", "iterations", true, "Run the rate sequence n times.");
-        options.addOption("s", "size", true, "Message payload size sequence, in bytes.");
-        options.addOption(null, "seed", true, "Random number generator seed.");
-        options.addOption("d", "data", true, "Send data file or verifiable stream.");
-        options.addOption("c", "channels", true, "Create the given channels.");
-        options.addOption(null, "driver", true, " Use 'external' or 'embedded' Aeron driver.");
-        options.addOption("t", "threads", true, "Number of threads.");
+        options.addOption("c",  "channels",   true, "Create the given channels.");
+        options.addOption("d",  "data",       true, "Send data file or verifiable stream.");
+        options.addOption(null, "driver",     true, " Use 'external' or 'embedded' Aeron driver.");
+        options.addOption("i",  "iterations", true, "Run the rate sequence n times.");
+        options.addOption("m",  "messages",   true, "Send n messages before exiting.");
+        options.addOption("r",  "rate",       true, "Send rate pattern.");
+        options.addOption(null, "seed",       true, "Random number generator seed.");
+        options.addOption(null, "session",    true, "Use session id for all publishers.");
+        options.addOption("s",  "size",       true, "Message payload size sequence, in bytes.");
+        options.addOption("t",  "threads",    true, "Number of threads.");
 
         // these will all be overridden in parseArgs
         randomSeed = 0;
@@ -39,6 +41,7 @@ public class PubSubOptions
         messages = 0;
         iterations = 0;
         useEmbeddedDriver = false;
+        sizePattern = null;
         channels = new ArrayList<ChannelDescriptor>();
     }
 
@@ -121,6 +124,7 @@ public class PubSubOptions
         parseChannels(opt);
 
         opt = command.getOptionValue("size", "32");
+        parseMessageSizes(opt);
     }
 
     public List<ChannelDescriptor> getChannels()
@@ -161,6 +165,10 @@ public class PubSubOptions
         return useEmbeddedDriver;
     }
 
+    public MessageSizePattern getMessageSizePattern()
+    {
+        return this.sizePattern;
+    }
     /**
      * Parses a comma separated list of channels. The channels can use ranges for ports and
      * stream-id on a per address basis. Channel Example: udp://192.168.0.100:21000-21004#1-10
@@ -361,6 +369,151 @@ public class PubSubOptions
             cd.setStreamIdentifiers(idArray);
             channels.add(cd);
             currentPort++;
+        }
+    }
+
+    private void parseMessageSizes(String cvs) throws ParseException
+    {
+        long numMessages = 0;
+        int messageSizeMin = 0;
+        int messageSizeMax = 0;
+
+        String[] sizeEntries = cvs.split(",");
+        for (int i = 0; i < sizeEntries.length; i++)
+        {
+            // The message size may be separated with a '@' to send a number of messages at a given size or range.
+            String entryStr = sizeEntries[i];
+            String[] entryComponents = entryStr.split("@");
+            if (entryComponents.length > 2)
+            {
+                throw new ParseException("Message size '" + entryStr + "' contains too many '@' characters.");
+            }
+
+            String sizeStr;
+            // Get number of messages and find the size string to be parsed later
+            if (entryComponents.length == 2)
+            {
+                // contains a number of messages followed by size or size range.
+                // Example: 100@8K-1MB (100 messages between 8 kilobytes and 1 megabyte in length)
+                try
+                {
+                    numMessages = Long.parseLong(entryComponents[0]);
+                }
+                catch (NumberFormatException numMessagesEx)
+                {
+                    throw new ParseException("Number of messages in '" + entryStr +"' could not parse as long value");
+                }
+                sizeStr = entryComponents[1];
+            }
+            else
+            {
+                numMessages = Long.MAX_VALUE;
+                sizeStr = entryComponents[0];
+            }
+
+            // parse the size string
+            String[] sizeRange = sizeStr.split("-");
+            if (sizeRange.length > 2)
+            {
+                throw new ParseException("Message size range in '" + entryStr + "' has too many '-' characters.");
+            }
+
+            messageSizeMin = parseSize(sizeRange[0]);
+            messageSizeMax = messageSizeMin;
+            if (sizeRange.length == 2)
+            {
+                // A range was specified, find the max value
+                messageSizeMax = parseSize(sizeRange[1]);
+            }
+            addSizeRange(numMessages, messageSizeMin, messageSizeMax);
+        } // end for loop
+    }
+
+    /**
+     * Parse a size into bytes. The size is a number with or without a suffix. The total bytes must be less
+     * than Integer.MAX_VALUE.
+     * Possible suffixes: B,b for bytes
+     *                    KB,kb,K,k for kilobyte (1024 bytes)
+     *                    MB,mb,M,m for megabytes (1024*1024 bytes)
+     * @param sizeStr String containing formatted size
+     * @return Number of bytes
+     * @throws ParseException When input is invalid or number of bytes too large.
+     */
+    private int parseSize(String sizeStr) throws ParseException
+    {
+        final int kb = 1024;
+        final int mb = 1024*1024;
+        int multiplier = 1;
+        long size = 0;
+        final String numberStr;
+
+        if (sizeStr.endsWith("KB") || sizeStr.contains("kb"))
+        {
+            multiplier = kb;
+            numberStr = sizeStr.substring(0, sizeStr.length() - 2);
+        }
+        else if (sizeStr.endsWith("K") || sizeStr.endsWith("k"))
+        {
+            multiplier = kb;
+            numberStr = sizeStr.substring(0, sizeStr.length() - 1);
+        }
+        else if (sizeStr.endsWith("MB") || sizeStr.contains("mb"))
+        {
+            multiplier = mb;
+            numberStr = sizeStr.substring(0, sizeStr.length() - 2);
+        }
+        else if (sizeStr.endsWith("M") || sizeStr.endsWith("m"))
+        {
+            multiplier = mb;
+            numberStr = sizeStr.substring(0, sizeStr.length() - 1);
+        }
+        else if (sizeStr.endsWith("B") || sizeStr.endsWith("b"))
+        {
+            multiplier = 1;
+            numberStr = sizeStr.substring(0, sizeStr.length() - 1);
+        }
+        else
+        {
+            // No suffix, assume bytes.
+            multiplier = 1;
+            numberStr = sizeStr;
+        }
+
+        try
+        {
+            size = Long.parseLong(numberStr);
+        }
+        catch (Exception ex)
+        {
+            throw new ParseException("Could not parse '" + numberStr + "' into a long value.");
+        }
+        size *= multiplier;
+
+        if (size > Integer.MAX_VALUE || size < 0)
+        {
+            // can't be larger than max signed int (2 gb) or less than 0.
+            throw new ParseException("Payload size '" + sizeStr + "' too large or negative.");
+        }
+        return (int)size;
+    }
+
+
+    private void addSizeRange(long messages, int minSize, int maxSize) throws ParseException
+    {
+        try
+        {
+            if (sizePattern == null)
+            {
+                sizePattern = new MessageSizePattern(messages, minSize, maxSize);
+            }
+            else
+            {
+                sizePattern.addPatternEntry(messages, minSize, maxSize);
+            }
+        }
+        catch (Exception ex)
+        {
+            throw new ParseException(ex.getMessage());
         }
     }
 }

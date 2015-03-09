@@ -15,12 +15,14 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -107,15 +109,62 @@ public class SamplesUtil
     {
         return (buffer, offset, length, header) ->
         {
-            final byte[] data = new byte[length];
-            buffer.getBytes(offset, data);
+        	if (MessageStream.isVerifiable(buffer, offset))
+        	{
+        		System.out.println("Yep, a verifiable message! Of length " + length + " bytes");
+        	}
+        	else
+        	{
+        		final byte[] data = new byte[length];
+        		buffer.getBytes(offset, data);
 
-            System.out.println(
-                String.format(
-                    "message to stream %d from session %x (%d@%d) <<%s>>",
-                    streamId, header.sessionId(), length, offset, new String(data)));
+        		System.out.println(
+        				String.format(
+        						"message to stream %d from session %x (%d@%d) <<%s>>",
+        						streamId, header.sessionId(), length, offset, new String(data)));
+        	}
         };
     }
+    
+    /**
+     * Return a reusable, parameterized {@link DataHandler} that prints to stdout
+     *
+     * @param streamId to show when printing
+     * @return subscription data handler function that prints the message contents
+     */
+    public static DataHandler printStringMessage(final int streamId, MessageStream ms)
+    {
+        return (buffer, offset, length, header) ->
+        {
+        	if (MessageStream.isVerifiable(buffer, offset))
+        	{
+        		System.out.println("Yep, a verifiable message! Of length " + length + " bytes");
+        		try
+        		{
+					ms.putNext(buffer, offset, length);
+				}
+        		catch (Exception e)
+        		{
+					e.printStackTrace();
+				}
+        		MessageStream.printHex(buffer, offset, length);
+        	}
+        	else
+        	{
+//        		final byte[] data = new byte[length];
+//        		buffer.getBytes(offset, data);
+//
+//        		System.out.println(
+//        				String.format(
+//        						"message to stream %d from session %x (%d@%d) <<%s>>",
+//        						streamId, header.sessionId(), length, offset, new String(data)));
+        		System.out.println("Got some weird crap:");
+        		MessageStream.printHex(buffer, offset, length);
+        	}
+        };
+    }
+    
+    
 
     /**
      * Return a reusable, parameteried {@link DataHandler} that calls into a

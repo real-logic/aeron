@@ -109,7 +109,27 @@ public class RateReporter implements Runnable
      */
     public void onMessage(final long messages, final long bytes)
     {
+//    	if ((ThreadLocalRandom.current().nextInt() % 1000) < 10)
+//    	{
+//    		//System.out.println("Good time for a nap...");
+//    		try
+//    		{	
+//				Thread.sleep(1000);
+//			}
+//    		catch (InterruptedException e)
+//    		{
+//				e.printStackTrace();
+//			}
+//    	}
+    	
         totalBytes += bytes;
         totalMessages += messages;
     }
+    
+    public void onSentMessage(final long messages, final long bytes)
+    {	
+        totalBytes += bytes;
+        totalMessages += messages;
+    }
+    
 }

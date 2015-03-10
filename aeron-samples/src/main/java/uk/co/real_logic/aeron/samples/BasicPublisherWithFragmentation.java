@@ -37,8 +37,8 @@ public class BasicPublisherWithFragmentation
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
 
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
-    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
-    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
+    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(8192));
+    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(8192));
 
     public static void main(final String[] args) throws Exception
     {
@@ -55,19 +55,20 @@ public class BasicPublisherWithFragmentation
         {
             for (int i = 0; i < 5; i++)
             {
-            	MessageStream msgStream = new MessageStream(12, 1024 * 50);
-            /* int len = msgStream.getNext(BUFFER); */
-                final String message = "Hello World! " + i;
-                BUFFER.putBytes(0, message.getBytes());
+            	MessageStream msgStream = new MessageStream(8192);
+            	int len = msgStream.getNext(BUFFER);
+            	int len2 = msgStream.getNext(BUFFER_2);
+                //final String message = "Hello World! " + i;
+                //BUFFER.putBytes(0, message.getBytes());
 
-                final String message2 = "Hello World from Second Publisher ! " + i;
-                BUFFER_2.putBytes(0, message2.getBytes());
+                //final String message2 = "Hello World from Second Publisher ! " + i;
+                //BUFFER_2.putBytes(0, message2.getBytes());
 
                 //System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
                 boolean offerStatus = false;
                 while (!offerStatus)
                 {
-	                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
+	                final boolean result = publication.offer(BUFFER, 0, len);
 
 	                if (!result)
 	                {
@@ -79,7 +80,7 @@ public class BasicPublisherWithFragmentation
 	                	offerStatus = true;
 	                    System.out.println(" yay!");
 	                }
-	                final boolean result2 = publication2.offer(BUFFER_2, 0, message2.getBytes().length);
+	                final boolean result2 = publication2.offer(BUFFER_2, 0, len2);
 
 	                if (!result2)
 	                {

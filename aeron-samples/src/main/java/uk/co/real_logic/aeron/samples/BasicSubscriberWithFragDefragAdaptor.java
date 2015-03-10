@@ -26,7 +26,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.tools.MessageStream;
 
-import java.io.PrintStream;
+//import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -145,7 +145,6 @@ public class BasicSubscriberWithFragDefragAdaptor
     {
         return (buffer, offset, length, header) ->
         {
-        	
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
@@ -153,7 +152,8 @@ public class BasicSubscriberWithFragDefragAdaptor
                 String.format(
                     "message to stream %d from session %d (%d@%d) <<%s>>",
                     streamId, header.sessionId(), length, offset, new String(data)));
-            try {
+            try
+            {
             	MessageStream msgStream = new MessageStream(8192);
             	msgStream.putNext(buffer, offset, length);
             }

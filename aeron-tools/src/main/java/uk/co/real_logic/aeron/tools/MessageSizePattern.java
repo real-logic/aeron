@@ -14,11 +14,11 @@ public class MessageSizePattern
     /**
      * Immutable object for holding a number of messages and a size range each message could be.
      */
-    final private class MessageSizeEntry
+    final class MessageSizeEntry
     {
-        final public long count;
-        final public int minSize;
-        final public int maxSize;
+        final long count;
+        final int minSize;
+        final int maxSize;
 
         MessageSizeEntry(long count, int minSize, int maxSize)
         {

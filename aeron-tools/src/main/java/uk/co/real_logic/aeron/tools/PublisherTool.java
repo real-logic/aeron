@@ -7,10 +7,13 @@ public class PublisherTool
     PublisherTool(String[] args)
     {
         PubSubOptions opts = new PubSubOptions();
-        opts.printHelp("PublisherTool");
         try
         {
-            opts.parseArgs(args);
+            if (opts.parseArgs(args) == 1)
+            {
+                opts.printHelp("PublisherTool");
+                System.exit(0);
+            }
         }
         catch (ParseException ex)
         {

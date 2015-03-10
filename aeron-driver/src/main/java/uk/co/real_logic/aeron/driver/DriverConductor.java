@@ -527,6 +527,7 @@ public class DriverConductor implements Agent
         final int sessionId,
         final int streamId,
         final int initialTermId,
+        final int activeTermId,
         final int initialTermOffset,
         final int termBufferLength,
         final int senderMtuLength,
@@ -544,7 +545,7 @@ public class DriverConductor implements Agent
         final RawLog rawLog = rawLogFactory.newConnection(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
         final long joiningPosition = LogBufferDescriptor.computePosition(
-            initialTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
+            activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
 
         final List<SubscriberPosition> subscriberPositions = subscriptions
             .stream()
@@ -588,6 +589,7 @@ public class DriverConductor implements Agent
             sessionId,
             streamId,
             initialTermId,
+            activeTermId,
             initialTermOffset,
             initialWindowLength,
             statusMessageTimeout,

@@ -24,7 +24,8 @@ public class CreateConnectionCmd implements DriverConductorCmd
 {
     private final int sessionId;
     private final int streamId;
-    private final int termId;
+    private final int initialTermId;
+    private final int activeTermId;
     private final int termOffset;
     private final int termLength;
     private final int senderMtuLength;
@@ -35,7 +36,8 @@ public class CreateConnectionCmd implements DriverConductorCmd
     public CreateConnectionCmd(
         final int sessionId,
         final int streamId,
-        final int termId,
+        final int initialTermId,
+        final int activeTermId,
         final int termOffet,
         final int termLength,
         final int senderMtuLength,
@@ -45,7 +47,8 @@ public class CreateConnectionCmd implements DriverConductorCmd
     {
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.termId = termId;
+        this.initialTermId = initialTermId;
+        this.activeTermId = activeTermId;
         this.termOffset = termOffet;
         this.termLength = termLength;
         this.senderMtuLength = senderMtuLength;
@@ -59,7 +62,8 @@ public class CreateConnectionCmd implements DriverConductorCmd
         conductor.onCreateConnection(
             sessionId,
             streamId,
-            termId,
+            initialTermId,
+            activeTermId,
             termOffset,
             termLength,
             senderMtuLength,
@@ -85,6 +89,6 @@ public class CreateConnectionCmd implements DriverConductorCmd
 
     public int termId()
     {
-        return termId;
+        return activeTermId;
     }
 }

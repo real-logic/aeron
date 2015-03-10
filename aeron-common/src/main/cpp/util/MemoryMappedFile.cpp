@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -159,7 +159,7 @@ bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
     uint8_t buffer[8196];
     memset(buffer, value, PAGE_SIZE);
- 
+
     DWORD written = 0;
 
     while (size >= PAGE_SIZE)

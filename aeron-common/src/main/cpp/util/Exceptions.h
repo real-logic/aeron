@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,9 +31,9 @@ namespace aeron { namespace common { namespace util {
 #ifdef _WIN32
 	#define SOURCEINFO __FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
 	#define AERON_NOEXCEPT
-#else 
+#else
 	#define SOURCEINFO  __PRETTY_FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
-	#define AERON_NOEXCEPT noexcept 
+	#define AERON_NOEXCEPT noexcept
 #endif
 
 class SourcedException : public std::exception

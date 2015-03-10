@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ static const char optHelp   = 'h';
 static const char optPath   = 'p';
 static const char optPeriod = 'u';
 
-struct Settings 
+struct Settings
 {
     std::string basePath = Context::defaultAeronPath();
     int updateIntervalms = 1000;
@@ -59,12 +59,12 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
         cp.displayOptionsHelp(std::cout);
         exit(0);
     }
-    
+
     Settings s;
-    
-    s.basePath = cp.getOption(optPath).getParam(0, s.basePath); 
+
+    s.basePath = cp.getOption(optPath).getParam(0, s.basePath);
     s.updateIntervalms = cp.getOption(optPeriod).getParamAsInt(0, 1, 1000000, s.updateIntervalms);
-    
+
     return s;
 }
 

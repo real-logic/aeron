@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -264,17 +264,17 @@ public:
     {
         return m_length;
     }
-    
+
     inline void setCapacity(util::index_t length)
     {
         m_length = length;
     }
-    
+
     inline std::uint8_t * getBuffer() const
     {
         return m_buffer;
     }
-        
+
     inline void setBuffer(std::uint8_t *buffer)
     {
         m_buffer = buffer;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,7 +52,7 @@ public class StreamingPublisher
     {
         if (MESSAGE_LENGTH < BitUtil.SIZE_OF_LONG)
         {
-            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", MESSAGE_LENGTH));
+            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", BitUtil.SIZE_OF_LONG));
         }
 
         SamplesUtil.useSharedMemoryOnLinux();

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -471,7 +471,7 @@ public class DriverConductor implements Agent
             if (connection.matches(channelEndpoint, streamId))
             {
                 final int subscriberPositionCounterId = allocatePositionCounter(
-                    "subscriber", channel, connection.sessionId(), streamId);
+                    "subscriber pos", channel, connection.sessionId(), streamId);
                 final BufferPositionIndicator indicator = new BufferPositionIndicator(
                     countersBuffer, subscriberPositionCounterId, countersManager);
                 final String sourceInfo = generateSourceInfo(connection.sourceAddress());
@@ -650,9 +650,7 @@ public class DriverConductor implements Agent
                 final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
                 logger.logPublicationRemoval(
-                    channelEndpoint.udpChannel().originalUriString(),
-                    publication.sessionId(),
-                    publication.streamId());
+                    channelEndpoint.udpChannel().originalUriString(), publication.sessionId(), publication.streamId());
 
                 channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
                 publications.remove(i);
@@ -709,6 +707,7 @@ public class DriverConductor implements Agent
         for (int i = connections.size() - 1; i >= 0; i--)
         {
             final DriverConnection connection = connections.get(i);
+            final String uriString = connection.receiveChannelEndpoint().udpChannel().originalUriString();
 
             switch (connection.status())
             {
@@ -725,10 +724,7 @@ public class DriverConductor implements Agent
                             connection.status(DriverConnection.Status.LINGER);
 
                             clientProxy.onInactiveConnection(
-                                connection.correlationId(),
-                                connection.sessionId(),
-                                connection.streamId(),
-                                connection.receiveChannelEndpoint().udpChannel().originalUriString());
+                                connection.correlationId(), connection.sessionId(), connection.streamId(), uriString);
                         }
                     }
                     break;
@@ -741,20 +737,14 @@ public class DriverConductor implements Agent
                         connection.timeOfLastStatusChange(now);
 
                         clientProxy.onInactiveConnection(
-                            connection.correlationId(),
-                            connection.sessionId(),
-                            connection.streamId(),
-                            connection.receiveChannelEndpoint().udpChannel().originalUriString());
+                            connection.correlationId(), connection.sessionId(), connection.streamId(), uriString);
                     }
                     break;
 
                 case LINGER:
                     if (now > (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        logger.logConnectionRemoval(
-                            connection.receiveChannelEndpoint().udpChannel().originalUriString(),
-                            connection.sessionId(),
-                            connection.streamId());
+                        logger.logConnectionRemoval(uriString, connection.sessionId(), connection.streamId());
 
                         connections.remove(i);
                         connection.close();

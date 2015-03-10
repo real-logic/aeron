@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.tools.*;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +55,7 @@ public class BasicPublisherWithFragmentation
         {
             for (int i = 0; i < 5; i++)
             {
+            	MessageStream msgStream = new MessageStream(12, 1024 * 1024 * 2);
                 final String message = "Hello World! " + i;
                 BUFFER.putBytes(0, message.getBytes());
 

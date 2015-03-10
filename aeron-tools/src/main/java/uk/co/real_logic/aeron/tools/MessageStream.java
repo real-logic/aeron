@@ -1,9 +1,9 @@
 package uk.co.real_logic.aeron.tools;
 
+import java.util.zip.CRC32;
+
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.util.zip.CRC32;
 
 public class MessageStream
 {
@@ -22,7 +22,7 @@ public class MessageStream
 	private final int maxSize;
 	private final CRC32 stream_checksum;
 	private final boolean verifiable;
-	
+
 	private long messageCount = 0;
 
 	private static final ThreadLocalCRC32 MSG_CHECKSUM = new ThreadLocalCRC32();
@@ -96,16 +96,16 @@ public class MessageStream
 		this.stream_checksum = new CRC32();
 		this.verifiable = true;
 	}
-	
+
 	public void putNext(DirectBuffer buffer, int offset, int length) throws Exception
 	{
 		UnsafeBuffer copybuf = new UnsafeBuffer(buffer, offset, length);
 		/* Assume we've already checked and it appears we have a verifiable message. */
-		
+
 		/* Save the checksums first, then blank them out. */
 		int msgCksum = copybuf.getInt(MESSAGE_CHECKSUM_OFFSET);
 		int streamCksum = copybuf.getInt(STREAM_CHECKSUM_OFFSET);
-		
+
 		copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, 0);
 		copybuf.putInt(STREAM_CHECKSUM_OFFSET, 0);
 
@@ -121,25 +121,25 @@ public class MessageStream
 			/* Put originally received checksums back in place. */
 			copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
 			copybuf.putInt(STREAM_CHECKSUM_OFFSET, streamCksum);
-			throw new Exception("Verifiable message per-message checksum invalid; received " + 
+			throw new Exception("Verifiable message per-message checksum invalid; received " +
 					msgCksum + " but calculated " + (int)(crc.getValue()));
 		}
-		
+
 		if ((int)(stream_checksum.getValue()) != streamCksum)
 		{
 			/* Put originally received checksums back in place. */
 			copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
 			copybuf.putInt(STREAM_CHECKSUM_OFFSET, streamCksum);
-			throw new Exception("Verifiable message stream checksum invalid; received " + 
+			throw new Exception("Verifiable message stream checksum invalid; received " +
 					streamCksum + " but calculated " + (int)(stream_checksum.getValue()));
 		}
-		
+
 		/* Put checksums back in place. */
 		copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
 		copybuf.putInt(STREAM_CHECKSUM_OFFSET, streamCksum);
 		messageCount++;
 	}
-	
+
 	public long getMessageCount()
 	{
 		return messageCount;
@@ -158,14 +158,14 @@ public class MessageStream
 		}
 		return false;
 	}
-	
+
 	private static final int HEX_PRINT_WIDTH = 16;
 
 	static void printHex(DirectBuffer buffer, int length)
 	{
 		printHex(buffer, 0, length);
 	}
-	
+
 	static void printHex(UnsafeBuffer buffer, int length)
 	{
 		printHex(buffer, 0, length);
@@ -184,9 +184,9 @@ public class MessageStream
 		}
 		System.out.println();
 	}
-	
+
 	public static void printHex(DirectBuffer buffer, int offset, int length)
-	{	
+	{
 		int pos = 0;
 		for (int i = offset; i < (offset + length); i++)
 		{
@@ -210,10 +210,10 @@ public class MessageStream
 
 		int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
 		getNext(buffer, size);
-		
+
 		return size;
 	}
-	
+
 	/** Generates a message of the desired size (size must be at least 12 bytes for
 	 * verifiable message headers if verifiable messages are on).
 	 * @throws Exception */
@@ -226,7 +226,7 @@ public class MessageStream
 				throw new Exception("Size must be at least " + HEADER_LENGTH + " when verifiable messages are used.");
 			}
 		}
-		
+
 		if (buffer.capacity() < size)
 		{
 			throw new Exception("Buffer capacity must be at least " + size + " bytes.");
@@ -245,7 +245,7 @@ public class MessageStream
 		{
 			pos = 0;
 		}
-		
+
 		int lenleft = size - pos;
 
 		/* Write random bytes until the end of the message. */
@@ -262,7 +262,7 @@ public class MessageStream
 			lenleft--;
 			pos++;
 		}
-		
+
 		/* Now calculate rolling and then per-message checksums if verifiable messages are on. */
 		if (verifiable)
 		{
@@ -273,7 +273,7 @@ public class MessageStream
 				stream_checksum.update(buffer.getByte(i));
 				msgCksum.update(buffer.getByte(i));
 			}
-						
+
 			/* Write checksums into message. */
 			buffer.putInt(STREAM_CHECKSUM_OFFSET, (int)(stream_checksum.getValue()));
 			buffer.putInt(MESSAGE_CHECKSUM_OFFSET, (int)(msgCksum.getValue()));

@@ -3,16 +3,17 @@ package uk.co.real_logic.aeron.tools;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class TLRandom {
+public class TLRandom
+{
 
-	final private static ThreadLocal<Random> RND = new ThreadLocal<Random>();
-	private static SeedCallback SEED_CALLBACK;
-	
-	public static void setSeedCallback(SeedCallback seedCallback)
+	private static final ThreadLocal<Random> RND = new ThreadLocal<Random>();
+	private static SeedCallback seedCallback;
+
+	public static void setSeedCallback(SeedCallback callback)
 	{
-		SEED_CALLBACK = seedCallback;
+		seedCallback = callback;
 	}
-	
+
 	public static Random current()
 	{
 		Random rnd = RND.get();
@@ -22,18 +23,18 @@ public class TLRandom {
 			long seed = ThreadLocalRandom.current().nextLong();
 			/* Call user's callback if set to give them a chance to
 			 * record or modify the seed. */
-			if (SEED_CALLBACK != null)
+			if (seedCallback != null)
 			{
-				seed = SEED_CALLBACK.setSeed(seed);
+				seed = seedCallback.setSeed(seed);
 			}
 			rnd = new Random(seed);
 			RND.set(rnd);
 		}
 		return rnd;
 	}
-	
+
 	public interface SeedCallback
 	{
-		public long setSeed(long seed);
+		long setSeed(long seed);
 	}
 }

@@ -37,8 +37,8 @@ public class BasicPublisherWithFragmentation
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
 
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
-    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(8192));
-    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(8192));
+    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
+    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
 
     public static void main(final String[] args) throws Exception
     {
@@ -53,11 +53,13 @@ public class BasicPublisherWithFragmentation
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 777);
         	 final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2, 999))
         {
+        	MessageStream msgStream = new MessageStream(8192);
+        	MessageStream msgStream2 = new MessageStream(8192);
+
             for (int i = 0; i < 5; i++)
             {
-            	MessageStream msgStream = new MessageStream(8192);
             	int len = msgStream.getNext(BUFFER);
-            	int len2 = msgStream.getNext(BUFFER_2);
+            	int len2 = msgStream2.getNext(BUFFER_2);
                 //final String message = "Hello World! " + i;
                 //BUFFER.putBytes(0, message.getBytes());
 
@@ -72,25 +74,25 @@ public class BasicPublisherWithFragmentation
 
 	                if (!result)
 	                {
-	                    System.out.println(" ah? from first publisher!");
+	                    System.out.println(" ah? from first publisher with stream ID " + STREAM_ID + "!!");
 	                    offerStatus = false;
 	                }
 	                else
 	                {
 	                	offerStatus = true;
-	                    System.out.println(" yay!");
+	                    System.out.println(" yay for stream " + STREAM_ID + " !! ");
 	                }
 	                final boolean result2 = publication2.offer(BUFFER_2, 0, len2);
 
 	                if (!result2)
 	                {
-	                    System.out.println(" ah? from second publisher!");
+	                    System.out.println(" ah? from second publisher with stream ID " + STREAM_ID_2 + "!!");
 	                    offerStatus = false;
 	                }
 	                else
 	                {
 	                	offerStatus = true;
-	                	System.out.println(" yay!");
+	                	System.out.println(" yay for stream " + STREAM_ID_2 + " !! ");
 	                }
                 }
 

@@ -42,7 +42,8 @@ public class BasicSubscriberWithFragDefragAdaptor
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
-
+    private static MessageStream msgStream = new MessageStream();
+    private static MessageStream msgStream2 = new MessageStream();
 
     public static void main(final String[] args) throws Exception
     {
@@ -65,7 +66,7 @@ public class BasicSubscriberWithFragDefragAdaptor
         final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(reassembledStringMessage(STREAM_ID));
 
         // Another Data handler for a different stream
-        final FragmentAssemblyAdapter dataHandler2 = new FragmentAssemblyAdapter(reassembledStringMessage(STREAM_ID_2));
+        final FragmentAssemblyAdapter dataHandler2 = new FragmentAssemblyAdapter(reassembledStringMessage2(STREAM_ID_2));
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
@@ -150,12 +151,18 @@ public class BasicSubscriberWithFragDefragAdaptor
 
             System.out.println(
                 String.format(
-                    "message to stream %d from session %d (%d@%d) <<%s>>",
-                    streamId, header.sessionId(), length, offset, new String(data)));
+                    "message to stream %d from session %d (%d@%d)",
+                    streamId, header.sessionId(), length, offset));
             try
             {
-            	MessageStream msgStream = new MessageStream(8192);
-            	msgStream.putNext(buffer, offset, length);
+            	if (streamId == STREAM_ID)
+            	{
+            		msgStream.putNext(buffer, offset, length);
+            	}
+            	else
+            	{
+            			System.out.println("Unknown Stream ID");
+            	}
             }
             catch (Exception e)
             {
@@ -163,4 +170,43 @@ public class BasicSubscriberWithFragDefragAdaptor
             }
         };
     }
+
+
+
+/**
+ * Return a reusable, parameterized {@link DataHandler} that prints to stdout
+ *
+ * @param streamId to show when printing
+ * @return subscription data handler function that prints the message contents
+ */
+public static DataHandler reassembledStringMessage2(final int streamId)
+{
+    return (buffer, offset, length, header) ->
+    {
+        final byte[] data = new byte[length];
+        buffer.getBytes(offset, data);
+
+        System.out.println(
+            String.format(
+                "message to stream %d from session %d (%d@%d)",
+                streamId, header.sessionId(), length, offset));
+        try
+        {
+
+        	if (streamId == STREAM_ID_2)
+        	{
+        		msgStream2.putNext(buffer, offset, length);
+        	}
+        	else
+        	{
+        			System.out.println("Unknown Stream ID");
+        	}
+        }
+        catch (Exception e)
+        {
+        	e.printStackTrace();
+        }
+    };
 }
+}
+

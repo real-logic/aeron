@@ -16,7 +16,7 @@
 
 
 
-checkstyle {
+/*checkstyle {
     // lambdas break checkstyle currently. Grrrr!
     ignoreFailures = true
-}
+}*/

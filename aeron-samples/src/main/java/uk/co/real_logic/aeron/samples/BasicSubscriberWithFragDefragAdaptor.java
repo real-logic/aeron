@@ -28,7 +28,7 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
+//import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
 
 /**
  * Basic Aeron subscriber application which can receive fragmented messages
@@ -41,21 +41,23 @@ public class BasicSubscriberWithFragDefragAdaptor
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    
+
     public static void main(final String[] args) throws Exception
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID + " and stream Id " + STREAM_ID_2);
-        
+
         // Create shared memory segments
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-        
-        // Create a context for client
-        final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventNewConnection) // Callback method when a new producer starts
-            .inactiveConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventInactiveConnection); // Callback when at a producer exits
-        
+
+        // Create a context for client and specify callback methods when
+        // a new connection starts (eventNewConnection)
+        // a connection goes inactive (eventInactiveConnection)
+        final Aeron.Context ctx = new Aeron.Context() /* Callback at new producer starts */
+        	.newConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventNewConnection)
+        	.inactiveConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventInactiveConnection);
+
         // dataHandler method is called for every new datagram received
         // When a message is completely reassembled, the delegate method 'printStringMessage' is called
         final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(reassembledStringMessage(STREAM_ID));
@@ -64,31 +66,28 @@ public class BasicSubscriberWithFragDefragAdaptor
         final FragmentAssemblyAdapter dataHandler2 = new FragmentAssemblyAdapter(reassembledStringMessage(STREAM_ID_2));
 
         final AtomicBoolean running = new AtomicBoolean(true);
-        
+
         //Register a SIGINT handler
         SigInt.register(() -> running.set(false));
 
         // Create an Aeron instance with client provided context configuration and connect to media driver
         try (final Aeron aeron = Aeron.connect(ctx);
-        	 //Add a subscription to Aeron for a given channel and steam. Also, supply a dataHandler to
-        	 // be called when data arrives 
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler);
-        	 final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
-        {
-            // run the subscriber thread from here
-            
-            //SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription2);
-            //SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+        		//Add a subscription to Aeron for a given channel and steam. Also,
+        		// supply a dataHandler to be called when data arrives
+        		final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler);
+        		final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
+        		{
+        	// run the subscriber thread from here
         	final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
-        	
-                try
+        			100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+
+        		try
                 {
                     while (running.get())
                     {
                         final int fragmentsRead = subscription.poll(FRAGMENT_COUNT_LIMIT);
                         idleStrategy.idle(fragmentsRead);
-                        
+
                         final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
                         idleStrategy.idle(fragmentsRead2);
                     }
@@ -133,7 +132,7 @@ public class BasicSubscriberWithFragDefragAdaptor
                 "inactive connection on %s streamId %d sessionId %d",
                 channel, streamId, sessionId));
     }
-    
+
     /**
      * Return a reusable, parameterized {@link DataHandler} that prints to stdout
      *

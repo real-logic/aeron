@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
@@ -40,35 +39,34 @@ public class BasicSubscriber
     public static void main(final String[] args) throws Exception
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
-        
+
         // Create shared memory segments
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-        
+
         // Create a context for client
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection) // Callback method when a new producer starts
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection); // Callback when at a producer exits
-        
-        // dataHandler method is called for every new datagram received
-        final DataHandler dataHandler = printStringMessage(STREAM_ID); 
 
+        // dataHandler method is called for every new datagram received
+        final DataHandler dataHandler = printStringMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
-        
+
         //Register a SIGINT handler
         SigInt.register(() -> running.set(false));
 
         // Create an Aeron instance with client provided context credentials
         try (final Aeron aeron = Aeron.connect(ctx);
-        	 //Add a subscription to Aeron for a given channel and steam. Also, supply a dataHandler to
-        	 // be called when data arrives 
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+        		//Add a subscription to Aeron for a given channel and steam. Also, supply a dataHandler to
+        		// be called when data arrives
+        		final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             // run the subscriber thread from here
-            SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+        	SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
-            System.out.println("Shutting down...");
+        	System.out.println("Shutting down...");
         }
 
         CloseHelper.quietClose(driver);

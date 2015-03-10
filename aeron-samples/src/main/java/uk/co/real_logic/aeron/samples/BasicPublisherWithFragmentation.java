@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.tools.*;
+import uk.co.real_logic.aeron.tools.MessageStream;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -51,23 +51,24 @@ public class BasicPublisherWithFragmentation
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 777);
-        	 final Publication publication_2 = aeron.addPublication(CHANNEL, STREAM_ID_2, 999))
+        	 final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2, 999))
         {
             for (int i = 0; i < 5; i++)
             {
-            	MessageStream msgStream = new MessageStream(12, 1024 * 1024 * 2);
+            	MessageStream msgStream = new MessageStream(12, 1024 * 50);
+            /* int len = msgStream.getNext(BUFFER); */
                 final String message = "Hello World! " + i;
                 BUFFER.putBytes(0, message.getBytes());
 
-                final String message_2 = "Hello World from Second Publisher ! " + i;
-                BUFFER_2.putBytes(0, message_2.getBytes());
-                
-                System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
+                final String message2 = "Hello World from Second Publisher ! " + i;
+                BUFFER_2.putBytes(0, message2.getBytes());
+
+                //System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
                 boolean offerStatus = false;
                 while (!offerStatus)
                 {
 	                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
-	
+
 	                if (!result)
 	                {
 	                    System.out.println(" ah? from first publisher!");
@@ -78,18 +79,17 @@ public class BasicPublisherWithFragmentation
 	                	offerStatus = true;
 	                    System.out.println(" yay!");
 	                }
-	                
-	                final boolean result_2 = publication_2.offer(BUFFER_2, 0, message_2.getBytes().length);
-	            	
-	                if (!result_2)
+	                final boolean result2 = publication2.offer(BUFFER_2, 0, message2.getBytes().length);
+
+	                if (!result2)
 	                {
 	                    System.out.println(" ah? from second publisher!");
 	                    offerStatus = false;
 	                }
 	                else
 	                {
-	                	offerStatus = true;                
-	                    System.out.println(" yay!");
+	                	offerStatus = true;
+	                	System.out.println(" yay!");
 	                }
                 }
 

@@ -46,7 +46,7 @@ public class NetworkUtil
      * @param subnetPrefix
      * @return {@link NetworkInterface}s that match the supplied criteria, ordered by the length
      * of the subnet prefix.  Empty if none match.
-     * @throws SocketException
+     * @throws SocketException Exception.
      */
     public static Collection<NetworkInterface> filterBySubnet(InetAddress address, int subnetPrefix)
         throws SocketException

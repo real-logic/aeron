@@ -157,8 +157,15 @@ project(':aeron-driver') {
         systemProperties(System.properties)
     }
 
+    
     build.doLast {
         tasks.distZip.execute()
+    }
+
+    task driver(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.driver.MediaDriver'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
     }
 }
 
@@ -183,6 +190,36 @@ project(':aeron-samples') {
     build.doLast {
         tasks.shadowJar.execute()
     }
+
+    task Ping(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.samples.Ping'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
+    }
+
+    task Pong(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.samples.Pong'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
+    }
+
+    task LLDriver(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.samples.LowLatencyMediaDriver'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
+    }
+
+    task basicPub(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.samples.BasicPublisher'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
+    }
+
+    task basicSub(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.samples.BasicSubscriber'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
+    }
 }
 
 project(':aeron-system-tests') {
@@ -202,6 +239,22 @@ project(':aeron-tools') {
         compile project(':aeron-client'), project(':aeron-driver')
         compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
         testCompile project(path: ':aeron-common', configuration: 'tests')
+    }
+
+    task stats(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.tools.StatsDriver'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
+
+      if (project.hasProperty('myargs')) {
+        args(myargs.split(','))
+      }
+    }
+
+    task embeddedPub(type:JavaExec) {
+      main = 'uk.co.real_logic.aeron.tools.EmbeddedPublisher'
+      classpath = sourceSets.main.runtimeClasspath
+      systemProperties(System.properties)
     }
 }
 

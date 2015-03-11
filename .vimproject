@@ -1,4 +1,4 @@
-Aeron=/Users/philipjohnson1/work/Aeron_Tools CD=. filter="*.java" {
+Aeron=~/work/AeronTools CD=. filter="*.java" {
   client=aeron-client/src/main/java/uk/co/real_logic/aeron {
     ActiveSubscriptions.java
     Aeron.java
@@ -202,8 +202,24 @@ Aeron=/Users/philipjohnson1/work/Aeron_Tools CD=. filter="*.java" {
     SystemTestHelper.java
   }
   tools=aeron-tools/src/main/java/uk/co/real_logic/aeron/tools {
-    AeronStat.java
+    ChannelDescriptor.java
+    EmbeddedPublisher.java
+    EmbeddedSubscriber.java
+    MessageSizePattern.java
+    PubSubOptions.java
+    PublisherStats.java
     PublisherTool.java
+    Stats.java
+    StatsConsoleOutput.java
+    StatsCSVOutput.java
+    StatsDriver.java
+    StatsNetstatOutput.java
+    StatsOutput.java
+    StatsVMStatOutput.java
+    SubscriberStats.java
+    SubscriberTool.java
+    TLRandom.java
+    TransportStats.java
   }
   config=config {
     checkstyle=checkstyle {

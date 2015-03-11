@@ -7,14 +7,14 @@ public class MessagesAtMessagesPerSecondInterval extends RateControllerInterval
 	/* The rate we _want_ to achieve, if possible.  Might not be able
 	 * to hit it exactly due to receiver pacing, etc.  But it's what
 	 * we're aiming for. */
-	private final long goalMessagesPerSecond;
+	private final double goalMessagesPerSecond;
 	/* Number of messages to send; for this interval type, this is a
 	 * hard number, not just a goal.  We _have_ to send this many
 	 * messages, no matter how long it takes or how slowly we end up
 	 * sending them. */
 	private final long messages;
 
-	public MessagesAtMessagesPerSecondInterval(long messages, long messagesPerSecond)
+	public MessagesAtMessagesPerSecondInterval(long messages, double messagesPerSecond)
 	{
 		this.goalMessagesPerSecond = messagesPerSecond;
 		this.messages = messages;

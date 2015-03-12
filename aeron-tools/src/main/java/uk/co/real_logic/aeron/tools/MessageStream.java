@@ -1,5 +1,6 @@
 package uk.co.real_logic.aeron.tools;
 
+import java.io.InputStream;
 import java.util.zip.CRC32;
 
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -7,7 +8,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class MessageStream
 {
-
 	/* Message header offsets for verifiable message headers. */
 	private static final int MAGIC_OFFSET = 0;
 	private static final int MESSAGE_CHECKSUM_OFFSET = 4;
@@ -17,13 +17,18 @@ public class MessageStream
 	private static final int HEADER_LENGTH = 12;
 
 	private static final int MAGIC = 0x0dd01221; /* That's "2112d00d" when taken a byte at a time... */
+	private static final int MAGIC_END = 0xbeba1221; /* That's "2112babe" when taken a byte at a time... */
 
 	private final int minSize;
 	private final int maxSize;
 	private final CRC32 stream_checksum;
 	private final boolean verifiable;
 
+	private InputStream inputStream;
+	private byte[] inputStreamBytes;
+
 	private long messageCount = 0;
+	private boolean active = true;
 
 	private static final ThreadLocalCRC32 MSG_CHECKSUM = new ThreadLocalCRC32();
 
@@ -37,16 +42,32 @@ public class MessageStream
 
 	public MessageStream(int size) throws Exception
 	{
-		this(size, size, true);
+		this(size, size, true, null);
 	}
 
 	public MessageStream(int minSize, int maxSize) throws Exception
 	{
-		this(minSize, maxSize, true);
+		this(minSize, maxSize, true, null);
+	}
+
+	public MessageStream(int size, InputStream inputStream) throws Exception
+	{
+		this(size, size, true, inputStream);
+	}
+
+	public MessageStream(int size, boolean verifiable, InputStream inputStream) throws Exception
+	{
+		this(size, size, verifiable, inputStream);
 	}
 
 	public MessageStream(int minSize, int maxSize, boolean verifiable) throws Exception
 	{
+		this(minSize, maxSize, verifiable, null);
+	}
+
+	public MessageStream(int minSize, int maxSize, boolean verifiable, InputStream inputStream) throws Exception
+	{
+		this.inputStream = inputStream;
 		if (minSize < 0)
 		{
 			throw new Exception("MessageStream minimum message size must be 0 or greater.");
@@ -64,6 +85,8 @@ public class MessageStream
 			throw new Exception("MessageStream minimum size must be at least " +
 					HEADER_LENGTH + " bytes when using verifiable messages.");
 		}
+
+		this.inputStreamBytes = new byte[maxSize];
 
 		this.verifiable = verifiable;
 		if (this.verifiable)
@@ -95,10 +118,24 @@ public class MessageStream
 		this.message_offset = HEADER_LENGTH;
 		this.stream_checksum = new CRC32();
 		this.verifiable = true;
+		this.inputStream = null;
+	}
+
+	public int payloadOffset(DirectBuffer buffer, int offset)
+	{
+		if (isVerifiable(buffer, offset))
+		{
+			return HEADER_LENGTH;
+		}
+		return 0;
 	}
 
 	public void putNext(DirectBuffer buffer, int offset, int length) throws Exception
 	{
+		if (!active)
+		{
+			throw new Exception("Stream has ended.");
+		}
 		UnsafeBuffer copybuf = new UnsafeBuffer(buffer, offset, length);
 		/* Assume we've already checked and it appears we have a verifiable message. */
 
@@ -138,6 +175,30 @@ public class MessageStream
 		copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
 		copybuf.putInt(STREAM_CHECKSUM_OFFSET, streamCksum);
 		messageCount++;
+		/* Look for an end marker. */
+		if (copybuf.getInt(MAGIC_OFFSET) == MAGIC_END)
+		{
+			active = false;
+		}
+	}
+
+	public void reset(InputStream inputStream)
+	{
+		reset();
+		this.inputStream = inputStream;
+	}
+
+	public void reset()
+	{
+		/* Reset stream checksum and set things back to active, 0 messages, etc. */
+		stream_checksum.reset();
+		active = true;
+		messageCount = 0;
+	}
+
+	public boolean isActive()
+	{
+		return active;
 	}
 
 	public long getMessageCount()
@@ -152,7 +213,8 @@ public class MessageStream
 		{
 			return false;
 		}
-		if (buffer.getInt(offset) == MAGIC)
+		final int magic = buffer.getInt(offset);
+		if ((magic == MAGIC) || (magic == MAGIC_END))
 		{
 			return true;
 		}
@@ -209,16 +271,21 @@ public class MessageStream
 		}
 
 		int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
-		getNext(buffer, size);
-
-		return size;
+		return getNext(buffer, size);
 	}
 
-	/** Generates a message of the desired size (size must be at least 12 bytes for
-	 * verifiable message headers if verifiable messages are on).
-	 * @throws Exception */
-	public void getNext(UnsafeBuffer buffer, int size) throws Exception
+	/* This method exists only because of the idiotic 100-line method limit
+	 * in checkstyle.  Otherwise it would've all gone in to the top of getNext. */
+	private void checkConstraints(UnsafeBuffer buffer, int size) throws Exception
 	{
+		if (!active)
+		{
+			throw new Exception("Stream has ended.");
+		}
+		if (size < 1)
+		{
+			throw new Exception("Size must be > 0.");
+		}
 		if (verifiable)
 		{
 			if (size < HEADER_LENGTH)
@@ -226,11 +293,18 @@ public class MessageStream
 				throw new Exception("Size must be at least " + HEADER_LENGTH + " when verifiable messages are used.");
 			}
 		}
-
 		if (buffer.capacity() < size)
 		{
 			throw new Exception("Buffer capacity must be at least " + size + " bytes.");
 		}
+	}
+
+	/** Generates a message of the desired size (size must be at least 12 bytes for
+	 * verifiable message headers if verifiable messages are on).
+	 * @throws Exception */
+	public int getNext(UnsafeBuffer buffer, int size) throws Exception
+	{
+		checkConstraints(buffer, size);
 
 		int pos;
 
@@ -248,19 +322,48 @@ public class MessageStream
 
 		int lenleft = size - pos;
 
-		/* Write random bytes until the end of the message. */
-		while (lenleft >= 4)
+		if (inputStream == null)
 		{
-			buffer.putInt(pos, TLRandom.current().nextInt());
-			pos += 4;
-			lenleft -= 4;
+			/* We don't have anything in particular we want to write, so
+			 * just fill in random bytes until the end of the message. */
+			while (lenleft >= 4)
+			{
+				buffer.putInt(pos, TLRandom.current().nextInt());
+				pos += 4;
+				lenleft -= 4;
+			}
+			while (lenleft > 0)
+			{
+				int lastnum = TLRandom.current().nextInt();
+				buffer.putByte(pos, (byte)(lastnum >> (lenleft << 3)));
+				lenleft--;
+				pos++;
+			}
 		}
-		while (lenleft > 0)
+		else
 		{
-			int lastnum = TLRandom.current().nextInt();
-			buffer.putByte(pos, (byte)(lastnum >> (lenleft << 3)));
-			lenleft--;
-			pos++;
+			/* Try to pull out "size" bytes from the InputStream.  If we
+			 * can't (stream ends, etc.), then just fill in what we got;
+			 * we'll return the size actually written. */
+			if (inputStreamBytes.length < lenleft)
+			{
+				inputStreamBytes = new byte[lenleft];
+			}
+			/* Try to read some bytes.  Maybe we'll even get some! */
+			final int sizeRead = inputStream.read(inputStreamBytes, 0, lenleft);
+			if (sizeRead > 0)
+			{
+				/* Copy what was read. */
+				buffer.putBytes(pos, inputStreamBytes, 0, sizeRead);
+				pos += sizeRead;
+			}
+			else
+			{
+				/* I guess the inputStream is done.  So change the
+				 * message type to an end message and mark this stream done. */
+				buffer.putInt(MAGIC_OFFSET, MAGIC_END);
+				active = false;
+			}
 		}
 
 		/* Now calculate rolling and then per-message checksums if verifiable messages are on. */
@@ -280,5 +383,6 @@ public class MessageStream
 		}
 
 		messageCount++;
+		return pos;
 	}
 }

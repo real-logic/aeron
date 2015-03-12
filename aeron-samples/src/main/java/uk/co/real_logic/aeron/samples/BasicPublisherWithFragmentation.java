@@ -47,15 +47,20 @@ public class BasicPublisherWithFragmentation
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+        // Create a context for client connection
         final Aeron.Context ctx = new Aeron.Context();
+
+        // Create an Aeron instance using connection parameter specified by context
+        // and add 2 publisher with two different session Ids
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 777);
         	 final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2, 999))
         {
+        	// Allocate 2 different session buffer
         	MessageStream msgStream = new MessageStream(8192);
         	MessageStream msgStream2 = new MessageStream(8192);
-
+        	// Try to send 5 messages from each publishers
             for (int i = 0; i < 5; i++)
             {
             	int len = msgStream.getNext(BUFFER);
@@ -63,6 +68,7 @@ public class BasicPublisherWithFragmentation
                 boolean offerStatus = false;
                 while (!offerStatus)
                 {
+                	// Try to publish buffer from first publisher
 	                final boolean result = publication.offer(BUFFER, 0, len);
 
 	                if (!result)
@@ -73,13 +79,16 @@ public class BasicPublisherWithFragmentation
 	                else
 	                {
 	                	offerStatus = true;
-	                    System.out.println(" yay for stream " + STREAM_ID + " !! ");
+	                    System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + "!!");
 	                }
+
+	                // Try to publish buffer from first publisher
 	                final boolean result2 = publication2.offer(BUFFER_2, 0, len2);
 
 	                if (!result2)
 	                {
-	                    System.out.println(" ah? from second publisher with stream ID " + STREAM_ID_2 + "!!");
+	                	System.out.println(" ah? from second publisher with stream ID " +
+	                			STREAM_ID_2 + " and data length " + len2 +  "!!");
 	                    offerStatus = false;
 	                }
 	                else

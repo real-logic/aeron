@@ -54,7 +54,7 @@ public class BasicSubscriberWithFragDefragAdaptor
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
-        // Create a context for client and specify callback methods when
+        // Create a context for a client and specify callback methods when
         // a new connection starts (eventNewConnection)
         // a connection goes inactive (eventInactiveConnection)
         final Aeron.Context ctx = new Aeron.Context() /* Callback at new producer starts */
@@ -80,12 +80,13 @@ public class BasicSubscriberWithFragDefragAdaptor
         		final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler);
         		final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
         		{
-        	// run the subscriber thread from here
+
         	final IdleStrategy idleStrategy = new BackoffIdleStrategy(
         			100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
         		try
                 {
+        			//Try to read the data for both the subscribers
                     while (running.get())
                     {
                         final int fragmentsRead = subscription.poll(FRAGMENT_COUNT_LIMIT);

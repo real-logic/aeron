@@ -21,7 +21,7 @@ public class RateController
 	private static final long TIME_NANOS;
 	private static final long TIME_NANOS_FUDGE_FACTOR = 2;
 
-	private final Sender sendFunc;
+	private final Callback sendFunc;
 
 	private final ArrayList<IntervalInternal> intervals = new ArrayList<RateController.IntervalInternal>();
 	private IntervalInternal activeInterval;
@@ -34,7 +34,7 @@ public class RateController
 	private final int iterations;
 	private int currentIteration;
 
-	public boolean sendNext()
+	public boolean next()
 	{
 		if (activeInterval == null)
 		{
@@ -65,10 +65,10 @@ public class RateController
 		return true;
 	}
 
-	public interface Sender
+	public interface Callback
 	{
-		/** Returns the number of bytes sent, or -1 to indicate sending should stop. */
-		int send();
+		/** Returns the number of bytes "sent", or -1 to indicate sending should stop. */
+		int onNext();
 	}
 
 	public void rewind()
@@ -207,7 +207,7 @@ public class RateController
 			/* Always start out sending immediately; if the previous
 			 * interval needed to delay a bit after its last send,
 			 * then it should have done so. */
-			final long sizeInBytes = rateController.sendFunc.send();
+			final long sizeInBytes = rateController.sendFunc.onNext();
 			if (sizeInBytes < 0)
 			{
 				/* Just stop here; returned size < 0 means the user wants us to stop. */
@@ -273,7 +273,7 @@ public class RateController
 			/* Always start out sending immediately; if the previous
 			 * interval needed to delay a bit after its last send,
 			 * then it should have done so. */
-			final long sizeInBytes = rateController.sendFunc.send();
+			final long sizeInBytes = rateController.sendFunc.onNext();
 			if (sizeInBytes < 0)
 			{
 				/* Just stop here; returned size < 0 means the user wants us to stop. */
@@ -340,7 +340,7 @@ public class RateController
 			/* Always start out sending immediately; if the previous
 			 * interval needed to delay a bit after its last send,
 			 * then it should have done so. */
-			final long sizeInBytes = rateController.sendFunc.send();
+			final long sizeInBytes = rateController.sendFunc.onNext();
 			if (sizeInBytes < 0)
 			{
 				/* Just stop here; returned size < 0 means the user wants us to stop. */
@@ -408,7 +408,7 @@ public class RateController
 			/* Always start out sending immediately; if the previous
 			 * interval needed to delay a bit after its last send,
 			 * then it should have done so. */
-			final long sizeInBytes = rateController.sendFunc.send();
+			final long sizeInBytes = rateController.sendFunc.onNext();
 			if (sizeInBytes < 0)
 			{
 				/* Just stop here; returned size < 0 means the user wants us to stop. */
@@ -484,13 +484,13 @@ public class RateController
 
 	}
 
-	public RateController(final Sender sendFunc, List<RateControllerInterval> intervals, int iterations) throws Exception
+	public RateController(final Callback callback, List<RateControllerInterval> intervals, int iterations) throws Exception
 	{
-		if (sendFunc == null)
+		if (callback == null)
 		{
-			throw new Exception("Must specify a send method.");
+			throw new Exception("Must specify a callback method.");
 		}
-		this.sendFunc = sendFunc;
+		this.sendFunc = callback;
 		if (intervals == null)
 		{
 			throw new Exception("Intervals list must not be null.");
@@ -503,17 +503,17 @@ public class RateController
 		this.iterations = iterations;
 	}
 
-	public RateController(final Sender sendFunc, List<RateControllerInterval> intervals) throws Exception
+	public RateController(final Callback callback, List<RateControllerInterval> intervals) throws Exception
 	{
-		this(sendFunc, intervals, 1);
+		this(callback, intervals, 1);
 	}
 
-	public long getMessagesSent()
+	public long getMessages()
 	{
 		return messagesSent;
 	}
 
-	public long getBytesSent()
+	public long getBytes()
 	{
 		return bytesSent;
 	}

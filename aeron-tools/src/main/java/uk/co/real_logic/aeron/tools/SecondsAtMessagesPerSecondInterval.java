@@ -17,6 +17,16 @@ public class SecondsAtMessagesPerSecondInterval extends RateControllerInterval
 		this.seconds = seconds;
 	}
 
+	public double messagesPerSecond()
+	{
+		return goalMessagesPerSecond;
+	}
+
+	public double seconds()
+	{
+		return seconds;
+	}
+
 	@Override
 	IntervalInternal makeInternal(RateController rateController)
 	{

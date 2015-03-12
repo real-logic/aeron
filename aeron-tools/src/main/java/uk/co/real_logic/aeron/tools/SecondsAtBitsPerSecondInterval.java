@@ -17,6 +17,16 @@ public class SecondsAtBitsPerSecondInterval extends RateControllerInterval
 		this.seconds = seconds;
 	}
 
+	public long bitsPerSecond()
+	{
+		return goalBitsPerSecond;
+	}
+
+	public double seconds()
+	{
+		return seconds;
+	}
+
 	@Override
 	IntervalInternal makeInternal(RateController rateController)
 	{

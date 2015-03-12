@@ -20,6 +20,16 @@ public class MessagesAtMessagesPerSecondInterval extends RateControllerInterval
 		this.messages = messages;
 	}
 
+	public double messagesPerSecond()
+	{
+		return goalMessagesPerSecond;
+	}
+
+	public long messages()
+	{
+		return messages;
+	}
+
 	@Override
 	IntervalInternal makeInternal(RateController rateController)
 	{

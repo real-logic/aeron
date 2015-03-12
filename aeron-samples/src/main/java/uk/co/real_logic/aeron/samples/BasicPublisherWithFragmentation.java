@@ -60,13 +60,6 @@ public class BasicPublisherWithFragmentation
             {
             	int len = msgStream.getNext(BUFFER);
             	int len2 = msgStream2.getNext(BUFFER_2);
-                //final String message = "Hello World! " + i;
-                //BUFFER.putBytes(0, message.getBytes());
-
-                //final String message2 = "Hello World from Second Publisher ! " + i;
-                //BUFFER_2.putBytes(0, message2.getBytes());
-
-                //System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
                 boolean offerStatus = false;
                 while (!offerStatus)
                 {

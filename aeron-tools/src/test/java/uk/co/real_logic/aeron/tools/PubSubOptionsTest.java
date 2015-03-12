@@ -6,6 +6,7 @@ import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -382,5 +383,107 @@ public class PubSubOptionsTest
         MessageSizePattern p = opts.getMessageSizePattern();
         assertThat(p.getNext(), both(greaterThanOrEqualTo(1023)).and(lessThanOrEqualTo((1024))));
         assertThat(p.getNext(), both(greaterThanOrEqualTo(1023*1024)).and(lessThanOrEqualTo(1024*1024)));
+    }
+
+    @Test
+    public void rateMaximum() throws Exception
+    {
+        String[] args = { "--rate", "max" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(1));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+    }
+
+    @Test
+    public void rateMbps() throws Exception
+    {
+        String[] args = { "--rate", "1Gbps" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(1));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+    }
+
+    @Test
+    public void rateMessagesPerSecond() throws Exception
+    {
+        String[] args = { "--rate", "100mps" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(1));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
+    }
+
+    @Test (expected=ParseException.class)
+    public void rateNotValid() throws Exception
+    {
+        String[] args = { "--rate", "1.21 Jigga Watts" };
+        opts.parseArgs(args); // will throw ParseException
+    }
+
+    @Test
+    public void rateMessagesAtBitsPerSecond() throws Exception
+    {
+        String[] args = { "--rate", "100m@0.5Mbps" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(1));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(MessagesAtBitsPerSecondInterval.class));
+    }
+
+    @Test
+    public void rateMessagesAtMessagesPerSecond() throws Exception
+    {
+        String[] args = { "--rate", "10m@1mps" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(1));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(MessagesAtMessagesPerSecondInterval.class));
+    }
+
+    @Test
+    public void rateSecondsAtBitsPerSecond() throws Exception
+    {
+        String[] args = { "--rate", "10.4s@1.5Kbps" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(1));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+    }
+
+    @Test
+    public void rateSecondsAtMessagesPerSecond() throws Exception
+    {
+        String[] args = { "--rate", "11s@100mps" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(1));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
+    }
+
+    @Test
+    public void rateCsv() throws Exception
+    {
+        String[] args = { "--rate", "100m@1mps,10s@1.5Mbps,10s@100mps,50m@100bps" };
+        opts.parseArgs(args);
+        assertThat(opts.getRateIntervals().size(), is(4));
+
+        RateControllerInterval interval = opts.getRateIntervals().get(0);
+        assertThat(interval, instanceOf(MessagesAtMessagesPerSecondInterval.class));
+        interval = opts.getRateIntervals().get(1);
+        assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+        interval = opts.getRateIntervals().get(2);
+        assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
+        interval = opts.getRateIntervals().get(3);
+        assertThat(interval, instanceOf(MessagesAtBitsPerSecondInterval.class));
+
     }
 }

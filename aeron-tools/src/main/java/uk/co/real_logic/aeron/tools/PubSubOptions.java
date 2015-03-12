@@ -4,6 +4,8 @@ import org.apache.commons.cli.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This is a class to hold information about what an Aeron publisher or subscriber
@@ -30,9 +32,11 @@ public class PubSubOptions
     String datafile;
     /** The Aeron channels to open */
     List<ChannelDescriptor> channels;
+    /** The message rate sending pattern */
+    List<RateControllerInterval> rateIntervals;
+
     /** The {@link MessageSizePattern} used to determine next message size */
     MessageSizePattern sizePattern;
-
 
     public PubSubOptions()
     {
@@ -60,6 +64,8 @@ public class PubSubOptions
         sizePattern = null;
         datafile = null;
         channels = new ArrayList<ChannelDescriptor>();
+        // Don't have the interval objects yet.
+        rateIntervals = new ArrayList<RateControllerInterval>();
     }
 
     /**
@@ -75,7 +81,7 @@ public class PubSubOptions
 
         String opt;
 
-        if(command.hasOption("help"))
+        if (command.hasOption("help"))
         {
             // Don't do anything, just signal the caller that they should call printHelp
             return 1;
@@ -107,6 +113,10 @@ public class PubSubOptions
         // channels
         opt = command.getOptionValue("channels", "udp://localhost:31111#1");
         parseChannels(opt);
+
+        // rates
+        opt = command.getOptionValue("rate", "max");
+        parseRates(opt);
 
         // message size
         opt = command.getOptionValue("size", "32");
@@ -141,6 +151,16 @@ public class PubSubOptions
     public void setChannels(List<ChannelDescriptor> channels)
     {
         this.channels = channels;
+    }
+
+    public void setRateIntervals(List<RateControllerInterval> rates)
+    {
+        this.rateIntervals = rates;
+    }
+
+    public List<RateControllerInterval> getRateIntervals()
+    {
+        return this.rateIntervals;
     }
 
     /**
@@ -544,6 +564,107 @@ public class PubSubOptions
         setUseVerifiableData(verify);
     }
 
+    /**
+     *
+     * @param ratesCsv
+     */
+    private void parseRates(String ratesCsv) throws ParseException
+    {
+        final String[] rates = ratesCsv.split(",");
+        for (final String currentRate : rates)
+        {
+            // the currentRate will contain a duration and rate
+            // [(message|seconds)@](bits per second|messages per second)
+            // i.e. 100s@1Mbps,1000m@10mps
+            final String[] rateComponents = currentRate.split("@");
+            if (rateComponents.length > 2)
+            {
+                throw new ParseException("Message rate '" + currentRate + "' contains too many '@' characters.");
+            }
+
+            // Duration is either in seconds or messages based on timeDuration flag.
+            double duration = Long.MAX_VALUE;
+            boolean timeDuration = true;
+            if (rateComponents.length == 2)
+            {
+                // duration is seconds if it ends with 's'
+                final String lowerCaseRate = rateComponents[0].toLowerCase();
+                if (lowerCaseRate.endsWith("m"))
+                {
+                    // value is messages, not seconds
+                    timeDuration = false;
+                }
+                else if (!lowerCaseRate.endsWith("s"))
+                {
+                    throw new ParseException("Rate " + rateComponents[0] + " does not contain 'm' or 's' to specify " +
+                            "a duration in messages or seconds.");
+                }
+                final String durationStr = lowerCaseRate.substring(0, rateComponents[0].length()-1);
+                duration = parseDoubleBetweenZeroAndMaxLong(durationStr);
+            }
+
+            // rate string is always the last entry of the components
+            final String rateComponent = rateComponents[rateComponents.length-1];
+            double rate = Long.MAX_VALUE;
+            boolean bitsPerSecondRate = true;
+            if (!rateComponent.equalsIgnoreCase("max"))
+            {
+                // rate string is not special value "max", determine value and type.
+                // Find the first non-numeric character
+                Matcher matcher = Pattern.compile("[a-zA-Z]").matcher(rateComponent);
+                if (!matcher.find())
+                {
+                    throw new ParseException("Rate " + rateComponent + " did not contain any units (Mbps, mps, etc...).");
+                }
+                final int idx = matcher.start();
+                final String prefix = rateComponent.substring(0, idx);
+                final String suffix = rateComponent.substring(idx, rateComponent.length());
+                rate = parseDoubleBetweenZeroAndMaxLong(prefix);
+                if (suffix.equalsIgnoreCase("mps"))
+                {
+                    bitsPerSecondRate = false;
+                }
+                else
+                {
+                    // rate is in bits per second, get the correct value based on suffix
+                    rate *= parseBitRateMultiplier(suffix);
+                }
+            }
+            addSendRate(duration, timeDuration, rate, bitsPerSecondRate);
+        }
+    }
+
+    private void addSendRate(double duration, boolean isTimeDuration, double rate, boolean isBitsPerSecondRate)
+    {
+        // There are 4 combinations of potential rates, each with it's own implementation of RateControllerInterval.
+        if (isTimeDuration)
+        {
+            if (isBitsPerSecondRate)
+            {
+                // number of seconds at bits per second
+                rateIntervals.add(new SecondsAtBitsPerSecondInterval(duration, (long)rate));
+            }
+            else
+            {
+                // number of seconds at number of messages per second
+                rateIntervals.add(new SecondsAtMessagesPerSecondInterval(duration, rate));
+            }
+        }
+        else
+        {
+            if (isBitsPerSecondRate)
+            {
+                // number of messages at bits per second
+                rateIntervals.add(new MessagesAtBitsPerSecondInterval((long)duration, (long)rate));
+            }
+            else
+            {
+                // number of messages at number of messages per second
+                rateIntervals.add(new MessagesAtMessagesPerSecondInterval((long)duration, rate));
+            }
+        }
+    }
+
     private void parseMessageSizes(String cvs) throws ParseException
     {
         long numMessages = 0;
@@ -688,6 +809,41 @@ public class PubSubOptions
         }
     }
 
+    /**
+     * Parses a bit rate multiplier based on a string that may contain Gbps, Mbps, Kbps, bps
+     * @param s
+     * @return
+     * @throws Exception
+     */
+    private int parseBitRateMultiplier(final String s) throws ParseException
+    {
+        final String rateLowercase = s.toLowerCase();
+
+        if (rateLowercase.equals("gbps"))
+        {
+            return 1000000000;
+        }
+        if (rateLowercase.equals("mbps"))
+        {
+            return 1000000;
+        }
+        if (rateLowercase.equals("kbps"))
+        {
+            return 1000;
+        }
+        if (rateLowercase.equals("bps"))
+        {
+            return 1;
+        }
+        throw new ParseException("bit rate " + s + " was not 'Gbps','Mbps','Kbps', or 'bps'.");
+    }
+
+    /**
+     * Parses a long string and returns the value. Value must be positive.
+     * @param longStr
+     * @return
+     * @throws ParseException
+     */
     private long parseLongCheckPositive(String longStr) throws ParseException
     {
         long value;
@@ -706,4 +862,24 @@ public class PubSubOptions
         }
         return value;
     }
+
+    private double parseDoubleBetweenZeroAndMaxLong(String doubleStr) throws ParseException
+    {
+        double value = 0;
+
+        try
+        {
+            value = Double.parseDouble(doubleStr);
+        }
+        catch (NumberFormatException ex)
+        {
+            throw new ParseException("Could not parse '" + doubleStr + " as a double value.");
+        }
+        if (value < 0D || value > (double)Long.MAX_VALUE)
+        {
+            throw new ParseException("Double value '" + value + "' must be positive and <= long max value.");
+        }
+        return value;
+    }
+
 }

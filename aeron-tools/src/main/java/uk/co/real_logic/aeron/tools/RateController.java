@@ -28,8 +28,11 @@ public class RateController
 	private int activeIntervalIndex;
 
 	/* Total messages and bytes sent across all intervals. */
-	protected long messagesSent;
-	protected long bytesSent;
+	private long messagesSent;
+	private long bytesSent;
+
+	private final int iterations;
+	private int currentIteration;
 
 	public boolean sendNext()
 	{
@@ -38,15 +41,25 @@ public class RateController
 			return false;
 		}
 
+		if (!activeInterval.active)
+		{
+			activeInterval.play();
+		}
+
 		if (!(activeInterval.sendNext()))
 		{
 			/* This interval's done; change to next interval. */
 			if (++activeIntervalIndex == intervals.size())
 			{
+				if (++currentIteration == iterations)
+				{
+					/* We're done. */
+					return false;
+				}
+				/* Start a new iteration at the beginning of the interval list. */
 				activeIntervalIndex = 0;
 			}
 			activeInterval = intervals.get(activeIntervalIndex);
-			return false;
 		}
 
 		return true;
@@ -190,33 +203,40 @@ public class RateController
 			 * So we can calculate the total amount of wall-clock time it
 			 * _should_ take to send the message, if we can send at the
 			 * rate we want to. */
+
+			/* Always start out sending immediately; if the previous
+			 * interval needed to delay a bit after its last send,
+			 * then it should have done so. */
 			final long sizeInBytes = rateController.sendFunc.send();
 			if (sizeInBytes < 0)
 			{
-				/* Just stop here. */
+				/* Just stop here; returned size < 0 means the user wants us to stop. */
 				stop();
 				return false;
 			}
-			final long sizeInBits = sizeInBytes * 8;
-			final double seconds = (double)sizeInBits / (double)goalBitsPerSecond;
-			final long nanoSeconds = (long)(seconds * 1000000000L);
-			final long sendEndTime = CLOCK.time();
 
 			rateController.messagesSent++;
 			rateController.bytesSent += sizeInBytes;
+			bitsSent += (sizeInBytes * 8);
 
-			if (++messagesSent == messages)
-			{
-				lastSendTimeNanos = sendEndTime;
-				stop();
-				return false;
-			}
+			/* How many bits have we sent so far between now and when the interval
+			 * first started?  How long has it taken to send all those bits?  How
+			 * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
+			final double seconds = (double)bitsSent / (double)goalBitsPerSecond;
+			final long nanoSeconds = (long)(seconds * 1000000000L);
+			final long sendEndTime = CLOCK.time();
 
 			/* Now - how long should we sleep, if at all? Be sure to count
 			 * all the wall-clock time that's elapsed since the last time
 			 * we were called - we might not want to sleep at all. */
-			nanoSleep(nanoSeconds - (sendEndTime - lastSendTimeNanos));
-			lastSendTimeNanos = CLOCK.time();
+			nanoSleep(nanoSeconds - (sendEndTime - beginTimeNanos));
+
+			if (++messagesSent == messages)
+			{
+				stop();
+				return false;
+			}
+
 			return true;
 		}
 
@@ -250,39 +270,41 @@ public class RateController
 		@Override
 		public boolean sendNext()
 		{
+			/* Always start out sending immediately; if the previous
+			 * interval needed to delay a bit after its last send,
+			 * then it should have done so. */
+			final long sizeInBytes = rateController.sendFunc.send();
+			if (sizeInBytes < 0)
+			{
+				/* Just stop here; returned size < 0 means the user wants us to stop. */
+				stop();
+				return false;
+			}
+
+			rateController.messagesSent++;
+			rateController.bytesSent += sizeInBytes;
+			bitsSent += (sizeInBytes * 8);
+			messagesSent++;
+
+			/* How many bits have we sent so far between now and when the interval
+			 * first started?  How long has it taken to send all those bits?  How
+			 * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
+			final double seconds = messagesSent / goalMessagesPerSecond;
+			final long nanoSeconds = (long)(seconds * 1000000000L);
+			final long sendEndTime = CLOCK.time();
+
+			/* Now - how long should we sleep, if at all? Be sure to count
+			 * all the wall-clock time that's elapsed since the last time
+			 * we were called - we might not want to sleep at all. */
+			nanoSleep(nanoSeconds - (sendEndTime - beginTimeNanos));
+
+			if (messagesSent == messages)
+			{
+				stop();
+				return false;
+			}
+
 			return true;
-//			/* We've got a fixed size message and a fixed bits/sec. rate.
-//			 * So we can calculate the total amount of wall-clock time it
-//			 * _should_ take to send the message, if we can send at the
-//			 * rate we want to. */
-//			final long sizeInBytes = rateController.sendFunc.send();
-//			if (sizeInBytes < 0)
-//			{
-//				/* Just stop here. */
-//				stop();
-//				return false;
-//			}
-//			final long sizeInBits = sizeInBytes * 8;
-//			final double seconds = sizeInBits / (double)goalBitsPerSecond;
-//			final long nanoSeconds = (long)(seconds * 1000000000L);
-//			final long sendEndTime = CLOCK.time();
-//
-//			/* Now - how long should we sleep, if at all? Be sure to count
-//			 * all the wall-clock time that's elapsed since the last time
-//			 * we were called - we might not want to sleep at all. */
-//			nanoSleep(nanoSeconds - (sendEndTime - lastSendTimeNanos));
-//
-//			rateController.messagesSent++;
-//			rateController.bytesSent += sizeInBytes;
-//
-//			lastSendTimeNanos = CLOCK.time();
-//
-//			if (++messagesSent == messages)
-//			{
-//				stop();
-//				return false;
-//			}
-//			return true;
 		}
 
 		@Override
@@ -315,39 +337,42 @@ public class RateController
 		@Override
 		public boolean sendNext()
 		{
+			/* Always start out sending immediately; if the previous
+			 * interval needed to delay a bit after its last send,
+			 * then it should have done so. */
+			final long sizeInBytes = rateController.sendFunc.send();
+			if (sizeInBytes < 0)
+			{
+				/* Just stop here; returned size < 0 means the user wants us to stop. */
+				stop();
+				return false;
+			}
+
+			rateController.messagesSent++;
+			rateController.bytesSent += sizeInBytes;
+			bitsSent += (sizeInBytes * 8);
+			messagesSent++;
+
+			/* How many bits have we sent so far between now and when the interval
+			 * first started?  How long has it taken to send all those bits?  How
+			 * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
+			final double secondsWanted = messagesSent / goalMessagesPerSecond;
+			final long nanoSeconds = (long)(secondsWanted * 1000000000L);
+			final long sendEndTime = CLOCK.time();
+
+			/* Now - how long should we sleep, if at all? Be sure to count
+			 * all the wall-clock time that's elapsed since the last time
+			 * we were called - we might not want to sleep at all. */
+			nanoSleep(nanoSeconds - (sendEndTime - beginTimeNanos));
+
+			/* End condition. */
+			if ((CLOCK.time() - beginTimeNanos) >= (seconds * 1000000000))
+			{
+				stop();
+				return false;
+			}
+
 			return true;
-//			/* We've got a fixed size message and a fixed bits/sec. rate.
-//			 * So we can calculate the total amount of wall-clock time it
-//			 * _should_ take to send the message, if we can send at the
-//			 * rate we want to. */
-//			final long sizeInBytes = rateController.sendFunc.send();
-//			if (sizeInBytes < 0)
-//			{
-//				/* Just stop here. */
-//				stop();
-//				return false;
-//			}
-//			final long sizeInBits = sizeInBytes * 8;
-//			final double seconds = sizeInBits / (double)goalBitsPerSecond;
-//			final long nanoSeconds = (long)(seconds * 1000000000L);
-//			final long sendEndTime = CLOCK.time();
-//
-//			/* Now - how long should we sleep, if at all? Be sure to count
-//			 * all the wall-clock time that's elapsed since the last time
-//			 * we were called - we might not want to sleep at all. */
-//			nanoSleep(nanoSeconds - (sendEndTime - lastSendTimeNanos));
-//
-//			rateController.messagesSent++;
-//			rateController.bytesSent += sizeInBytes;
-//
-//			lastSendTimeNanos = CLOCK.time();
-//
-//			if (++messagesSent == messages)
-//			{
-//				stop();
-//				return false;
-//			}
-//			return true;
 		}
 
 		@Override
@@ -380,39 +405,42 @@ public class RateController
 		@Override
 		public boolean sendNext()
 		{
+			/* Always start out sending immediately; if the previous
+			 * interval needed to delay a bit after its last send,
+			 * then it should have done so. */
+			final long sizeInBytes = rateController.sendFunc.send();
+			if (sizeInBytes < 0)
+			{
+				/* Just stop here; returned size < 0 means the user wants us to stop. */
+				stop();
+				return false;
+			}
+
+			rateController.messagesSent++;
+			rateController.bytesSent += sizeInBytes;
+			bitsSent += (sizeInBytes * 8);
+			messagesSent++;
+
+			/* How many bits have we sent so far between now and when the interval
+			 * first started?  How long has it taken to send all those bits?  How
+			 * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
+			final double secondsWanted = bitsSent / goalBitsPerSecond;
+			final long nanoSeconds = (long)(secondsWanted * 1000000000L);
+			final long sendEndTime = CLOCK.time();
+
+			/* Now - how long should we sleep, if at all? Be sure to count
+			 * all the wall-clock time that's elapsed since the last time
+			 * we were called - we might not want to sleep at all. */
+			nanoSleep(nanoSeconds - (sendEndTime - beginTimeNanos));
+
+			/* End condition. */
+			if ((CLOCK.time() - beginTimeNanos) >= (seconds * 1000000000))
+			{
+				stop();
+				return false;
+			}
+
 			return true;
-//			/* We've got a fixed size message and a fixed bits/sec. rate.
-//			 * So we can calculate the total amount of wall-clock time it
-//			 * _should_ take to send the message, if we can send at the
-//			 * rate we want to. */
-//			final long sizeInBytes = rateController.sendFunc.send();
-//			if (sizeInBytes < 0)
-//			{
-//				/* Just stop here. */
-//				stop();
-//				return false;
-//			}
-//			final long sizeInBits = sizeInBytes * 8;
-//			final double seconds = sizeInBits / (double)goalBitsPerSecond;
-//			final long nanoSeconds = (long)(seconds * 1000000000L);
-//			final long sendEndTime = CLOCK.time();
-//
-//			/* Now - how long should we sleep, if at all? Be sure to count
-//			 * all the wall-clock time that's elapsed since the last time
-//			 * we were called - we might not want to sleep at all. */
-//			nanoSleep(nanoSeconds - (sendEndTime - lastSendTimeNanos));
-//
-//			rateController.messagesSent++;
-//			rateController.bytesSent += sizeInBytes;
-//
-//			lastSendTimeNanos = CLOCK.time();
-//
-//			if (++messagesSent == messages)
-//			{
-//				stop();
-//				return false;
-//			}
-//			return true;
 		}
 
 		@Override
@@ -428,7 +456,7 @@ public class RateController
 
 		private final SystemNanoClock clock = new SystemNanoClock();
 
-		protected long lastSendTimeNanos;
+		protected long lastBitsSent;
 
 		protected RateController rateController;
 
@@ -444,6 +472,7 @@ public class RateController
 		public void play()
 		{
 			beginTimeNanos = clock.time();
+			lastBitsSent = rateController.bytesSent * 8;
 			active = true;
 		}
 
@@ -455,7 +484,7 @@ public class RateController
 
 	}
 
-	public RateController(final Sender sendFunc, List<RateControllerInterval> intervals) throws Exception
+	public RateController(final Sender sendFunc, List<RateControllerInterval> intervals, int iterations) throws Exception
 	{
 		if (sendFunc == null)
 		{
@@ -471,6 +500,12 @@ public class RateController
 			throw new Exception("Intervals list must contain at least one interval.");
 		}
 		addIntervals(intervals);
+		this.iterations = iterations;
+	}
+
+	public RateController(final Sender sendFunc, List<RateControllerInterval> intervals) throws Exception
+	{
+		this(sendFunc, intervals, 1);
 	}
 
 	public long getMessagesSent()

@@ -394,6 +394,9 @@ public class PubSubOptionsTest
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+        SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval)interval;
+        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        assertThat(sub.bitsPerSecond(), is(Long.MAX_VALUE));
     }
 
     @Test
@@ -405,6 +408,9 @@ public class PubSubOptionsTest
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+        SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval)interval;
+        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        assertThat(sub.bitsPerSecond(), is(1_000_000_000L));
     }
 
     @Test
@@ -416,12 +422,15 @@ public class PubSubOptionsTest
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
+        SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval)interval;
+        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        assertThat(sub.messagesPerSecond(), is(100D));
     }
 
     @Test (expected=ParseException.class)
     public void rateNotValid() throws Exception
     {
-        String[] args = { "--rate", "1.21 Jigga Watts" };
+        String[] args = { "--rate", "1.21 Giga Watts" };
         opts.parseArgs(args); // will throw ParseException
     }
 
@@ -434,6 +443,9 @@ public class PubSubOptionsTest
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(MessagesAtBitsPerSecondInterval.class));
+        MessagesAtBitsPerSecondInterval sub = (MessagesAtBitsPerSecondInterval)interval;
+        assertThat(sub.messages(), is(100L));
+        assertThat(sub.bitsPerSecond(), is(500000L));
     }
 
     @Test
@@ -445,6 +457,9 @@ public class PubSubOptionsTest
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(MessagesAtMessagesPerSecondInterval.class));
+        MessagesAtMessagesPerSecondInterval sub = (MessagesAtMessagesPerSecondInterval)interval;
+        assertThat(sub.messages(), is(10L));
+        assertThat(sub.messagesPerSecond(), is(1D));
     }
 
     @Test
@@ -456,6 +471,9 @@ public class PubSubOptionsTest
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+        SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval)interval;
+        assertThat(sub.seconds(), is(10.4D));
+        assertThat(sub.bitsPerSecond(), is(1500L));
     }
 
     @Test
@@ -467,23 +485,41 @@ public class PubSubOptionsTest
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
+        SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval)interval;
+        assertThat(sub.seconds(), is(11D));
+        assertThat(sub.messagesPerSecond(), is(100D));
     }
 
     @Test
     public void rateCsv() throws Exception
     {
-        String[] args = { "--rate", "100m@1mps,10s@1.5Mbps,10s@100mps,50m@100bps" };
+        String[] args = { "--rate", "100m@0.5mps,10s@1.5Mbps,10s@100mps,50m@100bps" };
         opts.parseArgs(args);
         assertThat(opts.getRateIntervals().size(), is(4));
 
         RateControllerInterval interval = opts.getRateIntervals().get(0);
         assertThat(interval, instanceOf(MessagesAtMessagesPerSecondInterval.class));
+        MessagesAtMessagesPerSecondInterval sub1 = (MessagesAtMessagesPerSecondInterval)interval;
+        assertThat(sub1.messages(), is(100L));
+        assertThat(sub1.messagesPerSecond(), is(0.5D));
+
         interval = opts.getRateIntervals().get(1);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
+        SecondsAtBitsPerSecondInterval sub2 = (SecondsAtBitsPerSecondInterval)interval;
+        assertThat(sub2.seconds(), is(10D));
+        assertThat(sub2.bitsPerSecond(), is(1_500_000L));
+
         interval = opts.getRateIntervals().get(2);
         assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
+        SecondsAtMessagesPerSecondInterval sub3 = (SecondsAtMessagesPerSecondInterval)interval;
+        assertThat(sub3.seconds(), is(10D));
+        assertThat(sub3.messagesPerSecond(), is(100D));
+
         interval = opts.getRateIntervals().get(3);
         assertThat(interval, instanceOf(MessagesAtBitsPerSecondInterval.class));
+        MessagesAtBitsPerSecondInterval sub4 = (MessagesAtBitsPerSecondInterval)interval;
+        assertThat(sub4.messages(), is(50L));
+        assertThat(sub4.bitsPerSecond(), is(100L));
 
     }
 }

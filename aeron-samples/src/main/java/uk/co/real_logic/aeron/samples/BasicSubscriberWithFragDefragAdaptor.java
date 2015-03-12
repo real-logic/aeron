@@ -134,6 +134,18 @@ public class BasicSubscriberWithFragDefragAdaptor
             String.format(
                 "inactive connection on %s streamId %d sessionId %d",
                 channel, streamId, sessionId));
+        if (streamId == STREAM_ID)
+        {
+        	msgStream = new MessageStream();
+        }
+        else if (streamId == STREAM_ID_2)
+        {
+        	msgStream2 = new MessageStream();
+        }
+        else
+        {
+        	System.out.println("Invalid Stream ID : " + streamId);
+        }
     }
 
     /**

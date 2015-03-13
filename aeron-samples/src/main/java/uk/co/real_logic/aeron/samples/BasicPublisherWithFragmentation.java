@@ -23,7 +23,7 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.tools.MessageStream;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.TimeUnit;
 
 /**
  * Basic Aeron publisher application
@@ -37,6 +37,7 @@ public class BasicPublisherWithFragmentation
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
 
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    //Allocate enough buffer size to hold maximum stream buffer
     private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
     private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
 
@@ -52,19 +53,19 @@ public class BasicPublisherWithFragmentation
 
         // Create an Aeron instance using connection parameter specified by context
         // and add 2 publisher with two different session Ids
-
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID, 777);
-        	 final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2, 999))
+             final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
+        	 final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
         	// Allocate 2 different session buffer
         	MessageStream msgStream = new MessageStream(8192);
         	MessageStream msgStream2 = new MessageStream(8192);
-        	// Try to send 5 messages from each publishers
-            for (int i = 0; i < 5; i++)
+        	// Try to send 5000 messages from each publishers
+        	int len = msgStream.getNext(BUFFER);
+        	int len2 = msgStream2.getNext(BUFFER_2);
+            for (int i = 0; i < 5000; i++)
             {
-            	int len = msgStream.getNext(BUFFER);
-            	int len2 = msgStream2.getNext(BUFFER_2);
+
                 boolean offerStatus = false;
                 while (!offerStatus)
                 {
@@ -78,11 +79,12 @@ public class BasicPublisherWithFragmentation
 	                }
 	                else
 	                {
+	                	len = msgStream.getNext(BUFFER);
 	                	offerStatus = true;
 	                    System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + "!!");
 	                }
 
-	                // Try to publish buffer from first publisher
+	                // Try to publish buffer from second publisher
 	                final boolean result2 = publication2.offer(BUFFER_2, 0, len2);
 
 	                if (!result2)
@@ -93,12 +95,13 @@ public class BasicPublisherWithFragmentation
 	                }
 	                else
 	                {
+	                	len2 = msgStream2.getNext(BUFFER_2);
 	                	offerStatus = true;
-	                	System.out.println(" yay for stream " + STREAM_ID_2 + " !! ");
+	                	System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + STREAM_ID_2 + " !! ");
 	                }
                 }
 
-                Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                //Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             }
 
             System.out.println("Done sending.");

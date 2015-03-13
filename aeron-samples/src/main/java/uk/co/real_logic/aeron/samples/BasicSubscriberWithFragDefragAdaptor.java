@@ -118,12 +118,26 @@ public class BasicSubscriberWithFragDefragAdaptor
     {
         System.out.println(
             String.format(
-                "new connection on %s streamId %d sessionId %d from %s",
+                "new connection on %s streamId %x sessionId %x from %s",
                 channel, streamId, sessionId, sourceInformation));
+      //Reset the stream buffer because streams have restarted
+        if (streamId == STREAM_ID)
+        {
+        	msgStream.reset();
+        }
+        else if (streamId == STREAM_ID_2)
+        {
+        	msgStream2.reset();
+        }
+        else
+        {
+        	System.out.println("Invalid Stream ID : " + streamId);
+        }
+
     }
 
     /**
-     * Print the information for an inactive connection to stdout.
+     * This handler is called when connection goes inactive
      *
      * @param channel   for the connection
      * @param streamId  for the stream
@@ -133,20 +147,8 @@ public class BasicSubscriberWithFragDefragAdaptor
     {
         System.out.println(
             String.format(
-                "inactive connection on %s streamId %d sessionId %d",
+                "inactive connection on %s streamId %d sessionId %x",
                 channel, streamId, sessionId));
-        if (streamId == STREAM_ID)
-        {
-        	msgStream = new MessageStream();
-        }
-        else if (streamId == STREAM_ID_2)
-        {
-        	msgStream2 = new MessageStream();
-        }
-        else
-        {
-        	System.out.println("Invalid Stream ID : " + streamId);
-        }
     }
 
     /**
@@ -164,8 +166,8 @@ public class BasicSubscriberWithFragDefragAdaptor
 
             System.out.println(
                 String.format(
-                    "message to stream %d from session %d (%d@%d)",
-                    streamId, header.sessionId(), length, offset));
+                    "message to stream %d from session %x term id %x term offset %d (%d@%d)",
+                    streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
             try
             {
             	if (streamId == STREAM_ID)
@@ -201,8 +203,8 @@ public static DataHandler reassembledStringMessage2(final int streamId)
 
         System.out.println(
             String.format(
-                "message to stream %d from session %d (%d@%d)",
-                streamId, header.sessionId(), length, offset));
+                "message to stream %d from session %x term id %x term offset %d (%d@%d)",
+                streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
         try
         {
 

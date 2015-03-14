@@ -96,9 +96,7 @@ public class TransportPoller implements AutoCloseable
         try
         {
             addTransport(transport);
-
             key = transport.datagramChannel().register(selector, SelectionKey.OP_READ, transport);
-
         }
         catch (final ClosedChannelException ex)
         {
@@ -172,7 +170,6 @@ public class TransportPoller implements AutoCloseable
         }
 
         return handledFrames;
-
     }
 
     /**

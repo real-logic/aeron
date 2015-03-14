@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.agrona.LangUtil;
+
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.channels.ClosedChannelException;
@@ -50,11 +52,13 @@ public class TransportPoller implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
-
-        SELECTED_KEYS_FIELD = selectKeysField;
-        PUBLIC_SELECTED_KEYS_FIELD = publicSelectKeysField;
+        finally
+        {
+            SELECTED_KEYS_FIELD = selectKeysField;
+            PUBLIC_SELECTED_KEYS_FIELD = publicSelectKeysField;
+        }
     }
 
     private final Selector selector;
@@ -88,16 +92,20 @@ public class TransportPoller implements AutoCloseable
      */
     public SelectionKey registerForRead(final UdpChannelTransport transport)
     {
+        SelectionKey key = null;
         try
         {
             addTransport(transport);
 
-            return transport.datagramChannel().register(selector, SelectionKey.OP_READ, transport);
+            key = transport.datagramChannel().register(selector, SelectionKey.OP_READ, transport);
+
         }
         catch (final ClosedChannelException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return key;
     }
 
     /**
@@ -122,7 +130,7 @@ public class TransportPoller implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 
@@ -133,10 +141,9 @@ public class TransportPoller implements AutoCloseable
      */
     public int pollTransports()
     {
+        int handledFrames = 0;
         try
         {
-            int handledFrames = 0;
-
             final UdpChannelTransport[] transports = this.transports;
             final int numTransports = transports.length;
             if (numTransports <= ITERATION_THRESHOLD)
@@ -158,13 +165,14 @@ public class TransportPoller implements AutoCloseable
 
                 selectedKeySet.reset();
             }
-
-            return handledFrames;
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return handledFrames;
+
     }
 
     /**
@@ -179,7 +187,7 @@ public class TransportPoller implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

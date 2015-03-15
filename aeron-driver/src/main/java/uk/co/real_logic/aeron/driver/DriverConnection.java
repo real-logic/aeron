@@ -535,6 +535,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isHeartbeat)
         {
+            systemCounters.heartbeatsReceived().orderedIncrement();
             timeOfLastFrame.lazySet(clock.time());
         }
 

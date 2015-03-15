@@ -59,15 +59,14 @@ public class StreamingPublisher
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
-        final ExecutorService executor = Executors.newFixedThreadPool(2);
         final Aeron.Context context = new Aeron.Context();
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
+        executor.execute(reporter);
 
         try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
-            executor.execute(reporter);
-
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -101,10 +100,9 @@ public class StreamingPublisher
                 printingActive = false;
             }
             while (barrier.await());
-
-            reporter.halt();
         }
 
+        reporter.halt();
         executor.shutdown();
         CloseHelper.quietClose(driver);
     }

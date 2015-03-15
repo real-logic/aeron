@@ -75,7 +75,7 @@ public class LogAppender extends LogBufferPartition
         this.defaultHeader = defaultHeader;
         this.headerLength = defaultHeader.capacity();
         this.maxFrameLength = maxFrameLength;
-        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(capacity());
+        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBuffer.capacity());
         this.maxPayloadLength = maxFrameLength - headerLength;
     }
 

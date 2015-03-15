@@ -120,7 +120,7 @@ public class DriverConnection implements AutoCloseable
         this.statusMessageTimeout = statusMessageTimeout;
         this.lastSmTimestamp = 0;
 
-        final int termCapacity = rebuilders[0].capacity();
+        final int termCapacity = rebuilders[0].termBuffer().capacity();
 
         this.currentWindowLength = Math.min(termCapacity, initialWindowLength);
         this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);

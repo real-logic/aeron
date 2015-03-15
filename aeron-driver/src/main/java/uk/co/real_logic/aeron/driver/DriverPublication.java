@@ -99,7 +99,7 @@ public class DriverPublication implements AutoCloseable
 
         scanner = new TermScanner(headerLength);
         sendBuffers = rawLog.sliceTerms();
-        termLength = logPartitions[0].capacity();
+        termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
         senderLimit = new AtomicLong(initialPositionLimit);
 

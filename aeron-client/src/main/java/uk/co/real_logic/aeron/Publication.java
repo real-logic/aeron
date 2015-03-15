@@ -68,7 +68,7 @@ public class Publication implements AutoCloseable
         this.limit = limit;
 
         activeTermId(logMetaDataBuffer, initialTermId(logMetaDataBuffer));
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].capacity());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].termBuffer().capacity());
     }
 
     /**

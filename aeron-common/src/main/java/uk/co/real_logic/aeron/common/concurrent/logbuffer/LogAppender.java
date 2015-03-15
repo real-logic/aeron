@@ -161,12 +161,12 @@ public class LogAppender extends LogBufferPartition
         final int frameOffset = getTailAndAdd(alignedLength);
 
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = capacity();
+        final int capacity = termBuffer.capacity();
         if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(termBuffer, frameOffset);
+                appendPaddingFrame(termBuffer, frameOffset, capacity);
                 return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -198,12 +198,12 @@ public class LogAppender extends LogBufferPartition
         final int frameOffset = getTailAndAdd(alignedLength);
 
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = capacity();
+        final int capacity = termBuffer.capacity();
         if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(termBuffer, frameOffset);
+                appendPaddingFrame(termBuffer, frameOffset, capacity);
                 return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -233,12 +233,12 @@ public class LogAppender extends LogBufferPartition
         int frameOffset = getTailAndAdd(requiredCapacity);
 
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = capacity();
+        final int capacity = termBuffer.capacity();
         if (isBeyondLogBufferCapacity(frameOffset, requiredCapacity, capacity))
         {
             if (frameOffset < capacity)
             {
-                appendPaddingFrame(termBuffer, frameOffset);
+                appendPaddingFrame(termBuffer, frameOffset, capacity);
                 return ActionStatus.TRIPPED;
             }
             else if (frameOffset == capacity)
@@ -287,14 +287,14 @@ public class LogAppender extends LogBufferPartition
         return (frameOffset + alignedFrameLength + headerLength) > capacity;
     }
 
-    private void appendPaddingFrame(final UnsafeBuffer termBuffer, final int frameOffset)
+    private void appendPaddingFrame(final UnsafeBuffer termBuffer, final int frameOffset, final int capacity)
     {
         termBuffer.putBytes(frameOffset, defaultHeader, 0, headerLength);
 
         frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
         frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
         frameTermOffset(termBuffer, frameOffset, frameOffset);
-        frameLengthOrdered(termBuffer, frameOffset, capacity() - frameOffset);
+        frameLengthOrdered(termBuffer, frameOffset, capacity - frameOffset);
     }
 
     private int getTailAndAdd(final int delta)

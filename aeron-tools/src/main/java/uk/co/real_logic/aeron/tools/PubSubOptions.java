@@ -1,7 +1,6 @@
 package uk.co.real_logic.aeron.tools;
 
 import org.apache.commons.cli.*;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -13,21 +12,30 @@ import java.util.regex.Pattern;
  */
 public class PubSubOptions
 {
+    /** line separator */
+    private static final String NL = System.lineSeparator();
+
     /** Apache Commons CLI options */
     final Options options;
 
+    /** Application should print advanced usage guide with help */
+    boolean showUsage;
     /** Application should create an embedded Aeron media driver */
     boolean useEmbeddedDriver;
     /** Application should send or expect verifiable data */
     boolean useVerifiableData;
+    /** Application provided a session Id for all strings */
+    boolean useSessionId;
     /** The seed for the random number generator */
     long randomSeed;
     /** The number of messages an Application should send before exiting */
     long messages;
-    /** The number of threads to use when sending or receiving in an application */
-    long threads;
     /** The number of times to repeat the sending rate pattern */
     long iterations;
+    /** Use session ID for all streams instead of default random */
+    int sessionId;
+    /** The number of threads to use when sending or receiving in an application */
+    int threads;
     /** When not using verifiable data, use this file */
     String datafile;
     /** The Aeron channels to open */
@@ -42,25 +50,28 @@ public class PubSubOptions
     {
         // TODO: Add more detail to the descriptions
         options = new Options();
-        options.addOption("c",  "channels",   true,  "Create the given channels.");
+        options.addOption("c",  "channels",   true,  "Create the given Aeron channels.");
         options.addOption("d",  "data",       true,  "Send data file or verifiable stream.");
         options.addOption(null, "driver",     true,  "Use 'external' or 'embedded' Aeron driver.");
-        options.addOption("h",  "help",       false, "Display help message.");
+        options.addOption("h",  "help",       false, "Display simple usage message.");
         options.addOption("i",  "iterations", true,  "Run the rate sequence n times.");
-        options.addOption("m",  "messages",   true,  "Send n messages before exiting.");
-        options.addOption("r",  "rate",       true,  "Send rate pattern.");
+        options.addOption("m",  "messages",   true,  "Send or receive n messages before exiting.");
+        options.addOption("r",  "rate",       true,  "Send rate pattern CSV list.");
         options.addOption(null, "seed",       true,  "Random number generator seed.");
         options.addOption(null, "session",    true,  "Use session id for all publishers.");
         options.addOption("s",  "size",       true,  "Message payload size sequence, in bytes.");
         options.addOption("t",  "threads",    true,  "Number of threads.");
+        options.addOption(null, "usage",      false, "Display advanced usage guide.");
 
         // these will all be overridden in parseArgs
         randomSeed = 0;
         threads = 0;
         messages = 0;
         iterations = 0;
+        sessionId = 0;
         useEmbeddedDriver = false;
         useVerifiableData = true;
+        useSessionId = false;
         sizePattern = null;
         datafile = null;
         channels = new ArrayList<ChannelDescriptor>();
@@ -81,6 +92,12 @@ public class PubSubOptions
 
         String opt;
 
+        if (command.hasOption("usage"))
+        {
+            showUsage = true;
+            // Signal the application it should call printHelp
+            return 1;
+        }
         if (command.hasOption("help"))
         {
             // Don't do anything, just signal the caller that they should call printHelp
@@ -88,7 +105,7 @@ public class PubSubOptions
         }
         // threads
         opt = command.getOptionValue("t", "1");
-        setThreads(parseLongCheckPositive(opt));
+        setThreads(parseIntCheckPositive(opt));
 
         // Random number seed
         opt = command.getOptionValue("seed", "0");
@@ -101,6 +118,10 @@ public class PubSubOptions
         // iterations
         opt = command.getOptionValue("iterations", "1");
         setIterations(parseIterations(opt));
+
+        // Session ID
+        opt = command.getOptionValue("session", "default");
+        setSessionId(parseSessionId(opt));
 
         // driver
         opt = command.getOptionValue("driver", "external");
@@ -132,7 +153,16 @@ public class PubSubOptions
     public void printHelp(String program)
     {
         HelpFormatter formatter = new HelpFormatter();
-        formatter.printHelp(program, options);
+        formatter.printHelp(program + " [options]", options);
+        System.out.println(NL + USAGE_EXAMPLES + NL);
+        if (showUsage)
+        {
+            System.out.println(ADVANCED_GUIDE);
+        }
+        else
+        {
+            System.out.println("Use --usage for expanded help message.");
+        }
     }
 
     /**
@@ -167,7 +197,7 @@ public class PubSubOptions
      * Get the number of threads for the application to use.
      * @return
      */
-    public long getThreads()
+    public int getThreads()
     {
         return threads;
     }
@@ -176,7 +206,7 @@ public class PubSubOptions
      * Set the number of threads for the application to use.
      * @param t Number of threads.
      */
-    public void setThreads(long t)
+    public void setThreads(int t)
     {
         threads = t;
     }
@@ -281,6 +311,46 @@ public class PubSubOptions
     }
 
     /**
+     * Enable or disable the use of a specific session ID.
+     * @see #setSessionId(int)
+     * @param enabled
+     */
+    public void setUseSessionId(boolean enabled)
+    {
+        this.useSessionId = enabled;
+    }
+
+    /**
+     * When an Aeron stream should be created with a session ID this will return true. Otherwise
+     * no session ID should be given to the Aeron transport.
+     * @return True when a session ID should be used.
+     * @see #getSessionId()
+     */
+    public boolean getUseSessionId()
+    {
+        return this.useSessionId;
+    }
+
+    /**
+     * Set the session ID to be used when #getUseSessionId() returns true.
+     * @see #getUseSessionId #setSessionId(boolean)
+     * @param id
+     */
+    public void setSessionId(int id)
+    {
+        this.sessionId = id;
+    }
+
+    /**
+     * Get the session ID to use for an Aeron transport. Only valid if #getUseSessionId() returns true.
+     * @return The session ID for the Aeron transport.
+     */
+    public int getSessionId()
+    {
+        return this.sessionId;
+    }
+
+    /**
      * Set the data file to be sent.
      * @param filename
      */
@@ -314,6 +384,33 @@ public class PubSubOptions
         {
             value = parseLongCheckPositive(m);
         }
+        return value;
+    }
+
+    /**
+     * Parse an integer for the session id. If the input is "default" the flag for useSessionId will be false.
+     * If the string parses into a valid integer, useSessionId will be true.
+     * @param sid Integer string or "default"
+     * @return sessionId
+     * @throws ParseException When input string is not "default" or an integer.
+     */
+    private int parseSessionId(String sid) throws ParseException
+    {
+        int value = 0;
+        useSessionId = false;
+        if (!sid.equalsIgnoreCase("default"))
+        {
+            try
+            {
+                value = Integer.parseInt(sid);
+            }
+            catch (NumberFormatException ex)
+            {
+                throw new ParseException("Could not parse session ID '" + sid + "' as an integer.");
+            }
+            useSessionId = true;
+        }
+
         return value;
     }
 
@@ -858,7 +955,32 @@ public class PubSubOptions
         }
         if (value < 0)
         {
-            throw new ParseException("Long value '" + longStr + "' must be greater than zero.");
+            throw new ParseException("Long value '" + longStr + "' must be positive.");
+        }
+        return value;
+    }
+
+    /**
+     * Parses an integer and returns the value if positive.
+     * @param intStr
+     * @return
+     * @throws ParseException
+     */
+    private int parseIntCheckPositive(String intStr) throws  ParseException
+    {
+        int value;
+
+        try
+        {
+            value = Integer.parseInt(intStr);
+        }
+        catch (NumberFormatException ex)
+        {
+            throw new ParseException("Could not parse '" + intStr + "' as an int value");
+        }
+        if (value < 0)
+        {
+            throw new ParseException("Integer value '" + "' must be positive");
         }
         return value;
     }
@@ -882,4 +1004,123 @@ public class PubSubOptions
         return value;
     }
 
+    private static final String USAGE_EXAMPLES = "" +
+            // stay within column 93 (80 when printed). That's here ---------------------> |
+            "Examples:" + NL +
+            "-c udp://localhost:31111 -r 60m@1mps" + NL +
+            "    Send 60 messages at a rate of 1 message per second" + NL +
+            NL +
+            "-c udp://224.10.10.12:30000#1-10 -r 1Mbps -s 100-200 -m 1000000 -t 2" + NL +
+            "    Create 10 multicast channels on port 30000 using session ID 1 through 10." + NL +
+            "    These channels will be split Round-Robin across 2 threads that will each" + NL +
+            "    send messages sized between 100 and 200 bytes at a rate of 1Mbps. After a" + NL +
+            "    total of 1 million messages have been sent, the program will exit.";
+
+    /** Advanced guide to the function and format of command line parameters */
+    private static final String ADVANCED_GUIDE = "" +
+            // stay within column 93 (80 when printed). That's here ---------------------> |
+            "Options Usage Guide" + NL +
+            NL +
+            "-c,--channels (csv list)" + NL +
+            "    This is a list of one or more Aeron channels. The value may represent a" + NL +
+            "    single channel or contain ranges for both ports and stream IDs. Many" + NL +
+            "    channels may be defined by using a comma separated list. There are 3 parts" + NL +
+            "    to each channel; Address, port, and stream ID. The port and stream ID can" + NL +
+            "    be either a single value, or a low to high range separated by a '-'. The" + NL +
+            "    port and stream ID values are combined together to create a cartesian" + NL +
+            "    product of channels for the given address." + NL +
+            NL +
+            "    Entry Input Format:" + NL +
+            "    udp://<address>:port[-portHigh][#streamId[-streamIdHigh]][,...]" + NL +
+            NL +
+            "    Examples:" + NL +
+            "    udp://localhost:21000" + NL +
+            "        Use one channel on port 21000 with stream ID 1" + NL +
+            "    udp://224.10.10.20:9100-9109#5" + NL +
+            "        Use 10 channels on port 9100 through 9109 all with stream ID 5." + NL +
+            "    udp://localhost:21000#5,udp://224.10.10.20:9100-9109#5" + NL +
+            "        Comma separated list of the previous two examples, 11 total channels." + NL +
+            "    udp://192.168.0.101:9100-9109#5-6" + NL +
+            "        On each port between 9100 and 9109 create a channel with stream ID 5" + NL +
+            "        and another with stream ID 6 for 20 total channels." + NL +
+            NL +
+                    // TODO: Add data description
+            "-d,--data To Be Determined" + NL +                                         // |
+            "    The data of the stream" + NL +
+            NL +
+            "--driver (embedded|external)" + NL +                                       // |
+            "    Controls whether the application will start an embedded Aeron messaging" + NL +
+            "    driver or communicate with an external one." +
+            "" + NL +
+            "-h,--help" + NL +                                                          // |
+            "    Show the shorthand usage guide." + NL +
+            NL +
+            "-i,--iterations (number)" + NL +                                           // |
+            "    Repeat the send rate pattern the given number of times, then exit. See" + NL +
+            "    the --rate option." + NL +
+            NL +
+            "-m,--messages (number)" + NL +                                             // |
+            "    Exit after the application sends or receives a given number of messages." + NL +
+            NL +
+            "-r,--rate (csv list)" + NL +                                               // |
+            "    This is a list of one or more send rates for a publisher. Each rate entry" + NL +
+            "    contains two parts, duration and speed. The duration is the number of" + NL +
+            "    seconds or number of messages, and the speed is the bits per second or" + NL +
+            "    messages per second. With these options there are four valid combinations" + NL +
+            "    of entries; Messages at messages per second, messages at bits per second," + NL +
+            "    seconds at messages per second, and seconds at bits per second. The suffix" + NL +
+            "    that appears after the numbers determines the type. The 'G', 'M', and 'K'" + NL +
+            "    prefix can be used with bps. A sending application will run through the" + NL +
+            "    rate pattern once, or --iterations times before exiting. If the duration" + NL +
+            "    is not supplied, then it is assumed to mean forever." + NL +
+            NL +
+            "    Entry Input Format:" + NL +
+            "    [<duration>(m|s)@]<speed>(mps|bps)[,...]" + NL +
+            NL +                                                                        // |
+            "    Examples:" + NL +
+            "    10Mbps" + NL +
+            "        Send forever at 10 Megabits per second." + NL +
+            "    1000m@10mps" + NL +
+            "        Send 1000 messages at 10 messages per second." + NL +
+            "    10s@1.5Kbps,1s@1Gbps,0.5mps" + NL +
+            "        Send for 10 seconds at 1.5 Kilobit per second, spike to 1" + NL +
+            "        Gigabit per second for 1 second, then send one message every 2 seconds" + NL +
+            "        forever." + NL +
+            NL +
+            "--seed (number)" + NL +                                                    // |
+            "    Set the seed for the random number generator. If multiple threads are" + NL +
+            "    being used, each one will use an incrementing seed value." + NL +
+            NL +
+            "--session (number|default)" + NL +                                         // |
+            "    All publishers will be created using the given number as their session ID." + NL +
+            "    The special value \"default\" can be used to allow Aeron to select an ID" + NL +
+            "    at random." + NL +
+            "" + NL +
+            "-s,--size (csv list)" + NL +                                               // |
+            "    This is a list of one or more message payload sizes. Each entry in the" + NL +
+            "    list contains up to two parts, the number of messages and the size or" + NL +
+            "    range of possible sizes. The size is specified as a number and optional" + NL +
+            "    suffix. A range of sizes is specified by two sizes separated by a hyphen." + NL +
+            "    Possible suffixes are 'GB' or 'G', 'MB' or 'M', 'KB' or 'K', and 'B'. " + NL +
+            "    The values are binary units, so 'KB' is actually 1024 bytes. If the number" + NL +
+            "    of messages not specified then the given size or range will be used" + NL +
+            "    indefinitely. The pattern of message sizes will repeat until the sender" + NL +
+            "    exits." + NL +
+            NL +
+            "    Entry Input Format:" + NL +
+            "    [<messages>@]<size>[B][-<maximum>[B]][,...]" + NL +
+            NL +
+            "    Examples:" + NL +
+            "    100" + NL +
+            "        All messages will be 100 bytes in size." + NL +
+            "    32-1KB" + NL +
+            "        All messages will have a random size between 32 and 1024 bytes." + NL +
+            "    99@8K,1@1MB-2MB" + NL +
+            "        The first 99 messages will be 8 Kilobytes in size, then one message" + NL +
+            "        will be between 1 Megabyte and 2 Megabytes. This pattern will repeat" + NL +
+            "        as long as messages are being sent." + NL +
+            NL +
+            "-t,--threads (number)" + NL +                                              // |
+            "    Use the given number of threads to process channels. Channels are split" + NL +
+            "    Round-Robin across the threads.";
 }

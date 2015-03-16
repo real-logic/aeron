@@ -42,7 +42,7 @@ public class PubSubOptionsTest
     {
         String[] args = { "-t", "1234" };
         opts.parseArgs(args);
-        assertThat(opts.getThreads(), is(1234L));
+        assertThat(opts.getThreads(), is(1234));
     }
 
     @Test
@@ -50,7 +50,7 @@ public class PubSubOptionsTest
     {
         String[] args = { "--threads", "1234" };
         opts.parseArgs(args);
-        assertThat(opts.getThreads(), is(1234L));
+        assertThat(opts.getThreads(), is(1234));
     }
 
     @Test (expected=ParseException.class)
@@ -63,7 +63,7 @@ public class PubSubOptionsTest
     @Test (expected=ParseException.class)
     public void threadsLonghandInvalid() throws Exception
     {
-        String[] args = { "--threads", "asdf" };
+        String[] args = { "--threads", "-1000" };
         opts.parseArgs(args);
     }
 
@@ -520,6 +520,46 @@ public class PubSubOptionsTest
         MessagesAtBitsPerSecondInterval sub4 = (MessagesAtBitsPerSecondInterval)interval;
         assertThat(sub4.messages(), is(50L));
         assertThat(sub4.bitsPerSecond(), is(100L));
+    }
 
+    @Test
+    public void sessionId() throws Exception
+    {
+        String[] args = { "--session", "1000" };
+        assertThat("FAIL: getUseSessionId needs to default to false",
+                opts.getUseSessionId(), is(false));
+        opts.parseArgs(args);
+        assertThat(opts.getSessionId(), is(1000));
+        assertThat("FAIL: After successfully setting a session ID, getUseSessionId should return true.",
+                opts.getUseSessionId(), is(true));
+    }
+
+    @Test
+    public void sessionIdDefault() throws Exception
+    {
+        String[] args = { "--session", "default" };
+        opts.parseArgs(args);
+        assertThat("FAIL: using default session ID means getUseSessionId should return false.",
+                opts.getUseSessionId(), is(false));
+    }
+
+    @Test
+    public void sessionIdFailure()
+    {
+        String[] args = { "--session", "fails" };
+        boolean exceptionThrown = false;
+        opts.setUseSessionId(true);
+        try
+        {
+            opts.parseArgs(args);
+        }
+        catch (ParseException ex)
+        {
+            exceptionThrown = true;
+        }
+        assertThat("FAIL: parseArgs should have thrown a ParseException for malformed session ID",
+                exceptionThrown, is(true));
+        assertThat("FAIL: invalid session ID input should cause getUseSessionId to return false.",
+                opts.getUseSessionId(), is(false));
     }
 }

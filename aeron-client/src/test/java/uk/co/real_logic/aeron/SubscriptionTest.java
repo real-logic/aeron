@@ -28,6 +28,7 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 
 public class SubscriptionTest
 {
@@ -54,12 +55,14 @@ public class SubscriptionTest
     private Subscription subscription;
     private LogReader[] readers;
     private LogBuffers logBuffers = mock(LogBuffers.class);
+    private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
     @Before
     public void setUp()
     {
         when(header.flags()).thenReturn(FLAGS);
         when(header.sessionId()).thenReturn(SESSION_ID_1);
+        when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
 
         readers = new LogReader[PARTITION_COUNT];
         for (int i = 0; i < PARTITION_COUNT; i++)
@@ -67,6 +70,7 @@ public class SubscriptionTest
             readers[i] = mock(LogReader.class);
             when(readers[i].isComplete()).thenReturn(false);
             when(readers[i].read(any(), anyInt())).thenReturn(0);
+            when(readers[i].termBuffer()).thenReturn(termBuffer);
         }
 
         subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);

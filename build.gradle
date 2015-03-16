@@ -104,7 +104,7 @@ subprojects {
     javadoc {
         title = '<h1>Aeron Transport Protocol</h1>'
 
-        options.bottom = '<i>Copyright &#169; 2015 Real Logic Ltd. All Rights Reserved.</i>'
+        options.bottom = '<i>Copyright &#169; 2014 - 2015 Real Logic Ltd. All Rights Reserved.</i>'
         options.addStringOption('XDignore.symbol.file', '-quiet')
     }
 
@@ -135,7 +135,7 @@ subprojects {
 
 project(':aeron-common') {
     dependencies {
-        compile 'uk.co.real-logic:Agrona:0.2'
+        compile 'uk.co.real-logic:Agrona:0.2.1-SNAPSHOT'
     }
 }
 

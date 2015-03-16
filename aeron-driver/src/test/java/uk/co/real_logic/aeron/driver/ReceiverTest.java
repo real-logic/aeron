@@ -62,10 +62,11 @@ public class ReceiverTest
     private static final UdpChannel UDP_CHANNEL = UdpChannel.parse(URI);
     private static final long CORRELATION_ID = 20;
     private static final int STREAM_ID = 10;
-    private static final int TERM_ID = 3;
+    private static final int INITIAL_TERM_ID = 3;
+    private static final int ACTIVE_TERM_ID = 3;
     private static final int SESSION_ID = 1;
     private static final int INITIAL_TERM_OFFSET = 0;
-    private static final int ACTIVE_INDEX = indexByTerm(TERM_ID, TERM_ID);
+    private static final int ACTIVE_INDEX = indexByTerm(ACTIVE_TERM_ID, ACTIVE_TERM_ID);
     private static final byte[] FAKE_PAYLOAD = "Hello there, message!".getBytes();
     private static final int INITIAL_WINDOW_LENGTH = Configuration.INITIAL_WINDOW_LENGTH_DEFAULT;
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
@@ -113,7 +114,7 @@ public class ReceiverTest
     public void setUp() throws Exception
     {
         when(POSITION_INDICATOR.position())
-            .thenReturn(computePosition(TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), TERM_ID));
+            .thenReturn(computePosition(ACTIVE_TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), ACTIVE_TERM_ID));
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
@@ -174,7 +175,8 @@ public class ReceiverTest
             CORRELATION_ID,
             SESSION_ID,
             STREAM_ID,
-            TERM_ID,
+            INITIAL_TERM_ID,
+            ACTIVE_TERM_ID,
             INITIAL_TERM_OFFSET,
             INITIAL_WINDOW_LENGTH,
             STATUS_MESSAGE_TIMEOUT,
@@ -197,7 +199,7 @@ public class ReceiverTest
                 assertThat(cmd.channelEndpoint().udpChannel(), is(UDP_CHANNEL));
                 assertThat(cmd.streamId(), is(STREAM_ID));
                 assertThat(cmd.sessionId(), is(SESSION_ID));
-                assertThat(cmd.termId(), is(TERM_ID));
+                assertThat(cmd.termId(), is(ACTIVE_TERM_ID));
 
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(receiveChannelEndpoint, connection);
@@ -219,7 +221,7 @@ public class ReceiverTest
         assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(statusHeader.streamId(), is(STREAM_ID));
         assertThat(statusHeader.sessionId(), is(SESSION_ID));
-        assertThat(statusHeader.termId(), is(TERM_ID));
+        assertThat(statusHeader.termId(), is(ACTIVE_TERM_ID));
         assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
     }
 
@@ -246,7 +248,8 @@ public class ReceiverTest
                         CORRELATION_ID,
                         SESSION_ID,
                         STREAM_ID,
-                        TERM_ID,
+                        INITIAL_TERM_ID,
+                        ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
@@ -273,7 +276,7 @@ public class ReceiverTest
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.termId(), is(ACTIVE_TERM_ID));
                 assertThat(header.streamId(), is(STREAM_ID));
                 assertThat(header.sessionId(), is(SESSION_ID));
                 assertThat(header.termOffset(), is(0));
@@ -307,7 +310,8 @@ public class ReceiverTest
                         CORRELATION_ID,
                         SESSION_ID,
                         STREAM_ID,
-                        TERM_ID,
+                        INITIAL_TERM_ID,
+                        ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
@@ -337,7 +341,7 @@ public class ReceiverTest
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.termId(), is(ACTIVE_TERM_ID));
                 assertThat(header.streamId(), is(STREAM_ID));
                 assertThat(header.sessionId(), is(SESSION_ID));
                 assertThat(header.termOffset(), is(0));
@@ -371,7 +375,8 @@ public class ReceiverTest
                         CORRELATION_ID,
                         SESSION_ID,
                         STREAM_ID,
-                        TERM_ID,
+                        INITIAL_TERM_ID,
+                        ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
@@ -401,7 +406,7 @@ public class ReceiverTest
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.termId(), is(ACTIVE_TERM_ID));
                 assertThat(header.streamId(), is(STREAM_ID));
                 assertThat(header.sessionId(), is(SESSION_ID));
                 assertThat(header.termOffset(), is(0));
@@ -439,7 +444,8 @@ public class ReceiverTest
                         CORRELATION_ID,
                         SESSION_ID,
                         STREAM_ID,
-                        TERM_ID,
+                        INITIAL_TERM_ID,
+                        ACTIVE_TERM_ID,
                         initialTermOffset,
                         INITIAL_WINDOW_LENGTH,
                         STATUS_MESSAGE_TIMEOUT,
@@ -474,7 +480,7 @@ public class ReceiverTest
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
-                assertThat(header.termId(), is(TERM_ID));
+                assertThat(header.termId(), is(ACTIVE_TERM_ID));
                 assertThat(header.streamId(), is(STREAM_ID));
                 assertThat(header.sessionId(), is(SESSION_ID));
                 assertThat(header.termOffset(), is(initialTermOffset));
@@ -489,7 +495,7 @@ public class ReceiverTest
     {
         header.wrap(dataBuffer, 0);
         header.termOffset(termOffset)
-              .termId(TERM_ID)
+              .termId(ACTIVE_TERM_ID)
               .streamId(STREAM_ID)
               .sessionId(SESSION_ID)
               .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
@@ -513,8 +519,8 @@ public class ReceiverTest
         header.wrap(setupBuffer, 0);
         header.streamId(STREAM_ID)
               .sessionId(SESSION_ID)
-              .initialTermId(TERM_ID)
-              .activeTermId(TERM_ID)
+              .initialTermId(INITIAL_TERM_ID)
+              .activeTermId(ACTIVE_TERM_ID)
               .termOffset(termOffset)
               .frameLength(SetupFlyweight.HEADER_LENGTH)
               .headerType(HeaderFlyweight.HDR_TYPE_SETUP)

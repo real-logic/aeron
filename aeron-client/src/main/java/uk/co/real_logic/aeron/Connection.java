@@ -54,7 +54,7 @@ class Connection
         this.dataHandler = dataHandler;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].capacity());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].termBuffer().capacity());
         this.initialTermId = initialTermId;
 
         final int currentTermId = computeTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);

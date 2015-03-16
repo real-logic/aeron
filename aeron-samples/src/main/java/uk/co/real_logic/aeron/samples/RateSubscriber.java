@@ -23,9 +23,7 @@ import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
@@ -67,15 +65,22 @@ public class RateSubscriber
         try (final Aeron aeron = Aeron.connect(ctx, executor);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
-            executor.execute(() -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            final Future future = executor.submit(
+                () -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             // run the rate reporter loop
             reporter.run();
 
             System.out.println("Shutting down...");
+            future.get();
         }
 
         executor.shutdown();
+        if (!executor.awaitTermination(5, TimeUnit.SECONDS))
+        {
+            System.out.println("Warning: not all tasks completed promptly");
+        }
+
         CloseHelper.quietClose(driver);
     }
 }

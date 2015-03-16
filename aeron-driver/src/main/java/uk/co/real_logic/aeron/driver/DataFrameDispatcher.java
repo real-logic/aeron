@@ -141,13 +141,21 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
         if (null != connectionBySessionIdMap)
         {
             final int sessionId = header.sessionId();
+            final int initialTermId = header.initialTermId();
             final int activeTermId = header.activeTermId();
             final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
 
             if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {
                 createConnection(
-                    srcAddress, streamId, sessionId, activeTermId, header.termOffset(), header.termLength(), header.mtuLength());
+                    srcAddress,
+                    streamId,
+                    sessionId,
+                    initialTermId,
+                    activeTermId,
+                    header.termOffset(),
+                    header.termLength(),
+                    header.mtuLength());
             }
         }
     }
@@ -166,7 +174,8 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
         final InetSocketAddress srcAddress,
         final int streamId,
         final int sessionId,
-        final int termId,
+        final int initialTermId,
+        final int activeTermId,
         final int termOffset,
         final int termLength,
         final int mtuLength)
@@ -177,6 +186,15 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
 
         initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createConnection(
-            sessionId, streamId, termId, termOffset, termLength, mtuLength, controlAddress, srcAddress, channelEndpoint);
+            sessionId,
+            streamId,
+            initialTermId,
+            activeTermId,
+            termOffset,
+            termLength,
+            mtuLength,
+            controlAddress,
+            srcAddress,
+            channelEndpoint);
     }
 }

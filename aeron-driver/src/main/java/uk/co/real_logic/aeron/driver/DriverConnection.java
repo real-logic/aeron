@@ -79,6 +79,7 @@ public class DriverConnection implements AutoCloseable
         final int sessionId,
         final int streamId,
         final int initialTermId,
+        final int activeTermId,
         final int initialTermOffset,
         final int initialWindowLength,
         final long statusMessageTimeout,
@@ -117,8 +118,9 @@ public class DriverConnection implements AutoCloseable
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
         this.statusMessageTimeout = statusMessageTimeout;
+        this.lastSmTimestamp = 0;
 
-        final int termCapacity = rebuilders[0].capacity();
+        final int termCapacity = rebuilders[0].termBuffer().capacity();
 
         this.currentWindowLength = Math.min(termCapacity, initialWindowLength);
         this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);
@@ -127,7 +129,7 @@ public class DriverConnection implements AutoCloseable
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
         this.initialTermId = initialTermId;
 
-        final long initialPosition = computePosition(initialTermId, initialTermOffset, positionBitsToShift, initialTermId);
+        final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition;
         this.completedPosition.position(initialPosition);
         this.hwmPosition.position(initialPosition);
@@ -533,6 +535,7 @@ public class DriverConnection implements AutoCloseable
 
         if (isHeartbeat)
         {
+            systemCounters.heartbeatsReceived().orderedIncrement();
             timeOfLastFrame.lazySet(clock.time());
         }
 

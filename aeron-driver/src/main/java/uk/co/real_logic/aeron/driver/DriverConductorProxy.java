@@ -52,7 +52,8 @@ public class DriverConductorProxy
     public void createConnection(
         final int sessionId,
         final int streamId,
-        final int termId,
+        final int initialTermId,
+        final int activeTermId,
         final int termOffset,
         final int termLength,
         final int mtuLength,
@@ -63,12 +64,30 @@ public class DriverConductorProxy
         if (isShared())
         {
             driverConductor.onCreateConnection(
-                sessionId, streamId, termId, termOffset, termLength, mtuLength, controlAddress, srcAddress, channelEndpoint);
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                termOffset,
+                termLength,
+                mtuLength,
+                controlAddress,
+                srcAddress,
+                channelEndpoint);
         }
         else
         {
             offer(new CreateConnectionCmd(
-                sessionId, streamId, termId, termOffset, termLength, mtuLength, controlAddress, srcAddress, channelEndpoint));
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                termOffset,
+                termLength,
+                mtuLength,
+                controlAddress,
+                srcAddress,
+                channelEndpoint));
         }
     }
 

@@ -64,6 +64,7 @@ public class DriverPublication implements AutoCloseable
     private int statusMessagesReceivedCount = 0;
     private int refCount = 0;
 
+    private boolean trackSenderLimits = true;
     private volatile boolean isActive = true;
     private volatile boolean shouldSendSetupFrame = true;
 
@@ -305,30 +306,39 @@ public class DriverPublication implements AutoCloseable
 
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
-        final int availableWindow = (int)(senderLimit.get() - senderPosition);
-        final int scanLimit = Math.min(availableWindow, mtuLength);
-        final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-
         int bytesAdvanced = 0;
-        final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
-        if (available > 0)
+        final int availableWindow = (int)(senderLimit.get() - senderPosition);
+        if (availableWindow > 0)
         {
-            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-            sendBuffer.limit(termOffset + available);
-            sendBuffer.position(termOffset);
+            final int scanLimit = Math.min(availableWindow, mtuLength);
+            final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-            if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
+            final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+            if (available > 0)
             {
-                lastSendLength = available;
-                timeOfLastSendOrHeartbeat = now;
+                final ByteBuffer sendBuffer = sendBuffers[activeIndex];
+                sendBuffer.limit(termOffset + available);
+                sendBuffer.position(termOffset);
 
-                bytesAdvanced = available + scanner.padding();
-                this.senderPosition.position(senderPosition + bytesAdvanced);
+                if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
+                {
+                    lastSendLength = available;
+                    timeOfLastSendOrHeartbeat = now;
+
+                    bytesAdvanced = available + scanner.padding();
+                    this.senderPosition.position(senderPosition + bytesAdvanced);
+                    trackSenderLimits = true;
+                }
+                else
+                {
+                    systemCounters.dataFrameShortSends().orderedIncrement();
+                }
             }
-            else
-            {
-                systemCounters.dataFrameShortSends().orderedIncrement();
-            }
+        }
+        else if (trackSenderLimits)
+        {
+            trackSenderLimits = false;
+            systemCounters.senderFlowControlLimits().orderedIncrement();
         }
 
         return bytesAdvanced;

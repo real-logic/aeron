@@ -112,6 +112,7 @@ public class SenderTest
         when(mockSendChannelEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
         when(mockSystemCounters.heartbeatsSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.bytesSent()).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.senderFlowControlLimits()).thenReturn(mock(AtomicCounter.class));
 
         sender = new Sender(
             new MediaDriver.Context()

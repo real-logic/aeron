@@ -76,11 +76,12 @@ subprojects {
     repositories {
         mavenCentral()
         mavenLocal()
-	maven { url 'http://strangelydim.com/repository/' }
+        maven { url 'http://strangelydim.com/repository/' }
     }
 
     dependencies {
         testCompile 'org.hamcrest:hamcrest-all:1.3', 'junit:junit:4.11', 'org.mockito:mockito-all:1.9.5'
+
     }
 
     checkstyle {

@@ -202,8 +202,15 @@ Aeron=/Users/philipjohnson1/work/Aeron_Tools CD=. filter="*.java" {
     SystemTestHelper.java
   }
   tools=aeron-tools/src/main/java/uk/co/real_logic/aeron/tools {
-    AeronStat.java
+    ChannelDescriptor.java
+    MessageSizePattern.java
+    MessageStream.java
+    MessagesAtBitsPerSecondInterval.java
+    MessagesAtMessagesPerSecondInterval.java
+    PubSubOptions.java
     PublisherTool.java
+    RateController.java
+
   }
   config=config {
     checkstyle=checkstyle {

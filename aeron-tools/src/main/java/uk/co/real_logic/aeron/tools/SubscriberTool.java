@@ -1,5 +1,7 @@
 package uk.co.real_logic.aeron.tools;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -51,9 +53,12 @@ public class SubscriberTool
 			System.exit(-1);
 		}
 
+    	sanityCheckOptions(subTool.options);
+
     	/* Set pRNG seed callback. */
     	TLRandom.setSeedCallback(subTool);
 
+    	/* Shut down gracefully when we receive SIGINT. */
     	SigInt.register(() -> subTool.shuttingDown = true);
 
     	/* Start embedded driver if requested. */
@@ -102,6 +107,18 @@ public class SubscriberTool
         System.out.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
         		verifiableMessages + nonVerifiableMessages,
         		bytesReceived, verifiableMessages, nonVerifiableMessages);
+    }
+
+    /** Warn about options settings that might cause trouble. */
+    private static void sanityCheckOptions(PubSubOptions options)
+    {
+    	if (options.getThreads() > 1)
+    	{
+    		if (options.getOutput() != null)
+    		{
+    			System.out.println("WARNING: File output may be non-deterministic when multiple subscriber threads are used.");
+    		}
+    	}
     }
 
     /**
@@ -238,6 +255,7 @@ public class SubscriberTool
 		private long nonVerifiableMessagesReceived;
 		private long verifiableMessagesReceived;
 		private long bytesReceived;
+		private byte[] bytesToWrite = new byte[1];
 
 		public SubscriberThread(int threadId)
 		{
@@ -281,6 +299,7 @@ public class SubscriberTool
 			private final String channel;
 			private final int streamId;
 			private final MessageStream ms = new MessageStream();
+			private final OutputStream os = options.getOutput();
 
 			public MessageStreamHandler(String channel, int streamId)
 			{
@@ -308,6 +327,26 @@ public class SubscriberTool
 		    	else
 		    	{
 		    		nonVerifiableMessagesReceived++;
+		    	}
+		    	/* Write the message contents (minus verifiable message header) to our output
+		    	 * stream if set. */
+		    	if (os != null)
+		    	{
+		    		final int payloadOffset = ms.payloadOffset(buffer, offset);
+		    		final int lengthToWrite = length - payloadOffset;
+		    		if (lengthToWrite > bytesToWrite.length)
+		    		{
+		    			bytesToWrite = new byte[lengthToWrite];
+		    		}
+		    		buffer.getBytes(offset + payloadOffset, bytesToWrite, 0, lengthToWrite);
+		    		try
+		    		{
+		    			os.write(bytesToWrite, 0, lengthToWrite);
+		    		}
+		    		catch (IOException e)
+		    		{
+						e.printStackTrace();
+					}
 		    	}
 		    }
 		}

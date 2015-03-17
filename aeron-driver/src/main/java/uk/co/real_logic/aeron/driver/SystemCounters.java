@@ -55,7 +55,7 @@ public class SystemCounters implements AutoCloseable
         statusMessagesReceived = countersManager.newCounter("SMs received");
         heartbeatsSent = countersManager.newCounter("Heartbeats sent");
         heartbeatsReceived = countersManager.newCounter("Heartbeats received");
-        retransmitsSent = countersManager.newCounter("Retransmits received");
+        retransmitsSent = countersManager.newCounter("Retransmits sent");
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
         invalidPackets = countersManager.newCounter("Invalid packets");

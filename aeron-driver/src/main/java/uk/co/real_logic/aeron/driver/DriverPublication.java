@@ -265,7 +265,7 @@ public class DriverPublication implements AutoCloseable
         {
             final long senderPosition = this.senderPosition.position();
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-            isFlushed = logPartitions[activeIndex].tailVolatile() == (int)(senderPosition & termLengthMask);
+            isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailVolatile();
         }
 
         if (isFlushed && isActive)

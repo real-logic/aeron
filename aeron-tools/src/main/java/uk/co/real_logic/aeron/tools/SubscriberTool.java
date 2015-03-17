@@ -101,6 +101,16 @@ public class SubscriberTool
     		driver.close();
     	}
 
+        try
+        {
+        	/* Close any open output files. */
+			subTool.options.close();
+		}
+        catch (IOException e)
+        {
+			e.printStackTrace();
+		}
+
         final long verifiableMessages = subTool.verifiableMessagesReceived();
         final long nonVerifiableMessages = subTool.nonVerifiableMessagesReceived();
         final long bytesReceived = subTool.bytesReceived();

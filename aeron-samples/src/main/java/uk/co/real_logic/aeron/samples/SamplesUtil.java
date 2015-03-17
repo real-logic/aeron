@@ -154,19 +154,19 @@ public class SamplesUtil
      *
      * @param messagesPerSec being reported
      * @param bytesPerSec    being reported
-     * @param totalFragments being reported
+     * @param totalMessages  being reported
      * @param totalBytes     being reported
      */
     public static void printRate(
         final double messagesPerSec,
         final double bytesPerSec,
-        final long totalFragments,
+        final long totalMessages,
         final long totalBytes)
     {
         System.out.println(
             String.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d message fragments %d MB",
-                messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024)));
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 
     /**

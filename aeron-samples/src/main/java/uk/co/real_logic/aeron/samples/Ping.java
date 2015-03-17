@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.*;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -66,7 +67,7 @@ public class Ping
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
         System.out.println("Message size of " + MESSAGE_LENGTH + " bytes");
 
-        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
+        final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);

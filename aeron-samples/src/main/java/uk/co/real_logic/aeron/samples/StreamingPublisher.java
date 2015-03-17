@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.samples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
@@ -27,9 +26,9 @@ import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Publisher that sends as fast as possible a given number of messages at a given length.
@@ -50,9 +49,9 @@ public class StreamingPublisher
 
     public static void main(final String[] args) throws Exception
     {
-        if (MESSAGE_LENGTH < BitUtil.SIZE_OF_LONG)
+        if (MESSAGE_LENGTH < SIZE_OF_LONG)
         {
-            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", BitUtil.SIZE_OF_LONG));
+            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", SIZE_OF_LONG));
         }
 
         SamplesUtil.useSharedMemoryOnLinux();
@@ -79,14 +78,17 @@ public class StreamingPublisher
 
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
+                    //final int length = ThreadLocalRandom.current().nextInt(SIZE_OF_LONG, MESSAGE_LENGTH);
+                    final int length = MESSAGE_LENGTH;
+
                     ATOMIC_BUFFER.putLong(0, i);
 
-                    while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+                    while (!publication.offer(ATOMIC_BUFFER, 0, length))
                     {
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
 
-                    reporter.onMessage(1, ATOMIC_BUFFER.capacity());
+                    reporter.onMessage(1, length);
                 }
 
                 System.out.println("Done streaming.");
@@ -113,7 +115,7 @@ public class StreamingPublisher
         if (printingActive)
         {
             System.out.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d message fragments %d MB\n",
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
                 messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
         }
     }

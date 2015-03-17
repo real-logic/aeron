@@ -58,16 +58,20 @@ public class StreamingPublisher
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-
+        //Create an executer with 2 reusable threads
         final ExecutorService executor = Executors.newFixedThreadPool(2);
+
+        // Create a context for media driver connection
         final Aeron.Context context = new Aeron.Context();
 
+        //Connect to media driver and add publisher to send message on CHANNEL and STREAM
         try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
+        	// Create a rate reporter to run every seconds
             final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
             executor.execute(reporter);
-
+            // Create a barrier which will ask to restart publisher after program's termination
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -81,12 +85,13 @@ public class StreamingPublisher
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
                     ATOMIC_BUFFER.putLong(0, i);
-
+                    // Try to Send the message on configured CHANNEL and STREAM
                     while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
                     {
+                    	//Returns almost immediately ( Used for low latency)
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
-
+                    // Reporter that one message of size ATOMIC_BUFFER.capacity() has been sent
                     reporter.onMessage(1, ATOMIC_BUFFER.capacity());
                 }
 
@@ -100,11 +105,13 @@ public class StreamingPublisher
 
                 printingActive = false;
             }
+            // Keep repeating the above loop if user answers 'Y' to "Execute again?"
+            // Otherwise, exit the loop
             while (barrier.await());
-
+            // Halt the report
             reporter.halt();
         }
-
+        // Gracefully shutdown the reporter threads
         executor.shutdown();
         CloseHelper.quietClose(driver);
     }

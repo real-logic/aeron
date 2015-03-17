@@ -5,6 +5,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -76,14 +78,6 @@ public class PubSubOptionsTest
     }
 
     @Test
-    public void iterationsShorthand() throws Exception
-    {
-        String[] args = { "-i", "1234" };
-        opts.parseArgs(args);
-        assertThat(opts.getIterations(), is(1234L));
-    }
-
-    @Test
     public void messages() throws Exception
     {
         String[] args = { "--messages", "1234" };
@@ -124,37 +118,64 @@ public class PubSubOptionsTest
     }
 
     @Test
-    public void dataVerifiable() throws Exception
+    public void inputStreamStdin() throws Exception
     {
-        String[] args = { "--data", "verifiable" };
+        String[] args = { "--input", "stdin" };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(true));
+        assertThat(opts.getInput(), equalTo(System.in));
     }
 
     @Test
-    public void dataVerifiableShorthand() throws Exception
+    public void inputStreamRandomShorthand() throws Exception
     {
-        String[] args = { "-d", "verifiable" };
+        String[] args = { "-i", "random" };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(true));
+        assertThat(opts.getInput(), instanceOf(RandomInputStream.class));
     }
 
     @Test
-    public void dataFilename() throws Exception
+    public void inputStreamDefault() throws Exception
     {
-        String[] args = { "--data", "/home/user/file_name" };
+        String[] args = { };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(false));
-        assertThat(opts.getDataFilename(), is("/home/user/file_name"));
+        assertThat("FAIL: default input stream should be a RandomInputStream.",
+                opts.getInput(), instanceOf(RandomInputStream.class));
     }
 
     @Test
-    public void dataFilenameShorthand() throws Exception
+    public void outputStreamDefaultNull() throws Exception
     {
-        String[] args = { "--d", "/home/user/file_name" };
+        String[] args = { };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(false));
-        assertThat(opts.getDataFilename(), is("/home/user/file_name"));
+        assertThat("FAIL: Default output stream should be null",
+                opts.getOutput(), is(nullValue()));
+    }
+
+    @Test
+    public void outputStreamSetNull() throws Exception
+    {
+        String[] args = { "-o", "NULL" };
+        opts.parseArgs(args);
+        assertThat("FAIL: Output stream should be null when set to the string 'null'",
+                opts.getOutput(), is(nullValue()));
+    }
+
+    @Test
+    public void outputStreamStdout() throws Exception
+    {
+        String[] args = { "--output", "StdOut" };
+        opts.parseArgs(args);
+        assertThat("FAIL: Expected outputStream to be the standard out",
+                opts.getOutput(), equalTo(System.out));
+    }
+
+    @Test
+    public void outputStreamStderr() throws Exception
+    {
+        String[] args = { "--output", "stderr" };
+        opts.parseArgs(args);
+        assertThat("FAIL: Expected outputStream to be standard error.",
+                opts.getOutput(), equalTo(System.err));
     }
 
     @Test
@@ -175,7 +196,6 @@ public class PubSubOptionsTest
         assertThat("FAIL: Stream ID is 1",
                 cd.getStreamIdentifiers()[0], is(1));
     }
-
 
     @Test
     public void channelWithStreamId() throws Exception

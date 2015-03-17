@@ -1,6 +1,8 @@
 package uk.co.real_logic.aeron.tools;
 
 import org.apache.commons.cli.*;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -22,8 +24,6 @@ public class PubSubOptions
     boolean showUsage;
     /** Application should create an embedded Aeron media driver */
     boolean useEmbeddedDriver;
-    /** Application should send or expect verifiable data */
-    boolean useVerifiableData;
     /** Application provided a session Id for all strings */
     boolean useSessionId;
     /** The seed for the random number generator */
@@ -36,26 +36,28 @@ public class PubSubOptions
     int sessionId;
     /** The number of threads to use when sending or receiving in an application */
     int threads;
-    /** When not using verifiable data, use this file */
-    String datafile;
     /** The Aeron channels to open */
     List<ChannelDescriptor> channels;
     /** The message rate sending pattern */
     List<RateControllerInterval> rateIntervals;
-
+    /** The stream used to generate data for a Publisher to send */
+    InputStream input;
+    /** The stream used by a Subscriber to write the data received */
+    OutputStream output;
     /** The {@link MessageSizePattern} used to determine next message size */
     MessageSizePattern sizePattern;
 
     public PubSubOptions()
     {
-        // TODO: Add more detail to the descriptions
         options = new Options();
         options.addOption("c",  "channels",   true,  "Create the given Aeron channels.");
         options.addOption("d",  "data",       true,  "Send data file or verifiable stream.");
         options.addOption(null, "driver",     true,  "Use 'external' or 'embedded' Aeron driver.");
         options.addOption("h",  "help",       false, "Display simple usage message.");
-        options.addOption("i",  "iterations", true,  "Run the rate sequence n times.");
+        options.addOption("i",  "input",      true,  "Publisher will send 'stdin', 'random', or a file as data.");
+        options.addOption(null, "iterations", true,  "Run the rate sequence n times.");
         options.addOption("m",  "messages",   true,  "Send or receive n messages before exiting.");
+        options.addOption("o",  "output",     true,  "Subscriber will write the stream to the output file.");
         options.addOption("r",  "rate",       true,  "Send rate pattern CSV list.");
         options.addOption(null, "seed",       true,  "Random number generator seed.");
         options.addOption(null, "session",    true,  "Use session id for all publishers.");
@@ -70,10 +72,10 @@ public class PubSubOptions
         iterations = 0;
         sessionId = 0;
         useEmbeddedDriver = false;
-        useVerifiableData = true;
         useSessionId = false;
         sizePattern = null;
-        datafile = null;
+        input = null;
+        output = null;
         channels = new ArrayList<ChannelDescriptor>();
         // Don't have the interval objects yet.
         rateIntervals = new ArrayList<RateControllerInterval>();
@@ -103,43 +105,36 @@ public class PubSubOptions
             // Don't do anything, just signal the caller that they should call printHelp
             return 1;
         }
-        // threads
         opt = command.getOptionValue("t", "1");
         setThreads(parseIntCheckPositive(opt));
 
-        // Random number seed
         opt = command.getOptionValue("seed", "0");
         setRandomSeed(parseLongCheckPositive(opt));
 
-        // messages
         opt = command.getOptionValue("messages", "unlimited");
         setMessages(parseNumberOfMessages(opt));
 
-        // iterations
         opt = command.getOptionValue("iterations", "1");
         setIterations(parseIterations(opt));
 
-        // Session ID
         opt = command.getOptionValue("session", "default");
         setSessionId(parseSessionId(opt));
 
-        // driver
         opt = command.getOptionValue("driver", "external");
         setUseEmbeddedDriver(parseDriver(opt));
 
-        // data
-        opt = command.getOptionValue("data", "verifiable");
-        parseData(opt);
+        opt = command.getOptionValue("input", "random");
+        parseInputStream(opt);
 
-        // channels
+        opt = command.getOptionValue("output", "null");
+        parseOutputStream(opt);
+
         opt = command.getOptionValue("channels", "udp://localhost:31111#1");
         parseChannels(opt);
 
-        // rates
         opt = command.getOptionValue("rate", "max");
         parseRates(opt);
 
-        // message size
         opt = command.getOptionValue("size", "32");
         parseMessageSizes(opt);
 
@@ -181,6 +176,42 @@ public class PubSubOptions
     public void setChannels(List<ChannelDescriptor> channels)
     {
         this.channels = channels;
+    }
+
+    /**
+     * Get the output stream where a subscriber will write received data.
+     * @return
+     */
+    public OutputStream getOutput()
+    {
+        return output;
+    }
+
+    /**
+     * Set the output stream where a subscriber will write received data.
+     * @param output
+     */
+    public void setOutput(OutputStream output)
+    {
+        this.output = output;
+    }
+
+    /**
+     * Get the input stream that a Publisher will read for data to send.
+     * @return
+     */
+    public InputStream getInput()
+    {
+        return input;
+    }
+
+    /**
+     * Set the input stream that a Publisher will read for data to send.
+     * @param input
+     */
+    public void setInput(InputStream input)
+    {
+        this.input = input;
     }
 
     public void setRateIntervals(List<RateControllerInterval> rates)
@@ -284,33 +315,6 @@ public class PubSubOptions
     }
 
     /**
-     * Get the use verifiable data option.
-     * @return
-     */
-    public boolean getUseVerifiableData()
-    {
-        return useVerifiableData;
-    }
-
-    /**
-     * Set the use verifiable data option to the given value.
-     * @param value
-     */
-    public void setUseVerifiableData(boolean value)
-    {
-        useVerifiableData = value;
-    }
-
-    /**
-     * When not using verifiable data, this will return a file name containing the data to be used.
-     * @return
-     */
-    public String getDataFilename()
-    {
-        return datafile;
-    }
-
-    /**
      * Enable or disable the use of a specific session ID.
      * @see #setSessionId(int)
      * @param enabled
@@ -348,15 +352,6 @@ public class PubSubOptions
     public int getSessionId()
     {
         return this.sessionId;
-    }
-
-    /**
-     * Set the data file to be sent.
-     * @param filename
-     */
-    public void setDataFilename(String filename)
-    {
-        datafile = filename;
     }
 
     /**
@@ -647,22 +642,6 @@ public class PubSubOptions
 
     /**
      *
-     * @param dataStr
-     */
-    private void parseData(String dataStr)
-    {
-        boolean verify = true;
-        if (!dataStr.equalsIgnoreCase("verifiable"))
-        {
-            // dataStr is a file name
-            verify = false;
-            datafile = dataStr;
-        }
-        setUseVerifiableData(verify);
-    }
-
-    /**
-     *
      * @param ratesCsv
      */
     private void parseRates(String ratesCsv) throws ParseException
@@ -906,6 +885,55 @@ public class PubSubOptions
         }
     }
 
+    private void parseInputStream(String inputStr) throws ParseException
+    {
+        if (inputStr.equalsIgnoreCase("random"))
+        {
+            setInput(new RandomInputStream());
+        }
+        else if (inputStr.equalsIgnoreCase("stdin"))
+        {
+            setInput(System.in);
+        }
+        else
+        {
+            try
+            {
+                setInput(new FileInputStream(inputStr));
+            }
+            catch (FileNotFoundException ex)
+            {
+                throw new ParseException("Input file '" + inputStr + "' not found.");
+            }
+        }
+    }
+
+    private void parseOutputStream(String outputStr) throws ParseException
+    {
+        if (outputStr.equalsIgnoreCase("null"))
+        {
+            setOutput(null);
+        }
+        else if (outputStr.equalsIgnoreCase("stdout"))
+        {
+            setOutput(System.out);
+        }
+        else if (outputStr.equalsIgnoreCase("stderr"))
+        {
+            setOutput(System.err);
+        }
+        else
+        {
+            try
+            {
+                setOutput(new FileOutputStream(outputStr));
+            }
+            catch (FileNotFoundException ex)
+            {
+                throw new ParseException("Could not open file '" + outputStr + "' for writing");
+            }
+        }
+    }
     /**
      * Parses a bit rate multiplier based on a string that may contain Gbps, Mbps, Kbps, bps
      * @param s
@@ -1044,10 +1072,6 @@ public class PubSubOptions
             "        On each port between 9100 and 9109 create a channel with stream ID 5" + NL +
             "        and another with stream ID 6 for 20 total channels." + NL +
             NL +
-                    // TODO: Add data description
-            "-d,--data To Be Determined" + NL +                                         // |
-            "    The data of the stream" + NL +
-            NL +
             "--driver (embedded|external)" + NL +                                       // |
             "    Controls whether the application will start an embedded Aeron messaging" + NL +
             "    driver or communicate with an external one." +
@@ -1055,12 +1079,23 @@ public class PubSubOptions
             "-h,--help" + NL +                                                          // |
             "    Show the shorthand usage guide." + NL +
             NL +
-            "-i,--iterations (number)" + NL +                                           // |
+            "-i,--input (random|stdin|<file>)" + NL +                                   // |
+            "    Input data for a Publisher to send. By default, the Publisher will send" + NL +
+            "    random generated data. If 'stdin' is used, standard input will be sent." + NL +
+            "    Any other value is assumed to be a filename. When the Publisher reaches" + NL +
+            "    the end of the stream, it will exit." + NL +
+            NL +
+            "--iterations (number)" + NL +                                              // |
             "    Repeat the send rate pattern the given number of times, then exit. See" + NL +
             "    the --rate option." + NL +
             NL +
             "-m,--messages (number)" + NL +                                             // |
             "    Exit after the application sends or receives a given number of messages." + NL +
+            NL +
+            "-o,--output (null|stdout|stderr|<file>)" + NL +
+            "    A subscriber will write data received to the given output stream. By" + NL +
+            "    default, the subscriber will not write to any stream. This is the " + NL +
+            "    behavior of the 'null' value." + NL +
             NL +
             "-r,--rate (csv list)" + NL +                                               // |
             "    This is a list of one or more send rates for a publisher. Each rate entry" + NL +

@@ -10,10 +10,6 @@ public class PongRunner
     {
       impl = new AeronPong();
     }
-    else if (args[0].equalsIgnoreCase("qpid"))
-    {
-      impl = new QpidPong();
-    }
     impl.prepare();
     impl.run();
   }

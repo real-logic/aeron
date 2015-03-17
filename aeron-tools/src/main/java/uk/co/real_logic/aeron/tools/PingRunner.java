@@ -31,10 +31,6 @@ public class PingRunner
     {
       impl = new AeronPing();
     }
-    else if (args[0].equalsIgnoreCase("qpid"))
-    {
-      impl = new QpidPing();
-    }
 
     impl.prepare();
     impl.connect();

@@ -205,28 +205,30 @@ public class DriverPublication implements AutoCloseable
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
             int remainingBytes = length;
-            int totalBytesSent = 0;
+            int bytesSent = 0;
             do
             {
-                termOffset += totalBytesSent;
+                termOffset += bytesSent;
 
                 final int available = scanner.scanForAvailability(termBuffer, termOffset, mtuLength);
-                if (available > 0)
+                if (available <= 0)
                 {
-                    sendBuffer.limit(termOffset + available);
-                    sendBuffer.position(termOffset);
-
-                    final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
-                    if (available != bytesSent)
-                    {
-                        systemCounters.dataFrameShortSends().orderedIncrement();
-                    }
+                    break;
                 }
 
-                totalBytesSent = available + scanner.padding();
-                remainingBytes -= totalBytesSent;
+                sendBuffer.limit(termOffset + available);
+                sendBuffer.position(termOffset);
+
+                if (available != channelEndpoint.sendTo(sendBuffer, dstAddress))
+                {
+                    systemCounters.dataFrameShortSends().orderedIncrement();
+                    break;
+                }
+
+                bytesSent += available + scanner.padding();
+                remainingBytes -= bytesSent;
             }
-            while (remainingBytes > 0 && totalBytesSent > 0);
+            while (remainingBytes > 0);
 
             systemCounters.retransmitsSent().orderedIncrement();
         }

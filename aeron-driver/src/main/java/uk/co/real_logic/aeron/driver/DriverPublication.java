@@ -227,9 +227,9 @@ public class DriverPublication implements AutoCloseable
                 remainingBytes -= totalBytesSent;
             }
             while (remainingBytes > 0 && totalBytesSent > 0);
-        }
 
-        systemCounters.retransmitsSent().orderedIncrement();
+            systemCounters.retransmitsSent().orderedIncrement();
+        }
     }
 
     public void triggerSendSetupFrame()

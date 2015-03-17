@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.agrona.LangUtil;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -92,7 +93,7 @@ public class SamplesUtil
                 }
                 catch (final Exception ex)
                 {
-                    ex.printStackTrace();
+                    LangUtil.rethrowUnchecked(ex);
                 }
             };
     }

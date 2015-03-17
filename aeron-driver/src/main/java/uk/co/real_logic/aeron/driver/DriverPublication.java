@@ -58,8 +58,8 @@ public class DriverPublication implements AutoCloseable
     private final int mtuLength;
     private final int termWindowLength;
 
-    private long timeOfLastSendOrHeartbeat;
     private long timeOfFlush = 0;
+    private long timeOfLastSendOrHeartbeat;
     private int lastSendLength = 0;
     private int statusMessagesReceivedCount = 0;
     private int refCount = 0;
@@ -324,10 +324,10 @@ public class DriverPublication implements AutoCloseable
                 {
                     lastSendLength = available;
                     timeOfLastSendOrHeartbeat = now;
+                    trackSenderLimits = true;
 
                     bytesAdvanced = available + scanner.padding();
                     this.senderPosition.position(senderPosition + bytesAdvanced);
-                    trackSenderLimits = true;
                 }
                 else
                 {

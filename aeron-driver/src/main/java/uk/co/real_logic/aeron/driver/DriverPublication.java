@@ -309,25 +309,26 @@ public class DriverPublication implements AutoCloseable
         final int scanLimit = Math.min(availableWindow, mtuLength);
         final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-        final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
         int bytesAdvanced = 0;
+        final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
         if (available > 0)
         {
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
             sendBuffer.limit(termOffset + available);
             sendBuffer.position(termOffset);
 
-            final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
-            if (available != bytesSent)
+            if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
+            {
+                lastSendLength = available;
+                timeOfLastSendOrHeartbeat = now;
+
+                bytesAdvanced = available + scanner.padding();
+                this.senderPosition.position(senderPosition + bytesAdvanced);
+            }
+            else
             {
                 systemCounters.dataFrameShortSends().orderedIncrement();
             }
-
-            lastSendLength = available;
-            timeOfLastSendOrHeartbeat = now;
-
-            bytesAdvanced = available + scanner.padding();
-            this.senderPosition.position(senderPosition + bytesAdvanced);
         }
 
         return bytesAdvanced;

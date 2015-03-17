@@ -30,6 +30,8 @@ public class MessageStream
 	private long messageCount = 0;
 	private boolean active = true;
 
+	private UnsafeBuffer copybuf = new UnsafeBuffer(new byte[1]);
+
 	private static final ThreadLocalCRC32 MSG_CHECKSUM = new ThreadLocalCRC32();
 
 	private static class ThreadLocalCRC32 extends ThreadLocal<CRC32>
@@ -136,7 +138,8 @@ public class MessageStream
 		{
 			throw new Exception("Stream has ended.");
 		}
-		UnsafeBuffer copybuf = new UnsafeBuffer(buffer, offset, length);
+
+		copybuf.wrap(buffer, offset, length);
 		/* Assume we've already checked and it appears we have a verifiable message. */
 
 		/* Save the checksums first, then blank them out. */

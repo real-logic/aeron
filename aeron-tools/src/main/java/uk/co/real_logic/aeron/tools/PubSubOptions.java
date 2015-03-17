@@ -10,7 +10,8 @@ import java.util.regex.Pattern;
 
 /**
  * This is a class to hold information about what an Aeron publisher or subscriber
- * application should do. It's main purpose is to parse command line options.
+ * application should do. It's main purpose is to parse command line options. It may
+ * open files during parsing, so all programs should call #close() to clean up properly.
  */
 public class PubSubOptions
 {
@@ -47,6 +48,9 @@ public class PubSubOptions
     /** The {@link MessageSizePattern} used to determine next message size */
     MessageSizePattern sizePattern;
 
+    private boolean outputNeedsClose;
+    private boolean inputNeedsClose;
+
     public PubSubOptions()
     {
         options = new Options();
@@ -62,7 +66,7 @@ public class PubSubOptions
         options.addOption(null, "seed",       true,  "Random number generator seed.");
         options.addOption(null, "session",    true,  "Use session id for all publishers.");
         options.addOption("s",  "size",       true,  "Message payload size sequence, in bytes.");
-        options.addOption("t",  "threads",    true,  "Number of threads.");
+        options.addOption("t",  "threads",    true,  "Round-Robin channels acress a number of threads.");
         options.addOption(null, "usage",      false, "Display advanced usage guide.");
 
         // these will all be overridden in parseArgs
@@ -71,18 +75,21 @@ public class PubSubOptions
         messages = 0;
         iterations = 0;
         sessionId = 0;
+        inputNeedsClose = false;
+        outputNeedsClose = false;
         useEmbeddedDriver = false;
         useSessionId = false;
         sizePattern = null;
         input = null;
         output = null;
         channels = new ArrayList<ChannelDescriptor>();
-        // Don't have the interval objects yet.
         rateIntervals = new ArrayList<RateControllerInterval>();
     }
 
     /**
-     * Parse command line arguments into usable objects.
+     * Parse command line arguments into usable objects. This must be called to set up the default values.
+     * It's possible that this method will open a file for input or output so all users of this method should
+     * also call #close().
      * @param args Command line arguments
      * @return 0 when options parsed, 1 if program should call {@link #printHelp(String)}.
      * @throws ParseException
@@ -370,6 +377,30 @@ public class PubSubOptions
     public void setMessageSizePattern(MessageSizePattern pattern)
     {
         this.sizePattern = pattern;
+    }
+
+    /**
+     * If the parsed arguments created file input or output streams, those need to be closed.
+     * This is a convenience method that will handle all the closable cases for you. Call this
+     * before shutting down an application. Output streams will also be flushed.
+     */
+    public void close() throws IOException
+    {
+        if (inputNeedsClose)
+        {
+            input.close();
+            inputNeedsClose = false;
+        }
+
+        if (output != null)
+        {
+            output.flush();
+            if (outputNeedsClose)
+            {
+                output.close();
+                outputNeedsClose = false;
+            }
+        }
     }
 
     private long parseNumberOfMessages(String m) throws ParseException
@@ -905,6 +936,8 @@ public class PubSubOptions
             {
                 throw new ParseException("Input file '" + inputStr + "' not found.");
             }
+            // keep track of the fact we need to close this file input stream.
+            inputNeedsClose = true;
         }
     }
 
@@ -932,6 +965,8 @@ public class PubSubOptions
             {
                 throw new ParseException("Could not open file '" + outputStr + "' for writing");
             }
+            // Keep track of the fact we need to close this file stream
+            outputNeedsClose = true;
         }
     }
     /**

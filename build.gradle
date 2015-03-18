@@ -199,10 +199,20 @@ project(':aeron-system-tests') {
 }
 
 project(':aeron-tools') {
+    apply plugin: 'shadow'
+
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
         compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
         testCompile project(path: ':aeron-common', configuration: 'tests')
+    }
+
+    shadow {
+        outputFile = new File('aeron-tools/build/libs/tools.jar')
+    }
+
+    build.doLast {
+        tasks.shadowJar.execute()
     }
 }
 

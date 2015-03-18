@@ -582,4 +582,36 @@ public class PubSubOptionsTest
         assertThat("FAIL: invalid session ID input should cause getUseSessionId to return false.",
                 opts.getUseSessionId(), is(false));
     }
+
+    @Test
+    public void verifyOn() throws Exception
+    {
+        String[] args = { "--verify", "Yes" };
+        opts.parseArgs(args);
+        assertThat(opts.getVerify(), is(true));
+    }
+
+    @Test
+    public void verifyOff() throws Exception
+    {
+        String[] args = { "--verify", "No" };
+        opts.parseArgs(args);
+        assertThat(opts.getVerify(), is(false));
+    }
+
+    @Test
+    public void verifyDefault() throws Exception
+    {
+        String[] args = { };
+        opts.parseArgs(args);
+        assertThat("FAIL: Default for --verify should be true",
+                opts.getVerify(), is(true));
+    }
+
+    @Test (expected=ParseException.class)
+    public void verifyException() throws Exception
+    {
+        String[] args = { "--verify", "schmerify" };
+        opts.parseArgs(args);
+    }
 }

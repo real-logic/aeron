@@ -27,6 +27,8 @@ public class PubSubOptions
     boolean useEmbeddedDriver;
     /** Application provided a session Id for all strings */
     boolean useSessionId;
+    /** Messages should include verifiable stream headers */
+    boolean useVerifiableStream;
     /** The seed for the random number generator */
     long randomSeed;
     /** The number of messages an Application should send before exiting */
@@ -55,7 +57,6 @@ public class PubSubOptions
     {
         options = new Options();
         options.addOption("c",  "channels",   true,  "Create the given Aeron channels.");
-        options.addOption("d",  "data",       true,  "Send data file or verifiable stream.");
         options.addOption(null, "driver",     true,  "Use 'external' or 'embedded' Aeron driver.");
         options.addOption("h",  "help",       false, "Display simple usage message.");
         options.addOption("i",  "input",      true,  "Publisher will send 'stdin', 'random', or a file as data.");
@@ -68,6 +69,7 @@ public class PubSubOptions
         options.addOption("s",  "size",       true,  "Message payload size sequence, in bytes.");
         options.addOption("t",  "threads",    true,  "Round-Robin channels acress a number of threads.");
         options.addOption(null, "usage",      false, "Display advanced usage guide.");
+        options.addOption(null, "verify",     true,  "Messages and streams are verifiable (yes|no).");
 
         // these will all be overridden in parseArgs
         randomSeed = 0;
@@ -145,6 +147,8 @@ public class PubSubOptions
         opt = command.getOptionValue("size", "32");
         parseMessageSizes(opt);
 
+        opt = command.getOptionValue("verify", "yes");
+        parseVerify(opt);
         return 0;
     }
 
@@ -210,6 +214,24 @@ public class PubSubOptions
     public InputStream getInput()
     {
         return input;
+    }
+
+    /**
+     * Get if messages use additional space to store checksums for the message and stream.
+     * @return
+     */
+    public boolean getVerify()
+    {
+        return useVerifiableStream;
+    }
+
+    /**
+     * Set if messages use additional space to store checksums for the message and stream.
+     * @param verify
+     */
+    public void setVerify(boolean verify)
+    {
+        useVerifiableStream = verify;
     }
 
     /**
@@ -413,6 +435,21 @@ public class PubSubOptions
         return value;
     }
 
+    private void parseVerify(String verifyStr) throws ParseException
+    {
+        if (verifyStr.equalsIgnoreCase("no"))
+        {
+            useVerifiableStream = false;
+        }
+        else if (verifyStr.equalsIgnoreCase("yes"))
+        {
+            useVerifiableStream = true;
+        }
+        else
+        {
+            throw new ParseException("The verify option '" + verifyStr + "' can only be 'yes' or 'no'");
+        }
+    }
     /**
      * Parse an integer for the session id. If the input is "default" the flag for useSessionId will be false.
      * If the string parses into a valid integer, useSessionId will be true.
@@ -1192,5 +1229,14 @@ public class PubSubOptions
             NL +
             "-t,--threads (number)" + NL +                                              // |
             "    Use the given number of threads to process channels. Channels are split" + NL +
-            "    Round-Robin across the threads.";
+            "    Round-Robin across the threads." + NL +
+            NL +
+            "--verify (yes|no)" + NL +                                                  // |
+            "    Each message will reserve space for checksum data that can be used to" + NL +
+            "    verify both the individual message and the stream up to that point." + NL +
+            "    The default behavior is 'yes', and will use the first 12 bytes of the" + NL +
+            "    message payload to store verification data. To send messages with less" + NL +
+            "    than 16 bytes of payload this option must be set to 'no'. Subscribers" + NL +
+            "    can detect that a message is verifiable. The checksums are not written" + NL +
+            "    to the output stream.";
 }

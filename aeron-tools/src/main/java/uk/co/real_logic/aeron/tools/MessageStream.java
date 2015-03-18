@@ -285,9 +285,9 @@ public class MessageStream
 		{
 			throw new Exception("Stream has ended.");
 		}
-		if (size < 1)
+		if (size < 0)
 		{
-			throw new Exception("Size must be > 0.");
+			throw new Exception("Size must be >= 0.");
 		}
 		if (verifiable)
 		{

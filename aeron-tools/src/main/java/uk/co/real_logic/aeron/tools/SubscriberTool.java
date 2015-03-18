@@ -21,16 +21,10 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.SystemNanoClock;
 
 public class SubscriberTool
-	implements RateController.Callback, SeedCallback, Runnable
+	implements RateReporter.Stats, SeedCallback
 {
-	private static final SystemNanoClock CLOCK = new SystemNanoClock();
-	private long lastReportTimeNanos;
-	private long lastNonVerifiableMessages;
-	private long lastVerifiableMessages;
-	private long lastBytesReceived;
 	private boolean shuttingDown;
 	private PubSubOptions options = new PubSubOptions();
 	private SubscriberThread subscribers[];
@@ -78,8 +72,7 @@ public class SubscriberTool
     		subThreads[i].start();
     	}
 
-        Thread reportingThread = new Thread(subTool);
-        reportingThread.start();
+        RateReporter rateReporter = new RateReporter(subTool);
 
         /* Wait for threads to exit. */
         try
@@ -88,7 +81,7 @@ public class SubscriberTool
         	{
         		subThreads[i].join();
         	}
-        	reportingThread.join();
+        	rateReporter.close();
         }
         catch (InterruptedException e)
         {
@@ -111,9 +104,9 @@ public class SubscriberTool
 			e.printStackTrace();
 		}
 
-        final long verifiableMessages = subTool.verifiableMessagesReceived();
-        final long nonVerifiableMessages = subTool.nonVerifiableMessagesReceived();
-        final long bytesReceived = subTool.bytesReceived();
+        final long verifiableMessages = subTool.verifiableMessages();
+        final long nonVerifiableMessages = subTool.nonVerifiableMessages();
+        final long bytesReceived = subTool.bytes();
         System.out.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
         		verifiableMessages + nonVerifiableMessages,
         		bytesReceived, verifiableMessages, nonVerifiableMessages);
@@ -136,7 +129,8 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of verifiable messages received
      */
-    public long verifiableMessagesReceived()
+    @Override
+	public long verifiableMessages()
     {
     	long totalMessages = 0;
     	for (int i = 0; i < subscribers.length; i++)
@@ -151,7 +145,8 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of bytes received
      */
-    public long bytesReceived()
+    @Override
+	public long bytes()
     {
     	long totalBytes = 0;
     	for (int i = 0; i < subscribers.length; i++)
@@ -166,7 +161,8 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of non-verifiable messages received
      */
-    public long nonVerifiableMessagesReceived()
+    @Override
+	public long nonVerifiableMessages()
     {
     	long totalMessages = 0;
     	for (int i = 0; i < subscribers.length; i++)
@@ -175,74 +171,6 @@ public class SubscriberTool
     	}
     	return totalMessages;
     }
-
-    /** Returns a human-readable bits/messages/whatever-per-second string
-     * @param bits The total number of bits (per second) to convert to a human-readable string
-     * @return the human-readable bits-per-second string
-     */
-    public static String getHumanReadableRate(long bits)
-    {
-        if (bits < 1024)
-        {
-			return bits + " ";
-		}
-        int exp = (int) (Math.log(bits) / Math.log(1024));
-        return String.format("%.1f %s", bits / Math.pow(1024, exp), "KMGTPE".charAt(exp-1));
-    }
-
-    /**
-     * Function called by the RateController once a second; used to report
-     * the current aggregate receiving rates.
-     */
-	@Override
-	public int onNext()
-	{
-		final long currentTimeNanos = CLOCK.time();
-		final long verifiableMessages = verifiableMessagesReceived();
-		final long nonVerifiableMessages = nonVerifiableMessagesReceived();
-		final long totalMessages = verifiableMessages + nonVerifiableMessages;
-		final long lastTotalMessages = lastNonVerifiableMessages + lastVerifiableMessages;
-		final long bytesReceived = bytesReceived();
-		System.out.format("%.6f: %smsgs/sec %sbps%n",
-				(currentTimeNanos - lastReportTimeNanos)/1000000000.0,
-				getHumanReadableRate(totalMessages - lastTotalMessages),
-				getHumanReadableRate((bytesReceived - lastBytesReceived) * 8));
-		lastReportTimeNanos = currentTimeNanos;
-		lastVerifiableMessages = verifiableMessages;
-		lastNonVerifiableMessages = nonVerifiableMessages;
-		lastBytesReceived = bytesReceived;
-		/* Should we exit? */
-		if (shuttingDown || (totalMessages >= options.getMessages()))
-		{
-			return -1;
-		}
-		return 0; /* no "bytes" sent. */
-	}
-
-	@Override
-	public void run()
-	{
-		ArrayList<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
-
-        intervals.add(new MessagesAtMessagesPerSecondInterval(Long.MAX_VALUE, 1));
-
-        RateController rateController;
-
-        try
-        {
-        	rateController = new RateController(this, intervals);
-        	lastReportTimeNanos = CLOCK.time() - 1000000000; /* Subtract a second so the first print is correct. */
-            while (rateController.next())
-            {
-            	/* rateController will call onNext to report the interval's rates. */
-            }
-        }
-        catch (Exception e)
-        {
-        	e.printStackTrace();
-        }
-        shuttingDown = true; /* If we weren't shutting down already, we certainly should be now. */
-	}
 
 	/**
 	 * Optionally sets the random seed used for the TLRandom class, and reports the seed used.

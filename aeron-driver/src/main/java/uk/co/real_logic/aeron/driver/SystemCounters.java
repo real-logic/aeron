@@ -31,6 +31,7 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter statusMessagesSent;
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter heartbeatsSent;
+    private final AtomicCounter heartbeatsReceived;
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter invalidPackets;
@@ -53,7 +54,8 @@ public class SystemCounters implements AutoCloseable
         statusMessagesSent = countersManager.newCounter("SMs sent");
         statusMessagesReceived = countersManager.newCounter("SMs received");
         heartbeatsSent = countersManager.newCounter("Heartbeats sent");
-        retransmitsSent = countersManager.newCounter("Retransmits sent");
+        heartbeatsReceived = countersManager.newCounter("Heartbeats received");
+        retransmitsSent = countersManager.newCounter("Retransmits received");
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
         invalidPackets = countersManager.newCounter("Invalid packets");
@@ -77,6 +79,7 @@ public class SystemCounters implements AutoCloseable
         statusMessagesSent.close();
         statusMessagesReceived.close();
         heartbeatsSent.close();
+        heartbeatsReceived.close();
         retransmitsSent.close();
         flowControlUnderRuns.close();
         flowControlOverRuns.close();
@@ -142,6 +145,11 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter heartbeatsSent()
     {
         return heartbeatsSent;
+    }
+
+    public AtomicCounter heartbeatsReceived()
+    {
+        return heartbeatsReceived;
     }
 
     public AtomicCounter flowControlUnderRuns()

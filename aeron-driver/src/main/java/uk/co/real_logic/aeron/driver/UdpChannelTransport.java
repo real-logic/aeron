@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventCode;
@@ -154,14 +155,17 @@ public abstract class UdpChannelTransport implements AutoCloseable
     {
         logger.logFrameOut(buffer, remoteAddress);
 
+        int bytesSent = 0;
         try
         {
-            return datagramChannel.send(buffer, remoteAddress);
+            bytesSent = datagramChannel.send(buffer, remoteAddress);
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return bytesSent;
     }
 
     /**
@@ -208,14 +212,17 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public <T> T getOption(final SocketOption<T> name)
     {
+        T option = null;
         try
         {
-            return datagramChannel.getOption(name);
+            option = datagramChannel.getOption(name);
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return option;
     }
 
     /**
@@ -286,9 +293,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
     private InetSocketAddress receive()
     {
-        InetSocketAddress address = null;
         receiveByteBuffer.clear();
 
+        InetSocketAddress address = null;
         try
         {
             address = (InetSocketAddress)datagramChannel.receive(receiveByteBuffer);
@@ -299,7 +306,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
 
         return address;

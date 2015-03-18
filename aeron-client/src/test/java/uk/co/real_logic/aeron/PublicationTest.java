@@ -54,6 +54,7 @@ public class PublicationTest
     private LogAppender[] appenders;
     private MutableDirectBuffer[] headers;
     private LogBuffers logBuffers = mock(LogBuffers.class);
+    private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
     @Before
     public void setUp()
@@ -61,6 +62,7 @@ public class PublicationTest
         final ClientConductor conductor = mock(ClientConductor.class);
         limit = mock(PositionIndicator.class);
         when(limit.position()).thenReturn(2L * SEND_BUFFER_CAPACITY);
+        when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
 
         appenders = new LogAppender[PARTITION_COUNT];
         headers = new MutableDirectBuffer[PARTITION_COUNT];
@@ -72,7 +74,7 @@ public class PublicationTest
             when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCEEDED);
             when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCEEDED);
             when(appenders[i].defaultHeader()).thenReturn(header);
-            when(appenders[i].capacity()).thenReturn(TERM_MIN_LENGTH);
+            when(appenders[i].termBuffer()).thenReturn(termBuffer);
         }
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);

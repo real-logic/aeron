@@ -58,20 +58,24 @@ public class StreamingPublisher
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+
         //Create an executer with 2 reusable threads
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         // Create a context for media driver connection
         final Aeron.Context context = new Aeron.Context();
 
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
+
+        executor.execute(reporter);
+
         //Connect to media driver and add publisher to send message on CHANNEL and STREAM
         try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-        	// Create a rate reporter to run every seconds
-            final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
-            executor.execute(reporter);
+
             // Create a barrier which will ask to restart publisher after program's termination
+
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -108,10 +112,9 @@ public class StreamingPublisher
             // Keep repeating the above loop if user answers 'Y' to "Execute again?"
             // Otherwise, exit the loop
             while (barrier.await());
-            // Halt the report
-            reporter.halt();
         }
-        // Gracefully shutdown the reporter threads
+        // Halt the report
+        reporter.halt();
         executor.shutdown();
         CloseHelper.quietClose(driver);
     }

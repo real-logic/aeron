@@ -5,6 +5,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.both;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -42,7 +44,7 @@ public class PubSubOptionsTest
     {
         String[] args = { "-t", "1234" };
         opts.parseArgs(args);
-        assertThat(opts.getThreads(), is(1234L));
+        assertThat(opts.getThreads(), is(1234));
     }
 
     @Test
@@ -50,7 +52,7 @@ public class PubSubOptionsTest
     {
         String[] args = { "--threads", "1234" };
         opts.parseArgs(args);
-        assertThat(opts.getThreads(), is(1234L));
+        assertThat(opts.getThreads(), is(1234));
     }
 
     @Test (expected=ParseException.class)
@@ -63,7 +65,7 @@ public class PubSubOptionsTest
     @Test (expected=ParseException.class)
     public void threadsLonghandInvalid() throws Exception
     {
-        String[] args = { "--threads", "asdf" };
+        String[] args = { "--threads", "-1000" };
         opts.parseArgs(args);
     }
 
@@ -71,14 +73,6 @@ public class PubSubOptionsTest
     public void iterations() throws Exception
     {
         String[] args = { "--iterations", "1234" };
-        opts.parseArgs(args);
-        assertThat(opts.getIterations(), is(1234L));
-    }
-
-    @Test
-    public void iterationsShorthand() throws Exception
-    {
-        String[] args = { "-i", "1234" };
         opts.parseArgs(args);
         assertThat(opts.getIterations(), is(1234L));
     }
@@ -124,37 +118,64 @@ public class PubSubOptionsTest
     }
 
     @Test
-    public void dataVerifiable() throws Exception
+    public void inputStreamStdin() throws Exception
     {
-        String[] args = { "--data", "verifiable" };
+        String[] args = { "--input", "stdin" };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(true));
+        assertThat(opts.getInput(), equalTo(System.in));
     }
 
     @Test
-    public void dataVerifiableShorthand() throws Exception
+    public void inputStreamRandomShorthand() throws Exception
     {
-        String[] args = { "-d", "verifiable" };
+        String[] args = { "-i", "random" };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(true));
+        assertThat(opts.getInput(), instanceOf(RandomInputStream.class));
     }
 
     @Test
-    public void dataFilename() throws Exception
+    public void inputStreamDefault() throws Exception
     {
-        String[] args = { "--data", "/home/user/file_name" };
+        String[] args = { };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(false));
-        assertThat(opts.getDataFilename(), is("/home/user/file_name"));
+        assertThat("FAIL: default input stream should be a RandomInputStream.",
+                opts.getInput(), instanceOf(RandomInputStream.class));
     }
 
     @Test
-    public void dataFilenameShorthand() throws Exception
+    public void outputStreamDefaultNull() throws Exception
     {
-        String[] args = { "--d", "/home/user/file_name" };
+        String[] args = { };
         opts.parseArgs(args);
-        assertThat(opts.getUseVerifiableData(), is(false));
-        assertThat(opts.getDataFilename(), is("/home/user/file_name"));
+        assertThat("FAIL: Default output stream should be null",
+                opts.getOutput(), is(nullValue()));
+    }
+
+    @Test
+    public void outputStreamSetNull() throws Exception
+    {
+        String[] args = { "-o", "NULL" };
+        opts.parseArgs(args);
+        assertThat("FAIL: Output stream should be null when set to the string 'null'",
+                opts.getOutput(), is(nullValue()));
+    }
+
+    @Test
+    public void outputStreamStdout() throws Exception
+    {
+        String[] args = { "--output", "StdOut" };
+        opts.parseArgs(args);
+        assertThat("FAIL: Expected outputStream to be the standard out",
+                opts.getOutput(), equalTo(System.out));
+    }
+
+    @Test
+    public void outputStreamStderr() throws Exception
+    {
+        String[] args = { "--output", "stderr" };
+        opts.parseArgs(args);
+        assertThat("FAIL: Expected outputStream to be standard error.",
+                opts.getOutput(), equalTo(System.err));
     }
 
     @Test
@@ -175,7 +196,6 @@ public class PubSubOptionsTest
         assertThat("FAIL: Stream ID is 1",
                 cd.getStreamIdentifiers()[0], is(1));
     }
-
 
     @Test
     public void channelWithStreamId() throws Exception
@@ -520,6 +540,46 @@ public class PubSubOptionsTest
         MessagesAtBitsPerSecondInterval sub4 = (MessagesAtBitsPerSecondInterval)interval;
         assertThat(sub4.messages(), is(50L));
         assertThat(sub4.bitsPerSecond(), is(100L));
+    }
 
+    @Test
+    public void sessionId() throws Exception
+    {
+        String[] args = { "--session", "1000" };
+        assertThat("FAIL: getUseSessionId needs to default to false",
+                opts.getUseSessionId(), is(false));
+        opts.parseArgs(args);
+        assertThat(opts.getSessionId(), is(1000));
+        assertThat("FAIL: After successfully setting a session ID, getUseSessionId should return true.",
+                opts.getUseSessionId(), is(true));
+    }
+
+    @Test
+    public void sessionIdDefault() throws Exception
+    {
+        String[] args = { "--session", "default" };
+        opts.parseArgs(args);
+        assertThat("FAIL: using default session ID means getUseSessionId should return false.",
+                opts.getUseSessionId(), is(false));
+    }
+
+    @Test
+    public void sessionIdFailure()
+    {
+        String[] args = { "--session", "fails" };
+        boolean exceptionThrown = false;
+        opts.setUseSessionId(true);
+        try
+        {
+            opts.parseArgs(args);
+        }
+        catch (ParseException ex)
+        {
+            exceptionThrown = true;
+        }
+        assertThat("FAIL: parseArgs should have thrown a ParseException for malformed session ID",
+                exceptionThrown, is(true));
+        assertThat("FAIL: invalid session ID input should cause getUseSessionId to return false.",
+                opts.getUseSessionId(), is(false));
     }
 }

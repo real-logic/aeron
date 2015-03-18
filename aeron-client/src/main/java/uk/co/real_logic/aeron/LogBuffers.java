@@ -88,7 +88,6 @@ class LogBuffers implements AutoCloseable
         {
             throw new RuntimeException(ex);
         }
-
     }
 
     public UnsafeBuffer[] atomicBuffers()

@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
@@ -377,46 +378,57 @@ public class Configuration
 
     public static IdleStrategy agentIdleStrategy()
     {
+        IdleStrategy idleStrategy = null;
         switch (AGENT_IDLE_STRATEGY)
         {
             case "uk.co.real_logic.aeron.common.BackoffIdleStrategy":
-                return new BackoffIdleStrategy(
+                idleStrategy = new BackoffIdleStrategy(
                     AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+                break;
 
             default:
                 try
                 {
-                    return (IdleStrategy)Class.forName(AGENT_IDLE_STRATEGY).newInstance();
+                    idleStrategy = (IdleStrategy)Class.forName(AGENT_IDLE_STRATEGY).newInstance();
                 }
                 catch (final Exception ex)
                 {
-                    throw new RuntimeException(ex);
+                    LangUtil.rethrowUnchecked(ex);
                 }
+                break;
         }
+
+        return idleStrategy;
     }
 
     public static SenderFlowControl unicastSenderFlowControlStrategy()
     {
+        SenderFlowControl senderFlowControl = null;
         try
         {
-            return (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
+             senderFlowControl= (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return senderFlowControl;
     }
 
     public static SenderFlowControl multicastSenderFlowControlStrategy()
     {
+        SenderFlowControl senderFlowControl = null;
         try
         {
-            return (SenderFlowControl)Class.forName(SENDER_MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
+            senderFlowControl = (SenderFlowControl)Class.forName(SENDER_MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return senderFlowControl;
     }
 
     public static TimerWheel newConductorTimerWheel()

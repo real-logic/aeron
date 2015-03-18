@@ -40,6 +40,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Test;
+import uk.co.real_logic.agrona.LangUtil;
 
 public class NetworkUtilTest
 {
@@ -235,6 +236,7 @@ public class NetworkUtilTest
 
     private static NetworkInterface newNetworkInterface(String name)
     {
+        NetworkInterface networkInterface = null;
         try
         {
             final Constructor<NetworkInterface> ctor = NetworkInterface.class.getDeclaredConstructor();
@@ -242,19 +244,21 @@ public class NetworkUtilTest
             final Field nameField = NetworkInterface.class.getDeclaredField("name");
             nameField.setAccessible(true);
 
-            final NetworkInterface networkInterface = ctor.newInstance();
+            networkInterface = ctor.newInstance();
             nameField.set(networkInterface, name);
 
-            return networkInterface;
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return networkInterface;
     }
 
     private static InterfaceAddress newInterfaceAddress(InetAddress inetAddress, short maskLength)
     {
+        InterfaceAddress interfaceAddress = null;
         try
         {
             final Constructor<InterfaceAddress> ctor = InterfaceAddress.class.getDeclaredConstructor();
@@ -264,16 +268,16 @@ public class NetworkUtilTest
             final Field maskLengthField = InterfaceAddress.class.getDeclaredField("maskLength");
             maskLengthField.setAccessible(true);
 
-            final InterfaceAddress interfaceAddress = ctor.newInstance();
+            interfaceAddress = ctor.newInstance();
             addressField.set(interfaceAddress, inetAddress);
             maskLengthField.set(interfaceAddress, maskLength);
-
-            return interfaceAddress;
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            throw new RuntimeException(e);
+            LangUtil.rethrowUnchecked(ex);
         }
+
+        return interfaceAddress;
     }
 
     private static byte[] asBytes(int i)

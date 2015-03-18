@@ -99,7 +99,7 @@ public class DriverPublication implements AutoCloseable
 
         scanner = new TermScanner(headerLength);
         sendBuffers = rawLog.sliceTerms();
-        termLength = logPartitions[0].capacity();
+        termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
         senderLimit = new AtomicLong(initialPositionLimit);
 
@@ -308,6 +308,7 @@ public class DriverPublication implements AutoCloseable
         final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
         final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+        int bytesAdvanced = 0;
         if (available > 0)
         {
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
@@ -323,10 +324,11 @@ public class DriverPublication implements AutoCloseable
             lastSendLength = available;
             timeOfLastSendOrHeartbeat = now;
 
-            this.senderPosition.position(senderPosition + available + scanner.padding());
+            bytesAdvanced = available + scanner.padding();
+            this.senderPosition.position(senderPosition + bytesAdvanced);
         }
 
-        return available;
+        return bytesAdvanced;
     }
 
     private void setupFrameCheck(final long now, final int activeTermId, final int termOffset)

@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.agrona.LangUtil;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
@@ -73,7 +74,7 @@ public class RawLogFactory implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            throw new RuntimeException(ex);
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 

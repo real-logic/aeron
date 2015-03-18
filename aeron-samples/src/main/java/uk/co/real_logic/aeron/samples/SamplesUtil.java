@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;

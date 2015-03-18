@@ -22,6 +22,8 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.Signal;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -203,12 +205,6 @@ public final class Aeron implements AutoCloseable
         private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
-
-//        private MappedByteBuffer defaultToClientBuffer;
-//        private MappedByteBuffer defaultToDriverBuffer;
-//        private MappedByteBuffer defaultCounterLabelsBuffer;
-//        private MappedByteBuffer defaultCounterValuesBuffer;
-
         private MappedByteBuffer cncByteBuffer;
         private DirectBuffer cncMetaDataBuffer;
 

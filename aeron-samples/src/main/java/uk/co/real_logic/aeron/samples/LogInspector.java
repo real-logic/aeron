@@ -19,12 +19,14 @@ import uk.co.real_logic.aeron.LogBuffers;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.PrintStream;
 import java.util.Date;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * Command line utility for inspecting a log buffer to see what terms and messages it contains.
@@ -34,13 +36,14 @@ public class LogInspector
     public static void main(final String[] args) throws Exception
     {
         final PrintStream out = System.out;
-        if (args.length != 1)
+        if (args.length < 1)
         {
-            out.println("Usage: LogInspector <logFileName>");
+            out.println("Usage: LogInspector <logFileName> [message dump limit]");
             return;
         }
 
         final String logFileName = args[0];
+        final int messageDumpLimit = args.length >= 2 ? Integer.parseInt(args[1]) : Integer.MAX_VALUE;
 
         try (final LogBuffers logBuffers = new LogBuffers(logFileName))
         {
@@ -91,16 +94,38 @@ public class LogInspector
                     out.println(dataHeaderFlyweight.toString());
 
                     int frameLength = dataHeaderFlyweight.frameLength();
-                    offset += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
-
                     if (frameLength == 0)
                     {
+                        final int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
+                        out.println(bytesToHex(termBuffer, offset + HEADER_LENGTH, limit));
+
                         break;
                     }
+
+                    final int limit = Math.min(frameLength - HEADER_LENGTH, messageDumpLimit);
+                    out.println(bytesToHex(termBuffer, offset + HEADER_LENGTH, limit));
+
+                    offset += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
                 }
                 while (offset < termLength);
             }
         }
+    }
+
+    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+
+    public static char[] bytesToHex(final DirectBuffer buffer, final int offset, final int length)
+    {
+        final char[] hexChars = new char[length * 2];
+
+        for (int i = 0; i < length; i++)
+        {
+            final int b = buffer.getByte(offset + i) & 0xFF;
+            hexChars[i * 2] = HEX_ARRAY[b >>> 4];
+            hexChars[i * 2 + 1] = HEX_ARRAY[b & 0x0F];
+        }
+
+        return hexChars;
     }
 
     private static String termStatus(final UnsafeBuffer metaDataBuffer)

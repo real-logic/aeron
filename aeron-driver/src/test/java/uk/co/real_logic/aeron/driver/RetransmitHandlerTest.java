@@ -21,7 +21,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
-import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;

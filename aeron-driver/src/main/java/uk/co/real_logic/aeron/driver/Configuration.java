@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.aeron.common.IdleStrategy;
-import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;

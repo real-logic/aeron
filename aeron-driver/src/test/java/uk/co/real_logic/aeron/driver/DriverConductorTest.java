@@ -21,7 +21,7 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
-import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;

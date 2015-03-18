@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.Agent;
 import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;

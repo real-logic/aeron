@@ -70,6 +70,11 @@ public class MessageStream
 	public MessageStream(int minSize, int maxSize, boolean verifiable, InputStream inputStream) throws Exception
 	{
 		this.inputStream = inputStream;
+        if (this.inputStream == null)
+        {
+            // When no input stream is supplied, use random generator.
+            this.inputStream = new RandomInputStream();
+        }
 		if (minSize < 0)
 		{
 			throw new Exception("MessageStream minimum message size must be 0 or greater.");
@@ -323,55 +328,34 @@ public class MessageStream
 			pos = 0;
 		}
 
-		int lenleft = size - pos;
+        int lenleft = size - pos;
 
-		if (inputStream == null)
-		{
-			/* We don't have anything in particular we want to write, so
-			 * just fill in random bytes until the end of the message. */
-			while (lenleft >= 4)
-			{
-				buffer.putInt(pos, TLRandom.current().nextInt());
-				pos += 4;
-				lenleft -= 4;
-			}
-			while (lenleft > 0)
-			{
-				int lastnum = TLRandom.current().nextInt();
-				buffer.putByte(pos, (byte)(lastnum >> (lenleft << 3)));
-				lenleft--;
-				pos++;
-			}
-		}
-		else
-		{
-			/* Try to pull out "size" bytes from the InputStream.  If we
-			 * can't (stream ends, etc.), then just fill in what we got;
-			 * we'll return the size actually written. */
-			if (inputStreamBytes.length < lenleft)
-			{
-				inputStreamBytes = new byte[lenleft];
-			}
-			/* Try to read some bytes.  Maybe we'll even get some! */
-			final int sizeRead = inputStream.read(inputStreamBytes, 0, lenleft);
-			if (sizeRead > 0)
-			{
-				/* Copy what was read. */
-				buffer.putBytes(pos, inputStreamBytes, 0, sizeRead);
-				pos += sizeRead;
-			}
-			else
-			{
-				/* I guess the inputStream is done.  So change the
-				 * message type to an end message (if using verifiable
-				 * messages) and mark this stream done. */
-				if (verifiable)
-				{
-					buffer.putInt(MAGIC_OFFSET, MAGIC_END);
-				}
-				active = false;
-			}
-		}
+        /* Try to pull out "size" bytes from the InputStream.  If we
+         * can't (stream ends, etc.), then just fill in what we got;
+         * we'll return the size actually written. */
+        if (inputStreamBytes.length < lenleft)
+        {
+            inputStreamBytes = new byte[lenleft];
+        }
+        /* Try to read some bytes.  Maybe we'll even get some! */
+        final int sizeRead = inputStream.read(inputStreamBytes, 0, lenleft);
+        if (sizeRead > 0)
+        {
+            /* Copy what was read. */
+            buffer.putBytes(pos, inputStreamBytes, 0, sizeRead);
+            pos += sizeRead;
+        }
+        else
+        {
+            /* I guess the inputStream is done.  So change the
+             * message type to an end message (if using verifiable
+             * messages) and mark this stream done. */
+            if (verifiable)
+            {
+                buffer.putInt(MAGIC_OFFSET, MAGIC_END);
+            }
+            active = false;
+        }
 
 		/* Now calculate rolling and then per-message checksums if verifiable messages are on. */
 		if (verifiable)

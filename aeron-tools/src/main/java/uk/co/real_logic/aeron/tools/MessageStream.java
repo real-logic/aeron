@@ -363,8 +363,12 @@ public class MessageStream
 			else
 			{
 				/* I guess the inputStream is done.  So change the
-				 * message type to an end message and mark this stream done. */
-				buffer.putInt(MAGIC_OFFSET, MAGIC_END);
+				 * message type to an end message (if using verifiable
+				 * messages) and mark this stream done. */
+				if (verifiable)
+				{
+					buffer.putInt(MAGIC_OFFSET, MAGIC_END);
+				}
 				active = false;
 			}
 		}

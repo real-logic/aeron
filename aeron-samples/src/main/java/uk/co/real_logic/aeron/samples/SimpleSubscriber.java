@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
+
 //import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class SimpleSubscriber
 {
     private static final int STREAM_ID = 10;
-    private static final String CHANNEL = "udp://localhost:40123";
+    private static final String CHANNEL = System.getProperty("aeron.sample.channel", "udp://localhost:40123");
     private static final int FRAGMENT_COUNT_LIMIT = 10;
 
     public static void main(final String[] args) throws Exception
@@ -47,12 +48,8 @@ public class SimpleSubscriber
 
         final MediaDriver driver = MediaDriver.launch();
 
-        // Create a context for a client and specify callback methods when
-        // a new connection starts (eventNewConnection)
-        // a connection goes inactive (eventInactiveConnection)
-        final Aeron.Context ctx = new Aeron.Context() /* Callback at new producer starts */
-        	.newConnectionHandler(SimpleSubscriber::eventNewConnection)
-        	.inactiveConnectionHandler(SimpleSubscriber::eventInactiveConnection);
+        // Create a context for a client
+        final Aeron.Context ctx = new Aeron.Context();
 
         // dataHandler method is called for every new datagram received
         // When a message is completely reassembled, the delegate method 'printStringMessage' is called
@@ -91,37 +88,6 @@ public class SimpleSubscriber
         }
 
         CloseHelper.quietClose(driver);
-    }
-    /**
-     * Print the information for a new connection to stdout.
-     *
-     * @param channel           for the connection
-     * @param streamId          for the stream
-     * @param sessionId         for the connection publication
-     * @param sourceInformation that is transport specific
-     */
-    public static void eventNewConnection(
-        final String channel, final int streamId, final int sessionId, final String sourceInformation)
-    {
-        System.out.println(
-            String.format(
-                "new connection on %s streamId %x sessionId %x from %s",
-                channel, streamId, sessionId, sourceInformation));
-    }
-
-    /**
-     * This handler is called when connection goes inactive
-     *
-     * @param channel   for the connection
-     * @param streamId  for the stream
-     * @param sessionId for the connection publication
-     */
-    public static void eventInactiveConnection(final String channel, final int streamId, final int sessionId)
-    {
-        System.out.println(
-            String.format(
-                "inactive connection on %s streamId %d sessionId %x",
-                channel, streamId, sessionId));
     }
 
     /**

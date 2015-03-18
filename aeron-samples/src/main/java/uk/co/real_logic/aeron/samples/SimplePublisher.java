@@ -31,7 +31,7 @@ public class SimplePublisher
 {
     private static final int STREAM_ID = 10;
 
-    private static final String CHANNEL = "udp://localhost:40123";
+    private static final String CHANNEL = System.getProperty("aeron.sample.channel", "udp://localhost:40123");
 
     //Allocate enough buffer size to hold maximum stream buffer
     private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(512));

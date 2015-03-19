@@ -53,13 +53,13 @@ public class LogInspector
 
             final UnsafeBuffer[] atomicBuffers = logBuffers.atomicBuffers();
             final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
+            final int termLength = atomicBuffers[0].capacity();
 
             final UnsafeBuffer logMetaDataBuffer = atomicBuffers[PARTITION_COUNT * 2];
 
             out.format("Initial term id: %d\n", initialTermId(logMetaDataBuffer));
             out.format(" Active term id: %d\n", activeTermId(logMetaDataBuffer));
             out.format("   Active Index: %d\n", indexByTerm(initialTermId(logMetaDataBuffer), activeTermId(logMetaDataBuffer)));
-            final int termLength = atomicBuffers[0].capacity();
             out.format("    Term Length: %d\n\n", termLength);
 
             final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);

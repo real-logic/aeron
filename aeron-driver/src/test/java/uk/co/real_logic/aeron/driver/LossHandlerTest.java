@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
-import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;

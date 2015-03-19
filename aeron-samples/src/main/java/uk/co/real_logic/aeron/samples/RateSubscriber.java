@@ -15,8 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
@@ -55,7 +54,7 @@ public class RateSubscriber
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
 
         // Create a data handler to be called when a message is received
-        final DataHandler rateReporterHandler = rateReporterHandler(reporter);
+        final DataHandler rateReporterHandler = new FragmentAssemblyAdapter(rateReporterHandler(reporter));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         // Register an SIGINT handler

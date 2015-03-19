@@ -21,6 +21,7 @@ import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.mockito.InOrder;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
@@ -60,7 +61,7 @@ public class PubAndSubTest
     private Subscription subscription;
     private Publication publication;
 
-    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
+    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
     private DataHandler dataHandler = mock(DataHandler.class);
 
     private void launch(final String channel) throws Exception
@@ -160,6 +161,91 @@ public class PubAndSubTest
         }
 
         verify(dataHandler, times(numMessagesToSend)).onData(
+            any(UnsafeBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+    }
+
+    @Theory
+    @Test(timeout = 10000)
+    public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel) throws Exception
+    {
+        final int termBufferLength = 64 * 1024;
+        final int termBufferLengthMinusPaddingHeader = termBufferLength - DataHeaderFlyweight.HEADER_LENGTH;
+        final int num1kMessagesInTermBuffer = 63;
+        final int lastMessageLength =
+            termBufferLengthMinusPaddingHeader - (num1kMessagesInTermBuffer * 1024) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
+
+        context.termBufferLength(termBufferLength);
+
+        launch(channel);
+
+        // lock step reception until we get to within 8 messages of the end
+        for (int i = 0; i < num1kMessagesInTermBuffer - 7; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] > 0,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscription.poll(10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        for (int i = 7; i > 0; i--)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+        }
+
+        // small enough to leave room for padding that is just a header
+        while (!publication.offer(buffer, 0, lastMessageLength))
+        {
+            Thread.yield();
+        }
+
+        // no roll over
+        while (!publication.offer(buffer, 0, messageLength))
+        {
+            Thread.yield();
+        }
+
+        final int fragmentsRead[] = new int[1];
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead[0] == 9,
+            (j) ->
+            {
+                fragmentsRead[0] += subscription.poll(10);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
+
+        final InOrder inOrder = inOrder(dataHandler);
+
+        inOrder.verify(dataHandler, times(num1kMessagesInTermBuffer)).onData(
+            any(UnsafeBuffer.class),
+            anyInt(),
+            eq(messageLength),
+            any(Header.class));
+        inOrder.verify(dataHandler, times(1)).onData(
+            any(UnsafeBuffer.class),
+            anyInt(),
+            eq(lastMessageLength),
+            any(Header.class));
+        inOrder.verify(dataHandler, times(1)).onData(
             any(UnsafeBuffer.class),
             anyInt(),
             eq(messageLength),
@@ -536,6 +622,49 @@ public class PubAndSubTest
             any(UnsafeBuffer.class),
             anyInt(),
             eq(messageLength),
+            any(Header.class));
+    }
+
+    @Theory
+    @Test(timeout = 10000)
+    public void shouldFragmentExactMessageLengthsCorrectly(final String channel) throws Exception
+    {
+        final int termBufferLength = 64 * 1024;
+        final int numFragmentsPerMessage = 2;
+        final int mtuLength = 4096;
+        final int frameLength = mtuLength - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = frameLength * numFragmentsPerMessage;
+        final int numMessagesToSend = 2;
+        final int numFramesToExpect = numMessagesToSend * numFragmentsPerMessage;
+
+        context.termBufferLength(termBufferLength)
+            .mtuLength(mtuLength);
+
+        launch(channel);
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (!publication.offer(buffer, 0, messageLength))
+            {
+                Thread.yield();
+            }
+        }
+
+        final int fragmentsRead[] = new int[1];
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead[0] > numFramesToExpect,
+            (j) ->
+            {
+                fragmentsRead[0] += subscription.poll(10);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(500));
+
+        verify(dataHandler, times(numFramesToExpect)).onData(
+            any(UnsafeBuffer.class),
+            anyInt(),
+            eq(frameLength),
             any(Header.class));
     }
 }

@@ -17,19 +17,22 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.common.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
+
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Publisher that sends as fast as possible a given number of messages at a given length.
@@ -46,26 +49,27 @@ public class StreamingPublisher
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
+    private static final IntSupplier LENGTH_GENERATOR = composeLengthGenerator(false, MESSAGE_LENGTH);
+
     private static volatile boolean printingActive = true;
 
     public static void main(final String[] args) throws Exception
     {
-        if (MESSAGE_LENGTH < BitUtil.SIZE_OF_LONG)
+        if (MESSAGE_LENGTH < SIZE_OF_LONG)
         {
-            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", BitUtil.SIZE_OF_LONG));
+            throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", SIZE_OF_LONG));
         }
 
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
-        //Create an executer with 2 reusable threads
-        final ExecutorService executor = Executors.newFixedThreadPool(2);
-
         // Create a context for media driver connection
         final Aeron.Context context = new Aeron.Context();
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
+        //Create an executer with 2 reusable threads
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         executor.execute(reporter);
 
@@ -75,7 +79,6 @@ public class StreamingPublisher
         {
 
             // Create a barrier which will ask to restart publisher after program's termination
-
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -88,15 +91,17 @@ public class StreamingPublisher
 
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
+                    final int length = LENGTH_GENERATOR.getAsInt();
+
                     ATOMIC_BUFFER.putLong(0, i);
-                    // Try to Send the message on configured CHANNEL and STREAM
-                    while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+
+                    while (!publication.offer(ATOMIC_BUFFER, 0, length))
                     {
                     	//Returns almost immediately ( Used for low latency)
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
-                    // Reporter that one message of size ATOMIC_BUFFER.capacity() has been sent
-                    reporter.onMessage(1, ATOMIC_BUFFER.capacity());
+
+                    reporter.onMessage(1, length);
                 }
 
                 System.out.println("Done streaming.");
@@ -125,8 +130,20 @@ public class StreamingPublisher
         if (printingActive)
         {
             System.out.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d message fragments %d MB\n",
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
                 messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
+        }
+    }
+
+    private static IntSupplier composeLengthGenerator(final boolean random, final int max)
+    {
+        if (random)
+        {
+            return () -> ThreadLocalRandom.current().nextInt(SIZE_OF_LONG, max);
+        }
+        else
+        {
+            return () -> max;
         }
     }
 }

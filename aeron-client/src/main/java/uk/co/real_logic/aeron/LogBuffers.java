@@ -31,7 +31,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  *
  * @see uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor
  */
-class LogBuffers implements AutoCloseable
+public class LogBuffers implements AutoCloseable
 {
     private final MappedByteBuffer[] mappedByteBuffers;
     private final UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];

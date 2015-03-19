@@ -229,7 +229,8 @@ public class LogAppender extends LogBufferPartition
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
         final int headerLength = this.headerLength;
-        final int requiredCapacity = align(remainingPayload + headerLength, FRAME_ALIGNMENT) + (numMaxPayloads * maxFrameLength);
+        final int lastFrameLength = (remainingPayload > 0) ? align(remainingPayload + headerLength, FRAME_ALIGNMENT) : 0;
+        final int requiredCapacity = (numMaxPayloads * maxFrameLength) + lastFrameLength;
         int frameOffset = getTailAndAdd(requiredCapacity);
 
         final UnsafeBuffer termBuffer = termBuffer();

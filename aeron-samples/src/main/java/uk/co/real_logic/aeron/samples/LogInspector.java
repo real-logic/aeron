@@ -113,7 +113,7 @@ public class LogInspector
         }
     }
 
-    private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
+    private static final char[] HEX_ARRAY = "0123456789ABCEDF".toCharArray();
 
     public static char[] bytesToHex(final DirectBuffer buffer, final int offset, final int length)
     {

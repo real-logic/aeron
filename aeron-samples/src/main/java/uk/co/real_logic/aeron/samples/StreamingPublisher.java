@@ -17,16 +17,20 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
 
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -45,6 +49,8 @@ public class StreamingPublisher
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
+    private static final IntSupplier LENGTH_GENERATOR = composeLengthGenerator(false, MESSAGE_LENGTH);
+
     private static volatile boolean printingActive = true;
 
     public static void main(final String[] args) throws Exception
@@ -61,6 +67,7 @@ public class StreamingPublisher
         final Aeron.Context context = new Aeron.Context();
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
+
         executor.execute(reporter);
 
         try (final Aeron aeron = Aeron.connect(context, executor);
@@ -78,8 +85,7 @@ public class StreamingPublisher
 
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
-                    //final int length = ThreadLocalRandom.current().nextInt(SIZE_OF_LONG, MESSAGE_LENGTH);
-                    final int length = MESSAGE_LENGTH;
+                    final int length = LENGTH_GENERATOR.getAsInt();
 
                     ATOMIC_BUFFER.putLong(0, i);
 
@@ -117,6 +123,18 @@ public class StreamingPublisher
             System.out.format(
                 "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
                 messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
+        }
+    }
+
+    private static IntSupplier composeLengthGenerator(final boolean random, final int max)
+    {
+        if (random)
+        {
+            return () -> ThreadLocalRandom.current().nextInt(SIZE_OF_LONG, max);
+        }
+        else
+        {
+            return () -> max;
         }
     }
 }

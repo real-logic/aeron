@@ -128,9 +128,9 @@ public class PubSubOptionsTest
     @Test
     public void inputStreamRandomShorthand() throws Exception
     {
-        String[] args = { "-i", "random" };
+        String[] args = { "-i", "null" };
         opts.parseArgs(args);
-        assertThat(opts.getInput(), instanceOf(RandomInputStream.class));
+        assertThat(opts.getInput(), is(nullValue()));
     }
 
     @Test
@@ -138,8 +138,8 @@ public class PubSubOptionsTest
     {
         String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: default input stream should be a RandomInputStream.",
-                opts.getInput(), instanceOf(RandomInputStream.class));
+        assertThat("FAIL: default input stream should be null.",
+                opts.getInput(), is(nullValue()));
     }
 
     @Test

@@ -7,6 +7,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.cli.ParseException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.InactiveConnectionHandler;
@@ -22,9 +24,12 @@ import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
 import uk.co.real_logic.agrona.DirectBuffer;
 
+
+
 public class SubscriberTool
 	implements RateReporter.Stats, SeedCallback
 {
+    private static final Logger LOG = LoggerFactory.getLogger(MessageSizePattern.class);
 	private boolean shuttingDown;
 	private PubSubOptions options = new PubSubOptions();
 	private SubscriberThread subscribers[];
@@ -119,7 +124,7 @@ public class SubscriberTool
     	{
     		if (options.getOutput() != null)
     		{
-    			System.out.println("WARNING: File output may be non-deterministic when multiple subscriber threads are used.");
+                LOG.warn("File output may be non-deterministic when multiple subscriber threads are used.");
     		}
     	}
     }

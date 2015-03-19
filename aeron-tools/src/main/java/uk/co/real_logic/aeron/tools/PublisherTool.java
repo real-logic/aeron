@@ -6,6 +6,8 @@ import java.util.ArrayList;
 
 import org.apache.commons.cli.ParseException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.InactiveConnectionHandler;
 import uk.co.real_logic.aeron.NewConnectionHandler;
@@ -19,6 +21,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class PublisherTool implements SeedCallback, RateReporter.Stats
 {
     public static final String APP_USAGE = "PublisherTool";
+    private static final Logger LOG = LoggerFactory.getLogger(PublisherTool.class);
 
     private final PubSubOptions options;
     private final Thread[] pubThreads;
@@ -32,8 +35,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
     	{
     		if (options.getInput() != null)
     		{
-    			System.out.println(
-    					"WARNING: File data may be sent in a non-deterministic order when multiple publisher threads are used.");
+                LOG.warn("File data may be sent in a non-deterministic order when multiple publisher threads are used.");
     		}
     	}
     	if (options.getVerify())

@@ -204,6 +204,8 @@ project(':aeron-tools') {
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
         compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
+        compile 'org.slf4j:slf4j-api:1.7.10'
+        compile 'org.slf4j:slf4j-simple:1.7.10'
         testCompile project(path: ':aeron-common', configuration: 'tests')
     }
 

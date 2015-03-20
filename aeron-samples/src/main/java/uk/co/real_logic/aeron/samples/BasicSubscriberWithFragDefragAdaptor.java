@@ -15,20 +15,20 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+//import java.io.PrintStream;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.IdleStrategy;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.tools.MessageStream;
-
-//import java.io.PrintStream;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 //import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
 
@@ -179,7 +179,7 @@ public class BasicSubscriberWithFragDefragAdaptor
             			System.out.println("Unknown Stream ID");
             	}
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
             	e.printStackTrace();
             }
@@ -217,7 +217,7 @@ public static DataHandler reassembledStringMessage2(final int streamId)
         			System.out.println("Unknown Stream ID");
         	}
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
         	e.printStackTrace();
         }

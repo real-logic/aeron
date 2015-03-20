@@ -61,6 +61,20 @@ public class RateReporter implements RateController.Callback, Runnable
         return String.format("%.1f %s", bits / Math.pow(1024, exp), "KMGTPE".charAt(exp-1));
     }
 
+    /** Returns a human-readable bits/messages/whatever-per-second string
+     * @param bits The total number of bits (per second) to convert to a human-readable string
+     * @return the human-readable bits-per-second string
+     */
+    public static String getHumanReadableRate(double bits)
+    {
+        if (bits < 1024)
+        {
+			return String.format("%.3f ",  bits);
+		}
+        int exp = (int) (Math.log(bits) / Math.log(1024));
+        return String.format("%.3f %s", bits / Math.pow(1024, exp), "KMGTPE".charAt(exp-1));
+    }
+
     /** Shuts down the rate reporter thread; blocks until it is finished. */
     public void close()
     {
@@ -113,10 +127,11 @@ public class RateReporter implements RateController.Callback, Runnable
 		final long totalMessages = verifiableMessages + nonVerifiableMessages;
 		final long lastTotalMessages = lastNonVerifiableMessages + lastVerifiableMessages;
 		final long bytesReceived = app.bytes();
+		final double secondsElapsed = (currentTimeNanos - lastReportTimeNanos)/1000000000.0;
 		System.out.format("%.6f: %smsgs/sec %sbps%n",
-				(currentTimeNanos - lastReportTimeNanos)/1000000000.0,
-				getHumanReadableRate(totalMessages - lastTotalMessages),
-				getHumanReadableRate((bytesReceived - lastBytes) * 8));
+				secondsElapsed,
+				getHumanReadableRate((totalMessages - lastTotalMessages) / secondsElapsed),
+				getHumanReadableRate((long)((((bytesReceived - lastBytes) * 8)) / secondsElapsed)));
 		lastReportTimeNanos = currentTimeNanos;
 		lastVerifiableMessages = verifiableMessages;
 		lastNonVerifiableMessages = nonVerifiableMessages;

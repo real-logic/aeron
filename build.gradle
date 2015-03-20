@@ -76,7 +76,6 @@ subprojects {
     repositories {
         mavenCentral()
         mavenLocal()
-	maven { url 'http://strangelydim.com/repository/' }
     }
 
     dependencies {

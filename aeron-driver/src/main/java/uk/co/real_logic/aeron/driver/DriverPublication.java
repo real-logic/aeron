@@ -385,23 +385,30 @@ public class DriverPublication implements AutoCloseable
 
     private void sendHeartbeat(final long now, final long senderPosition)
     {
-        final int length = lastSendLength;
-        final long lastSendPosition = senderPosition - length;
-        final int termOffset = (int)lastSendPosition & termLengthMask;
-        final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
-
-        final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-        sendBuffer.limit(termOffset + length);
-        sendBuffer.position(termOffset);
-
-        final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
-        if (bytesSent != length)
+        if (0 < senderPosition)
         {
-            systemCounters.dataFrameShortSends().orderedIncrement();
-        }
+            final int length = lastSendLength;
+            final long lastSendPosition = senderPosition - length;
+            final int termOffset = (int) lastSendPosition & termLengthMask;
+            final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
 
-        systemCounters.heartbeatsSent().orderedIncrement();
-        timeOfLastSendOrHeartbeat = now;
+            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
+            sendBuffer.limit(termOffset + length);
+            sendBuffer.position(termOffset);
+
+            final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
+            if (bytesSent != length)
+            {
+                systemCounters.dataFrameShortSends().orderedIncrement();
+            }
+
+            systemCounters.heartbeatsSent().orderedIncrement();
+            timeOfLastSendOrHeartbeat = now;
+        }
+        else
+        {
+            triggerSendSetupFrame();
+        }
     }
 
     private void constructSetupFrame(final int activeTermId)

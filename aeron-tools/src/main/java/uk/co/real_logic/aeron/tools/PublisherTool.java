@@ -390,12 +390,12 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 			int length = -1;
 			boolean sendSucceeded = false;
 			final Publication pub = publications[currentPublicationIndex];
+			final MessageStream ms = messageStreams[currentPublicationIndex];
 			currentPublicationIndex++;
 			if (currentPublicationIndex == publications.length)
 			{
 				currentPublicationIndex = 0;
 			}
-			final MessageStream ms = messageStreams[currentPublicationIndex];
 			if (!ms.isActive())
 			{
 				/* I guess we're out of bytes - probably should only happen if we're sending a file. */

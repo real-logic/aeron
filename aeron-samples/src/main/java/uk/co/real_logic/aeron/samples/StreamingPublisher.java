@@ -45,11 +45,12 @@ public class StreamingPublisher
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final boolean RANDOM_MESSAGE_LENGTH = SampleConfiguration.RANDOM_MESSAGE_LENGTH;
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
-    private static final IntSupplier LENGTH_GENERATOR = composeLengthGenerator(false, MESSAGE_LENGTH);
+    private static final IntSupplier LENGTH_GENERATOR = composeLengthGenerator(RANDOM_MESSAGE_LENGTH, MESSAGE_LENGTH);
 
     private static volatile boolean printingActive = true;
 
@@ -86,8 +87,12 @@ public class StreamingPublisher
                 printingActive = true;
 
                 System.out.format(
-                    "\nStreaming %,d messages of size %d bytes to %s on stream Id %d\n",
-                    NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
+                    "\nStreaming %,d messages of%s size %d bytes to %s on stream Id %d\n",
+                    NUMBER_OF_MESSAGES,
+                    (RANDOM_MESSAGE_LENGTH) ? " random" : "",
+                    MESSAGE_LENGTH,
+                    CHANNEL,
+                    STREAM_ID);
 
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {

@@ -53,12 +53,12 @@ public class RateReporter implements RateController.Callback, Runnable
      */
     public static String getHumanReadableRate(long bits)
     {
-        if (bits < 1024)
+        if (bits < 1000)
         {
 			return bits + " ";
 		}
-        int exp = (int) (Math.log(bits) / Math.log(1024));
-        return String.format("%.1f %s", bits / Math.pow(1024, exp), "KMGTPE".charAt(exp-1));
+        final int exp = (int) (Math.log(bits) / Math.log(1000));
+        return String.format("%.1f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp-1));
     }
 
     /** Returns a human-readable bits/messages/whatever-per-second string
@@ -67,12 +67,12 @@ public class RateReporter implements RateController.Callback, Runnable
      */
     public static String getHumanReadableRate(double bits)
     {
-        if (bits < 1024)
+        if (bits < 1000)
         {
 			return String.format("%.3f ",  bits);
 		}
-        int exp = (int) (Math.log(bits) / Math.log(1024));
-        return String.format("%.3f %s", bits / Math.pow(1024, exp), "KMGTPE".charAt(exp-1));
+        final int exp = (int) (Math.log(bits) / Math.log(1000));
+        return String.format("%.3f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp-1));
     }
 
     /** Shuts down the rate reporter thread; blocks until it is finished. */
@@ -83,7 +83,7 @@ public class RateReporter implements RateController.Callback, Runnable
     	{
 			reporterThread.join();
 		}
-    	catch (InterruptedException e)
+    	catch (final InterruptedException e)
     	{
 			e.printStackTrace();
 		}
@@ -92,7 +92,7 @@ public class RateReporter implements RateController.Callback, Runnable
 	@Override
 	public void run()
 	{
-		ArrayList<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
+		final ArrayList<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
 
         intervals.add(new MessagesAtMessagesPerSecondInterval(Long.MAX_VALUE, 1));
 
@@ -107,7 +107,7 @@ public class RateReporter implements RateController.Callback, Runnable
             	/* rateController will call onNext to report the interval's rates. */
             }
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
         	e.printStackTrace();
         }

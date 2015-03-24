@@ -43,7 +43,9 @@ public class ContinueBarrier
         final Console console = System.console();
         if (null == console)
         {
-            throw new IllegalStateException("Console is not available");
+        	return false;
+        	//Throwing exception results in a crash while running in Eclipse.
+            //throw new IllegalStateException("Console is not available");
         }
 
         while (true)

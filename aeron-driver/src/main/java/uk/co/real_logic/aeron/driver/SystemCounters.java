@@ -41,6 +41,7 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter nakFrameShortSends;
     private final AtomicCounter smFrameShortSends;
     private final AtomicCounter clientKeepAlives;
+    private final AtomicCounter senderFlowControlLimits;
 
     public SystemCounters(final CountersManager countersManager)
     {
@@ -55,7 +56,7 @@ public class SystemCounters implements AutoCloseable
         statusMessagesReceived = countersManager.newCounter("SMs received");
         heartbeatsSent = countersManager.newCounter("Heartbeats sent");
         heartbeatsReceived = countersManager.newCounter("Heartbeats received");
-        retransmitsSent = countersManager.newCounter("Retransmits received");
+        retransmitsSent = countersManager.newCounter("Retransmits sent");
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
         invalidPackets = countersManager.newCounter("Invalid packets");
@@ -64,7 +65,8 @@ public class SystemCounters implements AutoCloseable
         setupFrameShortSends = countersManager.newCounter("Setup Frame short sends");
         nakFrameShortSends = countersManager.newCounter("NAK Frame short sends");
         smFrameShortSends = countersManager.newCounter("SM Frame short sends");
-        clientKeepAlives = countersManager.newCounter("Client Keep Alives");
+        clientKeepAlives = countersManager.newCounter("Client keep-alives");
+        senderFlowControlLimits = countersManager.newCounter("Sender flow control limits applied");
     }
 
     public void close()
@@ -90,6 +92,7 @@ public class SystemCounters implements AutoCloseable
         nakFrameShortSends.close();
         smFrameShortSends.close();
         clientKeepAlives.close();
+        senderFlowControlLimits.close();
     }
 
     public AtomicCounter bytesSent()
@@ -195,5 +198,10 @@ public class SystemCounters implements AutoCloseable
     public AtomicCounter clientKeepAlives()
     {
         return clientKeepAlives;
+    }
+
+    public AtomicCounter senderFlowControlLimits()
+    {
+        return senderFlowControlLimits;
     }
 }

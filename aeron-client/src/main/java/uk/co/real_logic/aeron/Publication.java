@@ -101,6 +101,16 @@ public class Publication implements AutoCloseable
         return sessionId;
     }
 
+    /**
+     * Maximum message length supported in bytes.
+     *
+     * @return maximum message length supported in bytes.
+     */
+    public int maxMessageLength()
+    {
+        return logAppenders[0].maxMessageLength();
+    }
+
     public void close()
     {
         synchronized (clientConductor)

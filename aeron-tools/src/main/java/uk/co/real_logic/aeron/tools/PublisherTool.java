@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import org.apache.commons.cli.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.InactiveConnectionHandler;
@@ -19,6 +21,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class PublisherTool implements SeedCallback, RateReporter.Stats
 {
     public static final String APP_USAGE = "PublisherTool";
+    private static final Logger LOG = LoggerFactory.getLogger(PublisherTool.class);
 
     private final PubSubOptions options;
     private final Thread[] pubThreads;
@@ -32,8 +35,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
     	{
     		if (options.getInput() != null)
     		{
-    			System.out.println(
-    					"WARNING: File data may be sent in a non-deterministic order when multiple publisher threads are used.");
+                LOG.warn("File data may be sent in a non-deterministic order when multiple publisher threads are used.");
     		}
     	}
     	if (options.getVerify())
@@ -223,30 +225,23 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 		private long verifiableMessagesSent;
 		private long bytesSent;
 		private final long messagesToSend;
-		private Publication publications[];
+		private final Publication publications[];
+		private final MessageStream messageStreams[];
 		private int currentPublicationIndex;
 		private final MessageSizePattern msp;
-		private final MessageStream ms;
 		private final RateController rateController;
 		private final UnsafeBuffer sendBuffer;
 		private final boolean verifiableMessages = options.getVerify();
+		private final Aeron.Context ctx;
+		private final Aeron aeron;
 
+
+		@SuppressWarnings("resource")
 		public PublisherThread(int threadId, long messages)
 		{
 			this.threadId = threadId;
 			this.messagesToSend = messages;
 			msp = options.getMessageSizePattern();
-			MessageStream stream = null;
-			try
-			{
-				stream = new MessageStream(msp.getMaximum(), verifiableMessages, options.getInput());
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-				System.exit(-1);
-			}
-			ms = stream;
 			RateController rc = null;
 			try
 			{
@@ -259,6 +254,61 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 			}
 			rateController = rc;
 			sendBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msp.getMaximum()));
+
+			/* Create a context and subscribe to what we're supposed to
+			 * according to our thread ID. */
+			ctx = new Aeron.Context()
+			.inactiveConnectionHandler(this)
+			.newConnectionHandler(this)
+			.errorHandler((throwable) ->
+	        {
+	            throwable.printStackTrace();
+	            if (throwable instanceof DriverTimeoutException)
+	            {
+	                System.out.println("Driver does not appear to be running or has been unresponsive for ten seconds.");
+	                System.exit(-1);
+	            }
+	        })
+	        .mediaDriverTimeout(10000); /* ten seconds */
+
+			aeron = Aeron.connect(ctx);
+			final ArrayList<Publication> publicationsList = new ArrayList<Publication>();
+
+			int streamIdx = 0;
+			for (int i = 0; i < options.getChannels().size(); i++)
+			{
+				ChannelDescriptor channel = options.getChannels().get(i);
+				for (int j = 0; j < channel.getStreamIdentifiers().length; j++)
+				{
+					if ((streamIdx % options.getThreads()) == this.threadId)
+					{
+						final Publication pub = aeron.addPublication(
+								channel.getChannel(), channel.getStreamIdentifiers()[j], options.getSessionId());
+						publicationsList.add(pub);
+
+						System.out.format("%s publishing %d messages to: %s#%d[%d]%n", Thread.currentThread().getName(),
+								messagesToSend, pub.channel(), pub.streamId(), pub.sessionId());
+					}
+					streamIdx++;
+				}
+			}
+
+			/* Send our allotted messages round-robin across our configured channels/stream IDs. */
+			publications = new Publication[publicationsList.size()];
+			publicationsList.toArray(publications);
+			messageStreams = new MessageStream[publications.length];
+			for (int i = 0; i < publications.length; i++)
+			{
+				try
+				{
+					messageStreams[i] = new MessageStream(msp.getMaximum(), verifiableMessages, options.getInput());
+				}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+					System.exit(-1);
+				}
+			}
 		}
 
 		/** Get the number of bytes of all message types sent so far by this
@@ -296,59 +346,13 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 		{
 			Thread.currentThread().setName("publisher-" + threadId);
 
-			/* Create a context and subscribe to what we're supposed to
-			 * according to our thread ID. */
-			@SuppressWarnings("resource")
-			final Aeron.Context ctx = new Aeron.Context()
-			.inactiveConnectionHandler(this)
-			.newConnectionHandler(this)
-			.errorHandler((throwable) ->
-	        {
-	            throwable.printStackTrace();
-	            if (throwable instanceof DriverTimeoutException)
-	            {
-	                System.out.println("Driver does not appear to be running or has been unresponsive for ten seconds.");
-	                System.exit(-1);
-	            }
-	        })
-	        .mediaDriverTimeout(10000); /* ten seconds */
 
-			final Aeron aeron = Aeron.connect(ctx);
-			final ArrayList<Publication> publicationsList = new ArrayList<Publication>();
-
-			int streamIdx = 0;
-			for (int i = 0; i < options.getChannels().size(); i++)
-			{
-				ChannelDescriptor channel = options.getChannels().get(i);
-				for (int j = 0; j < channel.getStreamIdentifiers().length; j++)
-				{
-					if ((streamIdx % options.getThreads()) == this.threadId)
-					{
-						final Publication pub = aeron.addPublication(
-								channel.getChannel(), channel.getStreamIdentifiers()[j], options.getSessionId());
-						publicationsList.add(pub);
-
-						System.out.format("%s publishing %d messages to: %s#%d[%d]%n", Thread.currentThread().getName(),
-								messagesToSend, pub.channel(), pub.streamId(), pub.sessionId());
-					}
-					streamIdx++;
-				}
-			}
-
-			/* Send our allotted messages round-robin across our configured channels/stream IDs. */
-			publications = new Publication[publicationsList.size()];
-			publicationsList.toArray(publications);
 			while (!shuttingDown && rateController.next())
 			{
 				/* Rate controller handles sending. Stop if we
 				 * hit our allotted number of messages. */
 				if (rateController.getMessages() == messagesToSend)
 				{
-					break;
-				}
-				if (!ms.isActive())
-				{
-					/* I guess we're out of bytes - probably should only happen if we're sending a file. */
 					break;
 				}
 			}
@@ -386,10 +390,16 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 			int length = -1;
 			boolean sendSucceeded = false;
 			final Publication pub = publications[currentPublicationIndex];
+			final MessageStream ms = messageStreams[currentPublicationIndex];
 			currentPublicationIndex++;
 			if (currentPublicationIndex == publications.length)
 			{
 				currentPublicationIndex = 0;
+			}
+			if (!ms.isActive())
+			{
+				/* I guess we're out of bytes - probably should only happen if we're sending a file. */
+				return -1;
 			}
 			try
 			{

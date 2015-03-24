@@ -31,6 +31,7 @@ public class SampleConfiguration
     public static final String PONG_STREAM_ID_PROP = "aeron.sample.pong.streamId";
     public static final String WARMUP_NUMBER_OF_MESSAGES_PROP = "aeron.sample.warmup.messages";
     public static final String WARMUP_NUMBER_OF_ITERATIONS_PROP = "aeron.sample.warmup.iterations";
+    public static final String RANDOM_MESSAGE_LENGTH_PROP = "aeron.sample.randomMessageLength";
 
     public static final String FRAME_COUNT_LIMIT_PROP = "aeron.sample.frameCountLimit";
     public static final String MESSAGE_LENGTH_PROP = "aeron.sample.messageLength";
@@ -51,6 +52,7 @@ public class SampleConfiguration
     public static final int WARMUP_NUMBER_OF_ITERATIONS;
     public static final long LINGER_TIMEOUT_MS;
     public static final boolean EMBEDDED_MEDIA_DRIVER;
+    public static final boolean RANDOM_MESSAGE_LENGTH;
 
     static
     {
@@ -62,6 +64,7 @@ public class SampleConfiguration
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 10);
         MESSAGE_LENGTH = Integer.getInteger(MESSAGE_LENGTH_PROP, 256);
+        RANDOM_MESSAGE_LENGTH = Boolean.getBoolean(RANDOM_MESSAGE_LENGTH_PROP);
         NUMBER_OF_MESSAGES = Integer.getInteger(NUMBER_OF_MESSAGES_PROP, 1_000_000);
         WARMUP_NUMBER_OF_MESSAGES = Integer.getInteger(WARMUP_NUMBER_OF_MESSAGES_PROP, 5_000);
         WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger(WARMUP_NUMBER_OF_ITERATIONS_PROP, 10);

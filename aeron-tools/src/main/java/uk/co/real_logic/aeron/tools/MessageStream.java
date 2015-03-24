@@ -11,22 +11,22 @@ public class MessageStream
 	/* Message header offsets for verifiable message headers. */
 	private static final int MAGIC_OFFSET = 0;
 	private static final int MESSAGE_CHECKSUM_OFFSET = 4;
-	private static final int STREAM_CHECKSUM_OFFSET = 8;
-	private final int message_offset; /* Either 0 or 12, depending on if a verifiable message header is used. */
+	private static final int SEQUENCE_NUMBER_OFFSET = 8;
+	private final int message_offset; /* Either 0 or 16, depending on if a verifiable message header is used. */
 
-	private static final int HEADER_LENGTH = 12;
+	private static final int HEADER_LENGTH = 16;
 
 	private static final int MAGIC = 0x0dd01221; /* That's "2112d00d" when taken a byte at a time... */
 	private static final int MAGIC_END = 0xbeba1221; /* That's "2112babe" when taken a byte at a time... */
 
 	private final int minSize;
 	private final int maxSize;
-	private final CRC32 stream_checksum;
 	private final boolean verifiable;
 
 	private InputStream inputStream;
 	private byte[] inputStreamBytes;
 
+	private long sequenceNumber = 0;
 	private long messageCount = 0;
 	private boolean active = true;
 
@@ -100,14 +100,12 @@ public class MessageStream
 		{
 			this.minSize = minSize + HEADER_LENGTH;
 			this.maxSize = maxSize + HEADER_LENGTH;
-			this.stream_checksum = new CRC32();
-			this.message_offset = 12;
+			this.message_offset = 16;
 		}
 		else
 		{
 			this.minSize = minSize;
 			this.maxSize = maxSize;
-			this.stream_checksum = null;
 			this.message_offset = 0;
 		}
 
@@ -123,7 +121,6 @@ public class MessageStream
 		this.minSize = 0;
 		this.maxSize = 0;
 		this.message_offset = HEADER_LENGTH;
-		this.stream_checksum = new CRC32();
 		this.verifiable = true;
 		this.inputStream = null;
 	}
@@ -147,41 +144,44 @@ public class MessageStream
 		copybuf.wrap(buffer, offset, length);
 		/* Assume we've already checked and it appears we have a verifiable message. */
 
-		/* Save the checksums first, then blank them out. */
+		/* Sequence number check first. */
+		final long receivedSequenceNumber = copybuf.getLong(SEQUENCE_NUMBER_OFFSET);
+		if (receivedSequenceNumber != sequenceNumber)
+		{
+			Exception e = new Exception("Verifiable message stream received sequence number " +
+					receivedSequenceNumber + ", but was expecting " +
+					sequenceNumber + ". Possibly missed " +
+					(receivedSequenceNumber - sequenceNumber) +
+					" messages.");
+			/* Update expected SQN for next time. */
+			sequenceNumber = receivedSequenceNumber + 1;
+			throw e;
+		}
+
+		/* Update expected SQN for next time. */
+		sequenceNumber++;
+
+		/* Save the checksum first, then blank it out. */
 		int msgCksum = copybuf.getInt(MESSAGE_CHECKSUM_OFFSET);
-		int streamCksum = copybuf.getInt(STREAM_CHECKSUM_OFFSET);
 
 		copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, 0);
-		copybuf.putInt(STREAM_CHECKSUM_OFFSET, 0);
 
 		CRC32 crc = MSG_CHECKSUM.get();
 		crc.reset();
 		for (int i = 0; i < length; i++)
 		{
 			crc.update(copybuf.getByte(i));
-			stream_checksum.update(copybuf.getByte(i));
 		}
+
+		/* Put originally received checksum back in place. */
+		copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
+
 		if ((int)(crc.getValue()) != msgCksum)
 		{
-			/* Put originally received checksums back in place. */
-			copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
-			copybuf.putInt(STREAM_CHECKSUM_OFFSET, streamCksum);
 			throw new Exception("Verifiable message per-message checksum invalid; received " +
 					msgCksum + " but calculated " + (int)(crc.getValue()));
 		}
 
-		if ((int)(stream_checksum.getValue()) != streamCksum)
-		{
-			/* Put originally received checksums back in place. */
-			copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
-			copybuf.putInt(STREAM_CHECKSUM_OFFSET, streamCksum);
-			throw new Exception("Verifiable message stream checksum invalid; received " +
-					streamCksum + " but calculated " + (int)(stream_checksum.getValue()));
-		}
-
-		/* Put checksums back in place. */
-		copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
-		copybuf.putInt(STREAM_CHECKSUM_OFFSET, streamCksum);
 		messageCount++;
 		/* Look for an end marker. */
 		if (copybuf.getInt(MAGIC_OFFSET) == MAGIC_END)
@@ -199,9 +199,9 @@ public class MessageStream
 	public void reset()
 	{
 		/* Reset stream checksum and set things back to active, 0 messages, etc. */
-		stream_checksum.reset();
 		active = true;
 		messageCount = 0;
+		sequenceNumber = 0;
 	}
 
 	public boolean isActive()
@@ -212,6 +212,11 @@ public class MessageStream
 	public long getMessageCount()
 	{
 		return messageCount;
+	}
+
+	public long getSequenceNumber()
+	{
+		return sequenceNumber;
 	}
 
 	/** Returns true if the buffer is _probably_ a verifiable message, false otherwise. */
@@ -320,7 +325,9 @@ public class MessageStream
 		if (verifiable)
 		{
 			buffer.putInt(MAGIC_OFFSET, MAGIC);
-			buffer.putLong(MESSAGE_CHECKSUM_OFFSET, 0); /* Initially, checksums are set to 0. */
+			buffer.putInt(MESSAGE_CHECKSUM_OFFSET, 0); /* Initially, checksum is set to 0. */
+			buffer.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);
+			sequenceNumber++;
 			pos = message_offset;
 		}
 		else
@@ -364,12 +371,10 @@ public class MessageStream
 			msgCksum.reset();
 			for (int i = 0; i < pos; i++)
 			{
-				stream_checksum.update(buffer.getByte(i));
 				msgCksum.update(buffer.getByte(i));
 			}
 
-			/* Write checksums into message. */
-			buffer.putInt(STREAM_CHECKSUM_OFFSET, (int)(stream_checksum.getValue()));
+			/* Write checksum into message. */
 			buffer.putInt(MESSAGE_CHECKSUM_OFFSET, (int)(msgCksum.getValue()));
 		}
 

@@ -25,6 +25,7 @@ public class RandomInputStream extends InputStream
      * Can't go back in the random stream, sorry.
      * @return Always false
      */
+    @Override
     public boolean markSupported()
     {
         return false;
@@ -52,6 +53,7 @@ public class RandomInputStream extends InputStream
      * @param b
      * @return
      */
+    @Override
     public int read(byte[] b) throws IOException
     {
         int bytesRead = TLRandom.current().nextInt(400);

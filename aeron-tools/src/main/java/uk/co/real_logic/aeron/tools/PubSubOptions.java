@@ -59,7 +59,7 @@ public class PubSubOptions
         options.addOption("c",  "channels",   true,  "Create the given Aeron channels.");
         options.addOption(null, "driver",     true,  "Use 'external' or 'embedded' Aeron driver.");
         options.addOption("h",  "help",       false, "Display simple usage message.");
-        options.addOption("i",  "input",      true,  "Publisher will send 'stdin', 'random', or a file as data.");
+        options.addOption("i",  "input",      true,  "Publisher will send 'random', 'stdin', or a file as data.");
         options.addOption(null, "iterations", true,  "Run the rate sequence n times.");
         options.addOption("m",  "messages",   true,  "Send or receive n messages before exiting.");
         options.addOption("o",  "output",     true,  "Subscriber will write the stream to the output file.");
@@ -132,7 +132,7 @@ public class PubSubOptions
         opt = command.getOptionValue("driver", "external");
         setUseEmbeddedDriver(parseDriver(opt));
 
-        opt = command.getOptionValue("input", "random");
+        opt = command.getOptionValue("input", "null");
         parseInputStream(opt);
 
         opt = command.getOptionValue("output", "null");
@@ -955,9 +955,9 @@ public class PubSubOptions
 
     private void parseInputStream(String inputStr) throws ParseException
     {
-        if (inputStr.equalsIgnoreCase("random"))
+        if (inputStr.equalsIgnoreCase("null"))
         {
-            setInput(new RandomInputStream());
+            setInput(null);
         }
         else if (inputStr.equalsIgnoreCase("stdin"))
         {
@@ -1151,11 +1151,11 @@ public class PubSubOptions
             "-h,--help" + NL +                                                          // |
             "    Show the shorthand usage guide." + NL +
             NL +
-            "-i,--input (random|stdin|<file>)" + NL +                                   // |
-            "    Input data for a Publisher to send. By default, the Publisher will send" + NL +
-            "    random generated data. If 'stdin' is used, standard input will be sent." + NL +
-            "    Any other value is assumed to be a filename. When the Publisher reaches" + NL +
-            "    the end of the stream, it will exit." + NL +
+            "-i,--input (null|stdin|<file>)" + NL +                                     // |
+            "    Input data for a Publisher to send. When set to 'null' and by default," + NL +
+            "    the publisher will generate random data. If 'stdin' is used, standard" + NL +
+            "    input will be sent. Any other value is assumed to be a filename. When the" + NL +
+            "    publisher reaches the end of the stream, it will exit." + NL +
             NL +
             "--iterations (number)" + NL +                                              // |
             "    Repeat the send rate pattern the given number of times, then exit. See" + NL +

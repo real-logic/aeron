@@ -58,12 +58,13 @@ public class DriverPublication implements AutoCloseable
     private final int mtuLength;
     private final int termWindowLength;
 
-    private long timeOfLastSendOrHeartbeat;
     private long timeOfFlush = 0;
+    private long timeOfLastSendOrHeartbeat;
     private int lastSendLength = 0;
     private int statusMessagesReceivedCount = 0;
     private int refCount = 0;
 
+    private boolean trackSenderLimits = true;
     private volatile boolean isActive = true;
     private volatile boolean shouldSendSetupFrame = true;
 
@@ -205,31 +206,33 @@ public class DriverPublication implements AutoCloseable
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
 
             int remainingBytes = length;
-            int totalBytesSent = 0;
+            int bytesSent = 0;
             do
             {
-                termOffset += totalBytesSent;
+                termOffset += bytesSent;
 
                 final int available = scanner.scanForAvailability(termBuffer, termOffset, mtuLength);
-                if (available > 0)
+                if (available <= 0)
                 {
-                    sendBuffer.limit(termOffset + available);
-                    sendBuffer.position(termOffset);
-
-                    final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
-                    if (available != bytesSent)
-                    {
-                        systemCounters.dataFrameShortSends().orderedIncrement();
-                    }
+                    break;
                 }
 
-                totalBytesSent = available + scanner.padding();
-                remainingBytes -= totalBytesSent;
-            }
-            while (remainingBytes > 0 && totalBytesSent > 0);
-        }
+                sendBuffer.limit(termOffset + available);
+                sendBuffer.position(termOffset);
 
-        systemCounters.retransmitsSent().orderedIncrement();
+                if (available != channelEndpoint.sendTo(sendBuffer, dstAddress))
+                {
+                    systemCounters.dataFrameShortSends().orderedIncrement();
+                    break;
+                }
+
+                bytesSent += available + scanner.padding();
+                remainingBytes -= bytesSent;
+            }
+            while (remainingBytes > 0);
+
+            systemCounters.retransmitsSent().orderedIncrement();
+        }
     }
 
     public void triggerSendSetupFrame()
@@ -262,7 +265,7 @@ public class DriverPublication implements AutoCloseable
         {
             final long senderPosition = this.senderPosition.position();
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-            isFlushed = logPartitions[activeIndex].tailVolatile() == (int)(senderPosition & termLengthMask);
+            isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailVolatile();
         }
 
         if (isFlushed && isActive)
@@ -303,29 +306,39 @@ public class DriverPublication implements AutoCloseable
 
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
-        final int availableWindow = (int)(senderLimit.get() - senderPosition);
-        final int scanLimit = Math.min(availableWindow, mtuLength);
-        final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-
-        final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
         int bytesAdvanced = 0;
-        if (available > 0)
+        final int availableWindow = (int)(senderLimit.get() - senderPosition);
+        if (availableWindow > 0)
         {
-            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-            sendBuffer.limit(termOffset + available);
-            sendBuffer.position(termOffset);
+            final int scanLimit = Math.min(availableWindow, mtuLength);
+            final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-            final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
-            if (available != bytesSent)
+            final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+            if (available > 0)
             {
-                systemCounters.dataFrameShortSends().orderedIncrement();
+                final ByteBuffer sendBuffer = sendBuffers[activeIndex];
+                sendBuffer.limit(termOffset + available);
+                sendBuffer.position(termOffset);
+
+                if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
+                {
+                    lastSendLength = available;
+                    timeOfLastSendOrHeartbeat = now;
+                    trackSenderLimits = true;
+
+                    bytesAdvanced = available + scanner.padding();
+                    this.senderPosition.position(senderPosition + bytesAdvanced);
+                }
+                else
+                {
+                    systemCounters.dataFrameShortSends().orderedIncrement();
+                }
             }
-
-            lastSendLength = available;
-            timeOfLastSendOrHeartbeat = now;
-
-            bytesAdvanced = available + scanner.padding();
-            this.senderPosition.position(senderPosition + bytesAdvanced);
+        }
+        else if (trackSenderLimits)
+        {
+            trackSenderLimits = false;
+            systemCounters.senderFlowControlLimits().orderedIncrement();
         }
 
         return bytesAdvanced;
@@ -372,23 +385,30 @@ public class DriverPublication implements AutoCloseable
 
     private void sendHeartbeat(final long now, final long senderPosition)
     {
-        final int length = lastSendLength;
-        final long lastSendPosition = senderPosition - length;
-        final int termOffset = (int)lastSendPosition & termLengthMask;
-        final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
-
-        final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-        sendBuffer.limit(termOffset + length);
-        sendBuffer.position(termOffset);
-
-        final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
-        if (bytesSent != length)
+        if (0 < senderPosition)
         {
-            systemCounters.dataFrameShortSends().orderedIncrement();
-        }
+            final int length = lastSendLength;
+            final long lastSendPosition = senderPosition - length;
+            final int termOffset = (int) lastSendPosition & termLengthMask;
+            final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
 
-        systemCounters.heartbeatsSent().orderedIncrement();
-        timeOfLastSendOrHeartbeat = now;
+            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
+            sendBuffer.limit(termOffset + length);
+            sendBuffer.position(termOffset);
+
+            final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
+            if (bytesSent != length)
+            {
+                systemCounters.dataFrameShortSends().orderedIncrement();
+            }
+
+            systemCounters.heartbeatsSent().orderedIncrement();
+            timeOfLastSendOrHeartbeat = now;
+        }
+        else
+        {
+            triggerSendSetupFrame();
+        }
     }
 
     private void constructSetupFrame(final int activeTermId)

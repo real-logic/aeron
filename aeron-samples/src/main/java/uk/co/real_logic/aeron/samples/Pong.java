@@ -16,11 +16,11 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

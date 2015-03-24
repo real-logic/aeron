@@ -20,7 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.common.HeapPositionReporter;
-import uk.co.real_logic.aeron.common.TimerWheel;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
@@ -112,6 +112,7 @@ public class SenderTest
         when(mockSendChannelEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
         when(mockSystemCounters.heartbeatsSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.bytesSent()).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.senderFlowControlLimits()).thenReturn(mock(AtomicCounter.class));
 
         sender = new Sender(
             new MediaDriver.Context()

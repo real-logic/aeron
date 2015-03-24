@@ -15,17 +15,19 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.console;
 
-import java.io.Console;
+import java.util.Scanner;
 
 /**
- * Barrier to block the calling thread until a command is given on the {@link java.io.Console}
+ * Barrier to block the calling thread until a command is given on the command line.
  */
+
 public class ContinueBarrier
 {
     final String label;
 
     /**
-     * Create a barrier that will display the provided label and interact via the {@link java.io.Console}.
+     * Create a barrier that will display the provided label and interact
+     * via {@link System#out}, {@link System#in} and {@link java.util.Scanner}.
      *
      * @param label to prompt the user.
      */
@@ -36,25 +38,15 @@ public class ContinueBarrier
 
     /**
      * Await for input that matches the provided command.
+     *
      * @return true if y otherwise false
      */
     public boolean await()
     {
-        final Console console = System.console();
-        if (null == console)
-        {
-        	return false;
-        	//Throwing exception results in a crash while running in Eclipse.
-            //throw new IllegalStateException("Console is not available");
-        }
+        System.out.format("\n%s (y/n): ", label).flush();
+        final Scanner in  = new Scanner(System.in);
+        final String line = in.nextLine();
 
-        while (true)
-        {
-            console.printf("\n%s (y/n): ", label).flush();
-
-            final String line = console.readLine();
-
-            return "y".equalsIgnoreCase(line);
-        }
+        return "y".equalsIgnoreCase(line);
     }
 }

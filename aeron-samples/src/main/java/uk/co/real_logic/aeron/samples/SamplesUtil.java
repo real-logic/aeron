@@ -16,11 +16,12 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.BackoffIdleStrategy;
-import uk.co.real_logic.aeron.common.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.agrona.LangUtil;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -92,7 +93,7 @@ public class SamplesUtil
                 }
                 catch (final Exception ex)
                 {
-                    ex.printStackTrace();
+                    LangUtil.rethrowUnchecked(ex);
                 }
             };
     }
@@ -153,19 +154,19 @@ public class SamplesUtil
      *
      * @param messagesPerSec being reported
      * @param bytesPerSec    being reported
-     * @param totalFragments being reported
+     * @param totalMessages  being reported
      * @param totalBytes     being reported
      */
     public static void printRate(
         final double messagesPerSec,
         final double bytesPerSec,
-        final long totalFragments,
+        final long totalMessages,
         final long totalBytes)
     {
         System.out.println(
             String.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d message fragments %d MB",
-                messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024)));
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 
     /**

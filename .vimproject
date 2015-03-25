@@ -203,8 +203,6 @@ Aeron=~/work/AeronTools CD=. filter="*.java" {
   }
   tools=aeron-tools/src/main/java/uk/co/real_logic/aeron/tools {
     ChannelDescriptor.java
-    EmbeddedPublisher.java
-    EmbeddedSubscriber.java
     MessageSizePattern.java
     PubSubOptions.java
     PublisherStats.java
@@ -220,6 +218,10 @@ Aeron=~/work/AeronTools CD=. filter="*.java" {
     SubscriberTool.java
     TLRandom.java
     TransportStats.java
+    MessageStream.java
+    MessagesAtBitsPerSecondInterval.java
+    MessagesAtMessagesPerSecondInterval.java
+    RateController.java
   }
   config=config {
     checkstyle=checkstyle {

@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.driver.MediaDriver;
+import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.agrona.CloseHelper;
 
 /**
  * Basic Aeron subscriber application
@@ -59,14 +59,14 @@ public class BasicSubscriber
 
         // Create an Aeron instance with client provided context credentials
         try (final Aeron aeron = Aeron.connect(ctx);
-        		//Add a subscription to Aeron for a given channel and steam. Also, supply a dataHandler to
-        		// be called when data arrives
-        		final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+                //Add a subscription to Aeron for a given channel and steam. Also, supply a dataHandler to
+                // be called when data arrives
+                final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             // run the subscriber thread from here
-        	SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+            SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
-        	System.out.println("Shutting down...");
+            System.out.println("Shutting down...");
         }
 
         CloseHelper.quietClose(driver);

@@ -16,108 +16,108 @@ import javax.swing.JToggleButton;
 
 public class StatsPanel extends JPanel
 {
-	private LogModel model = null;
-	private GroupLayout layout = null;
-	private JLabel[] labels = null;
-	private JTextField[] fields = null;
-	private JToggleButton[] watchBtns = null;
-	private ImageIcon watchIcon = null;
-	private JPanel transportStats = null;
-	private JPanel transports = null;
-	JTextArea textArea = null;
-	JScrollPane scrollPane = null;
+    private LogModel model = null;
+    private GroupLayout layout = null;
+    private JLabel[] labels = null;
+    private JTextField[] fields = null;
+    private JToggleButton[] watchBtns = null;
+    private ImageIcon watchIcon = null;
+    private JPanel transportStats = null;
+    private JPanel transports = null;
+    JTextArea textArea = null;
+    JScrollPane scrollPane = null;
 
-	public StatsPanel(LogModel model)
-	{
-		this.model = model;
-		watchIcon = new ImageIcon("resources/eye1.png");
-		init();
-	}
+    public StatsPanel(LogModel model)
+    {
+        this.model = model;
+        watchIcon = new ImageIcon("resources/eye1.png");
+        init();
+    }
 
-	public void fillFields()
-	{
-		DriverStats stats = model.getStats();
+    public void fillFields()
+    {
+        DriverStats stats = model.getStats();
 
-		if (!stats.populated())
-		{
-			while (!stats.populated())
-			{
-				try
+        if (!stats.populated())
         {
-					Thread.sleep(100);
-				}
-				catch (Exception e)
+            while (!stats.populated())
+            {
+                try
+        {
+                    Thread.sleep(100);
+                }
+                catch (Exception e)
         {
 
-				}
-			}
-		}
-		labels = new JLabel[stats.getNumLabels()];
-		fields = new JTextField[stats.getNumLabels()];
-		watchBtns = new JToggleButton[stats.getNumLabels()];
+                }
+            }
+        }
+        labels = new JLabel[stats.getNumLabels()];
+        fields = new JTextField[stats.getNumLabels()];
+        watchBtns = new JToggleButton[stats.getNumLabels()];
 
-		for (int i = 0; i < stats.getNumLabels(); i++)
-		{
-			labels[i] = new JLabel(stats.getLabel(i));
-			fields[i] = new JTextField(stats.getValue(i) + "", 20);
-			fields[i].setEditable(false);
-			watchBtns[i] = new JToggleButton(watchIcon);
-		}
+        for (int i = 0; i < stats.getNumLabels(); i++)
+        {
+            labels[i] = new JLabel(stats.getLabel(i));
+            fields[i] = new JTextField(stats.getValue(i) + "", 20);
+            fields[i].setEditable(false);
+            watchBtns[i] = new JToggleButton(watchIcon);
+        }
 
-		layout.setAutoCreateGaps(true);
-		SequentialGroup seqGroup = layout.createSequentialGroup();
+        layout.setAutoCreateGaps(true);
+        SequentialGroup seqGroup = layout.createSequentialGroup();
 
-		seqGroup.addGroup(createParallelGroup(new int[] {0, 1}));
-		seqGroup.addGroup(createParallelGroup(new int[] {2, 3, 4}));
-		seqGroup.addGroup(createParallelGroup(new int[] {5, 6}));
-		seqGroup.addGroup(createParallelGroup(new int[] {7, 8}));
-	  seqGroup.addGroup(createParallelGroup(new int[] {9, 10}));
-		seqGroup.addGroup(createParallelGroup(new int[] {11, 12, 13}));
-		seqGroup.addGroup(createParallelGroup(new int[] {14, 15}));
-		seqGroup.addGroup(createParallelGroup(new int[] {16, 17, 18}));
-		seqGroup.addGroup(createParallelGroup(new int[] {19, 20}));
+        seqGroup.addGroup(createParallelGroup(new int[] {0, 1}));
+        seqGroup.addGroup(createParallelGroup(new int[] {2, 3, 4}));
+        seqGroup.addGroup(createParallelGroup(new int[] {5, 6}));
+        seqGroup.addGroup(createParallelGroup(new int[] {7, 8}));
+      seqGroup.addGroup(createParallelGroup(new int[] {9, 10}));
+        seqGroup.addGroup(createParallelGroup(new int[] {11, 12, 13}));
+        seqGroup.addGroup(createParallelGroup(new int[] {14, 15}));
+        seqGroup.addGroup(createParallelGroup(new int[] {16, 17, 18}));
+        seqGroup.addGroup(createParallelGroup(new int[] {19, 20}));
 
-		ParallelGroup pgroup1 = createParallelLabelsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
-		ParallelGroup pgroup2 = createParallelFieldsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
+        ParallelGroup pgroup1 = createParallelLabelsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
+        ParallelGroup pgroup2 = createParallelFieldsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
     ParallelGroup pgroup3 = createParallelWatchGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
-		ParallelGroup pgroup4 = createParallelLabelsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
-		ParallelGroup pgroup5 = createParallelFieldsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
-		ParallelGroup pgroup6 = createParallelWatchGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
+        ParallelGroup pgroup4 = createParallelLabelsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
+        ParallelGroup pgroup5 = createParallelFieldsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
+        ParallelGroup pgroup6 = createParallelWatchGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
     ParallelGroup pgroup7 = createParallelLabelsGroup(new int[] {4, 13, 18});
-		ParallelGroup pgroup8 = createParallelFieldsGroup(new int[] {4, 13, 18});
-		ParallelGroup pgroup9 = createParallelWatchGroup(new int[] {4, 13, 18});
+        ParallelGroup pgroup8 = createParallelFieldsGroup(new int[] {4, 13, 18});
+        ParallelGroup pgroup9 = createParallelWatchGroup(new int[] {4, 13, 18});
 
-		layout.setVerticalGroup(seqGroup);
-		layout.setHorizontalGroup(layout.createSequentialGroup()
-				.addGroup(pgroup1).addGroup(pgroup2).addGroup(pgroup3)
-				.addGroup(pgroup4).addGroup(pgroup5).addGroup(pgroup6)
-				.addGroup(pgroup7).addGroup(pgroup8).addGroup(pgroup9));
+        layout.setVerticalGroup(seqGroup);
+        layout.setHorizontalGroup(layout.createSequentialGroup()
+                .addGroup(pgroup1).addGroup(pgroup2).addGroup(pgroup3)
+                .addGroup(pgroup4).addGroup(pgroup5).addGroup(pgroup6)
+                .addGroup(pgroup7).addGroup(pgroup8).addGroup(pgroup9));
 
-		StringBuffer buff = new StringBuffer();
-		for (int i = 21; i < stats.getNumLabels(); i++)
-		{
-			buff.append(stats.getLabel(i) + ": " + stats.getValue(i) + "\n");
-		}
-		textArea.setText(buff.toString());
-	}
+        StringBuffer buff = new StringBuffer();
+        for (int i = 21; i < stats.getNumLabels(); i++)
+        {
+            buff.append(stats.getLabel(i) + ": " + stats.getValue(i) + "\n");
+        }
+        textArea.setText(buff.toString());
+    }
 
-	private void init()
-	{
-		transportStats = new JPanel();
-		transports = new JPanel();
-		layout = new GroupLayout(transportStats);
-		transportStats.setLayout(layout);
-		setLayout(new BorderLayout());
+    private void init()
+    {
+        transportStats = new JPanel();
+        transports = new JPanel();
+        layout = new GroupLayout(transportStats);
+        transportStats.setLayout(layout);
+        setLayout(new BorderLayout());
 
-		textArea = new JTextArea();
-		scrollPane = new JScrollPane(textArea);
-		transports.add(scrollPane);
+        textArea = new JTextArea();
+        scrollPane = new JScrollPane(textArea);
+        transports.add(scrollPane);
 
-		setBorder(BorderFactory.createTitledBorder("  Driver Stats  "));
+        setBorder(BorderFactory.createTitledBorder("  Driver Stats  "));
 
-		add(transportStats, BorderLayout.NORTH);
-		add(transports, BorderLayout.SOUTH);
-	}
+        add(transportStats, BorderLayout.NORTH);
+        add(transports, BorderLayout.SOUTH);
+    }
 
   private ParallelGroup createParallelGroup(int[] idx)
   {

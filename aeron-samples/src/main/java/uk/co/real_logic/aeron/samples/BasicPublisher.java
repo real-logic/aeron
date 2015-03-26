@@ -44,28 +44,36 @@ public class BasicPublisher
         SamplesUtil.useSharedMemoryOnLinux();
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+
+        // Create an Aeron context for client connection to media driver
         final Aeron.Context ctx = new Aeron.Context();
 
+        // Connect to media driver and add a publisher to Aeron instance
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
+        	// Try to send messages
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
+            	//Prepare a buffer to be sent
                 final String message = "Hello World! " + i;
                 BUFFER.putBytes(0, message.getBytes());
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
+                // Try to send the message on configured CHANNEL and STREAM
                 final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
 
                 if (!result)
                 {
+                	// Message offer did not succeed
                     System.out.println(" ah?!");
                 }
                 else
                 {
+                	// Successful message send
                     System.out.println(" yay!");
                 }
-
+                //Sleep for a second
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             }
 

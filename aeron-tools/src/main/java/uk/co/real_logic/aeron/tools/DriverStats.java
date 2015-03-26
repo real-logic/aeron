@@ -35,6 +35,20 @@ public class DriverStats
 	{
 		labels = new ArrayList<String>();
 		values = new ArrayList<Long>();
+		cncFile = CommonContext.newDefaultCncFile();
+		cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+		metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+		cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+		if (CncFileDescriptor.CNC_VERSION != cncVersion)
+		{
+			throw new IllegalStateException("CNC version not understood");
+		}
+
+		labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
+		valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
+
+		countersManager = new CountersManager(labelsBuffer, valuesBuffer);
 	}
 
 	public String getLabel(int idx)
@@ -59,29 +73,11 @@ public class DriverStats
 
 	public void populate()
 	{
-		cncFile = CommonContext.newDefaultCncFile();
-		cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-		metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-		cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-		if (CncFileDescriptor.CNC_VERSION != cncVersion)
-		{
-			throw new IllegalStateException("CNC version not understood");
-		}
-
-		labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
-		valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
-
-		countersManager = new CountersManager(labelsBuffer, valuesBuffer);
-
 		int size = 0;
 		int idx = 0;
 
-		if (populated)
-		{
-			labels.clear();
-			values.clear();
-		}
+		labels.clear();
+		values.clear();
 
 		while ((size = isValid(idx)) != 0)
 		{

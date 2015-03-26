@@ -58,8 +58,8 @@ public class BasicSubscriberWithFragDefragAdaptor
         // a new connection starts (eventNewConnection)
         // a connection goes inactive (eventInactiveConnection)
         final Aeron.Context ctx = new Aeron.Context() /* Callback at new producer starts */
-        	.newConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventNewConnection)
-        	.inactiveConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventInactiveConnection);
+            .newConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventNewConnection)
+            .inactiveConnectionHandler(BasicSubscriberWithFragDefragAdaptor::eventInactiveConnection);
 
         // dataHandler method is called for every new datagram received
         // When a message is completely reassembled, the delegate method 'printStringMessage' is called
@@ -75,18 +75,18 @@ public class BasicSubscriberWithFragDefragAdaptor
 
         // Create an Aeron instance with client provided context configuration and connect to media driver
         try (final Aeron aeron = Aeron.connect(ctx);
-        		//Add a subscription to Aeron for a given channel and steam. Also,
-        		// supply a dataHandler to be called when data arrives
-        		final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler);
-        		final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
-        		{
-
-        	final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-        			100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
-
-        		try
+                //Add a subscription to Aeron for a given channel and steam. Also,
+                // supply a dataHandler to be called when data arrives
+                final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler);
+                final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
                 {
-        			//Try to read the data for both the subscribers
+
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(
+                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+
+                try
+                {
+                    //Try to read the data for both the subscribers
                     while (running.get())
                     {
                         final int fragmentsRead = subscription.poll(FRAGMENT_COUNT_LIMIT);
@@ -123,15 +123,15 @@ public class BasicSubscriberWithFragDefragAdaptor
       //Reset the stream buffer because streams have restarted
         if (streamId == STREAM_ID)
         {
-        	msgStream.reset();
+            msgStream.reset();
         }
         else if (streamId == STREAM_ID_2)
         {
-        	msgStream2.reset();
+            msgStream2.reset();
         }
         else
         {
-        	System.out.println("Invalid Stream ID : " + streamId);
+            System.out.println("Invalid Stream ID : " + streamId);
         }
 
     }
@@ -170,18 +170,18 @@ public class BasicSubscriberWithFragDefragAdaptor
                     streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
             try
             {
-            	if (streamId == STREAM_ID)
-            	{
-            		msgStream.putNext(buffer, offset, length);
-            	}
-            	else
-            	{
-            			System.out.println("Unknown Stream ID");
-            	}
+                if (streamId == STREAM_ID)
+                {
+                    msgStream.putNext(buffer, offset, length);
+                }
+                else
+                {
+                        System.out.println("Unknown Stream ID");
+                }
             }
             catch (final Exception e)
             {
-            	e.printStackTrace();
+                e.printStackTrace();
             }
         };
     }
@@ -208,18 +208,18 @@ public static DataHandler reassembledStringMessage2(final int streamId)
         try
         {
 
-        	if (streamId == STREAM_ID_2)
-        	{
-        		msgStream2.putNext(buffer, offset, length);
-        	}
-        	else
-        	{
-        			System.out.println("Unknown Stream ID");
-        	}
+            if (streamId == STREAM_ID_2)
+            {
+                msgStream2.putNext(buffer, offset, length);
+            }
+            else
+            {
+                    System.out.println("Unknown Stream ID");
+            }
         }
         catch (final Exception e)
         {
-        	e.printStackTrace();
+            e.printStackTrace();
         }
     };
 }

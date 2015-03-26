@@ -15,14 +15,14 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import java.nio.ByteBuffer;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.tools.MessageStream;
-
-import java.nio.ByteBuffer;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 //import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,50 +54,50 @@ public class BasicPublisherWithFragmentation
         // and add 2 publisher with two different session Ids
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-        	 final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
+             final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
-        	// Allocate 2 different session buffer
-        	MessageStream msgStream = new MessageStream(8192);
-        	MessageStream msgStream2 = new MessageStream(8192);
-        	// Try to send 5000 messages from each publishers
-        	int len = msgStream.getNext(BUFFER);
-        	int len2 = msgStream2.getNext(BUFFER_2);
+            // Allocate 2 different session buffer
+            MessageStream msgStream = new MessageStream(8192);
+            MessageStream msgStream2 = new MessageStream(8192);
+            // Try to send 5000 messages from each publishers
+            int len = msgStream.getNext(BUFFER);
+            int len2 = msgStream2.getNext(BUFFER_2);
             for (int i = 0; i < 5000; i++)
             {
 
                 boolean offerStatus = false;
                 while (!offerStatus)
                 {
-                	// Try to publish buffer from first publisher
-	                final boolean result = publication.offer(BUFFER, 0, len);
+                    // Try to publish buffer from first publisher
+                    final boolean result = publication.offer(BUFFER, 0, len);
 
-	                if (!result)
-	                {
-	                    System.out.println(" ah? from first publisher with stream ID " + STREAM_ID + "!!");
-	                    offerStatus = false;
-	                }
-	                else
-	                {
-	                	len = msgStream.getNext(BUFFER);
-	                	offerStatus = true;
-	                    System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + "!!");
-	                }
+                    if (!result)
+                    {
+                        System.out.println(" ah? from first publisher with stream ID " + STREAM_ID + "!!");
+                        offerStatus = false;
+                    }
+                    else
+                    {
+                        len = msgStream.getNext(BUFFER);
+                        offerStatus = true;
+                        System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + "!!");
+                    }
 
-	                // Try to publish buffer from second publisher
-	                final boolean result2 = publication2.offer(BUFFER_2, 0, len2);
+                    // Try to publish buffer from second publisher
+                    final boolean result2 = publication2.offer(BUFFER_2, 0, len2);
 
-	                if (!result2)
-	                {
-	                	System.out.println(" ah? from second publisher with stream ID " +
-	                			STREAM_ID_2 + " and data length " + len2 +  "!!");
-	                    offerStatus = false;
-	                }
-	                else
-	                {
-	                	len2 = msgStream2.getNext(BUFFER_2);
-	                	offerStatus = true;
-	                	System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + STREAM_ID_2 + " !! ");
-	                }
+                    if (!result2)
+                    {
+                        System.out.println(" ah? from second publisher with stream ID " +
+                                STREAM_ID_2 + " and data length " + len2 +  "!!");
+                        offerStatus = false;
+                    }
+                    else
+                    {
+                        len2 = msgStream2.getNext(BUFFER_2);
+                        offerStatus = true;
+                        System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + STREAM_ID_2 + " !! ");
+                    }
                 }
 
                 //Thread.sleep(TimeUnit.SECONDS.toMillis(1));

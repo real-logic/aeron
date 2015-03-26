@@ -15,13 +15,13 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import java.nio.ByteBuffer;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-
-import java.nio.ByteBuffer;
 //import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,27 +51,27 @@ public class SimplePublisher
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-        	//Prepare a buffer to be sent
+            //Prepare a buffer to be sent
             String message = "Hello World! " + 1;
             BUFFER.putBytes(0, message.getBytes());
 
-        	// Try to send 5 messages from publisher
+            // Try to send 5 messages from publisher
             for (int i = 1; i < 6; i++)
             {
-                	// Try to publish buffer from first publisher
-            		System.out.print("offering " + i + "/" + 5);
-	                boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
+                    // Try to publish buffer from first publisher
+                    System.out.print("offering " + i + "/" + 5);
+                    boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
 
-	                if (!result)
-	                {
-	                    System.out.println(" ah? ");
-	                }
-	                else
-	                {
-	                    System.out.println(" yay !!");
-	                    message = "Hello World! " + (i + 1);
-	                    BUFFER.putBytes(0, message.getBytes());
-	                }
+                    if (!result)
+                    {
+                        System.out.println(" ah? ");
+                    }
+                    else
+                    {
+                        System.out.println(" yay !!");
+                        message = "Hello World! " + (i + 1);
+                        BUFFER.putBytes(0, message.getBytes());
+                    }
                 }
 
                 Thread.sleep(1000);

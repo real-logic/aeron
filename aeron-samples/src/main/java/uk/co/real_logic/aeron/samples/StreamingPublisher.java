@@ -15,6 +15,15 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.common.RateReporter;
@@ -24,15 +33,6 @@ import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.function.IntSupplier;
-
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Publisher that sends as fast as possible a given number of messages at a given length.
@@ -102,7 +102,7 @@ public class StreamingPublisher
 
                     while (!publication.offer(ATOMIC_BUFFER, 0, length))
                     {
-                    	//Returns almost immediately ( Used for low latency)
+                        //Returns almost immediately ( Used for low latency)
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
 

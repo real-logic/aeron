@@ -11,6 +11,10 @@ public class RateController
 
     private static final long WARMUP_IDLES = 5000;
     private static final long CALLIBRATION_IDLES = 50000;
+    /* Some platforms (like Windows) have a very coarse parkNanos resolution on the
+     * order of a nearly 16 millisecond minimum sleep time (!).  Don't spend more
+     * than a second on the warmup or measurement loops. */
+    private static final long MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS = 1000000000;
 
     private static final SystemNanoClock CLOCK = new SystemNanoClock();
 
@@ -150,18 +154,28 @@ public class RateController
         for (int i = 0; i < WARMUP_IDLES; i++)
         {
             LockSupport.parkNanos(yieldNanos);
+            if (CLOCK.time() > (yieldEndNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
+            {
+                break;
+            }
         }
         /* And now do a bunch and record how long it takes. */
         final long parkStartNanos = CLOCK.time();
-        for (int i = 0; i < CALLIBRATION_IDLES; i++)
+        int parkNanosLoops;
+        for (parkNanosLoops = 0; parkNanosLoops < CALLIBRATION_IDLES; parkNanosLoops++)
         {
             LockSupport.parkNanos(yieldNanos);
+            if (CLOCK.time() > (parkStartNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
+            {
+                parkNanosLoops++;
+                break;
+            }
         }
         final long parkEndNanos = CLOCK.time();
         /* better to over-estimate the time yield takes than to underestimate it, therefore the fudge factor. */
         YIELD_NANOS = yieldNanos * YIELD_NANOS_FUDGE_FACTOR;
         /* better to over-estimate the time park takes than to underestimate it, therefore the fudge factor. */
-        PARK_NANOS = ((parkEndNanos - parkStartNanos) / CALLIBRATION_IDLES) * PARK_NANOS_FUDGE_FACTOR;
+        PARK_NANOS = ((parkEndNanos - parkStartNanos) / parkNanosLoops) * PARK_NANOS_FUDGE_FACTOR;
     }
 
     private void addIntervals(List<RateControllerInterval> intervals) throws Exception

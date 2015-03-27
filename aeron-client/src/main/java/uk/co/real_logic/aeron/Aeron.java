@@ -175,14 +175,6 @@ public final class Aeron implements AutoCloseable
         return conductor.addSubscription(channel, streamId, handler);
     }
 
-    /**
-     * Used for testing.
-     */
-    ClientConductor conductor()
-    {
-        return conductor;
-    }
-
     private Aeron start()
     {
         final Thread thread = new Thread(conductorRunner);
@@ -239,8 +231,7 @@ public final class Aeron implements AutoCloseable
 
                     if (CncFileDescriptor.CNC_VERSION != cncVersion)
                     {
-                        throw new IllegalStateException(
-                            String.format("aeron cnc file version not understood: version=" + cncVersion));
+                        throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
                     }
                 }
 

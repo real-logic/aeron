@@ -1,6 +1,5 @@
 package uk.co.real_logic.aeron.tools;
 
-import java.awt.Dimension;
 import java.io.File;
 import java.util.Observable;
 import java.util.Observer;

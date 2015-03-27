@@ -2,91 +2,76 @@ package uk.co.real_logic.aeron.tools;
 
 import java.awt.Dimension;
 import java.io.File;
+import java.util.Observable;
+import java.util.Observer;
 
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTree;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreeNode;
-import javax.swing.tree.TreeSelectionModel;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.scene.control.TreeItem;
+import javafx.scene.control.TreeView;
+import javafx.scene.layout.VBox;
 
-
-public class NavigationPanel extends JPanel implements TreeSelectionListener
+public class NavigationPanel extends VBox implements Observer
 {
-    private JTree fileList = null;
+    private TreeItem<String> rootItem = null;
+    private TreeView<String> tree = null;
+
     private LogModel model = null;
+    private NavigationModel navModel = null;
+
     public NavigationPanel(LogModel model)
     {
         this.model = model;
+        navModel = new NavigationModel();
+        navModel.addObserver(this);
         init();
     }
 
+    public void update(Observable obs, Object obj)
+    {
+        rootItem.getChildren().removeAll(rootItem.getChildren());
+
+        addChildren(navModel.getDirectory(), rootItem);
+    }
+
+    public NavigationModel getModel()
+    {
+        return navModel;
+    }
     private void init()
     {
-        DefaultMutableTreeNode top = new DefaultMutableTreeNode("Aeron");
-        String prefix = System.getProperty("java.io.tmpdir") + "/aeron";
-        addChildren(prefix, top);
+        rootItem = new TreeItem<String>(navModel.getTitle());
+        rootItem.setExpanded(true);
 
-        fileList = new JTree(top);
-        fileList.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
-        fileList.addTreeSelectionListener(this);
+        addChildren(navModel.getDirectory(), rootItem);
 
-        JScrollPane listPane = new JScrollPane(fileList);
-        listPane.setPreferredSize(new Dimension(250, 400));
-        add(listPane);
+        tree = new TreeView<String>(rootItem);
+
+        tree.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem<String>>()
+        {
+            public void changed(ObservableValue<? extends TreeItem<String>> observableValue,
+                                TreeItem<String> oldItem, TreeItem<String> newItem)
+            {
+                navModel.setSelectedFile(newItem.getValue());
+            }
+        });
+        getChildren().add(tree);
     }
 
-    private void addChildren(String filename, DefaultMutableTreeNode parent)
+    private void addChildren(String filename, TreeItem<String> parent)
     {
         File files = new File(filename);
-        System.out.println(filename);
-        if (files.listFiles() == null)
+        if (files.listFiles() != null)
         {
-            return;
-        }
-
-        for (int i = 0; i < files.listFiles().length; i++)
-        {
-            DefaultMutableTreeNode node = new DefaultMutableTreeNode(files.list()[i]);
-            parent.add(node);
-            if (files.listFiles()[i].isDirectory())
+            for (int i = 0; i < files.listFiles().length; i++)
             {
-                addChildren(files.listFiles()[i].getAbsolutePath(), node);
-            }
-        }
-    }
-
-    @Override
-    public void valueChanged(TreeSelectionEvent e)
-    {
-        boolean stats = false;
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode)fileList.getLastSelectedPathComponent();
-        if (node.isLeaf())
-        {
-            TreeNode[] nodes = node.getPath();
-            String path = System.getProperty("java.io.tmpdir") + "/aeron";
-            if (node.toString().equalsIgnoreCase("cnc"))
-            {
-                stats = true;
-            }
-            else
-            {
-                stats = false;
-            }
-            for (int i = 1; i < nodes.length; i++)
-            {
-                path += "/" + nodes[i].toString();
-            }
-
-            if (stats)
-            {
-                model.processStatsBuffer();
-            }
-            else
-            {
-                model.processLogBuffer(path);
+                TreeItem<String> item = new TreeItem(files.list()[i]);
+                item.setExpanded(true);
+                parent.getChildren().add(item);
+                if (files.listFiles()[i].isDirectory())
+                {
+                    addChildren(files.listFiles()[i].getAbsolutePath(), item);
+                }
             }
         }
     }

@@ -1,12 +1,16 @@
 package uk.co.real_logic.aeron.tools;
 
 import javafx.application.Application;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
+import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.TreeItem;
-import javafx.scene.control.TreeView;
-import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -17,7 +21,7 @@ import javax.swing.*;
 
 public class LogAnalyzer extends Application implements Observer
 {
-	private JMenuBar menuBar = null;
+	private MenuBar menuBar = null;
 	private LogModel model = null;
 	private TermMetadataPanel termMetadataPanel = null;
 	private NavigationPanel navigationPanel = null;
@@ -27,12 +31,14 @@ public class LogAnalyzer extends Application implements Observer
 	private JTextField termLength;
 	private JPanel centerPanel = null;
 	private Thread updateThread = null;
+	private Scene scene = null;
+	private Stage stage = null;
 
 	public LogAnalyzer()
 	{
 		model = new LogModel();
 		model.addObserver(this);
-
+/*
 		UIManager.LookAndFeelInfo lafInfo[] = UIManager.getInstalledLookAndFeels();
 		for (int i = 0; i < lafInfo.length; i++)
 		{
@@ -72,27 +78,18 @@ public class LogAnalyzer extends Application implements Observer
 
 	public void start(Stage primaryStage)
 	{
-		primaryStage.setTitle("Log Analysis");
+		stage = primaryStage;
+		stage.setTitle("Log Analysis");
+		scene = new Scene(new VBox(), 400, 400);
+		scene.setFill(Color.CHOCOLATE);
 
-		TreeItem<String> rootItem = new TreeItem<String>("Aeron");
-		rootItem.setExpanded(true);
-		String prefix = System.getProperty("java.io.tmpdir") + "/aeron";
+		createMenuBar();
+		navigationPanel = new NavigationPanel(model);
 
-		addChildren(prefix, rootItem);
+		((VBox)scene.getRoot()).getChildren().addAll(navigationPanel);
 
-		TreeView<String> tree = new TreeView<String>(rootItem);
-		StackPane root = new StackPane();
-		root.getChildren().add(tree);
-		tree.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem<String>>()
-		{
-			public void changed(ObservableValue<? extends TreeItem<String>> observableValue,
-								TreeItem<String> oldItem, TreeItem<String> newItem)
-			{
-				System.out.println(newItem.getValue() + " was selected");
-			}
-		});
-		primaryStage.setScene(new Scene(root, 400, 400));
-		primaryStage.show();
+		stage.setScene(scene);
+		stage.show();
 	}
 
 	private void addChildren(String filename, TreeItem<String> parent)
@@ -114,12 +111,28 @@ public class LogAnalyzer extends Application implements Observer
 	}
 
 	private void createMenuBar()
-	{/*
-		final JFileChooser fc = new JFileChooser(System.getProperty("java.io.tmpdir") + "aeron/");
+	{
+		final DirectoryChooser fc = new DirectoryChooser();
 
-		menuBar = new JMenuBar();
-		JMenu fileMenu = new JMenu("File");
-		JMenuItem openItem = new JMenuItem("Open");
+		menuBar = new MenuBar();
+		Menu fileMenu = new Menu("File");
+		MenuItem openItem = new MenuItem("Open");
+		openItem.setOnAction(new EventHandler<ActionEvent>()
+		{
+			public void handle(ActionEvent e)
+			{
+				File file = fc.showDialog(stage);
+
+				if (file != null)
+				{
+					navigationPanel.getModel().setDirectory(file.getAbsolutePath());
+				}
+			}
+		});
+		fileMenu.getItems().add(openItem);
+		menuBar.getMenus().add(fileMenu);
+		((VBox)scene.getRoot()).getChildren().addAll(menuBar);
+	/*
 		openItem.addActionListener(new ActionListener()
 		{
 			public void actionPerformed(ActionEvent e)

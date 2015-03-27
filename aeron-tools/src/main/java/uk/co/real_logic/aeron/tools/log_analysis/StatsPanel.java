@@ -1,4 +1,4 @@
-package uk.co.real_logic.aeron.tools.uk.co.real_logic.aeron.tools.log_analysis;
+package uk.co.real_logic.aeron.tools.log_analysis;
 
 import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;

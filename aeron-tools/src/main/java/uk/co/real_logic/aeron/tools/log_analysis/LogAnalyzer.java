@@ -1,4 +1,4 @@
-package uk.co.real_logic.aeron.tools.uk.co.real_logic.aeron.tools.log_analysis;
+package uk.co.real_logic.aeron.tools.log_analysis;
 
 import javafx.application.Application;
 import javafx.event.ActionEvent;

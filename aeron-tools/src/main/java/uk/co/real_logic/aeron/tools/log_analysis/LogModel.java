@@ -1,4 +1,4 @@
-package uk.co.real_logic.aeron.tools.uk.co.real_logic.aeron.tools.log_analysis;
+package uk.co.real_logic.aeron.tools.log_analysis;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.activeTermId;

@@ -192,18 +192,6 @@ project(':aeron-samples') {
         tasks.shadowJar.execute()
     }
 
-    task Ping(type:JavaExec) {
-      main = 'uk.co.real_logic.aeron.samples.Ping'
-      classpath = sourceSets.main.runtimeClasspath
-      systemProperties(System.properties)
-    }
-
-    task Pong(type:JavaExec) {
-      main = 'uk.co.real_logic.aeron.samples.Pong'
-      classpath = sourceSets.main.runtimeClasspath
-      systemProperties(System.properties)
-    }
-
     task LLDriver(type:JavaExec) {
       main = 'uk.co.real_logic.aeron.samples.LowLatencyMediaDriver'
       classpath = sourceSets.main.runtimeClasspath
@@ -248,6 +236,33 @@ project(':aeron-tools') {
 
     shadow {
         outputFile = new File('aeron-tools/build/libs/tools.jar')
+    }
+
+    task stats(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.StatsDriver'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    task ping(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.PingRunner'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    task pong(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.PongRunner'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
     }
 
     build.doLast {

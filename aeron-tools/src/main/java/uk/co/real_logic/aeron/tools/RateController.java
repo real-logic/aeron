@@ -164,7 +164,7 @@ public class RateController
         PARK_NANOS = ((parkEndNanos - parkStartNanos) / CALLIBRATION_IDLES) * PARK_NANOS_FUDGE_FACTOR;
     }
 
-    private void addIntervals(List<RateControllerInterval> intervals)
+    private void addIntervals(List<RateControllerInterval> intervals) throws Exception
     {
         for (RateControllerInterval interval : intervals)
         {
@@ -188,8 +188,17 @@ public class RateController
          * sending them. */
         private final long messages;
 
-        protected MessagesAtBitsPerSecondInternal(RateController rateController, long messages, long bitsPerSecond)
+        protected MessagesAtBitsPerSecondInternal(
+                RateController rateController, long messages, long bitsPerSecond) throws Exception
         {
+            if (messages <= 0)
+            {
+                throw new Exception("The number of messages in a MessagesAtBitsPerSecond interval must be >= 1.");
+            }
+            if (bitsPerSecond <= 0)
+            {
+                throw new Exception("The bits per second in a MessagesAtBitsPerSecond interval must be >= 1.");
+            }
             this.rateController = rateController;
             this.goalBitsPerSecond = bitsPerSecond;
             this.messages = messages;
@@ -259,8 +268,17 @@ public class RateController
          * sending them. */
         private final long messages;
 
-        protected MessagesAtMessagesPerSecondInternal(RateController rateController, long messages, double messagesPerSecond)
+        protected MessagesAtMessagesPerSecondInternal(
+                RateController rateController, long messages, double messagesPerSecond) throws Exception
         {
+            if (messages <= 0)
+            {
+                throw new Exception("The number of messages in a MessagesAtMessagesPerSecond interval must be >= 1.");
+            }
+            if (messagesPerSecond <= 0)
+            {
+                throw new Exception("The messages per second in a MessagesAtMessagesPerSecond interval must be > 0.");
+            }
             this.rateController = rateController;
             this.goalMessagesPerSecond = messagesPerSecond;
             this.messages = messages;
@@ -326,8 +344,17 @@ public class RateController
          * sending them. */
         private final double seconds;
 
-        protected SecondsAtMessagesPerSecondInternal(RateController rateController, double seconds, double messagesPerSecond)
+        protected SecondsAtMessagesPerSecondInternal(
+                RateController rateController, double seconds, double messagesPerSecond) throws Exception
         {
+            if (seconds <= 0)
+            {
+                throw new Exception("The number of seconds in a SecondsAtMessagesPerSecond interval must be > 0.");
+            }
+            if (messagesPerSecond < 0)
+            {
+                throw new Exception("The messages per second in a SecondsAtMessagesPerSecond interval cannot be negative.");
+            }
             this.rateController = rateController;
             this.goalMessagesPerSecond = messagesPerSecond;
             this.seconds = seconds;
@@ -394,8 +421,17 @@ public class RateController
          * sending them. */
         private final double seconds;
 
-        protected SecondsAtBitsPerSecondInternal(RateController rateController, double seconds, long bitsPerSecond)
+        protected SecondsAtBitsPerSecondInternal(
+                RateController rateController, double seconds, long bitsPerSecond) throws Exception
         {
+            if (seconds <= 0)
+            {
+                throw new Exception("The number of seconds in a SecondsAtBitsPerSecond interval must be > 0.");
+            }
+            if (bitsPerSecond < 0)
+            {
+                throw new Exception("The bits per second in a SecondsAtBitsPerSecond interval cannot be negative.");
+            }
             this.rateController = rateController;
             this.goalBitsPerSecond = bitsPerSecond;
             this.seconds = seconds;
@@ -486,6 +522,10 @@ public class RateController
 
     public RateController(final Callback callback, List<RateControllerInterval> intervals, int iterations) throws Exception
     {
+        if (iterations <= 0)
+        {
+            throw new Exception("Iterations must be >= 1.");
+        }
         if (callback == null)
         {
             throw new Exception("Must specify a callback method.");

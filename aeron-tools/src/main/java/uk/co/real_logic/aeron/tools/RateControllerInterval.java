@@ -34,5 +34,5 @@ abstract class RateControllerInterval
         return endTimeNanos;
     }
 
-    abstract RateController.IntervalInternal makeInternal(RateController rateController);
+    abstract RateController.IntervalInternal makeInternal(RateController rateController) throws Exception;
 }

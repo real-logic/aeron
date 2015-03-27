@@ -1,4 +1,4 @@
-package uk.co.real_logic.aeron.tools;
+package uk.co.real_logic.aeron.tools.uk.co.real_logic.aeron.tools.log_analysis;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.activeTermId;
@@ -10,6 +10,7 @@ import java.util.Observable;
 
 import uk.co.real_logic.aeron.LogBuffers;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class LogModel extends Observable

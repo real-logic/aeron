@@ -364,6 +364,15 @@ public class RateController
         @Override
         public boolean sendNext()
         {
+            /* As a special case... If we're sending 0 messages per second, then this is really just a sleep.
+             * So sleep the appropriate amount of time and then end. */
+            if (goalMessagesPerSecond == 0)
+            {
+                nanoSleep((long)(seconds * 1000000000));
+                stop();
+                return false;
+            }
+
             /* Always start out sending immediately; if the previous
              * interval needed to delay a bit after its last send,
              * then it should have done so. */
@@ -441,6 +450,15 @@ public class RateController
         @Override
         public boolean sendNext()
         {
+            /* As a special case... If we're sending 0 bits per second, then this is really just a sleep.
+             * So sleep the appropriate amount of time and then end. */
+            if (goalBitsPerSecond == 0)
+            {
+                nanoSleep((long)(seconds * 1000000000));
+                stop();
+                return false;
+            }
+
             /* Always start out sending immediately; if the previous
              * interval needed to delay a bit after its last send,
              * then it should have done so. */

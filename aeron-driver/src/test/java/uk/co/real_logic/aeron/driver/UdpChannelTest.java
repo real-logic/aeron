@@ -18,11 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -229,6 +225,20 @@ public class UdpChannelTest
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-c0a80001-40456"));
         assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-c0a80001-40456"));
         assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-7f000001-0-7f000001-40456"));
+    }
+
+    @Test
+    public void shouldGetProtocolFamilyForIpV4() throws Exception
+    {
+        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=127.0.0.1|remote=127.0.0.1:12345");
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
+    }
+
+    @Test
+    public void shouldGetProtocolFamilyForIpV6() throws Exception
+    {
+        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=[::1]|remote=[::1]:12345");
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
     }
 
     @Test

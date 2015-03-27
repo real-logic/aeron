@@ -10,6 +10,10 @@ public class PongRunner
     {
       impl = new AeronPong();
     }
+    else if (args[0].equalsIgnoreCase("aeron-claim"))
+    {
+      impl = new AeronClaimPong();
+    }
     impl.prepare();
     impl.run();
   }

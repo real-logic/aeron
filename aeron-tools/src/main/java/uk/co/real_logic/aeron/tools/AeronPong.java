@@ -3,9 +3,8 @@ package uk.co.real_logic.aeron.tools;
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.driver.MediaDriver;
 
-import uk.co.real_logic.agrona.CloseHelper;
+
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
 
@@ -13,7 +12,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class AeronPong implements PongImpl
 {
-  private MediaDriver driver = null;
   private Aeron.Context ctx = null;
   private FragmentAssemblyAdapter dataHandler = null;
   private Aeron aeron = null;
@@ -34,7 +32,6 @@ public class AeronPong implements PongImpl
 
   public void prepare()
   {
-    driver = MediaDriver.launch();
     ctx = new Aeron.Context();
     dataHandler = new FragmentAssemblyAdapter(this::pingHandler);
     aeron = Aeron.connect(ctx);
@@ -50,8 +47,6 @@ public class AeronPong implements PongImpl
       int fragmentsRead = pingSub.poll(fragmentCountLimit);
       idle.idle(fragmentsRead);
     }
-
-    CloseHelper.quietClose(driver);
   }
 
   public void shutdown()

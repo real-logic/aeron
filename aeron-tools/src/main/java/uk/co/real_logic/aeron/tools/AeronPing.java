@@ -10,14 +10,12 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
 
 public class AeronPing implements PingImpl
 {
-  private MediaDriver driver = null;
   private Aeron.Context ctx = null;
   private FragmentAssemblyAdapter dataHandler = null;
   private Aeron aeron = null;
@@ -39,7 +37,6 @@ public class AeronPing implements PingImpl
 
   public void prepare()
   {
-    driver = MediaDriver.launch();
     ctx = new Aeron.Context()
       .newConnectionHandler(this::newPongConnectionHandler);
     dataHandler = new FragmentAssemblyAdapter(this::pongHandler);

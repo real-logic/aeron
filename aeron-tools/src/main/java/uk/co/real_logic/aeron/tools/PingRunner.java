@@ -12,7 +12,7 @@ import javax.imageio.*;
 
 public class PingRunner
 {
-  private int numMsgs = 1000000;
+  private int numMsgs = 10000000;
   private int numWarmupMsgs = 100000;
   private int msgLen = 64;
   private long[] rtts = null;
@@ -21,6 +21,7 @@ public class PingRunner
   private int idx;
   private boolean warmedUp = false;
   private PingImpl impl = null;
+  private String transport = "";
 
   public PingRunner(String[] args)
   {
@@ -31,7 +32,12 @@ public class PingRunner
     {
       impl = new AeronPing();
     }
+    else if (args[0].equalsIgnoreCase("aeron-claim"))
+    {
+      impl = new AeronClaimPing();
+    }
 
+    transport = args[0];
     impl.prepare();
     impl.connect();
     run();
@@ -118,7 +124,7 @@ public class PingRunner
     BufferedImage image = new BufferedImage(500, 400, BufferedImage.TYPE_INT_ARGB);
     Graphics2D g2 = image.createGraphics();
     FontMetrics fm = g2.getFontMetrics();
-    String filename = "scatterplot_" + percentile + ".png";
+    String filename = transport + "_scatterplot_" + percentile + ".png";
     File imageFile = new File(filename);
     int width = 390;
     int height = 370;

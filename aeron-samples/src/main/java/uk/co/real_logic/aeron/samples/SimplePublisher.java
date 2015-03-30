@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import java.nio.ByteBuffer;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
 
 /**
  * A  Aeron publisher application
@@ -28,11 +28,11 @@ public class SimplePublisher
 {
     public static void main(final String[] args) throws Exception
     {
-    	//Allocate enough buffer size to hold maximum stream buffer
-    	// 'UnsafeBuffer' class is part of agrona data structure, used for very efficient buffer management
+        //Allocate enough buffer size to hold maximum stream buffer
+        // 'UnsafeBuffer' class is part of agrona data structure, used for very efficient buffer management
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(512));
 
-    	String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
+        String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
         final int streamId = 10; //A unique identifier for a Stream within a channel. A value of 0 is reserved
 
         System.out.println("Publishing to " + channel + " on stream Id " + streamId);
@@ -45,29 +45,29 @@ public class SimplePublisher
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(channel, streamId))
         {
-        	//Prepare a buffer to be sent
+            //Prepare a buffer to be sent
             String message = "Hello World! " + 1;
             buffer.putBytes(0, message.getBytes());
 
-        	// Try to send 5 messages from publisher
+            // Try to send 5 messages from publisher
             for (int i = 1; i < 6; i++)
             {
-                	// Try to publish buffer from first publisher. Call to 'offer' is a non-blocking call.
-            	    // In case the call fails, it must be retried
-            		System.out.print("offering " + i + "/" + 5);
-	                boolean result = publication.offer(buffer, 0, message.getBytes().length);
+                    // Try to publish buffer from first publisher. Call to 'offer' is a non-blocking call.
+                    // In case the call fails, it must be retried
+                    System.out.print("offering " + i + "/" + 5);
+                    boolean result = publication.offer(buffer, 0, message.getBytes().length);
 
-	                if (!result)
-	                {
-	                    System.out.println(" ah? "); // Failed to send the message
-	                }
-	                else
-	                {
-	                	// Successfully sent the message
-	                    System.out.println(" yay !!");
-	                    message = "Hello World! " + (i + 1);
-	                    buffer.putBytes(0, message.getBytes());
-	                }
+                    if (!result)
+                    {
+                        System.out.println(" ah? "); // Failed to send the message
+                    }
+                    else
+                    {
+                        // Successfully sent the message
+                        System.out.println(" yay !!");
+                        message = "Hello World! " + (i + 1);
+                        buffer.putBytes(0, message.getBytes());
+                    }
                 }
                 Thread.sleep(1000);
             }

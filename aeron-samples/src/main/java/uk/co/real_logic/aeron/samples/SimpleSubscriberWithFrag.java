@@ -34,7 +34,7 @@ import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 public class SimpleSubscriberWithFrag
 {
 
-	private static MessageStream msgStream = new MessageStream();
+    private static MessageStream msgStream = new MessageStream();
     public static void main(final String[] args) throws Exception
     {
         final int fragmentCountLimit = 10; // Number of message fragments to limit for a single 'poll' operation
@@ -60,20 +60,20 @@ public class SimpleSubscriberWithFrag
         // Create an Aeron instance with client provided context configuration and connect to media driver
         try (final Aeron aeron = Aeron.connect(ctx);
 
-        		//Add a subscription to Aeron for a given channel and steam. Also,
-        		// supply a dataHandler to be called when data arrives
-        		final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
-        		{
+                //Add a subscription to Aeron for a given channel and steam. Also,
+                // supply a dataHandler to be called when data arrives
+                final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
+                {
                     // Initialize an 'Idlestrategy' class for a back off strategy
-        			final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-        					100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+                    final IdleStrategy idleStrategy = new BackoffIdleStrategy(
+                            100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
                     try
                     {
                         //Try to read the data from subscriber
                         while (running.get())
                         {
-                        	// poll returns number of fragments read
+                            // poll returns number of fragments read
                             final int dataRead = subscription.poll(fragmentCountLimit);
                             idleStrategy.idle(dataRead); // Idle strategy to avoid excessive spinning in case of slow publisher
                         }
@@ -106,11 +106,11 @@ public class SimpleSubscriberWithFrag
 
             try
             {
-            		msgStream.putNext(buffer, offset, length);
+                    msgStream.putNext(buffer, offset, length);
             }
             catch (final Exception e)
             {
-            	e.printStackTrace();
+                e.printStackTrace();
             }
 
         };

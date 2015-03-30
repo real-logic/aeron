@@ -7,11 +7,9 @@
         <property name="acceptOnMatch" value="false"/>
     </module>
 
-	<!-- Tabs are just fine.
     <module name="FileTabCharacter">
         <property name="eachLine" value="true"/>
     </module>
-    -->
 
     <module name="TreeWalker">
         <property name="tabWidth" value="4"/>

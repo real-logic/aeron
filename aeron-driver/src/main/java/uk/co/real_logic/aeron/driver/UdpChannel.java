@@ -22,13 +22,7 @@ import static uk.co.real_logic.aeron.common.NetworkUtil.filterBySubnet;
 import static uk.co.real_logic.aeron.common.NetworkUtil.findAddressOnInterface;
 import static uk.co.real_logic.aeron.common.Strings.isEmpty;
 
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -416,6 +410,24 @@ public final class UdpChannel
     public String originalUriString()
     {
         return uriStr;
+    }
+
+    public ProtocolFamily protocolFamily()
+    {
+        InetAddress address = localData.getAddress();
+
+        if (address instanceof Inet4Address)
+        {
+            return StandardProtocolFamily.INET;
+        }
+        else if (address instanceof Inet6Address)
+        {
+            return StandardProtocolFamily.INET6;
+        }
+        else
+        {
+            throw new IllegalStateException("Unknown ProtocolFamily");
+        }
     }
 
     private static class Context

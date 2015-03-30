@@ -55,21 +55,21 @@ public class SimpleSubscriber
         // Create an Aeron instance with client provided context configuration and connect to media driver
         try (final Aeron aeron = Aeron.connect(ctx);
 
-        		//Add a subscription to Aeron for a given channel and steam. Also,
-        		// supply a dataHandler to be called when data arrives
+                //Add a subscription to Aeron for a given channel and steam. Also,
+                // supply a dataHandler to be called when data arrives
                 // This works only if published data is not fragmented by Aeron
-        		final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
-        		{
+                final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
+                {
                     // Initialize an 'Idlestrategy' class for a back off strategy
-        			final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-        					100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+                    final IdleStrategy idleStrategy = new BackoffIdleStrategy(
+                            100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
-                    try
-                    {
+                try
+                {
                         //Try to read the data from subscriber
                         while (running.get())
                         {
-                        	// poll returns number of fragments read
+                            // poll returns number of fragments read
                             final int dataRead = subscription.poll(fragmentLimitCount);
                             idleStrategy.idle(dataRead); // Idle strategy to avoid excessive spinning in case of slow publisher
                         }

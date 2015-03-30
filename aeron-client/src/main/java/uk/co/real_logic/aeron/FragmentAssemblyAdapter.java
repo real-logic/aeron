@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  *
  * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
  *
- * When sessions go inactive {@see InactiveConnectionHandler}, it is possible to free the buffer by calling
+ * When sessions go inactive {@link InactiveConnectionHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
 public class FragmentAssemblyAdapter implements DataHandler

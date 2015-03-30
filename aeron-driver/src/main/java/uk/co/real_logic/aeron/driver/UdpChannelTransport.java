@@ -61,7 +61,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
         try
         {
-            datagramChannel = DatagramChannel.open();
+            datagramChannel = DatagramChannel.open(udpChannel.protocolFamily());
             if (udpChannel.isMulticast())
             {
                 final NetworkInterface localInterface = udpChannel.localInterface();

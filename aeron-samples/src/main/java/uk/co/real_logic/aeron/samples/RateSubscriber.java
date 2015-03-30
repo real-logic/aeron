@@ -15,17 +15,22 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.agrona.CloseHelper;
+import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
+import uk.co.real_logic.agrona.CloseHelper;
 
 /**
  * Example that displays current rate while receiving data
@@ -68,7 +73,7 @@ public class RateSubscriber
         try (final Aeron aeron = Aeron.connect(ctx, executor);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
-        	// Receive Data at subscriber in a separate thread
+            // Receive Data at subscriber in a separate thread
 
             final Future future = executor.submit(
                 () -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));

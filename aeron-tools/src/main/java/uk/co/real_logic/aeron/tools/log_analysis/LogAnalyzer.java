@@ -37,7 +37,7 @@ public class LogAnalyzer extends Application implements Observer
     public LogAnalyzer()
     {
         model = new LogModel();
-        model.addObserver(this);
+        //model.addObserver(this);
 /*
         UIManager.LookAndFeelInfo lafInfo[] = UIManager.getInstalledLookAndFeels();
         for (int i = 0; i < lafInfo.length; i++)

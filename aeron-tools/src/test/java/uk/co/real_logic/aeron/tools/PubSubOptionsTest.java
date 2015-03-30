@@ -306,6 +306,49 @@ public class PubSubOptionsTest
     }
 
     @Test
+    public void channelIPv6() throws Exception
+    {
+        ChannelDescriptor cd;
+        String[] args = { "--channels", "udp://[fe80::1234:2345:3456:4567]:12345#5" };
+        opts.parseArgs(args);
+
+        assertThat("FAIL: Expected 1 channel",
+                opts.getChannels().size(), is(1));
+        cd = opts.getChannels().get(0);
+        assertThat("FAIL wrong address for channel 1",
+                cd.getChannel(), is("udp://[fe80::1234:2345:3456:4567]:12345"));
+    }
+
+    @Test
+    public void channelAeronUnicastIPv4() throws Exception
+    {
+        ChannelDescriptor cd;
+        String[] args = { "--channels", "aeron:udp?remote=192.168.14.101:10000-10001|local=192.168.14.102#5" };
+        opts.parseArgs(args);
+
+        assertThat(opts.getChannels().size(), is(2));
+        cd = opts.getChannels().get(0);
+        assertThat("FAIL: wrong address for channel 1",
+                cd.getChannel(), is("aeron:udp?remote=192.168.14.101:10000|local=192.168.14.102"));
+        cd = opts.getChannels().get(1);
+        assertThat("FAIL: wrong address for channel 2",
+                cd.getChannel(), is("aeron:udp?remote=192.168.14.101:10001|local=192.168.14.102"));
+    }
+
+    @Test
+    public void channelAeronUnicastIPv6() throws Exception
+    {
+        ChannelDescriptor cd;
+        String[] args = { "--channels", "aeron:udp?remote=[::1]:12345|local=[::1]" };
+        opts.parseArgs(args);
+
+        assertThat(opts.getChannels().size(), is(1));
+        cd = opts.getChannels().get(0);
+        assertThat("FAIL: wrong address for channel 1",
+                cd.getChannel(), is("aeron:udp?remote=[::1]:12345|local=[::1]"));
+    }
+
+    @Test
     public void messageSizes() throws Exception
     {
         String[] args = { "--size", "100" };

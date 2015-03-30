@@ -1,12 +1,22 @@
 package uk.co.real_logic.aeron.tools;
 
-import org.apache.commons.cli.*;
-
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  * This is a class to hold information about what an Aeron publisher or subscriber
@@ -63,7 +73,7 @@ public class PubSubOptions
         options.addOption(null, "iterations", true,  "Run the rate sequence n times.");
         options.addOption("m",  "messages",   true,  "Send or receive n messages before exiting.");
         options.addOption("o",  "output",     true,  "Subscriber will write the stream to the output file.");
-        options.addOption("r",  "rate",       true,  "Send rate pattern CSV list.");
+        options.addOption("r",  "rate",       true,  "Send/receive rate pattern CSV list.");
         options.addOption(null, "seed",       true,  "Random number generator seed.");
         options.addOption(null, "session",    true,  "Use session id for all publishers.");
         options.addOption("s",  "size",       true,  "Message payload size sequence, in bytes.");
@@ -1097,7 +1107,7 @@ public class PubSubOptions
         {
             throw new ParseException("Could not parse '" + doubleStr + " as a double value.");
         }
-        if (value < 0D || value > (double)Long.MAX_VALUE)
+        if (value < 0D || value > Long.MAX_VALUE)
         {
             throw new ParseException("Double value '" + value + "' must be positive and <= long max value.");
         }

@@ -35,8 +35,8 @@ public class RateController
     private long messagesSent;
     private long bytesSent;
 
-    private final int iterations;
-    private int currentIteration;
+    private final long iterations;
+    private long currentIteration;
 
     public boolean next()
     {
@@ -552,7 +552,7 @@ public class RateController
 
     }
 
-    public RateController(final Callback callback, List<RateControllerInterval> intervals, int iterations) throws Exception
+    public RateController(final Callback callback, List<RateControllerInterval> intervals, long iterations) throws Exception
     {
         if (iterations <= 0)
         {

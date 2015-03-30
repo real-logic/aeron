@@ -206,7 +206,7 @@ public class SubscriberTool
         return seed;
     }
 
-    class SubscriberThread implements Runnable, InactiveConnectionHandler, NewConnectionHandler
+    class SubscriberThread implements Runnable, InactiveConnectionHandler, NewConnectionHandler, RateController.Callback
     {
         final int threadId;
         private long nonVerifiableMessagesReceived;
@@ -216,6 +216,7 @@ public class SubscriberTool
         private final Aeron.Context ctx;
         private final Aeron aeron;
         private final UnsafeBuffer controlBuffer = new UnsafeBuffer(new byte[4 + 4 + CHANNEL_NAME_MAX_LEN + 4 + 4]);
+        private final RateController rateController;
 
         /* All subscriptions we're interested in. */
         final Subscription subscriptions[];
@@ -229,11 +230,23 @@ public class SubscriberTool
         /* channel -> stream ID -> session ID */
         private final HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>> messageStreams =
                 new HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>>();
+        private int lastBytesReceived;
 
         @SuppressWarnings("resource")
         public SubscriberThread(int threadId)
         {
             this.threadId = threadId;
+            RateController rc = null;
+            try
+            {
+                rc = new RateController(this, options.getRateIntervals(), options.getIterations());
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+                System.exit(-1);
+            }
+            rateController = rc;
             /* Create a context and connect to the media driver. */
             ctx = new Aeron.Context()
             .inactiveConnectionHandler(this)
@@ -564,6 +577,19 @@ public class SubscriberTool
                         e.printStackTrace();
                     }
                 }
+
+                /* See if we've received as many messages as we wanted and should now exit. */
+                if ((nonVerifiableMessagesReceived + verifiableMessagesReceived) == options.getMessages())
+                {
+                    shuttingDown = true;
+                }
+
+                /* Pause a bit, if requested, to simulate a slower receiver. */
+                lastBytesReceived = length;
+                if (!rateController.next())
+                {
+                    shuttingDown = true;
+                }
             }
         }
 
@@ -641,6 +667,14 @@ public class SubscriberTool
         {
             /* Handle processing the new connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);
+        }
+
+        @Override
+        public int onNext()
+        {
+            /* Doesn't really need to do anything; just used for pausing the receiver thread a bit
+             * to simulate a slow receiver.  Return the number of bytes we just received. */
+            return lastBytesReceived;
         }
     }
 }

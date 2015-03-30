@@ -1,12 +1,22 @@
 package uk.co.real_logic.aeron.tools;
 
-import org.apache.commons.cli.*;
-
-import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  * This is a class to hold information about what an Aeron publisher or subscriber
@@ -17,6 +27,8 @@ public class PubSubOptions
 {
     /** line separator */
     private static final String NL = System.lineSeparator();
+    /** class that holds the default string values of the options */
+    private static final OptionValuesStruct DEFAULT_VALUES;
 
     /** Apache Commons CLI options */
     final Options options;
@@ -53,6 +65,25 @@ public class PubSubOptions
     private boolean outputNeedsClose;
     private boolean inputNeedsClose;
 
+    static
+    {
+        /* the default string values for each option */
+        DEFAULT_VALUES = new PubSubOptions.OptionValuesStruct(
+                "udp://localhost:31111#1", // channels
+                "external", // driver
+                "null", // input
+                "1", // iterations
+                "unlimited", // messages
+                "null", // output
+                "max", // rate
+                "0", // seed
+                "1", // session
+                "32", // size
+                "1", // threads
+                "yes" // verify
+                );
+    }
+
     public PubSubOptions()
     {
         options = new Options();
@@ -63,7 +94,7 @@ public class PubSubOptions
         options.addOption(null, "iterations", true,  "Run the rate sequence n times.");
         options.addOption("m",  "messages",   true,  "Send or receive n messages before exiting.");
         options.addOption("o",  "output",     true,  "Subscriber will write the stream to the output file.");
-        options.addOption("r",  "rate",       true,  "Send rate pattern CSV list.");
+        options.addOption("r",  "rate",       true,  "Send/receive rate pattern CSV list.");
         options.addOption(null, "seed",       true,  "Random number generator seed.");
         options.addOption(null, "session",    true,  "Use session id for all publishers.");
         options.addOption("s",  "size",       true,  "Message payload size sequence, in bytes.");
@@ -89,6 +120,107 @@ public class PubSubOptions
     }
 
     /**
+     * This is a struct for storing multiple ports on the same channel and to provide
+     * a helper function to insert a specific port into the string for a valid aeron channel.
+     * This can handle both styles of channel strings (aeron:, and udp:).
+     */
+    private class ChannelStruct
+    {
+        /** entire string that appears before the port value */
+        String prefix;
+        /** entire string that appears after the port value */
+        String suffix;
+        int portLow;
+        int portHigh;
+
+        public ChannelStruct()
+        {
+            clear();
+        }
+
+        public void clear()
+        {
+            prefix = "";
+            suffix = "";
+            portLow = 0;
+            portHigh = 0;
+        }
+
+        /**
+         * Helper function to add a single port to a channel string.
+         * @param port
+         * @return
+         */
+        String getChannelWithPort(int port)
+        {
+            return prefix + ":" + port + suffix;
+        }
+    }
+
+    /**
+     * Internal structure to hold the default string values for each option
+     */
+    private static final class OptionValuesStruct
+    {
+        String channels;
+        String driver;
+        String input;
+        String iterations;
+        String messages;
+        String output;
+        String rate;
+        String seed;
+        String session;
+        String size;
+        String threads;
+        String verify;
+
+        OptionValuesStruct(String channels,
+                           String driver,
+                           String input,
+                           String iterations,
+                           String messages,
+                           String output,
+                           String rate,
+                           String seed,
+                           String session,
+                           String size,
+                           String threads,
+                           String verify)
+        {
+            this.channels = channels;
+            this.driver = driver;
+            this.input = input;
+            this.iterations = iterations;
+            this.messages = messages;
+            this.output = output;
+            this.rate = rate;
+            this.seed = seed;
+            this.session = session;
+            this.size = size;
+            this.threads = threads;
+            this.verify = verify;
+        }
+
+        /** copy constructor for string values */
+        OptionValuesStruct(OptionValuesStruct other)
+        {
+            this.channels = other.channels;
+            this.driver = other.driver;
+            this.input = other.input;
+            this.iterations = other.iterations;
+            this.messages = other.messages;
+            this.output = other.output;
+            this.rate = other.rate;
+            this.seed = other.seed;
+            this.session = other.session;
+            this.size = other.size;
+            this.threads = other.threads;
+            this.verify = other.verify;
+        }
+    }
+
+    /**
      * Parse command line arguments into usable objects. This must be called to set up the default values.
      * It's possible that this method will open a file for input or output so all users of this method should
      * also call #close().
@@ -98,9 +230,9 @@ public class PubSubOptions
      */
     public int parseArgs(String[] args) throws ParseException
     {
+        OptionValuesStruct defaults;
         CommandLineParser parser = new GnuParser();
         CommandLine command = parser.parse(options, args);
-
         String opt;
 
         if (command.hasOption("usage"))
@@ -114,40 +246,44 @@ public class PubSubOptions
             // Don't do anything, just signal the caller that they should call printHelp
             return 1;
         }
-        opt = command.getOptionValue("t", "1");
+
+        // TODO: add a file parser to change defaults
+        defaults = DEFAULT_VALUES;
+
+        opt = command.getOptionValue("threads", defaults.threads);
         setThreads(parseIntCheckPositive(opt));
 
-        opt = command.getOptionValue("seed", "0");
+        opt = command.getOptionValue("seed", defaults.seed);
         setRandomSeed(parseLongCheckPositive(opt));
 
-        opt = command.getOptionValue("messages", "unlimited");
+        opt = command.getOptionValue("messages", defaults.messages);
         setMessages(parseNumberOfMessages(opt));
 
-        opt = command.getOptionValue("iterations", "1");
+        opt = command.getOptionValue("iterations", defaults.iterations);
         setIterations(parseIterations(opt));
 
-        opt = command.getOptionValue("session", "default");
+        opt = command.getOptionValue("session", defaults.session);
         setSessionId(parseSessionId(opt));
 
-        opt = command.getOptionValue("driver", "external");
+        opt = command.getOptionValue("driver", defaults.driver);
         setUseEmbeddedDriver(parseDriver(opt));
 
-        opt = command.getOptionValue("input", "null");
+        opt = command.getOptionValue("input", defaults.input);
         parseInputStream(opt);
 
-        opt = command.getOptionValue("output", "null");
+        opt = command.getOptionValue("output", defaults.output);
         parseOutputStream(opt);
 
-        opt = command.getOptionValue("channels", "udp://localhost:31111#1");
+        opt = command.getOptionValue("channels", defaults.channels);
         parseChannels(opt);
 
-        opt = command.getOptionValue("rate", "max");
+        opt = command.getOptionValue("rate", defaults.rate);
         parseRates(opt);
 
-        opt = command.getOptionValue("size", "32");
+        opt = command.getOptionValue("size", defaults.size);
         parseMessageSizes(opt);
 
-        opt = command.getOptionValue("verify", "yes");
+        opt = command.getOptionValue("verify", defaults.verify);
         parseVerify(opt);
         return 0;
     }
@@ -514,37 +650,30 @@ public class PubSubOptions
      */
     private void parseChannels(String csv) throws ParseException
     {
-        String channel;
-        int portLow = 0;
-        int portHigh = 0;
+        ChannelStruct chan = new ChannelStruct();
         int streamIdLow = 1;
         int streamIdHigh = 1;
-
         String[] channelDescriptions = csv.split(",");
         for (int i = 0; i < channelDescriptions.length; i++)
         {
             // channelComponents should have 1 or 2 pieces
-            // 1 when only an address is supplied, 2 when an address and stream-id are supplied.
+            // 1 when only an address and ports are supplied, 2 when stream-ids are also supplied.
             String[] channelComponents = channelDescriptions[i].split("#");
             if (channelComponents.length > 2)
             {
                 throw new ParseException("Channel '" + channelDescriptions[i] + "' has too many '#' characters");
             }
 
-            // address has 2 parts udp://<addr>:<port(s)>
+            // get Channel structure
             String address = channelComponents[0];
-            String[] addressComponents = address.split(":");
-            if (addressComponents.length != 3)
+            if (address.startsWith("aeron:"))
             {
-                throw new ParseException("Channel address '" + address + "' has too many ':' characters.");
+                parseAeronChannelToStruct(address, chan);
             }
-            channel = addressComponents[0] + ":" + addressComponents[1];
-
-            // get the port, or port range
-            String ports = addressComponents[2];
-            int[] portsArray = findMinAndMaxPort(ports);
-            portLow = portsArray[0];
-            portHigh = portsArray[1];
+            else
+            {
+                parseRawChannelToStruct(address, chan);
+            }
 
             // get stream Ids
             if (channelComponents.length > 1)
@@ -562,15 +691,15 @@ public class PubSubOptions
             }
 
             // Sanity Check ports and streams
-            if (portLow < 0 || portLow > 65535)
+            if (chan.portLow < 0 || chan.portLow > 65535)
             {
                 throw new ParseException("Low port of '" + channelDescriptions[i] + "' is not a valid port.");
             }
-            if (portHigh < 0 || portHigh > 65535)
+            if (chan.portHigh < 0 || chan.portHigh > 65535)
             {
                 throw new ParseException("High port of '" + channelDescriptions[i] + "' is not a valid port.");
             }
-            if (portLow > portHigh)
+            if (chan.portLow > chan.portHigh)
             {
                 throw new ParseException("Low port of '" + channelDescriptions[i] + "' is greater than high port.");
             }
@@ -580,8 +709,108 @@ public class PubSubOptions
             }
 
             // OK, now create the channels.
-            addChannelRanges(channel, portLow, portHigh, streamIdLow, streamIdHigh);
+            addChannelRanges(chan, streamIdLow, streamIdHigh);
         }
+    }
+
+    /**
+     * Parse a channel that starts with "aeron:" which is a different way of defining
+     * aeron channel that allows for more verbose settings.
+     * for UDP unicast:   aeron:udp?remote=<ip>:<port(s)>|local=<interface>
+     * for UDP multicast: aeron:udp?address=<multicast_ip>:<port(s)>|group=<interface>
+     * @param chanString
+     * @param chanStruct Object is filled with values parsed from the chanString
+     */
+    private void parseAeronChannelToStruct(String chanString, ChannelStruct chanStruct) throws ParseException
+    {
+        // need to split out the values and find the ports
+        int ipv6PortIdx = chanString.indexOf("]:");
+        String ports;
+
+        if (ipv6PortIdx != -1)
+        {
+            // IPv6, ports immediately follow the "]:" sequence, and finish at the end of the
+            // string or a | character.
+            int startIdx = ipv6PortIdx + 2;
+            int endIdx = findPortsEndIdx(chanString, startIdx);
+            ports = chanString.substring(startIdx, endIdx);
+            // base is everything up to and including the ]
+            chanStruct.prefix = chanString.substring(0, ipv6PortIdx + 1);
+            // anything after the ports is the suffix
+            chanStruct.suffix = chanString.substring(endIdx, chanString.length());
+        }
+        else
+        {
+            // IPv4, The ports are located after the 2nd ":" character in the string, and finish
+            // at the end of the string or a | character.
+            String[] addressComponents = chanString.split(":");
+            if (addressComponents.length != 3)
+            {
+                throw new ParseException("Channel address '" + chanString + "' wrong number of ':' characters for IPv4.");
+            }
+            int endIdx = findPortsEndIdx(addressComponents[2], 0);
+            ports = addressComponents[2].substring(0, endIdx);
+            chanStruct.prefix = addressComponents[0] + ":" + addressComponents[1];
+            chanStruct.suffix = addressComponents[2].substring(endIdx, addressComponents[2].length());
+        }
+
+        int[] portsArray = findMinAndMaxPort(ports);
+        chanStruct.portLow = portsArray[0];
+        chanStruct.portHigh = portsArray[1];
+    }
+
+    /**
+     * Parse a raw aeron channel in the form: <media><channel>:<port(s)>
+     * @param chanString
+     * @param chanStruct This object is filled with the values parsed from chanString
+     */
+    private void parseRawChannelToStruct(String chanString, ChannelStruct chanStruct) throws ParseException
+    {
+        chanStruct.clear();
+        String ports;
+        int ipv6PortIdx = chanString.indexOf("]:");
+        if (ipv6PortIdx != -1)
+        {
+            // IPv6, ports are in the remaining characters of the string
+            ports = chanString.substring(ipv6PortIdx + 2);
+            // the base address is everything up to the closing bracket, but not the : and ports
+            chanStruct.prefix = chanString.substring(0, ipv6PortIdx + 1);
+        }
+        else
+        {
+            // IPv4
+            String[] addressComponents = chanString.split(":");
+            if (addressComponents.length != 3)
+            {
+                throw new ParseException("Channel address '" + chanString + "' wrong number of ':' characters for IPv4.");
+            }
+            ports = addressComponents[2];
+            chanStruct.prefix = addressComponents[0] + ":" + addressComponents[1];
+        }
+        // get the port, or port range
+        int[] portsArray = findMinAndMaxPort(ports);
+        chanStruct.portLow = portsArray[0];
+        chanStruct.portHigh = portsArray[1];
+    }
+
+    /**
+     * Walk the string to find the end of the ports, which can be a number or range.
+     * Ports will end at the end of the string, or at a # or | character.
+     * @param input
+     * @param startIdx
+     * @return The index of the first character not part of the ports string.
+     */
+    private int findPortsEndIdx(String input, int startIdx)
+    {
+        int endIdx;
+        for (endIdx = startIdx; endIdx < input.length(); endIdx++)
+        {
+            if (input.charAt(endIdx) == '|')
+            {
+                break;
+            }
+        }
+        return endIdx;
     }
 
     /**
@@ -681,26 +910,24 @@ public class PubSubOptions
 
     /**
      * Function to add ChannelDescriptor objects to the channels list.
-     * @param baseAddress Channel address without :port
-     * @param portLow
-     * @param portHigh
-     * @param streamIdLow
-     * @param streamIdHigh
+     * @param chan Channel address including port low and high
+     * @param sessionIdLow
+     * @param sessionIdHigh
      */
-    private void addChannelRanges(String baseAddress, int portLow, int portHigh, int streamIdLow, int streamIdHigh)
+    private void addChannelRanges(ChannelStruct chan, int sessionIdLow, int sessionIdHigh)
     {
-        int currentPort = portLow;
-        while (currentPort <= portHigh)
+        int currentPort = chan.portLow;
+        while (currentPort <= chan.portHigh)
         {
             ChannelDescriptor cd = new ChannelDescriptor();
-            cd.setChannel(baseAddress + ":" + currentPort);
+            cd.setChannel(chan.getChannelWithPort(currentPort));
 
-            int[] idArray = new int[streamIdHigh - streamIdLow + 1];
-            int currentStream = streamIdLow;
+            int[] idArray = new int[sessionIdHigh - sessionIdLow + 1];
+            int sessionId = sessionIdLow;
             for (int i = 0; i < idArray.length; i++)
             {
-                // set all the Ids in the array
-                idArray[i] = currentStream++;
+                // set all the session Ids in the array
+                idArray[i] = sessionId++;
             }
             cd.setStreamIdentifiers(idArray);
             channels.add(cd);
@@ -1097,7 +1324,7 @@ public class PubSubOptions
         {
             throw new ParseException("Could not parse '" + doubleStr + " as a double value.");
         }
-        if (value < 0D || value > (double)Long.MAX_VALUE)
+        if (value < 0D || value > Long.MAX_VALUE)
         {
             throw new ParseException("Double value '" + value + "' must be positive and <= long max value.");
         }
@@ -1121,7 +1348,7 @@ public class PubSubOptions
             // stay within column 93 (80 when printed). That's here ---------------------> |
             "Options Usage Guide" + NL +
             NL +
-            "-c,--channels (csv list)" + NL +
+            "-c,--channels '(csv list)'" + NL +
             "    This is a list of one or more Aeron channels. The value may represent a" + NL +
             "    single channel or contain ranges for both ports and stream IDs. Many" + NL +
             "    channels may be defined by using a comma separated list. There are 3 parts" + NL +
@@ -1129,20 +1356,30 @@ public class PubSubOptions
             "    be either a single value, or a low to high range separated by a '-'. The" + NL +
             "    port and stream ID values are combined together to create a cartesian" + NL +
             "    product of channels for the given address." + NL +
+            "    *NOTE: Enclose entire value in single quotes when on a command prompt." + NL +
             NL +
             "    Entry Input Format:" + NL +
-            "    udp://<address>:port[-portHigh][#streamId[-streamIdHigh]][,...]" + NL +
+            "    'udp://<IP>:port[-portHigh][#streamId[-streamIdHigh]][,...]'" + NL +
+            "    [OR]" + NL +
+            "    'aeron:udp?(group|remote)<IP>:port[-portHigh][|(local|address)<IP>]" + NL +
+            "        [#streamId[-streamIdHigh]][,...]'" + NL +
+            NL +
+            "    IP addresses can be v4 or v6. IPv6 addresses must be in brackets [ ]." + NL +
             NL +
             "    Examples:" + NL +
             "    udp://localhost:21000" + NL +
             "        Use one channel on port 21000 with stream ID 1" + NL +
-            "    udp://224.10.10.20:9100-9109#5" + NL +
+            "    udp://224.10.10.21:9100-9109#5" + NL +
             "        Use 10 channels on port 9100 through 9109 all with stream ID 5." + NL +
             "    udp://localhost:21000#5,udp://224.10.10.20:9100-9109#5" + NL +
             "        Comma separated list of the previous two examples, 11 total channels." + NL +
             "    udp://192.168.0.101:9100-9109#5-6" + NL +
             "        On each port between 9100 and 9109 create a channel with stream ID 5" + NL +
             "        and another with stream ID 6 for 20 total channels." + NL +
+            "    aeron:udp?group=224.10.10.21:9100|address=192.168.0.101" + NL +
+            "        Send to multicast group 224.10.10.21 port 9100 using an interface." + NL +
+            "    aeron:udp?remote=[::1]:21000|local=" + NL +
+            "        Send to localhost using IPv6 on port 21000 with stream ID 1." + NL +
             NL +
             "--driver (embedded|external)" + NL +                                       // |
             "    Controls whether the application will start an embedded Aeron messaging" + NL +

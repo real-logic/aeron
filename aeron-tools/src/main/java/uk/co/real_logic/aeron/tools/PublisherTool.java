@@ -26,6 +26,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
     private final PubSubOptions options;
     private final Thread[] pubThreads;
     private final PublisherThread[] publishers;
+    private final int numThreads;
     private boolean shuttingDown;
 
     /** Warn about options settings that might cause trouble. */
@@ -82,11 +83,17 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         }
 
         /* Create and start publishing threads. */
-        pubThreads = new Thread[options.getThreads()];
-        publishers = new PublisherThread[options.getThreads()];
-        final long messagesPerThread = options.getMessages() / options.getThreads();
-        long leftoverMessages = options.getMessages() - (messagesPerThread * options.getThreads());
-        for (int i = 0; i < options.getThreads(); i++)
+        numThreads = Math.min(options.getThreads(), options.getChannels().size());
+        if (numThreads < options.getThreads())
+        {
+            LOG.warn(options.getThreads() + " threads were requested, but only " + options.getChannels().size() +
+                    " channel(s) were specified; using " + numThreads + " thread(s) instead.");
+        }
+        pubThreads = new Thread[numThreads];
+        publishers = new PublisherThread[numThreads];
+        final long messagesPerThread = options.getMessages() / numThreads;
+        long leftoverMessages = options.getMessages() - (messagesPerThread * numThreads);
+        for (int i = 0; i < numThreads; i++)
         {
             publishers[i] = new PublisherThread(i, messagesPerThread + ((leftoverMessages-- > 0) ? 1 : 0));
             pubThreads[i] = new Thread(publishers[i]);
@@ -245,7 +252,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             RateController rc = null;
             try
             {
-                rc = new RateController(this, options.getRateIntervals());
+                rc = new RateController(this, options.getRateIntervals(), options.getIterations());
             }
             catch (Exception e)
             {
@@ -280,7 +287,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                 ChannelDescriptor channel = options.getChannels().get(i);
                 for (int j = 0; j < channel.getStreamIdentifiers().length; j++)
                 {
-                    if ((streamIdx % options.getThreads()) == this.threadId)
+                    if ((streamIdx % numThreads) == this.threadId)
                     {
                         final Publication pub = aeron.addPublication(
                                 channel.getChannel(), channel.getStreamIdentifiers()[j], options.getSessionId());

@@ -20,27 +20,32 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.tools.MessageStream;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 /**
  * Basic Aeron subscriber application which can receive fragmented messages
  */
-public class SimpleSubscriber
+public class SimpleSubscriberWithFrag
 {
+
+	private static MessageStream msgStream = new MessageStream();
     public static void main(final String[] args) throws Exception
     {
-        final int fragmentLimitCount = 10; // Number of message fragments to limit for a single 'poll' operation
+        final int fragmentCountLimit = 10; // Number of message fragments to limit for a single 'poll' operation
         String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
         final int streamId = 10; //A unique identifier for a Stream within a channel. A value of 0 is reserved
 
         System.out.println("Subscribing to " + channel + " on stream Id " + streamId);
 
         // dataHandler method is called for every new datagram received
-        final DataHandler dataHandler = printStringMessage(streamId);
+        // When a message is completely reassembled, the delegate method 'printStringMessage' is called
+        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(printStringMessage(streamId));
 
         // Variable 'running' is set to 'true'
         final AtomicBoolean running = new AtomicBoolean(true);
@@ -57,7 +62,6 @@ public class SimpleSubscriber
 
         		//Add a subscription to Aeron for a given channel and steam. Also,
         		// supply a dataHandler to be called when data arrives
-                // This works only if published data is not fragmented by Aeron
         		final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
         		{
                     // Initialize an 'Idlestrategy' class for a back off strategy
@@ -70,7 +74,7 @@ public class SimpleSubscriber
                         while (running.get())
                         {
                         	// poll returns number of fragments read
-                            final int dataRead = subscription.poll(fragmentLimitCount);
+                            final int dataRead = subscription.poll(fragmentCountLimit);
                             idleStrategy.idle(dataRead); // Idle strategy to avoid excessive spinning in case of slow publisher
                         }
                 }
@@ -96,9 +100,18 @@ public class SimpleSubscriber
             buffer.getBytes(offset, data);
 
             System.out.println(
-                String.format(
-                    "message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
-                    new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+                    String.format(
+                        "message to stream %d from session %x term id %x term offset %d (%d@%d)",
+                        streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+
+            try
+            {
+            		msgStream.putNext(buffer, offset, length);
+            }
+            catch (final Exception e)
+            {
+            	e.printStackTrace();
+            }
 
         };
     }

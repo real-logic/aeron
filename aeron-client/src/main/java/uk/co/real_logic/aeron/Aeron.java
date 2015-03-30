@@ -73,8 +73,7 @@ public final class Aeron implements AutoCloseable
     Aeron(final Context ctx)
     {
         ctx.conclude();
-
-        final TimerWheel wheel = new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
+        this.ctx = ctx;
 
         conductor = new ClientConductor(
             ctx.toClientBuffer,
@@ -82,15 +81,13 @@ public final class Aeron implements AutoCloseable
             ctx.countersBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
             new Signal(),
-            wheel,
+            new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL),
             ctx.errorHandler,
             ctx.newConnectionHandler,
             ctx.inactiveConnectionHandler,
             ctx.mediaDriverTimeout());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
-
-        this.ctx = ctx;
     }
 
     /**
@@ -178,14 +175,6 @@ public final class Aeron implements AutoCloseable
         return conductor.addSubscription(channel, streamId, handler);
     }
 
-    /**
-     * Used for testing.
-     */
-    ClientConductor conductor()
-    {
-        return conductor;
-    }
-
     private Aeron start()
     {
         final Thread thread = new Thread(conductorRunner);
@@ -242,8 +231,7 @@ public final class Aeron implements AutoCloseable
 
                     if (CncFileDescriptor.CNC_VERSION != cncVersion)
                     {
-                        throw new IllegalStateException(
-                            String.format("aeron cnc file version not understood: version=" + cncVersion));
+                        throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
                     }
                 }
 

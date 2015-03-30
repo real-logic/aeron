@@ -96,15 +96,19 @@ Full clean and build of all modules
 Running Samples
 ---------------
 
-Start up a media driver
+Start up a media driver which will create the data and conductor directories. On Linux, this will probably be at `/tmp/aeron`.
 
     $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.driver.MediaDriver
 
-You can run the `BasicSubscriber` from a command line
+Alternatively, specify the data and conductor directories. The following example uses the shared memory 'directory' on Linux, but you could just as easily point to the regular filesystem.
+
+    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir.conductor=/dev/shm/aeron/conductor -Daeron.dir.data=/dev/shm/aeron/data uk.co.real_logic.aeron.driver.MediaDriver
+
+You can run the `BasicSubscriber` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 
     $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.samples.BasicSubscriber
     
-You can run the `BasicPublisher` from a command line
+You can run the `BasicPublisher` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 
     $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.samples.BasicPublisher
 
@@ -120,3 +124,26 @@ The Media Driver is packaged by the default build into an application that can b
 
     aeron-driver/build/distributions/aeron-driver-${VERSION}.zip
 
+
+Troubleshooting
+---------------
+
+1. On linux, the subscriber sample throws an exception `java.lang.InternalError(a fault occurred in a recent unsafe memory access operation in compiled Java code)`
+
+  This is actually an out of disk space issue.
+  
+  To alleviate, check to make sure you have enough disk space.
+
+  In the samples, on Linux, this will probably be either at `/dev/shm` or `/tmp/aeron` (depending on your settings).
+
+  See this [thread](https://issues.apache.org/jira/browse/CASSANDRA-5737?focusedCommentId=14251018&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-14251018) for a similar problem.
+  
+  Note: if you are trying to run this inside a Linux Docker, be aware that, by default, [Docker only allocates 64 MB](https://github.com/docker/docker/issues/2606) to the [shared memory](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&ved=0CB8QFjAA&url=http%3A%2F%2Fwww.cyberciti.biz%2Ftips%2Fwhat-is-devshm-and-its-practical-usage.html&ei=NBEPVcfzLZLWoASv8IKYCA&usg=AFQjCNHwBF2R9m4v_Z9pyNlunei2gH-ssA&sig2=VzzxpzRAGoHRjpH_MhRL8w&bvm=bv.88528373,d.cGU) space at `/dev/shm`. However, the samples will quickly outgrow this.
+  
+  You can work around this issue by running your Docker container in `privileged` mode and running this command:
+  
+  `mount -t tmpfs -o remount,rw,nosuid,nodev,noexec,relatime,size=1024M tmpfs /dev/shm`
+
+  This will increase the size of `/dev/shm` to 1 GB. Hopefully you have enough memory :)
+
+  

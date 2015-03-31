@@ -35,8 +35,6 @@ public class AeronStat
 {
     public static void main(final String[] args) throws Exception
     {
-        SamplesUtil.useSharedMemoryOnLinux();
-
         final File cncFile = CommonContext.newDefaultCncFile();
 
         System.out.println("Command `n Control file " + cncFile);

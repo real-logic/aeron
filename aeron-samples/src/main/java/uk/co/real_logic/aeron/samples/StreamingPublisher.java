@@ -61,8 +61,6 @@ public class StreamingPublisher
             throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", SIZE_OF_LONG));
         }
 
-        SamplesUtil.useSharedMemoryOnLinux();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         final Aeron.Context context = new Aeron.Context();

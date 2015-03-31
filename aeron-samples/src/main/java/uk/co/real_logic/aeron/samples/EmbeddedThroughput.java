@@ -44,8 +44,6 @@ public class EmbeddedThroughput
 
     public static void main(final String[] args) throws Exception
     {
-        SamplesUtil.useSharedMemoryOnLinux();
-
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(3);

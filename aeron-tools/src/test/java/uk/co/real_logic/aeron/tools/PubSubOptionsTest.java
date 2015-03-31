@@ -3,6 +3,11 @@ package uk.co.real_logic.aeron.tools;
 import org.apache.commons.cli.ParseException;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+
+import java.io.BufferedReader;
+import java.io.StringReader;
 
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -12,6 +17,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
 
 /**
  * Created by bhorst on 3/3/15.
@@ -19,9 +25,11 @@ import static org.junit.Assert.assertThat;
 public class PubSubOptionsTest
 {
     PubSubOptions opts;
+
     @Before
     public void setUp()
     {
+        MockitoAnnotations.initMocks(this);
         opts = new PubSubOptions();
     }
 
@@ -656,5 +664,90 @@ public class PubSubOptionsTest
     {
         String[] args = { "--verify", "schmerify" };
         opts.parseArgs(args);
+    }
+
+    @Test
+    public void defaultsFile() throws Exception
+    {
+        // Use a mockito spy to return our own BufferedReader from the helper function
+        PubSubOptions spyOpts = Mockito.spy(opts);
+        String text = "-c udp://192.168.0.100:3000#5";
+        StringReader reader = new StringReader(text);
+        BufferedReader br = new BufferedReader(reader);
+
+        // Make the function return the buffered reader we just created.
+        doReturn(br).when(spyOpts).makeBufferedFileReader("filename");
+        String[] args = { "--defaults", "filename" };
+        spyOpts.parseArgs(args);
+
+        // Channel should be what was in the file
+        assertThat(spyOpts.getChannels().size(), is(1));
+        ChannelDescriptor cd = spyOpts.getChannels().get(0);
+
+        assertThat(cd.getChannel(), is("udp://192.168.0.100:3000"));
+        assertThat(cd.getStreamIdentifiers().length, is(1));
+        assertThat(cd.getStreamIdentifiers()[0], is(5));
+    }
+
+    @Test
+    public void defaultsFileMultipleLines() throws Exception
+    {
+        // see defaultsFile() test for comments about what's going on here.
+        PubSubOptions spyOpts = Mockito.spy(opts);
+        String nl = System.lineSeparator();
+        String text = "# This is a comment line and will be ignored." + nl +
+                "   " + nl +              // line with spaces is ignored
+                "-s 100 -r 100mps" + nl + // multiple options on one line works
+                "       -t 3     " + nl + // leading and trailing whitespace ignored
+                "--verify      no" + nl + // number of spaces between entries doesn't matter
+                "-o stdout" + nl +      // a newline will separate options
+                nl; // empty line ignored
+        StringReader reader = new StringReader(text);
+        BufferedReader br = new BufferedReader(reader);
+        doReturn(br).when(spyOpts).makeBufferedFileReader("textfile");
+
+        String[] args = { "--defaults", "textfile" };
+        spyOpts.parseArgs(args);
+
+        // check size
+        assertThat("FAIL: Minimum size of messages incorrect.",
+                spyOpts.getMessageSizePattern().getMinimum(), is(100));
+
+        // check rate
+        assertThat(spyOpts.getRateIntervals().size(), is(1));
+        assertThat(spyOpts.getRateIntervals().get(0), instanceOf(SecondsAtMessagesPerSecondInterval.class));
+        SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval)spyOpts.getRateIntervals().get(0);
+        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        assertThat(sub.messagesPerSecond(), is(100D));
+
+        // check threads
+        assertThat(spyOpts.getThreads(), is(3));
+
+        // check verify
+        assertThat(spyOpts.getVerify(), is(false));
+
+        // check output
+        assertThat(spyOpts.getOutput(), equalTo(System.out));
+    }
+
+    @Test
+    public void defaultsOverriddenByCmdline() throws Exception
+    {
+        // the --defaults become the new default values which can be overridden as normal
+        // by anything else on the command line regardless of order
+        PubSubOptions spyOpts = Mockito.spy(opts);
+        String text = "--verify no --threads 2 --output stdout";
+        BufferedReader br = new BufferedReader(new StringReader(text));
+        doReturn(br).when(spyOpts).makeBufferedFileReader("filename");
+
+        String[] args = { "--output", "stderr", "--defaults", "filename", "--verify", "yes" };
+        spyOpts.parseArgs(args);
+
+        assertThat("FAIL: Should be overridden by args",
+                spyOpts.getVerify(), is(true));
+        assertThat("FAIL: Should be picked up from the defaults file",
+                spyOpts.getThreads(), is(2));
+        assertThat("FAIL: Should be overridden by args",
+                spyOpts.getOutput(), equalTo(System.err));
     }
 }

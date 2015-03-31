@@ -31,7 +31,7 @@ public class RandomInputStreamTest
     {
         byte[] array = new byte[1];
         int read = stream.read(array);
-        assertThat(read, is(1));
+        assertThat(read, both(greaterThanOrEqualTo(0)).and(lessThanOrEqualTo(1)));
     }
 
     @Test

@@ -1,11 +1,6 @@
 package uk.co.real_logic.aeron.tools;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -88,6 +83,7 @@ public class PubSubOptions
     {
         options = new Options();
         options.addOption("c",  "channels",   true,  "Create the given Aeron channels.");
+        options.addOption(null, "defaults",   true,  "File overriding default values for the command line options.");
         options.addOption(null, "driver",     true,  "Use 'external' or 'embedded' Aeron driver.");
         options.addOption("h",  "help",       false, "Display simple usage message.");
         options.addOption("i",  "input",      true,  "Publisher will send 'random', 'stdin', or a file as data.");
@@ -162,18 +158,18 @@ public class PubSubOptions
      */
     private static final class OptionValuesStruct
     {
-        String channels;
-        String driver;
-        String input;
-        String iterations;
-        String messages;
-        String output;
-        String rate;
-        String seed;
-        String session;
-        String size;
-        String threads;
-        String verify;
+        final String channels;
+        final String driver;
+        final String input;
+        final String iterations;
+        final String messages;
+        final String output;
+        final String rate;
+        final String seed;
+        final String session;
+        final String size;
+        final String threads;
+        final String verify;
 
         OptionValuesStruct(String channels,
                            String driver,
@@ -218,6 +214,26 @@ public class PubSubOptions
             this.threads = other.threads;
             this.verify = other.verify;
         }
+
+        /**
+         * Copy constructor using a parsed command line and a default value if one
+         * was not specified.
+         * */
+        OptionValuesStruct(CommandLine cmd, OptionValuesStruct other)
+        {
+            this.channels = cmd.getOptionValue("channels", other.channels);
+            this.driver = cmd.getOptionValue("driver", other.driver);
+            this.input = cmd.getOptionValue("input", other.input);
+            this.iterations = cmd.getOptionValue("iterations", other.iterations);
+            this.messages = cmd.getOptionValue("messages", other.messages);
+            this.output = cmd.getOptionValue("output", other.output);
+            this.rate = cmd.getOptionValue("rate", other.rate);
+            this.seed = cmd.getOptionValue("seed", other.seed);
+            this.session = cmd.getOptionValue("session", other.session);
+            this.size = cmd.getOptionValue("size", other.size);
+            this.threads = cmd.getOptionValue("threads", other.threads);
+            this.verify = cmd.getOptionValue("verify", other.verify);
+        }
     }
 
     /**
@@ -247,8 +263,12 @@ public class PubSubOptions
             return 1;
         }
 
-        // TODO: add a file parser to change defaults
         defaults = DEFAULT_VALUES;
+        if (command.hasOption("defaults"))
+        {
+            // Load the defaults before parsing any of the values.
+            defaults = getDefaultsFromOptionsFile(command.getOptionValue("defaults"));
+        }
 
         opt = command.getOptionValue("threads", defaults.threads);
         setThreads(parseIntCheckPositive(opt));
@@ -1233,6 +1253,64 @@ public class PubSubOptions
             outputNeedsClose = true;
         }
     }
+
+    /**
+     *
+     * @param filename
+     * @return
+     * @throws ParseException
+     */
+    private PubSubOptions.OptionValuesStruct getDefaultsFromOptionsFile(String filename) throws ParseException
+    {
+        BufferedReader br;
+        ArrayList<String> args = new ArrayList<String>();
+        try
+        {
+            br = makeBufferedFileReader(filename);
+        }
+        catch (FileNotFoundException ex)
+        {
+            throw new ParseException("Option defaults file '" + filename + "' not found.");
+        }
+
+        String line;
+        try
+        {
+            // build up the args list and we will use it to create a new CommandLine
+            // object to parse the values for our options.
+            int lineCount = 0;
+            while ((line = br.readLine()) != null)
+            {
+                lineCount++;
+                line = line.trim();
+                // # is a commented line, and line length 0 is empty
+                if (line.length() > 0 && !line.startsWith("#"))
+                {
+                    // Split values by any number of consecutive whitespaces.
+                    String[] arguments = line.split("\\s+");
+                    for (String arg : arguments)
+                    {
+                        args.add(arg);
+                    }
+                }
+            }
+            br.close();
+        }
+        catch(IOException ex)
+        {
+            throw new ParseException(ex.getMessage());
+        }
+
+        CommandLineParser parser = new GnuParser();
+        CommandLine command = parser.parse(options, args.toArray(new String[args.size()]));
+        return new OptionValuesStruct(command, DEFAULT_VALUES);
+    }
+
+    BufferedReader makeBufferedFileReader(String filename) throws FileNotFoundException
+    {
+        return new BufferedReader(new FileReader(filename));
+    }
+
     /**
      * Parses a bit rate multiplier based on a string that may contain Gbps, Mbps, Kbps, bps
      * @param s
@@ -1362,7 +1440,8 @@ public class PubSubOptions
             "    'udp://<IP>:port[-portHigh][#streamId[-streamIdHigh]][,...]'" + NL +
             "    [OR]" + NL +
             "    'aeron:udp?(group|remote)<IP>:port[-portHigh][|(local|address)<IP>]" + NL +
-            "        [#streamId[-streamIdHigh]][,...]'" + NL +
+            "            [#streamId[-streamIdHigh]][,...]'" + NL +
+            "        For multicast use group and address, for unicast use local and remote." + NL +
             NL +
             "    IP addresses can be v4 or v6. IPv6 addresses must be in brackets [ ]." + NL +
             NL +
@@ -1378,8 +1457,16 @@ public class PubSubOptions
             "        and another with stream ID 6 for 20 total channels." + NL +
             "    aeron:udp?group=224.10.10.21:9100|address=192.168.0.101" + NL +
             "        Send to multicast group 224.10.10.21 port 9100 using an interface." + NL +
-            "    aeron:udp?remote=[::1]:21000|local=" + NL +
-            "        Send to localhost using IPv6 on port 21000 with stream ID 1." + NL +
+            "    aeron:udp?remote=192.168.0.100:21000|local=192.168.0.121" + NL +
+            "        Send unicast to 192.168.0.100 on port 21000 with stream ID 1." + NL +
+            NL +
+            "--defaults (filename)" + NL +                                              // |
+            "    This allows a file to change the default option values for the program." + NL +
+            "    The file is loaded before applying any other command line parameters, so" + NL +
+            "    any duplicate options on the command line will override the value in the" + NL +
+            "    options file. The syntax for the file is the same as the command line," + NL +
+            "    with the exceptions that a '#' used to start a line is considered a" + NL +
+            "    comment, and a new line can be used in place of a space." + NL +
             NL +
             "--driver (embedded|external)" + NL +                                       // |
             "    Controls whether the application will start an embedded Aeron messaging" + NL +

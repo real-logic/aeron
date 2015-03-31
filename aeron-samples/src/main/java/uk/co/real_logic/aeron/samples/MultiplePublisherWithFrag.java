@@ -56,15 +56,16 @@ public class MultiplePublisherWithFrag
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
-            // Allocate 2 different session buffer
+            // Allocate 2 different session buffer for two streams
             MessageStream msgStream = new MessageStream(8192);
             MessageStream msgStream2 = new MessageStream(8192);
+
+            int len = msgStream.getNext(BUFFER); // BUFFER contains stream data for first stream
+            int len2 = msgStream2.getNext(BUFFER_2); // BUFFER2 contains stream data for the second stream
+
             // Try to send 5000 messages from each publishers
-            int len = msgStream.getNext(BUFFER);
-            int len2 = msgStream2.getNext(BUFFER_2);
             for (int i = 0; i < 5000; i++)
             {
-
                 boolean offerStatus = false;
                 while (!offerStatus)
                 {
@@ -73,11 +74,13 @@ public class MultiplePublisherWithFrag
 
                     if (!result)
                     {
+                        // Failed to send data, must be retried
                         System.out.println(" ah? from first publisher with stream ID " + STREAM_ID + "!!");
                         offerStatus = false;
                     }
                     else
                     {
+                        // Successfully send the data, get the next buffer in the stream
                         len = msgStream.getNext(BUFFER);
                         offerStatus = true;
                         System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + "!!");
@@ -88,12 +91,14 @@ public class MultiplePublisherWithFrag
 
                     if (!result2)
                     {
+                        // Failed to send data, must be retried
                         System.out.println(" ah? from second publisher with stream ID " +
                                 STREAM_ID_2 + " and data length " + len2 +  "!!");
                         offerStatus = false;
                     }
                     else
                     {
+                        // Successfully send the data, get the next buffer in the stream
                         len2 = msgStream2.getNext(BUFFER_2);
                         offerStatus = true;
                         System.out.println(" yay for stream " + STREAM_ID + " and data length " + len + STREAM_ID_2 + " !! ");
@@ -105,6 +110,7 @@ public class MultiplePublisherWithFrag
 
             if (0 < LINGER_TIMEOUT_MS)
             {
+                // Linger for sometime so that all the data is drained out before close
                 System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }

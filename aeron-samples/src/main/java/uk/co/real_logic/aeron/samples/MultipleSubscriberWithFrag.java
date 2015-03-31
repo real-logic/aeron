@@ -24,9 +24,7 @@ import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.tools.MessageStream;
-import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
@@ -34,25 +32,27 @@ import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 /**
  * Multiple subscriber application which can receive fragmented messages
+ * Create 2 subscribers on a given CHANNEL which can receive two independent stream of messages
  */
 public class MultipleSubscriberWithFrag
 {
+    // A unique stream id within a given channel for subscriber one
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+    // A unique stream id within a given channel for subscriber two
     private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
+    // Channel ID for the application
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
+
+    // Maximum Number of fragments to be read in a single poll operations
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
-    private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+
+    //Create two message streams for two different subscribers
     private static MessageStream msgStream = new MessageStream();
     private static MessageStream msgStream2 = new MessageStream();
 
     public static void main(final String[] args) throws Exception
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID + " and stream Id " + STREAM_ID_2);
-
-        // Create shared memory segments
-        SamplesUtil.useSharedMemoryOnLinux();
-
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         // Create a context for a client and specify callback methods when
         // a new connection starts (eventNewConnection)
@@ -80,7 +80,7 @@ public class MultipleSubscriberWithFrag
                 final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler);
                 final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
                 {
-
+            // Initialize a backoff strategy to avoid excessive spinning
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                     100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
@@ -90,10 +90,10 @@ public class MultipleSubscriberWithFrag
                     while (running.get())
                     {
                         final int fragmentsRead = subscription.poll(FRAGMENT_COUNT_LIMIT);
-                        idleStrategy.idle(fragmentsRead);
+                        idleStrategy.idle(fragmentsRead); // Call a backoff strategy
 
                         final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
-                        idleStrategy.idle(fragmentsRead2);
+                        idleStrategy.idle(fragmentsRead2); // Call a backoff strategy
                     }
                 }
                 catch (final Exception ex)
@@ -102,8 +102,6 @@ public class MultipleSubscriberWithFrag
                 }
             System.out.println("Shutting down...");
         }
-
-        CloseHelper.quietClose(driver);
     }
     /**
      * Print the information for a new connection to stdout.
@@ -152,7 +150,7 @@ public class MultipleSubscriberWithFrag
     }
 
     /**
-     * Return a reusable, parameterized {@link DataHandler} that prints to stdout
+     * Return a reusable, parameterized {@link DataHandler} that prints to stdout for the first stream(STREAM)
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
@@ -189,7 +187,7 @@ public class MultipleSubscriberWithFrag
 
 
 /**
- * Return a reusable, parameterized {@link DataHandler} that prints to stdout
+ * Return a reusable, parameterized {@link DataHandler} that prints to stdout for the second stream (STREAM + 1)
  *
  * @param streamId to show when printing
  * @return subscription data handler function that prints the message contents

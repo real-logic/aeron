@@ -68,8 +68,7 @@ public class SubscriptionTest
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
             readers[i] = mock(LogReader.class);
-            when(readers[i].isComplete()).thenReturn(false);
-            when(readers[i].read(any(), anyInt())).thenReturn(0);
+            when(readers[i].read(anyInt(), any(), anyInt())).thenReturn(0);
             when(readers[i].termBuffer()).thenReturn(termBuffer);
         }
 
@@ -95,10 +94,10 @@ public class SubscriptionTest
     {
         onTermBuffersMapped(SESSION_ID_1);
 
-        when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
+        when(readers[ACTIVE_INDEX].read(anyInt(), any(), anyInt())).then(
             (invocation) ->
             {
-                final DataHandler handler = (DataHandler)invocation.getArguments()[0];
+                final DataHandler handler = (DataHandler)invocation.getArguments()[1];
                 handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
@@ -118,10 +117,10 @@ public class SubscriptionTest
         onTermBuffersMapped(SESSION_ID_1);
         onTermBuffersMapped(SESSION_ID_2);
 
-        when(readers[ACTIVE_INDEX].read(any(), anyInt())).then(
+        when(readers[ACTIVE_INDEX].read(anyInt(), any(), anyInt())).then(
             (invocation) ->
             {
-                final DataHandler handler = (DataHandler)invocation.getArguments()[0];
+                final DataHandler handler = (DataHandler)invocation.getArguments()[1];
                 handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
@@ -132,7 +131,6 @@ public class SubscriptionTest
 
     private void onTermBuffersMapped(final int sessionId1)
     {
-        subscription.onConnectionReady(
-            sessionId1, TERM_ID_1, 0, CONNECTION_CORRELATION_ID, readers, reporter, logBuffers);
+        subscription.onConnectionReady(sessionId1, TERM_ID_1, 0, CONNECTION_CORRELATION_ID, readers, reporter, logBuffers);
     }
 }

@@ -22,16 +22,16 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 
 /**
  * A log buffer reader.
- *
+ * <p>
  * <b>Note:</b> Reading from the log is thread safe, but each thread needs its own instance of this class.
  */
 public class LogReader extends LogBufferPartition
 {
-    private final Header header;
     private int offset = 0;
+    private final Header header;
 
     /**
-     * Construct a reader for a log and associated state buffer.
+     * Construct a reader for a log and associated meta data buffer.
      *
      * @param termBuffer     containing the data frames.
      * @param metaDataBuffer containing the state data for the log.
@@ -53,73 +53,42 @@ public class LogReader extends LogBufferPartition
     }
 
     /**
-     * Move the read offset to the specified offset.
-     *
-     * @param offset the location to move the read offset to.
-     */
-    public void seek(final int offset)
-    {
-        final int capacity = termBuffer().capacity();
-        if (offset < 0 || offset > capacity)
-        {
-            throw new IndexOutOfBoundsException(String.format("Invalid offset %d: range is 0 - %d", offset, capacity));
-        }
-
-        checkOffsetAlignment(offset);
-
-        this.offset = offset;
-    }
-
-    /**
      * Reads data from the log buffer.
      *
+     * @param termOffset       offset within the buffer that the read should begin.
      * @param handler          the handler for data that has been read
      * @param framesCountLimit limit the number of frames read.
      * @return the number of frames read
      */
-    public int read(final DataHandler handler, final int framesCountLimit)
+    public int read(int termOffset, final DataHandler handler, final int framesCountLimit)
     {
         int framesCounter = 0;
-        int offset = this.offset;
         final Header header = this.header;
         final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = termBuffer.capacity();
+        offset = termOffset;
 
-        while (offset < capacity && framesCounter < framesCountLimit)
+        while (framesCounter < framesCountLimit && termOffset < capacity)
         {
-            final int frameLength = frameLengthVolatile(termBuffer, offset);
+            final int frameLength = frameLengthVolatile(termBuffer, termOffset);
             if (0 == frameLength)
             {
                 break;
             }
 
-            try
-            {
-                if (!isPaddingFrame(termBuffer, offset))
-                {
-                    header.offset(offset);
-                    handler.onData(termBuffer, offset + Header.LENGTH, frameLength - Header.LENGTH, header);
+            final int currentTermOffset = termOffset;
+            termOffset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
+            offset = termOffset;
 
-                    ++framesCounter;
-                }
-            }
-            finally
+            if (!isPaddingFrame(termBuffer, currentTermOffset))
             {
-                offset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
-                this.offset = offset;
+                header.offset(currentTermOffset);
+                handler.onData(termBuffer, currentTermOffset + Header.LENGTH, frameLength - Header.LENGTH, header);
+
+                ++framesCounter;
             }
         }
 
         return framesCounter;
-    }
-
-    /**
-     * Has the buffer been read right to the end?
-     *
-     * @return true if the whole buffer has been read otherwise false if read offset has not yet reached capacity.
-     */
-    public boolean isComplete()
-    {
-        return offset >= termBuffer().capacity();
     }
 }

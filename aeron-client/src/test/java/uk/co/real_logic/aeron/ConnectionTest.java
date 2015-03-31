@@ -52,14 +52,12 @@ public class ConnectionTest
         }
     }
 
-    private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
-    private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final long CORRELATION_ID = 0xC044E1AL;
     private static final int SESSION_ID = 0x5E55101D;
     private static final int STREAM_ID = 0xC400E;
     private static final int INITIAL_TERM_ID = 0xEE81D;
-    private static final long ZERO_INITIAL_POSITION =
-        computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+    private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
+    private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -69,8 +67,6 @@ public class ConnectionTest
 
     private LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
     private LogReader[] readers = new LogReader[PARTITION_COUNT];
-    private Connection connection;
-    private int activeIndex;
 
     @Before
     public void setUp()
@@ -84,16 +80,16 @@ public class ConnectionTest
             readers[i] = new LogReader(logBuffer, metaDataBuffer);
         }
 
-        activeIndex = LogBufferDescriptor.indexByTerm(INITIAL_TERM_ID, INITIAL_TERM_ID);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
     @Test
     public void shouldReportCorrectPositionOnReception()
     {
-        connection = createConnection(ZERO_INITIAL_POSITION);
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final Connection connection = createConnection(initialPosition);
 
-        insertDataFrame(offsetOfFrame(0));
+        insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(0));
 
         final int messages = connection.poll(Integer.MAX_VALUE);
         assertThat(messages, is(1));
@@ -105,8 +101,8 @@ public class ConnectionTest
             any(Header.class));
 
         final InOrder inOrder = Mockito.inOrder(positionReporter);
-        inOrder.verify(positionReporter).position(ZERO_INITIAL_POSITION);
-        inOrder.verify(positionReporter).position(ZERO_INITIAL_POSITION + ALIGNED_FRAME_LENGTH);
+        inOrder.verify(positionReporter).position(initialPosition);
+        inOrder.verify(positionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -117,11 +113,9 @@ public class ConnectionTest
         final long initialPosition =
             computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        rebuilders[activeIndex].tail(initialTermOffset);
+        final Connection connection = createConnection(initialPosition);
 
-        connection = createConnection(initialPosition);
-
-        insertDataFrame(offsetOfFrame(initialMessageIndex));
+        insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(initialMessageIndex));
 
         final int messages = connection.poll(Integer.MAX_VALUE);
         assertThat(messages, is(1));
@@ -146,12 +140,9 @@ public class ConnectionTest
         final long initialPosition =
             computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        activeIndex = LogBufferDescriptor.indexByTerm(INITIAL_TERM_ID, activeTermId);
-        rebuilders[activeIndex].tail(initialTermOffset);
+        final Connection connection = createConnection(initialPosition);
 
-        connection = createConnection(initialPosition);
-
-        insertDataFrame(offsetOfFrame(initialMessageIndex));
+        insertDataFrame(activeTermId, offsetOfFrame(initialMessageIndex));
 
         final int messages = connection.poll(Integer.MAX_VALUE);
         assertThat(messages, is(1));
@@ -174,20 +165,21 @@ public class ConnectionTest
             CORRELATION_ID, mockDataHandler, positionReporter, logBuffers);
     }
 
-    private void insertDataFrame(final int offset)
+    private void insertDataFrame(final int activeTermId, final int termOffset)
     {
         dataHeader.termId(INITIAL_TERM_ID)
                   .streamId(STREAM_ID)
                   .sessionId(SESSION_ID)
-                  .termOffset(offset)
+                  .termOffset(termOffset)
                   .frameLength(DATA.length + DataHeaderFlyweight.HEADER_LENGTH)
                   .headerType(HeaderFlyweight.HDR_TYPE_DATA)
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        dataHeader.buffer().putBytes(dataHeader.dataOffset(), DATA);
+        rcvBuffer.putBytes(dataHeader.dataOffset(), DATA);
 
-        rebuilders[activeIndex].insert(offset, rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
+        final int activeIndex = indexByTerm(INITIAL_TERM_ID, activeTermId);
+        rebuilders[activeIndex].insert(termOffset, rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
     }
 
     private int offsetOfFrame(final int index)

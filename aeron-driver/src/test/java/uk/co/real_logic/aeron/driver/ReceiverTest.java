@@ -272,6 +272,7 @@ public class ReceiverTest
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[ACTIVE_INDEX].read(
+            logReaders[ACTIVE_INDEX].offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -337,6 +338,7 @@ public class ReceiverTest
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[ACTIVE_INDEX].read(
+            logReaders[ACTIVE_INDEX].offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -402,6 +404,7 @@ public class ReceiverTest
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = logReaders[ACTIVE_INDEX].read(
+            logReaders[ACTIVE_INDEX].offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -473,9 +476,8 @@ public class ReceiverTest
         verify(mockCompletedReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
         verify(mockHighestReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
 
-        logReaders[ACTIVE_INDEX].seek(initialTermOffset);
-
         messagesRead = logReaders[ACTIVE_INDEX].read(
+            initialTermOffset,
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));

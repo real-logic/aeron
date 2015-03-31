@@ -28,8 +28,7 @@ import static java.lang.System.getProperty;
  *
  * Properties
  * <ul>
- * <li><code>aeron.dir.conductor</code>: Use value as directory name for conductor buffers.</li>
- * <li><code>aeron.dir.data</code>: Use value as directory name for data buffers.</li>
+ * <li><code>aeron.dir</code>: Use value as directory name for aeron buffers and stats.</li>
  * </ul>
  */
 public class CommonContext implements AutoCloseable

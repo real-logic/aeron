@@ -35,27 +35,38 @@ public class AeronStat
 {
     public static void main(final String[] args) throws Exception
     {
+        // On Linux, set the default admin and data directories
         SamplesUtil.useSharedMemoryOnLinux();
 
+        // Get command and control file path
         final File cncFile = CommonContext.newDefaultCncFile();
 
+        //Print command and control file path
         System.out.println("Command `n Control file " + cncFile);
 
+        // Check that command and control file exists, open file, and return MappedByteBuffer for entire file
         final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
 
+        // Create a DiectBuffer for cnc's metadata
         final DirectBuffer metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
 
+        // Extract version number of cnc from from meta data
         final int cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+        // Throw an exception if CNC version number mismatch is detected between this app and memory mapped cnc file
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
             throw new IllegalStateException("CNC version not understood: version=" + cncVersion);
         }
 
+        // Create levels buffer and values buffer
         final AtomicBuffer labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
         final AtomicBuffer valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
 
+        // Create a new counter Manager over the levels and the values buffer
         final CountersManager countersManager = new CountersManager(labelsBuffer, valuesBuffer);
 
+        // Setup the SIGINT handler for graceful shutdown
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
@@ -64,7 +75,7 @@ public class AeronStat
             System.out.print("\033[H\033[2J");
             System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
             System.out.println("=========================");
-
+            // Print entire statistics every second by printing levels and values
             countersManager.forEach(
                 (id, label) ->
                 {

@@ -129,7 +129,7 @@ public class DriverConnection implements AutoCloseable
         this.initialTermId = initialTermId;
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
-        this.lastSmPosition = initialPosition;
+        this.lastSmPosition = initialPosition - (currentGain + 1);
         this.completedPosition.position(initialPosition);
         this.hwmPosition.position(initialPosition);
     }
@@ -399,8 +399,9 @@ public class DriverConnection implements AutoCloseable
             final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
             final int lastSmTermId = computeTermIdFromPosition(lastSmPosition, positionBitsToShift, initialTermId);
 
-            if (0 == lastSmTimestamp || activeTermId != lastSmTermId ||
-                (position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
+            if (activeTermId != lastSmTermId ||
+                (position - lastSmPosition) > currentGain ||
+                now > (lastSmTimestamp + statusMessageTimeout))
             {
                 sendStatusMessage(activeTermId, termOffset, position, currentWindowLength, now);
 

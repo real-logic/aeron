@@ -22,7 +22,8 @@ import uk.co.real_logic.agrona.status.PositionReporter;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
- * A Connection from a publisher to a subscriber within a given session.
+ * Represents an incoming Connection from a publisher to a {@link Subscription}. Each connection identifies source publisher
+ * by session id.
  */
 class Connection
 {

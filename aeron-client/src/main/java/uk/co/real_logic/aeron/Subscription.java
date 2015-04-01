@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.agrona.status.PositionReporter;
 
 /**
@@ -108,13 +108,13 @@ public class Subscription implements AutoCloseable
         final int initialTermId,
         final long initialPosition,
         final long correlationId,
-        final LogReader[] logReaders,
+        final TermReader[] termReaders,
         final PositionReporter positionReporter,
         final LogBuffers logBuffers)
     {
         connections.add(
             new Connection(
-                logReaders,
+                termReaders,
                 sessionId,
                 initialTermId,
                 initialPosition,

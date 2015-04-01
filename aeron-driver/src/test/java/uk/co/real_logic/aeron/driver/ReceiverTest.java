@@ -25,7 +25,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -97,7 +97,7 @@ public class ReceiverTest
     private final TimerWheel timerWheel = new TimerWheel(
         clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
-    private LogReader[] logReaders;
+    private TermReader[] termReaders;
     private DatagramChannel senderChannel;
 
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
@@ -141,10 +141,10 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        logReaders = rawLog
+        termReaders = rawLog
             .stream()
-            .map((partition) -> new LogReader(partition.termBuffer(), partition.metaDataBuffer()))
-            .toArray(LogReader[]::new);
+            .map((partition) -> new TermReader(partition.termBuffer()))
+            .toArray(TermReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI), driverConductorProxy, mockLogger, mockSystemCounters, (address, length) -> false);
@@ -271,8 +271,8 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = logReaders[ACTIVE_INDEX].read(
-            logReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReaders[ACTIVE_INDEX].read(
+            termReaders[ACTIVE_INDEX].offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -337,8 +337,8 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = logReaders[ACTIVE_INDEX].read(
-            logReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReaders[ACTIVE_INDEX].read(
+            termReaders[ACTIVE_INDEX].offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -403,8 +403,8 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = logReaders[ACTIVE_INDEX].read(
-            logReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReaders[ACTIVE_INDEX].read(
+            termReaders[ACTIVE_INDEX].offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -476,7 +476,7 @@ public class ReceiverTest
         verify(mockCompletedReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
         verify(mockHighestReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
 
-        messagesRead = logReaders[ACTIVE_INDEX].read(
+        messagesRead = termReaders[ACTIVE_INDEX].read(
             initialTermOffset,
             (buffer, offset, length, header) ->
             {

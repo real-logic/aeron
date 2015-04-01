@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.agrona.status.PositionReporter;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -27,7 +27,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 class Connection
 {
     private final LogBuffers logBuffers;
-    private final LogReader[] logReaders;
+    private final TermReader[] termReaders;
     private final DataHandler dataHandler;
     private final PositionReporter subscriberPosition;
     private final long correlationId;
@@ -37,7 +37,7 @@ class Connection
     private final int initialTermId;
 
     public Connection(
-        final LogReader[] readers,
+        final TermReader[] readers,
         final int sessionId,
         final int initialTermId,
         final long initialPosition,
@@ -46,13 +46,13 @@ class Connection
         final PositionReporter subscriberPosition,
         final LogBuffers logBuffers)
     {
-        this.logReaders = readers;
+        this.termReaders = readers;
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
-        final int capacity = logReaders[0].termBuffer().capacity();
+        final int capacity = termReaders[0].termBuffer().capacity();
         this.termLengthMask = capacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
         this.initialTermId = initialTermId;
@@ -78,10 +78,10 @@ class Connection
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final int termOffset = (int)position & termLengthMask;
 
-        final LogReader logReader = logReaders[activeIndex];
-        final int messagesRead = logReader.read(termOffset, dataHandler, fragmentCountLimit);
+        final TermReader termReader = termReaders[activeIndex];
+        final int messagesRead = termReader.read(termOffset, dataHandler, fragmentCountLimit);
 
-        final long newPosition = position + (logReader.offset() - termOffset);
+        final long newPosition = position + (termReader.offset() - termOffset);
         subscriberPosition.position(newPosition);
 
         return messagesRead;

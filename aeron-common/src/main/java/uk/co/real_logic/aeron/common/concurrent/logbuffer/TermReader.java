@@ -19,27 +19,40 @@ import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.checkTermBuffer;
 
 /**
- * A log buffer reader.
+ * A term buffer reader.
  * <p>
- * <b>Note:</b> Reading from the log is thread safe, but each thread needs its own instance of this class.
+ * <b>Note:</b> Reading from the term is thread safe, but each thread needs its own instance of this class.
  */
-public class LogReader extends LogBufferPartition
+public class TermReader
 {
-    private int offset = 0;
+    private final UnsafeBuffer termBuffer;
     private final Header header;
+    private int offset = 0;
 
     /**
      * Construct a reader for a log and associated meta data buffer.
      *
-     * @param termBuffer     containing the data frames.
-     * @param metaDataBuffer containing the state data for the log.
+     * @param termBuffer containing the data frames.
      */
-    public LogReader(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
+    public TermReader(final UnsafeBuffer termBuffer)
     {
-        super(termBuffer, metaDataBuffer);
+        checkTermBuffer(termBuffer);
+
+        this.termBuffer = termBuffer;
         header = new Header(termBuffer);
+    }
+
+    /**
+     * Get the term buffer that the reader reads.
+     *
+     * @return the term buffer that the reader reads.
+     */
+    public UnsafeBuffer termBuffer()
+    {
+        return termBuffer;
     }
 
     /**
@@ -55,6 +68,8 @@ public class LogReader extends LogBufferPartition
     /**
      * Reads data from the log buffer.
      *
+     * If a framesCountLimit of 0 or less is passed then at least one read will be attempted.
+     *
      * @param termOffset       offset within the buffer that the read should begin.
      * @param handler          the handler for data that has been read
      * @param framesCountLimit limit the number of frames read.
@@ -64,11 +79,11 @@ public class LogReader extends LogBufferPartition
     {
         int framesCounter = 0;
         final Header header = this.header;
-        final UnsafeBuffer termBuffer = termBuffer();
+        final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
         offset = termOffset;
 
-        while (framesCounter < framesCountLimit && termOffset < capacity)
+        do
         {
             final int frameLength = frameLengthVolatile(termBuffer, termOffset);
             if (0 == frameLength)
@@ -88,6 +103,7 @@ public class LogReader extends LogBufferPartition
                 ++framesCounter;
             }
         }
+        while (framesCounter < framesCountLimit && termOffset < capacity);
 
         return framesCounter;
     }

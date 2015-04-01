@@ -53,7 +53,7 @@ public class SubscriptionTest
     private final Header header = mock(Header.class);
 
     private Subscription subscription;
-    private LogReader[] readers;
+    private TermReader[] readers;
     private LogBuffers logBuffers = mock(LogBuffers.class);
     private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
@@ -64,10 +64,10 @@ public class SubscriptionTest
         when(header.sessionId()).thenReturn(SESSION_ID_1);
         when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
 
-        readers = new LogReader[PARTITION_COUNT];
+        readers = new TermReader[PARTITION_COUNT];
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            readers[i] = mock(LogReader.class);
+            readers[i] = mock(TermReader.class);
             when(readers[i].read(anyInt(), any(), anyInt())).thenReturn(0);
             when(readers[i].termBuffer()).thenReturn(termBuffer);
         }

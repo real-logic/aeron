@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -233,11 +233,11 @@ class ClientConductor implements Agent, DriverListener
 
                             final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
                             final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-                            final LogReader[] readers = new LogReader[PARTITION_COUNT];
+                            final TermReader[] readers = new TermReader[PARTITION_COUNT];
 
                             for (int p = 0; p < PARTITION_COUNT; p++)
                             {
-                                readers[p] = new LogReader(buffers[p], buffers[p + PARTITION_COUNT]);
+                                readers[p] = new TermReader(buffers[p]);
                             }
 
                             subscription.onConnectionReady(

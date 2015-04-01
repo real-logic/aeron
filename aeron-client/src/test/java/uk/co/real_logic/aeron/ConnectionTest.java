@@ -66,7 +66,7 @@ public class ConnectionTest
     private final LogBuffers logBuffers = mock(LogBuffers.class);
 
     private LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
-    private LogReader[] readers = new LogReader[PARTITION_COUNT];
+    private TermReader[] readers = new TermReader[PARTITION_COUNT];
 
     @Before
     public void setUp()
@@ -77,7 +77,7 @@ public class ConnectionTest
             final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
 
             rebuilders[i] = new LogRebuilder(logBuffer, metaDataBuffer);
-            readers[i] = new LogReader(logBuffer, metaDataBuffer);
+            readers[i] = new TermReader(logBuffer);
         }
 
         dataHeader.wrap(rcvBuffer, 0);

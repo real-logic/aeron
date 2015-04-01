@@ -71,7 +71,6 @@ public class DriverConnection implements AutoCloseable
     private long lastSmTimestamp;
 
     private volatile boolean statusMessagesEnabled = false;
-    private volatile boolean scanForGapsEnabled = true;
 
     public DriverConnection(
         final ReceiveChannelEndpoint channelEndpoint,
@@ -281,20 +280,15 @@ public class DriverConnection implements AutoCloseable
      */
     public int scanForGaps()
     {
-        if (scanForGapsEnabled)
-        {
-            final long completedPosition = this.completedPosition.position();
+        final long completedPosition = this.completedPosition.position();
 
-            return lossHandler.scan(
-                rebuilders[indexByPosition(completedPosition, positionBitsToShift)].termBuffer(),
-                completedPosition,
-                hwmPosition.position(),
-                termLengthMask,
-                positionBitsToShift,
-                initialTermId);
-        }
-
-        return 0;
+        return lossHandler.scan(
+            rebuilders[indexByPosition(completedPosition, positionBitsToShift)].termBuffer(),
+            completedPosition,
+            hwmPosition.position(),
+            termLengthMask,
+            positionBitsToShift,
+            initialTermId);
     }
 
     /**
@@ -432,14 +426,6 @@ public class DriverConnection implements AutoCloseable
     public void disableStatusMessages()
     {
         statusMessagesEnabled = false;
-    }
-
-    /**
-     * Called from the {@link Receiver} thread once removed from dispatcher to stop sending NAKs
-     */
-    public void disableScanForGaps()
-    {
-        scanForGapsEnabled = false;
     }
 
     /**

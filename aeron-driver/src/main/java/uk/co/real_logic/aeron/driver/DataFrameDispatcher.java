@@ -61,11 +61,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        for (final DriverConnection connection : connectionBySessionIdMap.values())
-        {
-            connection.disableStatusMessages();
-            connection.disableScanForGaps();
-        }
+        connectionBySessionIdMap.values().forEach(DriverConnection::disableStatusMessages);
     }
 
     public void addConnection(final DriverConnection connection)

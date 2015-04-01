@@ -72,7 +72,6 @@ public class CommonContext implements AutoCloseable
 
     public CommonContext()
     {
-
         dirName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
 
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
@@ -81,7 +80,6 @@ public class CommonContext implements AutoCloseable
     public CommonContext conclude()
     {
         cncFile = new File(adminDirName(), CncFileDescriptor.CNC_FILE);
-
         return this;
     }
 

@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
@@ -37,7 +38,7 @@ public class DriverConnection implements AutoCloseable
 {
     public enum Status
     {
-        ACTIVE, INACTIVE, LINGER
+        INIT, ACTIVE, INACTIVE, LINGER
     }
 
     private final long correlationId;
@@ -65,12 +66,11 @@ public class DriverConnection implements AutoCloseable
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
 
-    private Status status = Status.ACTIVE;
     private long timeOfLastStatusChange;
     private long lastSmPosition;
     private long lastSmTimestamp;
 
-    private volatile boolean statusMessagesEnabled = false;
+    private volatile Status status = Status.INIT;
 
     public DriverConnection(
         final ReceiveChannelEndpoint channelEndpoint,
@@ -392,7 +392,7 @@ public class DriverConnection implements AutoCloseable
     public int sendPendingStatusMessage(final long now)
     {
         int workCount = 1;
-        if (statusMessagesEnabled)
+        if (ACTIVE == status)
         {
             final long position = subscribersPosition.get();
 
@@ -409,22 +409,6 @@ public class DriverConnection implements AutoCloseable
         }
 
         return workCount;
-    }
-
-    /**
-     * Called from the {@link Receiver} thread once added to dispatcher
-     */
-    public void enableStatusMessages()
-    {
-        statusMessagesEnabled = true;
-    }
-
-    /**
-     * Called from the {@link Receiver} thread once removed from dispatcher to stop sending SMs
-     */
-    public void disableStatusMessages()
-    {
-        statusMessagesEnabled = false;
     }
 
     /**

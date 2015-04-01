@@ -395,7 +395,7 @@ public class DriverConnection implements AutoCloseable
      * @param now time in nanoseconds
      * @return number of work items processed.
      */
-    public int sendPendingStatusMessages(final long now)
+    public int sendPendingStatusMessage(final long now)
     {
         int workCount = 1;
         if (statusMessagesEnabled)

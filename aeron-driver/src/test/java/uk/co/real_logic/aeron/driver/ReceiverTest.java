@@ -208,7 +208,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        connection.sendPendingStatusMessages(1000);
+        connection.sendPendingStatusMessage(1000);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
         final InetSocketAddress rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);

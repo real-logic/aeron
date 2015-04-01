@@ -40,9 +40,6 @@ public class BasicSubscriber
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        // Create shared memory segments
-        SamplesUtil.useSharedMemoryOnLinux();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         // Create a context for client

@@ -41,8 +41,6 @@ public class BasicPublisher
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        SamplesUtil.useSharedMemoryOnLinux();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
 
         // Create an Aeron context for client connection to media driver

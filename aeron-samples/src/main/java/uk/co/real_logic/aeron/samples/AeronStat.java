@@ -35,9 +35,6 @@ public class AeronStat
 {
     public static void main(final String[] args) throws Exception
     {
-        // On Linux, set the default admin and data directories
-        SamplesUtil.useSharedMemoryOnLinux();
-
         // Get command and control file path
         final File cncFile = CommonContext.newDefaultCncFile();
 

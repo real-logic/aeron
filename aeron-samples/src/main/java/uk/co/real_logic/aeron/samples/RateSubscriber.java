@@ -46,8 +46,6 @@ public class RateSubscriber
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        SamplesUtil.useSharedMemoryOnLinux();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         // Create a context with newConnectionHandler and inactiveConnectionHandler

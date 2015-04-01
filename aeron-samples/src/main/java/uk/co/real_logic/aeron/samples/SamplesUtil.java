@@ -16,44 +16,22 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
-import static uk.co.real_logic.aeron.common.CommonContext.ADMIN_DIR_PROP_NAME;
-import static uk.co.real_logic.aeron.common.CommonContext.DATA_DIR_PROP_NAME;
 
 /**
  * Utility functions for samples
  */
 public class SamplesUtil
 {
-    /**
-     * Use shared memory on Linux to avoid contention on the page cache.
-     */
-    public static void useSharedMemoryOnLinux()
-    {
-        if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
-        {
-            if (null == System.getProperty(ADMIN_DIR_PROP_NAME))
-            {
-                System.setProperty(ADMIN_DIR_PROP_NAME, "/dev/shm/aeron/conductor");
-            }
-
-            if (null == System.getProperty(DATA_DIR_PROP_NAME))
-            {
-                System.setProperty(DATA_DIR_PROP_NAME, "/dev/shm/aeron/data");
-            }
-        }
-    }
-
     /**
      * Return a reusable, parameterised event loop that calls a default idler when no messages are received
      *
@@ -64,6 +42,7 @@ public class SamplesUtil
     public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
     {
         final IdleStrategy idleStrategy = new BackoffIdleStrategy(
+
             100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
         return subscriberLoop(limit, running, idleStrategy);

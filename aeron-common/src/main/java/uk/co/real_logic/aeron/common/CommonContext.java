@@ -28,28 +28,14 @@ import static java.lang.System.getProperty;
  *
  * Properties
  * <ul>
- * <li><code>aeron.dir.conductor</code>: Use value as directory name for conductor buffers.</li>
- * <li><code>aeron.dir.data</code>: Use value as directory name for data buffers.</li>
+ * <li><code>aeron.dir</code>: Use value as directory name for aeron buffers and stats.</li>
  * </ul>
  */
 public class CommonContext implements AutoCloseable
 {
     /** Top level Aeron directory */
     public static final String AERON_DIR_PROP_NAME = "aeron.dir";
-
-    public static final String DATA_DIR_NAME = "data";
-    public static final String CONDUCTOR_DIR_NAME = "conductor";
-    public static final String COUNTERS_DIR_NAME = "counters";
-
-    /** Directory of the data buffers */
-    public static final String DATA_DIR_PROP_NAME = "aeron.dir.data";
-    /** Default directory for data buffers */
-    public static final String DATA_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + DATA_DIR_NAME;
-
-    /** Directory of the conductor buffers */
-    public static final String ADMIN_DIR_PROP_NAME = "aeron.dir.conductor";
-    /** Default directory for conductor buffers */
-    public static final String ADMIN_DIR_PROP_DEFAULT = IoUtil.tmpDirName() + "aeron" + File.separator + CONDUCTOR_DIR_NAME;
+    public static final String AERON_DIR_PROP_DEFAULT;
 
     /** Name of the default multicast interface */
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
@@ -57,27 +43,36 @@ public class CommonContext implements AutoCloseable
     /** Attempt to delete directories on exit */
     public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
 
-    private String dataDirName;
-    private String adminDirName;
+    private static final String DATA_DIR_NAME = "data";
+    private static final String CONDUCTOR_DIR_NAME = "conductor";
+
+    private String dirName;
     private boolean dirsDeleteOnExit;
     private File cncFile;
     private UnsafeBuffer counterLabelsBuffer;
     private UnsafeBuffer countersBuffer;
 
+    static
+    {
+        String aeronDirName = IoUtil.tmpDirName() + "aeron";
+
+        // Use shared memory on Linux to avoid contention on the page cache.
+        if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
+        {
+            final File devShmDir = new File("/dev/shm");
+
+            if (devShmDir.exists())
+            {
+                aeronDirName = "/dev/shm/aeron";
+            }
+        }
+
+        AERON_DIR_PROP_DEFAULT = aeronDirName;
+    }
+
     public CommonContext()
     {
-        final String aeronDir = getProperty(AERON_DIR_PROP_NAME);
-
-        if (null == aeronDir)
-        {
-            dataDirName(getProperty(DATA_DIR_PROP_NAME, DATA_DIR_PROP_DEFAULT));
-            adminDirName(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT));
-        }
-        else
-        {
-            dataDirName(getProperty(DATA_DIR_PROP_NAME, aeronDir + File.separator + DATA_DIR_NAME));
-            adminDirName(getProperty(ADMIN_DIR_PROP_NAME, aeronDir + File.separator + CONDUCTOR_DIR_NAME));
-        }
+        dirName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
 
         dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
     }
@@ -85,24 +80,35 @@ public class CommonContext implements AutoCloseable
     public CommonContext conclude()
     {
         cncFile = new File(adminDirName(), CncFileDescriptor.CNC_FILE);
+        return this;
+    }
 
+    public String dirName()
+    {
+        return dirName;
+    }
+
+    public CommonContext dirName(final String dirName)
+    {
+        this.dirName = dirName;
         return this;
     }
 
     public String dataDirName()
     {
-        return dataDirName;
+        return dirName + File.separator + DATA_DIR_NAME;
     }
 
-    public CommonContext dataDirName(final String dataDirName)
+    public String adminDirName()
     {
-        this.dataDirName = dataDirName;
-        return this;
+        return dirName + File.separator + CONDUCTOR_DIR_NAME;
     }
 
     public static File newDefaultCncFile()
     {
-        return new File(getProperty(ADMIN_DIR_PROP_NAME, ADMIN_DIR_PROP_DEFAULT), CncFileDescriptor.CNC_FILE);
+        return new File(
+            getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT) + File.separator + CONDUCTOR_DIR_NAME,
+            CncFileDescriptor.CNC_FILE);
     }
 
     public boolean dirsDeleteOnExit()
@@ -114,17 +120,6 @@ public class CommonContext implements AutoCloseable
     {
         this.dirsDeleteOnExit = dirsDeleteOnExit;
         return this;
-    }
-
-    public CommonContext adminDirName(final String adminDirName)
-    {
-        this.adminDirName = adminDirName;
-        return this;
-    }
-
-    public String adminDirName()
-    {
-        return adminDirName;
     }
 
     public UnsafeBuffer counterLabelsBuffer()

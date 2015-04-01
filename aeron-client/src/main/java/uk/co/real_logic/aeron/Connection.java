@@ -16,30 +16,29 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogReader;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.agrona.status.PositionReporter;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
- * A Connection from a publisher to a subscriber within a given session.
+ * Represents an incoming Connection from a publisher to a {@link Subscription}. Each connection identifies source publisher
+ * by session id.
  */
 class Connection
 {
     private final LogBuffers logBuffers;
-    private final LogReader[] logReaders;
+    private final TermReader[] termReaders;
     private final DataHandler dataHandler;
     private final PositionReporter subscriberPosition;
     private final long correlationId;
     private final int sessionId;
     private final int positionBitsToShift;
+    private final int termLengthMask;
     private final int initialTermId;
 
-    private int activeIndex;
-    private int activeTermId;
-
     public Connection(
-        final LogReader[] readers,
+        final TermReader[] readers,
         final int sessionId,
         final int initialTermId,
         final long initialPosition,
@@ -48,21 +47,17 @@ class Connection
         final PositionReporter subscriberPosition,
         final LogBuffers logBuffers)
     {
-        this.logReaders = readers;
+        this.termReaders = readers;
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.dataHandler = dataHandler;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(logReaders[0].termBuffer().capacity());
+        final int capacity = termReaders[0].termBuffer().capacity();
+        this.termLengthMask = capacity - 1;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
         this.initialTermId = initialTermId;
 
-        final int currentTermId = computeTermIdFromPosition(initialPosition, positionBitsToShift, initialTermId);
-        final int initialTermOffset = computeTermOffsetFromPosition(initialPosition, positionBitsToShift);
-        this.activeTermId = currentTermId;
-        this.activeIndex = indexByTerm(initialTermId, currentTermId);
-
-        logReaders[activeIndex].seek(initialTermOffset);
         subscriberPosition.position(initialPosition);
     }
 
@@ -78,23 +73,17 @@ class Connection
 
     public int poll(final int fragmentCountLimit)
     {
-        LogReader logReader = logReaders[activeIndex];
+        final long position = subscriberPosition.position();
+        final int initialTermId = this.initialTermId;
+        final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+        final int activeIndex = indexByTerm(initialTermId, activeTermId);
+        final int termOffset = (int)position & termLengthMask;
 
-        if (logReader.isComplete())
-        {
-            final int nextIndex = nextPartitionIndex(activeIndex);
-            logReader = logReaders[nextIndex];
-            logReader.seek(0);
-            ++activeTermId;
-            activeIndex = nextIndex;
-        }
+        final TermReader termReader = termReaders[activeIndex];
+        final int messagesRead = termReader.read(termOffset, dataHandler, fragmentCountLimit);
 
-        final int messagesRead = logReader.read(dataHandler, fragmentCountLimit);
-        if (messagesRead > 0)
-        {
-            final long position = computePosition(activeTermId, logReader.offset(), positionBitsToShift, initialTermId);
-            subscriberPosition.position(position);
-        }
+        final long newPosition = position + (termReader.offset() - termOffset);
+        subscriberPosition.position(newPosition);
 
         return messagesRead;
     }

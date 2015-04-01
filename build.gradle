@@ -218,7 +218,6 @@ project(':aeron-system-tests') {
     }
 
     test {
-        systemProperties('java.net.preferIPv4Stack': true)
         systemProperties('aeron.event.log': System.properties['aeron.event.log'])
     }
 }

@@ -34,8 +34,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -118,9 +117,9 @@ public final class MediaDriver implements AutoCloseable
         switch (ctx.threadingMode)
         {
             case SHARED:
-                runners = Arrays.asList(
+                runners = Collections.singletonList(
                     new AgentRunner(ctx.sharedIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                                    new CompositeAgent(sender, new CompositeAgent(receiver, driverConductor)))
+                        new CompositeAgent(sender, new CompositeAgent(receiver, driverConductor)))
                 );
                 break;
 

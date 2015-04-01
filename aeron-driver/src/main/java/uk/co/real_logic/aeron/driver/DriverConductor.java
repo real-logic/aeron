@@ -486,7 +486,7 @@ public class DriverConductor implements Agent
                     connection.completedPosition(),
                     connection.rawLogBuffers(),
                     correlationId,
-                    Arrays.asList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
+                    Collections.singletonList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
                     sourceInfo);
             }
         }

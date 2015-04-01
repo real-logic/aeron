@@ -1,19 +1,18 @@
 package uk.co.real_logic.aeron.tools;
 
-import uk.co.real_logic.aeron.common.CncFileDescriptor;
-import uk.co.real_logic.aeron.common.CommonContext;
-
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
+import static java.nio.ByteOrder.nativeOrder;
 
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.nio.ByteOrder.nativeOrder;
+import uk.co.real_logic.aeron.common.CncFileDescriptor;
+import uk.co.real_logic.aeron.common.CommonContext;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 /**
  * Layout of the counter stats:
@@ -57,7 +56,7 @@ public class Stats
   private static final int NUM_BASE_STATS = 20;
   private static final int UNREGISTERED_LABEL_SIZE = -1;
 
-  public Stats(StatsOutput output, String adminDirName) throws Exception
+  public Stats(StatsOutput output, String dirName) throws Exception
   {
     if (output == null)
     {
@@ -68,13 +67,13 @@ public class Stats
       this.output = output;
     }
 
-    if (adminDirName == null)
+    if (dirName == null)
     {
       cncFile = CommonContext.newDefaultCncFile();
     }
     else
     {
-      context = new CommonContext().adminDirName(adminDirName).conclude();
+      context = new CommonContext().dirName(dirName).conclude();
       cncFile = context.cncFile();
     }
 

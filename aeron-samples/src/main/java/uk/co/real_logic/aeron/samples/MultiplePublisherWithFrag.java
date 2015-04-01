@@ -44,8 +44,6 @@ public class MultiplePublisherWithFrag
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        SamplesUtil.useSharedMemoryOnLinux();
-
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
         // Create a context for client connection
         final Aeron.Context ctx = new Aeron.Context();

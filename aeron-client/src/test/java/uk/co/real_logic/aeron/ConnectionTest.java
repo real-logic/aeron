@@ -161,8 +161,7 @@ public class ConnectionTest
     public Connection createConnection(final long initialPosition)
     {
         return new Connection(
-            readers, SESSION_ID, INITIAL_TERM_ID, initialPosition,
-            CORRELATION_ID, mockDataHandler, positionReporter, logBuffers);
+            readers, SESSION_ID, initialPosition, CORRELATION_ID, mockDataHandler, positionReporter, logBuffers);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

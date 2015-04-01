@@ -58,7 +58,6 @@ public class ClientConductorTest
     private static final String CHANNEL = "udp://localhost:40124";
     private static final int STREAM_ID_1 = 2;
     private static final int STREAM_ID_2 = 4;
-    private static final int TERM_ID_1 = 1;
     private static final int SEND_BUFFER_CAPACITY = 1024;
 
     private static final int BROADCAST_BUFFER_LENGTH = (16 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
@@ -308,7 +307,7 @@ public class ClientConductorTest
 
         final Subscription subscription = addSubscription();
 
-        sendConnectionReady(SESSION_ID_1, TERM_ID_1, STREAM_ID_1, CORRELATION_ID);
+        sendConnectionReady(SESSION_ID_1, STREAM_ID_1, CORRELATION_ID);
         conductor.doWork();
 
         assertFalse(subscription.hasNoConnections());
@@ -337,12 +336,11 @@ public class ClientConductorTest
         toClientTransmitter.transmit(ON_PUBLICATION_READY, atomicSendBuffer, 0, publicationReady.length());
     }
 
-    private void sendConnectionReady(final int sessionId, final int termId, final int streamId, final long correlationId)
+    private void sendConnectionReady(final int sessionId, final int streamId, final long correlationId)
     {
         connectionReady.streamId(streamId)
                        .sessionId(sessionId)
-                       .correlationId(correlationId)
-                       .termId(termId);
+                       .correlationId(correlationId);
 
         connectionReady.channel(CHANNEL);
         connectionReady.logFileName(sessionId + "-log");

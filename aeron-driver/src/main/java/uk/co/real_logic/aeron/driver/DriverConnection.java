@@ -284,10 +284,9 @@ public class DriverConnection implements AutoCloseable
         if (scanForGapsEnabled)
         {
             final long completedPosition = this.completedPosition.position();
-            final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
 
             return lossHandler.scan(
-                rebuilders[indexByTerm(initialTermId, activeTermId)].termBuffer(),
+                rebuilders[indexByPosition(completedPosition, positionBitsToShift)].termBuffer(),
                 completedPosition,
                 hwmPosition.position(),
                 termLengthMask,

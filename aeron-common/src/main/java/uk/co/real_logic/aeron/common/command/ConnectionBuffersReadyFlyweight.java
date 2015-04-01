@@ -41,8 +41,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                           Stream ID                           |
  * +---------------------------------------------------------------+
- * |                           Term ID                             |
- * +---------------------------------------------------------------+
  * |                   Position Indicators Count                   |
  * +---------------------------------------------------------------+
  * |                         Channel Length                        |
@@ -75,13 +73,11 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class ConnectionBuffersReadyFlyweight extends Flyweight
 {
-
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int SESSION_ID_OFFSET = JOINING_POSITION_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int TERM_ID_FIELD_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int POSITION_INDICATOR_COUNT_OFFSET = TERM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int POSITION_INDICATOR_COUNT_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int CHANNEL_FIELD_OFFSET = POSITION_INDICATOR_COUNT_OFFSET + SIZE_OF_INT;
 
     private static final int POSITION_INDICATOR_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
@@ -173,29 +169,6 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
     public ConnectionBuffersReadyFlyweight streamId(final int streamId)
     {
         buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * return termId field
-     *
-     * @return termId field
-     */
-    public int termId()
-    {
-        return buffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
-    }
-
-    /**
-     * set termId field
-     *
-     * @param termId field value
-     * @return flyweight
-     */
-    public ConnectionBuffersReadyFlyweight termId(final int termId)
-    {
-        buffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }

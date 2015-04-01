@@ -516,11 +516,10 @@ public class EventCodec
     private static String dissect(final ConnectionBuffersReadyFlyweight command)
     {
         return String.format(
-            "%s %x:%x:%x %x %s [%x]\n    %s",
+            "%s %x:%x %x %s [%x]\n    %s",
              command.channel(),
              command.sessionId(),
              command.streamId(),
-             command.termId(),
              command.positionIndicatorCount(),
              command.sourceInfo(),
              command.correlationId(),

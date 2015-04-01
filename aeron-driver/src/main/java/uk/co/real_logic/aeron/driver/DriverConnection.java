@@ -395,14 +395,12 @@ public class DriverConnection implements AutoCloseable
         if (statusMessagesEnabled)
         {
             final long position = subscribersPosition.get();
-            final int termOffset = (int)position & termLengthMask;
-            final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-            final int lastSmTermId = computeTermIdFromPosition(lastSmPosition, positionBitsToShift, initialTermId);
 
-            if (activeTermId != lastSmTermId ||
-                (position - lastSmPosition) > currentGain ||
-                now > (lastSmTimestamp + statusMessageTimeout))
+            if ((position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
             {
+                final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+                final int termOffset = (int)position & termLengthMask;
+
                 sendStatusMessage(activeTermId, termOffset, position, currentWindowLength, now);
 
                 // invert the work count logic. We want to appear to be less busy once we send an SM

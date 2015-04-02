@@ -32,15 +32,13 @@ class Connection
     private final DataHandler dataHandler;
     private final PositionReporter subscriberPosition;
     private final long correlationId;
-    private final int sessionId;
     private final int positionBitsToShift;
     private final int termLengthMask;
-    private final int initialTermId;
+    private final int sessionId;
 
     public Connection(
         final TermReader[] readers,
         final int sessionId,
-        final int initialTermId,
         final long initialPosition,
         final long correlationId,
         final DataHandler dataHandler,
@@ -56,7 +54,6 @@ class Connection
         final int capacity = termReaders[0].termBuffer().capacity();
         this.termLengthMask = capacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
-        this.initialTermId = initialTermId;
 
         subscriberPosition.position(initialPosition);
     }
@@ -74,9 +71,7 @@ class Connection
     public int poll(final int fragmentCountLimit)
     {
         final long position = subscriberPosition.position();
-        final int initialTermId = this.initialTermId;
-        final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
+        final int activeIndex = indexByPosition(position, positionBitsToShift);
         final int termOffset = (int)position & termLengthMask;
 
         final TermReader termReader = termReaders[activeIndex];

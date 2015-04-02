@@ -36,7 +36,6 @@ interface DriverListener
         String channel,
         int streamId,
         int sessionId,
-        int termId,
         long initialPosition,
         String logFileName,
         ConnectionBuffersReadyFlyweight message,

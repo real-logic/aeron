@@ -18,10 +18,9 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.PositionIndicator;
 
@@ -75,6 +74,7 @@ public class PublicationTest
             when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCEEDED);
             when(appenders[i].defaultHeader()).thenReturn(header);
             when(appenders[i].termBuffer()).thenReturn(termBuffer);
+            when(appenders[i].maxMessageLength()).thenReturn(FrameDescriptor.computeMaxMessageLength(TERM_MIN_LENGTH));
         }
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
@@ -89,6 +89,12 @@ public class PublicationTest
             logBuffers,
             logMetaDataBuffer,
             CORRELATION_ID);
+    }
+
+    @Test
+    public void shouldReportMaxMessageLength()
+    {
+        assertThat(publication.maxMessageLength(), is(FrameDescriptor.computeMaxMessageLength(TERM_MIN_LENGTH)));
     }
 
     @Test

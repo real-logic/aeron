@@ -20,7 +20,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
 /**
  * Rebuild a log buffer based on incoming frames that can be out-of-order.
@@ -39,16 +38,6 @@ public class LogRebuilder extends LogBufferPartition
     public LogRebuilder(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
         super(termBuffer, metaDataBuffer);
-    }
-
-    /**
-     * Set the starting tail offset.
-     *
-     * @param offset to start tail at
-     */
-    public void tail(final int offset)
-    {
-        metaDataBuffer().putIntOrdered(TERM_TAIL_COUNTER_OFFSET, offset);
     }
 
     /**

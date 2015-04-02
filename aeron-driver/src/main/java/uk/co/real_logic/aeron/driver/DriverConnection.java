@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
@@ -37,7 +38,7 @@ public class DriverConnection implements AutoCloseable
 {
     public enum Status
     {
-        ACTIVE, INACTIVE, LINGER
+        INIT, ACTIVE, INACTIVE, LINGER
     }
 
     private final long correlationId;
@@ -65,13 +66,11 @@ public class DriverConnection implements AutoCloseable
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
 
-    private Status status = Status.ACTIVE;
     private long timeOfLastStatusChange;
     private long lastSmPosition;
     private long lastSmTimestamp;
 
-    private volatile boolean statusMessagesEnabled = false;
-    private volatile boolean scanForGapsEnabled = true;
+    private volatile Status status = Status.INIT;
 
     public DriverConnection(
         final ReceiveChannelEndpoint channelEndpoint,
@@ -130,7 +129,7 @@ public class DriverConnection implements AutoCloseable
         this.initialTermId = initialTermId;
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
-        this.lastSmPosition = initialPosition;
+        this.lastSmPosition = initialPosition - (currentGain + 1);
         this.completedPosition.position(initialPosition);
         this.hwmPosition.position(initialPosition);
     }
@@ -279,23 +278,30 @@ public class DriverConnection implements AutoCloseable
      *
      * @return if work has been done or not
      */
-    public int scanForGaps()
+    public int scanForLoss()
     {
-        if (scanForGapsEnabled)
-        {
-            final long completedPosition = this.completedPosition.position();
-            final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
+        long position = Long.MAX_VALUE;
 
-            return lossHandler.scan(
-                rebuilders[indexByTerm(initialTermId, activeTermId)].termBuffer(),
-                completedPosition,
-                hwmPosition.position(),
-                termLengthMask,
-                positionBitsToShift,
-                initialTermId);
+        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            position = Math.min(position, subscriberPositions.get(i).position());
         }
 
-        return 0;
+        if (subscribersPosition.get() != position)
+        {
+            subscribersPosition.lazySet(position);
+        }
+
+        final long completedPosition = this.completedPosition.position();
+
+        return lossHandler.scan(
+            rebuilders[indexByPosition(completedPosition, positionBitsToShift)].termBuffer(),
+            completedPosition,
+            hwmPosition.position(),
+            termLengthMask,
+            positionBitsToShift,
+            initialTermId);
     }
 
     /**
@@ -396,20 +402,23 @@ public class DriverConnection implements AutoCloseable
      * @param now time in nanoseconds
      * @return number of work items processed.
      */
-    public int sendPendingStatusMessages(final long now)
+    public int sendPendingStatusMessage(final long now)
     {
         int workCount = 1;
-        if (statusMessagesEnabled)
+        if (ACTIVE == status)
         {
             final long position = subscribersPosition.get();
-            final int termOffset = (int)position & termLengthMask;
-            final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-            final int lastSmTermId = computeTermIdFromPosition(lastSmPosition, positionBitsToShift, initialTermId);
 
-            if (0 == lastSmTimestamp || activeTermId != lastSmTermId ||
-                (position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
+            if ((position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
             {
-                sendStatusMessage(activeTermId, termOffset, position, currentWindowLength, now);
+                final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
+                final int termOffset = (int)position & termLengthMask;
+
+                statusMessageSender.send(activeTermId, termOffset, currentWindowLength);
+
+                lastSmTimestamp = now;
+                lastSmPosition = position;
+                systemCounters.statusMessagesSent().orderedIncrement();
 
                 // invert the work count logic. We want to appear to be less busy once we send an SM
                 workCount = 0;
@@ -417,30 +426,6 @@ public class DriverConnection implements AutoCloseable
         }
 
         return workCount;
-    }
-
-    /**
-     * Called from the {@link Receiver} thread once added to dispatcher
-     */
-    public void enableStatusMessages()
-    {
-        statusMessagesEnabled = true;
-    }
-
-    /**
-     * Called from the {@link Receiver} thread once removed from dispatcher to stop sending SMs
-     */
-    public void disableStatusMessages()
-    {
-        statusMessagesEnabled = false;
-    }
-
-    /**
-     * Called from the {@link Receiver} thread once removed from dispatcher to stop sending NAKs
-     */
-    public void disableScanForGaps()
-    {
-        scanForGapsEnabled = false;
     }
 
     /**
@@ -485,31 +470,6 @@ public class DriverConnection implements AutoCloseable
     }
 
     /**
-     * Update the aggregate position for all subscribers as part of the conductor duty cycle.
-     *
-     * @return 1 if an update has occurred otherwise 0.
-     */
-    public int updateSubscribersPosition()
-    {
-        int workCount = 0;
-        long position = Long.MAX_VALUE;
-
-        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-        {
-            position = Math.min(position, subscriberPositions.get(i).position());
-        }
-
-        if (subscribersPosition.get() != position)
-        {
-            subscribersPosition.lazySet(position);
-            workCount = 1;
-        }
-
-        return workCount;
-    }
-
-    /**
      * The initial term id this connection started at.
      *
      * @return the initial term id this connection started at.
@@ -517,16 +477,6 @@ public class DriverConnection implements AutoCloseable
     public int initialTermId()
     {
         return initialTermId;
-    }
-
-    private void sendStatusMessage(
-        final int termId, final int termOffset, final long position, final int windowLength, final long now)
-    {
-        statusMessageSender.send(termId, termOffset, windowLength);
-
-        lastSmTimestamp = now;
-        lastSmPosition = position;
-        systemCounters.statusMessagesSent().orderedIncrement();
     }
 
     private boolean isHeartbeat(final long currentPosition, final long proposedPosition)

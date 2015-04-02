@@ -310,7 +310,6 @@ public class LossHandlerTest
         long completedPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
         long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 5);
 
-        rebuilder.tail(offsetOfMessage(2));
         insertDataFrame(offsetOfMessage(2));
         insertDataFrame(offsetOfMessage(4));
 

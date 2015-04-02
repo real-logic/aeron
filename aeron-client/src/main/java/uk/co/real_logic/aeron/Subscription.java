@@ -105,7 +105,6 @@ public class Subscription implements AutoCloseable
 
     void onConnectionReady(
         final int sessionId,
-        final int initialTermId,
         final long initialPosition,
         final long correlationId,
         final TermReader[] termReaders,
@@ -113,15 +112,7 @@ public class Subscription implements AutoCloseable
         final LogBuffers logBuffers)
     {
         connections.add(
-            new Connection(
-                termReaders,
-                sessionId,
-                initialTermId,
-                initialPosition,
-                correlationId,
-                dataHandler,
-                positionReporter,
-                logBuffers));
+            new Connection(termReaders, sessionId, initialPosition, correlationId, dataHandler, positionReporter, logBuffers));
     }
 
     boolean isConnected(final int sessionId)

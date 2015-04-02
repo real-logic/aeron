@@ -211,7 +211,6 @@ class ClientConductor implements Agent, DriverListener
         final String channel,
         final int streamId,
         final int sessionId,
-        final int initialTermId,
         final long initialPosition,
         final String logFileName,
         final ConnectionBuffersReadyFlyweight message,
@@ -241,7 +240,7 @@ class ClientConductor implements Agent, DriverListener
                             }
 
                             subscription.onConnectionReady(
-                                sessionId, initialTermId, initialPosition, correlationId, readers, positionReporter, logBuffers);
+                                sessionId, initialPosition, correlationId, readers, positionReporter, logBuffers);
 
                             if (null != newConnectionHandler)
                             {

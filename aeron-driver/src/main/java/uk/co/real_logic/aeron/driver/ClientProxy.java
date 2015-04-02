@@ -85,7 +85,6 @@ public class ClientProxy
         final String channel,
         final int streamId,
         final int sessionId,
-        final int termId,
         final long joiningPosition,
         final RawLog rawLog,
         final long correlationId,
@@ -97,10 +96,9 @@ public class ClientProxy
                        .streamId(streamId)
                        .joiningPosition(joiningPosition)
                        .correlationId(correlationId)
-                       .termId(termId);
-        connectionReady.channel(channel);
-        connectionReady.logFileName(rawLog.logFileName());
-        connectionReady.sourceInfo(sourceInfo);
+                       .channel(channel)
+                       .logFileName(rawLog.logFileName())
+                       .sourceInfo(sourceInfo);
 
         final int size = subscriberPositions.size();
         connectionReady.positionIndicatorCount(size);

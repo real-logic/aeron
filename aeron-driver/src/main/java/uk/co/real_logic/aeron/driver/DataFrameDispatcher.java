@@ -61,11 +61,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        for (final DriverConnection connection : connectionBySessionIdMap.values())
-        {
-            connection.disableStatusMessages();
-            connection.disableScanForGaps();
-        }
+        connectionBySessionIdMap.values().forEach((connection) -> connection.status(DriverConnection.Status.INACTIVE));
     }
 
     public void addConnection(final DriverConnection connection)
@@ -82,7 +78,7 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
         connectionBySessionIdMap.put(sessionId, connection);
         initialisationInProgressMap.remove(sessionId, streamId);
 
-        connection.enableStatusMessages();
+        connection.status(DriverConnection.Status.ACTIVE);
     }
 
     public void removeConnection(final DriverConnection connection)
@@ -93,7 +89,6 @@ public class DataFrameDispatcher implements DataFrameHandler, SetupFrameHandler
         final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
         if (null != connectionBySessionIdMap)
         {
-            connection.disableStatusMessages();
             connectionBySessionIdMap.remove(sessionId);
             initialisationInProgressMap.remove(sessionId, streamId);
         }

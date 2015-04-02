@@ -278,8 +278,21 @@ public class DriverConnection implements AutoCloseable
      *
      * @return if work has been done or not
      */
-    public int scanForGaps()
+    public int scanForLoss()
     {
+        long position = Long.MAX_VALUE;
+
+        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            position = Math.min(position, subscriberPositions.get(i).position());
+        }
+
+        if (subscribersPosition.get() != position)
+        {
+            subscribersPosition.lazySet(position);
+        }
+
         final long completedPosition = this.completedPosition.position();
 
         return lossHandler.scan(
@@ -454,31 +467,6 @@ public class DriverConnection implements AutoCloseable
     public long completedPosition()
     {
         return completedPosition.position();
-    }
-
-    /**
-     * Update the aggregate position for all subscribers as part of the conductor duty cycle.
-     *
-     * @return 1 if an update has occurred otherwise 0.
-     */
-    public int updateSubscribersPosition()
-    {
-        int workCount = 0;
-        long position = Long.MAX_VALUE;
-
-        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-        {
-            position = Math.min(position, subscriberPositions.get(i).position());
-        }
-
-        if (subscribersPosition.get() != position)
-        {
-            subscribersPosition.lazySet(position);
-            workCount = 1;
-        }
-
-        return workCount;
     }
 
     /**

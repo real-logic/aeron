@@ -1,0 +1,2 @@
+REVIEWBOARD_URL = 'http://phrenologist/'
+REPOSITORY = 'strangelydim/Aeron'

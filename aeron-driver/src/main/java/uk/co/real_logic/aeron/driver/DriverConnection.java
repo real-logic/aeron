@@ -401,7 +401,11 @@ public class DriverConnection implements AutoCloseable
                 final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
                 final int termOffset = (int)position & termLengthMask;
 
-                sendStatusMessage(activeTermId, termOffset, position, currentWindowLength, now);
+                statusMessageSender.send(activeTermId, termOffset, currentWindowLength);
+
+                lastSmTimestamp = now;
+                lastSmPosition = position;
+                systemCounters.statusMessagesSent().orderedIncrement();
 
                 // invert the work count logic. We want to appear to be less busy once we send an SM
                 workCount = 0;
@@ -485,16 +489,6 @@ public class DriverConnection implements AutoCloseable
     public int initialTermId()
     {
         return initialTermId;
-    }
-
-    private void sendStatusMessage(
-        final int termId, final int termOffset, final long position, final int windowLength, final long now)
-    {
-        statusMessageSender.send(termId, termOffset, windowLength);
-
-        lastSmTimestamp = now;
-        lastSmPosition = position;
-        systemCounters.statusMessagesSent().orderedIncrement();
     }
 
     private boolean isHeartbeat(final long currentPosition, final long proposedPosition)

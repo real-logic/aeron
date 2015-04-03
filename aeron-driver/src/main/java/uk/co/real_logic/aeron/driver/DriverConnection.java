@@ -274,6 +274,7 @@ public class DriverConnection implements AutoCloseable
         final long oldCompletedPosition = this.completedPosition.position();
         final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
 
+        final int positionBitsToShift = this.positionBitsToShift;
         final int activeIndex = indexByPosition(completedPosition, positionBitsToShift);
         final LogRebuilder rebuilder = rebuilders[activeIndex];
         final UnsafeBuffer termBuffer = rebuilder.termBuffer();

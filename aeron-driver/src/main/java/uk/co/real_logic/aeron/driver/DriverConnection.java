@@ -110,10 +110,7 @@ public class DriverConnection implements AutoCloseable
         this.timeOfLastStatusChange = time;
         timeOfLastFrame.lazySet(time);
 
-        termBuffers = rawLog
-            .stream()
-            .map(RawLogPartition::termBuffer)
-            .toArray(UnsafeBuffer[]::new);
+        termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
         this.statusMessageTimeout = statusMessageTimeout;

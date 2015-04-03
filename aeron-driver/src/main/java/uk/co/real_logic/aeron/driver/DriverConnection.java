@@ -311,7 +311,7 @@ public class DriverConnection implements AutoCloseable
      */
     public int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
-        int bytesCompleted = 0;
+        int bytesInserted = length;
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
@@ -320,16 +320,17 @@ public class DriverConnection implements AutoCloseable
         if (isHeartbeat(completedPosition, proposedPosition) ||
             isFlowControlUnderRun(completedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
         {
-            return bytesCompleted;
+            bytesInserted = 0;
+        }
+        else
+        {
+            final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetBeginPosition, positionBitsToShift)];
+            LogRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
+
+            hwmCandidate(proposedPosition);
         }
 
-        final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetBeginPosition, positionBitsToShift)];
-        LogRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
-
-        bytesCompleted = length;
-        hwmCandidate(proposedPosition);
-
-        return bytesCompleted;
+        return bytesInserted;
     }
 
     private void hwmCandidate(final long proposedPosition)

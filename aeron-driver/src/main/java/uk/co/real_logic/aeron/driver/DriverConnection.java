@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.agrona.status.PositionIndicator;
@@ -134,6 +133,17 @@ public class DriverConnection implements AutoCloseable
         this.hwmPosition.position(initialPosition);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+        completedPosition.close();
+        hwmPosition.close();
+        rawLog.close();
+        subscriberPositions.forEach(PositionIndicator::close);
+    }
+
     public long correlationId()
     {
         return correlationId;
@@ -242,66 +252,46 @@ public class DriverConnection implements AutoCloseable
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public void close()
-    {
-        completedPosition.close();
-        hwmPosition.close();
-        rawLog.close();
-        subscriberPositions.forEach(PositionIndicator::close);
-    }
-
-    /**
      * Called from the {@link DriverConductor}.
      *
      * @return if work has been done or not
      */
-    public int cleanLogBuffer()
+    public int trackCompletion()
     {
-        int workCount = 0;
-
-        for (final LogBufferPartition logBufferPartition : rebuilders)
-        {
-            if (logBufferPartition.status() == NEEDS_CLEANING)
-            {
-                logBufferPartition.clean();
-                workCount = 1;
-            }
-        }
-
-        return workCount;
-    }
-
-    /**
-     * Called from the {@link DriverConductor}.
-     *
-     * @return if work has been done or not
-     */
-    public int scanForLoss()
-    {
-        long position = Long.MAX_VALUE;
+        long minSubscriberPosition = Long.MAX_VALUE;
+        long maxSubscriberPosition = Long.MIN_VALUE;
 
         final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            position = Math.min(position, subscriberPositions.get(i).position());
+            final long position = subscriberPositions.get(i).position();
+            minSubscriberPosition = Math.min(minSubscriberPosition, position);
+            maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        if (subscribersPosition.get() != position)
+        subscribersPosition.lazySet(minSubscriberPosition);
+
+        final long oldCompletedPosition = this.completedPosition.position();
+        final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
+
+        final int activeIndex = indexByPosition(completedPosition, positionBitsToShift);
+        final LogRebuilder rebuilder = rebuilders[activeIndex];
+        final UnsafeBuffer termBuffer = rebuilder.termBuffer();
+
+        int workCount = lossHandler.scan(
+            termBuffer, completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
+
+        final int completedTermOffset = (int)completedPosition & termLengthMask;
+        final int completedOffset = lossHandler.completedOffset();
+        final long newCompletedPosition = (completedPosition - completedTermOffset) + completedOffset;
+        this.completedPosition.position(newCompletedPosition);
+
+        if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
         {
-            subscribersPosition.lazySet(position);
+            rebuilders[previousPartitionIndex(activeIndex)].clean();
         }
 
-        final long completedPosition = this.completedPosition.position();
-
-        return lossHandler.scan(
-            rebuilders[indexByPosition(completedPosition, positionBitsToShift)].termBuffer(),
-            completedPosition,
-            hwmPosition.position(),
-            termLengthMask,
-            positionBitsToShift,
-            initialTermId);
+        return workCount;
     }
 
     /**
@@ -319,12 +309,11 @@ public class DriverConnection implements AutoCloseable
      *
      * @param buffer for the data packet to insert into the appropriate term.
      * @param length of the data packet
-     * @return number of bytes completed as a result of this insertion.
+     * @return number of bytes applied as a result of this insertion.
      */
     public int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
         int bytesCompleted = 0;
-        final int initialTermId = this.initialTermId;
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
@@ -336,52 +325,10 @@ public class DriverConnection implements AutoCloseable
             return bytesCompleted;
         }
 
-        final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
+        rebuilders[indexByPosition(packetBeginPosition, positionBitsToShift)].insert(termOffset, buffer, 0, length);
 
-        if (termId == activeTermId)
-        {
-            final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-            currentRebuilder.insert(termOffset, buffer, 0, length);
-
-            bytesCompleted = updateCompletionStatus(
-                currentRebuilder.termBuffer(), completedPosition, initialTermId, positionBitsToShift, activeTermId, activeIndex);
-        }
-        else
-        {
-            final LogRebuilder nextRebuilder = rebuilders[nextPartitionIndex(activeIndex)];
-            if (nextRebuilder.status() == CLEAN)
-            {
-                nextRebuilder.insert(termOffset, buffer, 0, length);
-            }
-        }
-
+        bytesCompleted = length;
         hwmCandidate(proposedPosition);
-
-        return bytesCompleted;
-    }
-
-    private int updateCompletionStatus(
-        final UnsafeBuffer termBuffer,
-        final long currentCompletedPosition,
-        final int initialTermId,
-        final int positionBitsToShift,
-        final int activeTermId,
-        final int activeIndex)
-    {
-        final int bytesCompleted;
-        final int currentTail = (int)(currentCompletedPosition & termLengthMask);
-        final int capacity = termBuffer.capacity();
-        final int newTail = LogRebuilder.scanForCompletion(termBuffer, currentTail, capacity);
-
-        if (newTail >= capacity)
-        {
-            rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
-        }
-
-        final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
-        bytesCompleted = (int)(newCompletedPosition - currentCompletedPosition);
-        completedPosition.position(newCompletedPosition);
 
         return bytesCompleted;
     }

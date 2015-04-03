@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -42,56 +43,52 @@ public class TermGapScanner
          * @param buffer containing the gap.
          * @param offset at which the gap begins.
          * @param length of the gap in bytes.
-         * @return true if scanning should continue otherwise false to halt scanning.
          */
-        boolean onGap(final int termId, UnsafeBuffer buffer, int offset, int length);
+        void onGap(final int termId, UnsafeBuffer buffer, int offset, int length);
     }
 
     /**
      * Scan for gaps from the completedOffset up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
      *
      * @param handler to be notified of gaps.
-     * @return the number of gaps founds.
+     * @return true if a gap is found otherwise false.
      */
-    public static int scanForGaps(
-        final UnsafeBuffer termBuffer, final int termId, int completedOffset, final int highWaterMark, final GapHandler handler)
+    public static boolean scanForGap(
+        final UnsafeBuffer termBuffer, final int termId, int completedOffset, final int hwmOffset, final GapHandler handler)
     {
-        int count = 0;
-
-        while (completedOffset < highWaterMark)
+        boolean gapFound = false;
+        do
         {
-            final int frameLength = align(termBuffer.getInt(lengthOffset(completedOffset), LITTLE_ENDIAN), FRAME_ALIGNMENT);
+            int frameLength = align(termBuffer.getInt(lengthOffset(completedOffset), LITTLE_ENDIAN), FRAME_ALIGNMENT);
             if (frameLength > 0)
             {
                 completedOffset += frameLength;
             }
             else
             {
-                completedOffset = scanGap(termId, termBuffer, handler, completedOffset, highWaterMark);
-                ++count;
+                final int limit = hwmOffset - DataHeaderFlyweight.HEADER_LENGTH;
+                int gapLength = 0;
+                do
+                {
+                    gapLength += FRAME_ALIGNMENT;
+                    final int lengthOffset = lengthOffset(completedOffset + gapLength);
+                    frameLength = align(termBuffer.getInt(lengthOffset, LITTLE_ENDIAN), FRAME_ALIGNMENT);
+
+                    if (0 != frameLength)
+                    {
+                        gapLength -= DataHeaderFlyweight.HEADER_LENGTH;
+                        break;
+                    }
+                }
+                while ((completedOffset + gapLength) < limit);
+
+                gapFound = true;
+                handler.onGap(termId, termBuffer, completedOffset, gapLength + DataHeaderFlyweight.HEADER_LENGTH);
+                break;
             }
         }
+        while (completedOffset < hwmOffset);
 
-        return count;
-    }
-
-    private static int scanGap(
-        final int termId,
-        final UnsafeBuffer termBuffer,
-        final GapHandler handler,
-        final int completedOffset,
-        final int highWaterMark)
-    {
-        int gapLength = 0;
-        int frameLength;
-        do
-        {
-            gapLength += FRAME_ALIGNMENT;
-            final int lengthOffset = lengthOffset(completedOffset + gapLength);
-            frameLength = align(termBuffer.getInt(lengthOffset, LITTLE_ENDIAN), FRAME_ALIGNMENT);
-        }
-        while (0 == frameLength);
-
-        return handler.onGap(termId, termBuffer, completedOffset, gapLength) ? (completedOffset + gapLength) : highWaterMark;
+        return gapFound;
     }
 }

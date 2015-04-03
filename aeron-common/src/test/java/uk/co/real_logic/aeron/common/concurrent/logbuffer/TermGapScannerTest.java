@@ -17,9 +17,10 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.InOrder;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import static java.lang.Boolean.*;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -42,33 +43,15 @@ public class TermGapScannerTest
     }
 
     @Test
-    public void shouldReportNoGapsOnEmptyBuffer()
-    {
-        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, 0, 0, gapHandler), is(0));
-
-        verifyZeroInteractions(gapHandler);
-    }
-
-    @Test
-    public void shouldReportNoGapsWhenTailEqualsHighWaterMark()
-    {
-        final int fillLevel = FRAME_ALIGNMENT * 4;
-
-        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, fillLevel, fillLevel, gapHandler), is(0));
-
-        verifyZeroInteractions(gapHandler);
-    }
-
-    @Test
     public void shouldReportGapAtBeginningOfBuffer()
     {
         final int frameOffset = FRAME_ALIGNMENT * 3;
-        final int highWaterMark = frameOffset + FRAME_ALIGNMENT;
+        final int highWaterMark = frameOffset + DataHeaderFlyweight.HEADER_LENGTH;
 
         when(termBuffer.getInt(lengthOffset(frameOffset), LITTLE_ENDIAN))
-            .thenReturn(FRAME_ALIGNMENT);
+            .thenReturn(DataHeaderFlyweight.HEADER_LENGTH);
 
-        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(1));
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(TRUE));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, 0, frameOffset);
     }
@@ -86,7 +69,7 @@ public class TermGapScannerTest
         when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn(FRAME_ALIGNMENT);
 
-        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(1));
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, tail, FRAME_ALIGNMENT);
     }
@@ -104,35 +87,8 @@ public class TermGapScannerTest
         when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
             .thenReturn(FRAME_ALIGNMENT);
 
-        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(1));
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, tail, FRAME_ALIGNMENT);
-    }
-
-    @Test
-    public void shouldReportMultipleGaps()
-    {
-        final int tail = FRAME_ALIGNMENT;
-        final int highWaterMark = FRAME_ALIGNMENT * 6;
-
-        when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN))
-            .thenReturn(FRAME_ALIGNMENT);
-        when(termBuffer.getInt(lengthOffset(FRAME_ALIGNMENT), LITTLE_ENDIAN))
-            .thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 2), LITTLE_ENDIAN))
-            .thenReturn(FRAME_ALIGNMENT);
-        when(termBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 3), LITTLE_ENDIAN))
-            .thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(FRAME_ALIGNMENT * 5), LITTLE_ENDIAN))
-            .thenReturn(FRAME_ALIGNMENT);
-
-        when(gapHandler.onGap(TERM_ID, termBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT))
-            .thenReturn(true);
-
-        assertThat(TermGapScanner.scanForGaps(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(2));
-
-        final InOrder inOrder = inOrder(gapHandler);
-        inOrder.verify(gapHandler).onGap(TERM_ID, termBuffer, FRAME_ALIGNMENT, FRAME_ALIGNMENT);
-        inOrder.verify(gapHandler).onGap(TERM_ID, termBuffer, FRAME_ALIGNMENT * 3, FRAME_ALIGNMENT * 2);
     }
 }

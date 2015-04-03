@@ -465,7 +465,6 @@ public class ReceiverTest
 
         assertThat(messagesRead, is(1));
 
-        verify(mockCompletedReceivedPosition).position(initialTermOffset);
         verify(mockHighestReceivedPosition).position(initialTermOffset);
 
         receiver.doWork();
@@ -473,7 +472,6 @@ public class ReceiverTest
         fillDataFrame(dataHeader, initialTermOffset, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress);
 
-        verify(mockCompletedReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
         verify(mockHighestReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
 
         messagesRead = termReaders[ACTIVE_INDEX].read(

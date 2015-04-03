@@ -65,7 +65,6 @@ public class LossHandlerTest
 
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
-    private final LogRebuilder rebuilder = new LogRebuilder(termBuffer, metaDataBuffer);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -344,7 +343,7 @@ public class LossHandlerTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
 
-        rebuilder.insert(offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+        LogRebuilder.insert(termBuffer, offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)

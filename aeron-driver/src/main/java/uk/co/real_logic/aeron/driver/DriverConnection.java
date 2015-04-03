@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
@@ -55,7 +56,7 @@ public class DriverConnection implements AutoCloseable
     private final EventLogger logger;
     private final SystemCounters systemCounters;
     private final NanoClock clock;
-    private final LogRebuilder[] rebuilders;
+    private final UnsafeBuffer[] termBuffers;
     private final AtomicLong timeOfLastFrame = new AtomicLong();
     private final PositionReporter completedPosition;
     private final PositionReporter hwmPosition;
@@ -109,16 +110,16 @@ public class DriverConnection implements AutoCloseable
         this.timeOfLastStatusChange = time;
         timeOfLastFrame.lazySet(time);
 
-        rebuilders = rawLog
+        termBuffers = rawLog
             .stream()
-            .map((partition) -> new LogRebuilder(partition.termBuffer(), partition.metaDataBuffer()))
-            .toArray(LogRebuilder[]::new);
+            .map(RawLogPartition::termBuffer)
+            .toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
         this.statusMessageTimeout = statusMessageTimeout;
         this.lastSmTimestamp = 0;
 
-        final int termCapacity = rebuilders[0].termBuffer().capacity();
+        final int termCapacity = termBuffers[0].capacity();
 
         this.currentWindowLength = Math.min(termCapacity, initialWindowLength);
         this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);
@@ -275,12 +276,10 @@ public class DriverConnection implements AutoCloseable
         final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
 
         final int positionBitsToShift = this.positionBitsToShift;
-        final int activeIndex = indexByPosition(completedPosition, positionBitsToShift);
-        final LogRebuilder rebuilder = rebuilders[activeIndex];
-        final UnsafeBuffer termBuffer = rebuilder.termBuffer();
+        final int index = indexByPosition(completedPosition, positionBitsToShift);
 
         int workCount = lossHandler.scan(
-            termBuffer, completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
+            termBuffers[index], completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
 
         final int completedTermOffset = (int)completedPosition & termLengthMask;
         final int completedOffset = lossHandler.completedOffset();
@@ -289,7 +288,8 @@ public class DriverConnection implements AutoCloseable
 
         if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
         {
-            rebuilders[previousPartitionIndex(activeIndex)].clean();
+            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(index)];
+            termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
         return workCount;
@@ -326,7 +326,8 @@ public class DriverConnection implements AutoCloseable
             return bytesCompleted;
         }
 
-        rebuilders[indexByPosition(packetBeginPosition, positionBitsToShift)].insert(termOffset, buffer, 0, length);
+        final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetBeginPosition, positionBitsToShift)];
+        LogRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
 
         bytesCompleted = length;
         hwmCandidate(proposedPosition);

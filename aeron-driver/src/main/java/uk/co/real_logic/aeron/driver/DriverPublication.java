@@ -138,14 +138,14 @@ public class DriverPublication implements AutoCloseable
 
             if (shouldSendSetupFrame)
             {
-                setupFrameCheck(now, activeTermId, termOffset, senderPosition);
+                setupMessageCheck(now, activeTermId, termOffset, senderPosition);
             }
 
             bytesSent = sendData(now, senderPosition, termOffset);
 
             if (0 == bytesSent)
             {
-                heartbeatCheck(now, senderPosition, activeTermId);
+                heartbeatMessageCheck(now, senderPosition, activeTermId);
             }
         }
 
@@ -345,11 +345,22 @@ public class DriverPublication implements AutoCloseable
         return bytesSent;
     }
 
-    private void setupFrameCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
+    private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
     {
         if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
         {
-            sendSetupFrame(now, activeTermId, termOffset);
+            setupHeader.activeTermId(activeTermId).termOffset(termOffset);
+
+            final int frameLength = setupHeader.frameLength();
+            setupFrameBuffer.limit(frameLength).position(0);
+
+            final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
+            if (frameLength != bytesSent)
+            {
+                systemCounters.setupFrameShortSends().orderedIncrement();
+            }
+
+            timeOfLastSendOrHeartbeat = now;
         }
 
         if (statusMessagesReceivedCount > 0)
@@ -358,45 +369,24 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private void sendSetupFrame(final long now, final int activeTermId, final int termOffset)
-    {
-        setupHeader.activeTermId(activeTermId).termOffset(termOffset);
-
-        final int frameLength = setupHeader.frameLength();
-        setupFrameBuffer.limit(frameLength).position(0);
-
-        final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
-        if (frameLength != bytesSent)
-        {
-            systemCounters.setupFrameShortSends().orderedIncrement();
-        }
-
-        timeOfLastSendOrHeartbeat = now;
-    }
-
-    private void heartbeatCheck(final long now, final long senderPosition, final int activeTermId)
+    private void heartbeatMessageCheck(final long now, final long senderPosition, final int activeTermId)
     {
         if (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
-            sendHeartbeat(now, senderPosition, activeTermId);
+            final int termOffset = (int)senderPosition & termLengthMask;
+
+            heartbeatFrameBuffer.clear();
+            dataHeader.termOffset(termOffset).termId(activeTermId);
+
+            final int bytesSent = channelEndpoint.sendTo(heartbeatFrameBuffer, dstAddress);
+            if (bytesSent != DataHeaderFlyweight.HEADER_LENGTH)
+            {
+                systemCounters.dataFrameShortSends().orderedIncrement();
+            }
+
+            systemCounters.heartbeatsSent().orderedIncrement();
+            timeOfLastSendOrHeartbeat = now;
         }
-    }
-
-    private void sendHeartbeat(final long now, final long senderPosition, final int activeTermId)
-    {
-        final int termOffset = (int)senderPosition & termLengthMask;
-
-        heartbeatFrameBuffer.clear();
-        dataHeader.termOffset(termOffset).termId(activeTermId);
-
-        final int bytesSent = channelEndpoint.sendTo(heartbeatFrameBuffer, dstAddress);
-        if (bytesSent != DataHeaderFlyweight.HEADER_LENGTH)
-        {
-            systemCounters.dataFrameShortSends().orderedIncrement();
-        }
-
-        systemCounters.heartbeatsSent().orderedIncrement();
-        timeOfLastSendOrHeartbeat = now;
     }
 
     private void initSetupFrame(final int activeTermId)

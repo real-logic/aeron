@@ -115,13 +115,15 @@ public class MultiDriverTest
     }
 
     @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown()
+    public void shouldSpinUpAndShutdown() throws Exception
     {
         launch();
 
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID, SESSION_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerA);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerB);
+
+        Thread.sleep(20); // allow for connections to be established
     }
 
     @Test(timeout = 10000)

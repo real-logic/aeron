@@ -383,7 +383,11 @@ public class DriverPublication implements AutoCloseable
 
     private void sendHeartbeat(final long now, final long senderPosition)
     {
-        if (senderPosition > 0)
+        if (0 == senderPosition)
+        {
+            shouldSendSetupFrame = true;
+        }
+        else
         {
             final int length = lastSendLength;
             final long lastSendPosition = senderPosition - length;
@@ -401,10 +405,6 @@ public class DriverPublication implements AutoCloseable
 
             systemCounters.heartbeatsSent().orderedIncrement();
             timeOfLastSendOrHeartbeat = now;
-        }
-        else
-        {
-            triggerSendSetupFrame();
         }
     }
 

@@ -61,7 +61,6 @@ public class DriverPublication implements AutoCloseable
 
     private long timeOfFlush = 0;
     private long timeOfLastSendOrHeartbeat;
-    private int lastSendLength = 0;
     private int statusMessagesReceivedCount = 0;
     private int refCount = 0;
 
@@ -139,7 +138,7 @@ public class DriverPublication implements AutoCloseable
 
             if (shouldSendSetupFrame)
             {
-                setupFrameCheck(now, activeTermId, termOffset);
+                setupFrameCheck(now, activeTermId, termOffset, senderPosition);
             }
 
             bytesSent = sendData(now, senderPosition, termOffset);
@@ -325,7 +324,6 @@ public class DriverPublication implements AutoCloseable
 
                 if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
                 {
-                    lastSendLength = available;
                     timeOfLastSendOrHeartbeat = now;
                     trackSenderLimits = true;
 
@@ -347,9 +345,9 @@ public class DriverPublication implements AutoCloseable
         return bytesSent;
     }
 
-    private void setupFrameCheck(final long now, final int activeTermId, final int termOffset)
+    private void setupFrameCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
     {
-        if (0 != lastSendLength || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
+        if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
         {
             sendSetupFrame(now, activeTermId, termOffset);
         }

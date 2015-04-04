@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -28,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
 
@@ -311,16 +313,20 @@ public class DriverConnection implements AutoCloseable
      */
     public int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
-        int bytesInserted = length;
+        int bytesReceived = length;
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
         final long completedPosition = this.completedPosition.position();
 
-        if (isHeartbeat(completedPosition, proposedPosition) ||
-            isFlowControlUnderRun(completedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
+        if (length == DataHeaderFlyweight.HEADER_LENGTH && 0 == buffer.getInt(lengthOffset(0)))
         {
-            bytesInserted = 0;
+            hwmCandidate(packetBeginPosition);
+            systemCounters.heartbeatsReceived().orderedIncrement();
+        }
+        else if (isFlowControlUnderRun(completedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
+        {
+            bytesReceived = 0;
         }
         else
         {
@@ -330,7 +336,7 @@ public class DriverConnection implements AutoCloseable
             hwmCandidate(proposedPosition);
         }
 
-        return bytesInserted;
+        return bytesReceived;
     }
 
     private void hwmCandidate(final long proposedPosition)
@@ -424,19 +430,6 @@ public class DriverConnection implements AutoCloseable
     public int initialTermId()
     {
         return initialTermId;
-    }
-
-    private boolean isHeartbeat(final long currentPosition, final long proposedPosition)
-    {
-        final boolean isHeartbeat = proposedPosition == currentPosition;
-
-        if (isHeartbeat)
-        {
-            systemCounters.heartbeatsReceived().orderedIncrement();
-            timeOfLastFrame.lazySet(clock.time());
-        }
-
-        return isHeartbeat;
     }
 
     private boolean isFlowControlUnderRun(final long completedPosition, final long packetPosition)

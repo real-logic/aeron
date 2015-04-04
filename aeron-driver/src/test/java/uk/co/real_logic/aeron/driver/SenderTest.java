@@ -382,8 +382,8 @@ public class SenderTest
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
+        assertThat(dataHeader.frameLength(), is(0));
+        assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
     }
 
     @Test
@@ -409,8 +409,8 @@ public class SenderTest
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
+        assertThat(dataHeader.frameLength(), is(0));
+        assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
 
         currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         sender.doWork();
@@ -420,8 +420,8 @@ public class SenderTest
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
+        assertThat(dataHeader.frameLength(), is(0));
+        assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
     }
 
     private int offsetOfMessage(final int offset)

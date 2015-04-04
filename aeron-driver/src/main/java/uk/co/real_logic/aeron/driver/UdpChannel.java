@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import uk.co.real_logic.aeron.common.NetworkUtil;
 import uk.co.real_logic.aeron.common.UriUtil;
 import uk.co.real_logic.aeron.common.uri.AeronUri;
 import uk.co.real_logic.aeron.common.uri.InterfaceSearchAddress;
@@ -414,20 +415,7 @@ public final class UdpChannel
 
     public ProtocolFamily protocolFamily()
     {
-        InetAddress address = localData.getAddress();
-
-        if (address instanceof Inet4Address)
-        {
-            return StandardProtocolFamily.INET;
-        }
-        else if (address instanceof Inet6Address)
-        {
-            return StandardProtocolFamily.INET6;
-        }
-        else
-        {
-            throw new IllegalStateException("Unknown ProtocolFamily");
-        }
+        return NetworkUtil.getProtocolFamily(localData.getAddress());
     }
 
     private static class Context

@@ -15,12 +15,11 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import static java.lang.String.format;
-import static java.lang.System.lineSeparator;
-import static java.net.InetAddress.getByAddress;
-import static uk.co.real_logic.aeron.common.NetworkUtil.filterBySubnet;
-import static uk.co.real_logic.aeron.common.NetworkUtil.findAddressOnInterface;
-import static uk.co.real_logic.aeron.common.Strings.isEmpty;
+import uk.co.real_logic.aeron.common.UriUtil;
+import uk.co.real_logic.aeron.common.uri.AeronUri;
+import uk.co.real_logic.aeron.common.uri.InterfaceSearchAddress;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import uk.co.real_logic.agrona.BitUtil;
 
 import java.net.*;
 import java.util.Arrays;
@@ -28,12 +27,11 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import uk.co.real_logic.aeron.common.NetworkUtil;
-import uk.co.real_logic.aeron.common.UriUtil;
-import uk.co.real_logic.aeron.common.uri.AeronUri;
-import uk.co.real_logic.aeron.common.uri.InterfaceSearchAddress;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
-import uk.co.real_logic.agrona.BitUtil;
+import static java.lang.String.format;
+import static java.lang.System.lineSeparator;
+import static java.net.InetAddress.getByAddress;
+import static uk.co.real_logic.aeron.common.NetworkUtil.*;
+import static uk.co.real_logic.aeron.common.Strings.isEmpty;
 
 /**
  * Encapsulation of UDP Channels
@@ -63,6 +61,7 @@ public final class UdpChannel
     private final String uriStr;
     private final String canonicalForm;
     private final NetworkInterface localInterface;
+    private final ProtocolFamily protocolFamily;
 
     /**
      * Parse URI and create channel
@@ -97,11 +96,14 @@ public final class UdpChannel
                 final NetworkInterface localInterface = findInterface(searchAddress);
                 final InetSocketAddress localAddress = resolveToAddressOfInterface(localInterface, searchAddress);
 
+                ProtocolFamily protocolFamily = getProtocolFamily(dataAddress.getAddress());
+
                 context.localControlAddress(localAddress)
                        .remoteControlAddress(controlAddress)
                        .localDataAddress(localAddress)
                        .remoteDataAddress(dataAddress)
                        .localInterface(localInterface)
+                       .protocolFamily(protocolFamily)
                        .canonicalForm(canonicalise(localAddress, dataAddress));
             }
             else
@@ -109,10 +111,16 @@ public final class UdpChannel
                 final InetSocketAddress remoteAddress = uri.getSocketAddress(REMOTE_KEY);
                 final InetSocketAddress localAddress = uri.getSocketAddress(LOCAL_KEY, 0, new InetSocketAddress(0));
 
+                ProtocolFamily protocolFamily =
+                        !uri.containsKey(LOCAL_KEY) && null != remoteAddress
+                                ? getProtocolFamily(remoteAddress.getAddress())
+                                : getProtocolFamily(localAddress.getAddress());
+
                 context.remoteControlAddress(remoteAddress)
                        .remoteDataAddress(remoteAddress)
                        .localControlAddress(localAddress)
                        .localDataAddress(localAddress)
+                       .protocolFamily(protocolFamily)
                        .canonicalForm(canonicalise(localAddress, remoteAddress));
             }
 
@@ -314,6 +322,7 @@ public final class UdpChannel
         this.uriStr = context.uriStr;
         this.canonicalForm = context.canonicalForm;
         this.localInterface = context.localInterface;
+        this.protocolFamily = context.protocolFamily;
     }
 
     /**
@@ -415,7 +424,7 @@ public final class UdpChannel
 
     public ProtocolFamily protocolFamily()
     {
-        return NetworkUtil.getProtocolFamily(localData.getAddress());
+        return protocolFamily;
     }
 
     private static class Context
@@ -427,6 +436,7 @@ public final class UdpChannel
         private String uriStr;
         private String canonicalForm;
         private NetworkInterface localInterface;
+        private ProtocolFamily protocolFamily;
 
         public Context uriStr(final String uri)
         {
@@ -467,6 +477,12 @@ public final class UdpChannel
         public Context localInterface(final NetworkInterface ifc)
         {
             this.localInterface = ifc;
+            return this;
+        }
+
+        public Context protocolFamily(ProtocolFamily protocolFamily)
+        {
+            this.protocolFamily = protocolFamily;
             return this;
         }
     }

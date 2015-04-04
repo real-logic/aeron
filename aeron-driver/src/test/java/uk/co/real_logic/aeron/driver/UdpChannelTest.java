@@ -243,6 +243,20 @@ public class UdpChannelTest
     }
 
     @Test
+    public void shouldGetProtocolFamilyForIpV4WithoutLocalSpecified() throws Exception
+    {
+        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=127.0.0.1:12345");
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
+    }
+
+    @Test
+    public void shouldGetProtocolFamilyForIpV6WithoutLocalSpecified() throws Exception
+    {
+        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=[::1]:12345");
+        assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
+    }
+
+    @Test
     public void shouldHandleCanonicalFormWithExampleCom() throws Exception
     {
         final String exampleDotCom = resolveToHexAddress("example.com");

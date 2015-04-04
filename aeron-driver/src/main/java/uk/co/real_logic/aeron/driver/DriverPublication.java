@@ -383,7 +383,7 @@ public class DriverPublication implements AutoCloseable
 
     private void sendHeartbeat(final long now, final long senderPosition)
     {
-        if (0 < senderPosition)
+        if (senderPosition > 0)
         {
             final int length = lastSendLength;
             final long lastSendPosition = senderPosition - length;

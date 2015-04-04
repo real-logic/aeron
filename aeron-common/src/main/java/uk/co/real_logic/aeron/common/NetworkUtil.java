@@ -21,10 +21,7 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Collections.sort;
 
-import java.net.InetAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -163,6 +160,22 @@ public class NetworkUtil
         return ((b[offset + 7] & 0xFFL)) + ((b[offset + 6] & 0xFFL) << 8) + ((b[offset + 5] & 0xFFL) << 16) +
             ((b[offset + 4] & 0xFFL) << 24) + ((b[offset + 3] & 0xFFL) << 32) + ((b[offset + 2] & 0xFFL) << 40) +
             ((b[offset + 1] & 0xFFL) << 48) + (((long) b[offset]) << 56);
+    }
+
+    public static ProtocolFamily getProtocolFamily(InetAddress address)
+    {
+        if (address instanceof Inet4Address)
+        {
+            return StandardProtocolFamily.INET;
+        }
+        else if (address instanceof Inet6Address)
+        {
+            return StandardProtocolFamily.INET6;
+        }
+        else
+        {
+            throw new IllegalStateException("Unknown ProtocolFamily");
+        }
     }
 
     private static class FilterResult implements Comparable<FilterResult>

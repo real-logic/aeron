@@ -55,7 +55,6 @@ public class DriverPublication implements AutoCloseable
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
-    private final int termLength;
     private final int mtuLength;
     private final int termWindowLength;
 
@@ -100,7 +99,7 @@ public class DriverPublication implements AutoCloseable
 
         scanner = new TermScanner(headerLength);
         sendBuffers = rawLog.sliceTerms();
-        termLength = logPartitions[0].termBuffer().capacity();
+        final int termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
         senderLimit = new AtomicLong(initialPositionLimit);
 
@@ -112,7 +111,7 @@ public class DriverPublication implements AutoCloseable
         publisherLimit.position(termWindowLength);
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
-        initSetupFrame(initialTermId);
+        initSetupFrame(initialTermId, termLength);
 
         dataHeader.wrap(new UnsafeBuffer(heartbeatFrameBuffer), 0);
         initHeartBeatFrame();
@@ -389,7 +388,7 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private void initSetupFrame(final int activeTermId)
+    private void initSetupFrame(final int activeTermId, final int termLength)
     {
         setupHeader
             .sessionId(sessionId)

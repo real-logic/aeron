@@ -161,7 +161,7 @@ public final class UdpChannel
             final String msg =
                 "URI must contain either a unicast configuration (%s) or a multicast configuration (%s) not both";
             throw new IllegalArgumentException(
-                format(msg, Arrays.toString(MULTICAST_KEYS), Arrays.toString(UNICAST_KEYS)));
+                format(msg, Arrays.toString(UNICAST_KEYS), Arrays.toString(MULTICAST_KEYS)));
         }
     }
 

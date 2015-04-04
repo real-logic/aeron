@@ -29,6 +29,7 @@ import org.junit.Assume;
 import org.junit.Test;
 
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import uk.co.real_logic.agrona.BitUtil;
 
 public class UdpChannelTest
 {
@@ -347,15 +348,6 @@ public class UdpChannelTest
 
     private String resolveToHexAddress(String host) throws UnknownHostException
     {
-        final InetAddress address = InetAddress.getByName(host);
-        String asHex = "";
-
-        final byte[] address2 = address.getAddress();
-        for (final byte b : address2)
-        {
-            final int i = (0xFF) & b;
-            asHex += Integer.toHexString(i);
-        }
-        return asHex;
+        return BitUtil.toHex(InetAddress.getByName(host).getAddress());
     }
 }

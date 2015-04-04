@@ -306,7 +306,7 @@ public class DriverPublication implements AutoCloseable
 
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
-        int bytesAdvanced = 0;
+        int bytesSent = 0;
         final int availableWindow = (int)(senderLimit.get() - senderPosition);
         if (availableWindow > 0)
         {
@@ -326,8 +326,8 @@ public class DriverPublication implements AutoCloseable
                     timeOfLastSendOrHeartbeat = now;
                     trackSenderLimits = true;
 
-                    bytesAdvanced = available + scanner.padding();
-                    this.senderPosition.position(senderPosition + bytesAdvanced);
+                    bytesSent = available;
+                    this.senderPosition.position(senderPosition + bytesSent + scanner.padding());
                 }
                 else
                 {
@@ -341,7 +341,7 @@ public class DriverPublication implements AutoCloseable
             systemCounters.senderFlowControlLimits().orderedIncrement();
         }
 
-        return bytesAdvanced;
+        return bytesSent;
     }
 
     private void setupFrameCheck(final long now, final int activeTermId, final int termOffset)

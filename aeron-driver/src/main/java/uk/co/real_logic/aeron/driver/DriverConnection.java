@@ -319,7 +319,7 @@ public class DriverConnection implements AutoCloseable
         final long proposedPosition = packetBeginPosition + length;
         final long completedPosition = this.completedPosition.position();
 
-        if (length == DataHeaderFlyweight.HEADER_LENGTH && 0 == buffer.getInt(lengthOffset(0)))
+        if (isHeartbeat(buffer, length))
         {
             hwmCandidate(packetBeginPosition);
             systemCounters.heartbeatsReceived().orderedIncrement();
@@ -337,16 +337,6 @@ public class DriverConnection implements AutoCloseable
         }
 
         return bytesReceived;
-    }
-
-    private void hwmCandidate(final long proposedPosition)
-    {
-        timeOfLastFrame.lazySet(clock.time());
-
-        if (proposedPosition > hwmPosition.position())
-        {
-            hwmPosition.position(proposedPosition);
-        }
     }
 
     /**
@@ -430,6 +420,21 @@ public class DriverConnection implements AutoCloseable
     public int initialTermId()
     {
         return initialTermId;
+    }
+
+    private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
+    {
+        return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(lengthOffset(0)) == 0;
+    }
+
+    private void hwmCandidate(final long proposedPosition)
+    {
+        timeOfLastFrame.lazySet(clock.time());
+
+        if (proposedPosition > hwmPosition.position())
+        {
+            hwmPosition.position(proposedPosition);
+        }
     }
 
     private boolean isFlowControlUnderRun(final long completedPosition, final long packetPosition)

@@ -217,8 +217,7 @@ public class DriverPublication implements AutoCloseable
                     break;
                 }
 
-                sendBuffer.limit(termOffset + available);
-                sendBuffer.position(termOffset);
+                sendBuffer.limit(termOffset + available).position(termOffset);
 
                 if (available != channelEndpoint.sendTo(sendBuffer, dstAddress))
                 {
@@ -294,14 +293,15 @@ public class DriverPublication implements AutoCloseable
      */
     public int updatePublishersLimit()
     {
+        int workCount = 0;
         final long candidatePublisherLimit = senderPosition.position() + termWindowLength;
         if (publisherLimit.position() != candidatePublisherLimit)
         {
             publisherLimit.position(candidatePublisherLimit);
-            return 1;
+            workCount = 1;
         }
 
-        return 0;
+        return workCount;
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)
@@ -317,8 +317,7 @@ public class DriverPublication implements AutoCloseable
             if (available > 0)
             {
                 final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-                sendBuffer.limit(termOffset + available);
-                sendBuffer.position(termOffset);
+                sendBuffer.limit(termOffset + available).position(termOffset);
 
                 if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
                 {
@@ -363,8 +362,7 @@ public class DriverPublication implements AutoCloseable
                    .termOffset(termOffset);
 
         final int frameLength = setupHeader.frameLength();
-        setupFrameBuffer.limit(frameLength)
-                        .position(0);
+        setupFrameBuffer.limit(frameLength).position(0);
 
         final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
         if (frameLength != bytesSent)
@@ -393,8 +391,7 @@ public class DriverPublication implements AutoCloseable
             final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
 
             final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-            sendBuffer.limit(termOffset + length);
-            sendBuffer.position(termOffset);
+            sendBuffer.limit(termOffset + length).position(termOffset);
 
             final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
             if (bytesSent != length)

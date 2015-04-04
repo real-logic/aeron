@@ -15,9 +15,11 @@
  */
 package uk.co.real_logic.aeron.common.uri;
 
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -61,6 +63,13 @@ public class SocketAddressUtilTest
     public void shouldParseIpV6() throws Exception
     {
         assertCorrectParseIpV6("::1", 54321);
+    }
+
+    @Test
+    public void shouldParseWithScope() throws Exception
+    {
+        InetSocketAddress address = SocketAddressUtil.parse("[::1%12~_.-34]:1234");
+        assertThat(address.getAddress(), instanceOf(Inet6Address.class));
     }
 
     private void assertCorrectParse(final String host, final int port) throws UnknownHostException

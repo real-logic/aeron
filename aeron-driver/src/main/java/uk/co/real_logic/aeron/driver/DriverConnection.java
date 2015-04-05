@@ -33,10 +33,27 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
 
+class DriverConnectionPadding1
+{
+    protected long p1, p2, p3, p4, p5, p6, p7;
+}
+
+class DriverConnectionConductorFields extends DriverConnectionPadding1
+{
+    protected long lastSmPosition;
+    protected long lastSmTimestamp;
+    protected long timeOfLastStatusChange;
+}
+
+class DriverConnectionPadding2 extends DriverConnectionConductorFields
+{
+    protected long p1, p2, p3, p4, p5, p6, p7;
+}
+
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverConnection implements AutoCloseable
+public class DriverConnection extends DriverConnectionPadding2 implements AutoCloseable
 {
     public enum Status
     {
@@ -66,10 +83,6 @@ public class DriverConnection implements AutoCloseable
     private final AtomicLong subscribersPosition = new AtomicLong();
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
-
-    private long timeOfLastStatusChange;
-    private long lastSmPosition;
-    private long lastSmTimestamp;
 
     private volatile Status status = Status.INIT;
 
@@ -113,7 +126,6 @@ public class DriverConnection implements AutoCloseable
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
-        this.lastSmTimestamp = 0;
 
         final int termCapacity = termBuffers[0].capacity();
 

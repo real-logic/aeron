@@ -558,7 +558,6 @@ public class DriverConductor implements Agent
                 })
             .collect(toList());
 
-        final int receiverCompletedCounterId = allocatePositionCounter("receiver pos", channel, sessionId, streamId);
         final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
         final String sourceInfo = generateSourceInfo(sourceAddress);
 
@@ -591,7 +590,6 @@ public class DriverConductor implements Agent
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
-            new BufferPositionReporter(countersBuffer, receiverCompletedCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
             systemCounters,

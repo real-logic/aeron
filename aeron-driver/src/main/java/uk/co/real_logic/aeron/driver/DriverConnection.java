@@ -76,11 +76,11 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
     private final NanoClock clock;
     private final UnsafeBuffer[] termBuffers;
     private final AtomicLong timeOfLastFrame = new AtomicLong();
-    private final PositionReporter completedPosition;
     private final PositionReporter hwmPosition;
     private final InetSocketAddress sourceAddress;
-    private final List<PositionIndicator> subscriberPositions;
+    private final AtomicLong completedPosition = new AtomicLong();
     private final AtomicLong subscribersPosition = new AtomicLong();
+    private final List<PositionIndicator> subscriberPositions;
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
 
@@ -99,7 +99,6 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
         final List<PositionIndicator> subscriberPositions,
-        final PositionReporter completedPosition,
         final PositionReporter hwmPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
@@ -112,7 +111,6 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         this.streamId = streamId;
         this.rawLog = rawLog;
         this.subscriberPositions = subscriberPositions;
-        this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
         this.sourceAddress = sourceAddress;
@@ -138,7 +136,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition - (currentGain + 1);
-        this.completedPosition.position(initialPosition);
+        this.completedPosition.lazySet(initialPosition);
         this.hwmPosition.position(initialPosition);
     }
 
@@ -147,7 +145,6 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
      */
     public void close()
     {
-        completedPosition.close();
         hwmPosition.close();
         rawLog.close();
         subscriberPositions.forEach(PositionIndicator::close);
@@ -280,7 +277,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
 
         subscribersPosition.lazySet(minSubscriberPosition);
 
-        final long oldCompletedPosition = this.completedPosition.position();
+        final long oldCompletedPosition = this.completedPosition.get();
         final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
 
         final int positionBitsToShift = this.positionBitsToShift;
@@ -292,7 +289,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         final int completedTermOffset = (int)completedPosition & termLengthMask;
         final int completedOffset = lossHandler.completedOffset();
         final long newCompletedPosition = (completedPosition - completedTermOffset) + completedOffset;
-        this.completedPosition.position(newCompletedPosition);
+        this.completedPosition.lazySet(newCompletedPosition);
 
         if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
         {
@@ -310,7 +307,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
      */
     public long remaining()
     {
-        return Math.max(completedPosition.position() - subscribersPosition.get(), 0);
+        return Math.max(completedPosition.get() - subscribersPosition.get(), 0);
     }
 
     /**
@@ -326,7 +323,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
-        final long completedPosition = this.completedPosition.position();
+        final long completedPosition = this.completedPosition.get();
 
         if (isHeartbeat(buffer, length))
         {
@@ -418,7 +415,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
      */
     public long completedPosition()
     {
-        return completedPosition.position();
+        return completedPosition.get();
     }
 
     /**

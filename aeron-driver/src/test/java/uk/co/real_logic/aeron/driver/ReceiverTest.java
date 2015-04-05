@@ -78,7 +78,6 @@ public class ReceiverTest
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
-    private final PositionReporter mockCompletedReceivedPosition = spy(new HeapPositionReporter());
     private final PositionReporter mockHighestReceivedPosition = spy(new HeapPositionReporter());
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
@@ -182,7 +181,6 @@ public class ReceiverTest
             mockLossHandler,
             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
             POSITION_INDICATORS,
-            mockCompletedReceivedPosition,
             mockHighestReceivedPosition,
             clock,
             mockSystemCounters,
@@ -254,7 +252,6 @@ public class ReceiverTest
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -316,7 +313,6 @@ public class ReceiverTest
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -381,7 +377,6 @@ public class ReceiverTest
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -450,7 +445,6 @@ public class ReceiverTest
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,

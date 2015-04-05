@@ -25,7 +25,6 @@ import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
@@ -43,7 +42,6 @@ public class DriverPublication implements AutoCloseable
     private final TermScanner scanner;
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
-    private final AtomicLong senderLimit;
     private final PositionReporter publisherLimit;
     private final PositionReporter senderPosition;
     private final SendChannelEndpoint channelEndpoint;
@@ -62,6 +60,7 @@ public class DriverPublication implements AutoCloseable
     private int refCount = 0;
 
     private boolean trackSenderLimits = true;
+    private volatile long senderLimit;
     private volatile boolean isActive = true;
     private volatile boolean shouldSendSetupFrame = true;
 
@@ -98,7 +97,7 @@ public class DriverPublication implements AutoCloseable
 
         final int termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
-        senderLimit = new AtomicLong(initialPositionLimit);
+        senderLimit = initialPositionLimit;
 
         timeOfLastSendOrHeartbeat = clock.time();
 
@@ -166,7 +165,7 @@ public class DriverPublication implements AutoCloseable
     public void updatePositionLimitFromStatusMessage(final long limit)
     {
         statusMessagesReceivedCount++;
-        senderLimit.lazySet(limit);
+        senderLimit = limit;
     }
 
     /**
@@ -306,7 +305,7 @@ public class DriverPublication implements AutoCloseable
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
-        final int availableWindow = (int)(senderLimit.get() - senderPosition);
+        final int availableWindow = (int)(senderLimit - senderPosition);
         if (availableWindow > 0)
         {
             final int scanLimit = Math.min(availableWindow, mtuLength);

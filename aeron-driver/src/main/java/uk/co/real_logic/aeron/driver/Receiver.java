@@ -25,18 +25,17 @@ import java.util.function.Consumer;
 /**
  * Receiver agent for JVM based media driver, uses an event loop with command buffer
  */
-public class Receiver implements Agent
+public class Receiver implements Agent, Consumer<ReceiverCmd>
 {
     private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
-    private final Consumer<ReceiverCmd> onReceiverCmdFunc = this::onReceiverCmd;
     private final AtomicCounter totalBytesReceived;
 
     public Receiver(final MediaDriver.Context ctx)
     {
-        this.transportPoller = ctx.receiverNioSelector();
-        this.commandQueue = ctx.receiverCommandQueue();
-        this.totalBytesReceived = ctx.systemCounters().bytesReceived();
+        transportPoller = ctx.receiverNioSelector();
+        commandQueue = ctx.receiverCommandQueue();
+        totalBytesReceived = ctx.systemCounters().bytesReceived();
     }
 
     public String roleName()
@@ -46,7 +45,7 @@ public class Receiver implements Agent
 
     public int doWork() throws Exception
     {
-        final int workCount = commandQueue.drain(onReceiverCmdFunc);
+        final int workCount = commandQueue.drain(this);
         final int bytesReceived = transportPoller.pollTransports();
 
         totalBytesReceived.addOrdered(bytesReceived);
@@ -91,7 +90,7 @@ public class Receiver implements Agent
         transportPoller.selectNowWithoutProcessing();
     }
 
-    private void onReceiverCmd(final ReceiverCmd cmd)
+    public void accept(final ReceiverCmd cmd)
     {
         cmd.execute(this);
     }

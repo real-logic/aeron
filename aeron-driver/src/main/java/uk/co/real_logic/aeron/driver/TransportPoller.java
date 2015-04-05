@@ -139,7 +139,7 @@ public class TransportPoller implements AutoCloseable
      */
     public int pollTransports()
     {
-        int handledFrames = 0;
+        int bytesReceived = 0;
         try
         {
             final UdpChannelTransport[] transports = this.transports;
@@ -148,7 +148,7 @@ public class TransportPoller implements AutoCloseable
             {
                 for (int i = numTransports - 1; i >= 0; i--)
                 {
-                    handledFrames += transports[i].pollFrames();
+                    bytesReceived += transports[i].pollForData();
                 }
             }
             else
@@ -158,7 +158,7 @@ public class TransportPoller implements AutoCloseable
                 final SelectionKey[] keys = selectedKeySet.keys();
                 for (int i = selectedKeySet.size() - 1; i >= 0; i--)
                 {
-                    handledFrames += ((UdpChannelTransport)keys[i].attachment()).pollFrames();
+                    bytesReceived += ((UdpChannelTransport)keys[i].attachment()).pollForData();
                 }
 
                 selectedKeySet.reset();
@@ -169,7 +169,7 @@ public class TransportPoller implements AutoCloseable
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return handledFrames;
+        return bytesReceived;
     }
 
     /**

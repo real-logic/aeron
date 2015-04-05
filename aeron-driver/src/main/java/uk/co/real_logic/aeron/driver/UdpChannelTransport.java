@@ -240,11 +240,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
     /**
      * Attempt to receive waiting data.
      *
-     * @return number of handled frames.
+     * @return number of bytes received.
      */
-    public int pollFrames()
+    public int pollForData()
     {
-        int framesRead = 0;
+        int bytesReceived = 0;
         final InetSocketAddress srcAddress = receive();
 
         if (null != srcAddress)
@@ -260,12 +260,12 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
                 if (isValidFrame(receiveBuffer, length))
                 {
-                    framesRead = dispatch(header.headerType(), receiveBuffer, length, srcAddress);
+                    bytesReceived = dispatch(header.headerType(), receiveBuffer, length, srcAddress);
                 }
             }
         }
 
-        return framesRead;
+        return bytesReceived;
     }
 
     protected UnsafeBuffer receiveBuffer()

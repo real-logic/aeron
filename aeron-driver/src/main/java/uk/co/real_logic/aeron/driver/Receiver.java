@@ -71,9 +71,7 @@ public class Receiver implements Agent
 
     public void onRemoveConnection(final DriverConnection connection)
     {
-        connection.receiveChannelEndpoint()
-                  .dispatcher()
-                  .removeConnection(connection);
+        connection.receiveChannelEndpoint().dispatcher().removeConnection(connection);
     }
 
     public void onRegisterMediaChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)

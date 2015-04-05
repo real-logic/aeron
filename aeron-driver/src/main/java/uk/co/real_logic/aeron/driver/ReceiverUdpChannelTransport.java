@@ -66,12 +66,12 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
     protected int dispatch(
         final int headerType, final UnsafeBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
     {
-        int framesRead = 0;
+        int bytesReceived = 0;
         switch (headerType)
         {
             case HDR_TYPE_PAD:
             case HDR_TYPE_DATA:
-                framesRead = dataFrameHandler.onFrame(dataHeader, receiveBuffer, length, srcAddress);
+                bytesReceived = dataFrameHandler.onFrame(dataHeader, receiveBuffer, length, srcAddress);
                 break;
 
             case HDR_TYPE_SETUP:
@@ -79,6 +79,6 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
                 break;
         }
 
-        return framesRead;
+        return bytesReceived;
     }
 }

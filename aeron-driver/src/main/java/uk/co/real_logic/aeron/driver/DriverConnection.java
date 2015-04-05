@@ -40,7 +40,8 @@ class DriverConnectionPadding1
 
 class DriverConnectionConductorFields extends DriverConnectionPadding1
 {
-    protected long lastSmPosition;
+    protected long completedPosition;
+    protected long subscribersPosition;
     protected long lastSmTimestamp;
     protected long timeOfLastStatusChange;
 }
@@ -75,15 +76,14 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
     private final SystemCounters systemCounters;
     private final NanoClock clock;
     private final UnsafeBuffer[] termBuffers;
-    private final AtomicLong timeOfLastFrame = new AtomicLong();
+    private final AtomicLong timeOfLastPacket = new AtomicLong();
     private final PositionReporter hwmPosition;
     private final InetSocketAddress sourceAddress;
-    private final AtomicLong completedPosition = new AtomicLong();
-    private final AtomicLong subscribersPosition = new AtomicLong();
     private final List<PositionIndicator> subscriberPositions;
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
 
+    private volatile long lastSmPosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
@@ -119,7 +119,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         this.clock = clock;
         final long time = clock.time();
         this.timeOfLastStatusChange = time;
-        timeOfLastFrame.lazySet(time);
+        timeOfLastPacket.lazySet(time);
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
@@ -136,7 +136,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition - (currentGain + 1);
-        this.completedPosition.lazySet(initialPosition);
+        this.completedPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
 
@@ -275,9 +275,9 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        subscribersPosition.lazySet(minSubscriberPosition);
+        subscribersPosition = minSubscriberPosition;
 
-        final long oldCompletedPosition = this.completedPosition.get();
+        final long oldCompletedPosition = this.completedPosition;
         final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
 
         final int positionBitsToShift = this.positionBitsToShift;
@@ -289,7 +289,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         final int completedTermOffset = (int)completedPosition & termLengthMask;
         final int completedOffset = lossHandler.completedOffset();
         final long newCompletedPosition = (completedPosition - completedTermOffset) + completedOffset;
-        this.completedPosition.lazySet(newCompletedPosition);
+        this.completedPosition = newCompletedPosition;
 
         if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
         {
@@ -307,7 +307,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
      */
     public long remaining()
     {
-        return Math.max(completedPosition.get() - subscribersPosition.get(), 0);
+        return Math.max(completedPosition - subscribersPosition, 0);
     }
 
     /**
@@ -323,14 +323,15 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
-        final long completedPosition = this.completedPosition.get();
+        final long windowBeginPosition = lastSmPosition;
 
         if (isHeartbeat(buffer, length))
         {
             hwmCandidate(packetBeginPosition);
             systemCounters.heartbeatsReceived().orderedIncrement();
         }
-        else if (isFlowControlUnderRun(completedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
+        else if (isFlowControlUnderRun(windowBeginPosition, packetBeginPosition) ||
+                 isFlowControlOverRun(windowBeginPosition, proposedPosition))
         {
             bytesReceived = 0;
         }
@@ -356,7 +357,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         int workCount = 1;
         if (ACTIVE == status)
         {
-            final long position = subscribersPosition.get();
+            final long position = subscribersPosition;
 
             if ((position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
             {
@@ -378,13 +379,13 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
     }
 
     /**
-     * Called from the {@link DriverConductor} thread to grab the time of the last frame for liveness
+     * Called from the {@link DriverConductor} thread to grab the time of the last packet for liveness
      *
      * @return time of last frame from the source
      */
-    public long timeOfLastFrame()
+    public long timeOfLastPacket()
     {
-        return timeOfLastFrame.get();
+        return timeOfLastPacket.get();
     }
 
     /**
@@ -415,7 +416,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
      */
     public long completedPosition()
     {
-        return completedPosition.get();
+        return completedPosition;
     }
 
     /**
@@ -435,7 +436,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
 
     private void hwmCandidate(final long proposedPosition)
     {
-        timeOfLastFrame.lazySet(clock.time());
+        timeOfLastPacket.lazySet(clock.time());
 
         if (proposedPosition > hwmPosition.position())
         {
@@ -443,9 +444,9 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         }
     }
 
-    private boolean isFlowControlUnderRun(final long completedPosition, final long packetPosition)
+    private boolean isFlowControlUnderRun(final long windowBeginPosition, final long packetPosition)
     {
-        final boolean isFlowControlUnderRun = packetPosition < completedPosition;
+        final boolean isFlowControlUnderRun = packetPosition < windowBeginPosition;
 
         if (isFlowControlUnderRun)
         {
@@ -455,14 +456,13 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         return isFlowControlUnderRun;
     }
 
-    private boolean isFlowControlOverRun(final long proposedPosition)
+    private boolean isFlowControlOverRun(final long windowBeginPosition, final long proposedPosition)
     {
-        final long subscribersPosition = this.subscribersPosition.get();
-        boolean isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowLength);
+        boolean isFlowControlOverRun = proposedPosition > (windowBeginPosition + currentWindowLength);
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, subscribersPosition, currentWindowLength);
+            logger.logOverRun(proposedPosition, windowBeginPosition, currentWindowLength);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

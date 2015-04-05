@@ -704,7 +704,7 @@ public class DriverConductor implements Agent
             switch (connection.status())
             {
                 case ACTIVE:
-                    if (now > (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (now > (connection.timeOfLastPacket() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         receiverProxy.removeConnection(connection);
 

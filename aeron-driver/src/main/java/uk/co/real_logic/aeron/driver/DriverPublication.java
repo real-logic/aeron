@@ -258,17 +258,17 @@ public class DriverPublication implements AutoCloseable
     public boolean isUnreferencedAndFlushed(final long now)
     {
         boolean isFlushed = false;
-        if (refCount == 0)
+        if (0 == refCount)
         {
             final long senderPosition = this.senderPosition.position();
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
             isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailVolatile();
-        }
 
-        if (isFlushed && isActive)
-        {
-            timeOfFlush = now;
-            isActive = false;
+            if (isFlushed && isActive)
+            {
+                timeOfFlush = now;
+                isActive = false;
+            }
         }
 
         return isFlushed;

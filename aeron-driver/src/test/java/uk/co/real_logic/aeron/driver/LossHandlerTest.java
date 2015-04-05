@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
@@ -64,7 +63,6 @@ public class LossHandlerTest
         TimeUnit.MILLISECONDS.toNanos(20), true);
 
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-    private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -277,30 +275,6 @@ public class LossHandlerTest
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)completedPosition);
-    }
-
-    @Test
-    @Ignore
-    public void shouldHandleHwmGreaterThanCompletedBufferWithFullTermBuffer()
-    {
-        handler = getLossHandlerWithImmediate();
-
-        long completedPosition = ACTIVE_TERM_POSITION;
-        long hwmPosition = ACTIVE_TERM_POSITION + TERM_BUFFER_LENGTH + ALIGNED_FRAME_LENGTH;
-        int offset = 0, i = 0;
-
-        // fill term buffer completely
-        while (TERM_BUFFER_LENGTH > offset)
-        {
-            insertDataFrame(offsetOfMessage(i));
-            i++;
-            offset += ALIGNED_FRAME_LENGTH;
-            completedPosition += ALIGNED_FRAME_LENGTH;
-        }
-
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-
-        verify(nakMessageSender).send(TERM_ID + 1, offsetOfMessage(0), gapLength());
     }
 
     @Test

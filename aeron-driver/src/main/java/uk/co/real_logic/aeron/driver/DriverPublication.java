@@ -50,8 +50,6 @@ public class DriverPublication implements AutoCloseable
     private final InetSocketAddress dstAddress;
     private final SystemCounters systemCounters;
 
-    private final int sessionId;
-    private final int streamId;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
@@ -88,8 +86,6 @@ public class DriverPublication implements AutoCloseable
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.clock = clock;
         this.publisherLimit = publisherLimit;
-        this.sessionId = sessionId;
-        this.streamId = streamId;
         this.mtuLength = mtuLength;
 
         logPartitions = rawLog
@@ -99,22 +95,23 @@ public class DriverPublication implements AutoCloseable
 
         scanner = new TermScanner(headerLength);
         sendBuffers = rawLog.sliceTerms();
+
         final int termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
         senderLimit = new AtomicLong(initialPositionLimit);
 
         timeOfLastSendOrHeartbeat = clock.time();
 
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.initialTermId = initialTermId;
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
         publisherLimit.position(termWindowLength);
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
-        initSetupFrame(initialTermId, termLength);
+        initSetupFrame(initialTermId, termLength, sessionId, streamId);
 
         dataHeader.wrap(new UnsafeBuffer(heartbeatFrameBuffer), 0);
-        initHeartBeatFrame();
+        initHeartBeatFrame(sessionId, streamId);
     }
 
     public void close()
@@ -158,12 +155,12 @@ public class DriverPublication implements AutoCloseable
 
     public int sessionId()
     {
-        return sessionId;
+        return dataHeader.sessionId();
     }
 
     public int streamId()
     {
-        return streamId;
+        return dataHeader.streamId();
     }
 
     public void updatePositionLimitFromStatusMessage(final long limit)
@@ -388,7 +385,7 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private void initSetupFrame(final int activeTermId, final int termLength)
+    private void initSetupFrame(final int activeTermId, final int termLength, final int sessionId, final int streamId)
     {
         setupHeader
             .sessionId(sessionId)
@@ -404,7 +401,7 @@ public class DriverPublication implements AutoCloseable
             .version(HeaderFlyweight.CURRENT_VERSION);
     }
 
-    private void initHeartBeatFrame()
+    private void initHeartBeatFrame(final int sessionId, final int streamId)
     {
         dataHeader
             .sessionId(sessionId)

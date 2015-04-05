@@ -59,10 +59,10 @@ public class TermGapScanner
         boolean gapFound = false;
         do
         {
-            int frameLength = align(termBuffer.getInt(lengthOffset(completedOffset), LITTLE_ENDIAN), FRAME_ALIGNMENT);
+            int frameLength = termBuffer.getInt(lengthOffset(completedOffset), LITTLE_ENDIAN);
             if (frameLength > 0)
             {
-                completedOffset += frameLength;
+                completedOffset += align(frameLength, FRAME_ALIGNMENT);
             }
             else
             {
@@ -72,7 +72,7 @@ public class TermGapScanner
                 {
                     gapLength += FRAME_ALIGNMENT;
                     final int lengthOffset = lengthOffset(completedOffset + gapLength);
-                    frameLength = align(termBuffer.getInt(lengthOffset, LITTLE_ENDIAN), FRAME_ALIGNMENT);
+                    frameLength = termBuffer.getInt(lengthOffset);
 
                     if (0 != frameLength)
                     {

@@ -48,7 +48,7 @@ public class TermGapScannerTest
         final int frameOffset = FRAME_ALIGNMENT * 3;
         final int highWaterMark = frameOffset + DataHeaderFlyweight.HEADER_LENGTH;
 
-        when(termBuffer.getInt(lengthOffset(frameOffset), LITTLE_ENDIAN))
+        when(termBuffer.getInt(lengthOffset(frameOffset)))
             .thenReturn(DataHeaderFlyweight.HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(TRUE));
@@ -66,7 +66,7 @@ public class TermGapScannerTest
             .thenReturn(FRAME_ALIGNMENT);
         when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
             .thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
@@ -84,7 +84,7 @@ public class TermGapScannerTest
             .thenReturn(FRAME_ALIGNMENT);
         when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
             .thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));

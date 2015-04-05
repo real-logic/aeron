@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
@@ -59,7 +58,7 @@ public class TermGapScanner
         boolean gapFound = false;
         do
         {
-            int frameLength = termBuffer.getInt(lengthOffset(completedOffset), LITTLE_ENDIAN);
+            int frameLength = frameLengthVolatile(termBuffer, completedOffset);
             if (frameLength > 0)
             {
                 completedOffset += align(frameLength, FRAME_ALIGNMENT);
@@ -71,8 +70,7 @@ public class TermGapScanner
                 do
                 {
                     gapLength += FRAME_ALIGNMENT;
-                    final int lengthOffset = lengthOffset(completedOffset + gapLength);
-                    frameLength = termBuffer.getInt(lengthOffset);
+                    frameLength = frameLengthVolatile(termBuffer, completedOffset + gapLength);
 
                     if (0 != frameLength)
                     {

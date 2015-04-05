@@ -21,7 +21,6 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.lang.Boolean.*;
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -48,7 +47,7 @@ public class TermGapScannerTest
         final int frameOffset = FRAME_ALIGNMENT * 3;
         final int highWaterMark = frameOffset + DataHeaderFlyweight.HEADER_LENGTH;
 
-        when(termBuffer.getInt(lengthOffset(frameOffset)))
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset)))
             .thenReturn(DataHeaderFlyweight.HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(TRUE));
@@ -62,11 +61,11 @@ public class TermGapScannerTest
         final int tail = FRAME_ALIGNMENT;
         final int highWaterMark = FRAME_ALIGNMENT * 3;
 
-        when(termBuffer.getInt(lengthOffset(tail - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(termBuffer.getIntVolatile(lengthOffset(tail - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
-        when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
+        when(termBuffer.getIntVolatile(lengthOffset(tail)))
             .thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
+        when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
@@ -80,11 +79,11 @@ public class TermGapScannerTest
         final int tail = LOG_BUFFER_CAPACITY - (FRAME_ALIGNMENT * 2);
         final int highWaterMark = LOG_BUFFER_CAPACITY;
 
-        when(termBuffer.getInt(lengthOffset(tail - FRAME_ALIGNMENT), LITTLE_ENDIAN))
+        when(termBuffer.getIntVolatile(lengthOffset(tail - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
-        when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN))
+        when(termBuffer.getIntVolatile(lengthOffset(tail)))
             .thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
+        when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - FRAME_ALIGNMENT)))
             .thenReturn(FRAME_ALIGNMENT);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));

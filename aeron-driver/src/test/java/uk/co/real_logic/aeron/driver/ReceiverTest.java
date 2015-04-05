@@ -178,7 +178,6 @@ public class ReceiverTest
             ACTIVE_TERM_ID,
             INITIAL_TERM_OFFSET,
             INITIAL_WINDOW_LENGTH,
-            STATUS_MESSAGE_TIMEOUT,
             rawLog,
             mockLossHandler,
             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
@@ -208,7 +207,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        connection.sendPendingStatusMessage(1000);
+        connection.sendPendingStatusMessage(1000, STATUS_MESSAGE_TIMEOUT);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
         final InetSocketAddress rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
@@ -251,7 +250,6 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
@@ -314,7 +312,6 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
@@ -380,7 +377,6 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
@@ -450,7 +446,6 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         initialTermOffset,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),

@@ -204,7 +204,7 @@ public class DriverConductor implements Agent
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             final DriverConnection connection = connections.get(i);
-            workCount += connection.trackCompletion() + connection.sendPendingStatusMessage(now);
+            workCount += connection.trackCompletion() + connection.sendPendingStatusMessage(now, statusMessageTimeout);
         }
 
         final ArrayList<DriverPublication> publications = this.publications;
@@ -587,7 +587,6 @@ public class DriverConductor implements Agent
             activeTermId,
             initialTermOffset,
             initialWindowLength,
-            statusMessageTimeout,
             rawLog,
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),

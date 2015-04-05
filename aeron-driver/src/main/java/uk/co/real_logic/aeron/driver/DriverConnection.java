@@ -44,7 +44,6 @@ public class DriverConnection implements AutoCloseable
     }
 
     private final long correlationId;
-    private final long statusMessageTimeout;
     private final int sessionId;
     private final int streamId;
     private final int positionBitsToShift;
@@ -83,7 +82,6 @@ public class DriverConnection implements AutoCloseable
         final int activeTermId,
         final int initialTermOffset,
         final int initialWindowLength,
-        final long statusMessageTimeout,
         final RawLog rawLog,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
@@ -115,7 +113,6 @@ public class DriverConnection implements AutoCloseable
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
-        this.statusMessageTimeout = statusMessageTimeout;
         this.lastSmTimestamp = 0;
 
         final int termCapacity = termBuffers[0].capacity();
@@ -345,7 +342,7 @@ public class DriverConnection implements AutoCloseable
      * @param now time in nanoseconds
      * @return number of work items processed.
      */
-    public int sendPendingStatusMessage(final long now)
+    public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
         int workCount = 1;
         if (ACTIVE == status)

@@ -33,7 +33,7 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.BufferPositionIndicator;
 import uk.co.real_logic.agrona.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
+import uk.co.real_logic.aeron.driver.cmd.ElicitSetupMessageFromSourceCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
@@ -91,7 +91,7 @@ public class DriverConductor implements Agent
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
-    private final ArrayList<ElicitSetupFromSourceCmd> pendingSetups = new ArrayList<>();
+    private final ArrayList<ElicitSetupMessageFromSourceCmd> pendingSetups = new ArrayList<>();
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
     private final Supplier<SenderFlowControl> multicastSenderFlowControl;
@@ -763,7 +763,7 @@ public class DriverConductor implements Agent
     {
         for (int i = pendingSetups.size() - 1; i >= 0; i--)
         {
-            final ElicitSetupFromSourceCmd cmd = pendingSetups.get(i);
+            final ElicitSetupMessageFromSourceCmd cmd = pendingSetups.get(i);
 
             if (now > (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS))
             {
@@ -773,7 +773,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    public void onElicitSetupFromSender(final ElicitSetupFromSourceCmd cmd)
+    public void onElicitSetupMessageFromSender(final ElicitSetupMessageFromSourceCmd cmd)
     {
         final int sessionId = cmd.sessionId();
         final int streamId = cmd.streamId();

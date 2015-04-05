@@ -16,20 +16,21 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.net.InetSocketAddress;
 
 @FunctionalInterface
-public interface SetupFrameHandler
+public interface DataPacketHandler
 {
     /**
-     * Handle a Setup Frame
+     * Handle a Data Frame from the network.
      *
-     * @param header of the first Setup Frame in the message (may be re-wrapped if needed)
-     * @param buffer holding the Setup Info (always starts at 0 offset)
-     * @param length of the Frame (may be longer than the header frame length)
-     * @param srcAddress of the Frame
+     * @param header of the first Data Frame in the packet (may be re-wrapped if needed)
+     * @param buffer holding the data (always starts at 0 offset)
+     * @param length of the packet (may be longer than the header frame length)
+     * @param srcAddress of the packet
+     * @return the number of bytes received.
      */
-    void onFrame(SetupFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
+    int onDataPacket(DataHeaderFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
 }

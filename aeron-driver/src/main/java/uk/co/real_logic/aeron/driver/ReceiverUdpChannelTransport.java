@@ -36,28 +36,28 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();
 
-    private final DataFrameHandler dataFrameHandler;
-    private final SetupFrameHandler setupFrameHandler;
+    private final DataPacketHandler dataPacketHandler;
+    private final SetupMessageHandler setupMessageHandler;
 
     /**
      * Construct a transport for use with receiving and processing data frames
      *
      * @param udpChannel       of the transport
-     * @param dataFrameHandler to call when data frames are received
+     * @param dataPacketHandler to call when data frames are received
      * @param logger           for logging
      * @param lossGenerator    for loss generation
      */
     public ReceiverUdpChannelTransport(
         final UdpChannel udpChannel,
-        final DataFrameHandler dataFrameHandler,
-        final SetupFrameHandler setupFrameHandler,
+        final DataPacketHandler dataPacketHandler,
+        final SetupMessageHandler setupMessageHandler,
         final EventLogger logger,
         final LossGenerator lossGenerator)
     {
         super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), lossGenerator, logger);
 
-        this.dataFrameHandler = dataFrameHandler;
-        this.setupFrameHandler = setupFrameHandler;
+        this.dataPacketHandler = dataPacketHandler;
+        this.setupMessageHandler = setupMessageHandler;
 
         dataHeader.wrap(receiveBuffer(), 0);
         setupHeader.wrap(receiveBuffer(), 0);
@@ -71,11 +71,11 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
         {
             case HDR_TYPE_PAD:
             case HDR_TYPE_DATA:
-                bytesReceived = dataFrameHandler.onFrame(dataHeader, receiveBuffer, length, srcAddress);
+                bytesReceived = dataPacketHandler.onDataPacket(dataHeader, receiveBuffer, length, srcAddress);
                 break;
 
             case HDR_TYPE_SETUP:
-                setupFrameHandler.onFrame(setupHeader, receiveBuffer, length, srcAddress);
+                setupMessageHandler.onSetupMessage(setupHeader, receiveBuffer, length, srcAddress);
                 break;
         }
 

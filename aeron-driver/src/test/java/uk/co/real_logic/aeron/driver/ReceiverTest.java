@@ -78,7 +78,6 @@ public class ReceiverTest
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
-    private final PositionReporter mockCompletedReceivedPosition = spy(new HeapPositionReporter());
     private final PositionReporter mockHighestReceivedPosition = spy(new HeapPositionReporter());
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
@@ -167,7 +166,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         final DriverConnection connection = new DriverConnection(
             receiveChannelEndpoint,
@@ -178,12 +177,10 @@ public class ReceiverTest
             ACTIVE_TERM_ID,
             INITIAL_TERM_OFFSET,
             INITIAL_WINDOW_LENGTH,
-            STATUS_MESSAGE_TIMEOUT,
             rawLog,
             mockLossHandler,
             receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
             POSITION_INDICATORS,
-            mockCompletedReceivedPosition,
             mockHighestReceivedPosition,
             clock,
             mockSystemCounters,
@@ -208,7 +205,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        connection.sendPendingStatusMessage(1000);
+        connection.sendPendingStatusMessage(1000, STATUS_MESSAGE_TIMEOUT);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
         final InetSocketAddress rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
@@ -233,7 +230,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -251,12 +248,10 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -269,7 +264,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = termReaders[ACTIVE_INDEX].read(
             termReaders[ACTIVE_INDEX].offset(),
@@ -296,7 +291,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -314,12 +309,10 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -332,10 +325,10 @@ public class ReceiverTest
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = termReaders[ACTIVE_INDEX].read(
             termReaders[ACTIVE_INDEX].offset(),
@@ -362,7 +355,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -380,12 +373,10 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -398,10 +389,10 @@ public class ReceiverTest
         receiver.doWork();
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
         messagesRead = termReaders[ACTIVE_INDEX].read(
             termReaders[ACTIVE_INDEX].offset(),
@@ -432,7 +423,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader, initialTermOffset);
-        receiveChannelEndpoint.onSetupFrame(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -450,12 +441,10 @@ public class ReceiverTest
                         ACTIVE_TERM_ID,
                         initialTermOffset,
                         INITIAL_WINDOW_LENGTH,
-                        STATUS_MESSAGE_TIMEOUT,
                         rawLog,
                         mockLossHandler,
                         receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
-                        mockCompletedReceivedPosition,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -465,15 +454,13 @@ public class ReceiverTest
 
         assertThat(messagesRead, is(1));
 
-        verify(mockCompletedReceivedPosition).position(initialTermOffset);
         verify(mockHighestReceivedPosition).position(initialTermOffset);
 
         receiver.doWork();
 
         fillDataFrame(dataHeader, initialTermOffset, FAKE_PAYLOAD);  // initial data frame
-        receiveChannelEndpoint.onDataFrame(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress);
+        receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress);
 
-        verify(mockCompletedReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
         verify(mockHighestReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
 
         messagesRead = termReaders[ACTIVE_INDEX].read(

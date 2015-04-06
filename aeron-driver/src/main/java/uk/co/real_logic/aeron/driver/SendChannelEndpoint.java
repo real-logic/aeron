@@ -31,9 +31,9 @@ import java.nio.ByteBuffer;
  */
 public class SendChannelEndpoint implements AutoCloseable
 {
+    private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final UdpChannelTransport transport;
     private final UdpChannel udpChannel;
-    private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final SystemCounters systemCounters;
 
     public SendChannelEndpoint(
@@ -45,7 +45,7 @@ public class SendChannelEndpoint implements AutoCloseable
     {
         this.systemCounters = systemCounters;
         this.transport = new SenderUdpChannelTransport(
-            udpChannel, this::onStatusMessageFrame, this::onNakFrame, logger, lossGenerator);
+            udpChannel, this::onStatusMessage, this::onNakMessage, logger, lossGenerator);
         this.transport.registerForRead(transportPoller);
         this.udpChannel = udpChannel;
     }
@@ -94,9 +94,7 @@ public class SendChannelEndpoint implements AutoCloseable
     }
 
     public void addPublication(
-        final DriverPublication publication,
-        final RetransmitHandler retransmitHandler,
-        final SenderFlowControl senderFlowControl)
+        final DriverPublication publication, final RetransmitHandler retransmitHandler, final SenderFlowControl senderFlowControl)
     {
         assemblyByStreamAndSessionIdMap.put(
             publication.sessionId(), publication.streamId(),
@@ -122,7 +120,7 @@ public class SendChannelEndpoint implements AutoCloseable
         return assemblyByStreamAndSessionIdMap.size();
     }
 
-    private void onStatusMessageFrame(
+    private void onStatusMessage(
         final StatusMessageFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(header.sessionId(), header.streamId());
@@ -145,7 +143,7 @@ public class SendChannelEndpoint implements AutoCloseable
         }
     }
 
-    private void onNakFrame(
+    private void onNakMessage(
         final NakFlyweight nak, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(nak.sessionId(), nak.streamId());
@@ -157,7 +155,7 @@ public class SendChannelEndpoint implements AutoCloseable
         }
     }
 
-    private static final class PublicationAssembly
+    static final class PublicationAssembly
     {
         final DriverPublication publication;
         final RetransmitHandler retransmitHandler;

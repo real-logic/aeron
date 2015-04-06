@@ -26,9 +26,10 @@ import java.util.regex.Pattern;
 public class SocketAddressUtil
 {
     private static final Pattern IPV4_ADDRESS_PATTERN = Pattern.compile("([^:]+)(?::([0-9]+))?");
-    private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile("\\[([0-9A-Fa-f:]+)\\](?::([0-9]+))?");
+    private static final Pattern IPV6_ADDRESS_PATTERN = Pattern.compile(
+        "\\[([0-9A-Fa-f:]+)(?:%[a-zA-Z0-9_.~-]+)?\\](?::([0-9]+))?");
 
-    private static InetSocketAddress parse(CharSequence cs, BiFunction<String, String, InetSocketAddress> consumer)
+    private static InetSocketAddress parse(final CharSequence cs, final BiFunction<String, String, InetSocketAddress> consumer)
     {
         if (null == cs)
         {
@@ -65,7 +66,7 @@ public class SocketAddressUtil
      * @param cs Input string
      * @return An InetSocketAddress parsed from the input.
      */
-    public static InetSocketAddress parse(CharSequence cs)
+    public static InetSocketAddress parse(final CharSequence cs)
     {
         return parse(cs, (hostString, portString) ->
         {
@@ -78,7 +79,7 @@ public class SocketAddressUtil
         });
     }
 
-    public static InetSocketAddress parse(CharSequence cs, int defaultPort)
+    public static InetSocketAddress parse(final CharSequence cs, final int defaultPort)
     {
         return parse(cs, (hostString, portString) ->
         {

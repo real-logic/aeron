@@ -81,18 +81,6 @@ public class ReceiverProxy
         }
     }
 
-    public void removeConnection(final DriverConnection connection)
-    {
-        if (isSharedThread())
-        {
-            receiver.onRemoveConnection(connection);
-        }
-        else
-        {
-            offer(new RemoveConnectionCmd(connection));
-        }
-    }
-
     public void registerMediaEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         if (isSharedThread())

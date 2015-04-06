@@ -16,17 +16,15 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermScanner;
+import uk.co.real_logic.aeron.common.protocol.*;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.agrona.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
@@ -38,33 +36,31 @@ public class DriverPublication implements AutoCloseable
     private final RawLog rawLog;
     private final NanoClock clock;
     private final SetupFlyweight setupHeader = new SetupFlyweight();
-    private final TermScanner scanner;
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
+    private final TermScanner scanner;
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
-    private final AtomicLong senderLimit;
     private final PositionReporter publisherLimit;
     private final PositionReporter senderPosition;
-    private final SystemCounters systemCounters;
     private final SendChannelEndpoint channelEndpoint;
     private final InetSocketAddress dstAddress;
+    private final SystemCounters systemCounters;
 
-    private final int sessionId;
-    private final int streamId;
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
-    private final int termLength;
     private final int mtuLength;
     private final int termWindowLength;
 
     private long timeOfFlush = 0;
     private long timeOfLastSendOrHeartbeat;
-    private int lastSendLength = 0;
     private int statusMessagesReceivedCount = 0;
     private int refCount = 0;
 
     private boolean trackSenderLimits = true;
+    private volatile long senderLimit;
     private volatile boolean isActive = true;
     private volatile boolean shouldSendSetupFrame = true;
 
@@ -89,8 +85,6 @@ public class DriverPublication implements AutoCloseable
         this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.clock = clock;
         this.publisherLimit = publisherLimit;
-        this.sessionId = sessionId;
-        this.streamId = streamId;
         this.mtuLength = mtuLength;
 
         logPartitions = rawLog
@@ -100,19 +94,23 @@ public class DriverPublication implements AutoCloseable
 
         scanner = new TermScanner(headerLength);
         sendBuffers = rawLog.sliceTerms();
-        termLength = logPartitions[0].termBuffer().capacity();
+
+        final int termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
-        senderLimit = new AtomicLong(initialPositionLimit);
+        senderLimit = initialPositionLimit;
 
         timeOfLastSendOrHeartbeat = clock.time();
 
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.initialTermId = initialTermId;
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
         publisherLimit.position(termWindowLength);
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
-        constructSetupFrame(initialTermId);
+        initSetupFrame(initialTermId, termLength, sessionId, streamId);
+
+        dataHeader.wrap(new UnsafeBuffer(heartbeatFrameBuffer), 0);
+        initHeartBeatFrame(sessionId, streamId);
     }
 
     public void close()
@@ -135,14 +133,14 @@ public class DriverPublication implements AutoCloseable
 
             if (shouldSendSetupFrame)
             {
-                setupFrameCheck(now, activeTermId, termOffset);
+                setupMessageCheck(now, activeTermId, termOffset, senderPosition);
             }
 
             bytesSent = sendData(now, senderPosition, termOffset);
 
             if (0 == bytesSent)
             {
-                heartbeatCheck(now, senderPosition);
+                heartbeatMessageCheck(now, senderPosition, activeTermId);
             }
         }
 
@@ -156,18 +154,18 @@ public class DriverPublication implements AutoCloseable
 
     public int sessionId()
     {
-        return sessionId;
+        return dataHeader.sessionId();
     }
 
     public int streamId()
     {
-        return streamId;
+        return dataHeader.streamId();
     }
 
     public void updatePositionLimitFromStatusMessage(final long limit)
     {
         statusMessagesReceivedCount++;
-        senderLimit.lazySet(limit);
+        senderLimit = limit;
     }
 
     /**
@@ -217,8 +215,7 @@ public class DriverPublication implements AutoCloseable
                     break;
                 }
 
-                sendBuffer.limit(termOffset + available);
-                sendBuffer.position(termOffset);
+                sendBuffer.limit(termOffset + available).position(termOffset);
 
                 if (available != channelEndpoint.sendTo(sendBuffer, dstAddress))
                 {
@@ -261,17 +258,17 @@ public class DriverPublication implements AutoCloseable
     public boolean isUnreferencedAndFlushed(final long now)
     {
         boolean isFlushed = false;
-        if (refCount == 0)
+        if (0 == refCount)
         {
             final long senderPosition = this.senderPosition.position();
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
             isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailVolatile();
-        }
 
-        if (isFlushed && isActive)
-        {
-            timeOfFlush = now;
-            isActive = false;
+            if (isFlushed && isActive)
+            {
+                timeOfFlush = now;
+                isActive = false;
+            }
         }
 
         return isFlushed;
@@ -294,20 +291,21 @@ public class DriverPublication implements AutoCloseable
      */
     public int updatePublishersLimit()
     {
+        int workCount = 0;
         final long candidatePublisherLimit = senderPosition.position() + termWindowLength;
         if (publisherLimit.position() != candidatePublisherLimit)
         {
             publisherLimit.position(candidatePublisherLimit);
-            return 1;
+            workCount = 1;
         }
 
-        return 0;
+        return workCount;
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
-        int bytesAdvanced = 0;
-        final int availableWindow = (int)(senderLimit.get() - senderPosition);
+        int bytesSent = 0;
+        final int availableWindow = (int)(senderLimit - senderPosition);
         if (availableWindow > 0)
         {
             final int scanLimit = Math.min(availableWindow, mtuLength);
@@ -317,17 +315,15 @@ public class DriverPublication implements AutoCloseable
             if (available > 0)
             {
                 final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-                sendBuffer.limit(termOffset + available);
-                sendBuffer.position(termOffset);
+                sendBuffer.limit(termOffset + available).position(termOffset);
 
                 if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
                 {
-                    lastSendLength = available;
                     timeOfLastSendOrHeartbeat = now;
                     trackSenderLimits = true;
 
-                    bytesAdvanced = available + scanner.padding();
-                    this.senderPosition.position(senderPosition + bytesAdvanced);
+                    bytesSent = available;
+                    this.senderPosition.position(senderPosition + bytesSent + scanner.padding());
                 }
                 else
                 {
@@ -341,14 +337,25 @@ public class DriverPublication implements AutoCloseable
             systemCounters.senderFlowControlLimits().orderedIncrement();
         }
 
-        return bytesAdvanced;
+        return bytesSent;
     }
 
-    private void setupFrameCheck(final long now, final int activeTermId, final int termOffset)
+    private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
     {
-        if (0 != lastSendLength || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
+        if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
         {
-            sendSetupFrame(now, activeTermId, termOffset);
+            setupHeader.activeTermId(activeTermId).termOffset(termOffset);
+
+            final int frameLength = setupHeader.frameLength();
+            setupFrameBuffer.limit(frameLength).position(0);
+
+            final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
+            if (frameLength != bytesSent)
+            {
+                systemCounters.setupFrameShortSends().orderedIncrement();
+            }
+
+            timeOfLastSendOrHeartbeat = now;
         }
 
         if (statusMessagesReceivedCount > 0)
@@ -357,47 +364,17 @@ public class DriverPublication implements AutoCloseable
         }
     }
 
-    private void sendSetupFrame(final long now, final int activeTermId, final int termOffset)
-    {
-        setupHeader.activeTermId(activeTermId)
-                   .termOffset(termOffset);
-
-        final int frameLength = setupHeader.frameLength();
-        setupFrameBuffer.limit(frameLength)
-                        .position(0);
-
-        final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
-        if (frameLength != bytesSent)
-        {
-            systemCounters.setupFrameShortSends().orderedIncrement();
-        }
-
-        timeOfLastSendOrHeartbeat = now;
-    }
-
-    private void heartbeatCheck(final long now, final long senderPosition)
+    private void heartbeatMessageCheck(final long now, final long senderPosition, final int activeTermId)
     {
         if (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
-            sendHeartbeat(now, senderPosition);
-        }
-    }
+            final int termOffset = (int)senderPosition & termLengthMask;
 
-    private void sendHeartbeat(final long now, final long senderPosition)
-    {
-        if (0 < senderPosition)
-        {
-            final int length = lastSendLength;
-            final long lastSendPosition = senderPosition - length;
-            final int termOffset = (int) lastSendPosition & termLengthMask;
-            final int activeIndex = indexByPosition(lastSendPosition, positionBitsToShift);
+            heartbeatFrameBuffer.clear();
+            dataHeader.termOffset(termOffset).termId(activeTermId);
 
-            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-            sendBuffer.limit(termOffset + length);
-            sendBuffer.position(termOffset);
-
-            final int bytesSent = channelEndpoint.sendTo(sendBuffer, dstAddress);
-            if (bytesSent != length)
+            final int bytesSent = channelEndpoint.sendTo(heartbeatFrameBuffer, dstAddress);
+            if (bytesSent != DataHeaderFlyweight.HEADER_LENGTH)
             {
                 systemCounters.dataFrameShortSends().orderedIncrement();
             }
@@ -405,24 +382,31 @@ public class DriverPublication implements AutoCloseable
             systemCounters.heartbeatsSent().orderedIncrement();
             timeOfLastSendOrHeartbeat = now;
         }
-        else
-        {
-            triggerSendSetupFrame();
-        }
     }
 
-    private void constructSetupFrame(final int activeTermId)
+    private void initSetupFrame(final int activeTermId, final int termLength, final int sessionId, final int streamId)
     {
-        setupHeader.sessionId(sessionId)
-                   .streamId(streamId)
-                   .initialTermId(initialTermId)
-                   .activeTermId(activeTermId)
-                   .termOffset(0)
-                   .termLength(termLength)
-                   .mtuLength(mtuLength)
-                   .frameLength(SetupFlyweight.HEADER_LENGTH)
-                   .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
-                   .flags((byte)0)
-                   .version(HeaderFlyweight.CURRENT_VERSION);
+        setupHeader
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .initialTermId(initialTermId)
+            .activeTermId(activeTermId)
+            .termOffset(0)
+            .termLength(termLength)
+            .mtuLength(mtuLength)
+            .frameLength(SetupFlyweight.HEADER_LENGTH)
+            .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+            .flags((byte)0)
+            .version(HeaderFlyweight.CURRENT_VERSION);
+    }
+
+    private void initHeartBeatFrame(final int sessionId, final int streamId)
+    {
+        dataHeader
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .frameLength(0)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
     }
 }

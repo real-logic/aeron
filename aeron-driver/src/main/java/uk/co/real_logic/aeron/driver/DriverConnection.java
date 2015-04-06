@@ -15,9 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.agrona.status.PositionIndicator;
@@ -26,15 +27,43 @@ import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
+
+class DriverConnectionPadding1
+{
+    protected long p1, p2, p3, p4, p5, p6, p7;
+}
+
+class DriverConnectionConductorFields extends DriverConnectionPadding1
+{
+    protected long completedPosition;
+    protected long subscribersPosition;
+    protected long lastSmTimestamp;
+    protected long timeOfLastStatusChange;
+}
+
+class DriverConnectionPadding2 extends DriverConnectionConductorFields
+{
+    protected long p8, p9, p10, p11, p12, p13, p15;
+}
+
+class DriverConnectionHotFields extends DriverConnectionPadding2
+{
+    protected long timeOfLastPacket;
+}
+
+class DriverConnectionPadding3 extends DriverConnectionHotFields
+{
+    protected long p16, p17, p18, p19, p20, p21, p22;
+}
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverConnection implements AutoCloseable
+public class DriverConnection extends DriverConnectionPadding3 implements AutoCloseable
 {
     public enum Status
     {
@@ -42,7 +71,6 @@ public class DriverConnection implements AutoCloseable
     }
 
     private final long correlationId;
-    private final long statusMessageTimeout;
     private final int sessionId;
     private final int streamId;
     private final int positionBitsToShift;
@@ -56,20 +84,14 @@ public class DriverConnection implements AutoCloseable
     private final EventLogger logger;
     private final SystemCounters systemCounters;
     private final NanoClock clock;
-    private final LogRebuilder[] rebuilders;
-    private final AtomicLong timeOfLastFrame = new AtomicLong();
-    private final PositionReporter completedPosition;
+    private final UnsafeBuffer[] termBuffers;
     private final PositionReporter hwmPosition;
     private final InetSocketAddress sourceAddress;
     private final List<PositionIndicator> subscriberPositions;
-    private final AtomicLong subscribersPosition = new AtomicLong();
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
 
-    private long timeOfLastStatusChange;
-    private long lastSmPosition;
-    private long lastSmTimestamp;
-
+    private volatile long lastSmPosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
@@ -81,12 +103,10 @@ public class DriverConnection implements AutoCloseable
         final int activeTermId,
         final int initialTermOffset,
         final int initialWindowLength,
-        final long statusMessageTimeout,
         final RawLog rawLog,
         final LossHandler lossHandler,
         final StatusMessageSender statusMessageSender,
         final List<PositionIndicator> subscriberPositions,
-        final PositionReporter completedPosition,
         final PositionReporter hwmPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
@@ -99,7 +119,6 @@ public class DriverConnection implements AutoCloseable
         this.streamId = streamId;
         this.rawLog = rawLog;
         this.subscriberPositions = subscriberPositions;
-        this.completedPosition = completedPosition;
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
         this.sourceAddress = sourceAddress;
@@ -108,18 +127,13 @@ public class DriverConnection implements AutoCloseable
         this.clock = clock;
         final long time = clock.time();
         this.timeOfLastStatusChange = time;
-        timeOfLastFrame.lazySet(time);
+        this.timeOfLastPacket = time;
 
-        rebuilders = rawLog
-            .stream()
-            .map((partition) -> new LogRebuilder(partition.termBuffer(), partition.metaDataBuffer()))
-            .toArray(LogRebuilder[]::new);
+        termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
         this.statusMessageSender = statusMessageSender;
-        this.statusMessageTimeout = statusMessageTimeout;
-        this.lastSmTimestamp = 0;
 
-        final int termCapacity = rebuilders[0].termBuffer().capacity();
+        final int termCapacity = termBuffers[0].capacity();
 
         this.currentWindowLength = Math.min(termCapacity, initialWindowLength);
         this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);
@@ -130,8 +144,18 @@ public class DriverConnection implements AutoCloseable
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition - (currentGain + 1);
-        this.completedPosition.position(initialPosition);
+        this.completedPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+        hwmPosition.close();
+        rawLog.close();
+        subscriberPositions.forEach(PositionIndicator::close);
     }
 
     public long correlationId()
@@ -218,6 +242,7 @@ public class DriverConnection implements AutoCloseable
      */
     public void status(final Status status)
     {
+        timeOfLastStatusChange = clock.time();
         this.status = status;
     }
 
@@ -232,76 +257,46 @@ public class DriverConnection implements AutoCloseable
     }
 
     /**
-     * Set time of last status change. Set by {@link DriverConductor}.
-     *
-     * @param now timestamp to use for time
-     */
-    public void timeOfLastStatusChange(final long now)
-    {
-        timeOfLastStatusChange = now;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public void close()
-    {
-        completedPosition.close();
-        hwmPosition.close();
-        rawLog.close();
-        subscriberPositions.forEach(PositionIndicator::close);
-    }
-
-    /**
      * Called from the {@link DriverConductor}.
      *
      * @return if work has been done or not
      */
-    public int cleanLogBuffer()
+    public int trackCompletion()
     {
-        int workCount = 0;
-
-        for (final LogBufferPartition logBufferPartition : rebuilders)
-        {
-            if (logBufferPartition.status() == NEEDS_CLEANING)
-            {
-                logBufferPartition.clean();
-                workCount = 1;
-            }
-        }
-
-        return workCount;
-    }
-
-    /**
-     * Called from the {@link DriverConductor}.
-     *
-     * @return if work has been done or not
-     */
-    public int scanForLoss()
-    {
-        long position = Long.MAX_VALUE;
+        long minSubscriberPosition = Long.MAX_VALUE;
+        long maxSubscriberPosition = Long.MIN_VALUE;
 
         final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            position = Math.min(position, subscriberPositions.get(i).position());
+            final long position = subscriberPositions.get(i).position();
+            minSubscriberPosition = Math.min(minSubscriberPosition, position);
+            maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        if (subscribersPosition.get() != position)
+        subscribersPosition = minSubscriberPosition;
+
+        final long oldCompletedPosition = this.completedPosition;
+        final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
+
+        final int positionBitsToShift = this.positionBitsToShift;
+        final int index = indexByPosition(completedPosition, positionBitsToShift);
+
+        int workCount = lossHandler.scan(
+            termBuffers[index], completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
+
+        final int completedTermOffset = (int)completedPosition & termLengthMask;
+        final int completedOffset = lossHandler.completedOffset();
+        final long newCompletedPosition = (completedPosition - completedTermOffset) + completedOffset;
+        this.completedPosition = newCompletedPosition;
+
+        if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
         {
-            subscribersPosition.lazySet(position);
+            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(index)];
+            termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
-        final long completedPosition = this.completedPosition.position();
-
-        return lossHandler.scan(
-            rebuilders[indexByPosition(completedPosition, positionBitsToShift)].termBuffer(),
-            completedPosition,
-            hwmPosition.position(),
-            termLengthMask,
-            positionBitsToShift,
-            initialTermId);
+        return workCount;
     }
 
     /**
@@ -311,7 +306,7 @@ public class DriverConnection implements AutoCloseable
      */
     public long remaining()
     {
-        return Math.max(completedPosition.position() - subscribersPosition.get(), 0);
+        return Math.max(completedPosition - subscribersPosition, 0);
     }
 
     /**
@@ -319,81 +314,54 @@ public class DriverConnection implements AutoCloseable
      *
      * @param buffer for the data packet to insert into the appropriate term.
      * @param length of the data packet
-     * @return number of bytes completed as a result of this insertion.
+     * @return number of bytes applied as a result of this insertion.
      */
     public int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
-        int bytesCompleted = 0;
-        final int initialTermId = this.initialTermId;
+        int bytesReceived = length;
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
-        final long completedPosition = this.completedPosition.position();
+        final long windowBeginPosition = lastSmPosition;
 
-        if (isHeartbeat(completedPosition, proposedPosition) ||
-            isFlowControlUnderRun(completedPosition, packetBeginPosition) || isFlowControlOverRun(proposedPosition))
+        if (isHeartbeat(buffer, length))
         {
-            return bytesCompleted;
+            hwmCandidate(packetBeginPosition);
+            systemCounters.heartbeatsReceived().orderedIncrement();
         }
-
-        final int activeTermId = computeTermIdFromPosition(completedPosition, positionBitsToShift, initialTermId);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
-
-        if (termId == activeTermId)
+        else if (isFlowControlUnderRun(windowBeginPosition, packetBeginPosition) ||
+                 isFlowControlOverRun(windowBeginPosition, proposedPosition))
         {
-            final LogRebuilder currentRebuilder = rebuilders[activeIndex];
-            currentRebuilder.insert(termOffset, buffer, 0, length);
-
-            bytesCompleted = updateCompletionStatus(
-                currentRebuilder.termBuffer(), completedPosition, initialTermId, positionBitsToShift, activeTermId, activeIndex);
+            bytesReceived = 0;
         }
         else
         {
-            final LogRebuilder nextRebuilder = rebuilders[nextPartitionIndex(activeIndex)];
-            if (nextRebuilder.status() == CLEAN)
-            {
-                nextRebuilder.insert(termOffset, buffer, 0, length);
-            }
+            final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetBeginPosition, positionBitsToShift)];
+            LogRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
+
+            hwmCandidate(proposedPosition);
         }
 
-        hwmCandidate(proposedPosition);
-
-        return bytesCompleted;
+        return bytesReceived;
     }
 
-    private int updateCompletionStatus(
-        final UnsafeBuffer termBuffer,
-        final long currentCompletedPosition,
-        final int initialTermId,
-        final int positionBitsToShift,
-        final int activeTermId,
-        final int activeIndex)
+    /**
+     * To be called from the {@link Receiver} to see if a connection should be garbage collected.
+     *
+     * @param now                       current time to check against.
+     * @param connectionLivenessTimeout timeout for inactivity test.
+     * @return true if still active otherwise false.
+     */
+    public boolean checkForActivity(final long now, final long connectionLivenessTimeout)
     {
-        final int bytesCompleted;
-        final int currentTail = (int)(currentCompletedPosition & termLengthMask);
-        final int capacity = termBuffer.capacity();
-        final int newTail = LogRebuilder.scanForCompletion(termBuffer, currentTail, capacity);
-
-        if (newTail >= capacity)
+        if (now > (timeOfLastPacket + connectionLivenessTimeout))
         {
-            rebuilders[previousPartitionIndex(activeIndex)].statusOrdered(NEEDS_CLEANING);
+            status(Status.INACTIVE);
+
+            return false;
         }
 
-        final long newCompletedPosition = computePosition(activeTermId, newTail, positionBitsToShift, initialTermId);
-        bytesCompleted = (int)(newCompletedPosition - currentCompletedPosition);
-        completedPosition.position(newCompletedPosition);
-
-        return bytesCompleted;
-    }
-
-    private void hwmCandidate(final long proposedPosition)
-    {
-        timeOfLastFrame.lazySet(clock.time());
-
-        if (proposedPosition > hwmPosition.position())
-        {
-            hwmPosition.position(proposedPosition);
-        }
+        return true;
     }
 
     /**
@@ -402,12 +370,12 @@ public class DriverConnection implements AutoCloseable
      * @param now time in nanoseconds
      * @return number of work items processed.
      */
-    public int sendPendingStatusMessage(final long now)
+    public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
         int workCount = 1;
         if (ACTIVE == status)
         {
-            final long position = subscribersPosition.get();
+            final long position = subscribersPosition;
 
             if ((position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
             {
@@ -426,16 +394,6 @@ public class DriverConnection implements AutoCloseable
         }
 
         return workCount;
-    }
-
-    /**
-     * Called from the {@link DriverConductor} thread to grab the time of the last frame for liveness
-     *
-     * @return time of last frame from the source
-     */
-    public long timeOfLastFrame()
-    {
-        return timeOfLastFrame.get();
     }
 
     /**
@@ -466,7 +424,7 @@ public class DriverConnection implements AutoCloseable
      */
     public long completedPosition()
     {
-        return completedPosition.position();
+        return completedPosition;
     }
 
     /**
@@ -479,22 +437,24 @@ public class DriverConnection implements AutoCloseable
         return initialTermId;
     }
 
-    private boolean isHeartbeat(final long currentPosition, final long proposedPosition)
+    private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
     {
-        final boolean isHeartbeat = proposedPosition == currentPosition;
-
-        if (isHeartbeat)
-        {
-            systemCounters.heartbeatsReceived().orderedIncrement();
-            timeOfLastFrame.lazySet(clock.time());
-        }
-
-        return isHeartbeat;
+        return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(lengthOffset(0)) == 0;
     }
 
-    private boolean isFlowControlUnderRun(final long completedPosition, final long packetPosition)
+    private void hwmCandidate(final long proposedPosition)
     {
-        final boolean isFlowControlUnderRun = packetPosition < completedPosition;
+        timeOfLastPacket = clock.time();
+
+        if (proposedPosition > hwmPosition.position())
+        {
+            hwmPosition.position(proposedPosition);
+        }
+    }
+
+    private boolean isFlowControlUnderRun(final long windowBeginPosition, final long packetPosition)
+    {
+        final boolean isFlowControlUnderRun = packetPosition < windowBeginPosition;
 
         if (isFlowControlUnderRun)
         {
@@ -504,14 +464,13 @@ public class DriverConnection implements AutoCloseable
         return isFlowControlUnderRun;
     }
 
-    private boolean isFlowControlOverRun(final long proposedPosition)
+    private boolean isFlowControlOverRun(final long windowBeginPosition, final long proposedPosition)
     {
-        final long subscribersPosition = this.subscribersPosition.get();
-        boolean isFlowControlOverRun = proposedPosition > (subscribersPosition + currentWindowLength);
+        boolean isFlowControlOverRun = proposedPosition > (windowBeginPosition + currentWindowLength);
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, subscribersPosition, currentWindowLength);
+            logger.logOverRun(proposedPosition, windowBeginPosition, currentWindowLength);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

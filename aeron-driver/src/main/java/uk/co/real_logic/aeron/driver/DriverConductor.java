@@ -33,7 +33,7 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.BufferPositionIndicator;
 import uk.co.real_logic.agrona.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
+import uk.co.real_logic.aeron.driver.cmd.ElicitSetupMessageFromSourceCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.driver.Configuration.CONNECTION_LIVENESS_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
@@ -91,7 +92,7 @@ public class DriverConductor implements Agent
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
-    private final ArrayList<ElicitSetupFromSourceCmd> pendingSetups = new ArrayList<>();
+    private final ArrayList<ElicitSetupMessageFromSourceCmd> pendingSetups = new ArrayList<>();
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
     private final Supplier<SenderFlowControl> multicastSenderFlowControl;
@@ -204,17 +205,14 @@ public class DriverConductor implements Agent
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             final DriverConnection connection = connections.get(i);
-            workCount += connection.scanForLoss() +
-                         connection.sendPendingStatusMessage(now) +
-                         connection.cleanLogBuffer();
+            workCount += connection.trackCompletion() + connection.sendPendingStatusMessage(now, statusMessageTimeout);
         }
 
         final ArrayList<DriverPublication> publications = this.publications;
         for (int i = 0, size = publications.size(); i < size; i++)
         {
             final DriverPublication publication = publications.get(i);
-            workCount += publication.cleanLogBuffer() +
-                         publication.updatePublishersLimit();
+            workCount += publication.updatePublishersLimit() + publication.cleanLogBuffer();
         }
 
         return workCount;
@@ -561,7 +559,6 @@ public class DriverConductor implements Agent
                 })
             .collect(toList());
 
-        final int receiverCompletedCounterId = allocatePositionCounter("receiver pos", channel, sessionId, streamId);
         final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId);
         final String sourceInfo = generateSourceInfo(sourceAddress);
 
@@ -590,12 +587,10 @@ public class DriverConductor implements Agent
             activeTermId,
             initialTermOffset,
             initialWindowLength,
-            statusMessageTimeout,
             rawLog,
             lossHandler,
             channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
-            new BufferPositionReporter(countersBuffer, receiverCompletedCounterId, countersManager),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
             systemCounters,
@@ -709,30 +704,11 @@ public class DriverConductor implements Agent
 
             switch (connection.status())
             {
-                case ACTIVE:
-                    if (now > (connection.timeOfLastFrame() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
-                    {
-                        receiverProxy.removeConnection(connection);
-
-                        connection.status(DriverConnection.Status.INACTIVE);
-                        connection.timeOfLastStatusChange(now);
-
-                        if (connection.remaining() == 0)
-                        {
-                            connection.status(DriverConnection.Status.LINGER);
-
-                            clientProxy.onInactiveConnection(
-                                connection.correlationId(), connection.sessionId(), connection.streamId(), uriString);
-                        }
-                    }
-                    break;
-
                 case INACTIVE:
                     if (connection.remaining() == 0 ||
-                        now > (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+                        now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         connection.status(DriverConnection.Status.LINGER);
-                        connection.timeOfLastStatusChange(now);
 
                         clientProxy.onInactiveConnection(
                             connection.correlationId(), connection.sessionId(), connection.streamId(), uriString);
@@ -740,7 +716,7 @@ public class DriverConductor implements Agent
                     break;
 
                 case LINGER:
-                    if (now > (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         logger.logConnectionRemoval(uriString, connection.sessionId(), connection.streamId());
 
@@ -758,7 +734,7 @@ public class DriverConductor implements Agent
         {
             final AeronClient aeronClient = clients.get(i);
 
-            if (now > (aeronClient.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+            if (now > (aeronClient.timeOfLastKeepalive() + CONNECTION_LIVENESS_TIMEOUT_NS))
             {
                 clients.remove(i);
             }
@@ -769,7 +745,7 @@ public class DriverConductor implements Agent
     {
         for (int i = pendingSetups.size() - 1; i >= 0; i--)
         {
-            final ElicitSetupFromSourceCmd cmd = pendingSetups.get(i);
+            final ElicitSetupMessageFromSourceCmd cmd = pendingSetups.get(i);
 
             if (now > (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS))
             {
@@ -779,7 +755,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    public void onElicitSetupFromSender(final ElicitSetupFromSourceCmd cmd)
+    public void onElicitSetupMessageFromSender(final ElicitSetupMessageFromSourceCmd cmd)
     {
         final int sessionId = cmd.sessionId();
         final int streamId = cmd.streamId();

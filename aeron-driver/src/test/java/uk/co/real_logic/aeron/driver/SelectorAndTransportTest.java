@@ -58,8 +58,8 @@ public class SelectorAndTransportTest
 
     private final EventLogger mockTransportLogger = mock(EventLogger.class);
 
-    private final DataFrameHandler mockDataFrameHandler = mock(DataFrameHandler.class);
-    private final SetupFrameHandler mockSetupFrameHandler = mock(SetupFrameHandler.class);
+    private final DataPacketHandler mockDataPacketHandler = mock(DataPacketHandler.class);
+    private final SetupMessageHandler mockSetupMessageHandler = mock(SetupMessageHandler.class);
     private final NakFrameHandler mockNakFrameHandler = mock(NakFrameHandler.class);
     private final StatusMessageFrameHandler mockStatusMessageFrameHandler = mock(StatusMessageFrameHandler.class);
 
@@ -100,7 +100,7 @@ public class SelectorAndTransportTest
     {
         transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
-            RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+            RCV_DST, mockDataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
@@ -114,7 +114,7 @@ public class SelectorAndTransportTest
     public void shouldSendEmptyDataFrameUnicastFromSourceToReceiver() throws Exception
     {
         final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
-        final DataFrameHandler dataFrameHandler =
+        final DataPacketHandler dataPacketHandler =
             (header, buffer, length, srcAddress) ->
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
@@ -132,7 +132,7 @@ public class SelectorAndTransportTest
 
         transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
-            RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+            RCV_DST, dataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
@@ -164,7 +164,7 @@ public class SelectorAndTransportTest
     {
         final AtomicInteger dataHeadersReceived = new AtomicInteger(0);
 
-        final DataFrameHandler dataFrameHandler =
+        final DataPacketHandler dataPacketHandler =
             (header, buffer, length, srcAddress) ->
             {
                 assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
@@ -182,7 +182,7 @@ public class SelectorAndTransportTest
 
         transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
-            RCV_DST, dataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+            RCV_DST, dataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 
@@ -233,7 +233,7 @@ public class SelectorAndTransportTest
 
         transportPoller = new TransportPoller();
         receiverTransport = new ReceiverUdpChannelTransport(
-            RCV_DST, mockDataFrameHandler, mockSetupFrameHandler, mockTransportLogger, NO_LOSS);
+            RCV_DST, mockDataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, statusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
 

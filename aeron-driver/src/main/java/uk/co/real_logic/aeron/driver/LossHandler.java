@@ -23,7 +23,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import java.util.concurrent.TimeUnit;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.GapHandler;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.scanForGaps;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.scanForGap;
 
 /**
  * Tracking and handling of gaps in a stream
@@ -37,19 +37,20 @@ public class LossHandler
     private final NakMessageSender nakMessageSender;
     private final TimerWheel.Timer timer;
     private final TimerWheel wheel;
-
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
     private final GapHandler onGapFunc = this::onGap;
     private final Runnable onTimerExpireFunc = this::onTimerExpire;
 
+    private int completedOffset = 0;
+
     /**
      * Create a loss handler for a channel.
      *
-     * @param wheel             for timer management
-     * @param delayGenerator    to use for delay determination
-     * @param nakMessageSender  to call when sending a NAK is indicated
-     * @param systemCounters    to use for tracking purposes
+     * @param wheel            for timer management
+     * @param delayGenerator   to use for delay determination
+     * @param nakMessageSender to call when sending a NAK is indicated
+     * @param systemCounters   to use for tracking purposes
      */
     public LossHandler(
         final TimerWheel wheel,
@@ -65,11 +66,21 @@ public class LossHandler
     }
 
     /**
+     * Get the offset to which the term is completed after a {@link #scan(UnsafeBuffer, long, long, int, int, int)}.
+     *
+     * @return the offset to which the term is completed after a {@link #scan(UnsafeBuffer, long, long, int, int, int)}.
+     */
+    public int completedOffset()
+    {
+        return completedOffset;
+    }
+
+    /**
      * Scan for gaps and handle received data.
      * <p>
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
      *
-     * @return whether a scan should be done soon or could wait
+     * @return the work count for this operation.
      */
     public int scan(
         final UnsafeBuffer termBuffer,
@@ -79,42 +90,44 @@ public class LossHandler
         final int positionBitsToShift,
         final int initialTermId)
     {
-        if (completedPosition >= hwmPosition)
+        int workCount = 1;
+
+        final int completedTermOffset = (int)completedPosition & termLengthMask;
+        final int hwmTermOffset = (int)hwmPosition & termLengthMask;
+
+        if (completedPosition < hwmPosition)
+        {
+            final int completedTermsCount = (int)(completedPosition >>> positionBitsToShift);
+            final int hwmTermsCount = (int)(hwmPosition >>> positionBitsToShift);
+
+            final int activeTermId = initialTermId + completedTermsCount;
+            final int activeTermLimit = (completedTermsCount == hwmTermsCount) ? hwmTermOffset : termBuffer.capacity();
+            completedOffset = activeTermLimit;
+
+            if (scanForGap(termBuffer, activeTermId, completedTermOffset, activeTermLimit, onGapFunc))
+            {
+                final Gap gap = scannedGap;
+                if (!timer.isActive() || !gap.matches(activeGap.termId, activeGap.termOffset))
+                {
+                    activateGap(gap.termId, gap.termOffset, gap.length);
+                    workCount = 0;
+                }
+
+                completedOffset = gap.termOffset;
+            }
+        }
+        else
         {
             if (timer.isActive())
             {
                 timer.cancel();
             }
 
-            return 0;
+            completedOffset = completedTermOffset;
+            workCount = 0;
         }
 
-        final int partitionCompleted = termLengthMask & (int)completedPosition;
-        final int partitionHwm = termLengthMask & (int)hwmPosition;
-        final int completedTerms = (int)(completedPosition >>> positionBitsToShift);
-        final int hwmTerms = (int)(hwmPosition >>> positionBitsToShift);
-
-        final int activeTermId = initialTermId + completedTerms;
-
-        final int activePartitionHwm = (completedTerms == hwmTerms) ? partitionHwm : partitionCompleted;
-        final int numGaps = scanForGaps(termBuffer, activeTermId, partitionCompleted, activePartitionHwm, onGapFunc);
-
-        if (numGaps > 0)
-        {
-            final Gap gap = scannedGap;
-            if (!timer.isActive() || !gap.matches(activeGap.termId, activeGap.termOffset))
-            {
-                activateGap(gap.termId, gap.termOffset, gap.length);
-            }
-
-            return 0;
-        }
-        else if (!timer.isActive() || !activeGap.matches(activeTermId, partitionCompleted))
-        {
-            activateGap(activeTermId, partitionCompleted, (int)(hwmPosition - completedPosition));
-        }
-
-        return 1;
+        return workCount;
     }
 
     /**
@@ -136,11 +149,9 @@ public class LossHandler
         scheduleTimer();
     }
 
-    private boolean onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
+    private void onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
     {
         scannedGap.reset(termId, offset, length);
-
-        return false;
     }
 
     private void activateGap(final int termId, final int termOffset, final int length)

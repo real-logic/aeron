@@ -65,7 +65,7 @@ public class ConnectionTest
     private final PositionReporter positionReporter = spy(new HeapPositionReporter());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
 
-    private LogRebuilder[] rebuilders = new LogRebuilder[PARTITION_COUNT];
+    private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private TermReader[] readers = new TermReader[PARTITION_COUNT];
 
     @Before
@@ -73,11 +73,10 @@ public class ConnectionTest
     {
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final UnsafeBuffer logBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-            final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
+            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
 
-            rebuilders[i] = new LogRebuilder(logBuffer, metaDataBuffer);
-            readers[i] = new TermReader(logBuffer);
+            termBuffers[i] = termBuffer;
+            readers[i] = new TermReader(termBuffer);
         }
 
         dataHeader.wrap(rcvBuffer, 0);
@@ -178,7 +177,7 @@ public class ConnectionTest
         rcvBuffer.putBytes(dataHeader.dataOffset(), DATA);
 
         final int activeIndex = indexByTerm(INITIAL_TERM_ID, activeTermId);
-        rebuilders[activeIndex].insert(termOffset, rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
+        LogRebuilder.insert(termBuffers[activeIndex], termOffset, rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
     }
 
     private int offsetOfFrame(final int index)

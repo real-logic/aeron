@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 
 import java.net.InetSocketAddress;
 
-public class ElicitSetupFromSourceCmd implements DriverConductorCmd
+public class ElicitSetupMessageFromSourceCmd implements DriverConductorCmd
 {
     private final int sessionId;
     private final int streamId;
@@ -29,7 +29,7 @@ public class ElicitSetupFromSourceCmd implements DriverConductorCmd
 
     private long timeOfStatusMessage;
 
-    public ElicitSetupFromSourceCmd(
+    public ElicitSetupMessageFromSourceCmd(
         final int sessionId,
         final int streamId,
         final InetSocketAddress controlAddress,
@@ -43,7 +43,7 @@ public class ElicitSetupFromSourceCmd implements DriverConductorCmd
 
     public void execute(final DriverConductor conductor)
     {
-        conductor.onElicitSetupFromSender(this);
+        conductor.onElicitSetupMessageFromSender(this);
     }
 
     public int sessionId()

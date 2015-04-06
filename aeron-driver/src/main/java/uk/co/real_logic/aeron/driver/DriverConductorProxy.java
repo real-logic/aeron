@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.cmd.ElicitSetupFromSourceCmd;
+import uk.co.real_logic.aeron.driver.cmd.ElicitSetupMessageFromSourceCmd;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -97,10 +97,11 @@ public class DriverConductorProxy
         final InetSocketAddress controlAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
-        final ElicitSetupFromSourceCmd cmd = new ElicitSetupFromSourceCmd(sessionId, streamId, controlAddress, channelEndpoint);
+        final ElicitSetupMessageFromSourceCmd cmd = new ElicitSetupMessageFromSourceCmd(
+            sessionId, streamId, controlAddress, channelEndpoint);
         if (isShared())
         {
-            driverConductor.onElicitSetupFromSender(cmd);
+            driverConductor.onElicitSetupMessageFromSender(cmd);
         }
         else
         {

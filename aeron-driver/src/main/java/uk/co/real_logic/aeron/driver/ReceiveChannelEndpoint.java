@@ -32,7 +32,7 @@ import java.nio.ByteBuffer;
 public class ReceiveChannelEndpoint implements AutoCloseable
 {
     private final UdpChannelTransport transport;
-    private final DataFrameDispatcher dispatcher;
+    private final DataPacketDispatcher dispatcher;
     private final SystemCounters systemCounters;
 
     private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
@@ -55,7 +55,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         nakHeader.wrap(nakBuffer, 0);
 
         this.systemCounters = systemCounters;
-        dispatcher = new DataFrameDispatcher(conductorProxy, this);
+        dispatcher = new DataPacketDispatcher(conductorProxy, this);
         transport = new ReceiverUdpChannelTransport(udpChannel, dispatcher, dispatcher, logger, lossGenerator);
     }
 
@@ -85,7 +85,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         transport.registerForRead(transportPoller);
     }
 
-    public DataFrameDispatcher dispatcher()
+    public DataPacketDispatcher dispatcher()
     {
         return dispatcher;
     }
@@ -129,16 +129,16 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return refCountByStreamIdMap.size();
     }
 
-    public int onDataFrame(
+    public int onDataPacket(
         final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
-        return dispatcher.onFrame(header, buffer, length, srcAddress);
+        return dispatcher.onDataPacket(header, buffer, length, srcAddress);
     }
 
-    public void onSetupFrame(
+    public void onSetupMessage(
         final SetupFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
-        dispatcher.onFrame(header, buffer, length, srcAddress);
+        dispatcher.onSetupMessage(header, buffer, length, srcAddress);
     }
 
     public StatusMessageSender composeStatusMessageSender(

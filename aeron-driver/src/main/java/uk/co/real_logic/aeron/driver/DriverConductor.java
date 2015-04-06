@@ -705,8 +705,7 @@ public class DriverConductor implements Agent
             switch (connection.status())
             {
                 case INACTIVE:
-                    if (connection.remaining() == 0 ||
-                        now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (connection.isDrained() || now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         connection.status(DriverConnection.Status.LINGER);
 

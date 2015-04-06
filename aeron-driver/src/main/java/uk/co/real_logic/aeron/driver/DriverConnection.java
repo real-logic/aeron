@@ -300,13 +300,13 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
-     * Called from the {@link DriverConductor} to determine what is remaining for the subscriber to drain.
+     * Called from the {@link DriverConductor} to determine if the subscribers have drained the connection yet.
      *
-     * @return remaining bytes to drain
+     * @return true if the subscribers have drained the connection stream.
      */
-    public long remaining()
+    public boolean isDrained()
     {
-        return Math.max(completedPosition - subscribersPosition, 0);
+        return subscribersPosition >= completedPosition;
     }
 
     /**

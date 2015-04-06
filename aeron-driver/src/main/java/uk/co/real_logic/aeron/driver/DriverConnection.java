@@ -194,6 +194,16 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
+     * Get the string representation of the channel URI.
+     *
+     * @return the string representation of the channel URI.
+     */
+    public String channelUriString()
+    {
+        return channelEndpoint.udpChannel().originalUriString();
+    }
+
+    /**
      * The address of the source associated with the connection.
      *
      * @return source address

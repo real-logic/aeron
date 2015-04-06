@@ -699,28 +699,27 @@ public class DriverConductor implements Agent
         final ArrayList<DriverConnection> connections = this.connections;
         for (int i = connections.size() - 1; i >= 0; i--)
         {
-            final DriverConnection connection = connections.get(i);
-            final String uriString = connection.receiveChannelEndpoint().udpChannel().originalUriString();
+            final DriverConnection con = connections.get(i);
 
-            switch (connection.status())
+            switch (con.status())
             {
                 case INACTIVE:
-                    if (connection.isDrained() || now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (con.isDrained() || now > (con.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        connection.status(DriverConnection.Status.LINGER);
+                        con.status(DriverConnection.Status.LINGER);
 
                         clientProxy.onInactiveConnection(
-                            connection.correlationId(), connection.sessionId(), connection.streamId(), uriString);
+                            con.correlationId(), con.sessionId(), con.streamId(), con.channelUriString());
                     }
                     break;
 
                 case LINGER:
-                    if (now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (now > (con.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        logger.logConnectionRemoval(uriString, connection.sessionId(), connection.streamId());
+                        logger.logConnectionRemoval(con.channelUriString(), con.sessionId(), con.streamId());
 
                         connections.remove(i);
-                        connection.close();
+                        con.close();
                     }
                     break;
             }

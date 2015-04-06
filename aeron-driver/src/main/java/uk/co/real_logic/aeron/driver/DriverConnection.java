@@ -194,6 +194,16 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
+     * Get the string representation of the channel URI.
+     *
+     * @return the string representation of the channel URI.
+     */
+    public String channelUriString()
+    {
+        return channelEndpoint.udpChannel().originalUriString();
+    }
+
+    /**
      * The address of the source associated with the connection.
      *
      * @return source address
@@ -201,6 +211,14 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     public InetSocketAddress sourceAddress()
     {
         return sourceAddress;
+    }
+
+    /**
+     * Remove this connection from the {@link DataPacketDispatcher} so it will process no further packets from the network.
+     */
+    public void removeFromDispatcher()
+    {
+        channelEndpoint.dispatcher().removeConnection(this);
     }
 
     /**
@@ -300,13 +318,13 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
-     * Called from the {@link DriverConductor} to determine what is remaining for the subscriber to drain.
+     * Called from the {@link DriverConductor} to determine if the subscribers have drained the connection yet.
      *
-     * @return remaining bytes to drain
+     * @return true if the subscribers have drained the connection stream.
      */
-    public long remaining()
+    public boolean isDrained()
     {
-        return Math.max(completedPosition - subscribersPosition, 0);
+        return subscribersPosition >= completedPosition;
     }
 
     /**

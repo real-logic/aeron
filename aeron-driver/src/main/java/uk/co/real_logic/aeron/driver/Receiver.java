@@ -56,7 +56,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             final DriverConnection connection = connections.get(i);
             if (!connection.checkForActivity(now, Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
             {
-                connection.receiveChannelEndpoint().dispatcher().removeConnection(connection);
+                connection.removeFromDispatcher();
                 connections.remove(i);
             }
         }

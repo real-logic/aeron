@@ -27,7 +27,6 @@ import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.net.InetSocketAddress;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -48,13 +47,23 @@ class DriverConnectionConductorFields extends DriverConnectionPadding1
 
 class DriverConnectionPadding2 extends DriverConnectionConductorFields
 {
-    protected long p1, p2, p3, p4, p5, p6, p7;
+    protected long p8, p9, p10, p11, p12, p13, p15;
+}
+
+class DriverConnectionHotFields extends DriverConnectionPadding2
+{
+    protected long timeOfLastPacket;
+}
+
+class DriverConnectionPadding3 extends DriverConnectionHotFields
+{
+    protected long p16, p17, p18, p19, p20, p21, p22;
 }
 
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverConnection extends DriverConnectionPadding2 implements AutoCloseable
+public class DriverConnection extends DriverConnectionPadding3 implements AutoCloseable
 {
     public enum Status
     {
@@ -76,7 +85,6 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
     private final SystemCounters systemCounters;
     private final NanoClock clock;
     private final UnsafeBuffer[] termBuffers;
-    private final AtomicLong timeOfLastPacket = new AtomicLong();
     private final PositionReporter hwmPosition;
     private final InetSocketAddress sourceAddress;
     private final List<PositionIndicator> subscriberPositions;
@@ -119,7 +127,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         this.clock = clock;
         final long time = clock.time();
         this.timeOfLastStatusChange = time;
-        timeOfLastPacket.lazySet(time);
+        this.timeOfLastPacket = time;
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
@@ -234,6 +242,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
      */
     public void status(final Status status)
     {
+        timeOfLastStatusChange = clock.time();
         this.status = status;
     }
 
@@ -245,16 +254,6 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
     public long timeOfLastStatusChange()
     {
         return timeOfLastStatusChange;
-    }
-
-    /**
-     * Set time of last status change. Set by {@link DriverConductor}.
-     *
-     * @param now timestamp to use for time
-     */
-    public void timeOfLastStatusChange(final long now)
-    {
-        timeOfLastStatusChange = now;
     }
 
     /**
@@ -347,6 +346,25 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
     }
 
     /**
+     * To be called from the {@link Receiver} to see if a connection should be garbage collected.
+     *
+     * @param now                       current time to check against.
+     * @param connectionLivenessTimeout timeout for inactivity test.
+     * @return true if still active otherwise false.
+     */
+    public boolean checkForActivity(final long now, final long connectionLivenessTimeout)
+    {
+        if (now > (timeOfLastPacket + connectionLivenessTimeout))
+        {
+            status(Status.INACTIVE);
+
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Called from the {@link DriverConductor}.
      *
      * @param now time in nanoseconds
@@ -376,16 +394,6 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
         }
 
         return workCount;
-    }
-
-    /**
-     * Called from the {@link DriverConductor} thread to grab the time of the last packet for liveness
-     *
-     * @return time of last frame from the source
-     */
-    public long timeOfLastPacket()
-    {
-        return timeOfLastPacket.get();
     }
 
     /**
@@ -436,7 +444,7 @@ public class DriverConnection extends DriverConnectionPadding2 implements AutoCl
 
     private void hwmCandidate(final long proposedPosition)
     {
-        timeOfLastPacket.lazySet(clock.time());
+        timeOfLastPacket = clock.time();
 
         if (proposedPosition > hwmPosition.position())
         {

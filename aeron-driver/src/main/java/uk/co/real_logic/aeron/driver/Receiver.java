@@ -16,10 +16,9 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.*;
 
+import java.util.ArrayList;
 import java.util.function.Consumer;
 
 /**
@@ -30,12 +29,15 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
+    private final NanoClock clock;
+    private final ArrayList<DriverConnection> connections = new ArrayList<>();
 
     public Receiver(final MediaDriver.Context ctx)
     {
         transportPoller = ctx.receiverNioSelector();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().bytesReceived();
+        clock = ctx.conductorTimerWheel().clock();
     }
 
     public String roleName()
@@ -47,6 +49,17 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     {
         final int workCount = commandQueue.drain(this);
         final int bytesReceived = transportPoller.pollTransports();
+
+        final long now = clock.time();
+        for (int i = connections.size() - 1; i >= 0; i--)
+        {
+            final DriverConnection connection = connections.get(i);
+            if (!connection.checkForActivity(now, Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+            {
+                connection.receiveChannelEndpoint().dispatcher().removeConnection(connection);
+                connections.remove(i);
+            }
+        }
 
         totalBytesReceived.addOrdered(bytesReceived);
 
@@ -65,12 +78,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
     {
+        connections.add(connection);
         channelEndpoint.dispatcher().addConnection(connection);
-    }
-
-    public void onRemoveConnection(final DriverConnection connection)
-    {
-        connection.receiveChannelEndpoint().dispatcher().removeConnection(connection);
     }
 
     public void onRegisterMediaChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)

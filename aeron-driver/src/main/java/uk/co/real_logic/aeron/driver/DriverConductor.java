@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.driver.Configuration.CONNECTION_LIVENESS_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
@@ -703,30 +704,11 @@ public class DriverConductor implements Agent
 
             switch (connection.status())
             {
-                case ACTIVE:
-                    if (now > (connection.timeOfLastPacket() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
-                    {
-                        receiverProxy.removeConnection(connection);
-
-                        connection.status(DriverConnection.Status.INACTIVE);
-                        connection.timeOfLastStatusChange(now);
-
-                        if (connection.remaining() == 0)
-                        {
-                            connection.status(DriverConnection.Status.LINGER);
-
-                            clientProxy.onInactiveConnection(
-                                connection.correlationId(), connection.sessionId(), connection.streamId(), uriString);
-                        }
-                    }
-                    break;
-
                 case INACTIVE:
                     if (connection.remaining() == 0 ||
-                        now > (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+                        now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         connection.status(DriverConnection.Status.LINGER);
-                        connection.timeOfLastStatusChange(now);
 
                         clientProxy.onInactiveConnection(
                             connection.correlationId(), connection.sessionId(), connection.streamId(), uriString);
@@ -734,7 +716,7 @@ public class DriverConductor implements Agent
                     break;
 
                 case LINGER:
-                    if (now > (connection.timeOfLastStatusChange() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (now > (connection.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
                         logger.logConnectionRemoval(uriString, connection.sessionId(), connection.streamId());
 
@@ -752,7 +734,7 @@ public class DriverConductor implements Agent
         {
             final AeronClient aeronClient = clients.get(i);
 
-            if (now > (aeronClient.timeOfLastKeepalive() + Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+            if (now > (aeronClient.timeOfLastKeepalive() + CONNECTION_LIVENESS_TIMEOUT_NS))
             {
                 clients.remove(i);
             }

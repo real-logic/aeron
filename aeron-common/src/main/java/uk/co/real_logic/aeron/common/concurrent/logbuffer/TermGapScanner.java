@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
@@ -71,22 +71,25 @@ public class TermGapScanner
         boolean gapFound = false;
         if (completedOffset < hwmOffset)
         {
+            gapFound = true;
             final int limit = hwmOffset - HEADER_LENGTH;
-            int gapLength = 0;
-            while ((completedOffset + gapLength) < limit)
+            final int gapBeginOffset = completedOffset;
+            completedOffset += FRAME_LENGTH_FIELD_OFFSET;
+
+            while (completedOffset < limit)
             {
-                gapLength += FRAME_ALIGNMENT;
-                final int frameLength = termBuffer.getInt(lengthOffset(completedOffset + gapLength));
+                completedOffset += FRAME_ALIGNMENT;
+                final int frameLength = termBuffer.getInt(completedOffset);
 
                 if (0 != frameLength)
                 {
-                    gapLength -= HEADER_LENGTH;
+                    completedOffset -= HEADER_LENGTH;
                     break;
                 }
             }
 
-            gapFound = true;
-            handler.onGap(termId, termBuffer, completedOffset, gapLength + HEADER_LENGTH);
+            final int gapLength = ((completedOffset - FRAME_LENGTH_FIELD_OFFSET) - gapBeginOffset) + HEADER_LENGTH;
+            handler.onGap(termId, termBuffer, gapBeginOffset, gapLength);
         }
 
         return gapFound;

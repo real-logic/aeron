@@ -94,24 +94,15 @@ public class LossHandler
 
         final int completedTermOffset = (int)completedPosition & termLengthMask;
         final int hwmTermOffset = (int)hwmPosition & termLengthMask;
-        completedOffset = completedTermOffset;
 
-        if (completedPosition >= hwmPosition)
-        {
-            if (timer.isActive())
-            {
-                timer.cancel();
-            }
-
-            workCount = 0;
-        }
-        else
+        if (completedPosition < hwmPosition)
         {
             final int completedTermsCount = (int)(completedPosition >>> positionBitsToShift);
             final int hwmTermsCount = (int)(hwmPosition >>> positionBitsToShift);
 
             final int activeTermId = initialTermId + completedTermsCount;
             final int activeTermLimit = (completedTermsCount == hwmTermsCount) ? hwmTermOffset : termBuffer.capacity();
+            completedOffset = activeTermLimit;
 
             if (scanForGap(termBuffer, activeTermId, completedTermOffset, activeTermLimit, onGapFunc))
             {
@@ -124,10 +115,16 @@ public class LossHandler
 
                 completedOffset = gap.termOffset;
             }
-            else
+        }
+        else
+        {
+            if (timer.isActive())
             {
-                completedOffset = activeTermLimit;
+                timer.cancel();
             }
+
+            completedOffset = completedTermOffset;
+            workCount = 0;
         }
 
         return workCount;

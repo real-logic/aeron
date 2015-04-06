@@ -19,6 +19,7 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
@@ -55,37 +56,38 @@ public class TermGapScanner
     public static boolean scanForGap(
         final UnsafeBuffer termBuffer, final int termId, int completedOffset, final int hwmOffset, final GapHandler handler)
     {
-        boolean gapFound = false;
         do
         {
-            int frameLength = frameLengthVolatile(termBuffer, completedOffset);
-            if (frameLength > 0)
+            final int frameLength = frameLengthVolatile(termBuffer, completedOffset);
+            if (0 == frameLength)
             {
-                completedOffset += align(frameLength, FRAME_ALIGNMENT);
-            }
-            else
-            {
-                final int limit = hwmOffset - DataHeaderFlyweight.HEADER_LENGTH;
-                int gapLength = 0;
-                do
-                {
-                    gapLength += FRAME_ALIGNMENT;
-                    frameLength = frameLengthVolatile(termBuffer, completedOffset + gapLength);
-
-                    if (0 != frameLength)
-                    {
-                        gapLength -= DataHeaderFlyweight.HEADER_LENGTH;
-                        break;
-                    }
-                }
-                while ((completedOffset + gapLength) < limit);
-
-                gapFound = true;
-                handler.onGap(termId, termBuffer, completedOffset, gapLength + DataHeaderFlyweight.HEADER_LENGTH);
                 break;
             }
+
+            completedOffset += align(frameLength, FRAME_ALIGNMENT);
         }
         while (completedOffset < hwmOffset);
+
+        boolean gapFound = false;
+        if (completedOffset < hwmOffset)
+        {
+            final int limit = hwmOffset - HEADER_LENGTH;
+            int gapLength = 0;
+            while ((completedOffset + gapLength) < limit)
+            {
+                gapLength += FRAME_ALIGNMENT;
+                final int frameLength = termBuffer.getInt(lengthOffset(completedOffset + gapLength));
+
+                if (0 != frameLength)
+                {
+                    gapLength -= HEADER_LENGTH;
+                    break;
+                }
+            }
+
+            gapFound = true;
+            handler.onGap(termId, termBuffer, completedOffset, gapLength + HEADER_LENGTH);
+        }
 
         return gapFound;
     }

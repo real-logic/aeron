@@ -214,6 +214,14 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
+     * Remove this connection from the {@link DataPacketDispatcher} so it will process no further packets from the network.
+     */
+    public void removeFromDispatcher()
+    {
+        channelEndpoint.dispatcher().removeConnection(this);
+    }
+
+    /**
      * Does this connection match a given {@link ReceiveChannelEndpoint} and stream id?
      *
      * @param channelEndpoint to match by identity.

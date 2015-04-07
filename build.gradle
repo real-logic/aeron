@@ -264,6 +264,24 @@ project(':aeron-tools') {
         }
     }
 
+    task throughputencyPub(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronThroughputencyPublisher'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    task throughputencySub(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronThroughputencySubscriber'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
     build.doLast {
         tasks.shadowJar.execute()
     }

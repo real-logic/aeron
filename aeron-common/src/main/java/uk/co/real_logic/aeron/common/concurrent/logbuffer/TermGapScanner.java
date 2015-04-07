@@ -79,7 +79,7 @@ public class TermGapScanner
             while (completedOffset < limit)
             {
                 completedOffset += FRAME_ALIGNMENT;
-                final int frameLength = termBuffer.getInt(completedOffset);
+                final int frameLength = termBuffer.getIntVolatile(completedOffset);
 
                 if (0 != frameLength)
                 {

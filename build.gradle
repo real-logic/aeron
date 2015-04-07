@@ -46,6 +46,10 @@ buildscript {
     }
 }
 
+configurations {
+  javadoc
+}
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'maven'
@@ -101,11 +105,22 @@ subprojects {
     }
 
     javadoc {
-        title = '<h1>Aeron Transport Protocol</h1>'
+        title = '<h1>Aeron Transport Protocol  </h1>'
 
         options.bottom = '<i>Copyright &#169; 2014 - 2015 Real Logic Ltd. All Rights Reserved.</i>'
         options.addStringOption('XDignore.symbol.file', '-quiet')
     }
+    afterEvaluate {
+		if(plugins.hasPlugin(JavaPlugin)) {
+			
+			// configuration here
+			rootProject.tasks.docs {
+				source += files(sourceSets.collect { srcSet -> srcSet.allJava })
+				classpath += files(sourceSets*.compileClasspath)
+			}
+
+		}
+	}
 
     task sourcesJar(type: Jar) {
         classifier = 'sources'
@@ -117,7 +132,7 @@ subprojects {
         from sourceSets.test.output
     }
 
-    task javadocJar(type: Jar) {
+    task javadocJar(type: Jar, dependsOn: javadoc) {
         classifier = 'javadoc'
         from javadoc.destinationDir
     }
@@ -255,4 +270,25 @@ uploadArchives {
 
 task wrapper(type: Wrapper) {
     gradleVersion = '2.1'
+}
+
+task docs(type: Javadoc) {
+	title = '<h1>Aeron Transport Protocol </h1>'
+
+        options.bottom = '<i>Copyright &#169; 2014 - 2015 Real Logic Ltd. All Rights Reserved.</i>'
+        options.addStringOption('XDignore.symbol.file', '-quiet')
+        include '**/Aeron.java'
+        include '**/FragmentAssemblyAdapter.java'
+        include '**/InactiveConnectionHandler.java'
+        include '**/NewConnectionHandler.java'
+        include '**/Publication.java'
+        include '**/Subscription.java'
+        include '**/CommonContext.java'
+        include '**/ErrorCode.java'
+        include '**/Header.java'
+        include '**/DataHandler.java'
+        include '**/BufferClaim.java'
+        include '**/RegistrationException.java'
+        include '**/DriverTimeoutException.java'
+	destinationDir = file("$buildDir/docs/all")
 }

@@ -8,11 +8,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
-
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
 
 /**
  * Created by philipjohnson1 on 4/2/15.
@@ -28,11 +23,9 @@ public class AeronThroughputencySubscriber
     private int subStreamId = 10;
     private String subChannel = "udp://localhost:44444";
     private String pubChannel = "udp://localhost:55555";
-    private int fragmentCountLimit;
-    private IdleStrategy idle = new NoOpIdleStrategy();
     private boolean running = true;
-    private long timestamps[] = new long[41111100];
     private BufferClaim bufferClaim = null;
+
     public AeronThroughputencySubscriber()
     {
         ctx = new Aeron.Context();
@@ -40,28 +33,14 @@ public class AeronThroughputencySubscriber
         aeron = Aeron.connect(ctx);
         pub = aeron.addPublication(pubChannel, pubStreamId);
         sub = aeron.addSubscription(subChannel, subStreamId, dataHandler);
-        fragmentCountLimit = 2;
         bufferClaim = new BufferClaim();
 
         while (running)
         {
-            int fragmentsRead = sub.poll(fragmentCountLimit);
-            //idle.idle(fragmentsRead);
+            sub.poll(1);
         }
 
-        try
-        {
-            PrintWriter out = new PrintWriter(new FileOutputStream("sub.ts"));
-            for (int i = 1; i < timestamps.length; i++)
-            {
-                out.println(timestamps[i] - timestamps[i - 1]);
-            }
-            out.close();
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+
         sub.close();
         pub.close();
         ctx.close();
@@ -70,6 +49,7 @@ public class AeronThroughputencySubscriber
 
     public void msgHandler(DirectBuffer buffer, int offset, int length, Header header)
     {
+        int iterations = 0;
         if (buffer.getByte(offset) == (byte)'q')
         {
             running = false;
@@ -77,27 +57,27 @@ public class AeronThroughputencySubscriber
         }
         else
         {
-            if (pub.tryClaim(length, bufferClaim))
+            while (!pub.tryClaim(length, bufferClaim))
             {
-                try
-                {
-                    MutableDirectBuffer newBuffer = bufferClaim.buffer();
-                    int newOffset = bufferClaim.offset();
-
-                    newBuffer.putBytes(newOffset, buffer, offset, length);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
-                finally
-                {
-                    bufferClaim.commit();
-                }
+                iterations++;
             }
-            else
+            if (iterations > 10)
             {
-                msgHandler(buffer, offset, length, header);
+                System.out.println("Took too many tries: " + iterations);
+            }
+            try
+            {
+                MutableDirectBuffer newBuffer = bufferClaim.buffer();
+                int newOffset = bufferClaim.offset();
+                 newBuffer.putBytes(newOffset, buffer, offset, length);
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+            finally
+            {
+                bufferClaim.commit();
             }
         }
     }

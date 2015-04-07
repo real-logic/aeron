@@ -10,7 +10,12 @@ import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -37,6 +42,8 @@ public class AeronPing
     private int msgCount = 0;
     private boolean claim = false;
     private BufferClaim bufferClaim = null;
+    private double sorted[] =null;
+    private double tmp[] = null;
 
     public AeronPing(boolean claim)
     {
@@ -70,9 +77,10 @@ public class AeronPing
 
     public void run()
     {
+        System.out.println("Sending Warmup Messages");
         for (int i = 0; i < numWarmupMsgs; i++)
         {
-            if (claim)
+            if (!claim)
             {
                 sendPingAndReceivePong();
             }
@@ -80,25 +88,140 @@ public class AeronPing
             {
                 sendPingAndReceivePongClaim();
             }
+        }
+        warmedUp = true;
 
-            while (sub.poll(1) <= 0)
+        System.out.println("Sending Real Messages");
+        for (int i = 0; i < numMsgs; i++)
+        {
+            if (!claim)
             {
-
+                sendPingAndReceivePong();
+            }
+            else
+            {
+                sendPingAndReceivePongClaim();
             }
         }
+
+        buffer.putByte(0, (byte) 'q');
+        while (!pub.offer(buffer, 0, msgLen))
+        {
+
+        }
+        System.out.println("Done");
     }
 
     public void shutdown()
     {
-        ctx.close();
+        //ctx.close();
+        //pub.close();
+        //sub.close();
         aeron.close();
-        pub.close();
-        sub.close();
     }
 
     public void generateGraphs()
     {
+        double sum = 0.0;
+        double max = Double.MIN_VALUE;
+        double min = Double.MAX_VALUE;
+        int maxIdx = 0;
+        int minIdx = 0;
+        double mean = 0.0;
+        double stdDev = 0.0;
 
+        tmp = new double[timestamps[0].length];
+        sorted = new double[tmp.length];
+
+        for (int i = 0; i < tmp.length; i++)
+        {
+            tmp[i] = (timestamps[1][i] - timestamps[0][i]) / 1000.0;
+            if (tmp[i] > max)
+            {
+                max = tmp[i];
+                maxIdx = i;
+            }
+            if (tmp[i] < min)
+            {
+                min = tmp[i];
+                minIdx = i;
+            }
+            sum += tmp[i];
+        }
+
+        mean = sum / tmp.length;
+
+        System.arraycopy(tmp, 0, sorted, 0, tmp.length);
+        Arrays.sort(sorted);
+
+        sum = 0;
+        for (int i = 0; i < tmp.length; i++)
+        {
+            sum += Math.pow(mean - tmp[i], 2);
+        }
+        stdDev = Math.sqrt(sum / tmp.length);
+
+        BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = image.createGraphics();
+        g.setColor(Color.white);
+        g.fillRect(0, 0, 1800, 1000);
+        generateScatterPlot(g, 0, 0, min, max, .9);
+        generateScatterPlot(g, 600, 0, min, max, .99);
+        generateScatterPlot(g, 1200, 0, min, max, .999);
+        generateScatterPlot(g, 0, 500, min, max, .9999);
+        generateScatterPlot(g, 600, 500, min, max, .99999);
+        generateScatterPlot(g, 1200, 500, min, max, .999999);
+
+        g.setColor(Color.black);
+        g.drawString(String.format("Mean: %.3fus Std. Dev %.3fus", mean, stdDev), 20, 940);
+        g.drawString("Min: " + min + " Index: " + minIdx, 20, 960);
+        g.drawString("Max: " + max + " Index: " + maxIdx, 20, 980);
+
+        String filename = "Aeron_RTT.png";
+        File imageFile = new File(filename);
+        try
+        {
+            ImageIO.write(image, "png", imageFile);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+        System.out.println("Completed");
+    }
+
+    private void generateScatterPlot(Graphics2D g, int x, int y, double min, double max, double percentile)
+    {
+        FontMetrics fm = g.getFontMetrics();
+        int width = 390;
+        int height = 370;
+        int num = (int)((numMsgs - 1) * percentile);
+        double newMax = sorted[num];
+        double stepY = (double)(height / (newMax - min));
+        double stepX = (double)width / (double)num;
+        String title = "Latency Scatterplot (us) " + percentile + " percentile";
+
+        System.out.println("Generating graph for " + percentile + " percentile");
+        g.setColor(Color.black);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.drawString(title, x + 100 + width / 2 - fm.stringWidth(title) / 2, y + 20);
+        g.drawString("" + newMax, x + 10, y + 20);
+        g.drawString("" + min, x + 10, y + 390);
+        g.drawLine(x + 100, y + 20, x + 100, y + 390);
+        g.drawLine(x + 100, y + 390, x + 490, y + 390);
+
+        g.setColor(Color.red);
+        int idx = 0;
+        for (int i = 0; i < numMsgs; i++)
+        {
+            if (tmp[i] <= newMax)
+            {
+                int posX = x + 100 + (int)(stepX * (double)idx);
+                int posY = y + 390 - (int)(stepY * (tmp[i] - min));
+                g.fillRect(posX, posY, 1, 1);
+                idx++;
+            }
+        }
     }
 
     private void connectionHandler(String channel, int streamId,
@@ -135,6 +258,11 @@ public class AeronPing
         {
 
         }
+
+        while (sub.poll(1) <= 0)
+        {
+
+        }
     }
 
     private void sendPingAndReceivePongClaim()
@@ -163,6 +291,10 @@ public class AeronPing
             finally
             {
                 bufferClaim.commit();
+                while (sub.poll(1) <= 0)
+                {
+
+                }
             }
         }
         else
@@ -178,6 +310,17 @@ public class AeronPing
         if (args.length == 0)
         {
             ping = new AeronPing(false);
+        }
+        else
+        {
+            if (args[0].equalsIgnoreCase("--claim") || args[0].equalsIgnoreCase("-c"))
+            {
+                ping = new AeronPing(true);
+            }
+            else
+            {
+                ping = new AeronPing(false);
+            }
         }
 
         ping.connect();

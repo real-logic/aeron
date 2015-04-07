@@ -1,6 +1,6 @@
 package uk.co.real_logic.aeron.tools;
 
-abstract class RateControllerInterval
+public abstract class RateControllerInterval
 {
     /* Is this interval currently active/running? */
     protected boolean active;

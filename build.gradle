@@ -247,7 +247,7 @@ project(':aeron-tools') {
     }
 
     task ping(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.PingRunner'
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronPing'
         classpath = sourceSets.main.runtimeClasspath
         systemProperties(System.properties);
         if (project.hasProperty('myargs')) {
@@ -256,7 +256,7 @@ project(':aeron-tools') {
     }
 
     task pong(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.PongRunner'
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronPong'
         classpath = sourceSets.main.runtimeClasspath
         systemProperties(System.properties);
         if (project.hasProperty('myargs')) {

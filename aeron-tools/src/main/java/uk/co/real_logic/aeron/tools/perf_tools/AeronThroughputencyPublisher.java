@@ -12,7 +12,7 @@ import uk.co.real_logic.aeron.tools.RateControllerInterval;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -53,6 +53,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     private BufferClaim bufferClaim;
     private int warmups = 0;
     private double means[] = new double[7];
+
     public AeronThroughputencyPublisher()
     {
         ctx = new Aeron.Context()
@@ -62,7 +63,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         pub = aeron.addPublication(pubChannel, pubStreamId);
         sub = aeron.addSubscription(subChannel, subStreamId, dataHandler);
         connectionLatch = new CountDownLatch(1);
-        idle = new NoOpIdleStrategy();
+        idle = new BusySpinIdleStrategy();
         bufferClaim = new BufferClaim();
 
         List<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
@@ -114,6 +115,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             while (!pub.tryClaim(buffer.capacity(), bufferClaim))
             {
+                idle.idle(1);
             }
             try
             {
@@ -195,7 +197,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
             MutableDirectBuffer buffer = bufferClaim.buffer();
             int offset = bufferClaim.offset();
             buffer.putByte(offset, (byte) 'p');
-            buffer.putInt(offset + 1, msgCount);
+            buffer.putInt(offset + 1, msgCount++);
             buffer.putLong(offset + 5, System.nanoTime());
         }
         catch (Exception e)
@@ -206,7 +208,6 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         finally
         {
             bufferClaim.commit();
-            msgCount++;
             return msgLen;
         }
     }

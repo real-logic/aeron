@@ -11,6 +11,11 @@ public class StatsVMStatOutput implements StatsOutput
   {
     "In/Out", "RP/SP/DCP", "In/Out", "In/Out", "", "", "Under/Over", "Packets", "Exceptions", "DF/SF/NF/SMF", "Alives"
   };
+  private String formats[] =
+          {
+                  "%1$-18s", "%1$-18s", "%1$-10s", "%1$-14s", "%1$-12s", "%1$-6s",  "%1$-14s", "%1$-9s",
+                  "%1$-12s", "%1$-18s", "%1$-6s"
+          };
 
   public StatsVMStatOutput()
   {
@@ -23,26 +28,29 @@ public class StatsVMStatOutput implements StatsOutput
     {
       for (int i = 0; i < titles.length; i++)
       {
-        System.out.format("%1$-15s", titles[i]);
+        System.out.format(formats[i], titles[i]);
       }
       System.out.println();
       for (int i = 0; i < titles.length; i++)
       {
-        System.out.format("%1$-15s", subTitles[i]);
+        System.out.format(formats[i], subTitles[i]);
       }
       System.out.println();
     }
-    System.out.format("%-15s", vals[1] + "/" + vals[0]);
-    System.out.format("%-15s", vals[2] + "/" + vals[3] + "/" + vals[4]);
-    System.out.format("%-15s", vals[6] + "/" + vals[5]);
-    System.out.format("%-15s", vals[8] + "/" + vals[7]);
-    System.out.format("%-15s", vals[9]);
-    System.out.format("%-15s", vals[10]);
-    System.out.format("%-15s", vals[11] + "/" + vals[12]);
-    System.out.format("%-15s", vals[13]);
-    System.out.format("%-15s", vals[14]);
-    System.out.format("%-15s", vals[15] + "/" + vals[16] + "/" + vals[17] + "/" + vals[18]);
-    System.out.format("%-15s", vals[19]);
+    System.out.format(formats[0], humanReadableByteCount(vals[1], false) + "/" + humanReadableByteCount(vals[0], false));
+    System.out.format(formats[1], humanReadableCount(vals[2], true) + "/" +
+            humanReadableCount(vals[3], true) + "/" + humanReadableCount(vals[4], true));
+    System.out.format(formats[2], humanReadableCount(vals[6], true) + "/" + humanReadableCount(vals[5], true));
+    System.out.format(formats[3], humanReadableCount(vals[8], true) + "/" + humanReadableCount(vals[7], true));
+    System.out.format(formats[4], humanReadableCount(vals[9], true));
+    System.out.format(formats[5], humanReadableCount(vals[10], true));
+    System.out.format(formats[6], humanReadableCount(vals[11], true) + "/" + humanReadableCount(vals[12], true));
+    System.out.format(formats[7], humanReadableCount(vals[13], true));
+    System.out.format(formats[8], humanReadableCount(vals[14], true));
+    System.out.format(formats[9], humanReadableCount(vals[15], true) + "/" +
+            humanReadableCount(vals[16], true) + "/" + humanReadableCount(vals[17], true) + "/" +
+            humanReadableCount(vals[18], true));
+    System.out.format(formats[10], humanReadableCount(vals[19], true));
     System.out.println();
     iterations++;
   }
@@ -50,5 +58,29 @@ public class StatsVMStatOutput implements StatsOutput
   public void close() throws Exception
   {
 
+  }
+
+  private String humanReadableByteCount(long bytes, boolean si)
+  {
+    int unit = si ? 1000 : 1024;
+    if (bytes < unit)
+    {
+      return bytes + "B";
+    }
+    int exp = (int)(Math.log(bytes) / Math.log(unit));
+    String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+    return String.format("%.1f%sB", bytes / Math.pow(unit, exp), pre);
+  }
+
+  private String humanReadableCount(long val, boolean si)
+  {
+    int unit = si ? 1000 : 1024;
+    if (val < unit)
+    {
+      return val + "";
+    }
+    int exp = (int)(Math.log(val) / Math.log(unit));
+    String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+    return String.format("%.1f%s", val / Math.pow(unit, exp), pre);
   }
 }

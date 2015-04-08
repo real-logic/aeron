@@ -47,7 +47,7 @@ public class TermGapScannerTest
         final int frameOffset = HEADER_LENGTH * 3;
         final int highWaterMark = frameOffset + HEADER_LENGTH;
 
-        when(termBuffer.getInt(lengthOffset(frameOffset))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(TRUE));
 
@@ -61,8 +61,8 @@ public class TermGapScannerTest
         final int highWaterMark = HEADER_LENGTH * 3;
 
         when(termBuffer.getIntVolatile(lengthOffset(tail - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
-        when(termBuffer.getInt(lengthOffset(tail))).thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(0);
+        when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
 
@@ -76,8 +76,8 @@ public class TermGapScannerTest
         final int highWaterMark = LOG_BUFFER_CAPACITY;
 
         when(termBuffer.getIntVolatile(lengthOffset(tail - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
-        when(termBuffer.getInt(lengthOffset(tail))).thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(0);
+        when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
 

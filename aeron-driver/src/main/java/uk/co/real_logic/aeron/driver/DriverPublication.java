@@ -394,10 +394,10 @@ public class DriverPublication implements AutoCloseable
             .termOffset(0)
             .termLength(termLength)
             .mtuLength(mtuLength)
-            .frameLength(SetupFlyweight.HEADER_LENGTH)
-            .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+            .version(HeaderFlyweight.CURRENT_VERSION)
             .flags((byte)0)
-            .version(HeaderFlyweight.CURRENT_VERSION);
+            .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+            .frameLength(SetupFlyweight.HEADER_LENGTH);
     }
 
     private void initHeartBeatFrame(final int sessionId, final int streamId)
@@ -405,8 +405,9 @@ public class DriverPublication implements AutoCloseable
         dataHeader
             .sessionId(sessionId)
             .streamId(streamId)
-            .frameLength(0)
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
             .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-            .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
+            .frameLength(0);
     }
 }

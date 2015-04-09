@@ -60,8 +60,8 @@ public class SelectorAndTransportTest
 
     private final DataPacketHandler mockDataPacketHandler = mock(DataPacketHandler.class);
     private final SetupMessageHandler mockSetupMessageHandler = mock(SetupMessageHandler.class);
-    private final NakFrameHandler mockNakFrameHandler = mock(NakFrameHandler.class);
-    private final StatusMessageFrameHandler mockStatusMessageFrameHandler = mock(StatusMessageFrameHandler.class);
+    private final NakMessageHandler mockNakMessageHandler = mock(NakMessageHandler.class);
+    private final StatusMessageHandler mockStatusMessageHandler = mock(StatusMessageHandler.class);
 
     private TransportPoller transportPoller;
     private SenderUdpChannelTransport senderTransport;
@@ -102,7 +102,7 @@ public class SelectorAndTransportTest
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, mockDataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
-            SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+            SRC_DST, mockStatusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
         receiverTransport.registerForRead(transportPoller);
         senderTransport.registerForRead(transportPoller);
@@ -134,7 +134,7 @@ public class SelectorAndTransportTest
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, dataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
-            SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+            SRC_DST, mockStatusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
         receiverTransport.registerForRead(transportPoller);
         senderTransport.registerForRead(transportPoller);
@@ -184,7 +184,7 @@ public class SelectorAndTransportTest
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, dataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
-            SRC_DST, mockStatusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+            SRC_DST, mockStatusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
         receiverTransport.registerForRead(transportPoller);
         senderTransport.registerForRead(transportPoller);
@@ -223,11 +223,11 @@ public class SelectorAndTransportTest
     public void shouldHandleSmFrameFromReceiverToSender() throws Exception
     {
         final AtomicInteger controlHeadersReceived = new AtomicInteger(0);
-        final StatusMessageFrameHandler statusMessageFrameHandler =
-            (header, buffer, length, srcAddress) ->
+        final StatusMessageHandler statusMessageHandler =
+            (statusMessage, srcAddress) ->
             {
-                assertThat(header.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-                assertThat(header.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
+                assertThat(statusMessage.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
+                assertThat(statusMessage.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
                 controlHeadersReceived.incrementAndGet();
             };
 
@@ -235,7 +235,7 @@ public class SelectorAndTransportTest
         receiverTransport = new ReceiverUdpChannelTransport(
             RCV_DST, mockDataPacketHandler, mockSetupMessageHandler, mockTransportLogger, NO_LOSS);
         senderTransport = new SenderUdpChannelTransport(
-            SRC_DST, statusMessageFrameHandler, mockNakFrameHandler, mockTransportLogger, NO_LOSS);
+            SRC_DST, statusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
         receiverTransport.registerForRead(transportPoller);
         senderTransport.registerForRead(transportPoller);

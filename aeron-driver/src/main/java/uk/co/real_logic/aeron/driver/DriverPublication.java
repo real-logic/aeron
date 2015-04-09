@@ -221,7 +221,7 @@ public class DriverPublication implements AutoCloseable
 
                 if (available != channelEndpoint.sendTo(sendBuffer, dstAddress))
                 {
-                    systemCounters.dataFrameShortSends().orderedIncrement();
+                    systemCounters.dataPacketShortSends().orderedIncrement();
                     break;
                 }
 
@@ -329,7 +329,7 @@ public class DriverPublication implements AutoCloseable
                 }
                 else
                 {
-                    systemCounters.dataFrameShortSends().orderedIncrement();
+                    systemCounters.dataPacketShortSends().orderedIncrement();
                 }
             }
         }
@@ -352,7 +352,7 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
             if (SetupFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.setupFrameShortSends().orderedIncrement();
+                systemCounters.setupMessageShortSends().orderedIncrement();
             }
 
             timeOfLastSendOrHeartbeat = now;
@@ -376,7 +376,7 @@ public class DriverPublication implements AutoCloseable
             final int bytesSent = channelEndpoint.sendTo(heartbeatFrameBuffer, dstAddress);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.dataFrameShortSends().orderedIncrement();
+                systemCounters.dataPacketShortSends().orderedIncrement();
             }
 
             systemCounters.heartbeatsSent().orderedIncrement();

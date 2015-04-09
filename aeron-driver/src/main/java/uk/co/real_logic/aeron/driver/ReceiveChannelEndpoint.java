@@ -52,7 +52,18 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final LossGenerator lossGenerator)
     {
         smHeader.wrap(smBuffer, 0);
+        smHeader
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags((byte)0)
+            .headerType(HeaderFlyweight.HDR_TYPE_SM)
+            .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+
         nakHeader.wrap(nakBuffer, 0);
+        nakHeader
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags((byte)0)
+            .headerType(HeaderFlyweight.HDR_TYPE_NAK)
+            .frameLength(NakFlyweight.HEADER_LENGTH);
 
         this.systemCounters = systemCounters;
         dispatcher = new DataPacketDispatcher(conductorProxy, this);
@@ -203,24 +214,18 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     {
         if (!closed)
         {
+            smBuffer.clear();
             smHeader.sessionId(sessionId)
                     .streamId(streamId)
                     .termId(termId)
                     .completedTermOffset(termOffset)
                     .receiverWindowLength(window)
-                    .headerType(HeaderFlyweight.HDR_TYPE_SM)
-                    .frameLength(StatusMessageFlyweight.HEADER_LENGTH)
-                    .flags(flags)
-                    .version(HeaderFlyweight.CURRENT_VERSION);
-
-            final int frameLength = smHeader.frameLength();
-            smBuffer.position(0);
-            smBuffer.limit(frameLength);
+                    .flags(flags);
 
             final int bytesSent = transport.sendTo(smBuffer, controlAddress);
-            if (bytesSent < frameLength)
+            if (StatusMessageFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.smFrameShortSends().orderedIncrement();
+                systemCounters.statusMessageShortSends().orderedIncrement();
             }
         }
     }
@@ -235,24 +240,17 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     {
         if (!closed)
         {
+            nakBuffer.clear();
             nakHeader.streamId(streamId)
                      .sessionId(sessionId)
                      .termId(termId)
                      .termOffset(termOffset)
-                     .length(length)
-                     .frameLength(NakFlyweight.HEADER_LENGTH)
-                     .headerType(HeaderFlyweight.HDR_TYPE_NAK)
-                     .flags((byte)0)
-                     .version(HeaderFlyweight.CURRENT_VERSION);
-
-            final int frameLength = nakHeader.frameLength();
-            nakBuffer.position(0);
-            nakBuffer.limit(frameLength);
+                     .length(length);
 
             final int bytesSent = transport.sendTo(nakBuffer, controlAddress);
-            if (bytesSent < frameLength)
+            if (NakFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.nakFrameShortSends().orderedIncrement();
+                systemCounters.nakMessageShortSends().orderedIncrement();
             }
         }
     }

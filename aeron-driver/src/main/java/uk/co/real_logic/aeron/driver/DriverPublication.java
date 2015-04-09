@@ -371,10 +371,10 @@ public class DriverPublication implements AutoCloseable
             final int termOffset = (int)senderPosition & termLengthMask;
 
             heartbeatFrameBuffer.clear();
-            dataHeader.termOffset(termOffset).termId(activeTermId);
+            dataHeader.termId(activeTermId).termOffset(termOffset);
 
             final int bytesSent = channelEndpoint.sendTo(heartbeatFrameBuffer, dstAddress);
-            if (bytesSent != DataHeaderFlyweight.HEADER_LENGTH)
+            if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 systemCounters.dataFrameShortSends().orderedIncrement();
             }

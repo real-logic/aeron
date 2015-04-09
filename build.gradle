@@ -128,7 +128,7 @@ subprojects {
         from sourceSets.test.output
     }
 
-    task javadocJar(type: Jar, dependsOn: javadoc) {
+    task javadocJar(type: Jar) {
         classifier = 'javadoc'
         from javadoc.destinationDir
     }

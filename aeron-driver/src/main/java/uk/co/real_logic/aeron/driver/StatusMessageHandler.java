@@ -15,21 +15,18 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 
 @FunctionalInterface
-public interface StatusMessageFrameHandler
+public interface StatusMessageHandler
 {
     /**
      * Handle a Status Message Frame
      *
-     * @param header of the first Status Message Frame in the message (may be re-wrapped if needed)
-     * @param buffer holding the NAK (always starts at 0 offset)
-     * @param length of the Frame (may be longer than the header frame length)
-     * @param srcAddress of the Frame
+     * @param statusMessage flyweight wrapping the message within the receive buffer.
+     * @param srcAddress    of the status message.
      */
-    void onFrame(StatusMessageFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
+    void onMessage(StatusMessageFlyweight statusMessage, InetSocketAddress srcAddress);
 }

@@ -34,52 +34,52 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM
  */
 public final class SenderUdpChannelTransport extends UdpChannelTransport
 {
-    private final NakFlyweight nakHeader = new NakFlyweight();
+    private final NakFlyweight nakMessage = new NakFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
-    private final StatusMessageFrameHandler smFrameHandler;
-    private final NakFrameHandler nakFrameHandler;
+    private final StatusMessageHandler smMessageHandler;
+    private final NakMessageHandler nakMessageHandler;
 
     /**
      * Construct a transport for use with receiving and processing control frames
      *
      * Does not register
      *
-     * @param udpChannel      of the transport
-     * @param smFrameHandler  to call when status message frames are received
-     * @param nakFrameHandler to call when NAK frames are received
-     * @param logger          for logging
-     * @param lossGenerator   for loss generation
+     * @param udpChannel        of the transport
+     * @param smMessageHandler  to call when status message frames are received
+     * @param nakMessageHandler to call when NAK frames are received
+     * @param logger            for logging
+     * @param lossGenerator     for loss generation
      */
     public SenderUdpChannelTransport(
         final UdpChannel udpChannel,
-        final StatusMessageFrameHandler smFrameHandler,
-        final NakFrameHandler nakFrameHandler,
+        final StatusMessageHandler smMessageHandler,
+        final NakMessageHandler nakMessageHandler,
         final EventLogger logger,
         final LossGenerator lossGenerator)
     {
         super(udpChannel, udpChannel.remoteControl(), udpChannel.localControl(), lossGenerator, logger);
 
-        this.smFrameHandler = smFrameHandler;
-        this.nakFrameHandler = nakFrameHandler;
+        this.smMessageHandler = smMessageHandler;
+        this.nakMessageHandler = nakMessageHandler;
 
-        nakHeader.wrap(receiveBuffer(), 0);
+        nakMessage.wrap(receiveBuffer(), 0);
         statusMessage.wrap(receiveBuffer(), 0);
     }
 
     protected int dispatch(
-        final int headerType, final UnsafeBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
+        final int messageType, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
-        switch (headerType)
+        switch (messageType)
         {
             case HDR_TYPE_NAK:
-                nakFrameHandler.onFrame(nakHeader, receiveBuffer, length, srcAddress);
+                nakMessageHandler.onMessage(nakMessage);
                 framesRead = 1;
                 break;
 
             case HDR_TYPE_SM:
-                smFrameHandler.onFrame(statusMessage, receiveBuffer, length, srcAddress);
+                smMessageHandler.onMessage(statusMessage, srcAddress);
                 framesRead = 1;
                 break;
         }

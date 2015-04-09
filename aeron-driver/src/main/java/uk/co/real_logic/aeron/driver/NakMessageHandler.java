@@ -15,21 +15,15 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 
-import java.net.InetSocketAddress;
-
 @FunctionalInterface
-public interface NakFrameHandler
+public interface NakMessageHandler
 {
     /**
      * Handle a NAK Frame
      *
-     * @param header the first NAK Frame in the message (may be re-wrapped if needed)
-     * @param buffer holding the Status Message (always starts at 0 offset)
-     * @param length of the Frame (may be longer than the header frame length)
-     * @param srcAddress of the Frame
+     * @param nakMessage wrapping the receive buffer.
      */
-    void onFrame(NakFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
+    void onMessage(NakFlyweight nakMessage);
 }

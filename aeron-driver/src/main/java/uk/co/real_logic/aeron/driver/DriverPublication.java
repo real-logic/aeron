@@ -27,6 +27,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -219,7 +221,7 @@ public class DriverPublication implements AutoCloseable
 
                 if (available != channelEndpoint.sendTo(sendBuffer, dstAddress))
                 {
-                    systemCounters.dataFrameShortSends().orderedIncrement();
+                    systemCounters.dataPacketShortSends().orderedIncrement();
                     break;
                 }
 
@@ -327,7 +329,7 @@ public class DriverPublication implements AutoCloseable
                 }
                 else
                 {
-                    systemCounters.dataFrameShortSends().orderedIncrement();
+                    systemCounters.dataPacketShortSends().orderedIncrement();
                 }
             }
         }
@@ -342,17 +344,15 @@ public class DriverPublication implements AutoCloseable
 
     private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
     {
-        if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
+        if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + PUBLICATION_SETUP_TIMEOUT_NS)))
         {
+            setupFrameBuffer.clear();
             setupHeader.activeTermId(activeTermId).termOffset(termOffset);
 
-            final int frameLength = setupHeader.frameLength();
-            setupFrameBuffer.limit(frameLength).position(0);
-
             final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
-            if (frameLength != bytesSent)
+            if (SetupFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.setupFrameShortSends().orderedIncrement();
+                systemCounters.setupMessageShortSends().orderedIncrement();
             }
 
             timeOfLastSendOrHeartbeat = now;
@@ -366,17 +366,17 @@ public class DriverPublication implements AutoCloseable
 
     private void heartbeatMessageCheck(final long now, final long senderPosition, final int activeTermId)
     {
-        if (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+        if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             final int termOffset = (int)senderPosition & termLengthMask;
 
             heartbeatFrameBuffer.clear();
-            dataHeader.termOffset(termOffset).termId(activeTermId);
+            dataHeader.termId(activeTermId).termOffset(termOffset);
 
             final int bytesSent = channelEndpoint.sendTo(heartbeatFrameBuffer, dstAddress);
-            if (bytesSent != DataHeaderFlyweight.HEADER_LENGTH)
+            if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.dataFrameShortSends().orderedIncrement();
+                systemCounters.dataPacketShortSends().orderedIncrement();
             }
 
             systemCounters.heartbeatsSent().orderedIncrement();
@@ -394,10 +394,10 @@ public class DriverPublication implements AutoCloseable
             .termOffset(0)
             .termLength(termLength)
             .mtuLength(mtuLength)
-            .frameLength(SetupFlyweight.HEADER_LENGTH)
-            .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+            .version(HeaderFlyweight.CURRENT_VERSION)
             .flags((byte)0)
-            .version(HeaderFlyweight.CURRENT_VERSION);
+            .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+            .frameLength(SetupFlyweight.HEADER_LENGTH);
     }
 
     private void initHeartBeatFrame(final int sessionId, final int streamId)
@@ -405,8 +405,9 @@ public class DriverPublication implements AutoCloseable
         dataHeader
             .sessionId(sessionId)
             .streamId(streamId)
-            .frameLength(0)
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
             .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-            .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
+            .frameLength(0);
     }
 }

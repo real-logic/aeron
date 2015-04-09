@@ -164,16 +164,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
-     * The {@link ReceiveChannelEndpoint} to which the connection belongs.
-     *
-     * @return {@link ReceiveChannelEndpoint} to which the connection belongs.
-     */
-    public ReceiveChannelEndpoint receiveChannelEndpoint()
-    {
-        return channelEndpoint;
-    }
-
-    /**
      * The session id of the channel from a publisher.
      *
      * @return session id of the channel from a publisher.

@@ -52,11 +52,6 @@ public class Configuration
     public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
 
     /**
-     * Length (in bytes) of the command buffers between threads
-     */
-    public static final String COMMAND_BUFFER_LENGTH_PROP_NAME = "aeron.command.buffer.length";
-
-    /**
      * Length (in bytes) of the conductor buffers between the media driver and the client
      */
     public static final String CONDUCTOR_BUFFER_LENGTH_PROP_NAME = "aeron.conductor.buffer.length";
@@ -153,12 +148,6 @@ public class Configuration
      * Default term max buffer length.
      */
     public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 16 * 1024 * 1024;
-
-    /**
-     * Default buffer length for command buffers between threads
-     */
-    public static final int COMMAND_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
-    public static final int COMMAND_BUFFER_LENGTH = getInteger(COMMAND_BUFFER_LENGTH_PROP_NAME, COMMAND_BUFFER_LENGTH_DEFAULT);
 
     /**
      * Default buffer length for conductor buffers between the media driver and the client

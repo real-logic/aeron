@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
@@ -25,6 +24,8 @@ import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
+
+import static uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
  * Aggregator of multiple {@link DriverPublication}s onto a single transport session for processing of control frames.
@@ -120,21 +121,20 @@ public class SendChannelEndpoint implements AutoCloseable
         return assemblyByStreamAndSessionIdMap.size();
     }
 
-    private void onStatusMessage(
-        final StatusMessageFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    private void onStatusMessage(final StatusMessageFlyweight statusMsg, final InetSocketAddress srcAddress)
     {
-        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(header.sessionId(), header.streamId());
+        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(statusMsg.sessionId(), statusMsg.streamId());
 
         if (null != assembly)
         {
-            if (StatusMessageFlyweight.SEND_SETUP_FLAG == (header.flags() & StatusMessageFlyweight.SEND_SETUP_FLAG))
+            if (SEND_SETUP_FLAG == (statusMsg.flags() & SEND_SETUP_FLAG))
             {
                 assembly.publication.triggerSendSetupFrame();
             }
             else
             {
                 final long limit = assembly.senderFlowControl.onStatusMessage(
-                    header.termId(), header.completedTermOffset(), header.receiverWindowLength(), srcAddress);
+                    statusMsg.termId(), statusMsg.completedTermOffset(), statusMsg.receiverWindowLength(), srcAddress);
 
                 assembly.publication.updatePositionLimitFromStatusMessage(limit);
             }
@@ -143,14 +143,13 @@ public class SendChannelEndpoint implements AutoCloseable
         }
     }
 
-    private void onNakMessage(
-        final NakFlyweight nak, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    private void onNakMessage(final NakFlyweight nakMessage)
     {
-        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(nak.sessionId(), nak.streamId());
+        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(nakMessage.sessionId(), nakMessage.streamId());
 
         if (null != assembly)
         {
-            assembly.retransmitHandler.onNak(nak.termId(), nak.termOffset(), nak.length());
+            assembly.retransmitHandler.onNak(nakMessage.termId(), nakMessage.termOffset(), nakMessage.length());
             systemCounters.naksReceived().orderedIncrement();
         }
     }

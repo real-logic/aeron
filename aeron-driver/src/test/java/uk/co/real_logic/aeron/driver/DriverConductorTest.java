@@ -65,8 +65,7 @@ public class DriverConductorTest
     private static final long CLIENT_ID = 1433;
     private static final int BUFFER_LENGTH = 1024 * 1024;
 
-    private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(
-        Configuration.COMMAND_BUFFER_LENGTH + RingBufferDescriptor.TRAILER_LENGTH);
+    private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(Configuration.CONDUCTOR_BUFFER_LENGTH);
 
     private final ByteBuffer toEventBuffer = ByteBuffer.allocate(
         EventConfiguration.BUFFER_LENGTH_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);

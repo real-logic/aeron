@@ -16,15 +16,21 @@
 package uk.co.real_logic.aeron.common;
 
 /**
- * Error codes between media driver and library and the on-wire protocol.
+ * Error codes between media driver and client and the on-wire protocol.
  */
 public enum ErrorCode
 {
+    /** Aeron encountered an error condition. */
     GENERIC_ERROR(0),
+    /** A failure occurred creating a new channel or parsing the channel string. */
     INVALID_CHANNEL(1),
+    /** Attempted to remove a subscription, but it was not found */
     UNKNOWN_SUBSCRIPTION(2),
+    /** Reserved for future use. */
     GENERIC_ERROR_MESSAGE(3),
+    /** Reserved for future use. */
     GENERIC_ERROR_SUBSCRIPTION_MESSAGE(4),
+    /** Attempted to remove a publication, but it was not found. */
     UNKNOWN_PUBLICATION(5);
 
     private final short value;
@@ -34,11 +40,20 @@ public enum ErrorCode
         this.value = (short) value;
     }
 
+    /**
+     * Get the value of this ErrorCode.
+     * @return The value.
+     */
     public short value()
     {
         return value;
     }
 
+    /**
+     * Get the ErrorCode that corresponds to the given value.
+     * @param value Of the ErrorCode
+     * @return ErrorCode
+     */
     public static ErrorCode get(final short value)
     {
         if (value > Singleton.VALUES.length)

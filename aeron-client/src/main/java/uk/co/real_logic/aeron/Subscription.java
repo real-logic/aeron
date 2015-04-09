@@ -22,8 +22,18 @@ import uk.co.real_logic.agrona.status.PositionReporter;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
+ * Subscribers are created via an {@link Aeron} object, and received messages are delivered
+ * to the {@link DataHandler} provided at creation time.
+ * <p>
+ * By default fragmented messages are not reassembled before delivery. If an application must
+ * receive whole messages, whether or not they were fragmented, then the Subscriber
+ * should be created with a {@link FragmentAssemblyAdapter} or a custom implementation.
+ * <p>
+ * It is an applications responsibility to {@link #poll} the Subscriber for new messages.
  * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
+ * @see Aeron#addSubscription(String, int, DataHandler)
+ * @see FragmentAssemblyAdapter
  */
 public class Subscription implements AutoCloseable
 {

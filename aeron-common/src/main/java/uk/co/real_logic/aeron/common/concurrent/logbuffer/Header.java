@@ -154,7 +154,9 @@ public class Header
     }
 
     /**
-     * The flags for this frame.
+     * The flags for this frame. Valid flags are {@link DataHeaderFlyweight#BEGIN_FLAG}
+     * and {@link DataHeaderFlyweight#END_FLAG}. A convenience flag {@link DataHeaderFlyweight#BEGIN_AND_END_FLAGS}
+     * can be used for both flags.
      *
      * @return the flags for this frame.
      */

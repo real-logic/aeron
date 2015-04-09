@@ -27,9 +27,15 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 
 /**
- * Publication end of a channel and stream for publishing messages to subscribers.
+ * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
+ * are created via an {@link Aeron} object, and messages are sent via an offer method or a claim and commit
+ * method combination.
+ * <p>
+ * The APIs used to send are all non-blocking.
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publisher threads.
+ * @see Aeron#addPublication(String, int)
+ * @see Aeron#addPublication(String, int, int)
  */
 public class Publication implements AutoCloseable
 {
@@ -92,7 +98,7 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Session under which messages are published.
+     * Session under which messages are published. Identifies this Publication instance.
      *
      * @return the session id for this publication.
      */
@@ -111,6 +117,9 @@ public class Publication implements AutoCloseable
         return logAppenders[0].maxMessageLength();
     }
 
+    /**
+     * Release resources used by this Publication.
+     */
     public void close()
     {
         synchronized (clientConductor)
@@ -174,10 +183,10 @@ public class Publication implements AutoCloseable
     /**
      * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
-     *
+     * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
      *
-     * <code>
+     * <pre>{@code
      *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
      *
      *     if (publication.tryClaim(messageLength, bufferClaim))
@@ -194,9 +203,9 @@ public class Publication implements AutoCloseable
      *             bufferClaim.commit();
      *         }
      *     }
-     * </code>
+     * }</pre>
      *
-     * @param length      of the range to claim.
+     * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populate if the claim succeeds.
      * @return true if the claim was successful otherwise false.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.

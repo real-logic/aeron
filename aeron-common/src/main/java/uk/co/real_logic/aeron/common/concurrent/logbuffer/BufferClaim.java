@@ -20,6 +20,9 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
+ * <p>
+ * The claimed space is in #buffer() between #offset() and #offset() + #length(). When the buffer is filled
+ * with message data, use #commit() to make it available to subscribers.
  */
 public class BufferClaim
 {
@@ -52,7 +55,7 @@ public class BufferClaim
     }
 
     /**
-     * The offset in the buffer at which the range begins.
+     * The offset in the buffer at which the claimed range begins.
      *
      * @return offset in the buffer at which the range begins.
      */
@@ -74,12 +77,12 @@ public class BufferClaim
     }
 
     /**
-     * The length of the range in the buffer.
+     * The length of the claimed range in the buffer.
      *
      * @return length of the range in the buffer.
      */
     public int length()
-    {
+     {
         return length;
     }
 
@@ -120,7 +123,7 @@ public class BufferClaim
     }
 
     /**
-     * Commit the message to the log buffer so that is it available to consumers.
+     * Commit the message to the log buffer so that is it available to subscribers.
      */
     public void commit()
     {

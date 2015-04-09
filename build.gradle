@@ -46,10 +46,6 @@ buildscript {
     }
 }
 
-configurations {
-  javadoc
-}
-
 subprojects {
     apply plugin: 'java'
     apply plugin: 'maven'
@@ -296,5 +292,9 @@ task docs(type: Javadoc) {
 task docsJar (type: Jar, dependsOn: docs) {
         classifier = 'docs'
         from docs.destinationDir
+}
+
+artifacts {
+       archives docsJar
 }
 

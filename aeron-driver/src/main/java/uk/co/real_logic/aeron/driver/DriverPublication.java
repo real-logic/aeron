@@ -27,6 +27,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -342,15 +344,13 @@ public class DriverPublication implements AutoCloseable
 
     private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
     {
-        if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_SETUP_TIMEOUT_NS)))
+        if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + PUBLICATION_SETUP_TIMEOUT_NS)))
         {
+            setupFrameBuffer.clear();
             setupHeader.activeTermId(activeTermId).termOffset(termOffset);
 
-            final int frameLength = setupHeader.frameLength();
-            setupFrameBuffer.limit(frameLength).position(0);
-
             final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
-            if (frameLength != bytesSent)
+            if (SetupFlyweight.HEADER_LENGTH != bytesSent)
             {
                 systemCounters.setupFrameShortSends().orderedIncrement();
             }
@@ -366,7 +366,7 @@ public class DriverPublication implements AutoCloseable
 
     private void heartbeatMessageCheck(final long now, final long senderPosition, final int activeTermId)
     {
-        if (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+        if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             final int termOffset = (int)senderPosition & termLengthMask;
 

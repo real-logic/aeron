@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -35,7 +36,8 @@ public class SendChannelEndpoint implements AutoCloseable
     private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final UdpChannelTransport transport;
     private final UdpChannel udpChannel;
-    private final SystemCounters systemCounters;
+    private final AtomicCounter nakMessagesReceived;
+    private final AtomicCounter statusMessagesReceived;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel,
@@ -44,11 +46,12 @@ public class SendChannelEndpoint implements AutoCloseable
         final LossGenerator lossGenerator,
         final SystemCounters systemCounters)
     {
-        this.systemCounters = systemCounters;
         this.transport = new SenderUdpChannelTransport(
             udpChannel, this::onStatusMessage, this::onNakMessage, logger, lossGenerator);
         this.transport.registerForRead(transportPoller);
         this.udpChannel = udpChannel;
+        this.nakMessagesReceived = systemCounters.nakMessagesReceived();
+        this.statusMessagesReceived = systemCounters.statusMessagesReceived();
     }
 
     public int send(final ByteBuffer buffer) throws Exception
@@ -133,13 +136,13 @@ public class SendChannelEndpoint implements AutoCloseable
             }
             else
             {
-                final long limit = assembly.senderFlowControl.onStatusMessage(
+                final long positionLimit = assembly.senderFlowControl.onStatusMessage(
                     statusMsg.termId(), statusMsg.completedTermOffset(), statusMsg.receiverWindowLength(), srcAddress);
 
-                assembly.publication.updatePositionLimitFromStatusMessage(limit);
+                assembly.publication.senderPositionLimit(positionLimit);
             }
 
-            systemCounters.statusMessagesReceived().orderedIncrement();
+            statusMessagesReceived.orderedIncrement();
         }
     }
 
@@ -150,7 +153,7 @@ public class SendChannelEndpoint implements AutoCloseable
         if (null != assembly)
         {
             assembly.retransmitHandler.onNak(nakMessage.termId(), nakMessage.termOffset(), nakMessage.length());
-            systemCounters.naksReceived().orderedIncrement();
+            nakMessagesReceived.orderedIncrement();
         }
     }
 

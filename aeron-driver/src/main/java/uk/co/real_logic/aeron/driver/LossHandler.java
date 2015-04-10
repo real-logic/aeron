@@ -59,7 +59,7 @@ public class LossHandler
         final SystemCounters systemCounters)
     {
         this.wheel = wheel;
-        this.naksSent = systemCounters.naksSent();
+        this.naksSent = systemCounters.nakMessagesSent();
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;

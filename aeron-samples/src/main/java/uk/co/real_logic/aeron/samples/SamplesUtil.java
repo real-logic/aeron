@@ -20,10 +20,8 @@ import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.*;
 
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -41,9 +39,7 @@ public class SamplesUtil
      */
     public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
     {
-        final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-
-            100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
         return subscriberLoop(limit, running, idleStrategy);
     }

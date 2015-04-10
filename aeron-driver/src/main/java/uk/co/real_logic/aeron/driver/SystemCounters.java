@@ -25,8 +25,8 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter receiverProxyFails;
     private final AtomicCounter senderProxyFails;
     private final AtomicCounter conductorProxyFails;
-    private final AtomicCounter naksSent;
-    private final AtomicCounter naksReceived;
+    private final AtomicCounter nakMessagesSent;
+    private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter retransmitsSent;
     private final AtomicCounter statusMessagesSent;
     private final AtomicCounter statusMessagesReceived;
@@ -50,8 +50,8 @@ public class SystemCounters implements AutoCloseable
         receiverProxyFails = countersManager.newCounter("Failed offers to ReceiverProxy");
         senderProxyFails = countersManager.newCounter("Failed offers to SenderProxy");
         conductorProxyFails = countersManager.newCounter("Failed offers to DriverConductorProxy");
-        naksSent = countersManager.newCounter("NAKs sent");
-        naksReceived = countersManager.newCounter("NAKs received");
+        nakMessagesSent = countersManager.newCounter("NAKs sent");
+        nakMessagesReceived = countersManager.newCounter("NAKs received");
         statusMessagesSent = countersManager.newCounter("SMs sent");
         statusMessagesReceived = countersManager.newCounter("SMs received");
         heartbeatsSent = countersManager.newCounter("Heartbeats sent");
@@ -76,8 +76,8 @@ public class SystemCounters implements AutoCloseable
         receiverProxyFails.close();
         senderProxyFails.close();
         conductorProxyFails.close();
-        naksSent.close();
-        naksReceived.close();
+        nakMessagesSent.close();
+        nakMessagesReceived.close();
         statusMessagesSent.close();
         statusMessagesReceived.close();
         heartbeatsSent.close();
@@ -120,14 +120,14 @@ public class SystemCounters implements AutoCloseable
         return conductorProxyFails;
     }
 
-    public AtomicCounter naksSent()
+    public AtomicCounter nakMessagesSent()
     {
-        return naksSent;
+        return nakMessagesSent;
     }
 
-    public AtomicCounter naksReceived()
+    public AtomicCounter nakMessagesReceived()
     {
-        return naksReceived;
+        return nakMessagesReceived;
     }
 
     public AtomicCounter retransmitsSent()

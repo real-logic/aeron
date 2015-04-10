@@ -75,7 +75,7 @@ public class LossHandlerTest
 
     public LossHandlerTest()
     {
-        when(mockSystemCounters.naksSent()).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.nakMessagesSent()).thenReturn(mock(AtomicCounter.class));
 
         wheel = new TimerWheel(
             () -> currentTime,

@@ -62,7 +62,7 @@ public class DriverPublication implements AutoCloseable
     private int refCount = 0;
 
     private boolean trackSenderLimits = true;
-    private volatile long senderLimit;
+    private volatile long senderPositionLimit;
     private volatile boolean isActive = true;
     private volatile boolean shouldSendSetupFrame = true;
 
@@ -99,7 +99,7 @@ public class DriverPublication implements AutoCloseable
 
         final int termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
-        senderLimit = initialPositionLimit;
+        senderPositionLimit = initialPositionLimit;
 
         timeOfLastSendOrHeartbeat = clock.time();
 
@@ -164,10 +164,10 @@ public class DriverPublication implements AutoCloseable
         return dataHeader.streamId();
     }
 
-    public void updatePositionLimitFromStatusMessage(final long limit)
+    public void senderPositionLimit(final long positionLimit)
     {
         statusMessagesReceivedCount++;
-        senderLimit = limit;
+        senderPositionLimit = positionLimit;
     }
 
     /**
@@ -307,7 +307,7 @@ public class DriverPublication implements AutoCloseable
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
-        final int availableWindow = (int)(senderLimit - senderPosition);
+        final int availableWindow = (int)(senderPositionLimit - senderPosition);
         if (availableWindow > 0)
         {
             final int scanLimit = Math.min(availableWindow, mtuLength);

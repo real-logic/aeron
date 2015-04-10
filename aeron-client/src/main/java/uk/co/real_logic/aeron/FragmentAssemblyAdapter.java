@@ -15,26 +15,27 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.BufferBuilder;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.BEGIN_FRAG;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.END_FRAG;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.UNFRAGMENTED;
 
 import java.util.function.Supplier;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
+import uk.co.real_logic.aeron.common.BufferBuilder;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 /**
- * {@link DataHandler} that sits in a chain-of-responsibilities pattern that re-assembles fragmented messages
- * so that next handler in the chain only sees unfragmented messages.
- *
+ * A {@link DataHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
+ * so that the next handler in the chain only sees whole messages.
+ * <p>
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
  * buffer for reassembly before delegation.
- *
+ * <p>
  * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
- *
- * When sessions go inactive {@link InactiveConnectionHandler}, it is possible to free the buffer by calling
+ * When sessions go inactive see {@link InactiveConnectionHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
 public class FragmentAssemblyAdapter implements DataHandler
@@ -45,7 +46,7 @@ public class FragmentAssemblyAdapter implements DataHandler
     private final Supplier<BufferBuilder> builderSupplier;
 
     /**
-     * Construct an adapter to reassembly message fragments and delegate on only whole messages.
+     * Construct an adapter to reassemble message fragments and delegate on only whole messages.
      *
      * @param delegate onto which whole messages are forwarded.
      */
@@ -66,6 +67,14 @@ public class FragmentAssemblyAdapter implements DataHandler
         builderSupplier = () -> new BufferBuilder(initialBufferLength);
     }
 
+    /**
+     * The implementation of {@link DataHandler} that reassembles and forwards whole messages.
+     * @param buffer containing the data.
+     * @param offset at which the data begins.
+     * @param length of the data in bytes.
+     * @param header representing the meta data for the data.
+     */
+    @Override
     public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
@@ -124,16 +133,19 @@ public class FragmentAssemblyAdapter implements DataHandler
             return this;
         }
 
+        @Override
         public int frameLength()
         {
             return frameLength;
         }
 
+        @Override
         public byte flags()
         {
             return (byte)(super.flags() | UNFRAGMENTED);
         }
 
+        @Override
         public int termOffset()
         {
             return offset() - (frameLength - super.frameLength());

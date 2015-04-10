@@ -32,6 +32,7 @@ import java.util.Map;
  * value     = *( "[^|]" )
  * </pre>
  *
+ * <p>
  * Multiple params with the same key are allowed, the last value specified 'wins'.
  */
 public class AeronUri

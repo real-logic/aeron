@@ -636,8 +636,7 @@ public class SubscriberTool
         private void enqueueControlMessage(int type, String channel, int streamId, int sessionId)
         {
             /* Don't deliver events for the control channel itself. */
-            if ((sessionId != CONTROL_SESSIONID)
-                    || (streamId != CONTROL_STREAMID)
+            if ((streamId != CONTROL_STREAMID)
                     || (!channel.equals(CONTROL_CHANNEL)))
             {
                 /* Enqueue the control message. */

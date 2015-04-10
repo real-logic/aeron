@@ -31,6 +31,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final AtomicCounter totalBytesReceived;
     private final NanoClock clock;
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
+    private final long statusMessageTimeout;
 
     public Receiver(final MediaDriver.Context ctx)
     {
@@ -38,6 +39,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().bytesReceived();
         clock = ctx.conductorTimerWheel().clock();
+        statusMessageTimeout = ctx.statusMessageTimeout();
     }
 
     public String roleName()
@@ -59,6 +61,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
                 connection.removeFromDispatcher();
                 connections.remove(i);
             }
+
+            connection.sendPendingStatusMessage(now, statusMessageTimeout);
         }
 
         totalBytesReceived.addOrdered(bytesReceived);

@@ -205,6 +205,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
+        connection.trackCompletion();
         connection.sendPendingStatusMessage(1000, STATUS_MESSAGE_TIMEOUT);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);

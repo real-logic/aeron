@@ -105,7 +105,6 @@ public class DriverConductor implements Agent
     private final int mtuLength;
     private final int capacity;
     private final int initialWindowLength;
-    private final long statusMessageTimeout;
     private final long dataLossSeed;
     private final long controlLossSeed;
     private final double dataLossRate;
@@ -131,7 +130,6 @@ public class DriverConductor implements Agent
         this.mtuLength = ctx.mtuLength();
         this.initialWindowLength = ctx.initialWindowLength();
         this.capacity = ctx.termBufferLength();
-        this.statusMessageTimeout = ctx.statusMessageTimeout();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
         this.countersManager = ctx.countersManager();
@@ -205,7 +203,7 @@ public class DriverConductor implements Agent
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             final DriverConnection connection = connections.get(i);
-            workCount += connection.trackCompletion() + connection.sendPendingStatusMessage(now, statusMessageTimeout);
+            workCount += connection.trackCompletion();
         }
 
         final ArrayList<DriverPublication> publications = this.publications;

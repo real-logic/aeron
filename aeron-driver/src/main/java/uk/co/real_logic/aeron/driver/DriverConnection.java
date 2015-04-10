@@ -92,6 +92,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final StatusMessageSender statusMessageSender;
 
     private volatile long lastSmPosition;
+    private volatile long currentSmPosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
@@ -144,6 +145,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastSmPosition = initialPosition - (currentGain + 1);
+        this.currentSmPosition = this.lastSmPosition;
         this.completedPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
@@ -304,6 +306,11 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
+        if ((minSubscriberPosition - lastSmPosition) > currentGain)
+        {
+            this.currentSmPosition = minSubscriberPosition;
+        }
+
         return workCount;
     }
 
@@ -373,9 +380,10 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
-     * Called from the {@link DriverConductor}.
+     * Called from the {@link Receiver} to send any pending Status Messages.
      *
-     * @param now time in nanoseconds
+     * @param now time in nanoseconds.
+     * @param statusMessageTimeout for sending of Status Messages.
      * @return number of work items processed.
      */
     public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
@@ -383,17 +391,15 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         int workCount = 1;
         if (ACTIVE == status)
         {
-            final long position = subscribersPosition;
-
-            if ((position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
+            if ((currentSmPosition != lastSmPosition) || now > (lastSmTimestamp + statusMessageTimeout))
             {
-                final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-                final int termOffset = (int)position & termLengthMask;
+                final int activeTermId = computeTermIdFromPosition(currentSmPosition, positionBitsToShift, initialTermId);
+                final int termOffset = (int)currentSmPosition & termLengthMask;
 
                 statusMessageSender.send(activeTermId, termOffset, currentWindowLength);
 
                 lastSmTimestamp = now;
-                lastSmPosition = position;
+                lastSmPosition = currentSmPosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
 
                 // invert the work count logic. We want to appear to be less busy once we send an SM

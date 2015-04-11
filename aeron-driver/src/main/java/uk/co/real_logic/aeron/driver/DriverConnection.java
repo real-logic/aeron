@@ -41,7 +41,6 @@ class DriverConnectionConductorFields extends DriverConnectionPadding1
 {
     protected long completedPosition;
     protected long subscribersPosition;
-    protected long lastSmTimestamp;
     protected long timeOfLastStatusChange;
 }
 
@@ -53,6 +52,7 @@ class DriverConnectionPadding2 extends DriverConnectionConductorFields
 class DriverConnectionHotFields extends DriverConnectionPadding2
 {
     protected long timeOfLastPacket;
+    protected long lastStatusMessageTimestamp;
     protected long lastStatusMessagePosition;
 }
 
@@ -392,7 +392,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         if (ACTIVE == status)
         {
             final long statusMessagePosition = this.statusMessagePosition;
-            if ((statusMessagePosition != lastStatusMessagePosition) || now > (lastSmTimestamp + statusMessageTimeout))
+            if ((statusMessagePosition != lastStatusMessagePosition) || now > (lastStatusMessageTimestamp + statusMessageTimeout))
             {
                 final int activeTermId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)statusMessagePosition & termLengthMask;
@@ -400,7 +400,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
                 channelEndpoint.sendStatusMessage(
                     controlAddress, sessionId, streamId, activeTermId, termOffset, currentWindowLength, (byte)0);
 
-                lastSmTimestamp = now;
+                lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
 

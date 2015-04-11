@@ -581,8 +581,8 @@ public class DriverConductor implements Agent
             systemCounters);
 
         final DriverConnection connection = new DriverConnection(
-            channelEndpoint,
-            correlationId,
+            correlationId, channelEndpoint,
+            controlAddress,
             sessionId,
             streamId,
             initialTermId,
@@ -591,7 +591,6 @@ public class DriverConductor implements Agent
             initialWindowLength,
             rawLog,
             lossHandler,
-            channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,

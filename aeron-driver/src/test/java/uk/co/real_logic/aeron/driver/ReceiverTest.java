@@ -169,8 +169,8 @@ public class ReceiverTest
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
         final DriverConnection connection = new DriverConnection(
-            receiveChannelEndpoint,
-            CORRELATION_ID,
+            CORRELATION_ID, receiveChannelEndpoint,
+            senderAddress,
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,
@@ -179,7 +179,6 @@ public class ReceiverTest
             INITIAL_WINDOW_LENGTH,
             rawLog,
             mockLossHandler,
-            receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
             POSITION_INDICATORS,
             mockHighestReceivedPosition,
             clock,
@@ -241,8 +240,8 @@ public class ReceiverTest
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
                     new DriverConnection(
-                        receiveChannelEndpoint,
-                        CORRELATION_ID,
+                        CORRELATION_ID, receiveChannelEndpoint,
+                        senderAddress,
                         SESSION_ID,
                         STREAM_ID,
                         INITIAL_TERM_ID,
@@ -251,7 +250,6 @@ public class ReceiverTest
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockLossHandler,
-                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,
@@ -302,8 +300,8 @@ public class ReceiverTest
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
                     new DriverConnection(
-                        receiveChannelEndpoint,
-                        CORRELATION_ID,
+                        CORRELATION_ID, receiveChannelEndpoint,
+                        senderAddress,
                         SESSION_ID,
                         STREAM_ID,
                         INITIAL_TERM_ID,
@@ -312,7 +310,6 @@ public class ReceiverTest
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockLossHandler,
-                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,
@@ -366,8 +363,8 @@ public class ReceiverTest
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
                     new DriverConnection(
-                        receiveChannelEndpoint,
-                        CORRELATION_ID,
+                        CORRELATION_ID, receiveChannelEndpoint,
+                        senderAddress,
                         SESSION_ID,
                         STREAM_ID,
                         INITIAL_TERM_ID,
@@ -376,7 +373,6 @@ public class ReceiverTest
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockLossHandler,
-                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,
@@ -434,8 +430,8 @@ public class ReceiverTest
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
                     new DriverConnection(
-                        receiveChannelEndpoint,
-                        CORRELATION_ID,
+                        CORRELATION_ID, receiveChannelEndpoint,
+                        senderAddress,
                         SESSION_ID,
                         STREAM_ID,
                         INITIAL_TERM_ID,
@@ -444,7 +440,6 @@ public class ReceiverTest
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
                         mockLossHandler,
-                        receiveChannelEndpoint.composeStatusMessageSender(senderAddress, SESSION_ID, STREAM_ID),
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,

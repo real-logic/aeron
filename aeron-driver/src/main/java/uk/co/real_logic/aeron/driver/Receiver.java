@@ -61,8 +61,10 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
                 connection.removeFromDispatcher();
                 connections.remove(i);
             }
-
-            connection.sendPendingStatusMessage(now, statusMessageTimeout);
+            else
+            {
+                connection.sendPendingStatusMessage(now, statusMessageTimeout);
+            }
         }
 
         totalBytesReceived.addOrdered(bytesReceived);

@@ -152,13 +152,6 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         dispatcher.onSetupMessage(header, buffer, length, srcAddress);
     }
 
-    public StatusMessageSender composeStatusMessageSender(
-        final InetSocketAddress controlAddress, final int sessionId, final int streamId)
-    {
-        return (termId, termOffset, window) ->
-            sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window, (byte)0);
-    }
-
     public NakMessageSender composeNakMessageSender(
         final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
@@ -203,7 +196,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         }
     }
 
-    private void sendStatusMessage(
+    public void sendStatusMessage(
         final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,

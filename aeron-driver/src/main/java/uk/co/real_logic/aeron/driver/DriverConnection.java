@@ -81,6 +81,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final int currentGain;
 
     private final RawLog rawLog;
+    private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final EventLogger logger;
     private final SystemCounters systemCounters;
@@ -90,14 +91,14 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final InetSocketAddress sourceAddress;
     private final List<PositionIndicator> subscriberPositions;
     private final LossHandler lossHandler;
-    private final StatusMessageSender statusMessageSender;
 
     private volatile long statusMessagePosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
-        final ReceiveChannelEndpoint channelEndpoint,
         final long correlationId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -106,7 +107,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int initialWindowLength,
         final RawLog rawLog,
         final LossHandler lossHandler,
-        final StatusMessageSender statusMessageSender,
         final List<PositionIndicator> subscriberPositions,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -114,8 +114,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final InetSocketAddress sourceAddress,
         final EventLogger logger)
     {
-        this.channelEndpoint = channelEndpoint;
         this.correlationId = correlationId;
+        this.channelEndpoint = channelEndpoint;
+        this.controlAddress = controlAddress;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.rawLog = rawLog;
@@ -132,7 +133,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
-        this.statusMessageSender = statusMessageSender;
 
         final int termCapacity = termBuffers[0].capacity();
 
@@ -397,7 +397,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
                 final int activeTermId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)statusMessagePosition & termLengthMask;
 
-                statusMessageSender.send(activeTermId, termOffset, currentWindowLength);
+                channelEndpoint.sendStatusMessage(
+                    controlAddress, sessionId, streamId, activeTermId, termOffset, currentWindowLength, (byte)0);
 
                 lastSmTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;

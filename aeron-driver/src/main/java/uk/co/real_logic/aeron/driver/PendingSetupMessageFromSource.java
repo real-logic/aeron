@@ -13,37 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.cmd;
+package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.DriverConductor;
-import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
-
-import java.net.InetSocketAddress;
-
-public class ElicitSetupMessageFromSourceCmd implements DriverConductorCmd
+public class PendingSetupMessageFromSource
 {
     private final int sessionId;
     private final int streamId;
-    private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
 
     private long timeOfStatusMessage;
 
-    public ElicitSetupMessageFromSourceCmd(
+    public PendingSetupMessageFromSource(
         final int sessionId,
         final int streamId,
-        final InetSocketAddress controlAddress,
         final ReceiveChannelEndpoint channelEndpoint)
     {
         this.sessionId = sessionId;
         this.streamId = streamId;
-        this.controlAddress = controlAddress;
         this.channelEndpoint = channelEndpoint;
-    }
-
-    public void execute(final DriverConductor conductor)
-    {
-        conductor.onElicitSetupMessageFromSender(this);
     }
 
     public int sessionId()
@@ -54,11 +41,6 @@ public class ElicitSetupMessageFromSourceCmd implements DriverConductorCmd
     public int streamId()
     {
         return streamId;
-    }
-
-    public InetSocketAddress controlAddress()
-    {
-        return controlAddress;
     }
 
     public ReceiveChannelEndpoint channelEndpoint()

@@ -45,6 +45,11 @@ public class ReceiverProxy
         this.receiver = receiver;
     }
 
+    public Receiver receiver()
+    {
+        return receiver;
+    }
+
     public void addSubscription(final ReceiveChannelEndpoint mediaEndpoint, final int streamId)
     {
         if (isSharedThread())
@@ -102,18 +107,6 @@ public class ReceiverProxy
         else
         {
             offer(new CloseReceiveChannelEndpointCmd(channelEndpoint));
-        }
-    }
-
-    public void removePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
-    {
-        if (isSharedThread())
-        {
-            receiver.onRemovePendingSetup(channelEndpoint, sessionId, streamId);
-        }
-        else
-        {
-            offer(new RemovePendingSetupCmd(channelEndpoint, sessionId, streamId));
         }
     }
 

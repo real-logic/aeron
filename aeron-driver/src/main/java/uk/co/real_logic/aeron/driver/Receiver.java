@@ -31,6 +31,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final AtomicCounter totalBytesReceived;
     private final NanoClock clock;
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
+    private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
+
     private final long statusMessageTimeout;
 
     public Receiver(final MediaDriver.Context ctx)
@@ -67,9 +69,19 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
         }
 
+        onCheckPendingSetupMessages(now);
+
         totalBytesReceived.addOrdered(bytesReceived);
 
         return workCount + bytesReceived;
+    }
+
+    public void addPendingSetup(
+        final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    {
+        final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(sessionId, streamId, channelEndpoint);
+        cmd.timeOfStatusMessage(clock.time());
+        pendingSetupMessages.add(cmd);
     }
 
     public void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
@@ -94,11 +106,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         transportPoller.selectNowWithoutProcessing();
     }
 
-    public void onRemovePendingSetup(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
-    {
-        channelEndpoint.dispatcher().removePendingSetup(sessionId, streamId);
-    }
-
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
@@ -108,5 +115,19 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public void accept(final ReceiverCmd cmd)
     {
         cmd.execute(this);
+    }
+
+    private void onCheckPendingSetupMessages(final long now)
+    {
+        for (int i = pendingSetupMessages.size() - 1; i >= 0; i--)
+        {
+            final PendingSetupMessageFromSource cmd = pendingSetupMessages.get(i);
+
+            if (now > (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS))
+            {
+                pendingSetupMessages.remove(i);
+                cmd.channelEndpoint().dispatcher().removePendingSetup(cmd.sessionId(), cmd.streamId());
+            }
+        }
     }
 }

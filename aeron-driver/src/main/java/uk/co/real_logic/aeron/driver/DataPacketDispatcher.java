@@ -37,11 +37,16 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
     private final BiInt2ObjectMap<Integer> initialisationInProgressMap = new BiInt2ObjectMap<>();
     private final Int2ObjectHashMap<Int2ObjectHashMap<DriverConnection>> connectionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
+    private final Receiver receiver;
     private final ReceiveChannelEndpoint channelEndpoint;
 
-    public DataPacketDispatcher(final DriverConductorProxy conductorProxy, final ReceiveChannelEndpoint channelEndpoint)
+    public DataPacketDispatcher(
+        final DriverConductorProxy conductorProxy,
+        final Receiver receiver,
+        final ReceiveChannelEndpoint channelEndpoint)
     {
         this.conductorProxy = conductorProxy;
+        this.receiver = receiver;
         this.channelEndpoint = channelEndpoint;
     }
 
@@ -162,7 +167,9 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
 
         initialisationInProgressMap.put(sessionId, streamId, PENDING_SETUP_FRAME);
-        conductorProxy.elicitSetupFromSource(sessionId, streamId, controlAddress, channelEndpoint);
+
+        channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
+        receiver.addPendingSetup(sessionId, streamId, channelEndpoint);
     }
 
     private void createConnection(

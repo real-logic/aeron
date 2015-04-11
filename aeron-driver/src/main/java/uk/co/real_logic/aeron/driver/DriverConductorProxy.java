@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.cmd.ElicitSetupMessageFromSourceCmd;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;
@@ -88,24 +87,6 @@ public class DriverConductorProxy
                 controlAddress,
                 srcAddress,
                 channelEndpoint));
-        }
-    }
-
-    public void elicitSetupFromSource(
-        final int sessionId,
-        final int streamId,
-        final InetSocketAddress controlAddress,
-        final ReceiveChannelEndpoint channelEndpoint)
-    {
-        final ElicitSetupMessageFromSourceCmd cmd = new ElicitSetupMessageFromSourceCmd(
-            sessionId, streamId, controlAddress, channelEndpoint);
-        if (isShared())
-        {
-            driverConductor.onElicitSetupMessageFromSender(cmd);
-        }
-        else
-        {
-            offer(cmd);
         }
     }
 

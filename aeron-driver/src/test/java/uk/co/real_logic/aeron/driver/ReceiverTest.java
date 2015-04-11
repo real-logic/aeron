@@ -146,7 +146,7 @@ public class ReceiverTest
             .toArray(TermReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
-            UdpChannel.parse(URI), driverConductorProxy, mockLogger, mockSystemCounters, (address, length) -> false);
+            UdpChannel.parse(URI), driverConductorProxy, receiver, mockLogger, mockSystemCounters, (address, length) -> false);
     }
 
     @After

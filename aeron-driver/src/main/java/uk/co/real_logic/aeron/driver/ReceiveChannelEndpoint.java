@@ -47,6 +47,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DriverConductorProxy conductorProxy,
+        final Receiver receiver,
         final EventLogger logger,
         final SystemCounters systemCounters,
         final LossGenerator lossGenerator)
@@ -66,7 +67,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             .frameLength(NakFlyweight.HEADER_LENGTH);
 
         this.systemCounters = systemCounters;
-        dispatcher = new DataPacketDispatcher(conductorProxy, this);
+        dispatcher = new DataPacketDispatcher(conductorProxy, receiver, this);
         transport = new ReceiverUdpChannelTransport(udpChannel, dispatcher, dispatcher, logger, lossGenerator);
     }
 

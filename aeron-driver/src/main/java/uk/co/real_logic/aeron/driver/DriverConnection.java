@@ -51,7 +51,7 @@ class DriverConnectionPadding2 extends DriverConnectionConductorFields
 
 class DriverConnectionHotFields extends DriverConnectionPadding2
 {
-    protected long timeOfLastPacket;
+    protected long lastPacketTimestamp;
     protected long lastStatusMessageTimestamp;
     protected long lastStatusMessagePosition;
 }
@@ -129,7 +129,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         this.clock = clock;
         final long time = clock.time();
         this.timeOfLastStatusChange = time;
-        this.timeOfLastPacket = time;
+        this.lastPacketTimestamp = time;
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
@@ -369,7 +369,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public boolean checkForActivity(final long now, final long connectionLivenessTimeout)
     {
-        if (now > (timeOfLastPacket + connectionLivenessTimeout))
+        if (now > (lastPacketTimestamp + connectionLivenessTimeout))
         {
             status(Status.INACTIVE);
 
@@ -460,7 +460,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
     private void hwmCandidate(final long proposedPosition)
     {
-        timeOfLastPacket = clock.time();
+        lastPacketTimestamp = clock.time();
 
         if (proposedPosition > hwmPosition.position())
         {

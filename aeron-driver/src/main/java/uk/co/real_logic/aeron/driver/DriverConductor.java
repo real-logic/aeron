@@ -369,10 +369,8 @@ public class DriverConductor implements Agent
             LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
             LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
 
-            final int senderPositionId = allocatePositionCounter(
-                "sender pos", channel, sessionId, streamId, correlationId);
-            final int publisherLimitId = allocatePositionCounter(
-                "publisher limit", channel, sessionId, streamId, correlationId);
+            final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId, correlationId);
+            final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId, correlationId);
             final SenderFlowControl senderFlowControl =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
@@ -557,8 +555,7 @@ public class DriverConductor implements Agent
                 })
             .collect(toList());
 
-        final int receiverHwmCounterId = allocatePositionCounter(
-            "receiver hwm", channel, sessionId, streamId, correlationId);
+        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId, correlationId);
         final String sourceInfo = generateSourceInfo(sourceAddress);
 
         clientProxy.onConnectionReady(

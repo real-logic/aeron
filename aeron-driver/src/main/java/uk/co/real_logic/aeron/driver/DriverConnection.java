@@ -53,6 +53,7 @@ class DriverConnectionPadding2 extends DriverConnectionConductorFields
 class DriverConnectionHotFields extends DriverConnectionPadding2
 {
     protected long timeOfLastPacket;
+    protected long lastStatusMessagePosition;
 }
 
 class DriverConnectionPadding3 extends DriverConnectionHotFields
@@ -91,8 +92,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final LossHandler lossHandler;
     private final StatusMessageSender statusMessageSender;
 
-    private volatile long lastSmPosition;
-    private volatile long currentSmPosition;
+    private volatile long statusMessagePosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
@@ -144,8 +144,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         this.initialTermId = initialTermId;
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
-        this.lastSmPosition = initialPosition - (currentGain + 1);
-        this.currentSmPosition = this.lastSmPosition;
+        this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
+        this.statusMessagePosition = this.lastStatusMessagePosition;
         this.completedPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
@@ -306,9 +306,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
-        if ((minSubscriberPosition - lastSmPosition) > currentGain)
+        if ((minSubscriberPosition - statusMessagePosition) > currentGain)
         {
-            this.currentSmPosition = minSubscriberPosition;
+            this.statusMessagePosition = minSubscriberPosition;
         }
 
         return workCount;
@@ -337,7 +337,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
-        final long windowBeginPosition = lastSmPosition;
+        final long windowBeginPosition = lastStatusMessagePosition;
 
         if (isHeartbeat(buffer, length))
         {
@@ -391,15 +391,16 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         int workCount = 1;
         if (ACTIVE == status)
         {
-            if ((currentSmPosition != lastSmPosition) || now > (lastSmTimestamp + statusMessageTimeout))
+            final long statusMessagePosition = this.statusMessagePosition;
+            if ((statusMessagePosition != lastStatusMessagePosition) || now > (lastSmTimestamp + statusMessageTimeout))
             {
-                final int activeTermId = computeTermIdFromPosition(currentSmPosition, positionBitsToShift, initialTermId);
-                final int termOffset = (int)currentSmPosition & termLengthMask;
+                final int activeTermId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
+                final int termOffset = (int)statusMessagePosition & termLengthMask;
 
                 statusMessageSender.send(activeTermId, termOffset, currentWindowLength);
 
                 lastSmTimestamp = now;
-                lastSmPosition = currentSmPosition;
+                lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
 
                 // invert the work count logic. We want to appear to be less busy once we send an SM

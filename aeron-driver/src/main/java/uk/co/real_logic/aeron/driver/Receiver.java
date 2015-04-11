@@ -26,6 +26,7 @@ import java.util.function.Consumer;
  */
 public class Receiver implements Agent, Consumer<ReceiverCmd>
 {
+    private final long statusMessageTimeout;
     private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
@@ -33,15 +34,13 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
 
-    private final long statusMessageTimeout;
-
     public Receiver(final MediaDriver.Context ctx)
     {
+        statusMessageTimeout = ctx.statusMessageTimeout();
         transportPoller = ctx.receiverNioSelector();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().bytesReceived();
         clock = ctx.conductorTimerWheel().clock();
-        statusMessageTimeout = ctx.statusMessageTimeout();
     }
 
     public String roleName()

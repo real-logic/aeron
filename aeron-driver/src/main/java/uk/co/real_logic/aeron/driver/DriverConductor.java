@@ -33,7 +33,6 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.status.BufferPositionIndicator;
 import uk.co.real_logic.agrona.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.cmd.ElicitSetupMessageFromSourceCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
@@ -92,7 +91,6 @@ public class DriverConductor implements Agent
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
     private final ArrayList<DriverConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
-    private final ArrayList<ElicitSetupMessageFromSourceCmd> pendingSetups = new ArrayList<>();
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
     private final Supplier<SenderFlowControl> multicastSenderFlowControl;
@@ -105,7 +103,6 @@ public class DriverConductor implements Agent
     private final int mtuLength;
     private final int capacity;
     private final int initialWindowLength;
-    private final long statusMessageTimeout;
     private final long dataLossSeed;
     private final long controlLossSeed;
     private final double dataLossRate;
@@ -131,7 +128,6 @@ public class DriverConductor implements Agent
         this.mtuLength = ctx.mtuLength();
         this.initialWindowLength = ctx.initialWindowLength();
         this.capacity = ctx.termBufferLength();
-        this.statusMessageTimeout = ctx.statusMessageTimeout();
         this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
         this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
         this.countersManager = ctx.countersManager();
@@ -201,11 +197,10 @@ public class DriverConductor implements Agent
         workCount += processTimers();
 
         final ArrayList<DriverConnection> connections = this.connections;
-        final long now = clock.time();
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             final DriverConnection connection = connections.get(i);
-            workCount += connection.trackCompletion() + connection.sendPendingStatusMessage(now, statusMessageTimeout);
+            workCount += connection.trackCompletion();
         }
 
         final ArrayList<DriverPublication> publications = this.publications;
@@ -229,7 +224,6 @@ public class DriverConductor implements Agent
         onCheckPublicationRegistrations(now);
         onCheckSubscriptions(now);
         onCheckConnections(now);
-        onCheckPendingSetups(now);
 
         timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
     }
@@ -375,10 +369,8 @@ public class DriverConductor implements Agent
             LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
             LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
 
-            final int senderPositionId = allocatePositionCounter(
-                "sender pos", channel, sessionId, streamId, correlationId);
-            final int publisherLimitId = allocatePositionCounter(
-                "publisher limit", channel, sessionId, streamId, correlationId);
+            final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId, correlationId);
+            final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId, correlationId);
             final SenderFlowControl senderFlowControl =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
@@ -451,7 +443,8 @@ public class DriverConductor implements Agent
         if (null == channelEndpoint)
         {
             final LossGenerator lossGenerator = Configuration.createLossGenerator(dataLossRate, dataLossSeed);
-            channelEndpoint = new ReceiveChannelEndpoint(udpChannel, conductorProxy, logger, systemCounters, lossGenerator);
+            channelEndpoint = new ReceiveChannelEndpoint(
+                udpChannel, conductorProxy, receiverProxy.receiver(), logger, systemCounters, lossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerMediaEndpoint(channelEndpoint);
@@ -562,8 +555,7 @@ public class DriverConductor implements Agent
                 })
             .collect(toList());
 
-        final int receiverHwmCounterId = allocatePositionCounter(
-            "receiver hwm", channel, sessionId, streamId, correlationId);
+        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId, correlationId);
         final String sourceInfo = generateSourceInfo(sourceAddress);
 
         clientProxy.onConnectionReady(
@@ -583,8 +575,8 @@ public class DriverConductor implements Agent
             systemCounters);
 
         final DriverConnection connection = new DriverConnection(
-            channelEndpoint,
-            correlationId,
+            correlationId, channelEndpoint,
+            controlAddress,
             sessionId,
             streamId,
             initialTermId,
@@ -593,7 +585,6 @@ public class DriverConductor implements Agent
             initialWindowLength,
             rawLog,
             lossHandler,
-            channelEndpoint.composeStatusMessageSender(controlAddress, sessionId, streamId),
             subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
@@ -741,33 +732,6 @@ public class DriverConductor implements Agent
                 clients.remove(i);
             }
         }
-    }
-
-    private void onCheckPendingSetups(final long now)
-    {
-        for (int i = pendingSetups.size() - 1; i >= 0; i--)
-        {
-            final ElicitSetupMessageFromSourceCmd cmd = pendingSetups.get(i);
-
-            if (now > (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS))
-            {
-                pendingSetups.remove(i);
-                receiverProxy.removePendingSetup(cmd.channelEndpoint(), cmd.sessionId(), cmd.streamId());
-            }
-        }
-    }
-
-    public void onElicitSetupMessageFromSender(final ElicitSetupMessageFromSourceCmd cmd)
-    {
-        final int sessionId = cmd.sessionId();
-        final int streamId = cmd.streamId();
-        final InetSocketAddress controlAddress = cmd.controlAddress();
-        final ReceiveChannelEndpoint channelEndpoint = cmd.channelEndpoint();
-
-        channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
-        cmd.timeOfStatusMessage(clock.time());
-
-        pendingSetups.add(cmd);
     }
 
     private void onDriverConductorCmd(final DriverConductorCmd cmd)

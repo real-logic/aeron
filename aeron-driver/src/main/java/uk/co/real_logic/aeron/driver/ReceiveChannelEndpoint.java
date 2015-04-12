@@ -47,6 +47,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DriverConductorProxy conductorProxy,
+        final Receiver receiver,
         final EventLogger logger,
         final SystemCounters systemCounters,
         final LossGenerator lossGenerator)
@@ -66,7 +67,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             .frameLength(NakFlyweight.HEADER_LENGTH);
 
         this.systemCounters = systemCounters;
-        dispatcher = new DataPacketDispatcher(conductorProxy, this);
+        dispatcher = new DataPacketDispatcher(conductorProxy, receiver, this);
         transport = new ReceiverUdpChannelTransport(udpChannel, dispatcher, dispatcher, logger, lossGenerator);
     }
 
@@ -152,13 +153,6 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         dispatcher.onSetupMessage(header, buffer, length, srcAddress);
     }
 
-    public StatusMessageSender composeStatusMessageSender(
-        final InetSocketAddress controlAddress, final int sessionId, final int streamId)
-    {
-        return (termId, termOffset, window) ->
-            sendStatusMessage(controlAddress, sessionId, streamId, termId, termOffset, window, (byte)0);
-    }
-
     public NakMessageSender composeNakMessageSender(
         final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
@@ -203,7 +197,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         }
     }
 
-    private void sendStatusMessage(
+    public void sendStatusMessage(
         final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,

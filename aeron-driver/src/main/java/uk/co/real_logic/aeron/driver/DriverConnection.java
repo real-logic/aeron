@@ -41,7 +41,6 @@ class DriverConnectionConductorFields extends DriverConnectionPadding1
 {
     protected long completedPosition;
     protected long subscribersPosition;
-    protected long lastSmTimestamp;
     protected long timeOfLastStatusChange;
 }
 
@@ -52,7 +51,9 @@ class DriverConnectionPadding2 extends DriverConnectionConductorFields
 
 class DriverConnectionHotFields extends DriverConnectionPadding2
 {
-    protected long timeOfLastPacket;
+    protected long lastPacketTimestamp;
+    protected long lastStatusMessageTimestamp;
+    protected long lastStatusMessagePosition;
 }
 
 class DriverConnectionPadding3 extends DriverConnectionHotFields
@@ -80,6 +81,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final int currentGain;
 
     private final RawLog rawLog;
+    private final InetSocketAddress controlAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final EventLogger logger;
     private final SystemCounters systemCounters;
@@ -89,14 +91,14 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final InetSocketAddress sourceAddress;
     private final List<PositionIndicator> subscriberPositions;
     private final LossHandler lossHandler;
-    private final StatusMessageSender statusMessageSender;
 
-    private volatile long lastSmPosition;
+    private volatile long statusMessagePosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
-        final ReceiveChannelEndpoint channelEndpoint,
         final long correlationId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -105,7 +107,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int initialWindowLength,
         final RawLog rawLog,
         final LossHandler lossHandler,
-        final StatusMessageSender statusMessageSender,
         final List<PositionIndicator> subscriberPositions,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -113,8 +114,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final InetSocketAddress sourceAddress,
         final EventLogger logger)
     {
-        this.channelEndpoint = channelEndpoint;
         this.correlationId = correlationId;
+        this.channelEndpoint = channelEndpoint;
+        this.controlAddress = controlAddress;
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.rawLog = rawLog;
@@ -127,11 +129,10 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         this.clock = clock;
         final long time = clock.time();
         this.timeOfLastStatusChange = time;
-        this.timeOfLastPacket = time;
+        this.lastPacketTimestamp = time;
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = lossHandler;
-        this.statusMessageSender = statusMessageSender;
 
         final int termCapacity = termBuffers[0].capacity();
 
@@ -143,7 +144,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         this.initialTermId = initialTermId;
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
-        this.lastSmPosition = initialPosition - (currentGain + 1);
+        this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
+        this.statusMessagePosition = this.lastStatusMessagePosition;
         this.completedPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
@@ -304,6 +306,11 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
+        if ((minSubscriberPosition - statusMessagePosition) > currentGain)
+        {
+            this.statusMessagePosition = minSubscriberPosition;
+        }
+
         return workCount;
     }
 
@@ -330,7 +337,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int positionBitsToShift = this.positionBitsToShift;
         final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long proposedPosition = packetBeginPosition + length;
-        final long windowBeginPosition = lastSmPosition;
+        final long windowBeginPosition = lastStatusMessagePosition;
 
         if (isHeartbeat(buffer, length))
         {
@@ -362,7 +369,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public boolean checkForActivity(final long now, final long connectionLivenessTimeout)
     {
-        if (now > (timeOfLastPacket + connectionLivenessTimeout))
+        if (now > (lastPacketTimestamp + connectionLivenessTimeout))
         {
             status(Status.INACTIVE);
 
@@ -373,9 +380,10 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
-     * Called from the {@link DriverConductor}.
+     * Called from the {@link Receiver} to send any pending Status Messages.
      *
-     * @param now time in nanoseconds
+     * @param now time in nanoseconds.
+     * @param statusMessageTimeout for sending of Status Messages.
      * @return number of work items processed.
      */
     public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
@@ -383,17 +391,17 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         int workCount = 1;
         if (ACTIVE == status)
         {
-            final long position = subscribersPosition;
-
-            if ((position - lastSmPosition) > currentGain || now > (lastSmTimestamp + statusMessageTimeout))
+            final long statusMessagePosition = this.statusMessagePosition;
+            if ((statusMessagePosition != lastStatusMessagePosition) || now > (lastStatusMessageTimestamp + statusMessageTimeout))
             {
-                final int activeTermId = computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-                final int termOffset = (int)position & termLengthMask;
+                final int activeTermId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
+                final int termOffset = (int)statusMessagePosition & termLengthMask;
 
-                statusMessageSender.send(activeTermId, termOffset, currentWindowLength);
+                channelEndpoint.sendStatusMessage(
+                    controlAddress, sessionId, streamId, activeTermId, termOffset, currentWindowLength, (byte)0);
 
-                lastSmTimestamp = now;
-                lastSmPosition = position;
+                lastStatusMessageTimestamp = now;
+                lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
 
                 // invert the work count logic. We want to appear to be less busy once we send an SM
@@ -452,7 +460,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
     private void hwmCandidate(final long proposedPosition)
     {
-        timeOfLastPacket = clock.time();
+        lastPacketTimestamp = clock.time();
 
         if (proposedPosition > hwmPosition.position())
         {

@@ -575,7 +575,8 @@ public class DriverConductor implements Agent
             systemCounters);
 
         final DriverConnection connection = new DriverConnection(
-            correlationId, channelEndpoint,
+            correlationId,
+            channelEndpoint,
             controlAddress,
             sessionId,
             streamId,

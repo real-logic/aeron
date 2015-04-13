@@ -46,7 +46,10 @@ public class SubscriberTool
     private static final int CONTROL_ACTION_NEW_CONNECTION = 0;
     private static final int CONTROL_ACTION_INACTIVE_CONNECTION = 1;
 
-    private static final int CHANNEL_NAME_MAX_LEN = "udp://[2001:db8:85a3:8d3:1319:8a2e:370:7348]:65535/".length();
+    /* IPv6 addresses have a max string length of 45, plus port, plus "udp://", etc.
+     * This should be big enough to include all of that and any reasonable Aeron-
+     * specific expansions in the future. */
+    private static final int CHANNEL_NAME_MAX_LEN = 256;
 
     public static void main(String[] args)
     {

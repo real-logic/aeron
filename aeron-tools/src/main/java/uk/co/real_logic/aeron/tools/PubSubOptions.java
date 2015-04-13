@@ -1,6 +1,13 @@
 package uk.co.real_logic.aeron.tools;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -82,21 +89,38 @@ public class PubSubOptions
     public PubSubOptions()
     {
         options = new Options();
-        options.addOption("c",  "channels",   true,  "Create the given Aeron channels.");
-        options.addOption(null, "defaults",   true,  "File overriding default values for the command line options.");
-        options.addOption(null, "driver",     true,  "Use 'external' or 'embedded' Aeron driver.");
-        options.addOption("h",  "help",       false, "Display simple usage message.");
-        options.addOption("i",  "input",      true,  "Publisher will send 'random', 'stdin', or a file as data.");
-        options.addOption(null, "iterations", true,  "Run the rate sequence n times.");
-        options.addOption("m",  "messages",   true,  "Send or receive n messages before exiting.");
-        options.addOption("o",  "output",     true,  "Subscriber will write the stream to the output file.");
-        options.addOption("r",  "rate",       true,  "Send/receive rate pattern CSV list.");
-        options.addOption(null, "seed",       true,  "Random number generator seed.");
-        options.addOption(null, "session",    true,  "Use session id for all publishers.");
-        options.addOption("s",  "size",       true,  "Message payload size sequence, in bytes.");
-        options.addOption("t",  "threads",    true,  "Round-Robin channels acress a number of threads.");
-        options.addOption(null, "usage",      false, "Display advanced usage guide.");
-        options.addOption(null, "verify",     true,  "Messages and streams are verifiable (yes|no).");
+        options.addOption("c",  "channels",   true,
+                "Create the given Aeron channels [default: " + DEFAULT_VALUES.channels + "].");
+        options.addOption(null, "defaults",   true,
+                "File overriding default values for the command line options.");
+        options.addOption(null, "driver",     true,
+                "Use 'external' or 'embedded' Aeron driver [default: " + DEFAULT_VALUES.driver + "].");
+        options.addOption("h",  "help",       false,
+                "Display simple usage message.");
+        options.addOption("i",  "input",      true,
+                "Publisher will send random bytes ('null'), " +
+                "bytes read from stdin ('stdin'), or a file " +
+                "(path to file) as data [default: " + DEFAULT_VALUES.input +"].");
+        options.addOption(null, "iterations", true,
+                "Run the rate sequence n times [default: " + DEFAULT_VALUES.iterations + "].");
+        options.addOption("m",  "messages",   true,
+                "Send or receive n messages before exiting [default: " + DEFAULT_VALUES.messages + "].");
+        options.addOption("o",  "output",     true,
+                "Subscriber will write the stream to the output file.");
+        options.addOption("r",  "rate",       true,
+                "Send/receive rate pattern CSV list [default: " + DEFAULT_VALUES.rate + "].");
+        options.addOption(null, "seed",       true,
+                "Random number generator seed.");
+        options.addOption(null, "session",    true,
+                "Use session id for all publishers [default: " + DEFAULT_VALUES.session + "].");
+        options.addOption("s",  "size",       true,
+                "Message payload size sequence, in bytes [default: " + DEFAULT_VALUES.size + "].");
+        options.addOption("t",  "threads",    true,
+                "Round-Robin channels acress a number of threads [default: " + DEFAULT_VALUES.threads + "].");
+        options.addOption(null, "usage",      false,
+                "Display advanced usage guide.");
+        options.addOption(null, "verify",     true,
+                "Messages and streams are verifiable (yes|no) [default: " + DEFAULT_VALUES.verify + "].");
 
         // these will all be overridden in parseArgs
         randomSeed = 0;

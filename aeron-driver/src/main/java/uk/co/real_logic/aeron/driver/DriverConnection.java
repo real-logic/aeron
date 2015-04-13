@@ -388,7 +388,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
-        int workCount = 1;
         if (ACTIVE == status)
         {
             final long statusMessagePosition = this.statusMessagePosition;
@@ -403,13 +402,10 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
                 lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
-
-                // invert the work count logic. We want to appear to be less busy once we send an SM
-                workCount = 0;
             }
         }
 
-        return workCount;
+        return 1;
     }
 
     /**

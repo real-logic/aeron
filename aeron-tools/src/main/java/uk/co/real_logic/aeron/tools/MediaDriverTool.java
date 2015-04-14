@@ -1,0 +1,89 @@
+package uk.co.real_logic.aeron.tools;
+
+import org.apache.commons.cli.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+
+/**
+ * Created by bhorst on 4/10/15.
+ */
+public class MediaDriverTool
+{
+    private static final Logger LOG = LoggerFactory.getLogger(MediaDriverTool.class);
+
+    public static void main(String[] args)
+    {
+        final MediaDriverOptions opts = new MediaDriverOptions();
+        int printHelp = 1;
+        int exitValue = 0;
+        try
+        {
+            printHelp = opts.parseArgs(args);
+        }
+        catch (ParseException ex)
+        {
+            ex.printStackTrace();
+            exitValue = -1;
+        }
+
+        if (printHelp != 0)
+        {
+            opts.printHelp("MediaDriverTool");
+            System.out.println(USAGE_GUIDE);
+            System.exit(exitValue);
+        }
+        final MediaDriverTool driver = new MediaDriverTool();
+        driver.run(opts);
+    }
+
+    public void run(MediaDriverOptions opts)
+    {
+        if (opts.getProperties() != null)
+        {
+            // Set system properties (aeron configuration) from the loaded configuration file.
+            System.getProperties().putAll(opts.getProperties());
+        }
+        final MediaDriver.Context context = new MediaDriver.Context()
+                .conductorIdleStrategy(opts.getConductorIdleStrategy())
+                .senderIdleStrategy(opts.getSenderIdleStrategy())
+                .receiverIdleStrategy(opts.getReceiverIdleStrategy())
+                .sharedNetworkIdleStrategy(opts.getSharedNetworkIdleStrategy())
+                .sharedIdleStrategy(opts.getSharedIdleStrategy());
+
+        // Everything else can be changed by Aeron settings.
+        try (final MediaDriver driver = MediaDriver.launch(context))
+        {
+            LOG.info("Media Driver Started.");
+            new SigIntBarrier().await();
+            LOG.info("Media Driver Stopped.");
+        }
+    }
+
+    private static final String NL = System.lineSeparator();
+    private static final String USAGE_GUIDE = "" +
+            //                                                                 80 chars -> |
+            NL +
+            "Use this tool to run an Aeron Media driver with configuration in a properties" + NL +
+            "file. Additionally, the idle strategies for all possible threads can be set" + NL +
+            "independently via the command line or properties." + NL +
+            NL +
+            "The Agrona project provides 3 implementations of IdleStrategy:" + NL +
+            uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy.class.getName() + NL +
+            uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy.class.getName() + NL +
+            uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy.class.getName() + NL +
+            "You may also implement your own IdleStrategy and pass its class name." + NL +
+            NL +
+            "It is possible to provide input parameters to the BackoffIdleStrategy" + NL +
+            "through the command line. After specifying the BackoffIdleStrategy class," + NL +
+            "add (<long>,<long>,<long>,<long>). For Example:" + NL +
+            uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy.class.getName() + "(1,1,1,1)" + NL +
+            NL +
+            "Set the default idle strategies for each thread using these properties:" + NL +
+            "aeron.tools.mediadriver.sender" + NL +
+            "aeron.tools.mediadriver.receiver" + NL +
+            "aeron.tools.mediadriver.conductor" + NL +
+            "aeron.tools.mediadriver.network" + NL +
+            "areon.tools.mediadriver.shared" + NL;
+}

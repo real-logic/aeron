@@ -42,7 +42,7 @@ public class LogRebuilder
     {
         final int lengthOffset = lengthOffset(srcOffset);
         final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
-        packet.putInt(lengthOffset, 0, LITTLE_ENDIAN);
+        packet.putIntOrdered(lengthOffset, 0);
 
         termBuffer.putBytes(termOffset, packet, srcOffset, length);
         frameLengthOrdered(termBuffer, termOffset, frameLength);

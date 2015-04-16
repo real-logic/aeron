@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.computePosition;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
-public class LossHandlerTest
+public class LossDetectorTest
 {
     private static final int TERM_BUFFER_LENGTH = TERM_MIN_LENGTH;
     private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH);
@@ -68,11 +68,11 @@ public class LossHandlerTest
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
     private final TimerWheel wheel;
-    private LossHandler handler;
+    private LossDetector handler;
     private NakMessageSender nakMessageSender;
     private long currentTime = 0;
 
-    public LossHandlerTest()
+    public LossDetectorTest()
     {
         wheel = new TimerWheel(
             () -> currentTime,
@@ -82,7 +82,7 @@ public class LossHandlerTest
 
         nakMessageSender = mock(NakMessageSender.class);
 
-        handler = new LossHandler(wheel, DELAY_GENERATOR, nakMessageSender);
+        handler = new LossDetector(wheel, DELAY_GENERATOR, nakMessageSender);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -110,7 +110,7 @@ public class LossHandlerTest
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
 
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -125,7 +125,7 @@ public class LossHandlerTest
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(60));
 
-        verify(nakMessageSender, atLeast(2)).send(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender, atLeast(2)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -183,9 +183,9 @@ public class LossHandlerTest
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(80));
 
         final InOrder inOrder = inOrder(nakMessageSender);
-        inOrder.verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(1), gapLength());
-        inOrder.verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(3), gapLength());
-        inOrder.verify(nakMessageSender, never()).send(TERM_ID, offsetOfMessage(5), gapLength());
+        inOrder.verify(nakMessageSender, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        inOrder.verify(nakMessageSender, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
+        inOrder.verify(nakMessageSender, never()).onLossDetected(TERM_ID, offsetOfMessage(5), gapLength());
     }
 
     @Test
@@ -208,7 +208,7 @@ public class LossHandlerTest
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(nakMessageSender, atLeast(1)).send(TERM_ID, offsetOfMessage(3), gapLength());
+        verify(nakMessageSender, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
     }
 
     @Test
@@ -224,7 +224,7 @@ public class LossHandlerTest
 
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -255,7 +255,7 @@ public class LossHandlerTest
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
 
     @Test
@@ -271,7 +271,7 @@ public class LossHandlerTest
 
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)completedPosition);
+        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)completedPosition);
     }
 
     @Test
@@ -287,13 +287,13 @@ public class LossHandlerTest
 
         handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(nakMessageSender).send(TERM_ID, offsetOfMessage(3), gapLength());
+        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
         verifyNoMoreInteractions(nakMessageSender);
     }
 
-    private LossHandler getLossHandlerWithImmediate()
+    private LossDetector getLossHandlerWithImmediate()
     {
-        return new LossHandler(wheel, DELAY_GENERATOR_WITH_IMMEDIATE, nakMessageSender);
+        return new LossDetector(wheel, DELAY_GENERATOR_WITH_IMMEDIATE, nakMessageSender);
     }
 
     private void insertDataFrame(final int offset)

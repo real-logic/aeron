@@ -16,17 +16,17 @@
 package uk.co.real_logic.aeron.driver;
 
 /**
- * Handler for sending a NAK
+ * Handler for transmitting NAK messages
  */
 @FunctionalInterface
 public interface NakMessageSender
 {
     /**
-     * Called when a NAK should be sent
+     * Called when a gap has not been filled.
      *
-     * @param termId     for the NAK
-     * @param termOffset for the NAK
-     * @param length     for the NAK
+     * @param termId     for the gap
+     * @param termOffset for the beginning of the gap
+     * @param length     of the gap
      */
-    void send(int termId, int termOffset, int length);
+    void onLossDetected(int termId, int termOffset, int length);
 }

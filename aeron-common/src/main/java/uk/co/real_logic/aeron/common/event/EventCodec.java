@@ -508,7 +508,7 @@ public class EventCodec
             command.channel(),
             command.sessionId(),
             command.streamId(),
-            command.positionCounterId(),
+            command.publicationLimitCounterId(),
             command.correlationId(),
             command.logFileName());
     }

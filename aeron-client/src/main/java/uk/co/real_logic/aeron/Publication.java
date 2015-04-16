@@ -46,7 +46,7 @@ public class Publication implements AutoCloseable
     private final int sessionId;
     private final long registrationId;
     private final LogAppender[] logAppenders;
-    private final PositionIndicator limit;
+    private final PositionIndicator publicationLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
 
@@ -58,7 +58,7 @@ public class Publication implements AutoCloseable
         final int streamId,
         final int sessionId,
         final LogAppender[] logAppenders,
-        final PositionIndicator limit,
+        final PositionIndicator publicationLimit,
         final LogBuffers logBuffers,
         final UnsafeBuffer logMetaDataBuffer,
         final long registrationId)
@@ -71,7 +71,7 @@ public class Publication implements AutoCloseable
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.logAppenders = logAppenders;
-        this.limit = limit;
+        this.publicationLimit = publicationLimit;
 
         activeTermId(logMetaDataBuffer, initialTermId(logMetaDataBuffer));
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].termBuffer().capacity());
@@ -159,9 +159,9 @@ public class Publication implements AutoCloseable
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
+        final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
 
-        if (currentTail < logAppender.termBuffer().capacity() &&
-            isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
+        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.position())
         {
             switch (logAppender.append(buffer, offset, length))
             {
@@ -220,9 +220,9 @@ public class Publication implements AutoCloseable
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
+        final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
 
-        if (currentTail < logAppender.termBuffer().capacity() &&
-            isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
+        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.position())
         {
             switch (logAppender.claim(length, bufferClaim))
             {
@@ -273,10 +273,5 @@ public class Publication implements AutoCloseable
         previousAppender.statusOrdered(NEEDS_CLEANING);
 
         LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
-    }
-
-    private boolean isWithinFlowControlLimit(final int initialTermId, final int activeTermId, final int currentTail)
-    {
-        return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId) < limit.position();
     }
 }

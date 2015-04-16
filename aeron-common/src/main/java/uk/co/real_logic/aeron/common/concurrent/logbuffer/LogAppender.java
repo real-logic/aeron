@@ -132,12 +132,17 @@ public class LogAppender extends LogBufferPartition
     {
         checkMessageLength(length);
 
+        final ActionStatus status;
         if (length <= maxPayloadLength)
         {
-            return appendUnfragmentedMessage(srcBuffer, srcOffset, length);
+            status = appendUnfragmentedMessage(srcBuffer, srcOffset, length);
+        }
+        else
+        {
+            status = appendFragmentedMessage(srcBuffer, srcOffset, length);
         }
 
-        return appendFragmentedMessage(srcBuffer, srcOffset, length);
+        return status;
     }
 
     /**

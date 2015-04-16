@@ -101,7 +101,7 @@ subprojects {
     }
 
     javadoc {
-        title = '<h1>Aeron Transport Protocol  </h1>'
+        title = '<h1>Aeron Transport Protocol</h1>'
 
         options.bottom = '<i>Copyright &#169; 2014 - 2015 Real Logic Ltd. All Rights Reserved.</i>'
         options.addStringOption('XDignore.symbol.file', '-quiet')
@@ -183,7 +183,7 @@ project(':aeron-samples') {
     apply plugin: 'shadow'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), 'org.hdrhistogram:HdrHistogram:1.2.1'
+        compile project(':aeron-client'), project(':aeron-driver'), 'org.hdrhistogram:HdrHistogram:2.1.4'
     }
 
     shadow {

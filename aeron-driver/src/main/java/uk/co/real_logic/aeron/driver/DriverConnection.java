@@ -455,8 +455,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             if (changeNumber == beginLossChange)
             {
                 channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
-                systemCounters.nakMessagesSent().orderedIncrement();
                 lastChangeNumber = changeNumber;
+                systemCounters.nakMessagesSent().orderedIncrement();
                 workCount = 1;
             }
         }

@@ -69,14 +69,14 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
         }
 
-        onCheckPendingSetupMessages(now);
+        timeoutPendingSetupMessages(now);
 
         totalBytesReceived.addOrdered(bytesReceived);
 
         return workCount + bytesReceived;
     }
 
-    public void addPendingSetup(final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    public void addPendingSetupMessage(final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(sessionId, streamId, channelEndpoint);
         cmd.timeOfStatusMessage(clock.time());
@@ -116,7 +116,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         cmd.execute(this);
     }
 
-    private void onCheckPendingSetupMessages(final long now)
+    private void timeoutPendingSetupMessages(final long now)
     {
         for (int i = pendingSetupMessages.size() - 1; i >= 0; i--)
         {

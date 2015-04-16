@@ -160,7 +160,8 @@ public class Publication implements AutoCloseable
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
+        if (currentTail < logAppender.termBuffer().capacity() &&
+            isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
         {
             switch (logAppender.append(buffer, offset, length))
             {
@@ -185,7 +186,7 @@ public class Publication implements AutoCloseable
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
-     *
+     *U
      * <pre>{@code
      *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
      *
@@ -220,7 +221,8 @@ public class Publication implements AutoCloseable
         final LogAppender logAppender = logAppenders[activeIndex];
         final int currentTail = logAppender.tailVolatile();
 
-        if (isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
+        if (currentTail < logAppender.termBuffer().capacity() &&
+            isWithinFlowControlLimit(initialTermId, activeTermId, currentTail))
         {
             switch (logAppender.claim(length, bufferClaim))
             {

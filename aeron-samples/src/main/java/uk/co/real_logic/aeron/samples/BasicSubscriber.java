@@ -40,11 +40,15 @@ public class BasicSubscriber
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
+        if(EMBEDDED_MEDIA_DRIVER)
+        {
+            ctx.dirName(driver.contextDirName());
+        }
 
         final DataHandler dataHandler = printStringMessage(STREAM_ID);
 

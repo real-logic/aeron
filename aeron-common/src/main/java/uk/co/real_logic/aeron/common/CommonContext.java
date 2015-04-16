@@ -19,8 +19,8 @@ import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
+import java.util.UUID;
 
-import static java.lang.Boolean.getBoolean;
 import static java.lang.System.getProperty;
 
 /**
@@ -29,7 +29,6 @@ import static java.lang.System.getProperty;
  * Properties
  * <ul>
  * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and stats.</li>
- * <li><code>aeron.dir.delete.on.exit</code>: Attempt to delete Aeron directories on exit.</li>
  * </ul>
  */
 public class CommonContext implements AutoCloseable
@@ -40,14 +39,11 @@ public class CommonContext implements AutoCloseable
     public static final String AERON_DIR_PROP_DEFAULT;
     /** Name of the default multicast interface */
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
-    /** Attempt to delete directories on exit */
-    public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
 
     private static final String DATA_DIR_NAME = "data";
     private static final String CONDUCTOR_DIR_NAME = "conductor";
 
     private String dirName;
-    private boolean dirsDeleteOnExit;
     private File cncFile;
     private UnsafeBuffer counterLabelsBuffer;
     private UnsafeBuffer countersBuffer;
@@ -70,14 +66,31 @@ public class CommonContext implements AutoCloseable
         AERON_DIR_PROP_DEFAULT = aeronDirName;
     }
 
+    public static String generateEmbeddedDirName()
+    {
+        String randomDirName = UUID.randomUUID().toString();
+        String aeronDirName = IoUtil.tmpDirName() + "aeron" + File.separator + randomDirName;
+
+        // Use shared memory on Linux to avoid contention on the page cache.
+        if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
+        {
+            final File devShmDir = new File("/dev/shm");
+
+            if (devShmDir.exists())
+            {
+                aeronDirName = "/dev/shm/aeron/" + randomDirName;
+            }
+        }
+
+        return aeronDirName;
+    }
+
     /**
      * Create a new context with Aeron directory and delete on exit values based on the current system properties.
      */
     public CommonContext()
     {
         dirName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
-
-        dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
     }
 
     /**
@@ -139,26 +152,6 @@ public class CommonContext implements AutoCloseable
         return new File(
             getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT) + File.separator + CONDUCTOR_DIR_NAME,
             CncFileDescriptor.CNC_FILE);
-    }
-
-    /**
-     * Get whether or not this application will attempt to delete the Aeron directories when exiting.
-     * @return true when directories will be deleted, otherwise false.
-     */
-    public boolean dirsDeleteOnExit()
-    {
-        return dirsDeleteOnExit;
-    }
-
-    /**
-     * Set whether or not this application will attempt to delete the Aeron directories when exiting.
-     * @param dirsDeleteOnExit Attempt deletion.
-     * @return this Object for method chaining.
-     */
-    public CommonContext dirsDeleteOnExit(final boolean dirsDeleteOnExit)
-    {
-        this.dirsDeleteOnExit = dirsDeleteOnExit;
-        return this;
     }
 
     /**

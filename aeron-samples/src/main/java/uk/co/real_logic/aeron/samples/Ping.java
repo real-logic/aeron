@@ -58,9 +58,13 @@ public class Ping
 
     public static void main(final String[] args) throws Exception
     {
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(Ping::newPongConnectionHandler);
+        if(EMBEDDED_MEDIA_DRIVER)
+        {
+            ctx.dirName(driver.contextDirName());
+        }
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);

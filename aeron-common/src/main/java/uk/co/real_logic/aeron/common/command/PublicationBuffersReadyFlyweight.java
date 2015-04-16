@@ -38,7 +38,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                           Stream ID                           |
  * +---------------------------------------------------------------+
- * |                   Position Indicator Offset                   |
+ * |                    Publication Limit Offset                   |
  * +---------------------------------------------------------------+
  * |                           MTU Length                          |
  * +---------------------------------------------------------------+
@@ -58,8 +58,8 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
-    private static final int POSITION_COUNTER_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int MTU_LENGTH_OFFSET = POSITION_COUNTER_ID_OFFSET + SIZE_OF_INT;
+    private static final int PUBLICATION_LIMIT_COUNTER_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int MTU_LENGTH_OFFSET = PUBLICATION_LIMIT_COUNTER_ID_OFFSET + SIZE_OF_INT;
     private static final int CHANNEL_FIELD_OFFSET = MTU_LENGTH_OFFSET + SIZE_OF_INT;
 
     /**
@@ -132,13 +132,13 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
     }
 
     /**
-     * return position counter id field
+     * The publication limit counter id.
      *
-     * @return position counter id field
+     * @return publication limit counter id.
      */
-    public int positionCounterId()
+    public int publicationLimitCounterId()
     {
-        return buffer().getInt(offset() + POSITION_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -147,9 +147,9 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      * @param positionCounterId field value
      * @return flyweight
      */
-    public PublicationBuffersReadyFlyweight positionCounterId(final int positionCounterId)
+    public PublicationBuffersReadyFlyweight publicationLimitCounterId(final int positionCounterId)
     {
-        buffer().putInt(offset() + POSITION_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
 
         return this;
     }

@@ -183,7 +183,7 @@ class ClientConductor implements Agent, DriverListener
         final String channel,
         final int streamId,
         final int sessionId,
-        final int limitPositionIndicatorOffset,
+        final int publicationLimitCounterId,
         final int mtuLength,
         final String logFileName,
         final long correlationId)
@@ -199,10 +199,10 @@ class ClientConductor implements Agent, DriverListener
             appenders[i] = new LogAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
         }
 
-        final PositionIndicator limit = new BufferPositionIndicator(counterValuesBuffer, limitPositionIndicatorOffset);
+        final PositionIndicator publicationLimit = new BufferPositionIndicator(counterValuesBuffer, publicationLimitCounterId);
 
         addedPublication = new Publication(
-            this, channel, streamId, sessionId, appenders, limit, logBuffers, logMetaDataBuffer, correlationId);
+            this, channel, streamId, sessionId, appenders, publicationLimit, logBuffers, logMetaDataBuffer, correlationId);
 
         correlationSignal.signal();
     }

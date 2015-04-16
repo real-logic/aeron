@@ -65,6 +65,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             else
             {
                 connection.sendPendingStatusMessage(now, statusMessageTimeout);
+                connection.sendPendingNak();
             }
         }
 

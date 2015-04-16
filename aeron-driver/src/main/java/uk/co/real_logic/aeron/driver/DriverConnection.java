@@ -93,6 +93,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final InetSocketAddress sourceAddress;
     private final List<PositionIndicator> subscriberPositions;
     private final LossHandler lossHandler;
+    private final AtomicNakInfo nakInfo;
+    private final NakMessageSender sendNakFunc = this::sendNak;
 
     private volatile long statusMessagePosition;
     private volatile Status status = Status.INIT;
@@ -136,6 +138,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossHandler = new LossHandler(timerwheel, lossFeedbackDelayGenerator, this::onLossDetected);
+        this.nakInfo = new AtomicNakInfo();
 
         final int termCapacity = termBuffers[0].capacity();
 
@@ -412,6 +415,16 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
+     * Called from the {@link Receiver} to send a pending NAK.
+     *
+     * @return number of work items processed.
+     */
+    public int sendPendingNak()
+    {
+        return nakInfo.sendPending(sendNakFunc);
+    }
+
+    /**
      * Remove a {@link PositionIndicator} for a subscriber that has been removed so it is not tracked for flow control.
      *
      * @param subscriberPosition for the subscriber that has been removed.
@@ -492,9 +505,14 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         return isFlowControlOverRun;
     }
 
-    private void onLossDetected(int termId, int termOffset, int length)
+    private void onLossDetected(final int termId, final int termOffset, final int length)
     {
-        this.systemCounters.nakMessagesSent().orderedIncrement();  // TODO: move
+        nakInfo.info(termId, termOffset, length);
+    }
+
+    private void sendNak(final int termId, final int termOffset, final int length)
+    {
+        this.systemCounters.nakMessagesSent().orderedIncrement();
         channelEndpoint.sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 }

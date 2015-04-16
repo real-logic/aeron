@@ -218,7 +218,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         }
     }
 
-    public void sendNak(
+    public void sendNakMessage(
         final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,

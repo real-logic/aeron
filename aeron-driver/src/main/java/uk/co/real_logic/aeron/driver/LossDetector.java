@@ -25,11 +25,11 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.scanForGap;
 
 /**
- * Tracking and handling of gaps in a stream
+ * Detecting and handling of gaps in a stream
  * <p>
- * This handler only sends a single NAK at a time.
+ * This detector only notifies a single NAK at a time.
  */
-public class LossHandler
+public class LossDetector
 {
     private final FeedbackDelayGenerator delayGenerator;
     private final NakMessageSender nakMessageSender;
@@ -49,7 +49,7 @@ public class LossHandler
      * @param delayGenerator   to use for delay determination
      * @param nakMessageSender to call when sending a NAK is indicated
      */
-    public LossHandler(
+    public LossDetector(
         final TimerWheel wheel,
         final FeedbackDelayGenerator delayGenerator,
         final NakMessageSender nakMessageSender)
@@ -168,7 +168,7 @@ public class LossHandler
 
     private void sendNakMessage()
     {
-        nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
+        nakMessageSender.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 
     private long determineNakDelay()

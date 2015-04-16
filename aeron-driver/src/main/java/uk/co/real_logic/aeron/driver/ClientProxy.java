@@ -126,7 +126,7 @@ public class ClientProxy
         publicationReady.sessionId(sessionId)
                         .streamId(streamId)
                         .correlationId(correlationId)
-                        .positionCounterId(positionCounterId)
+                        .publicationLimitCounterId(positionCounterId)
                         .mtuLength(mtuLength);
 
         publicationReady.channel(channel);

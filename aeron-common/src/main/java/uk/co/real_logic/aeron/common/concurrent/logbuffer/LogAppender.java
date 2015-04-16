@@ -151,8 +151,8 @@ public class LogAppender extends LogBufferPartition
     {
         if (length > maxPayloadLength)
         {
-            final String s = String.format("claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length);
-            throw new IllegalArgumentException(s);
+            throw new IllegalArgumentException(
+                String.format("Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
         }
 
         final int headerLength = this.headerLength;
@@ -307,8 +307,8 @@ public class LogAppender extends LogBufferPartition
     {
         if (length > maxMessageLength)
         {
-            final String s = String.format("encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length);
-            throw new IllegalArgumentException(s);
+            throw new IllegalArgumentException(
+                String.format("Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
         }
     }
 }

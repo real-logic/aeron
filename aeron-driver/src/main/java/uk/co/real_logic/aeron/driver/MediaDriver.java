@@ -287,6 +287,7 @@ public final class MediaDriver implements AutoCloseable
             eventBufferLength = EventConfiguration.bufferLength();
 
             warnIfDirectoriesExist = true;
+
         }
 
         public Context conclude()

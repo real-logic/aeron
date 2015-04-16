@@ -62,8 +62,9 @@ public class DriverConductor implements Agent
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
+
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
-        Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
+            Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
         Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
@@ -567,13 +568,25 @@ public class DriverConductor implements Agent
             correlationId,
             subscriberPositions,
             sourceInfo);
+        final LossHandler lossHandler;
+        if (Configuration.dontSendNack())
+        {
+            final NoNackDelayGenerator noNackDelayGenerator = new NoNackDelayGenerator(); //Don't send a NACK (For QA only)
 
-        final LossHandler lossHandler = new LossHandler(
+            lossHandler = new LossHandler(
+                timerWheel,
+                noNackDelayGenerator,
+                channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
+                systemCounters);
+        }
+        else
+        {
+            lossHandler = new LossHandler(
             timerWheel,
             udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
             systemCounters);
-
+        }
         final DriverConnection connection = new DriverConnection(
             correlationId, channelEndpoint,
             controlAddress,

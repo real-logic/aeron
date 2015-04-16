@@ -568,12 +568,6 @@ public class DriverConductor implements Agent
             subscriberPositions,
             sourceInfo);
 
-        final LossHandler lossHandler = new LossHandler(
-            timerWheel,
-            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-            channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-            systemCounters);
-
         final DriverConnection connection = new DriverConnection(
             correlationId,
             channelEndpoint,
@@ -585,7 +579,8 @@ public class DriverConductor implements Agent
             initialTermOffset,
             initialWindowLength,
             rawLog,
-            lossHandler,
+            timerWheel,
+            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
             new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
             clock,

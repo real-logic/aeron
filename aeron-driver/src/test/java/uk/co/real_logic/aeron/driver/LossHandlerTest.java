@@ -18,20 +18,20 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
-import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.computePosition;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class LossHandlerTest
@@ -71,12 +71,9 @@ public class LossHandlerTest
     private LossHandler handler;
     private NakMessageSender nakMessageSender;
     private long currentTime = 0;
-    private SystemCounters mockSystemCounters = mock(SystemCounters.class);
 
     public LossHandlerTest()
     {
-        when(mockSystemCounters.nakMessagesSent()).thenReturn(mock(AtomicCounter.class));
-
         wheel = new TimerWheel(
             () -> currentTime,
             Configuration.CONDUCTOR_TICK_DURATION_US,
@@ -85,7 +82,7 @@ public class LossHandlerTest
 
         nakMessageSender = mock(NakMessageSender.class);
 
-        handler = new LossHandler(wheel, DELAY_GENERATOR, nakMessageSender, mockSystemCounters);
+        handler = new LossHandler(wheel, DELAY_GENERATOR, nakMessageSender);
         dataHeader.wrap(rcvBuffer, 0);
     }
 
@@ -296,7 +293,7 @@ public class LossHandlerTest
 
     private LossHandler getLossHandlerWithImmediate()
     {
-        return new LossHandler(wheel, DELAY_GENERATOR_WITH_IMMEDIATE, nakMessageSender, mockSystemCounters);
+        return new LossHandler(wheel, DELAY_GENERATOR_WITH_IMMEDIATE, nakMessageSender);
     }
 
     private void insertDataFrame(final int offset)

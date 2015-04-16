@@ -153,12 +153,6 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         dispatcher.onSetupMessage(header, buffer, length, srcAddress);
     }
 
-    public NakMessageSender composeNakMessageSender(
-        final InetSocketAddress controlAddress, final int sessionId, final int streamId)
-    {
-        return (termId, termOffset, length) -> sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
-    }
-
     public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
         sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
@@ -224,7 +218,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         }
     }
 
-    private void sendNak(
+    public void sendNak(
         final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,

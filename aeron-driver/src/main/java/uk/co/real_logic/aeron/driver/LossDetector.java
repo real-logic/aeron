@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,14 +25,13 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.scanForGap;
 
 /**
- * Tracking and handling of gaps in a stream
+ * Detecting and handling of gaps in a stream
  * <p>
- * This handler only sends a single NAK at a time.
+ * This detector only notifies a single NAK at a time.
  */
-public class LossHandler
+public class LossDetector
 {
     private final FeedbackDelayGenerator delayGenerator;
-    private final AtomicCounter naksSent;
     private final NakMessageSender nakMessageSender;
     private final TimerWheel.Timer timer;
     private final TimerWheel wheel;
@@ -50,16 +48,13 @@ public class LossHandler
      * @param wheel            for timer management
      * @param delayGenerator   to use for delay determination
      * @param nakMessageSender to call when sending a NAK is indicated
-     * @param systemCounters   to use for tracking purposes
      */
-    public LossHandler(
+    public LossDetector(
         final TimerWheel wheel,
         final FeedbackDelayGenerator delayGenerator,
-        final NakMessageSender nakMessageSender,
-        final SystemCounters systemCounters)
+        final NakMessageSender nakMessageSender)
     {
         this.wheel = wheel;
-        this.naksSent = systemCounters.nakMessagesSent();
         this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
@@ -177,8 +172,7 @@ public class LossHandler
 
     private void sendNakMessage()
     {
-        naksSent.orderedIncrement();
-        nakMessageSender.send(activeGap.termId, activeGap.termOffset, activeGap.length);
+        nakMessageSender.onLossDetected(activeGap.termId, activeGap.termOffset, activeGap.length);
     }
 
     private long determineNakDelay()

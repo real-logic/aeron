@@ -15,8 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
@@ -42,6 +44,12 @@ class DriverConnectionConductorFields extends DriverConnectionPadding1
     protected long completedPosition;
     protected long subscribersPosition;
     protected long timeOfLastStatusChange;
+
+    protected volatile long beginLossChange = -1;
+    protected volatile long endLossChange = -1;
+    protected int lossTermId;
+    protected int lossTermOffset;
+    protected int lossLength;
 }
 
 class DriverConnectionPadding2 extends DriverConnectionConductorFields
@@ -54,6 +62,7 @@ class DriverConnectionHotFields extends DriverConnectionPadding2
     protected long lastPacketTimestamp;
     protected long lastStatusMessageTimestamp;
     protected long lastStatusMessagePosition;
+    protected long lastChangeNumber = -1;
 }
 
 class DriverConnectionPadding3 extends DriverConnectionHotFields
@@ -64,7 +73,7 @@ class DriverConnectionPadding3 extends DriverConnectionHotFields
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverConnection extends DriverConnectionPadding3 implements AutoCloseable
+public class DriverConnection extends DriverConnectionPadding3 implements AutoCloseable, NakMessageSender
 {
     public enum Status
     {
@@ -90,7 +99,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final PositionReporter hwmPosition;
     private final InetSocketAddress sourceAddress;
     private final List<PositionIndicator> subscriberPositions;
-    private final LossHandler lossHandler;
+    private final LossDetector lossDetector;
 
     private volatile long statusMessagePosition;
     private volatile Status status = Status.INIT;
@@ -106,7 +115,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int initialTermOffset,
         final int initialWindowLength,
         final RawLog rawLog,
-        final LossHandler lossHandler,
+        final TimerWheel timerwheel,
+        final FeedbackDelayGenerator lossFeedbackDelayGenerator,
         final List<PositionIndicator> subscriberPositions,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -132,7 +142,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         this.lastPacketTimestamp = time;
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
-        this.lossHandler = lossHandler;
+        this.lossDetector = new LossDetector(timerwheel, lossFeedbackDelayGenerator, this);
 
         final int termCapacity = termBuffers[0].capacity();
 
@@ -267,6 +277,24 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
+     * Called from the {@link LossDetector} when gap is detected.
+     *
+     * @see NakMessageSender
+     */
+    public void onLossDetected(final int termId, final int termOffset, final int length)
+    {
+        final long changeNumber = beginLossChange + 1;
+
+        beginLossChange = changeNumber;
+
+        lossTermId = termId;
+        lossTermOffset = termOffset;
+        lossLength = length;
+
+        endLossChange = changeNumber;
+    }
+
+    /**
      * Called from the {@link DriverConductor}.
      *
      * @return if work has been done or not
@@ -292,11 +320,11 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int positionBitsToShift = this.positionBitsToShift;
         final int index = indexByPosition(completedPosition, positionBitsToShift);
 
-        int workCount = lossHandler.scan(
+        int workCount = lossDetector.scan(
             termBuffers[index], completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
 
         final int completedTermOffset = (int)completedPosition & termLengthMask;
-        final int completedOffset = lossHandler.completedOffset();
+        final int completedOffset = lossDetector.completedOffset();
         final long newCompletedPosition = (completedPosition - completedTermOffset) + completedOffset;
         this.completedPosition = newCompletedPosition;
 
@@ -388,11 +416,10 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
-        int workCount = 1;
         if (ACTIVE == status)
         {
             final long statusMessagePosition = this.statusMessagePosition;
-            if ((statusMessagePosition != lastStatusMessagePosition) || now > (lastStatusMessageTimestamp + statusMessageTimeout))
+            if (statusMessagePosition != lastStatusMessagePosition || now > (lastStatusMessageTimestamp + statusMessageTimeout))
             {
                 final int activeTermId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)statusMessagePosition & termLengthMask;
@@ -403,9 +430,34 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
                 lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
+            }
+        }
 
-                // invert the work count logic. We want to appear to be less busy once we send an SM
-                workCount = 0;
+        return 1;
+    }
+
+    /**
+     * Called from the {@link Receiver} to send a pending NAK.
+     *
+     * @return number of work items processed.
+     */
+    public int sendPendingNak()
+    {
+        int workCount = 0;
+        final long changeNumber = endLossChange;
+
+        if (changeNumber != lastChangeNumber)
+        {
+            final int termId = lossTermId;
+            final int termOffset = lossTermOffset;
+            final int length = lossLength;
+
+            if (changeNumber == beginLossChange)
+            {
+                channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
+                lastChangeNumber = changeNumber;
+                systemCounters.nakMessagesSent().orderedIncrement();
+                workCount = 1;
             }
         }
 

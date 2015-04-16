@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -74,7 +75,7 @@ public class ReceiverTest
     private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
     private static final List<PositionIndicator> POSITION_INDICATORS = Collections.singletonList(POSITION_INDICATOR);
 
-    private final LossHandler mockLossHandler = mock(LossHandler.class);
+    private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
@@ -178,7 +179,8 @@ public class ReceiverTest
             INITIAL_TERM_OFFSET,
             INITIAL_WINDOW_LENGTH,
             rawLog,
-            mockLossHandler,
+            timerWheel,
+            mockFeedbackDelayGenerator,
             POSITION_INDICATORS,
             mockHighestReceivedPosition,
             clock,
@@ -249,7 +251,8 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        mockLossHandler,
+                        timerWheel,
+                        mockFeedbackDelayGenerator,
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,
@@ -309,7 +312,8 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        mockLossHandler,
+                        timerWheel,
+                        mockFeedbackDelayGenerator,
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,
@@ -372,7 +376,8 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        mockLossHandler,
+                        timerWheel,
+                        mockFeedbackDelayGenerator,
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,
@@ -439,7 +444,8 @@ public class ReceiverTest
                         initialTermOffset,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        mockLossHandler,
+                        timerWheel,
+                        mockFeedbackDelayGenerator,
                         POSITION_INDICATORS,
                         mockHighestReceivedPosition,
                         clock,

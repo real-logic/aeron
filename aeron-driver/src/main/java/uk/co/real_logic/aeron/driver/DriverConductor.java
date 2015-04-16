@@ -568,43 +568,55 @@ public class DriverConductor implements Agent
             correlationId,
             subscriberPositions,
             sourceInfo);
-        final LossHandler lossHandler;
+
+        final DriverConnection connection;
+
         if (Configuration.dontSendNack())
         {
             final NoNackDelayGenerator noNackDelayGenerator = new NoNackDelayGenerator(); //Don't send a NACK (For QA only)
 
-            lossHandler = new LossHandler(
-                timerWheel,
-                noNackDelayGenerator,
-                channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-                systemCounters);
+            connection = new DriverConnection(
+                    correlationId,
+                    channelEndpoint,
+                    controlAddress,
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    activeTermId,
+                    initialTermOffset,
+                    initialWindowLength,
+                    rawLog,
+                    timerWheel,
+                    noNackDelayGenerator,
+                    subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
+                    new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
+                    clock,
+                    systemCounters,
+                    sourceAddress,
+                    logger);
         }
         else
         {
-            lossHandler = new LossHandler(
-            timerWheel,
-            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-            channelEndpoint.composeNakMessageSender(controlAddress, sessionId, streamId),
-            systemCounters);
+            connection = new DriverConnection(
+                correlationId,
+                channelEndpoint,
+                controlAddress,
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                initialTermOffset,
+                initialWindowLength,
+                rawLog,
+                timerWheel,
+                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+                subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
+                new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
+                clock,
+                systemCounters,
+                sourceAddress,
+                logger);
         }
-        final DriverConnection connection = new DriverConnection(
-            correlationId, channelEndpoint,
-            controlAddress,
-            sessionId,
-            streamId,
-            initialTermId,
-            activeTermId,
-            initialTermOffset,
-            initialWindowLength,
-            rawLog,
-            lossHandler,
-            subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
-            new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
-            clock,
-            systemCounters,
-            sourceAddress,
-            logger);
-
         connections.add(connection);
 
         subscriberPositions.forEach(

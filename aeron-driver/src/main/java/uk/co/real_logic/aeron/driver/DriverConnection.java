@@ -15,8 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
+import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
@@ -91,6 +93,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final InetSocketAddress sourceAddress;
     private final List<PositionIndicator> subscriberPositions;
     private final LossHandler lossHandler;
+    private final AtomicNakInfo nakInfo;
+    private final NakMessageSender sendNakFunc = this::sendNak;
 
     private volatile long statusMessagePosition;
     private volatile Status status = Status.INIT;
@@ -106,7 +110,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int initialTermOffset,
         final int initialWindowLength,
         final RawLog rawLog,
-        final LossHandler lossHandler,
+        final TimerWheel timerwheel,
+        final FeedbackDelayGenerator lossFeedbackDelayGenerator,
         final List<PositionIndicator> subscriberPositions,
         final PositionReporter hwmPosition,
         final NanoClock clock,
@@ -132,7 +137,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         this.lastPacketTimestamp = time;
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
-        this.lossHandler = lossHandler;
+        this.lossHandler = new LossHandler(timerwheel, lossFeedbackDelayGenerator, this::onLossDetected);
+        this.nakInfo = new AtomicNakInfo();
 
         final int termCapacity = termBuffers[0].capacity();
 
@@ -388,7 +394,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
-        int workCount = 1;
         if (ACTIVE == status)
         {
             final long statusMessagePosition = this.statusMessagePosition;
@@ -403,13 +408,20 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
                 lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
-
-                // invert the work count logic. We want to appear to be less busy once we send an SM
-                workCount = 0;
             }
         }
 
-        return workCount;
+        return 1;
+    }
+
+    /**
+     * Called from the {@link Receiver} to send a pending NAK.
+     *
+     * @return number of work items processed.
+     */
+    public int sendPendingNak()
+    {
+        return nakInfo.sendPending(sendNakFunc);
     }
 
     /**
@@ -491,5 +503,16 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         }
 
         return isFlowControlOverRun;
+    }
+
+    private void onLossDetected(final int termId, final int termOffset, final int length)
+    {
+        nakInfo.info(termId, termOffset, length);
+    }
+
+    private void sendNak(final int termId, final int termOffset, final int length)
+    {
+        this.systemCounters.nakMessagesSent().orderedIncrement();
+        channelEndpoint.sendNak(controlAddress, sessionId, streamId, termId, termOffset, length);
     }
 }

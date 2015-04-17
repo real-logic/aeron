@@ -413,7 +413,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                 length = ms.getNext(sendBuffer, msp.getNext());
                 if (length > 0)
                 {
-                    while (!(sendSucceeded = pub.offer(sendBuffer, 0, length)) && !shuttingDown)
+                    while (!(sendSucceeded = (pub.offer(sendBuffer, 0, length) >= 0L)) && !shuttingDown)
                     {
 
                     }

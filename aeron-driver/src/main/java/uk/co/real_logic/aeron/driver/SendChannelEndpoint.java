@@ -33,6 +33,7 @@ import static uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight.SEND
  */
 public class SendChannelEndpoint implements AutoCloseable
 {
+    private final BiInt2ObjectMap<DriverPublication> publicationByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final UdpChannelTransport transport;
     private final UdpChannel udpChannel;
@@ -41,39 +42,62 @@ public class SendChannelEndpoint implements AutoCloseable
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel,
-        final TransportPoller transportPoller,
         final EventLogger logger,
         final LossGenerator lossGenerator,
         final SystemCounters systemCounters)
     {
         this.transport = new SenderUdpChannelTransport(
             udpChannel, this::onStatusMessage, this::onNakMessage, logger, lossGenerator);
-        this.transport.registerForRead(transportPoller);
         this.udpChannel = udpChannel;
         this.nakMessagesReceived = systemCounters.nakMessagesReceived();
         this.statusMessagesReceived = systemCounters.statusMessagesReceived();
     }
 
-    public int send(final ByteBuffer buffer) throws Exception
+    /**
+     * Called from the {@link Sender} to register the transport.
+     *
+     * @param transportPoller to register with
+     */
+    public void registerForRead(final TransportPoller transportPoller)
     {
-        return transport.sendTo(buffer, udpChannel.remoteData());
+        transport.registerForRead(transportPoller);
     }
 
+    /**
+     * Called from the {@link Sender} to send data or retransmits.
+     *
+     * @param buffer to send
+     * @param address to send to
+     * @return bytes sent
+     */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress address)
     {
         return transport.sendTo(buffer, address);
     }
 
+    /**
+     * Close endpoint.
+     */
     public void close()
     {
         transport.close();
     }
 
+    /**
+     * Return the {@link UdpChannel} for the endpoint.
+     *
+     * @return UdpChannel for the endpoint
+     */
     public UdpChannel udpChannel()
     {
         return udpChannel;
     }
 
+    /**
+     * Validate the MTU length with the underlying transport
+     *
+     * @param mtuLength to validate against
+     */
     public void validateMtuLength(final int mtuLength)
     {
         final int soSndbuf = transport.getOption(StandardSocketOptions.SO_SNDBUF);
@@ -85,43 +109,80 @@ public class SendChannelEndpoint implements AutoCloseable
         }
     }
 
+    /**
+     * Called from the {@link DriverConductor} to find the publication associated with a sessionId and streamId
+     *
+     * @param sessionId for the publication
+     * @param streamId for the publication
+     * @return publication
+     */
     public DriverPublication getPublication(final int sessionId, final int streamId)
     {
-        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(sessionId, streamId);
-
-        if (null != assembly)
-        {
-            return assembly.publication;
-        }
-
-        return null;
+        return publicationByStreamAndSessionIdMap.get(sessionId, streamId);
     }
 
-    public void addPublication(
-        final DriverPublication publication, final RetransmitHandler retransmitHandler, final SenderFlowControl senderFlowControl)
+    /**
+     * Called form the {@link DriverConductor} to associate a publication with a sessionId and streamId.
+     *
+     * @param publication to associate
+     */
+    public void addPublication(final DriverPublication publication)
+    {
+        publicationByStreamAndSessionIdMap.put(publication.sessionId(), publication.streamId(), publication);
+    }
+
+    /**
+     * Called from the {@link DriverConductor} to remove an association of a publication.
+     *
+     * @param publication to remove
+     * @return publication removed
+     */
+    public DriverPublication removePublication(final DriverPublication publication)
+    {
+        return publicationByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
+    }
+
+    /**
+     * Called from the {@link DriverConductor} to return the number of associated publications.
+     *
+     * @return number of publications associated.
+     */
+    public int sessionCount()
+    {
+        return publicationByStreamAndSessionIdMap.size();
+    }
+
+    /**
+     * Called from the {@link Sender} to add information to the control packet dispatcher.
+     *
+     * @param publication to add to the dispatcher
+     * @param retransmitHandler to add to the dispatcher
+     * @param senderFlowControl to add to the dispatcher
+     */
+    public void addToDispatcher(
+        final DriverPublication publication,
+        final RetransmitHandler retransmitHandler,
+        final SenderFlowControl senderFlowControl)
     {
         assemblyByStreamAndSessionIdMap.put(
             publication.sessionId(), publication.streamId(),
             new PublicationAssembly(publication, retransmitHandler, senderFlowControl));
     }
 
-    public DriverPublication removePublication(final int sessionId, final int streamId)
+    /**
+     * Called from the {@link Sender} to remove information from the control packet dispatcher.
+     *
+     * @param publication to remove
+     */
+    public void removeFromDispatcher(final DriverPublication publication)
     {
-        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.remove(sessionId, streamId);
+        final PublicationAssembly assembly =
+            assemblyByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
 
-        DriverPublication publication = null;
         if (null != assembly)
         {
             assembly.retransmitHandler.close();
-            publication = assembly.publication;
         }
-
-        return publication;
-    }
-
-    public int sessionCount()
-    {
-        return assemblyByStreamAndSessionIdMap.size();
     }
 
     private void onStatusMessage(final StatusMessageFlyweight statusMsg, final InetSocketAddress srcAddress)

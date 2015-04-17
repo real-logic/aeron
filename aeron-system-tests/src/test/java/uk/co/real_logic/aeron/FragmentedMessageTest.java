@@ -83,7 +83,7 @@ public class FragmentedMessageTest
                 srcBuffer.setMemory(i * length, length, (byte)(65 + i));
             }
 
-            while (!publication.offer(srcBuffer, offset, srcBuffer.capacity()))
+            while (publication.offer(srcBuffer, offset, srcBuffer.capacity()) < 0L)
             {
                 Thread.yield();
             }

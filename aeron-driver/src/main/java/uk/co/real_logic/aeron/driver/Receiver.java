@@ -99,7 +99,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.dispatcher().addConnection(connection);
     }
 
-    public void onRegisterMediaChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.registerForRead(transportPoller);
         transportPoller.selectNowWithoutProcessing();

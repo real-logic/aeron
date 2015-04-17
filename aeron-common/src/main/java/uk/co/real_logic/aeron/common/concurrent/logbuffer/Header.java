@@ -15,26 +15,19 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.nio.ByteOrder;
-
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 
 /**
  * Represents the header of the data frame for accessing meta data fields.
  */
 public class Header
 {
-    /**
-     * The actual length of the header must be aligned to a {@link FrameDescriptor#FRAME_ALIGNMENT} boundary.
-     */
-    public static final int LENGTH = BitUtil.align(DataHeaderFlyweight.HEADER_LENGTH, FRAME_ALIGNMENT);
-
-    private UnsafeBuffer buffer;
+    private int initialTermId;
     private int offset = 0;
+    private UnsafeBuffer buffer;
 
     /**
      * Default constructor to enable inheritance.
@@ -51,6 +44,38 @@ public class Header
     public Header(final UnsafeBuffer termBuffer)
     {
         this.buffer = termBuffer;
+    }
+
+    /**
+     * Construct a header that references a buffer for the log.
+     *
+     * @param initialTermId this stream started at.
+     * @param termBuffer    for the log.
+     */
+    public Header(final int initialTermId, final UnsafeBuffer termBuffer)
+    {
+        this.initialTermId = initialTermId;
+        this.buffer = termBuffer;
+    }
+
+    /**
+     * Get the initial term id this stream started at.
+     *
+     * @return the initial term id this stream started at.
+     */
+    public int initialTermId()
+    {
+        return initialTermId;
+    }
+
+    /**
+     * Set the initial term id this stream started at.
+     *
+     * @param initialTermId this stream started at.
+     */
+    public void initialTermId(final int initialTermId)
+    {
+        this.initialTermId = initialTermId;
     }
 
     /**

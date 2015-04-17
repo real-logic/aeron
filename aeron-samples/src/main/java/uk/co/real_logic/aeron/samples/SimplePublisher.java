@@ -41,7 +41,7 @@ public class SimplePublisher
         // A separate media driver process need to run prior to running this application
         final Aeron.Context ctx = new Aeron.Context();
 
-     // Create an Aeron instance with client provided context configuration and connect to media driver
+        // Create an Aeron instance with client provided context configuration and connect to media driver
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(channel, streamId))
         {
@@ -55,9 +55,9 @@ public class SimplePublisher
                     // Try to publish buffer from first publisher. Call to 'offer' is a non-blocking call.
                     // In case the call fails, it must be retried
                     System.out.print("offering " + i + "/" + 5);
-                    boolean result = publication.offer(buffer, 0, message.getBytes().length);
+                    final long result = publication.offer(buffer, 0, message.getBytes().length);
 
-                    if (!result)
+                    if (result < 0L)
                     {
                         System.out.println(" ah? "); // Failed to send the message
                     }

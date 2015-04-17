@@ -59,9 +59,9 @@ public class BasicPublisher
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
                 // Try to send the message on configured CHANNEL and STREAM
-                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
+                final long result = publication.offer(BUFFER, 0, message.getBytes().length);
 
-                if (!result)
+                if (result < 0L)
                 {
                     // Message offer did not succeed
                     System.out.println(" ah?!");

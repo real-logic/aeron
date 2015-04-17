@@ -1,5 +1,7 @@
 package uk.co.real_logic.aeron.tools.perf_tools;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
@@ -8,8 +10,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by philip on 4/7/15.
@@ -73,7 +73,7 @@ public class AeronPong
             running.set(false);
             return;
         }
-        while (!pongPub.offer(buffer, offset, length))
+        while (pongPub.offer(buffer, offset, length) < 0L)
         {
         }
     }
@@ -85,7 +85,7 @@ public class AeronPong
             running.set(false);
             return;
         }
-        if (pongPub.tryClaim(length, bufferClaim))
+        if (pongPub.tryClaim(length, bufferClaim) >= 0)
         {
             try
             {

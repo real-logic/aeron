@@ -1,5 +1,18 @@
 package uk.co.real_logic.aeron.tools.perf_tools;
 
+import java.awt.Color;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
+
+import javax.imageio.ImageIO;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
@@ -9,22 +22,11 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.tools.MessagesAtMessagesPerSecondInterval;
 import uk.co.real_logic.aeron.tools.RateController;
 import uk.co.real_logic.aeron.tools.RateControllerInterval;
-
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.File;
-
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by philipjohnson1 on 4/2/15.
@@ -88,6 +90,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
 
         Runnable task = new Runnable()
         {
+            @Override
             public void run()
             {
                 while (running)
@@ -113,7 +116,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
 
         for (int i = 0; i < warmUpMsgs; i++)
         {
-            while (!pub.tryClaim(buffer.capacity(), bufferClaim))
+            while (pub.tryClaim(buffer.capacity(), bufferClaim) < 0L)
             {
                 idle.idle(1);
             }
@@ -149,7 +152,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         int total = (int)(System.currentTimeMillis() - start) / 1000;
         buffer.putByte(0, (byte)'q');
 
-        while (!pub.offer(buffer, 0, buffer.capacity()))
+        while (pub.offer(buffer, 0, buffer.capacity()) < 0L)
         {
             idle.idle(0);
         }
@@ -181,10 +184,11 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         computeStats();
     }
 
+    @Override
     public int onNext()
     {
         int iterations = 0;
-        while (!pub.tryClaim(buffer.capacity(), bufferClaim))
+        while (pub.tryClaim(buffer.capacity(), bufferClaim) < 0L)
         {
             iterations++;
         }

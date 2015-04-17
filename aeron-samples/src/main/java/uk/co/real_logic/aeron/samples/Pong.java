@@ -74,7 +74,7 @@ public class Pong
     public static void pingHandler(
         final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
-        while (!pongPublication.offer(buffer, offset, length))
+        while (pongPublication.offer(buffer, offset, length) < 0L)
         {
             PING_HANDLER_IDLE_STRATEGY.idle(0);
         }

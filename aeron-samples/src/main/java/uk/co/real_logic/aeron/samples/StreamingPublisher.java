@@ -98,7 +98,7 @@ public class StreamingPublisher
 
                     ATOMIC_BUFFER.putLong(0, i);
 
-                    while (!publication.offer(ATOMIC_BUFFER, 0, length))
+                    while (publication.offer(ATOMIC_BUFFER, 0, length) < 0L)
                     {
                         //Returns almost immediately ( Used for low latency)
                         OFFER_IDLE_STRATEGY.idle(0);

@@ -117,7 +117,7 @@ public class DriverConductorTest
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(transportPoller)
-            .conductorNioSelector(transportPoller)
+            .senderNioSelector(transportPoller)
             .unicastSenderFlowControl(UnicastSenderFlowControl::new)
             .multicastSenderFlowControl(MaxMulticastSenderFlowControl::new)
             .conductorTimerWheel(wheel)
@@ -199,7 +199,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verify(senderProxy, times(4)).newPublication(any());
+        verify(senderProxy, times(4)).newPublication(any(), any(), any());
     }
 
     @Test
@@ -338,7 +338,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         driverConductor.doWork();
 
-        verify(senderProxy, never()).newPublication(any());
+        verify(senderProxy, never()).newPublication(any(), any(), any());
 
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
         verifyNeverSucceeds();
@@ -463,7 +463,7 @@ public class DriverConductorTest
     private void verifySenderNotifiedOfNewPublication()
     {
         final ArgumentCaptor<DriverPublication> captor = ArgumentCaptor.forClass(DriverPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture());
+        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
         final DriverPublication publication = captor.getValue();
         assertThat(publication.sessionId(), is(1));

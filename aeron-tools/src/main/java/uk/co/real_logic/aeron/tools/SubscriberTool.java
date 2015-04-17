@@ -649,7 +649,7 @@ public class SubscriberTool
                 controlBuffer.putBytes(8, channelBytes);
                 controlBuffer.putInt(8 + channelBytes.length, streamId);
                 controlBuffer.putInt(12 + channelBytes.length, sessionId);
-                while (!controlPublication.offer(controlBuffer, 0, 16 + channelBytes.length))
+                while (controlPublication.offer(controlBuffer, 0, 16 + channelBytes.length) < 0L)
                 {
 
                 }

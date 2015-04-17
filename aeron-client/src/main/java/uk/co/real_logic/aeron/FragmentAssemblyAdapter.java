@@ -24,6 +24,7 @@ import java.util.function.Supplier;
 import uk.co.real_logic.aeron.common.BufferBuilder;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
@@ -126,9 +127,10 @@ public class FragmentAssemblyAdapter implements DataHandler
 
         public AssemblyHeader reset(final Header base, final int msgLength)
         {
-            buffer(base.buffer());
+            initialTermId(base.initialTermId());
             offset(base.offset());
-            frameLength = msgLength + Header.LENGTH;
+            buffer(base.buffer());
+            frameLength = msgLength + DataHeaderFlyweight.HEADER_LENGTH;
 
             return this;
         }

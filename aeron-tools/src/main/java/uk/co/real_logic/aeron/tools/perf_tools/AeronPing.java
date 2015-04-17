@@ -1,5 +1,17 @@
 package uk.co.real_logic.aeron.tools.perf_tools;
 
+import java.awt.Color;
+import java.awt.FontMetrics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+
+import javax.imageio.ImageIO;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
@@ -9,14 +21,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import javax.imageio.ImageIO;
-import java.awt.*;
-import java.awt.image.BufferedImage;
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * Created by philip on 4/7/15.
@@ -105,7 +109,7 @@ public class AeronPing
         }
 
         buffer.putByte(0, (byte) 'q');
-        while (!pub.offer(buffer, 0, msgLen))
+        while (pub.offer(buffer, 0, msgLen) < 0L)
         {
 
         }
@@ -197,7 +201,7 @@ public class AeronPing
         int height = 370;
         int num = (int)((numMsgs - 1) * percentile);
         double newMax = sorted[num];
-        double stepY = (double)(height / (newMax - min));
+        double stepY = height / (newMax - min);
         double stepX = (double)width / (double)num;
         String title = "Latency Scatterplot (us) " + percentile + " percentile";
 
@@ -216,7 +220,7 @@ public class AeronPing
         {
             if (tmp[i] <= newMax)
             {
-                int posX = x + 100 + (int)(stepX * (double)idx);
+                int posX = x + 100 + (int)(stepX * idx);
                 int posY = y + 390 - (int)(stepY * (tmp[i] - min));
                 g.fillRect(posX, posY, 1, 1);
                 idx++;
@@ -254,7 +258,7 @@ public class AeronPing
             buffer.putInt(1, msgCount);
             timestamps[0][msgCount++] = System.nanoTime();
         }
-        while (!pub.offer(buffer, 0, msgLen))
+        while (pub.offer(buffer, 0, msgLen) < 0L)
         {
 
         }
@@ -267,7 +271,7 @@ public class AeronPing
 
     private void sendPingAndReceivePongClaim()
     {
-        if (pub.tryClaim(msgLen, bufferClaim))
+        if (pub.tryClaim(msgLen, bufferClaim) >= 0)
         {
             try
             {

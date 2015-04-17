@@ -57,7 +57,7 @@ public class AeronThroughputencySubscriber
         }
         else
         {
-            while (!pub.tryClaim(length, bufferClaim))
+            while (pub.tryClaim(length, bufferClaim) < 0L)
             {
                 iterations++;
             }

@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -27,7 +28,8 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -104,7 +106,7 @@ public class PongTest
     {
         buffer.putInt(0, 1);
 
-        assertTrue(pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT));
+        assertThat(pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT), greaterThan(0L));
 
         final int fragmentsRead[] = new int[1];
 
@@ -132,7 +134,7 @@ public class PongTest
 
         verify(pongHandler).onData(
             any(UnsafeBuffer.class),
-            eq(Header.LENGTH),
+            eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),
             any(Header.class));
     }
@@ -140,6 +142,6 @@ public class PongTest
     public void pingHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         // echoes back the ping
-        assertTrue(pongPublication.offer(buffer, offset, length));
+        assertThat(pongPublication.offer(buffer, offset, length), greaterThan(0L));
     }
 }

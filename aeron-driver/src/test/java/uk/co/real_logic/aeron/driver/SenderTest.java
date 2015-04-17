@@ -64,6 +64,7 @@ public class SenderTest
     private static final int ALIGNED_FRAME_LENGTH = align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
 
     private final EventLogger mockLogger = mock(EventLogger.class);
+    private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
 
     private final RawLog rawLog =
         LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, LogBufferDescriptor.TERM_META_DATA_LENGTH);
@@ -73,6 +74,7 @@ public class SenderTest
     private Sender sender;
 
     private final SenderFlowControl senderFlowControl = spy(new UnicastSenderFlowControl());
+    private final RetransmitHandler mockRetransmitHandler = mock(RetransmitHandler.class);
 
     private long currentTimestamp = 0;
 
@@ -116,6 +118,7 @@ public class SenderTest
 
         sender = new Sender(
             new MediaDriver.Context()
+                .senderNioSelector(mockTransportPoller)
                 .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger));
@@ -139,7 +142,7 @@ public class SenderTest
             senderFlowControl.initialPositionLimit(INITIAL_TERM_ID, TERM_BUFFER_LENGTH),
             mockSystemCounters);
 
-        senderCommandQueue.offer(new NewPublicationCmd(publication));
+        senderCommandQueue.offer(new NewPublicationCmd(publication, mockRetransmitHandler, senderFlowControl));
     }
 
     @After

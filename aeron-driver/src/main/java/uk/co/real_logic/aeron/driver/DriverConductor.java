@@ -15,28 +15,32 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.driver.buffer.*;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.Flyweight;
+import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
+import uk.co.real_logic.aeron.common.StaticDelayGenerator;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.status.BufferPositionIndicator;
-import uk.co.real_logic.agrona.status.BufferPositionReporter;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.status.BufferPositionIndicator;
+import uk.co.real_logic.agrona.status.BufferPositionReporter;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -47,9 +51,7 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.driver.Configuration.CONNECTION_LIVENESS_TIMEOUT_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
@@ -79,7 +81,6 @@ public class DriverConductor implements Agent
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
     private final DriverConductorProxy conductorProxy;
-    private final TransportPoller transportPoller;
     private final RawLogFactory rawLogFactory;
     private final RingBuffer toDriverCommands;
     private final RingBuffer toEventReader;
@@ -124,7 +125,6 @@ public class DriverConductor implements Agent
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();
         this.rawLogFactory = ctx.rawLogBuffersFactory();
-        this.transportPoller = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowLength = ctx.initialWindowLength();
         this.capacity = ctx.termBufferLength();
@@ -190,7 +190,6 @@ public class DriverConductor implements Agent
     {
         int workCount = 0;
 
-        workCount += transportPoller.pollTransports();
         workCount += toDriverCommands.read(onClientCommandFunc);
         workCount += driverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += toEventReader.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
@@ -346,14 +345,13 @@ public class DriverConductor implements Agent
         {
             channelEndpoint = new SendChannelEndpoint(
                 udpChannel,
-                transportPoller,
                 logger,
                 Configuration.createLossGenerator(controlLossRate, controlLossSeed),
                 systemCounters);
-            transportPoller.selectNowWithoutProcessing();
 
             channelEndpoint.validateMtuLength(mtuLength);
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
+            senderProxy.registerSendChannelEndpoint(channelEndpoint);
         }
 
         final AeronClient aeronClient = getOrAddClient(clientId);
@@ -393,14 +391,14 @@ public class DriverConductor implements Agent
                 systemCounters,
                 DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
                 DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                composeNewRetransmitSender(publication),
+                publication::onRetransmit,
                 initialTermId,
                 capacity);
 
-            channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
+            channelEndpoint.addPublication(publication);
             publications.add(publication);
 
-            senderProxy.newPublication(publication);
+            senderProxy.newPublication(publication, retransmitHandler, senderFlowControl);
         }
 
         final PublicationRegistration existingRegistration = publicationRegistrations.put(
@@ -447,7 +445,7 @@ public class DriverConductor implements Agent
                 udpChannel, conductorProxy, receiverProxy.receiver(), logger, systemCounters, lossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
-            receiverProxy.registerMediaEndpoint(channelEndpoint);
+            receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
         }
 
         channelEndpoint.incRefToStream(streamId);
@@ -636,7 +634,7 @@ public class DriverConductor implements Agent
                 logger.logPublicationRemoval(
                     channelEndpoint.udpChannel().originalUriString(), publication.sessionId(), publication.streamId());
 
-                channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
+                channelEndpoint.removePublication(publication);
                 publications.remove(i);
 
                 senderProxy.closePublication(publication);
@@ -644,8 +642,7 @@ public class DriverConductor implements Agent
                 if (channelEndpoint.sessionCount() == 0)
                 {
                     sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                    channelEndpoint.close();
-                    transportPoller.selectNowWithoutProcessing();
+                    senderProxy.closeSendChannelEndpoint(channelEndpoint);
                 }
             }
         }
@@ -791,11 +788,6 @@ public class DriverConductor implements Agent
         }
 
         return subscription;
-    }
-
-    private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)
-    {
-        return (termId, termOffset, length) -> senderProxy.retransmit(publication, termId, termOffset, length);
     }
 
     private long generateCreationCorrelationId()

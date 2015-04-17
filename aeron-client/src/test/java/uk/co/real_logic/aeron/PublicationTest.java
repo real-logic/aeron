@@ -91,6 +91,12 @@ public class PublicationTest
     }
 
     @Test
+    public void shouldReportInitialPosition()
+    {
+        assertThat(publication.position(), is(0L));
+    }
+
+    @Test
     public void shouldReportMaxMessageLength()
     {
         assertThat(publication.maxMessageLength(), is(FrameDescriptor.computeMaxMessageLength(TERM_MIN_LENGTH)));
@@ -99,9 +105,12 @@ public class PublicationTest
     @Test
     public void shouldOfferAMessageUponConstruction()
     {
+        final long expectedPosition = (long)atomicSendBuffer.capacity();
         when(appenders[0].append(atomicSendBuffer, 0, atomicSendBuffer.capacity())).thenReturn(atomicSendBuffer.capacity());
+        when(appenders[0].tailVolatile()).thenReturn(0).thenReturn((int)expectedPosition);
 
-        assertThat(publication.offer(atomicSendBuffer), is((long)atomicSendBuffer.capacity()));
+        assertThat(publication.offer(atomicSendBuffer), is(expectedPosition));
+        assertThat(publication.position(), is(expectedPosition));
     }
 
     @Test

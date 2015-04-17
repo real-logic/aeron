@@ -143,6 +143,22 @@ public class Publication implements AutoCloseable
     }
 
     /**
+     * Get the current position to which the publication has advanced for this stream.
+     *
+     * @return the current position to which the publication has advanced for this stream.
+     */
+    public long position()
+    {
+        final int initialTermId = initialTermId(logMetaDataBuffer);
+        final int activeTermId = activeTermId(logMetaDataBuffer);
+        final int activeIndex = indexByTerm(initialTermId, activeTermId);
+        final LogAppender logAppender = logAppenders[activeIndex];
+        final int currentTail = logAppender.tailVolatile();
+
+        return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+    }
+
+    /**
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.

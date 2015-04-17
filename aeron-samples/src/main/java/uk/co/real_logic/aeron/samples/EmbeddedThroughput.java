@@ -47,12 +47,17 @@ public class EmbeddedThroughput
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new NoOpIdleStrategy())
             .receiverIdleStrategy(new NoOpIdleStrategy())
-            .senderIdleStrategy(new NoOpIdleStrategy());
+            .senderIdleStrategy(new NoOpIdleStrategy())
+            .dirsDeleteOnExit(true);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(3);
+
+        String embeddedDirName = CommonContext.generateEmbeddedDirName();
+        ctx.dirName(embeddedDirName);
         final Aeron.Context context = new Aeron.Context();
+        context.dirName(embeddedDirName);
 
         final AtomicBoolean running = new AtomicBoolean(true);
 

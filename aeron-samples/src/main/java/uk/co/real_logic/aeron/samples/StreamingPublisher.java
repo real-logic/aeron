@@ -61,10 +61,14 @@ public class StreamingPublisher
             throw new IllegalArgumentException(String.format("Message length must be at least %d bytes", SIZE_OF_LONG));
         }
 
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 
         // Create a context for media driver connection
         final Aeron.Context context = new Aeron.Context();
+        if(EMBEDDED_MEDIA_DRIVER)
+        {
+            context.dirName(driver.contextDirName());
+        }
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
         //Create an executer with 2 reusable threads

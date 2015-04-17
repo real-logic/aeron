@@ -15,7 +15,28 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.*;
+import static java.lang.Boolean.getBoolean;
+import static java.lang.Integer.getInteger;
+import static uk.co.real_logic.aeron.driver.Configuration.CONDUCTOR_BUFFER_LENGTH;
+import static uk.co.real_logic.aeron.driver.Configuration.COUNTER_BUFFERS_LENGTH;
+import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
+import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_PROP_NAME;
+import static uk.co.real_logic.aeron.driver.Configuration.TO_CLIENTS_BUFFER_LENGTH;
+import static uk.co.real_logic.agrona.IoUtil.deleteIfExists;
+import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import uk.co.real_logic.aeron.common.CncFileDescriptor;
+import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
@@ -26,23 +47,16 @@ import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.AgentRunner;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.CompositeAgent;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import static java.lang.Integer.getInteger;
-import static uk.co.real_logic.aeron.driver.Configuration.*;
-import static uk.co.real_logic.agrona.IoUtil.deleteIfExists;
-import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based media driver
@@ -58,12 +72,18 @@ import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
  * <li><code>aeron.command.buffer.length</code>: Use int value as length of the command buffers between threads.</li>
  * <li><code>aeron.conductor.buffer.length</code>: Use int value as length of the conductor buffers between the media
  * driver and the client.</li>
+ * <li><code>aeron.dir.delete.on.exit</code>: Attempt to delete Aeron directories on exit.</li>
  * </ul>
  */
 public final class MediaDriver implements AutoCloseable
 {
+
+    /** Attempt to delete directories on exit */
+    public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
+
     private final File adminDirectory;
     private final File dataDirectory;
+    private final File parentDirectory;
     private final List<AgentRunner> runners;
     private final Context ctx;
 
@@ -93,6 +113,7 @@ public final class MediaDriver implements AutoCloseable
 
         adminDirectory = new File(ctx.adminDirName());
         dataDirectory = new File(ctx.dataDirName());
+        parentDirectory = new File(ctx.dirName());
 
         ensureDirectoriesAreRecreated();
 
@@ -144,6 +165,30 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
+     * Launch an isolated MediaDriver embedded in the current process with a generated dirName that can be retrieved
+     * by calling contextDirName.
+     * @return the newly started MediaDriver.
+     */
+    public static MediaDriver launchEmbedded()
+    {
+        Context ctx = new Context();
+        return launchEmbedded(ctx);
+    }
+
+    /**
+     * Launch an isolated MediaDriver embedded in the current process with a provided configuration context and
+     * a generated dirName (overwrites configured dirName) that can be retrieved by calling contextDirName.
+     *
+     * @param ctx containing the configuration options.
+     * @return the newly started MediaDriver.
+     */
+    public static MediaDriver launchEmbedded(final Context ctx)
+    {
+        ctx.dirName(CommonContext.generateEmbeddedDirName());
+        return launch(ctx);
+    }
+
+    /**
      * Launch a MediaDriver embedded in the current process with default configuration.
      *
      * @return the newly started MediaDriver.
@@ -167,6 +212,7 @@ public final class MediaDriver implements AutoCloseable
     /**
      * Shutdown the media driver by stopping all threads and freeing resources.
      */
+    @Override
     public void close()
     {
         try
@@ -224,7 +270,17 @@ public final class MediaDriver implements AutoCloseable
         {
             IoUtil.delete(adminDirectory, false);
             IoUtil.delete(dataDirectory, false);
+            IoUtil.delete(parentDirectory, false);
         }
+    }
+
+    /**
+     * Used to access the configured dirName for this MediaDriver Context typically after the launchIsolated method
+     * @return the context dirName
+     */
+    public String contextDirName()
+    {
+        return ctx.dirName();
     }
 
     public static class Context extends CommonContext
@@ -271,6 +327,7 @@ public final class MediaDriver implements AutoCloseable
         private EventLogger eventLogger;
         private Consumer<String> eventConsumer;
         private ThreadingMode threadingMode;
+        private boolean dirsDeleteOnExit;
 
         public Context()
         {
@@ -288,8 +345,10 @@ public final class MediaDriver implements AutoCloseable
 
             warnIfDirectoriesExist = true;
 
+            dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
         }
 
+        @Override
         public Context conclude()
         {
             super.conclude();
@@ -577,6 +636,17 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Set whether or not this application will attempt to delete the Aeron directories when exiting.
+         * @param dirsDeleteOnExit Attempt deletion.
+         * @return this Object for method chaining.
+         */
+        public Context dirsDeleteOnExit(final boolean dirsDeleteOnExit)
+        {
+            this.dirsDeleteOnExit = dirsDeleteOnExit;
+            return this;
+        }
+
         public OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue()
         {
             return conductorCommandQueue;
@@ -748,6 +818,15 @@ public final class MediaDriver implements AutoCloseable
             return systemCounters;
         }
 
+        /**
+         * Get whether or not this application will attempt to delete the Aeron directories when exiting.
+         * @return true when directories will be deleted, otherwise false.
+         */
+        public boolean dirsDeleteOnExit()
+        {
+            return dirsDeleteOnExit;
+        }
+
         public Consumer<String> eventConsumer()
         {
             return eventConsumer;
@@ -763,6 +842,7 @@ public final class MediaDriver implements AutoCloseable
             return toEventReader;
         }
 
+        @Override
         public void close()
         {
             if (null != systemCounters)

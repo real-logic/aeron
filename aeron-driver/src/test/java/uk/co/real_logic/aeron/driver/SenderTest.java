@@ -137,7 +137,6 @@ public class SenderTest
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,
-            HEADER.capacity(),
             MAX_FRAME_LENGTH,
             senderFlowControl.initialPositionLimit(INITIAL_TERM_ID, TERM_BUFFER_LENGTH),
             mockSystemCounters);

@@ -41,7 +41,7 @@ public class DriverPublication implements AutoCloseable
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final TermScanner scanner;
+    private final TermScanner scanner = new TermScanner(DataHeaderFlyweight.HEADER_LENGTH);
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
     private final PositionReporter publisherLimit;
@@ -75,7 +75,6 @@ public class DriverPublication implements AutoCloseable
         final int sessionId,
         final int streamId,
         final int initialTermId,
-        final int headerLength,
         final int mtuLength,
         final long initialPositionLimit,
         final SystemCounters systemCounters)
@@ -94,7 +93,6 @@ public class DriverPublication implements AutoCloseable
             .map((partition) -> new LogBufferPartition(partition.termBuffer(), partition.metaDataBuffer()))
             .toArray(LogBufferPartition[]::new);
 
-        scanner = new TermScanner(headerLength);
         sendBuffers = rawLog.sliceTerms();
 
         final int termLength = logPartitions[0].termBuffer().capacity();

@@ -381,7 +381,6 @@ public class DriverConductor implements Agent
                 sessionId,
                 streamId,
                 initialTermId,
-                DataHeaderFlyweight.HEADER_LENGTH,
                 mtuLength,
                 senderFlowControl.initialPositionLimit(initialTermId, capacity),
                 systemCounters);

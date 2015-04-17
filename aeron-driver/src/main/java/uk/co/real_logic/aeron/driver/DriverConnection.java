@@ -363,23 +363,22 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     {
         int bytesReceived = length;
         final int positionBitsToShift = this.positionBitsToShift;
-        final long packetBeginPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-        final long proposedPosition = packetBeginPosition + length;
-        final long windowBeginPosition = lastStatusMessagePosition;
+        final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
+        final long proposedPosition = packetPosition + length;
+        final long windowPosition = lastStatusMessagePosition;
 
         if (isHeartbeat(buffer, length))
         {
-            hwmCandidate(packetBeginPosition);
+            hwmCandidate(packetPosition);
             systemCounters.heartbeatsReceived().orderedIncrement();
         }
-        else if (isFlowControlUnderRun(windowBeginPosition, packetBeginPosition) ||
-                 isFlowControlOverRun(windowBeginPosition, proposedPosition))
+        else if (isFlowControlUnderRun(windowPosition, packetPosition) || isFlowControlOverRun(windowPosition, proposedPosition))
         {
             bytesReceived = 0;
         }
         else
         {
-            final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetBeginPosition, positionBitsToShift)];
+            final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
             LogRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
 
             hwmCandidate(proposedPosition);
@@ -520,9 +519,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         }
     }
 
-    private boolean isFlowControlUnderRun(final long windowBeginPosition, final long packetPosition)
+    private boolean isFlowControlUnderRun(final long windowPosition, final long packetPosition)
     {
-        final boolean isFlowControlUnderRun = packetPosition < windowBeginPosition;
+        final boolean isFlowControlUnderRun = packetPosition < windowPosition;
 
         if (isFlowControlUnderRun)
         {
@@ -532,13 +531,13 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         return isFlowControlUnderRun;
     }
 
-    private boolean isFlowControlOverRun(final long windowBeginPosition, final long proposedPosition)
+    private boolean isFlowControlOverRun(final long windowPosition, final long proposedPosition)
     {
-        boolean isFlowControlOverRun = proposedPosition > (windowBeginPosition + currentWindowLength);
+        boolean isFlowControlOverRun = proposedPosition > (windowPosition + currentWindowLength);
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, windowBeginPosition, currentWindowLength);
+            logger.logOverRun(proposedPosition, windowPosition, currentWindowLength);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

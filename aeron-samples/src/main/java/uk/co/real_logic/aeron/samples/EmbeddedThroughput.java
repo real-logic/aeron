@@ -20,9 +20,8 @@ import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.agrona.concurrent.*;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.*;
@@ -44,6 +43,12 @@ public class EmbeddedThroughput
 
     public static void main(final String[] args) throws Exception
     {
+        final MediaDriver.Context ctx = new MediaDriver.Context()
+            .threadingMode(ThreadingMode.DEDICATED)
+            .conductorIdleStrategy(new NoOpIdleStrategy())
+            .receiverIdleStrategy(new NoOpIdleStrategy())
+            .senderIdleStrategy(new NoOpIdleStrategy());
+
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(3);
@@ -51,7 +56,7 @@ public class EmbeddedThroughput
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        try (final MediaDriver ignore = MediaDriver.launch();
+        try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))

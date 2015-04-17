@@ -124,8 +124,9 @@ public class FragmentAssemblyAdapter implements DataHandler
 
         public AssemblyHeader reset(final Header base, final int msgLength)
         {
-            buffer(base.buffer());
+            initialTermId(base.initialTermId());
             offset(base.offset());
+            buffer(base.buffer());
             frameLength = msgLength + DataHeaderFlyweight.HEADER_LENGTH;
 
             return this;

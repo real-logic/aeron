@@ -36,14 +36,15 @@ public class TermReader
     /**
      * Construct a reader for a log and associated meta data buffer.
      *
-     * @param termBuffer containing the data frames.
+     * @param initialTermId at which this stream started.
+     * @param termBuffer    containing the data frames.
      */
-    public TermReader(final UnsafeBuffer termBuffer)
+    public TermReader(final int initialTermId, final UnsafeBuffer termBuffer)
     {
         checkTermBuffer(termBuffer);
 
         this.termBuffer = termBuffer;
-        header = new Header(termBuffer);
+        header = new Header(initialTermId, termBuffer);
     }
 
     /**

@@ -233,10 +233,11 @@ class ClientConductor implements Agent, DriverListener
                             final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
                             final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
                             final TermReader[] readers = new TermReader[PARTITION_COUNT];
+                            final int initialTermId = LogBufferDescriptor.initialTermId(buffers[buffers.length - 1]);
 
                             for (int p = 0; p < PARTITION_COUNT; p++)
                             {
-                                readers[p] = new TermReader(buffers[p]);
+                                readers[p] = new TermReader(initialTermId, buffers[p]);
                             }
 
                             subscription.onConnectionReady(

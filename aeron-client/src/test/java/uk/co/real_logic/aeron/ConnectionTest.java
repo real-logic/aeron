@@ -76,7 +76,7 @@ public class ConnectionTest
             final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
 
             termBuffers[i] = termBuffer;
-            readers[i] = new TermReader(termBuffer);
+            readers[i] = new TermReader(INITIAL_TERM_ID, termBuffer);
         }
 
         dataHeader.wrap(rcvBuffer, 0);

@@ -143,7 +143,7 @@ public class ReceiverTest
 
         termReaders = rawLog
             .stream()
-            .map((partition) -> new TermReader(partition.termBuffer()))
+            .map((partition) -> new TermReader(INITIAL_TERM_ID, partition.termBuffer()))
             .toArray(TermReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(

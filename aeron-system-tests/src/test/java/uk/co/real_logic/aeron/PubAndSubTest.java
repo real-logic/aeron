@@ -32,7 +32,8 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -108,7 +109,7 @@ public class PubAndSubTest
 
         buffer.putInt(0, 1);
 
-        assertTrue(publication.offer(buffer, 0, BitUtil.SIZE_OF_INT));
+        assertThat(publication.offer(buffer, 0, BitUtil.SIZE_OF_INT), greaterThan(0L));
 
         final int fragmentsRead[] = new int[1];
         SystemTestHelper.executeUntil(
@@ -143,7 +144,7 @@ public class PubAndSubTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }
@@ -185,7 +186,7 @@ public class PubAndSubTest
         // lock step reception until we get to within 8 messages of the end
         for (int i = 0; i < num1kMessagesInTermBuffer - 7; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }
@@ -204,20 +205,20 @@ public class PubAndSubTest
 
         for (int i = 7; i > 0; i--)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }
         }
 
         // small enough to leave room for padding that is just a header
-        while (!publication.offer(buffer, 0, lastMessageLength))
+        while (publication.offer(buffer, 0, lastMessageLength) < 0L)
         {
             Thread.yield();
         }
 
         // no roll over
-        while (!publication.offer(buffer, 0, messageLength))
+        while (publication.offer(buffer, 0, messageLength) < 0L)
         {
             Thread.yield();
         }
@@ -269,7 +270,7 @@ public class PubAndSubTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }
@@ -314,7 +315,7 @@ public class PubAndSubTest
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
             {
-                while (!publication.offer(buffer, 0, messageLength))
+                while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
                 }
@@ -358,7 +359,7 @@ public class PubAndSubTest
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
             {
-                while (!publication.offer(buffer, 0, messageLength))
+                while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
                 }
@@ -376,7 +377,7 @@ public class PubAndSubTest
                 TimeUnit.MILLISECONDS.toNanos(900));
         }
 
-        while (!publication.offer(buffer, 0, messageLength))
+        while (publication.offer(buffer, 0, messageLength) < 0L)
         {
             Thread.yield();
         }
@@ -419,7 +420,7 @@ public class PubAndSubTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }
@@ -467,7 +468,7 @@ public class PubAndSubTest
         {
             for (int j = 0; j < numMessagesPerBatch; j++)
             {
-                while (!publication.offer(buffer, 0, messageLength))
+                while (publication.offer(buffer, 0, messageLength) < 0L)
                 {
                     Thread.yield();
                 }
@@ -514,7 +515,7 @@ public class PubAndSubTest
         {
             int offerFails = 0;
 
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 if (++offerFails > maxFails)
                 {
@@ -576,7 +577,7 @@ public class PubAndSubTest
 
         for (int i = 0; i < numMessagesToSendStageOne; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }
@@ -601,7 +602,7 @@ public class PubAndSubTest
 
         for (int i = 0; i < numMessagesToSendStageTwo; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }
@@ -644,7 +645,7 @@ public class PubAndSubTest
 
         for (int i = 0; i < numMessagesToSend; i++)
         {
-            while (!publication.offer(buffer, 0, messageLength))
+            while (publication.offer(buffer, 0, messageLength) < 0L)
             {
                 Thread.yield();
             }

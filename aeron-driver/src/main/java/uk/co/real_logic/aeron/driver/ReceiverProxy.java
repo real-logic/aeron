@@ -86,11 +86,11 @@ public class ReceiverProxy
         }
     }
 
-    public void registerMediaEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    public void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         if (isSharedThread())
         {
-            receiver.onRegisterMediaChannelEndpoint(channelEndpoint);
+            receiver.onRegisterReceiveChannelEndpoint(channelEndpoint);
         }
         else
         {

@@ -20,6 +20,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.checkTermBuffer;
+import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * A term buffer reader.
@@ -98,7 +99,7 @@ public class TermReader
             if (!isPaddingFrame(termBuffer, currentTermOffset))
             {
                 header.offset(currentTermOffset);
-                handler.onData(termBuffer, currentTermOffset + Header.LENGTH, frameLength - Header.LENGTH, header);
+                handler.onData(termBuffer, currentTermOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
                 ++framesCounter;
             }

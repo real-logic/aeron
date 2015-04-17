@@ -15,11 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.cmd.*;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.aeron.driver.cmd.ClosePublicationCmd;
-import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
-import uk.co.real_logic.aeron.driver.cmd.RetransmitPublicationCmd;
-import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 
 import java.util.Queue;
 
@@ -47,15 +44,27 @@ public class SenderProxy
         this.sender = sender;
     }
 
-    public void retransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
+    public void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         if (isSharedThread())
         {
-            sender.onRetransmit(publication, termId, termOffset, length);
+            sender.onRegisterSendChannelEndpoint(channelEndpoint);
         }
         else
         {
-            offer(new RetransmitPublicationCmd(publication, termId, termOffset, length));
+            offer(new RegisterSendChannelEndpointCmd(channelEndpoint));
+        }
+    }
+
+    public void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+    {
+        if (isSharedThread())
+        {
+            sender.onCloseSendChannelEndpoint(channelEndpoint);
+        }
+        else
+        {
+            offer(new CloseSendChannelEndpointCmd(channelEndpoint));
         }
     }
 
@@ -71,15 +80,18 @@ public class SenderProxy
         }
     }
 
-    public void newPublication(final DriverPublication publication)
+    public void newPublication(
+        final DriverPublication publication,
+        final RetransmitHandler retransmitHandler,
+        final SenderFlowControl senderFlowControl)
     {
         if (isSharedThread())
         {
-            sender.onNewPublication(publication);
+            sender.onNewPublication(publication, retransmitHandler, senderFlowControl);
         }
         else
         {
-            offer(new NewPublicationCmd(publication));
+            offer(new NewPublicationCmd(publication, retransmitHandler, senderFlowControl));
         }
     }
 

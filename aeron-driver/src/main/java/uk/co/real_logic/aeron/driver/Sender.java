@@ -29,6 +29,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 {
     private static final DriverPublication[] EMPTY_DRIVER_PUBLICATIONS = new DriverPublication[0];
 
+    private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final AtomicCounter totalBytesSent;
 
@@ -37,18 +38,18 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     public Sender(final MediaDriver.Context ctx)
     {
+        this.transportPoller = ctx.senderNioSelector();
         this.commandQueue = ctx.senderCommandQueue();
         this.totalBytesSent = ctx.systemCounters().bytesSent();
     }
 
     public int doWork()
     {
-        int workCount = 0;
+        final int workCount = commandQueue.drain(this);
+        final int bytesSent = doSend();
+        final int bytesReceived = transportPoller.pollTransports();
 
-        workCount += commandQueue.drain(this);
-        workCount += doSend();
-
-        return workCount;
+        return workCount + bytesSent + bytesReceived;
     }
 
     public String roleName()
@@ -56,12 +57,22 @@ public class Sender implements Agent, Consumer<SenderCmd>
         return "sender";
     }
 
-    public void onRetransmit(final DriverPublication publication, final int termId, final int termOffset, final int length)
+    public void onRegisterSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
-        publication.onRetransmit(termId, termOffset, length);
+        channelEndpoint.registerForRead(transportPoller);
+        transportPoller.selectNowWithoutProcessing();
     }
 
-    public void onNewPublication(final DriverPublication publication)
+    public void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+    {
+        channelEndpoint.close();
+        transportPoller.selectNowWithoutProcessing();
+    }
+
+    public void onNewPublication(
+        final DriverPublication publication,
+        final RetransmitHandler retransmitHandler,
+        final SenderFlowControl senderFlowControl)
     {
         final DriverPublication[] oldPublications = publications;
         final int length = oldPublications.length;
@@ -71,6 +82,8 @@ public class Sender implements Agent, Consumer<SenderCmd>
         newPublications[length] = publication;
 
         publications = newPublications;
+
+        publication.sendChannelEndpoint().addToDispatcher(publication, retransmitHandler, senderFlowControl);
     }
 
     public void onClosePublication(final DriverPublication publication)
@@ -87,6 +100,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         }
 
         publications = newPublications;
+        publication.sendChannelEndpoint().removeFromDispatcher(publication);
         publication.close();
     }
 

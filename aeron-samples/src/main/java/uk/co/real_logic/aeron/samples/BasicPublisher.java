@@ -56,9 +56,9 @@ public class BasicPublisher
                 BUFFER.putBytes(0, message.getBytes());
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
-                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
+                final long result = publication.offer(BUFFER, 0, message.getBytes().length);
 
-                if (!result)
+                if (result < 0L)
                 {
                     System.out.println(" ah?!");
                 }

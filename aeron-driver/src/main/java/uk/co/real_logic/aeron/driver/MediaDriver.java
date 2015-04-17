@@ -219,7 +219,7 @@ public final class MediaDriver implements AutoCloseable
     private void freeSocketsForReuseOnWindows()
     {
         ctx.receiverNioSelector().selectNowWithoutProcessing();
-        ctx.conductorNioSelector().selectNowWithoutProcessing();
+        ctx.senderNioSelector().selectNowWithoutProcessing();
     }
 
     private MediaDriver start()
@@ -273,7 +273,7 @@ public final class MediaDriver implements AutoCloseable
     {
         private RawLogFactory rawLogFactory;
         private TransportPoller receiverTransportPoller;
-        private TransportPoller conductorTransportPoller;
+        private TransportPoller senderTransportPoller;
         private Supplier<SenderFlowControl> unicastSenderFlowControl;
         private Supplier<SenderFlowControl> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
@@ -357,7 +357,7 @@ public final class MediaDriver implements AutoCloseable
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
                 receiverNioSelector(new TransportPoller());
-                conductorNioSelector(new TransportPoller());
+                senderNioSelector(new TransportPoller());
 
                 Configuration.validateTermBufferLength(termBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
@@ -429,9 +429,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorNioSelector(final TransportPoller transportPoller)
+        public Context senderNioSelector(final TransportPoller transportPoller)
         {
-            this.conductorTransportPoller = transportPoller;
+            this.senderTransportPoller = transportPoller;
             return this;
         }
 
@@ -647,9 +647,9 @@ public final class MediaDriver implements AutoCloseable
             return receiverTransportPoller;
         }
 
-        public TransportPoller conductorNioSelector()
+        public TransportPoller senderNioSelector()
         {
-            return conductorTransportPoller;
+            return senderTransportPoller;
         }
 
         public Supplier<SenderFlowControl> unicastSenderFlowControl()

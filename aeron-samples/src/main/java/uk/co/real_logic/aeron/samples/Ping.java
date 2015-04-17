@@ -113,7 +113,7 @@ public class Ping
             {
                 ATOMIC_BUFFER.putLong(0, System.nanoTime());
             }
-            while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
+            while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
             while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
             {

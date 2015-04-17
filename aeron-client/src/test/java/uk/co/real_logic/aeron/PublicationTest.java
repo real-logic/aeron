@@ -26,12 +26,12 @@ import uk.co.real_logic.agrona.status.PositionIndicator;
 
 import java.nio.ByteBuffer;
 
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.concurrent.broadcast.RecordDescriptor.RECORD_ALIGNMENT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.*;
 
 public class PublicationTest
 {
@@ -70,8 +70,7 @@ public class PublicationTest
             appenders[i] = mock(LogAppender.class);
             final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(0, 0, 0);
             headers[i] = header;
-            when(appenders[i].append(any(), anyInt(), anyInt())).thenReturn(SUCCEEDED);
-            when(appenders[i].claim(anyInt(), any())).thenReturn(SUCCEEDED);
+
             when(appenders[i].defaultHeader()).thenReturn(header);
             when(appenders[i].termBuffer()).thenReturn(termBuffer);
             when(appenders[i].maxMessageLength()).thenReturn(FrameDescriptor.computeMaxMessageLength(TERM_MIN_LENGTH));
@@ -100,32 +99,34 @@ public class PublicationTest
     @Test
     public void shouldOfferAMessageUponConstruction()
     {
-        assertTrue(publication.offer(atomicSendBuffer));
+        when(appenders[0].append(atomicSendBuffer, 0, atomicSendBuffer.capacity())).thenReturn(atomicSendBuffer.capacity());
+
+        assertThat(publication.offer(atomicSendBuffer), is((long)atomicSendBuffer.capacity()));
     }
 
     @Test
     public void shouldFailToOfferAMessageWhenLimited()
     {
         when(limit.position()).thenReturn(0L);
-        assertFalse(publication.offer(atomicSendBuffer));
+        assertThat(publication.offer(atomicSendBuffer), is(Publication.NOT_CONNECTED));
     }
 
     @Test
     public void shouldFailToOfferWhenAppendFails()
     {
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(FAILED);
-        assertFalse(publication.offer(atomicSendBuffer));
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(LogAppender.FAILED);
+        assertThat(publication.offer(atomicSendBuffer), is(Publication.BACK_PRESSURE));
     }
 
     @Test
     public void shouldRotateWhenAppendTrips()
     {
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TRIPPED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(LogAppender.TRIPPED);
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
-        assertFalse(publication.offer(atomicSendBuffer));
-        assertTrue(publication.offer(atomicSendBuffer));
+        assertThat(publication.offer(atomicSendBuffer), is(Publication.BACK_PRESSURE));
+        assertThat(publication.offer(atomicSendBuffer), greaterThan(0L));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2], logMetaDataBuffer);
         inOrder.verify(appenders[indexByTerm(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);
@@ -140,13 +141,13 @@ public class PublicationTest
     @Test
     public void shouldRotateWhenClaimTrips()
     {
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TRIPPED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(LogAppender.TRIPPED);
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.position()).thenReturn(Long.MAX_VALUE);
 
         final BufferClaim bufferClaim = new BufferClaim();
-        assertFalse(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
-        assertTrue(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim));
+        assertThat(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim), is(Publication.BACK_PRESSURE));
+        assertThat(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim), greaterThan(0L));
 
         final InOrder inOrder = inOrder(appenders[0], appenders[1], appenders[2], logMetaDataBuffer);
         inOrder.verify(appenders[indexByTerm(TERM_ID_1, TERM_ID_1 + 2)]).statusOrdered(NEEDS_CLEANING);

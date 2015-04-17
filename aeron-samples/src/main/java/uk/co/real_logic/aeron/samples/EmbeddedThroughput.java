@@ -78,7 +78,7 @@ public class EmbeddedThroughput
                 {
                     ATOMIC_BUFFER.putLong(0, i);
 
-                    while (!publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()))
+                    while (publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()) < 0)
                     {
                         backPressureCount++;
                         OFFER_IDLE_STRATEGY.idle(0);

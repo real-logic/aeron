@@ -155,7 +155,7 @@ public class EmbeddedPingPong
             {
                 ATOMIC_BUFFER.putLong(0, System.nanoTime());
             }
-            while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
+            while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
             while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
             {
@@ -184,7 +184,7 @@ public class EmbeddedPingPong
     public static void pingHandler(
         final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
-        while (!pongPublication.offer(buffer, offset, length))
+        while (pongPublication.offer(buffer, offset, length) < 0L)
         {
             PING_HANDLER_IDLE_STRATEGY.idle(0);
         }

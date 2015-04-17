@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.status.PositionReporter;
 
@@ -43,7 +44,7 @@ public class SubscriptionTest
     private static final int READ_BUFFER_CAPACITY = 1024;
     public static final byte FLAGS = (byte)FrameDescriptor.UNFRAGMENTED;
     public static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
-    public static final int HEADER_LENGTH = Header.LENGTH;
+    public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
     private final ByteBuffer readBuffer = ByteBuffer.allocate(READ_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(readBuffer);

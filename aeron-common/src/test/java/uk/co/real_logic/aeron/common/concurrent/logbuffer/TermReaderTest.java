@@ -19,21 +19,22 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
+
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class TermReaderTest
 {
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
-    private static final int HEADER_LENGTH = Header.LENGTH;
+    private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final DataHandler handler = Mockito.mock(DataHandler.class);

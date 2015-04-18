@@ -88,7 +88,7 @@ public class SamplesUtil
 
             System.out.println(
                 String.format(
-                    "message to stream %d from session %x (%d@%d) <<%s>>",
+                    "Message to stream %d from session %x (%d@%d) <<%s>>",
                     streamId, header.sessionId(), length, offset, new String(data)));
         };
     }
@@ -168,12 +168,13 @@ public class SamplesUtil
      * @param channel   for the connection
      * @param streamId  for the stream
      * @param sessionId for the connection publication
+     * @param position  at which the connection when inactive
      */
-    public static void printInactiveConnection(final String channel, final int streamId, final int sessionId)
+    public static void printInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
     {
         System.out.println(
             String.format(
-                "Inactive connection on %s streamId %d sessionId %x",
-                channel, streamId, sessionId));
+                "Inactive connection on %s streamId %d sessionId %x @ position %d",
+                channel, streamId, sessionId, position));
     }
 }

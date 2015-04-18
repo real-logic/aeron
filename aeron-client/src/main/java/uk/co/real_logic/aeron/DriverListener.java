@@ -45,6 +45,7 @@ interface DriverListener
         String channel,
         int streamId,
         int sessionId,
+        long position,
         long correlationId);
 
     void onError(ErrorCode errorCode, String message);

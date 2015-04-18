@@ -268,7 +268,8 @@ class ClientConductor implements Agent, DriverListener
         correlationSignal.signal();
     }
 
-    public void onInactiveConnection(final String channel, final int streamId, final int sessionId, final long correlationId)
+    public void onInactiveConnection(
+        final String channel, final int streamId, final int sessionId, final long position, final long correlationId)
     {
         activeSubscriptions.forEach(
             channel,
@@ -279,7 +280,7 @@ class ClientConductor implements Agent, DriverListener
                 {
                     if (null != inactiveConnectionHandler)
                     {
-                        inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId);
+                        inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId, position);
                     }
                 }
             });

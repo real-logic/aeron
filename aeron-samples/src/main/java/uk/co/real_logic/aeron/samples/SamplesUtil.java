@@ -150,15 +150,16 @@ public class SamplesUtil
      * @param channel           for the connection
      * @param streamId          for the stream
      * @param sessionId         for the connection publication
+     * @param joiningPosition   for the subscriber in the stream
      * @param sourceInformation that is transport specific
      */
     public static void printNewConnection(
-        final String channel, final int streamId, final int sessionId, final String sourceInformation)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInformation)
     {
         System.out.println(
             String.format(
-                "new connection on %s streamId %d sessionId %x from %s",
-                channel, streamId, sessionId, sourceInformation));
+                "New connection on %s streamId %d sessionId %x @ position %d from %s",
+                channel, streamId, sessionId, joiningPosition, sourceInformation));
     }
 
     /**
@@ -172,7 +173,7 @@ public class SamplesUtil
     {
         System.out.println(
             String.format(
-                "inactive connection on %s streamId %d sessionId %x",
+                "Inactive connection on %s streamId %d sessionId %x",
                 channel, streamId, sessionId));
     }
 }

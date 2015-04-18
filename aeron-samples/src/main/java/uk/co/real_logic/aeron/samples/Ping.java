@@ -61,7 +61,8 @@ public class Ping
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(Ping::newPongConnectionHandler);
-        if(EMBEDDED_MEDIA_DRIVER)
+
+        if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }
@@ -135,7 +136,7 @@ public class Ping
     }
 
     private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
     {
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {

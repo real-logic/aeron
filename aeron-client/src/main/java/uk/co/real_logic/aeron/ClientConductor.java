@@ -211,9 +211,9 @@ class ClientConductor implements Agent, DriverListener
         final String channel,
         final int streamId,
         final int sessionId,
-        final long initialPosition,
+        final long joiningPosition,
         final String logFileName,
-        final ConnectionBuffersReadyFlyweight message,
+        final ConnectionBuffersReadyFlyweight msg,
         final long correlationId)
     {
         activeSubscriptions.forEach(
@@ -223,12 +223,12 @@ class ClientConductor implements Agent, DriverListener
             {
                 if (!subscription.isConnected(sessionId))
                 {
-                    for (int i = 0, size = message.positionIndicatorCount(); i < size; i++)
+                    for (int i = 0, size = msg.positionIndicatorCount(); i < size; i++)
                     {
-                        if (subscription.registrationId() == message.positionIndicatorRegistrationId(i))
+                        if (subscription.registrationId() == msg.positionIndicatorRegistrationId(i))
                         {
                             final PositionReporter positionReporter = new BufferPositionReporter(
-                                counterValuesBuffer, message.positionIndicatorCounterId(i));
+                                counterValuesBuffer, msg.positionIndicatorCounterId(i));
 
                             final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
                             final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
@@ -241,11 +241,12 @@ class ClientConductor implements Agent, DriverListener
                             }
 
                             subscription.onConnectionReady(
-                                sessionId, initialPosition, correlationId, readers, positionReporter, logBuffers);
+                                sessionId, joiningPosition, correlationId, readers, positionReporter, logBuffers);
 
                             if (null != newConnectionHandler)
                             {
-                                newConnectionHandler.onNewConnection(channel, streamId, sessionId, message.sourceInfo());
+                                final String info = msg.sourceInfo();
+                                newConnectionHandler.onNewConnection(channel, streamId, sessionId, joiningPosition, info);
                             }
 
                             break;

@@ -55,6 +55,8 @@
 
         <module name="NoWhitespaceBefore"/>
 
+        <module name="WhitespaceAround"/>
+
         <module name="WhitespaceAfter">
             <property name="tokens" value="COMMA, SEMI"/>
         </module>

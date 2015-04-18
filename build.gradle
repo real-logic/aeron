@@ -107,7 +107,7 @@ subprojects {
     }
     afterEvaluate {
 		if(plugins.hasPlugin(JavaPlugin)) {
-			
+
 			// configuration here
 			rootProject.tasks.docs {
 				source += files(sourceSets.collect { srcSet -> srcSet.allJava })
@@ -264,7 +264,7 @@ uploadArchives {
 }
 
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.1'
+    gradleVersion = '2.3'
 }
 
 task docs(type: Javadoc) {

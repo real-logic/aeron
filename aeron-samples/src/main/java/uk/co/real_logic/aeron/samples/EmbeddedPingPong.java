@@ -64,8 +64,9 @@ public class EmbeddedPingPong
 
         try (final MediaDriver ignored = MediaDriver.launchEmbedded(ctx))
         {
-            Thread pongThread = startPong(ignored.contextDirName());
+            final Thread pongThread = startPong(ignored.contextDirName());
             pongThread.start();
+
             runPing(ignored.contextDirName());
             RUNNING.set(false);
             pongThread.join();

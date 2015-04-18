@@ -158,7 +158,7 @@ public final class MediaDriver implements AutoCloseable
      */
     public static MediaDriver launchEmbedded()
     {
-        Context ctx = new Context();
+        final Context ctx = new Context();
         return launchEmbedded(ctx);
     }
 

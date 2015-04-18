@@ -96,7 +96,7 @@ public final class UdpChannel
                 final NetworkInterface localInterface = findInterface(searchAddress);
                 final InetSocketAddress localAddress = resolveToAddressOfInterface(localInterface, searchAddress);
 
-                ProtocolFamily protocolFamily = getProtocolFamily(dataAddress.getAddress());
+                final ProtocolFamily protocolFamily = getProtocolFamily(dataAddress.getAddress());
 
                 context.localControlAddress(localAddress)
                        .remoteControlAddress(controlAddress)
@@ -111,7 +111,7 @@ public final class UdpChannel
                 final InetSocketAddress remoteAddress = uri.getSocketAddress(REMOTE_KEY);
                 final InetSocketAddress localAddress = uri.getSocketAddress(LOCAL_KEY, 0, new InetSocketAddress(0));
 
-                ProtocolFamily protocolFamily =
+                final ProtocolFamily protocolFamily =
                         !uri.containsKey(LOCAL_KEY) && null != remoteAddress
                                 ? getProtocolFamily(remoteAddress.getAddress())
                                 : getProtocolFamily(localAddress.getAddress());
@@ -140,7 +140,7 @@ public final class UdpChannel
         }
     }
 
-    private static boolean isMulticast(AeronUri uri)
+    private static boolean isMulticast(final AeronUri uri)
     {
         return uri.containsKey(GROUP_KEY);
     }
@@ -151,7 +151,7 @@ public final class UdpChannel
         validateUnicastXorMulticast(uri);
     }
 
-    private static void validateMedia(AeronUri uri)
+    private static void validateMedia(final AeronUri uri)
     {
         if (!UDP_MEDIA_ID.equals(uri.getMedia()))
         {
@@ -159,7 +159,7 @@ public final class UdpChannel
         }
     }
 
-    private static void validateUnicastXorMulticast(AeronUri uri)
+    private static void validateUnicastXorMulticast(final AeronUri uri)
     {
         final boolean hasMulticastKeys = uri.containsAnyKey(MULTICAST_KEYS);
         final boolean hasUnicastKeys = uri.containsAnyKey(UNICAST_KEYS);
@@ -173,7 +173,7 @@ public final class UdpChannel
         }
     }
 
-    private static AeronUri parseIntoAeronUri(String uriStr) throws URISyntaxException, UnknownHostException
+    private static AeronUri parseIntoAeronUri(final String uriStr) throws URISyntaxException, UnknownHostException
     {
         if (uriStr.startsWith("udp:"))
         {
@@ -187,7 +187,7 @@ public final class UdpChannel
         throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
 
-    private static AeronUri parseUdpUriToAeronUri(String uriStr) throws URISyntaxException, UnknownHostException
+    private static AeronUri parseUdpUriToAeronUri(final String uriStr) throws URISyntaxException, UnknownHostException
     {
         final URI uri = new URI(uriStr);
         final String userInfo = uri.getUserInfo();
@@ -225,7 +225,7 @@ public final class UdpChannel
         }
     }
 
-    private static String interfaceStringOf(String userInfo, String subnetPrefix)
+    private static String interfaceStringOf(final String userInfo, final String subnetPrefix)
     {
         if (isEmpty(userInfo))
         {
@@ -241,7 +241,7 @@ public final class UdpChannel
     }
 
     private static InetSocketAddress resolveToAddressOfInterface(
-        NetworkInterface localInterface, InterfaceSearchAddress searchAddress)
+        final NetworkInterface localInterface, final InterfaceSearchAddress searchAddress)
     {
         final InetAddress interfaceAddress =
             findAddressOnInterface(
@@ -255,7 +255,7 @@ public final class UdpChannel
         return new InetSocketAddress(interfaceAddress, searchAddress.getPort());
     }
 
-    private static NetworkInterface findInterface(InterfaceSearchAddress searchAddress)
+    private static NetworkInterface findInterface(final InterfaceSearchAddress searchAddress)
         throws SocketException, UnknownHostException
     {
         final Collection<NetworkInterface> filteredIfcs =

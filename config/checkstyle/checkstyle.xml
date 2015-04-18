@@ -17,6 +17,8 @@
 
         <module name="ConstantName"/>
 
+        <module name="FinalLocalVariable"/>
+
         <module name="LocalFinalVariableName"/>
 
         <module name="LocalVariableName"/>

@@ -320,7 +320,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int positionBitsToShift = this.positionBitsToShift;
         final int index = indexByPosition(completedPosition, positionBitsToShift);
 
-        int workCount = lossDetector.scan(
+        final int workCount = lossDetector.scan(
             termBuffers[index], completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
 
         final int completedTermOffset = (int)completedPosition & termLengthMask;
@@ -533,7 +533,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
     private boolean isFlowControlOverRun(final long windowPosition, final long proposedPosition)
     {
-        boolean isFlowControlOverRun = proposedPosition > (windowPosition + currentWindowLength);
+        final boolean isFlowControlOverRun = proposedPosition > (windowPosition + currentWindowLength);
 
         if (isFlowControlOverRun)
         {

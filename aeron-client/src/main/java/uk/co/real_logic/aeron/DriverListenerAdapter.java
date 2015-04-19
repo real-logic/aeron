@@ -112,6 +112,7 @@ class DriverListenerAdapter implements MessageHandler
                     connectionMessage.channel(),
                     connectionMessage.streamId(),
                     connectionMessage.sessionId(),
+                    connectionMessage.position(),
                     connectionMessage.correlationId());
                 break;
 

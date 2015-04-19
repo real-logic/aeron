@@ -36,6 +36,7 @@ import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
 
 class DriverConnectionPadding1
 {
+    @SuppressWarnings("unused")
     protected long p1, p2, p3, p4, p5, p6, p7;
 }
 
@@ -54,6 +55,7 @@ class DriverConnectionConductorFields extends DriverConnectionPadding1
 
 class DriverConnectionPadding2 extends DriverConnectionConductorFields
 {
+    @SuppressWarnings("unused")
     protected long p8, p9, p10, p11, p12, p13, p15;
 }
 
@@ -67,6 +69,7 @@ class DriverConnectionHotFields extends DriverConnectionPadding2
 
 class DriverConnectionPadding3 extends DriverConnectionHotFields
 {
+    @SuppressWarnings("unused")
     protected long p16, p17, p18, p19, p20, p21, p22;
 }
 
@@ -320,7 +323,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int positionBitsToShift = this.positionBitsToShift;
         final int index = indexByPosition(completedPosition, positionBitsToShift);
 
-        int workCount = lossDetector.scan(
+        final int workCount = lossDetector.scan(
             termBuffers[index], completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
 
         final int completedTermOffset = (int)completedPosition & termLengthMask;
@@ -534,7 +537,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
     private boolean isFlowControlOverRun(final long windowPosition, final long proposedPosition)
     {
-        boolean isFlowControlOverRun = proposedPosition > (windowPosition + currentWindowLength);
+        final boolean isFlowControlOverRun = proposedPosition > (windowPosition + currentWindowLength);
 
         if (isFlowControlOverRun)
         {

@@ -148,12 +148,14 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onInactiveConnection(final long correlationId, final int sessionId, final int streamId, final String channel)
+    public void onInactiveConnection(
+        final long correlationId, final int sessionId, final int streamId, final long position, final String channel)
     {
         connectionMessage.wrap(tmpBuffer, 0);
         connectionMessage.correlationId(correlationId)
                          .sessionId(sessionId)
                          .streamId(streamId)
+                         .position(position)
                          .channel(channel);
 
         logger.log(EventCode.CMD_OUT_ON_INACTIVE_CONNECTION, tmpBuffer, 0, connectionMessage.length());

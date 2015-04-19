@@ -216,8 +216,8 @@ public class LossDetectorTest
     {
         handler = getLossHandlerWithImmediate();
 
-        long completedPosition = ACTIVE_TERM_POSITION;
-        long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -230,8 +230,8 @@ public class LossDetectorTest
     @Test
     public void shouldNotNakImmediatelyByDefault()
     {
-        long completedPosition = ACTIVE_TERM_POSITION;
-        long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -246,8 +246,8 @@ public class LossDetectorTest
     {
         handler = getLossHandlerWithImmediate();
 
-        long completedPosition = ACTIVE_TERM_POSITION;
-        long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
@@ -264,7 +264,7 @@ public class LossDetectorTest
         handler = getLossHandlerWithImmediate();
 
         long completedPosition = ACTIVE_TERM_POSITION;
-        long hwmPosition = ACTIVE_TERM_POSITION + TERM_BUFFER_LENGTH + ALIGNED_FRAME_LENGTH;
+        final long hwmPosition = ACTIVE_TERM_POSITION + TERM_BUFFER_LENGTH + ALIGNED_FRAME_LENGTH;
 
         insertDataFrame(offsetOfMessage(0));
         completedPosition += ALIGNED_FRAME_LENGTH;
@@ -279,8 +279,8 @@ public class LossDetectorTest
     {
         handler = getLossHandlerWithImmediate();
 
-        long completedPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
-        long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 5);
+        final long completedPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 5);
 
         insertDataFrame(offsetOfMessage(2));
         insertDataFrame(offsetOfMessage(4));

@@ -42,27 +42,26 @@ public class SubscriptionTest
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
     private static final long CONNECTION_CORRELATION_ID = 101;
     private static final int READ_BUFFER_CAPACITY = 1024;
-    public static final byte FLAGS = (byte)FrameDescriptor.UNFRAGMENTED;
-    public static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
-    public static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
+    private static final byte FLAGS = (byte)FrameDescriptor.UNFRAGMENTED;
+    private static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
+    private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
     private final ByteBuffer readBuffer = ByteBuffer.allocate(READ_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final PositionReporter reporter = mock(PositionReporter.class);
     private final DataHandler dataHandler = mock(DataHandler.class);
-    private final Header header = mock(Header.class);
-
     private Subscription subscription;
+
     private TermReader[] readers;
     private LogBuffers logBuffers = mock(LogBuffers.class);
     private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final Header header = spy(new Header(termBuffer));
 
     @Before
     public void setUp()
     {
         when(header.flags()).thenReturn(FLAGS);
-        when(header.sessionId()).thenReturn(SESSION_ID_1);
         when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
 
         readers = new TermReader[PARTITION_COUNT];
@@ -130,8 +129,8 @@ public class SubscriptionTest
         assertThat(subscription.poll(FRAGMENT_COUNT_LIMIT), is(2));
     }
 
-    private void onTermBuffersMapped(final int sessionId1)
+    private void onTermBuffersMapped(final int sessionId)
     {
-        subscription.onConnectionReady(sessionId1, 0, CONNECTION_CORRELATION_ID, readers, reporter, logBuffers);
+        subscription.onConnectionReady(sessionId, 0, CONNECTION_CORRELATION_ID, readers, reporter, logBuffers);
     }
 }

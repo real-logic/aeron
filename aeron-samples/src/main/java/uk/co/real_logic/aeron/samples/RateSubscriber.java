@@ -47,7 +47,8 @@ public class RateSubscriber
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
-        if(EMBEDDED_MEDIA_DRIVER)
+
+        if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }

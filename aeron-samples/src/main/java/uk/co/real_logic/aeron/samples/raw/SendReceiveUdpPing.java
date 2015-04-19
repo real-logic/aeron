@@ -70,7 +70,7 @@ public class SendReceiveUdpPing
 
             histogram.reset();
             System.gc();
-            LockSupport.parkNanos(1000 * 1000 * 1000);
+            LockSupport.parkNanos(1000_000_000);
         }
     }
 
@@ -103,7 +103,7 @@ public class SendReceiveUdpPing
                     return;
                 }
 
-                for (int i = receiveChannels.length - 1; i >=0; i--)
+                for (int i = receiveChannels.length - 1; i >= 0; i--)
                 {
                     if (null != receiveChannels[i].receive(buffer))
                     {

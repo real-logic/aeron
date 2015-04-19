@@ -330,7 +330,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
         {
-            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(index)];
+            final int oldCompletedPositionIndex = indexByPosition(oldCompletedPosition, positionBitsToShift);
+            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(oldCompletedPositionIndex)];
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 

@@ -62,11 +62,14 @@ public class LogInspector
             out.format("   Active Index: %d\n", indexByTerm(initialTermId(logMetaDataBuffer), activeTermId(logMetaDataBuffer)));
             out.format("    Term Length: %d\n\n", termLength);
 
-            final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
-            for (int i = 0; i < defaultFrameHeaders.length; i++)
+            if (!Boolean.getBoolean("loginspector.skipHeaders"))
             {
-                dataHeaderFlyweight.wrap(defaultFrameHeaders[i]);
-                out.format("Index %d Default %s\n", i, dataHeaderFlyweight);
+                final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
+                for (int i = 0; i < defaultFrameHeaders.length; i++)
+                {
+                    dataHeaderFlyweight.wrap(defaultFrameHeaders[i]);
+                    out.format("Index %d Default %s\n", i, dataHeaderFlyweight);
+                }
             }
 
             out.println();

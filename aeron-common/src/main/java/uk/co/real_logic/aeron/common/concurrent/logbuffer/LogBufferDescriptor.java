@@ -295,10 +295,21 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Determine the partition index based on number of terms that have passed.
+     *
+     * @param termCount for the number of terms that have passed.
+     * @return the partition index for the term count.
+     */
+    public static int indexByTermCount(final int termCount)
+    {
+        return termCount % PARTITION_COUNT;
+    }
+
+    /**
      * Determine the partition index given a stream position.
      *
      * @param position in the stream in bytes.
-     * @return the partition index for the current term roll.
+     * @return the partition index for the position
      */
     public static int indexByPosition(final long position, final int positionBitsToShift)
     {

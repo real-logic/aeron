@@ -330,10 +330,12 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final long newCompletedPosition = (completedPosition - completedTermOffset) + lossDetector.completedOffset();
         this.completedPosition = newCompletedPosition;
 
-        if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
+        final int newTermCount = (int)(newCompletedPosition >>> positionBitsToShift);
+        final int oldTermCount = (int)(oldCompletedPosition >>> positionBitsToShift);
+        if (newTermCount > oldTermCount)
         {
-            final int oldCompletedPositionIndex = indexByPosition(oldCompletedPosition, positionBitsToShift);
-            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(oldCompletedPositionIndex)];
+            final int oldTermCountIndex = indexByTermCount(oldTermCount);
+            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(oldTermCountIndex)];
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 

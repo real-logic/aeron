@@ -42,9 +42,8 @@ class DriverConnectionPadding1
 
 class DriverConnectionConductorFields extends DriverConnectionPadding1
 {
-    protected long rebuildPosition;
-    protected long subscribersPosition;
     protected long timeOfLastStatusChange;
+    protected long rebuildPosition;
 
     protected volatile long beginLossChange = -1;
     protected volatile long endLossChange = -1;
@@ -286,7 +285,14 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public boolean isDrained()
     {
-        return subscribersPosition >= rebuildPosition;
+        long subscriberPosition = Long.MAX_VALUE;
+        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).position());
+        }
+
+        return subscriberPosition >= rebuildPosition;
     }
 
     /**
@@ -324,8 +330,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             minSubscriberPosition = Math.min(minSubscriberPosition, position);
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
-
-        subscribersPosition = minSubscriberPosition;
 
         final long oldRebuildPosition = this.rebuildPosition;
         final long rebuildPosition = Math.max(oldRebuildPosition, maxSubscriberPosition);

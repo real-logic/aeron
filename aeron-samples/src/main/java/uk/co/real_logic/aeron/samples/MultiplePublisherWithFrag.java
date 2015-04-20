@@ -55,8 +55,8 @@ public class MultiplePublisherWithFrag
              final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
             // Allocate 2 different session buffer for two streams
-            MessageStream msgStream = new MessageStream(8192);
-            MessageStream msgStream2 = new MessageStream(8192);
+            final MessageStream msgStream = new MessageStream(8192);
+            final MessageStream msgStream2 = new MessageStream(8192);
 
             int len = msgStream.getNext(BUFFER); // BUFFER contains stream data for first stream
             int len2 = msgStream2.getNext(BUFFER_2); // BUFFER2 contains stream data for the second stream

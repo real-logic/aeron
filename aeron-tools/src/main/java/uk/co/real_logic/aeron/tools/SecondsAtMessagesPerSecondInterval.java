@@ -11,7 +11,7 @@ public class SecondsAtMessagesPerSecondInterval extends RateControllerInterval
     /* Number of seconds (can be fractional) to run for, in total. */
     private final double seconds;
 
-    public SecondsAtMessagesPerSecondInterval(double seconds, double messagesPerSecond)
+    public SecondsAtMessagesPerSecondInterval(final double seconds, final double messagesPerSecond)
     {
         this.goalMessagesPerSecond = messagesPerSecond;
         this.seconds = seconds;
@@ -28,7 +28,7 @@ public class SecondsAtMessagesPerSecondInterval extends RateControllerInterval
     }
 
     @Override
-    IntervalInternal makeInternal(RateController rateController) throws Exception
+    IntervalInternal makeInternal(final RateController rateController) throws Exception
     {
         return rateController.new SecondsAtMessagesPerSecondInternal(rateController, seconds, goalMessagesPerSecond);
     }

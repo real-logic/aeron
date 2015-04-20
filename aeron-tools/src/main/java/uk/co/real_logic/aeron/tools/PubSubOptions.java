@@ -100,7 +100,7 @@ public class PubSubOptions
         options.addOption("i",  "input",      true,
                 "Publisher will send random bytes ('null'), " +
                 "bytes read from stdin ('stdin'), or a file " +
-                "(path to file) as data [default: " + DEFAULT_VALUES.input +"].");
+                "(path to file) as data [default: " + DEFAULT_VALUES.input + "].");
         options.addOption(null, "iterations", true,
                 "Run the rate sequence n times [default: " + DEFAULT_VALUES.iterations + "].");
         options.addOption("m",  "messages",   true,
@@ -171,7 +171,7 @@ public class PubSubOptions
          * @param port
          * @return
          */
-        String getChannelWithPort(int port)
+        String getChannelWithPort(final int port)
         {
             return prefix + ":" + port + suffix;
         }
@@ -195,18 +195,18 @@ public class PubSubOptions
         final String threads;
         final String verify;
 
-        OptionValuesStruct(String channels,
-                           String driver,
-                           String input,
-                           String iterations,
-                           String messages,
-                           String output,
-                           String rate,
-                           String seed,
-                           String session,
-                           String size,
-                           String threads,
-                           String verify)
+        OptionValuesStruct(final String channels,
+                           final String driver,
+                           final String input,
+                           final String iterations,
+                           final String messages,
+                           final String output,
+                           final String rate,
+                           final String seed,
+                           final String session,
+                           final String size,
+                           final String threads,
+                           final String verify)
         {
             this.channels = channels;
             this.driver = driver;
@@ -223,7 +223,7 @@ public class PubSubOptions
         }
 
         /** copy constructor for string values */
-        OptionValuesStruct(OptionValuesStruct other)
+        OptionValuesStruct(final OptionValuesStruct other)
         {
             this.channels = other.channels;
             this.driver = other.driver;
@@ -243,7 +243,7 @@ public class PubSubOptions
          * Copy constructor using a parsed command line and a default value if one
          * was not specified.
          * */
-        OptionValuesStruct(CommandLine cmd, OptionValuesStruct other)
+        OptionValuesStruct(final CommandLine cmd, final OptionValuesStruct other)
         {
             this.channels = cmd.getOptionValue("channels", other.channels);
             this.driver = cmd.getOptionValue("driver", other.driver);
@@ -268,11 +268,11 @@ public class PubSubOptions
      * @return 0 when options parsed, 1 if program should call {@link #printHelp(String)}.
      * @throws ParseException
      */
-    public int parseArgs(String[] args) throws ParseException
+    public int parseArgs(final String[] args) throws ParseException
     {
         OptionValuesStruct defaults;
-        CommandLineParser parser = new GnuParser();
-        CommandLine command = parser.parse(options, args);
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args);
         String opt;
 
         if (command.hasOption("usage"))
@@ -336,9 +336,9 @@ public class PubSubOptions
      * Print the help message for the available options.
      * @param program Name of the program calling print help.
      */
-    public void printHelp(String program)
+    public void printHelp(final String program)
     {
-        HelpFormatter formatter = new HelpFormatter();
+        final HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(program + " [options]", options);
         System.out.println(NL + USAGE_EXAMPLES + NL);
         if (showUsage)
@@ -364,7 +364,7 @@ public class PubSubOptions
      * Set the list of channels on which to publish or subscribe
      * @param channels
      */
-    public void setChannels(List<ChannelDescriptor> channels)
+    public void setChannels(final List<ChannelDescriptor> channels)
     {
         this.channels = channels;
     }
@@ -382,7 +382,7 @@ public class PubSubOptions
      * Set the output stream where a subscriber will write received data.
      * @param output
      */
-    public void setOutput(OutputStream output)
+    public void setOutput(final OutputStream output)
     {
         this.output = output;
     }
@@ -409,7 +409,7 @@ public class PubSubOptions
      * Set if messages use additional space to store checksums for the message and stream.
      * @param verify
      */
-    public void setVerify(boolean verify)
+    public void setVerify(final boolean verify)
     {
         useVerifiableStream = verify;
     }
@@ -418,12 +418,12 @@ public class PubSubOptions
      * Set the input stream that a Publisher will read for data to send.
      * @param input
      */
-    public void setInput(InputStream input)
+    public void setInput(final InputStream input)
     {
         this.input = input;
     }
 
-    public void setRateIntervals(List<RateControllerInterval> rates)
+    public void setRateIntervals(final List<RateControllerInterval> rates)
     {
         this.rateIntervals = rates;
     }
@@ -446,7 +446,7 @@ public class PubSubOptions
      * Set the number of threads for the application to use.
      * @param t Number of threads.
      */
-    public void setThreads(int t)
+    public void setThreads(final int t)
     {
         threads = t;
     }
@@ -464,7 +464,7 @@ public class PubSubOptions
      * Set the total number of messages an application will send or receive before exiting.
      * @param messages
      */
-    public void setMessages(long messages)
+    public void setMessages(final long messages)
     {
         this.messages = messages;
     }
@@ -491,7 +491,7 @@ public class PubSubOptions
      * Set the seed for a random number generator.
      * @param value
      */
-    public void setRandomSeed(long value)
+    public void setRandomSeed(final long value)
     {
         randomSeed = value;
     }
@@ -500,7 +500,7 @@ public class PubSubOptions
      * Set the number of times to run the rate sequence.
      * @param value
      */
-    public void setIterations(long value)
+    public void setIterations(final long value)
     {
         iterations = value;
     }
@@ -518,7 +518,7 @@ public class PubSubOptions
      * Set the use of an embedded Aeron media driver.
      * @param embedded
      */
-    public void setUseEmbeddedDriver(boolean embedded)
+    public void setUseEmbeddedDriver(final boolean embedded)
     {
         useEmbeddedDriver = embedded;
     }
@@ -528,7 +528,7 @@ public class PubSubOptions
      * @see #setSessionId(int)
      * @param enabled
      */
-    public void setUseSessionId(boolean enabled)
+    public void setUseSessionId(final boolean enabled)
     {
         this.useSessionId = enabled;
     }
@@ -549,7 +549,7 @@ public class PubSubOptions
      * @see #getUseSessionId #setSessionId(boolean)
      * @param id
      */
-    public void setSessionId(int id)
+    public void setSessionId(final int id)
     {
         this.sessionId = id;
     }
@@ -576,7 +576,7 @@ public class PubSubOptions
      * Set the message size pattern used to determine what each message size should be.
      * @param pattern
      */
-    public void setMessageSizePattern(MessageSizePattern pattern)
+    public void setMessageSizePattern(final MessageSizePattern pattern)
     {
         this.sizePattern = pattern;
     }
@@ -605,7 +605,7 @@ public class PubSubOptions
         }
     }
 
-    private long parseNumberOfMessages(String m) throws ParseException
+    private long parseNumberOfMessages(final String m) throws ParseException
     {
         long value = Long.MAX_VALUE;
         if (!m.equalsIgnoreCase("unlimited"))
@@ -615,7 +615,7 @@ public class PubSubOptions
         return value;
     }
 
-    private void parseVerify(String verifyStr) throws ParseException
+    private void parseVerify(final String verifyStr) throws ParseException
     {
         if (verifyStr.equalsIgnoreCase("no"))
         {
@@ -637,7 +637,7 @@ public class PubSubOptions
      * @return sessionId
      * @throws ParseException When input string is not "default" or an integer.
      */
-    private int parseSessionId(String sid) throws ParseException
+    private int parseSessionId(final String sid) throws ParseException
     {
         int value = 0;
         useSessionId = false;
@@ -647,7 +647,7 @@ public class PubSubOptions
             {
                 value = Integer.parseInt(sid);
             }
-            catch (NumberFormatException ex)
+            catch (final NumberFormatException ex)
             {
                 throw new ParseException("Could not parse session ID '" + sid + "' as an integer.");
             }
@@ -657,7 +657,7 @@ public class PubSubOptions
         return value;
     }
 
-    private long parseIterations(String iterationsStr) throws ParseException
+    private long parseIterations(final String iterationsStr) throws ParseException
     {
         long value = Long.MAX_VALUE;
         if (!iterationsStr.equalsIgnoreCase("unlimited"))
@@ -667,7 +667,7 @@ public class PubSubOptions
         return value;
     }
 
-    private boolean parseDriver(String useEmbeddedStr) throws ParseException
+    private boolean parseDriver(final String useEmbeddedStr) throws ParseException
     {
         boolean embedded;
         if (useEmbeddedStr.equalsIgnoreCase("external"))
@@ -692,24 +692,24 @@ public class PubSubOptions
      * @param csv
      * @throws ParseException
      */
-    private void parseChannels(String csv) throws ParseException
+    private void parseChannels(final String csv) throws ParseException
     {
-        ChannelStruct chan = new ChannelStruct();
+        final ChannelStruct chan = new ChannelStruct();
         int streamIdLow = 1;
         int streamIdHigh = 1;
-        String[] channelDescriptions = csv.split(",");
+        final String[] channelDescriptions = csv.split(",");
         for (int i = 0; i < channelDescriptions.length; i++)
         {
             // channelComponents should have 1 or 2 pieces
             // 1 when only an address and ports are supplied, 2 when stream-ids are also supplied.
-            String[] channelComponents = channelDescriptions[i].split("#");
+            final String[] channelComponents = channelDescriptions[i].split("#");
             if (channelComponents.length > 2)
             {
                 throw new ParseException("Channel '" + channelDescriptions[i] + "' has too many '#' characters");
             }
 
             // get Channel structure
-            String address = channelComponents[0];
+            final String address = channelComponents[0];
             if (address.startsWith("aeron:"))
             {
                 parseAeronChannelToStruct(address, chan);
@@ -722,8 +722,8 @@ public class PubSubOptions
             // get stream Ids
             if (channelComponents.length > 1)
             {
-                String ids = channelComponents[1];
-                int[] streamIdRange = findMinAndMaxStreamIds(ids);
+                final String ids = channelComponents[1];
+                final int[] streamIdRange = findMinAndMaxStreamIds(ids);
                 streamIdLow = streamIdRange[0];
                 streamIdHigh = streamIdRange[1];
             }
@@ -765,18 +765,18 @@ public class PubSubOptions
      * @param chanString
      * @param chanStruct Object is filled with values parsed from the chanString
      */
-    private void parseAeronChannelToStruct(String chanString, ChannelStruct chanStruct) throws ParseException
+    private void parseAeronChannelToStruct(final String chanString, final ChannelStruct chanStruct) throws ParseException
     {
         // need to split out the values and find the ports
-        int ipv6PortIdx = chanString.indexOf("]:");
+        final int ipv6PortIdx = chanString.indexOf("]:");
         String ports;
 
         if (ipv6PortIdx != -1)
         {
             // IPv6, ports immediately follow the "]:" sequence, and finish at the end of the
             // string or a | character.
-            int startIdx = ipv6PortIdx + 2;
-            int endIdx = findPortsEndIdx(chanString, startIdx);
+            final int startIdx = ipv6PortIdx + 2;
+            final int endIdx = findPortsEndIdx(chanString, startIdx);
             ports = chanString.substring(startIdx, endIdx);
             // base is everything up to and including the ]
             chanStruct.prefix = chanString.substring(0, ipv6PortIdx + 1);
@@ -787,18 +787,18 @@ public class PubSubOptions
         {
             // IPv4, The ports are located after the 2nd ":" character in the string, and finish
             // at the end of the string or a | character.
-            String[] addressComponents = chanString.split(":");
+            final String[] addressComponents = chanString.split(":");
             if (addressComponents.length != 3)
             {
                 throw new ParseException("Channel address '" + chanString + "' wrong number of ':' characters for IPv4.");
             }
-            int endIdx = findPortsEndIdx(addressComponents[2], 0);
+            final int endIdx = findPortsEndIdx(addressComponents[2], 0);
             ports = addressComponents[2].substring(0, endIdx);
             chanStruct.prefix = addressComponents[0] + ":" + addressComponents[1];
             chanStruct.suffix = addressComponents[2].substring(endIdx, addressComponents[2].length());
         }
 
-        int[] portsArray = findMinAndMaxPort(ports);
+        final int[] portsArray = findMinAndMaxPort(ports);
         chanStruct.portLow = portsArray[0];
         chanStruct.portHigh = portsArray[1];
     }
@@ -808,11 +808,11 @@ public class PubSubOptions
      * @param chanString
      * @param chanStruct This object is filled with the values parsed from chanString
      */
-    private void parseRawChannelToStruct(String chanString, ChannelStruct chanStruct) throws ParseException
+    private void parseRawChannelToStruct(final String chanString, final ChannelStruct chanStruct) throws ParseException
     {
         chanStruct.clear();
         String ports;
-        int ipv6PortIdx = chanString.indexOf("]:");
+        final int ipv6PortIdx = chanString.indexOf("]:");
         if (ipv6PortIdx != -1)
         {
             // IPv6, ports are in the remaining characters of the string
@@ -823,7 +823,7 @@ public class PubSubOptions
         else
         {
             // IPv4
-            String[] addressComponents = chanString.split(":");
+            final String[] addressComponents = chanString.split(":");
             if (addressComponents.length != 3)
             {
                 throw new ParseException("Channel address '" + chanString + "' wrong number of ':' characters for IPv4.");
@@ -832,7 +832,7 @@ public class PubSubOptions
             chanStruct.prefix = addressComponents[0] + ":" + addressComponents[1];
         }
         // get the port, or port range
-        int[] portsArray = findMinAndMaxPort(ports);
+        final int[] portsArray = findMinAndMaxPort(ports);
         chanStruct.portLow = portsArray[0];
         chanStruct.portHigh = portsArray[1];
     }
@@ -844,7 +844,7 @@ public class PubSubOptions
      * @param startIdx
      * @return The index of the first character not part of the ports string.
      */
-    private int findPortsEndIdx(String input, int startIdx)
+    private int findPortsEndIdx(final String input, final int startIdx)
     {
         int endIdx;
         for (endIdx = startIdx; endIdx < input.length(); endIdx++)
@@ -863,14 +863,14 @@ public class PubSubOptions
      * @param ports The port string which is either a number or range containing a hyphen.
      * @return An array of length 2 containing the low and high.
      */
-    private int[] findMinAndMaxPort(String ports) throws ParseException
+    private int[] findMinAndMaxPort(final String ports) throws ParseException
     {
         int portLow = 0;
         int portHigh = 0;
         if (ports.contains("-"))
         {
             // It's a range in the form portLow-portHigh
-            String[] portRangeStrings = ports.split("-");
+            final String[] portRangeStrings = ports.split("-");
             if (portRangeStrings.length != 2)
             {
                 throw new ParseException("Address port range '" + ports + "' contains too many '-' characters.");
@@ -881,7 +881,7 @@ public class PubSubOptions
                 portLow = Integer.parseInt(portRangeStrings[0]);
                 portHigh = Integer.parseInt(portRangeStrings[1]);
             }
-            catch (NumberFormatException portRangeEx)
+            catch (final NumberFormatException portRangeEx)
             {
                 throw new ParseException("Address port range '" + ports + "' did not parse into two integers.");
             }
@@ -894,7 +894,7 @@ public class PubSubOptions
                 portLow = Integer.parseInt(ports);
                 portHigh = portLow;
             }
-            catch (NumberFormatException portEx)
+            catch (final NumberFormatException portEx)
             {
                 throw new ParseException("Address port '" + ports + "' didn't parse into an integer");
             }
@@ -912,7 +912,7 @@ public class PubSubOptions
      * @param ids String containing the ids, either single integer or 2 integer range with hyphen.
      * @return An array that is always length 2 which contains minimum and maximum stream IDs.
      */
-    private int[] findMinAndMaxStreamIds(String ids) throws ParseException
+    private int[] findMinAndMaxStreamIds(final String ids) throws ParseException
     {
         int streamIdLow = 1;
         int streamIdHigh = 1;
@@ -920,7 +920,7 @@ public class PubSubOptions
         if (ids.contains("-"))
         {
             // identifier strings contain a low and a high
-            String[] idRange = ids.split("-");
+            final String[] idRange = ids.split("-");
             if (idRange.length != 2)
             {
                 throw new ParseException("Stream ID range '" + ids + "' has too many '-' characters.");
@@ -930,7 +930,7 @@ public class PubSubOptions
                 streamIdLow = Integer.parseInt(idRange[0]);
                 streamIdHigh = Integer.parseInt(idRange[1]);
             }
-            catch (NumberFormatException idRangEx)
+            catch (final NumberFormatException idRangEx)
             {
                 throw new ParseException("Stream ID range '" + ids + "' did not parse into two integers.");
             }
@@ -943,7 +943,7 @@ public class PubSubOptions
                 streamIdLow = Integer.parseInt(ids);
                 streamIdHigh = streamIdLow;
             }
-            catch (NumberFormatException streamIdEx)
+            catch (final NumberFormatException streamIdEx)
             {
                 throw new ParseException("Stream ID '" + ids + "' did not parse into an int.");
             }
@@ -958,15 +958,15 @@ public class PubSubOptions
      * @param sessionIdLow
      * @param sessionIdHigh
      */
-    private void addChannelRanges(ChannelStruct chan, int sessionIdLow, int sessionIdHigh)
+    private void addChannelRanges(final ChannelStruct chan, final int sessionIdLow, final int sessionIdHigh)
     {
         int currentPort = chan.portLow;
         while (currentPort <= chan.portHigh)
         {
-            ChannelDescriptor cd = new ChannelDescriptor();
+            final ChannelDescriptor cd = new ChannelDescriptor();
             cd.setChannel(chan.getChannelWithPort(currentPort));
 
-            int[] idArray = new int[sessionIdHigh - sessionIdLow + 1];
+            final int[] idArray = new int[sessionIdHigh - sessionIdLow + 1];
             int sessionId = sessionIdLow;
             for (int i = 0; i < idArray.length; i++)
             {
@@ -983,7 +983,7 @@ public class PubSubOptions
      *
      * @param ratesCsv
      */
-    private void parseRates(String ratesCsv) throws ParseException
+    private void parseRates(final String ratesCsv) throws ParseException
     {
         final String[] rates = ratesCsv.split(",");
         for (final String currentRate : rates)
@@ -1014,19 +1014,19 @@ public class PubSubOptions
                     throw new ParseException("Rate " + rateComponents[0] + " does not contain 'm' or 's' to specify " +
                             "a duration in messages or seconds.");
                 }
-                final String durationStr = lowerCaseRate.substring(0, rateComponents[0].length()-1);
+                final String durationStr = lowerCaseRate.substring(0, rateComponents[0].length() - 1);
                 duration = parseDoubleBetweenZeroAndMaxLong(durationStr);
             }
 
             // rate string is always the last entry of the components
-            final String rateComponent = rateComponents[rateComponents.length-1];
+            final String rateComponent = rateComponents[rateComponents.length - 1];
             double rate = Long.MAX_VALUE;
             boolean bitsPerSecondRate = true;
             if (!rateComponent.equalsIgnoreCase("max"))
             {
                 // rate string is not special value "max", determine value and type.
                 // Find the first non-numeric character
-                Matcher matcher = Pattern.compile("[a-zA-Z]").matcher(rateComponent);
+                final Matcher matcher = Pattern.compile("[a-zA-Z]").matcher(rateComponent);
                 if (!matcher.find())
                 {
                     throw new ParseException("Rate " + rateComponent + " did not contain any units (Mbps, mps, etc...).");
@@ -1049,7 +1049,8 @@ public class PubSubOptions
         }
     }
 
-    private void addSendRate(double duration, boolean isTimeDuration, double rate, boolean isBitsPerSecondRate)
+    private void addSendRate(final double duration, final boolean isTimeDuration,
+            final double rate, final boolean isBitsPerSecondRate)
     {
         // There are 4 combinations of potential rates, each with it's own implementation of RateControllerInterval.
         if (isTimeDuration)
@@ -1080,18 +1081,18 @@ public class PubSubOptions
         }
     }
 
-    private void parseMessageSizes(String cvs) throws ParseException
+    private void parseMessageSizes(final String cvs) throws ParseException
     {
         long numMessages = 0;
         int messageSizeMin = 0;
         int messageSizeMax = 0;
 
-        String[] sizeEntries = cvs.split(",");
+        final String[] sizeEntries = cvs.split(",");
         for (int i = 0; i < sizeEntries.length; i++)
         {
             // The message size may be separated with a '@' to send a number of messages at a given size or range.
-            String entryStr = sizeEntries[i];
-            String[] entryComponents = entryStr.split("@");
+            final String entryStr = sizeEntries[i];
+            final String[] entryComponents = entryStr.split("@");
             if (entryComponents.length > 2)
             {
                 throw new ParseException("Message size '" + entryStr + "' contains too many '@' characters.");
@@ -1107,9 +1108,9 @@ public class PubSubOptions
                 {
                     numMessages = Long.parseLong(entryComponents[0]);
                 }
-                catch (NumberFormatException numMessagesEx)
+                catch (final NumberFormatException numMessagesEx)
                 {
-                    throw new ParseException("Number of messages in '" + entryStr +"' could not parse as long value");
+                    throw new ParseException("Number of messages in '" + entryStr + "' could not parse as long value");
                 }
                 sizeStr = entryComponents[1];
             }
@@ -1120,7 +1121,7 @@ public class PubSubOptions
             }
 
             // parse the size string
-            String[] sizeRange = sizeStr.split("-");
+            final String[] sizeRange = sizeStr.split("-");
             if (sizeRange.length > 2)
             {
                 throw new ParseException("Message size range in '" + entryStr + "' has too many '-' characters.");
@@ -1147,10 +1148,10 @@ public class PubSubOptions
      * @return Number of bytes
      * @throws ParseException When input is invalid or number of bytes too large.
      */
-    private int parseSize(String sizeStr) throws ParseException
+    private int parseSize(final String sizeStr) throws ParseException
     {
         final int kb = 1024;
-        final int mb = 1024*1024;
+        final int mb = 1024 * 1024;
         int multiplier = 1;
         long size = 0;
         final String numberStr;
@@ -1191,7 +1192,7 @@ public class PubSubOptions
         {
             size = Long.parseLong(numberStr);
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             throw new ParseException("Could not parse '" + numberStr + "' into a long value.");
         }
@@ -1205,7 +1206,7 @@ public class PubSubOptions
         return (int)size;
     }
 
-    private void addSizeRange(long messages, int minSize, int maxSize) throws ParseException
+    private void addSizeRange(final long messages, final int minSize, final int maxSize) throws ParseException
     {
         try
         {
@@ -1218,13 +1219,13 @@ public class PubSubOptions
                 sizePattern.addPatternEntry(messages, minSize, maxSize);
             }
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             throw new ParseException(ex.getMessage());
         }
     }
 
-    private void parseInputStream(String inputStr) throws ParseException
+    private void parseInputStream(final String inputStr) throws ParseException
     {
         if (inputStr.equalsIgnoreCase("null"))
         {
@@ -1240,7 +1241,7 @@ public class PubSubOptions
             {
                 setInput(new FileInputStream(inputStr));
             }
-            catch (FileNotFoundException ex)
+            catch (final FileNotFoundException ex)
             {
                 throw new ParseException("Input file '" + inputStr + "' not found.");
             }
@@ -1249,7 +1250,7 @@ public class PubSubOptions
         }
     }
 
-    private void parseOutputStream(String outputStr) throws ParseException
+    private void parseOutputStream(final String outputStr) throws ParseException
     {
         if (outputStr.equalsIgnoreCase("null"))
         {
@@ -1269,7 +1270,7 @@ public class PubSubOptions
             {
                 setOutput(new FileOutputStream(outputStr));
             }
-            catch (FileNotFoundException ex)
+            catch (final FileNotFoundException ex)
             {
                 throw new ParseException("Could not open file '" + outputStr + "' for writing");
             }
@@ -1284,15 +1285,15 @@ public class PubSubOptions
      * @return
      * @throws ParseException
      */
-    private PubSubOptions.OptionValuesStruct getDefaultsFromOptionsFile(String filename) throws ParseException
+    private PubSubOptions.OptionValuesStruct getDefaultsFromOptionsFile(final String filename) throws ParseException
     {
         BufferedReader br;
-        ArrayList<String> args = new ArrayList<String>();
+        final ArrayList<String> args = new ArrayList<String>();
         try
         {
             br = makeBufferedFileReader(filename);
         }
-        catch (FileNotFoundException ex)
+        catch (final FileNotFoundException ex)
         {
             throw new ParseException("Option defaults file '" + filename + "' not found.");
         }
@@ -1311,8 +1312,8 @@ public class PubSubOptions
                 if (line.length() > 0 && !line.startsWith("#"))
                 {
                     // Split values by any number of consecutive whitespaces.
-                    String[] arguments = line.split("\\s+");
-                    for (String arg : arguments)
+                    final String[] arguments = line.split("\\s+");
+                    for (final String arg : arguments)
                     {
                         args.add(arg);
                     }
@@ -1320,17 +1321,17 @@ public class PubSubOptions
             }
             br.close();
         }
-        catch(IOException ex)
+        catch (final IOException ex)
         {
             throw new ParseException(ex.getMessage());
         }
 
-        CommandLineParser parser = new GnuParser();
-        CommandLine command = parser.parse(options, args.toArray(new String[args.size()]));
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args.toArray(new String[args.size()]));
         return new OptionValuesStruct(command, DEFAULT_VALUES);
     }
 
-    BufferedReader makeBufferedFileReader(String filename) throws FileNotFoundException
+    BufferedReader makeBufferedFileReader(final String filename) throws FileNotFoundException
     {
         return new BufferedReader(new FileReader(filename));
     }
@@ -1370,7 +1371,7 @@ public class PubSubOptions
      * @return
      * @throws ParseException
      */
-    private long parseLongCheckPositive(String longStr) throws ParseException
+    private long parseLongCheckPositive(final String longStr) throws ParseException
     {
         long value;
 
@@ -1378,7 +1379,7 @@ public class PubSubOptions
         {
             value = Long.parseLong(longStr);
         }
-        catch (NumberFormatException ex)
+        catch (final NumberFormatException ex)
         {
             throw new ParseException("Could not parse '" + longStr + "' as a long value.");
         }
@@ -1395,7 +1396,7 @@ public class PubSubOptions
      * @return
      * @throws ParseException
      */
-    private int parseIntCheckPositive(String intStr) throws  ParseException
+    private int parseIntCheckPositive(final String intStr) throws  ParseException
     {
         int value;
 
@@ -1403,7 +1404,7 @@ public class PubSubOptions
         {
             value = Integer.parseInt(intStr);
         }
-        catch (NumberFormatException ex)
+        catch (final NumberFormatException ex)
         {
             throw new ParseException("Could not parse '" + intStr + "' as an int value");
         }
@@ -1414,7 +1415,7 @@ public class PubSubOptions
         return value;
     }
 
-    private double parseDoubleBetweenZeroAndMaxLong(String doubleStr) throws ParseException
+    private double parseDoubleBetweenZeroAndMaxLong(final String doubleStr) throws ParseException
     {
         double value = 0;
 
@@ -1422,7 +1423,7 @@ public class PubSubOptions
         {
             value = Double.parseDouble(doubleStr);
         }
-        catch (NumberFormatException ex)
+        catch (final NumberFormatException ex)
         {
             throw new ParseException("Could not parse '" + doubleStr + " as a double value.");
         }

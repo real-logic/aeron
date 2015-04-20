@@ -32,7 +32,7 @@ public class MessageStream
     private long messageCount = 0;
     private boolean active = true;
 
-    private UnsafeBuffer copybuf = new UnsafeBuffer(new byte[1]);
+    private final UnsafeBuffer copybuf = new UnsafeBuffer(new byte[1]);
 
     private static final ThreadLocalCRC32 MSG_CHECKSUM = new ThreadLocalCRC32();
 
@@ -44,32 +44,33 @@ public class MessageStream
         }
     }
 
-    public MessageStream(int size) throws Exception
+    public MessageStream(final int size) throws Exception
     {
         this(size, size, true, null);
     }
 
-    public MessageStream(int minSize, int maxSize) throws Exception
+    public MessageStream(final int minSize, final int maxSize) throws Exception
     {
         this(minSize, maxSize, true, null);
     }
 
-    public MessageStream(int size, InputStream inputStream) throws Exception
+    public MessageStream(final int size, final InputStream inputStream) throws Exception
     {
         this(size, size, true, inputStream);
     }
 
-    public MessageStream(int size, boolean verifiable, InputStream inputStream) throws Exception
+    public MessageStream(final int size, final boolean verifiable, final InputStream inputStream) throws Exception
     {
         this(size, size, verifiable, inputStream);
     }
 
-    public MessageStream(int minSize, int maxSize, boolean verifiable) throws Exception
+    public MessageStream(final int minSize, final int maxSize, final boolean verifiable) throws Exception
     {
         this(minSize, maxSize, verifiable, null);
     }
 
-    public MessageStream(int minSize, int maxSize, boolean verifiable, InputStream inputStream) throws Exception
+    public MessageStream(final int minSize, final int maxSize, final boolean verifiable,
+            final InputStream inputStream) throws Exception
     {
         this.inputStream = inputStream;
         if (this.inputStream == null)
@@ -127,7 +128,7 @@ public class MessageStream
         this.inputStream = null;
     }
 
-    public int payloadOffset(DirectBuffer buffer, int offset)
+    public int payloadOffset(final DirectBuffer buffer, final int offset)
     {
         if (isVerifiable(buffer, offset))
         {
@@ -136,7 +137,7 @@ public class MessageStream
         return 0;
     }
 
-    public void putNext(DirectBuffer buffer, int offset, int length) throws Exception
+    public void putNext(final DirectBuffer buffer, final int offset, final int length) throws Exception
     {
         if (!active)
         {
@@ -151,7 +152,7 @@ public class MessageStream
         final long expectedSequenceNumber = sequenceNumber + 1;
         if (receivedSequenceNumber != expectedSequenceNumber)
         {
-            Exception e = new Exception("Verifiable message stream received sequence number " +
+            final Exception e = new Exception("Verifiable message stream received sequence number " +
                     receivedSequenceNumber + ", but was expecting " +
                     expectedSequenceNumber + ". Possibly missed " +
                     (receivedSequenceNumber - expectedSequenceNumber) +
@@ -165,11 +166,11 @@ public class MessageStream
         sequenceNumber++;
 
         /* Save the checksum first, then blank it out. */
-        int msgCksum = copybuf.getInt(MESSAGE_CHECKSUM_OFFSET);
+        final int msgCksum = copybuf.getInt(MESSAGE_CHECKSUM_OFFSET);
 
         copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, 0);
 
-        CRC32 crc = MSG_CHECKSUM.get();
+        final CRC32 crc = MSG_CHECKSUM.get();
         crc.reset();
         for (int i = 0; i < length; i++)
         {
@@ -193,7 +194,7 @@ public class MessageStream
         }
     }
 
-    public void reset(InputStream inputStream)
+    public void reset(final InputStream inputStream)
     {
         reset();
         this.inputStream = inputStream;
@@ -253,7 +254,7 @@ public class MessageStream
      * @param offset Offset within the buffer where the message starts
      * @return true if the message appears to be a verifiable message, false otherwise
      */
-    public static boolean isVerifiable(DirectBuffer buffer, int offset)
+    public static boolean isVerifiable(final DirectBuffer buffer, final int offset)
     {
         if ((buffer.capacity() - offset) < HEADER_LENGTH)
         {
@@ -267,17 +268,17 @@ public class MessageStream
         return false;
     }
 
-    static void printHex(DirectBuffer buffer, int length)
+    static void printHex(final DirectBuffer buffer, final int length)
     {
         printHex(buffer, 0, length);
     }
 
-    static void printHex(UnsafeBuffer buffer, int length)
+    static void printHex(final UnsafeBuffer buffer, final int length)
     {
         printHex(buffer, 0, length);
     }
 
-    static void printHex(UnsafeBuffer buffer, int offset, int length)
+    static void printHex(final UnsafeBuffer buffer, final int offset, final int length)
     {
         int pos = 0;
         for (int i = offset; i < (offset + length); i++)
@@ -291,7 +292,7 @@ public class MessageStream
         System.out.println();
     }
 
-    public static void printHex(DirectBuffer buffer, int offset, int length)
+    public static void printHex(final DirectBuffer buffer, final int offset, final int length)
     {
         int pos = 0;
         for (int i = offset; i < (offset + length); i++)
@@ -311,21 +312,21 @@ public class MessageStream
      * @param buffer The buffer to write a message to.
      * @return number of bytes written
      * @throws Exception */
-    public int getNext(UnsafeBuffer buffer) throws Exception
+    public int getNext(final UnsafeBuffer buffer) throws Exception
     {
         if (buffer.capacity() < maxSize)
         {
             throw new Exception("Buffer capacity must be at least " + maxSize + " bytes.");
         }
 
-        int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
+        final int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
         return getNext(buffer, size);
     }
 
     /* This method exists only because of the 100-line method limit
      * in checkstyle.  The checks here really belong, functionally,
      * at the top of getNext. */
-    private void checkConstraints(UnsafeBuffer buffer, int size) throws Exception
+    private void checkConstraints(final UnsafeBuffer buffer, final int size) throws Exception
     {
         if (!active)
         {
@@ -355,7 +356,7 @@ public class MessageStream
      * @param size The length of the message to write, in bytes
      * @return number of bytes written
      * @throws Exception */
-    public int getNext(UnsafeBuffer buffer, int size) throws Exception
+    public int getNext(final UnsafeBuffer buffer, final int size) throws Exception
     {
         checkConstraints(buffer, size);
 
@@ -375,7 +376,7 @@ public class MessageStream
             pos = 0;
         }
 
-        int lenleft = size - pos;
+        final int lenleft = size - pos;
 
         /* Try to pull out "size" bytes from the InputStream.  If we
          * can't (stream ends, etc.), then just fill in what we got;
@@ -407,7 +408,7 @@ public class MessageStream
         /* Now calculate rolling and then per-message checksums if verifiable messages are on. */
         if (verifiable)
         {
-            CRC32 msgCksum = MSG_CHECKSUM.get();
+            final CRC32 msgCksum = MSG_CHECKSUM.get();
             msgCksum.reset();
             for (int i = 0; i < pos; i++)
             {

@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Pong component of Ping-Pong.
- *
+ * <p>
  * Echoes back messages
  */
 public class Pong
@@ -45,10 +45,11 @@ public class Pong
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 
         final Aeron.Context ctx = new Aeron.Context();
-        if(EMBEDDED_MEDIA_DRIVER)
+        if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }
+
         final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
         System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);

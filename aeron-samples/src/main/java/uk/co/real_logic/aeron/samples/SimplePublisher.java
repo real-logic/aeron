@@ -32,7 +32,7 @@ public class SimplePublisher
         // 'UnsafeBuffer' class is part of agrona data structure, used for very efficient buffer management
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(512));
 
-        String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
+        final String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
         final int streamId = 10; //A unique identifier for a Stream within a channel. A value of 0 is reserved
 
         System.out.println("Publishing to " + channel + " on stream Id " + streamId);

@@ -31,18 +31,18 @@ public class StatsPanel extends JPanel
     JTextArea textArea = null;
     JScrollPane scrollPane = null;
 
-    public StatsPanel(LogModel model)
+    public StatsPanel(final LogModel model)
     {
         this.model = model;
-        ClassLoader classLoader = getClass().getClassLoader();
-        File file = new File(classLoader.getResource("eye1.png").getFile());
+        final ClassLoader classLoader = getClass().getClassLoader();
+        final File file = new File(classLoader.getResource("eye1.png").getFile());
         watchIcon = new ImageIcon(file.toString());
         init();
     }
 
     public void fillFields()
     {
-        DriverStats stats = model.getStats();
+        final DriverStats stats = model.getStats();
 
         labels = new JLabel[stats.getNumLabels()];
         fields = new JTextField[stats.getNumLabels()];
@@ -56,9 +56,10 @@ public class StatsPanel extends JPanel
             watchBtns[i] = new JToggleButton(watchIcon);
             watchBtns[i].addActionListener(new ActionListener()
                 {
-                    public void actionPerformed(ActionEvent e)
+                    @Override
+                    public void actionPerformed(final ActionEvent e)
                     {
-                        JToggleButton src = (JToggleButton)e.getSource();
+                        final JToggleButton src = (JToggleButton)e.getSource();
 
                         for (int i = 0; i < watchBtns.length; i++)
                         {
@@ -73,7 +74,7 @@ public class StatsPanel extends JPanel
         }
 
         layout.setAutoCreateGaps(true);
-        SequentialGroup seqGroup = layout.createSequentialGroup();
+        final SequentialGroup seqGroup = layout.createSequentialGroup();
 
         seqGroup.addGroup(createParallelGroup(new int[] {0, 1}));
         seqGroup.addGroup(createParallelGroup(new int[] {2, 3, 4}));
@@ -85,15 +86,15 @@ public class StatsPanel extends JPanel
         seqGroup.addGroup(createParallelGroup(new int[] {16, 17, 18}));
         seqGroup.addGroup(createParallelGroup(new int[] {19, 20}));
 
-        ParallelGroup pgroup1 = createParallelLabelsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
-        ParallelGroup pgroup2 = createParallelFieldsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
-        ParallelGroup pgroup3 = createParallelWatchGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
-        ParallelGroup pgroup4 = createParallelLabelsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
-        ParallelGroup pgroup5 = createParallelFieldsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
-        ParallelGroup pgroup6 = createParallelWatchGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
-        ParallelGroup pgroup7 = createParallelLabelsGroup(new int[] {4, 13, 18});
-        ParallelGroup pgroup8 = createParallelFieldsGroup(new int[] {4, 13, 18});
-        ParallelGroup pgroup9 = createParallelWatchGroup(new int[] {4, 13, 18});
+        final ParallelGroup pgroup1 = createParallelLabelsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
+        final ParallelGroup pgroup2 = createParallelFieldsGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
+        final ParallelGroup pgroup3 = createParallelWatchGroup(new int[] {0, 2, 5, 7, 9, 11, 14, 16, 19});
+        final ParallelGroup pgroup4 = createParallelLabelsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
+        final ParallelGroup pgroup5 = createParallelFieldsGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
+        final ParallelGroup pgroup6 = createParallelWatchGroup(new int[] {1, 3, 6, 8, 10, 12, 15, 17, 20});
+        final ParallelGroup pgroup7 = createParallelLabelsGroup(new int[] {4, 13, 18});
+        final ParallelGroup pgroup8 = createParallelFieldsGroup(new int[] {4, 13, 18});
+        final ParallelGroup pgroup9 = createParallelWatchGroup(new int[] {4, 13, 18});
 
         layout.setVerticalGroup(seqGroup);
         layout.setHorizontalGroup(layout.createSequentialGroup()
@@ -101,15 +102,16 @@ public class StatsPanel extends JPanel
                 .addGroup(pgroup4).addGroup(pgroup5).addGroup(pgroup6)
                 .addGroup(pgroup7).addGroup(pgroup8).addGroup(pgroup9));
 
-        StringBuffer buff = new StringBuffer();
+        final StringBuffer buff = new StringBuffer();
         for (int i = 21; i < stats.getNumLabels(); i++)
         {
             buff.append(stats.getLabel(i) + ": " + stats.getValue(i) + "\n");
         }
         textArea.setText(buff.toString());
 
-        Runnable task = new Runnable()
+        final Runnable task = new Runnable()
         {
+            @Override
             public void run()
             {
                 while (StatsPanel.this.isVisible())
@@ -119,20 +121,20 @@ public class StatsPanel extends JPanel
                     {
                         Thread.sleep(1000);
                     }
-                    catch (Exception e)
+                    catch (final Exception e)
                     {
                         e.printStackTrace();
                     }
                 }
             }
         };
-        Thread thread = new Thread(task);
+        final Thread thread = new Thread(task);
         thread.start();
     }
 
     public void updateFields()
     {
-        DriverStats stats = model.getStats();
+        final DriverStats stats = model.getStats();
         stats.populate();
         for (int i = 0; i < 21; i++)
         {
@@ -140,7 +142,7 @@ public class StatsPanel extends JPanel
             fields[i].invalidate();
         }
 
-        StringBuffer buff = new StringBuffer();
+        final StringBuffer buff = new StringBuffer();
         for (int i = 21; i < stats.getNumLabels(); i++)
         {
             buff.append(stats.getLabel(i) + ": " + stats.getValue(i) + "\n");
@@ -173,9 +175,9 @@ public class StatsPanel extends JPanel
         add(transports, BorderLayout.SOUTH);
     }
 
-    private ParallelGroup createParallelGroup(int[] idx)
+    private ParallelGroup createParallelGroup(final int[] idx)
     {
-        ParallelGroup group = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
+        final ParallelGroup group = layout.createParallelGroup(GroupLayout.Alignment.CENTER);
 
         for (int i = 0; i < idx.length; i++)
         {
@@ -185,9 +187,9 @@ public class StatsPanel extends JPanel
         return group;
     }
 
-    private ParallelGroup createParallelLabelsGroup(int[] idx)
+    private ParallelGroup createParallelLabelsGroup(final int[] idx)
     {
-        ParallelGroup group = layout.createParallelGroup(GroupLayout.Alignment.TRAILING);
+        final ParallelGroup group = layout.createParallelGroup(GroupLayout.Alignment.TRAILING);
 
         for (int i = 0; i < idx.length; i++)
         {
@@ -197,9 +199,9 @@ public class StatsPanel extends JPanel
         return group;
     }
 
-    private ParallelGroup createParallelFieldsGroup(int[] idx)
+    private ParallelGroup createParallelFieldsGroup(final int[] idx)
     {
-        ParallelGroup group = layout.createParallelGroup();
+        final ParallelGroup group = layout.createParallelGroup();
 
         for (int i = 0; i < idx.length; i++)
         {
@@ -209,9 +211,9 @@ public class StatsPanel extends JPanel
         return group;
     }
 
-    private ParallelGroup createParallelWatchGroup(int[] idx)
+    private ParallelGroup createParallelWatchGroup(final int[] idx)
     {
-        ParallelGroup group = layout.createParallelGroup();
+        final ParallelGroup group = layout.createParallelGroup();
 
         for (int i = 0; i < idx.length; i++)
         {

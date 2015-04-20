@@ -3,15 +3,15 @@ package uk.co.real_logic.aeron.tools;
 public class StatsVMStatOutput implements StatsOutput
 {
   private int iterations;
-  private String titles[] =
+  private final String titles[] =
   {
     "Bytes", "Failed Offers", "NAKs", "SMs", "Heartbeats", "RX", "Flow Control", "Invalid", "Driver", "Short Sends", "Keep"
   };
-  private String subTitles[] =
+  private final String subTitles[] =
   {
     "In/Out", "RP/SP/DCP", "In/Out", "In/Out", "", "", "Under/Over", "Packets", "Exceptions", "DF/SF/NF/SMF", "Alives"
   };
-  private String formats[] =
+  private final String formats[] =
           {
                   "%1$-18s", "%1$-18s", "%1$-10s", "%1$-14s", "%1$-12s", "%1$-6s",  "%1$-14s", "%1$-9s",
                   "%1$-12s", "%1$-18s", "%1$-6s"
@@ -22,7 +22,8 @@ public class StatsVMStatOutput implements StatsOutput
     iterations = 0;
   }
 
-  public void format(String[] keys, long[] vals) throws Exception
+  @Override
+public void format(final String[] keys, final long[] vals) throws Exception
   {
     if (iterations % 20 == 0)
     {
@@ -55,32 +56,33 @@ public class StatsVMStatOutput implements StatsOutput
     iterations++;
   }
 
-  public void close() throws Exception
+  @Override
+public void close() throws Exception
   {
 
   }
 
-  private String humanReadableByteCount(long bytes, boolean si)
+  private String humanReadableByteCount(final long bytes, final boolean si)
   {
-    int unit = si ? 1000 : 1024;
+    final int unit = si ? 1000 : 1024;
     if (bytes < unit)
     {
       return bytes + "B";
     }
-    int exp = (int)(Math.log(bytes) / Math.log(unit));
-    String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+    final int exp = (int)(Math.log(bytes) / Math.log(unit));
+    final String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
     return String.format("%.1f%sB", bytes / Math.pow(unit, exp), pre);
   }
 
-  private String humanReadableCount(long val, boolean si)
+  private String humanReadableCount(final long val, final boolean si)
   {
-    int unit = si ? 1000 : 1024;
+    final int unit = si ? 1000 : 1024;
     if (val < unit)
     {
       return val + "";
     }
-    int exp = (int)(Math.log(val) / Math.log(unit));
-    String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
+    final int exp = (int)(Math.log(val) / Math.log(unit));
+    final String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
     return String.format("%.1f%s", val / Math.pow(unit, exp), pre);
   }
 }

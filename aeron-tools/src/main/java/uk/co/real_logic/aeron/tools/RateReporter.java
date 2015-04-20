@@ -40,7 +40,7 @@ public class RateReporter implements RateController.Callback, Runnable
         long nonVerifiableMessages();
     }
 
-    public RateReporter(Stats app)
+    public RateReporter(final Stats app)
     {
         this.app = app;
         reporterThread = new Thread(this);
@@ -51,28 +51,28 @@ public class RateReporter implements RateController.Callback, Runnable
      * @param bits The total number of bits (per second) to convert to a human-readable string
      * @return the human-readable bits-per-second string
      */
-    public static String getHumanReadableRate(long bits)
+    public static String getHumanReadableRate(final long bits)
     {
         if (bits < 1000)
         {
             return bits + " ";
         }
         final int exp = (int) (Math.log(bits) / Math.log(1000));
-        return String.format("%.1f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp-1));
+        return String.format("%.1f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp - 1));
     }
 
     /** Returns a human-readable bits/messages/whatever-per-second string
      * @param bits The total number of bits (per second) to convert to a human-readable string
      * @return the human-readable bits-per-second string
      */
-    public static String getHumanReadableRate(double bits)
+    public static String getHumanReadableRate(final double bits)
     {
         if (bits < 1000)
         {
             return String.format("%.3f ",  bits);
         }
         final int exp = (int) (Math.log(bits) / Math.log(1000));
-        return String.format("%.3f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp-1));
+        return String.format("%.3f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp - 1));
     }
 
     /** Shuts down the rate reporter thread; blocks until it is finished. */
@@ -127,7 +127,7 @@ public class RateReporter implements RateController.Callback, Runnable
         final long totalMessages = verifiableMessages + nonVerifiableMessages;
         final long lastTotalMessages = lastNonVerifiableMessages + lastVerifiableMessages;
         final long bytesReceived = app.bytes();
-        final double secondsElapsed = (currentTimeNanos - lastReportTimeNanos)/1000000000.0;
+        final double secondsElapsed = (currentTimeNanos - lastReportTimeNanos) / 1000000000.0;
         System.out.format("%.6f: %smsgs/sec %sbps%n",
                 secondsElapsed,
                 getHumanReadableRate((totalMessages - lastTotalMessages) / secondsElapsed),

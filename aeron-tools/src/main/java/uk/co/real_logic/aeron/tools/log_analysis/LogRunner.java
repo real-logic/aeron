@@ -5,9 +5,9 @@ package uk.co.real_logic.aeron.tools.log_analysis;
  */
 public class LogRunner
 {
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
-        LogModel model = new LogModel();
+        final LogModel model = new LogModel();
         model.processLogBuffer(args[0]);
     }
 }

@@ -27,9 +27,9 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
  */
 public class AeronPing
 {
-    private int numMsgs = 10000000;
-    private int numWarmupMsgs = 100000;
-    private int msgLen = 32;
+    private final int numMsgs = 10000000;
+    private final int numWarmupMsgs = 100000;
+    private final int msgLen = 32;
     private long[][] timestamps = null;
     private boolean warmedUp = false;
     private Aeron.Context ctx = null;
@@ -38,18 +38,18 @@ public class AeronPing
     private Publication pub = null;
     private Subscription sub = null;
     private CountDownLatch connectionLatch = null;
-    private int pingStreamId = 10;
-    private int pongStreamId = 11;
-    private String pingChannel = "udp://localhost:44444";
-    private String pongChannel = "udp://localhost:55555";
+    private final int pingStreamId = 10;
+    private final int pongStreamId = 11;
+    private final String pingChannel = "udp://localhost:44444";
+    private final String pongChannel = "udp://localhost:55555";
     private UnsafeBuffer buffer = null;
     private int msgCount = 0;
     private boolean claim = false;
     private BufferClaim bufferClaim = null;
-    private double sorted[] =null;
+    private double sorted[] = null;
     private double tmp[] = null;
 
-    public AeronPing(boolean claim)
+    public AeronPing(final boolean claim)
     {
         ctx = new Aeron.Context()
                 .newConnectionHandler(this::connectionHandler);
@@ -73,7 +73,7 @@ public class AeronPing
         {
             connectionLatch.await();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -165,8 +165,8 @@ public class AeronPing
         }
         stdDev = Math.sqrt(sum / tmp.length);
 
-        BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g = image.createGraphics();
+        final BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
+        final Graphics2D g = image.createGraphics();
         g.setColor(Color.white);
         g.fillRect(0, 0, 1800, 1000);
         generateScatterPlot(g, 0, 0, min, max, .9);
@@ -181,29 +181,30 @@ public class AeronPing
         g.drawString("Min: " + min + " Index: " + minIdx, 20, 960);
         g.drawString("Max: " + max + " Index: " + maxIdx, 20, 980);
 
-        String filename = "Aeron_RTT.png";
-        File imageFile = new File(filename);
+        final String filename = "Aeron_RTT.png";
+        final File imageFile = new File(filename);
         try
         {
             ImageIO.write(image, "png", imageFile);
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
         System.out.println("Completed");
     }
 
-    private void generateScatterPlot(Graphics2D g, int x, int y, double min, double max, double percentile)
+    private void generateScatterPlot(final Graphics2D g, final int x, final int y,
+            final double min, final double max, final double percentile)
     {
-        FontMetrics fm = g.getFontMetrics();
-        int width = 390;
-        int height = 370;
-        int num = (int)((numMsgs - 1) * percentile);
-        double newMax = sorted[num];
-        double stepY = height / (newMax - min);
-        double stepX = (double)width / (double)num;
-        String title = "Latency Scatterplot (us) " + percentile + " percentile";
+        final FontMetrics fm = g.getFontMetrics();
+        final int width = 390;
+        final int height = 370;
+        final int num = (int)((numMsgs - 1) * percentile);
+        final double newMax = sorted[num];
+        final double stepY = height / (newMax - min);
+        final double stepX = (double)width / (double)num;
+        final String title = "Latency Scatterplot (us) " + percentile + " percentile";
 
         System.out.println("Generating graph for " + percentile + " percentile");
         g.setColor(Color.black);
@@ -220,16 +221,17 @@ public class AeronPing
         {
             if (tmp[i] <= newMax)
             {
-                int posX = x + 100 + (int)(stepX * idx);
-                int posY = y + 390 - (int)(stepY * (tmp[i] - min));
+                final int posX = x + 100 + (int)(stepX * idx);
+                final int posY = y + 390 - (int)(stepY * (tmp[i] - min));
                 g.fillRect(posX, posY, 1, 1);
                 idx++;
             }
         }
     }
 
-    private void connectionHandler(String channel, int streamId,
-                                   int sessionId, String sourceInfo)
+    private void connectionHandler(final String channel, final int streamId,
+                                   final int sessionId, final long position,
+                                   final String sourceInfo)
     {
         if (channel.equals(pongChannel) && pongStreamId == streamId)
         {
@@ -237,8 +239,8 @@ public class AeronPing
         }
     }
 
-    private void pongHandler(DirectBuffer buffer, int offset, int length,
-                             Header header)
+    private void pongHandler(final DirectBuffer buffer, final int offset, final int length,
+                             final Header header)
     {
         if (buffer.getByte(offset + 0) == (byte)'p')
         {
@@ -275,8 +277,8 @@ public class AeronPing
         {
             try
             {
-                MutableDirectBuffer buffer = bufferClaim.buffer();
-                int offset = bufferClaim.offset();
+                final MutableDirectBuffer buffer = bufferClaim.buffer();
+                final int offset = bufferClaim.offset();
                 if (!warmedUp)
                 {
                     buffer.putByte(offset + 0, (byte) 'w');
@@ -288,7 +290,7 @@ public class AeronPing
                     timestamps[0][msgCount++] = System.nanoTime();
                 }
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
             }
@@ -307,7 +309,7 @@ public class AeronPing
         }
     }
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         AeronPing ping = null;
 

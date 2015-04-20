@@ -69,7 +69,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 
     }
 
-    public PublisherTool(PubSubOptions options)
+    public PublisherTool(final PubSubOptions options)
     {
         this.options = options;
 
@@ -77,7 +77,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         {
             sanityCheckOptions();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
             System.exit(-1);
@@ -114,7 +114,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             pubThreads[i].start();
         }
 
-        RateReporter rateReporter = new RateReporter(this);
+        final RateReporter rateReporter = new RateReporter(this);
 
         /* Wait for threads to exit. */
         try
@@ -125,7 +125,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             }
             rateReporter.close();
         }
-        catch (InterruptedException e)
+        catch (final InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -141,7 +141,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             /* Close any open output files. */
             options.close();
         }
-        catch (IOException e)
+        catch (final IOException e)
         {
             e.printStackTrace();
         }
@@ -154,9 +154,9 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                 bytesSent, verifiableMessages, nonVerifiableMessages));
     }
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
-        PubSubOptions opts = new PubSubOptions();
+        final PubSubOptions opts = new PubSubOptions();
         try
         {
             if (opts.parseArgs(args) != 0)
@@ -166,7 +166,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             }
         }
 
-        catch (ParseException ex)
+        catch (final ParseException ex)
         {
             ex.printStackTrace();
             opts.printHelp(PublisherTool.APP_USAGE);
@@ -258,7 +258,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 
 
         @SuppressWarnings("resource")
-        public PublisherThread(int threadId, long messages)
+        public PublisherThread(final int threadId, final long messages)
         {
             this.threadId = threadId;
             this.messagesToSend = messages;
@@ -268,7 +268,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             {
                 rc = new RateController(this, options.getRateIntervals(), options.getIterations());
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
                 System.exit(-1);
@@ -298,7 +298,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             int streamIdx = 0;
             for (int i = 0; i < options.getChannels().size(); i++)
             {
-                ChannelDescriptor channel = options.getChannels().get(i);
+                final ChannelDescriptor channel = options.getChannels().get(i);
                 for (int j = 0; j < channel.getStreamIdentifiers().length; j++)
                 {
                     if ((streamIdx % numThreads) == this.threadId)
@@ -325,7 +325,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                 {
                     messageStreams[i] = new MessageStream(msp.getMaximum(), verifiableMessages, options.getInput());
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
                     e.printStackTrace();
                     System.exit(-1);
@@ -389,18 +389,19 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         }
 
         @Override
-        public void onInactiveConnection(String channel, int streamId, int sessionId)
+        public void onInactiveConnection(final String channel, final int streamId,
+                final int sessionId, final long position)
         {
-            LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d%n",
-                    channel, streamId, sessionId));
+            LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x%n",
+                    channel, streamId, sessionId, position));
         }
 
         @Override
-        public void onNewConnection(String channel, int streamId, int sessionId,
-                String sourceInformation)
+        public void onNewConnection(final String channel, final int streamId,
+                final int sessionId, final long position, final String sourceInformation)
         {
-            LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, source \"%s\"%n",
-                    channel, streamId, sessionId, sourceInformation));
+            LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"%n",
+                    channel, streamId, sessionId, position, sourceInformation));
         }
 
         /**
@@ -435,7 +436,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                     }
                 }
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
                 System.exit(-1);

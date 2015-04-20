@@ -11,7 +11,7 @@ public class StatsCSVOutput implements StatsOutput
   private FileWriter out;
   private boolean firstTime = true;
 
-  public StatsCSVOutput(String file)
+  public StatsCSVOutput(final String file)
   {
     if (file != null)
     {
@@ -25,17 +25,18 @@ public class StatsCSVOutput implements StatsOutput
     try
     {
       System.out.println("Output file: " + this.file);
-      File outFile = new File(this.file);
+      final File outFile = new File(this.file);
       outFile.createNewFile();
       out = new FileWriter(outFile);
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       e.printStackTrace();
     }
   }
 
-  public void format(String[] keys, long[] vals) throws Exception
+  @Override
+public void format(final String[] keys, final long[] vals) throws Exception
   {
     if (firstTime)
     {
@@ -55,7 +56,8 @@ public class StatsCSVOutput implements StatsOutput
     out.flush();
   }
 
-  public void close() throws Exception
+  @Override
+public void close() throws Exception
   {
     out.close();
   }

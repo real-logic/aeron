@@ -14,7 +14,7 @@ public class MessagesAtBitsPerSecondInterval extends RateControllerInterval
      * sending them. */
     private final long messages;
 
-    public MessagesAtBitsPerSecondInterval(long messages, long bitsPerSecond)
+    public MessagesAtBitsPerSecondInterval(final long messages, final long bitsPerSecond)
     {
         this.goalBitsPerSecond = bitsPerSecond;
         this.messages = messages;
@@ -31,7 +31,7 @@ public class MessagesAtBitsPerSecondInterval extends RateControllerInterval
     }
 
     @Override
-    IntervalInternal makeInternal(RateController rateController) throws Exception
+    IntervalInternal makeInternal(final RateController rateController) throws Exception
     {
         return rateController.new MessagesAtBitsPerSecondInternal(rateController, messages, goalBitsPerSecond);
     }

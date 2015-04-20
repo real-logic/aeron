@@ -11,14 +11,14 @@ public class NavigationModel extends Observable
     public static final String TITLE = "Aeron";
     public static final String DEFAULT_DIRECTORY = System.getProperty("java.io.tmpdir") + "/aeron";
     private String directory = DEFAULT_DIRECTORY;
-    private String selectedFile= "";
+    private String selectedFile = "";
 
     public NavigationModel()
     {
 
     }
 
-    public void setDirectory(String directory)
+    public void setDirectory(final String directory)
     {
         this.directory = directory;
         setChanged();
@@ -35,7 +35,7 @@ public class NavigationModel extends Observable
         return TITLE;
     }
 
-    public void setSelectedFile(String selectedFile)
+    public void setSelectedFile(final String selectedFile)
     {
         this.selectedFile = selectedFile;
     }

@@ -62,10 +62,10 @@ public class StreamingPublisher
         }
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
-
         // Create a context for media driver connection
         final Aeron.Context context = new Aeron.Context();
-        if(EMBEDDED_MEDIA_DRIVER)
+
+        if (EMBEDDED_MEDIA_DRIVER)
         {
             context.dirName(driver.contextDirName());
         }

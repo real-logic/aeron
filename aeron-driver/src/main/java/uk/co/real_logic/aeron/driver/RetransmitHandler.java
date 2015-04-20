@@ -16,11 +16,11 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
@@ -150,7 +150,7 @@ public class RetransmitHandler
 
     private boolean isInvalid(final int termOffset)
     {
-        final boolean isInvalid = termOffset >= (capacity - FrameDescriptor.BASE_HEADER_LENGTH);
+        final boolean isInvalid = termOffset >= (capacity - DataHeaderFlyweight.HEADER_LENGTH);
 
         if (isInvalid)
         {

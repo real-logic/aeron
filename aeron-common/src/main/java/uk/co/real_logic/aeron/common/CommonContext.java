@@ -68,7 +68,7 @@ public class CommonContext implements AutoCloseable
 
     public static String generateEmbeddedDirName()
     {
-        String randomDirName = UUID.randomUUID().toString();
+        final String randomDirName = UUID.randomUUID().toString();
         String aeronDirName = IoUtil.tmpDirName() + "aeron" + File.separator + randomDirName;
 
         // Use shared memory on Linux to avoid contention on the page cache.

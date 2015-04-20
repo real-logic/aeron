@@ -398,7 +398,7 @@ public class Configuration
         SenderFlowControl senderFlowControl = null;
         try
         {
-             senderFlowControl= (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
+             senderFlowControl = (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {

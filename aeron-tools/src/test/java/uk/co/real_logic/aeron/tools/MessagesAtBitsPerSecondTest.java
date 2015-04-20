@@ -33,7 +33,7 @@ public class MessagesAtBitsPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithZeroBitsPerSecond() throws Exception
     {
         ivlsList.clear();
@@ -41,7 +41,7 @@ public class MessagesAtBitsPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithZeroMessages() throws Exception
     {
         ivlsList.clear();
@@ -49,7 +49,7 @@ public class MessagesAtBitsPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNegativeMessages() throws Exception
     {
         ivlsList.clear();
@@ -57,7 +57,7 @@ public class MessagesAtBitsPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNegativeBitsPerSecond() throws Exception
     {
         ivlsList.clear();

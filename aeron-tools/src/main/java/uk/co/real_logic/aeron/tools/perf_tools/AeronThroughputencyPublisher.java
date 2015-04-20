@@ -39,22 +39,22 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     private Publication pub = null;
     private Subscription sub = null;
     private CountDownLatch connectionLatch = null;
-    private int pubStreamId = 10;
-    private int subStreamId = 11;
-    private String pubChannel = "udp://localhost:44444";
-    private String subChannel = "udp://localhost:55555";
+    private final int pubStreamId = 10;
+    private final int subStreamId = 11;
+    private final String pubChannel = "udp://localhost:44444";
+    private final String subChannel = "udp://localhost:55555";
     private Thread subThread = null;
     private boolean running = true;
     private IdleStrategy idle = null;
-    private int warmUpMsgs = 100000;
-    private int msgLen = 20;
+    private final int warmUpMsgs = 100000;
+    private final int msgLen = 20;
     private RateController rateCtlr = null;
     private UnsafeBuffer buffer = null;
-    private long timestamps[] = new long[41111100];
+    private final long timestamps[] = new long[41111100];
     private int msgCount = 0;
-    private BufferClaim bufferClaim;
+    private final BufferClaim bufferClaim;
     private int warmups = 0;
-    private double means[] = new double[7];
+    private final double means[] = new double[7];
 
     public AeronThroughputencyPublisher()
     {
@@ -68,7 +68,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         idle = new BusySpinIdleStrategy();
         bufferClaim = new BufferClaim();
 
-        List<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
+        final List<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
         intervals.add(new MessagesAtMessagesPerSecondInterval(100, 10));
         intervals.add(new MessagesAtMessagesPerSecondInterval(1000, 100));
         intervals.add(new MessagesAtMessagesPerSecondInterval(10000, 1000));
@@ -83,12 +83,12 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             rateCtlr = new RateController(this, intervals);
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
 
-        Runnable task = new Runnable()
+        final Runnable task = new Runnable()
         {
             @Override
             public void run()
@@ -109,7 +109,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             connectionLatch.await();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -122,11 +122,11 @@ public class AeronThroughputencyPublisher implements RateController.Callback
             }
             try
             {
-                MutableDirectBuffer buffer = bufferClaim.buffer();
-                int offset = bufferClaim.offset();
+                final MutableDirectBuffer buffer = bufferClaim.buffer();
+                final int offset = bufferClaim.offset();
                 buffer.putByte(offset, (byte) 'w');
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
             }
@@ -139,17 +139,17 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             Thread.sleep(1000);
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
         System.out.println("warmup msgs received: " + warmups);
-        int start = (int)System.currentTimeMillis();
+        final int start = (int)System.currentTimeMillis();
         while (rateCtlr.next())
         {
 
         }
-        int total = (int)(System.currentTimeMillis() - start) / 1000;
+        final int total = (int)(System.currentTimeMillis() - start) / 1000;
         buffer.putByte(0, (byte)'q');
 
         while (pub.offer(buffer, 0, buffer.capacity()) < 0L)
@@ -162,7 +162,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             Thread.sleep(1000);
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -173,7 +173,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             subThread.join();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -198,13 +198,13 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         }
         try
         {
-            MutableDirectBuffer buffer = bufferClaim.buffer();
-            int offset = bufferClaim.offset();
+            final MutableDirectBuffer buffer = bufferClaim.buffer();
+            final int offset = bufferClaim.offset();
             buffer.putByte(offset, (byte) 'p');
             buffer.putInt(offset + 1, msgCount++);
             buffer.putLong(offset + 5, System.nanoTime());
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
             System.exit(0);
@@ -216,8 +216,8 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         }
     }
 
-    private void connectionHandler(String channel, int streamId,
-                                   int sessionId, String sourceInfo)
+    private void connectionHandler(final String channel, final int streamId,
+                                   final int sessionId, final long position, final String sourceInfo)
     {
         if (channel.equals(subChannel) && subStreamId == streamId)
         {
@@ -225,8 +225,8 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         }
     }
 
-    private void msgHandler(DirectBuffer buffer, int offset, int length,
-                            Header header)
+    private void msgHandler(final DirectBuffer buffer, final int offset, final int length,
+                            final Header header)
     {
         if (buffer.getByte(offset) == (byte)'p')
         {
@@ -251,7 +251,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         generateScatterPlot();
     }
 
-    private double computeStats(int start, int end, String title)
+    private double computeStats(final int start, final int end, final String title)
     {
         double sum = 0.0;
         double min = Double.MAX_VALUE;
@@ -259,7 +259,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
 
         for (int i = start; i < end; i++)
         {
-            double ts = timestamps[i] / 1000.0;
+            final double ts = timestamps[i] / 1000.0;
             if (ts < 0)
             {
                 System.exit(1);
@@ -280,18 +280,18 @@ public class AeronThroughputencyPublisher implements RateController.Callback
 
     private void generateScatterPlot()
     {
-        BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        FontMetrics fm = g2.getFontMetrics();
-        String filename = "throughputency.png";
-        File imageFile = new File(filename);
+        final BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
+        final Graphics2D g2 = image.createGraphics();
+        final FontMetrics fm = g2.getFontMetrics();
+        final String filename = "throughputency.png";
+        final File imageFile = new File(filename);
 
-        int height = 940;
+        final int height = 940;
         double min = Double.MAX_VALUE;
         double max = Double.MIN_VALUE;
         for (int i = 0; i < timestamps.length; i++)
         {
-            double ts = timestamps[i] / 1000.0;
+            final double ts = timestamps[i] / 1000.0;
             if (ts < min)
             {
                 min = ts;
@@ -301,7 +301,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
                 max = ts;
             }
         }
-        double stepY = height / max;
+        final double stepY = height / max;
 
         g2.setColor(Color.white);
         g2.fillRect(0, 0, 1800, 1000);
@@ -314,7 +314,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         g2.drawLine(100, 960, 1790, 960);
         int start = 0;
         int end = 100;
-        double width = 1690.0 / 7.0;
+        final double width = 1690.0 / 7.0;
         g2.setColor(Color.red);
         plotSubset(g2, start, end, "10 msgs/sec", 100, width, stepY, means[0]);
 
@@ -352,31 +352,32 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             ImageIO.write(image, "png", imageFile);
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
     }
 
-    private void plotSubset(Graphics2D g, int start, int end, String title, double startX, double width,
-                            double stepY, double mean)
+    private void plotSubset(final Graphics2D g, final int start, final int end,
+            final String title, final double startX, final double width,
+            final double stepY, final double mean)
     {
-        FontMetrics fm = g.getFontMetrics();
-        Color color = g.getColor();
+        final FontMetrics fm = g.getFontMetrics();
+        final Color color = g.getColor();
         g.setColor(Color.black);
         g.drawString(title, (int)(startX + width / 2 - fm.stringWidth(title) / 2), 975);
-        String tmp = String.format("Mean: %.3fus", mean);
+        final String tmp = String.format("Mean: %.3fus", mean);
         g.drawString(tmp, (int)(startX + width / 2 - fm.stringWidth(tmp) / 2), 990);
         g.setColor(color);
-        double stepX = width / (end - start);
+        final double stepX = width / (end - start);
         for (int i = start; i < end; i++)
         {
-            int posX = (int)(startX + stepX * (i - start));
-            int posY = 960 - ((int)(stepY * (timestamps[i] / 1000.0)) + 1);
+            final int posX = (int)(startX + stepX * (i - start));
+            final int posY = 960 - ((int)(stepY * (timestamps[i] / 1000.0)) + 1);
             g.drawLine(posX, posY, posX, 960);
         }
     }
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         new AeronThroughputencyPublisher();
     }

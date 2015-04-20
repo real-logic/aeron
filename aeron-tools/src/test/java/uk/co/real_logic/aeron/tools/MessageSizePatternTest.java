@@ -1,11 +1,12 @@
 package uk.co.real_logic.aeron.tools;
 
-import org.junit.Test;
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
+
+import org.junit.Test;
 
 /**
  * Created by bhorst on 3/6/15.
@@ -45,7 +46,7 @@ public class MessageSizePatternTest
 
         assertThat(p.getNext(), is(1000));
 
-        MessageSizePattern p2 = new MessageSizePattern(p);
+        final MessageSizePattern p2 = new MessageSizePattern(p);
         assertThat("FAIL: Copied pattern didn't start at the beginning", p2.getNext(), is(1000));
         assertThat(p.getNext(), both(greaterThanOrEqualTo(1001)).and(lessThanOrEqualTo(1002)));
         assertThat(p2.getNext(), both(greaterThanOrEqualTo(1001)).and(lessThanOrEqualTo(1002)));
@@ -131,25 +132,25 @@ public class MessageSizePatternTest
                 p.getNext(), is(1000));
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void invalidSize() throws Exception
     {
         p = new MessageSizePattern(-10);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void invalidNumberOfMessages() throws Exception
     {
         p = new MessageSizePattern(0, 1000);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void negativeRange() throws Exception
     {
         p = new MessageSizePattern(1, -1000, -500);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void invalidRange() throws Exception
     {
         p = new MessageSizePattern(1, 1000, 500);

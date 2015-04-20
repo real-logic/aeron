@@ -47,8 +47,8 @@ public class MultipleSubscriberWithFrag
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
 
     //Create two message streams for two different subscribers
-    private static MessageStream msgStream = new MessageStream();
-    private static MessageStream msgStream2 = new MessageStream();
+    private static final MessageStream MSG_STREAM_1 = new MessageStream();
+    private static final MessageStream MSG_STREAM_2 = new MessageStream();
 
     public static void main(final String[] args) throws Exception
     {
@@ -109,10 +109,11 @@ public class MultipleSubscriberWithFrag
      * @param channel           for the connection
      * @param streamId          for the stream
      * @param sessionId         for the connection publication
+     * @param position          in the stream
      * @param sourceInformation that is transport specific
      */
     public static void eventNewConnection(
-        final String channel, final int streamId, final int sessionId, final String sourceInformation)
+        final String channel, final int streamId, final int sessionId, final long position, final String sourceInformation)
     {
         System.out.println(
             String.format(
@@ -121,11 +122,11 @@ public class MultipleSubscriberWithFrag
       //Reset the stream buffer because streams have restarted
         if (streamId == STREAM_ID)
         {
-            msgStream.reset();
+            MSG_STREAM_1.reset();
         }
         else if (streamId == STREAM_ID_2)
         {
-            msgStream2.reset();
+            MSG_STREAM_2.reset();
         }
         else
         {
@@ -140,8 +141,9 @@ public class MultipleSubscriberWithFrag
      * @param channel   for the connection
      * @param streamId  for the stream
      * @param sessionId for the connection publication
+     * @param position  within the stream
      */
-    public static void eventInactiveConnection(final String channel, final int streamId, final int sessionId)
+    public static void eventInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
     {
         System.out.println(
             String.format(
@@ -170,7 +172,7 @@ public class MultipleSubscriberWithFrag
             {
                 if (streamId == STREAM_ID)
                 {
-                    msgStream.putNext(buffer, offset, length);
+                    MSG_STREAM_1.putNext(buffer, offset, length);
                 }
                 else
                 {
@@ -208,7 +210,7 @@ public static DataHandler reassembledStringMessage2(final int streamId)
 
             if (streamId == STREAM_ID_2)
             {
-                msgStream2.putNext(buffer, offset, length);
+                MSG_STREAM_2.putNext(buffer, offset, length);
             }
             else
             {

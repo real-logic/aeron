@@ -65,7 +65,7 @@ public class SubscriberTool
      * specific expansions in the future. */
     private static final int CHANNEL_NAME_MAX_LEN = 256;
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         final SubscriberTool subTool = new SubscriberTool();
         try
@@ -149,7 +149,7 @@ public class SubscriberTool
     }
 
     /** Warn about options settings that might cause trouble. */
-    private static void sanityCheckOptions(PubSubOptions options)
+    private static void sanityCheckOptions(final PubSubOptions options)
     {
         if (options.getThreads() > 1)
         {
@@ -250,7 +250,7 @@ public class SubscriberTool
         private int lastBytesReceived;
 
         @SuppressWarnings("resource")
-        public SubscriberThread(int threadId)
+        public SubscriberThread(final int threadId)
         {
             this.threadId = threadId;
             RateController rc = null;
@@ -258,7 +258,7 @@ public class SubscriberTool
             {
                 rc = new RateController(this, options.getRateIntervals(), options.getIterations());
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
                 System.exit(-1);
@@ -364,7 +364,7 @@ public class SubscriberTool
         }
 
         /** Looks for a connection in the active subscriptions list; if it's not found, it adds it. */
-        private void makeActive(String channel, int streamId)
+        private void makeActive(final String channel, final int streamId)
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
@@ -395,7 +395,7 @@ public class SubscriberTool
         }
 
         /** Looks for a connection in the active subscriptions list; if it's found, take it out. */
-        private void makeInactive(String channel, int streamId)
+        private void makeInactive(final String channel, final int streamId)
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
@@ -427,14 +427,15 @@ public class SubscriberTool
             private final Int2ObjectHashMap<MessageStream> sessionIdMap;
             private final OutputStream os = options.getOutput();
 
-            public MessageStreamHandler(String channel, int streamId, Int2ObjectHashMap<MessageStream> sessionIdMap)
+            public MessageStreamHandler(final String channel, final int streamId,
+                    final Int2ObjectHashMap<MessageStream> sessionIdMap)
             {
                 this.channel = channel;
                 this.streamId = streamId;
                 this.sessionIdMap = sessionIdMap;
             }
 
-            public void onControl(DirectBuffer buffer, int offset, int length, Header header)
+            public void onControl(final DirectBuffer buffer, final int offset, final int length, final Header header)
             {
                 /* Make sure this was really intended for this app - we might have a bunch
                  * running on the same machine. */
@@ -531,7 +532,7 @@ public class SubscriberTool
                 }
             }
 
-            public void onMessage(DirectBuffer buffer, int offset, int length, Header header)
+            public void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
             {
                 bytesReceived += length;
                 MessageStream ms = null;
@@ -650,7 +651,7 @@ public class SubscriberTool
             ctx.close();
         }
 
-        private void enqueueControlMessage(int type, String channel, int streamId, int sessionId)
+        private void enqueueControlMessage(final int type, final String channel, final int streamId, final int sessionId)
         {
             /* Don't deliver events for the control channel itself. */
             if ((streamId != CONTROL_STREAMID)
@@ -671,15 +672,16 @@ public class SubscriberTool
         }
 
         @Override
-        public void onInactiveConnection(String channel, int streamId, int sessionId)
+        public void onInactiveConnection(final String channel, final int streamId,
+                final int sessionId, final long position)
         {
             /* Handle processing the inactive connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_INACTIVE_CONNECTION, channel, streamId, sessionId);
         }
 
         @Override
-        public void onNewConnection(String channel, int streamId, int sessionId,
-                String sourceInformation)
+        public void onNewConnection(final String channel, final int streamId, final int sessionId,
+                final long position, final String sourceInformation)
         {
             /* Handle processing the new connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);

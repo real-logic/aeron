@@ -20,11 +20,14 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 
 import java.nio.ByteOrder;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+
 /**
  * Represents the header of the data frame for accessing meta data fields.
  */
 public class Header
 {
+    private int positionBitsToShift;
     private int initialTermId;
     private int offset = 0;
     private UnsafeBuffer buffer;
@@ -44,6 +47,7 @@ public class Header
     public Header(final UnsafeBuffer termBuffer)
     {
         this.buffer = termBuffer;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termBuffer.capacity());
     }
 
     /**
@@ -56,6 +60,37 @@ public class Header
     {
         this.initialTermId = initialTermId;
         this.buffer = termBuffer;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termBuffer.capacity());
+    }
+
+    /**
+     * Get the current position to which the connection has advanced on reading this message.
+     *
+     * @return the current position to which the connection has advanced on reading this message.
+     */
+    public final long position()
+    {
+        return computePosition(termId(), termOffset() + frameLength(), positionBitsToShift, initialTermId);
+    }
+
+    /**
+     * Get the number of bits the number of terms need to be shifted to get the position.
+     *
+     * @return the number of bits the number of terms need to be shifted to get the position.
+     */
+    public final int positionBitsToShift()
+    {
+        return positionBitsToShift;
+    }
+
+    /**
+     * Set the number of bits the number of terms need to be shifted to get the position.
+     *
+     * @param positionBitsToShift the number of bits the number of terms need to be shifted to get the position.
+     */
+    public final void positionBitsToShift(final int positionBitsToShift)
+    {
+        this.positionBitsToShift = positionBitsToShift;
     }
 
     /**
@@ -63,7 +98,7 @@ public class Header
      *
      * @return the initial term id this stream started at.
      */
-    public int initialTermId()
+    public final int initialTermId()
     {
         return initialTermId;
     }
@@ -73,7 +108,7 @@ public class Header
      *
      * @param initialTermId this stream started at.
      */
-    public void initialTermId(final int initialTermId)
+    public final void initialTermId(final int initialTermId)
     {
         this.initialTermId = initialTermId;
     }
@@ -83,7 +118,7 @@ public class Header
      *
      * @param offset at which the header begins in the log.
      */
-    public void offset(final int offset)
+    public final void offset(final int offset)
     {
         this.offset = offset;
     }
@@ -93,7 +128,7 @@ public class Header
      *
      * @return offset at which the frame begins.
      */
-    public int offset()
+    public final int offset()
     {
         return offset;
     }
@@ -103,7 +138,7 @@ public class Header
      *
      * @return {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
      */
-    public UnsafeBuffer buffer()
+    public final UnsafeBuffer buffer()
     {
         return buffer;
     }
@@ -113,7 +148,7 @@ public class Header
      *
      * @param buffer {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
      */
-    public void buffer(final UnsafeBuffer buffer)
+    public final void buffer(final UnsafeBuffer buffer)
     {
         this.buffer = buffer;
     }
@@ -133,7 +168,7 @@ public class Header
      *
      * @return the session ID to which the frame belongs.
      */
-    public int sessionId()
+    public final int sessionId()
     {
         return buffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
@@ -143,7 +178,7 @@ public class Header
      *
      * @return the stream ID to which the frame belongs.
      */
-    public int streamId()
+    public final int streamId()
     {
         return buffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
@@ -153,7 +188,7 @@ public class Header
      *
      * @return the term ID to which the frame belongs.
      */
-    public int termId()
+    public final int termId()
     {
         return buffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
@@ -173,7 +208,7 @@ public class Header
      *
      * @return type of the the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
      */
-    public int type()
+    public final int type()
     {
         return buffer.getShort(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
     }

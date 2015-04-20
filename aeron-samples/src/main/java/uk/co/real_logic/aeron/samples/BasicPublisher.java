@@ -45,10 +45,11 @@ public class BasicPublisher
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         // Create an Aeron context for client connection to media driver
         final Aeron.Context ctx = new Aeron.Context();
-        if(EMBEDDED_MEDIA_DRIVER)
+        if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }
+
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {

@@ -98,7 +98,7 @@ public class RateController
             return;
         }
         /* Reset all intervals and set active interval back to 0. */
-        for (IntervalInternal interval : intervals)
+        for (final IntervalInternal interval : intervals)
         {
             interval.reset();
         }
@@ -194,9 +194,9 @@ public class RateController
         PARK_NANOS = ((parkEndNanos - parkStartNanos) / parkNanosLoops) * PARK_NANOS_FUDGE_FACTOR;
     }
 
-    private void addIntervals(List<RateControllerInterval> intervals) throws Exception
+    private void addIntervals(final List<RateControllerInterval> intervals) throws Exception
     {
-        for (RateControllerInterval interval : intervals)
+        for (final RateControllerInterval interval : intervals)
         {
             this.intervals.add(interval.makeInternal(this));
         }
@@ -219,7 +219,7 @@ public class RateController
         private final long messages;
 
         protected MessagesAtBitsPerSecondInternal(
-                RateController rateController, long messages, long bitsPerSecond) throws Exception
+                final RateController rateController, final long messages, final long bitsPerSecond) throws Exception
         {
             if (messages <= 0)
             {
@@ -280,7 +280,7 @@ public class RateController
         }
 
         @Override
-        protected IntervalInternal makeInternal(RateController rateController)
+        protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
         }
@@ -299,7 +299,7 @@ public class RateController
         private final long messages;
 
         protected MessagesAtMessagesPerSecondInternal(
-                RateController rateController, long messages, double messagesPerSecond) throws Exception
+                final RateController rateController, final long messages, final double messagesPerSecond) throws Exception
         {
             if (messages <= 0)
             {
@@ -356,7 +356,7 @@ public class RateController
         }
 
         @Override
-        protected IntervalInternal makeInternal(RateController rateController)
+        protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
         }
@@ -375,7 +375,7 @@ public class RateController
         private final double seconds;
 
         protected SecondsAtMessagesPerSecondInternal(
-                RateController rateController, double seconds, double messagesPerSecond) throws Exception
+                final RateController rateController, final double seconds, final double messagesPerSecond) throws Exception
         {
             if (seconds <= 0)
             {
@@ -442,7 +442,7 @@ public class RateController
         }
 
         @Override
-        protected IntervalInternal makeInternal(RateController rateController)
+        protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
         }
@@ -461,7 +461,7 @@ public class RateController
         private final double seconds;
 
         protected SecondsAtBitsPerSecondInternal(
-                RateController rateController, double seconds, long bitsPerSecond) throws Exception
+                final RateController rateController, final double seconds, final long bitsPerSecond) throws Exception
         {
             if (seconds <= 0)
             {
@@ -528,7 +528,7 @@ public class RateController
         }
 
         @Override
-        protected IntervalInternal makeInternal(RateController rateController)
+        protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
         }
@@ -568,7 +568,8 @@ public class RateController
 
     }
 
-    public RateController(final Callback callback, List<RateControllerInterval> intervals, long iterations) throws Exception
+    public RateController(final Callback callback, final List<RateControllerInterval> intervals,
+            final long iterations) throws Exception
     {
         if (iterations <= 0)
         {
@@ -591,7 +592,7 @@ public class RateController
         this.iterations = iterations;
     }
 
-    public RateController(final Callback callback, List<RateControllerInterval> intervals) throws Exception
+    public RateController(final Callback callback, final List<RateControllerInterval> intervals) throws Exception
     {
         this(callback, intervals, 1);
     }

@@ -24,28 +24,28 @@ public class TermMetadataPanel extends JPanel implements Observer
     private JTextField initialTermIdFld = null;
     private JTextField activeTermIdFld = null;
     private JTextField termLengthFld = null;
-    private JTextField[] dataOffsetFld = new JTextField[3];
-    private JTextField[] flagsFld = new JTextField[3];
-    private JTextField[] frameLengthFld = new JTextField[3];
-    private JTextField[] headerTypeFld = new JTextField[3];
-    private JTextField[] offsetFld = new JTextField[3];
-    private JTextField[] sessionIdFld = new JTextField[3];
-    private JTextField[] streamIdFld = new JTextField[3];
-    private JTextField[] termIdFld = new JTextField[3];
-    private JTextField[] termOffsetFld = new JTextField[3];
-    private JTextField[] versionFld = new JTextField[3];
+    private final JTextField[] dataOffsetFld = new JTextField[3];
+    private final JTextField[] flagsFld = new JTextField[3];
+    private final JTextField[] frameLengthFld = new JTextField[3];
+    private final JTextField[] headerTypeFld = new JTextField[3];
+    private final JTextField[] offsetFld = new JTextField[3];
+    private final JTextField[] sessionIdFld = new JTextField[3];
+    private final JTextField[] streamIdFld = new JTextField[3];
+    private final JTextField[] termIdFld = new JTextField[3];
+    private final JTextField[] termOffsetFld = new JTextField[3];
+    private final JTextField[] versionFld = new JTextField[3];
 
-    private TermMetadataModel termModel = null;
+    private final TermMetadataModel termModel = null;
     private LogModel model = null;
 
-    public TermMetadataPanel(LogModel model)
+    public TermMetadataPanel(final LogModel model)
     {
         this.model = model;
         init();
     }
 
     @Override
-    public void update(Observable obs, Object obj)
+    public void update(final Observable obs, final Object obj)
     {
 
     }
@@ -58,8 +58,8 @@ public class TermMetadataPanel extends JPanel implements Observer
 
         for (int i = 0; i < 3; i++)
         {
-            UnsafeBuffer defaultFrameHeader = model.getDefaultFrameHeader(i);
-            DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
+            final UnsafeBuffer defaultFrameHeader = model.getDefaultFrameHeader(i);
+            final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
             dataHeaderFlyweight.wrap(defaultFrameHeader);
             dataOffsetFld[i].setText(dataHeaderFlyweight.dataOffset() + "");
@@ -78,7 +78,7 @@ public class TermMetadataPanel extends JPanel implements Observer
     private void init()
     {
         northPanel = new JPanel();
-        GroupLayout layout = new GroupLayout(northPanel);
+        final GroupLayout layout = new GroupLayout(northPanel);
         northPanel.setLayout(layout);
         //setLayout(new BorderLayout());
         add(northPanel/*, BorderLayout.NORTH*/);
@@ -89,15 +89,15 @@ public class TermMetadataPanel extends JPanel implements Observer
         vis = new BufferVisualization();
         vis.setPreferredSize(new Dimension(1000, 400));
         add(vis/*, BorderLayout.SOUTH*/);
-        JLabel initialTermIdLbl = new JLabel("Initial Term Id:");
+        final JLabel initialTermIdLbl = new JLabel("Initial Term Id:");
         initialTermIdFld = new JTextField("", 20);
         initialTermIdFld.setEditable(false);
 
-        JLabel activeTermIdLbl = new JLabel("Active Term Id:");
+        final JLabel activeTermIdLbl = new JLabel("Active Term Id:");
         activeTermIdFld = new JTextField("", 20);
         activeTermIdFld.setEditable(false);
 
-        JLabel termLengthLbl = new JLabel("Term Length:");
+        final JLabel termLengthLbl = new JLabel("Term Length:");
         termLengthFld = new JTextField("", 20);
         termLengthFld.setEditable(false);
 
@@ -129,26 +129,26 @@ public class TermMetadataPanel extends JPanel implements Observer
 
     private void createFrameHeaderPanes()
     {
-        String[] labels = {
+        final String[] labels = {
                 "Data Offset:", "Flags:", "Frame Length:", "Header Type:",
                 "Offset:", "Session Id:", "Stream Id:", "Term Id:", "Term Offset:",
                 "Version:"
         };
-        JPanel[] panels = new JPanel[3];
-        JLabel[] dataOffsetLbls = new JLabel[3];
-        JLabel[] flagsLbls = new JLabel[3];
-        JLabel[] frameLengthLbls = new JLabel[3];
-        JLabel[] headerTypeLbls = new JLabel[3];
-        JLabel[] offsetLbls = new JLabel[3];
-        JLabel[] sessionIdLbls = new JLabel[3];
-        JLabel[] streamIdLbls = new JLabel[3];
-        JLabel[] termIdLbls = new JLabel[3];
-        JLabel[] termOffsetLbls = new JLabel[3];
-        JLabel[] versionLbls = new JLabel[3];
+        final JPanel[] panels = new JPanel[3];
+        final JLabel[] dataOffsetLbls = new JLabel[3];
+        final JLabel[] flagsLbls = new JLabel[3];
+        final JLabel[] frameLengthLbls = new JLabel[3];
+        final JLabel[] headerTypeLbls = new JLabel[3];
+        final JLabel[] offsetLbls = new JLabel[3];
+        final JLabel[] sessionIdLbls = new JLabel[3];
+        final JLabel[] streamIdLbls = new JLabel[3];
+        final JLabel[] termIdLbls = new JLabel[3];
+        final JLabel[] termOffsetLbls = new JLabel[3];
+        final JLabel[] versionLbls = new JLabel[3];
         for (int i = 0; i < 3; i++)
         {
             panels[i] = new JPanel();
-            GroupLayout layout = new GroupLayout(panels[i]);
+            final GroupLayout layout = new GroupLayout(panels[i]);
             layout.setAutoCreateContainerGaps(true);
             panels[i].setLayout(layout);
             dataOffsetLbls[i] = new JLabel(labels[0]);
@@ -181,20 +181,20 @@ public class TermMetadataPanel extends JPanel implements Observer
             versionLbls[i] = new JLabel(labels[9]);
             versionFld[i] = new JTextField("", 10);
             versionFld[i].setEditable(false);
-            SequentialGroup seqGroup = layout.createSequentialGroup();
-            ParallelGroup group1 = layout.createParallelGroup();
+            final SequentialGroup seqGroup = layout.createSequentialGroup();
+            final ParallelGroup group1 = layout.createParallelGroup();
             group1.addComponent(dataOffsetLbls[i]).addComponent(dataOffsetFld[i]);
             group1.addComponent(flagsLbls[i]).addComponent(flagsFld[i]);
-            ParallelGroup group2 = layout.createParallelGroup();
+            final ParallelGroup group2 = layout.createParallelGroup();
             group2.addComponent(frameLengthLbls[i]).addComponent(frameLengthFld[i]);
             group2.addComponent(headerTypeLbls[i]).addComponent(headerTypeFld[i]);
-            ParallelGroup group3 = layout.createParallelGroup();
+            final ParallelGroup group3 = layout.createParallelGroup();
             group3.addComponent(offsetLbls[i]).addComponent(offsetFld[i]);
             group3.addComponent(sessionIdLbls[i]).addComponent(sessionIdFld[i]);
-            ParallelGroup group4 = layout.createParallelGroup();
+            final ParallelGroup group4 = layout.createParallelGroup();
             group4.addComponent(streamIdLbls[i]).addComponent(streamIdFld[i]);
             group4.addComponent(termIdLbls[i]).addComponent(termIdFld[i]);
-            ParallelGroup group5 = layout.createParallelGroup();
+            final ParallelGroup group5 = layout.createParallelGroup();
             group5.addComponent(termOffsetLbls[i]).addComponent(termOffsetFld[i]);
             group5.addComponent(versionLbls[i]).addComponent(versionFld[i]);
             seqGroup.addGroup(group1);
@@ -202,19 +202,19 @@ public class TermMetadataPanel extends JPanel implements Observer
             seqGroup.addGroup(group3);
             seqGroup.addGroup(group4);
             seqGroup.addGroup(group5);
-            ParallelGroup pgroup1 = layout.createParallelGroup();
+            final ParallelGroup pgroup1 = layout.createParallelGroup();
             pgroup1.addComponent(dataOffsetLbls[i]).addComponent(frameLengthLbls[i]);
             pgroup1.addComponent(offsetLbls[i]).addComponent(streamIdLbls[i]);
             pgroup1.addComponent(termOffsetLbls[i]);
-            ParallelGroup pgroup2 = layout.createParallelGroup();
+            final ParallelGroup pgroup2 = layout.createParallelGroup();
             pgroup2.addComponent(dataOffsetFld[i]).addComponent(frameLengthFld[i]);
             pgroup2.addComponent(offsetFld[i]).addComponent(streamIdFld[i]);
             pgroup2.addComponent(termOffsetFld[i]);
-            ParallelGroup pgroup3 = layout.createParallelGroup();
+            final ParallelGroup pgroup3 = layout.createParallelGroup();
             pgroup3.addComponent(flagsLbls[i]).addComponent(headerTypeLbls[i]);
             pgroup3.addComponent(sessionIdLbls[i]).addComponent(termIdLbls[i]);
             pgroup3.addComponent(versionLbls[i]);
-            ParallelGroup pgroup4 = layout.createParallelGroup();
+            final ParallelGroup pgroup4 = layout.createParallelGroup();
             pgroup4.addComponent(flagsFld[i]).addComponent(headerTypeFld[i]);
             pgroup4.addComponent(sessionIdFld[i]).addComponent(termIdFld[i]);
             pgroup4.addComponent(versionFld[i]);

@@ -54,7 +54,7 @@ public class EmbeddedThroughput
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(3);
 
-        String embeddedDirName = CommonContext.generateEmbeddedDirName();
+        final String embeddedDirName = CommonContext.generateEmbeddedDirName();
         ctx.dirName(embeddedDirName);
         final Aeron.Context context = new Aeron.Context();
         context.dirName(embeddedDirName);

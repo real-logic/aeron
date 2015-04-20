@@ -1,15 +1,21 @@
 package uk.co.real_logic.aeron.tools;
 
-import org.apache.commons.cli.*;
-import uk.co.real_logic.aeron.driver.Configuration;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import uk.co.real_logic.aeron.driver.Configuration;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 /**
  * Created by bhorst on 4/10/15.
@@ -17,7 +23,7 @@ import java.util.Properties;
 public class MediaDriverOptions
 {
     // Command line options for media driver
-    private Options options;
+    private final Options options;
 
     // Properties containing Aeron settings.
     private Properties properties;
@@ -55,10 +61,10 @@ public class MediaDriverOptions
      * @return 0 on success, 1 if application should call {@link #printHelp(String)}
      * @throws org.apache.commons.cli.ParseException On string parsing error.
      */
-    public int parseArgs(String[] args) throws ParseException
+    public int parseArgs(final String[] args) throws ParseException
     {
-        CommandLineParser parser = new GnuParser();
-        CommandLine command = parser.parse(options, args);
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args);
 
         if (command.hasOption("help"))
         {
@@ -88,9 +94,9 @@ public class MediaDriverOptions
         return 0;
     }
 
-    public void printHelp(String applicationName)
+    public void printHelp(final String applicationName)
     {
-        HelpFormatter formatter = new HelpFormatter();
+        final HelpFormatter formatter = new HelpFormatter();
         formatter.printHelp(applicationName + " [options]", options);
     }
 
@@ -99,7 +105,7 @@ public class MediaDriverOptions
         return conductorIdleStrategy;
     }
 
-    public void setConductorIdleStrategy(IdleStrategy conductorIdleStrategy)
+    public void setConductorIdleStrategy(final IdleStrategy conductorIdleStrategy)
     {
         this.conductorIdleStrategy = conductorIdleStrategy;
     }
@@ -109,7 +115,7 @@ public class MediaDriverOptions
         return senderIdleStrategy;
     }
 
-    public void setSenderIdleStrategy(IdleStrategy senderIdleStrategy)
+    public void setSenderIdleStrategy(final IdleStrategy senderIdleStrategy)
     {
         this.senderIdleStrategy = senderIdleStrategy;
     }
@@ -119,7 +125,7 @@ public class MediaDriverOptions
         return receiverIdleStrategy;
     }
 
-    public void setReceiverIdleStrategy(IdleStrategy receiverIdleStrategy)
+    public void setReceiverIdleStrategy(final IdleStrategy receiverIdleStrategy)
     {
         this.receiverIdleStrategy = receiverIdleStrategy;
     }
@@ -129,7 +135,7 @@ public class MediaDriverOptions
         return sharedNetworkIdleStrategy;
     }
 
-    public void setSharedNetworkIdleStrategy(IdleStrategy sharedNetworkIdleStrategy)
+    public void setSharedNetworkIdleStrategy(final IdleStrategy sharedNetworkIdleStrategy)
     {
         this.sharedNetworkIdleStrategy = sharedNetworkIdleStrategy;
     }
@@ -139,7 +145,7 @@ public class MediaDriverOptions
         return sharedIdleStrategy;
     }
 
-    public void setSharedIdleStrategy(IdleStrategy sharedIdleStrategy)
+    public void setSharedIdleStrategy(final IdleStrategy sharedIdleStrategy)
     {
         this.sharedIdleStrategy = sharedIdleStrategy;
     }
@@ -149,7 +155,7 @@ public class MediaDriverOptions
         return properties;
     }
 
-    public void setProperties(Properties properties)
+    public void setProperties(final Properties properties)
     {
         this.properties = properties;
     }
@@ -164,20 +170,20 @@ public class MediaDriverOptions
      * @return InputStream for reading the file.
      * @throws FileNotFoundException
      */
-    InputStream newFileInputStream(String filename) throws FileNotFoundException
+    InputStream newFileInputStream(final String filename) throws FileNotFoundException
     {
         return new FileInputStream(filename);
     }
 
-    private Properties parseProperties(String arg) throws ParseException
+    private Properties parseProperties(final String arg) throws ParseException
     {
-        Properties p = new Properties();
+        final Properties p = new Properties();
         InputStream inputStream;
         try
         {
             inputStream = newFileInputStream(arg);
         }
-        catch (FileNotFoundException ex)
+        catch (final FileNotFoundException ex)
         {
             throw new ParseException("Could not find properties file " + arg);
         }
@@ -185,14 +191,14 @@ public class MediaDriverOptions
         {
             p.load(inputStream);
         }
-        catch (IOException ex)
+        catch (final IOException ex)
         {
             throw new ParseException(ex.getMessage());
         }
         return p;
     }
 
-    private IdleStrategy parseIdleStrategy(String arg) throws ParseException
+    private IdleStrategy parseIdleStrategy(final String arg) throws ParseException
     {
         if (arg == null || arg.equalsIgnoreCase("NULL"))
         {
@@ -211,18 +217,18 @@ public class MediaDriverOptions
             // Use reflection to create the new IdleStrategy with no parameters.
             try
             {
-                Class clazz = Class.forName(arg);
+                final Class clazz = Class.forName(arg);
                 strategy = (IdleStrategy)clazz.newInstance();
             }
-            catch (ClassNotFoundException ex)
+            catch (final ClassNotFoundException ex)
             {
                 throw new ParseException("Class not found: " + ex.getMessage());
             }
-            catch (IllegalAccessException ex)
+            catch (final IllegalAccessException ex)
             {
                 throw new ParseException("Illegal access of class '" + arg + "': " + ex.getMessage());
             }
-            catch (InstantiationException ex)
+            catch (final InstantiationException ex)
             {
                 throw new ParseException("Could not instantiate class '" + arg + "': " + ex.getMessage());
             }
@@ -231,9 +237,9 @@ public class MediaDriverOptions
     }
 
     /* Generates a new BackoffIdleStrategy with default parameters, or parsed parameters when present. */
-    private IdleStrategy parseBackoffIdleStrategy(String arg) throws ParseException
+    private IdleStrategy parseBackoffIdleStrategy(final String arg) throws ParseException
     {
-        int openParenIndex = arg.indexOf("(");
+        final int openParenIndex = arg.indexOf("(");
         long maxSpins = Configuration.AGENT_IDLE_MAX_SPINS;
         long maxYields = Configuration.AGENT_IDLE_MAX_YIELDS;
         long minParkPeriodNs = Configuration.AGENT_IDLE_MIN_PARK_NS;
@@ -247,7 +253,7 @@ public class MediaDriverOptions
             }
             // The parameters to the backoff strategy are added just like they would be hardcoded in java.
             // i.e. "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy(1, 1, 1, 1)"
-            String[] params = arg.substring(openParenIndex + 1, arg.length() - 1).split(",");
+            final String[] params = arg.substring(openParenIndex + 1, arg.length() - 1).split(",");
             if (params.length != 4)
             {
                 throw new ParseException("A BackoffIdleStrategy must have all 4 parameters separated by commas.");
@@ -262,19 +268,20 @@ public class MediaDriverOptions
     }
 
     // Broken out into simple method for testing.
-    IdleStrategy makeBackoffIdleStrategy(long maxSpins, long maxYields, long minParkPeriodNs, long maxParkPeriodNs)
+    IdleStrategy makeBackoffIdleStrategy(final long maxSpins, final long maxYields,
+            final long minParkPeriodNs, final long maxParkPeriodNs)
     {
         return new BackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
     }
 
-    private long parseLong(String longValue) throws ParseException
+    private long parseLong(final String longValue) throws ParseException
     {
         long value;
         try
         {
             value = Long.parseLong(longValue);
         }
-        catch (NumberFormatException ex)
+        catch (final NumberFormatException ex)
         {
             throw new ParseException("Could not parse '" + longValue + "' as a long value.");
         }

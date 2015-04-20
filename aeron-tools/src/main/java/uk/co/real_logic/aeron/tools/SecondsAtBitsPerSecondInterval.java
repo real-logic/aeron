@@ -11,7 +11,7 @@ public class SecondsAtBitsPerSecondInterval extends RateControllerInterval
     /* Number of seconds (can be fractional) to run for, in total. */
     private final double seconds;
 
-    public SecondsAtBitsPerSecondInterval(double seconds, long bitsPerSecond)
+    public SecondsAtBitsPerSecondInterval(final double seconds, final long bitsPerSecond)
     {
         this.goalBitsPerSecond = bitsPerSecond;
         this.seconds = seconds;
@@ -28,7 +28,7 @@ public class SecondsAtBitsPerSecondInterval extends RateControllerInterval
     }
 
     @Override
-    IntervalInternal makeInternal(RateController rateController) throws Exception
+    IntervalInternal makeInternal(final RateController rateController) throws Exception
     {
         return rateController.new SecondsAtBitsPerSecondInternal(rateController, seconds, goalBitsPerSecond);
     }

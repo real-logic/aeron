@@ -64,8 +64,9 @@ public class EmbeddedPingPong
 
         try (final MediaDriver ignored = MediaDriver.launchEmbedded(ctx))
         {
-            Thread pongThread = startPong(ignored.contextDirName());
+            final Thread pongThread = startPong(ignored.contextDirName());
             pongThread.start();
+
             runPing(ignored.contextDirName());
             RUNNING.set(false);
             pongThread.join();
@@ -176,7 +177,7 @@ public class EmbeddedPingPong
     }
 
     private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
     {
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {

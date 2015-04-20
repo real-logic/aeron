@@ -9,7 +9,8 @@ public class StatsConsoleOutput implements StatsOutput
 
   }
 
-  public void format(String[] keys, long[] vals) throws Exception
+  @Override
+public void format(final String[] keys, final long[] vals) throws Exception
   {
     System.out.print("\033[H\033[2J");
     System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stats\n", new Date());
@@ -21,7 +22,8 @@ public class StatsConsoleOutput implements StatsOutput
     }
   }
 
-  public void close() throws Exception
+  @Override
+public void close() throws Exception
   {
 
   }

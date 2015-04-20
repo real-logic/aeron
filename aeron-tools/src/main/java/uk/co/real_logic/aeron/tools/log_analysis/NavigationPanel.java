@@ -18,7 +18,7 @@ public class NavigationPanel extends VBox implements Observer
     private LogModel model = null;
     private NavigationModel navModel = null;
 
-    public NavigationPanel(LogModel model)
+    public NavigationPanel(final LogModel model)
     {
         this.model = model;
         navModel = new NavigationModel();
@@ -26,7 +26,8 @@ public class NavigationPanel extends VBox implements Observer
         init();
     }
 
-    public void update(Observable obs, Object obj)
+    @Override
+    public void update(final Observable obs, final Object obj)
     {
         rootItem.getChildren().removeAll(rootItem.getChildren());
 
@@ -48,8 +49,9 @@ public class NavigationPanel extends VBox implements Observer
 
         tree.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem<String>>()
         {
-            public void changed(ObservableValue<? extends TreeItem<String>> observableValue,
-                                TreeItem<String> oldItem, TreeItem<String> newItem)
+            @Override
+            public void changed(final ObservableValue<? extends TreeItem<String>> observableValue,
+                                final TreeItem<String> oldItem, final TreeItem<String> newItem)
             {
                 navModel.setSelectedFile(newItem.getValue());
             }
@@ -57,14 +59,14 @@ public class NavigationPanel extends VBox implements Observer
         getChildren().add(tree);
     }
 
-    private void addChildren(String filename, TreeItem<String> parent)
+    private void addChildren(final String filename, final TreeItem<String> parent)
     {
-        File files = new File(filename);
+        final File files = new File(filename);
         if (files.listFiles() != null)
         {
             for (int i = 0; i < files.listFiles().length; i++)
             {
-                TreeItem<String> item = new TreeItem(files.list()[i]);
+                final TreeItem<String> item = new TreeItem(files.list()[i]);
                 item.setExpanded(true);
                 parent.getChildren().add(item);
                 if (files.listFiles()[i].isDirectory())

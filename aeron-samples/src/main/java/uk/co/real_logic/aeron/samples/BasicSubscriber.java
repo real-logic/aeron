@@ -46,7 +46,7 @@ public class BasicSubscriber
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection) // Callback method when a new producer starts
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection); // Callback when at a producer exits
-        if(EMBEDDED_MEDIA_DRIVER)
+        if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }

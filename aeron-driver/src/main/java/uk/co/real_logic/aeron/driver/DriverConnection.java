@@ -104,7 +104,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final List<PositionIndicator> subscriberPositions;
     private final LossDetector lossDetector;
 
-    private volatile long statusMessagePosition;
+    private volatile long newStatusMessagePosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
@@ -158,7 +158,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
-        this.statusMessagePosition = this.lastStatusMessagePosition;
+        this.newStatusMessagePosition = this.lastStatusMessagePosition;
         this.rebuildPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
@@ -339,9 +339,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
-        if (minSubscriberPosition > (statusMessagePosition + currentGain))
+        if (minSubscriberPosition > (newStatusMessagePosition + currentGain))
         {
-            statusMessagePosition = minSubscriberPosition;
+            newStatusMessagePosition = minSubscriberPosition;
         }
 
         return workCount;
@@ -424,7 +424,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         if (ACTIVE == status)
         {
-            final long statusMessagePosition = this.statusMessagePosition;
+            final long statusMessagePosition = this.newStatusMessagePosition;
             if (statusMessagePosition != lastStatusMessagePosition || now > (lastStatusMessageTimestamp + statusMessageTimeout))
             {
                 final int termId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);

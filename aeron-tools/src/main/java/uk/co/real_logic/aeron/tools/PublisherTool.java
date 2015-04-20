@@ -20,6 +20,20 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class PublisherTool implements SeedCallback, RateReporter.Stats
 {
+    static
+    {
+        /* Turn off some of the default clutter of the default logger if the
+         * user hasn't explicitly turned it back on. */
+        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
+        }
+    }
+
     public static final String APP_USAGE = "PublisherTool";
     private static final Logger LOG = LoggerFactory.getLogger(PublisherTool.class);
 
@@ -135,9 +149,9 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         final long verifiableMessages = verifiableMessages();
         final long nonVerifiableMessages = nonVerifiableMessages();
         final long bytesSent = bytes();
-        System.out.format("Exiting. Sent %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
+        LOG.info("{}", String.format("Exiting. Sent %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
                 verifiableMessages + nonVerifiableMessages,
-                bytesSent, verifiableMessages, nonVerifiableMessages);
+                bytesSent, verifiableMessages, nonVerifiableMessages));
     }
 
     public static void main(String[] args)
@@ -173,14 +187,14 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         {
             seed = options.getRandomSeed();
         }
-        System.out.format("Thread %s using random seed %d.%n", Thread.currentThread().getName(), seed);
+        LOG.info("{}", String.format("Thread %s using random seed %d.%n", Thread.currentThread().getName(), seed));
         return seed;
     }
 
     /**
      * A snapshot (non-atomic) total of the number of verifiable messages
-     * received across all receiving threads.
-     * @return current total number of verifiable messages received
+     * sent across all publishing threads.
+     * @return current total number of verifiable messages sent
      */
     @Override
     public long verifiableMessages()
@@ -195,8 +209,8 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 
     /**
      * A snapshot (non-atomic) total of the number of bytes
-     * received across all receiving threads.
-     * @return current total number of bytes received
+     * sent across all publishing threads.
+     * @return current total number of bytes sent
      */
     @Override
     public long bytes()
@@ -211,8 +225,8 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
 
     /**
      * A snapshot (non-atomic) total of the number of non-verifiable messages
-     * received across all receiving threads.
-     * @return current total number of non-verifiable messages received
+     * sent across all publishing threads.
+     * @return current total number of non-verifiable messages sent
      */
     @Override
     public long nonVerifiableMessages()
@@ -272,7 +286,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                 throwable.printStackTrace();
                 if (throwable instanceof DriverTimeoutException)
                 {
-                    System.out.println("Driver does not appear to be running or has been unresponsive for ten seconds.");
+                    LOG.error("Driver does not appear to be running or has been unresponsive for ten seconds.");
                     System.exit(-1);
                 }
             })
@@ -293,8 +307,9 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                                 channel.getChannel(), channel.getStreamIdentifiers()[j], options.getSessionId());
                         publicationsList.add(pub);
 
-                        System.out.format("%s publishing %d messages to: %s#%d[%d]%n", Thread.currentThread().getName(),
-                                messagesToSend, pub.channel(), pub.streamId(), pub.sessionId());
+                        LOG.info("{}", String.format("%s publishing %d messages to: %s#%d[%d]%n",
+                                ("publisher-" + threadId), messagesToSend, pub.channel(),
+                                pub.streamId(), pub.sessionId()));
                     }
                     streamIdx++;
                 }
@@ -376,15 +391,16 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         @Override
         public void onInactiveConnection(String channel, int streamId, int sessionId)
         {
-            System.out.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d%n", channel, streamId, sessionId);
+            LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d%n",
+                    channel, streamId, sessionId));
         }
 
         @Override
         public void onNewConnection(String channel, int streamId, int sessionId,
                 String sourceInformation)
         {
-            System.out.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, source \"%s\"%n",
-                    channel, streamId, sessionId, sourceInformation);
+            LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, source \"%s\"%n",
+                    channel, streamId, sessionId, sourceInformation));
         }
 
         /**
@@ -411,7 +427,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             try
             {
                 length = ms.getNext(sendBuffer, msp.getNext());
-                if (length > 0)
+                if (length >= 0)
                 {
                     while (!(sendSucceeded = (pub.offer(sendBuffer, 0, length) >= 0L)) && !shuttingDown)
                     {

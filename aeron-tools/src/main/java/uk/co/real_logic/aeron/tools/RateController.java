@@ -38,6 +38,16 @@ public class RateController
     private final long iterations;
     private long currentIteration;
 
+    /**
+     * This is the most commonly-called RateController method; it calls the Callback associated
+     * with this RateController and then pauses the current thread for the time needed, if any,
+     * before the next event should occur.  next() will usually be called in an empty loop, like this:
+     * while (rateController.next())
+     * {
+     * }
+     * @return true if next should be called again, false if the RateController has now finished
+     * all intervals
+     */
     public boolean next()
     {
         if (activeInterval == null)
@@ -69,12 +79,18 @@ public class RateController
         return true;
     }
 
+    /**
+     * Rate controller callback, called at the beginning of each call to {@link #next() next}
+     * and supplied by the user of RateController.
+     *
+     */
     public interface Callback
     {
         /** Returns the number of bytes "sent", or -1 to indicate sending should stop. */
         int onNext();
     }
 
+    /** Resets the RateController back to the beginning, starting at the first interval. */
     public void rewind()
     {
         if (activeInterval == null)

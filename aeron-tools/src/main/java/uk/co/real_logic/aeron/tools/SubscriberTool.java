@@ -33,6 +33,20 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 public class SubscriberTool
     implements RateReporter.Stats, SeedCallback
 {
+    static
+    {
+        /* Turn off some of the default clutter of the default logger if the
+         * user hasn't explicitly turned it back on. */
+        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
+        }
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(SubscriberTool.class);
     private boolean shuttingDown;
     private final PubSubOptions options = new PubSubOptions();
@@ -64,7 +78,7 @@ public class SubscriberTool
         }
         catch (final ParseException e)
         {
-            System.out.println(e.getMessage());
+            LOG.error(e.getMessage());
             subTool.options.printHelp("SubscriberTool");
             System.exit(-1);
         }
@@ -129,9 +143,9 @@ public class SubscriberTool
         final long verifiableMessages = subTool.verifiableMessages();
         final long nonVerifiableMessages = subTool.nonVerifiableMessages();
         final long bytesReceived = subTool.bytes();
-        System.out.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
+        LOG.info("{}", String.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
                 verifiableMessages + nonVerifiableMessages,
-                bytesReceived, verifiableMessages, nonVerifiableMessages);
+                bytesReceived, verifiableMessages, nonVerifiableMessages));
     }
 
     /** Warn about options settings that might cause trouble. */
@@ -205,7 +219,7 @@ public class SubscriberTool
         {
             seed = options.getRandomSeed();
         }
-        System.out.format("Thread %s using random seed %d.%n", Thread.currentThread().getName(), seed);
+        LOG.info("{}", String.format("Thread %s using random seed %d.%n", Thread.currentThread().getName(), seed));
         return seed;
     }
 
@@ -283,8 +297,8 @@ public class SubscriberTool
                 {
                     if ((streamIdx % options.getThreads()) == this.threadId)
                     {
-                        System.out.format("subscriber-thread %d subscribing to: %s#%d%n", threadId,
-                                channel.getChannel(), channel.getStreamIdentifiers()[j]);
+                        LOG.info("{}", String.format("subscriber-thread %d subscribing to: %s#%d%n", threadId,
+                                channel.getChannel(), channel.getStreamIdentifiers()[j]));
 
                         /* Add appropriate entries to the messageStreams map. */
                         Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
@@ -439,15 +453,15 @@ public class SubscriberTool
 
                 if (action == CONTROL_ACTION_NEW_CONNECTION)
                 {
-                    System.out.format("NEW CONNECTION: channel \"%s\", stream %d, session %d%n",
-                            channel, streamId, sessionId);
+                    LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d%n",
+                            channel, streamId, sessionId));
 
                     /* Create a new MessageStream for this connection if it doesn't already exist. */
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
                             messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("WARNING: New connection detected for channel we were not subscribed to.");
+                        LOG.warn("New connection detected for channel we were not subscribed to.");
                     }
                     else
                     {
@@ -455,7 +469,7 @@ public class SubscriberTool
                                 streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("WARNING: New connection detected for channel we were not subscribed to.");
+                            LOG.warn("New connection detected for channel we were not subscribed to.");
                         }
                         else
                         {
@@ -473,14 +487,14 @@ public class SubscriberTool
                 }
                 else if (action == CONTROL_ACTION_INACTIVE_CONNECTION)
                 {
-                    System.out.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d%n",
-                            channel, streamId, sessionId);
+                    LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d%n",
+                            channel, streamId, sessionId));
 
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
                             messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("WARNING: Inactive connection detected for unknown connection.");
+                        LOG.warn("Inactive connection detected for unknown connection.");
                     }
                     else
                     {
@@ -488,14 +502,14 @@ public class SubscriberTool
                                 streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("WARNING: Inactive connection detected for unknown connection.");
+                            LOG.warn("Inactive connection detected for unknown connection.");
                         }
                         else
                         {
                             final MessageStream ms = sessionIdMap.get(sessionId);
                             if (ms == null)
                             {
-                                LOG.warn("WARNING: Inactive connection detected for unknown connection.");
+                                LOG.warn("Inactive connection detected for unknown connection.");
                             }
                             else
                             {
@@ -513,7 +527,7 @@ public class SubscriberTool
                 }
                 else
                 {
-                    System.out.format("WARNING: Unknown control message type (%d) received.", action);
+                    LOG.warn("{}", String.format("Unknown control message type (%d) received.", action));
                 }
             }
 

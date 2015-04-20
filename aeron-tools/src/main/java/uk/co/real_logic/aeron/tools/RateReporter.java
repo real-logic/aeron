@@ -15,6 +15,24 @@ public class RateReporter implements RateController.Callback, Runnable
     private long lastBytes;
     private boolean shuttingDown;
     private final Stats app;
+    private final Callback callback;
+    private final StringBuilder sb = new StringBuilder();
+
+    private class DefaultCallback implements Callback
+    {
+
+        @Override
+        public void report(final StringBuilder reportString)
+        {
+            System.out.println(reportString);
+        }
+
+    }
+
+    public interface Callback
+    {
+        void report(final StringBuilder reportString);
+    }
 
     public interface Stats
     {
@@ -40,11 +58,24 @@ public class RateReporter implements RateController.Callback, Runnable
         long nonVerifiableMessages();
     }
 
-    public RateReporter(final Stats app)
+    public RateReporter(final Stats app, final Callback callback)
     {
         this.app = app;
+        if (callback != null)
+        {
+            this.callback = callback;
+        }
+        else
+        {
+            this.callback = new DefaultCallback();
+        }
         reporterThread = new Thread(this);
         reporterThread.start();
+    }
+
+    public RateReporter(final Stats app)
+    {
+        this(app, null);
     }
 
     /** Returns a human-readable bits/messages/whatever-per-second string
@@ -128,10 +159,12 @@ public class RateReporter implements RateController.Callback, Runnable
         final long lastTotalMessages = lastNonVerifiableMessages + lastVerifiableMessages;
         final long bytesReceived = app.bytes();
         final double secondsElapsed = (currentTimeNanos - lastReportTimeNanos) / 1000000000.0;
-        System.out.format("%.6f: %smsgs/sec %sbps%n",
+        sb.setLength(0);
+        sb.append(String.format("%.6f: %smsgs/sec %sbps",
                 secondsElapsed,
                 getHumanReadableRate((totalMessages - lastTotalMessages) / secondsElapsed),
-                getHumanReadableRate((long)((((bytesReceived - lastBytes) * 8)) / secondsElapsed)));
+                getHumanReadableRate((long)((((bytesReceived - lastBytes) * 8)) / secondsElapsed))));
+        callback.report(sb);
         lastReportTimeNanos = currentTimeNanos;
         lastVerifiableMessages = verifiableMessages;
         lastNonVerifiableMessages = nonVerifiableMessages;

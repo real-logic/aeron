@@ -31,7 +31,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 
 public class SubscriberTool
-    implements RateReporter.Stats, SeedCallback
+    implements RateReporter.Stats, SeedCallback, RateReporter.Callback
 {
     static
     {
@@ -108,7 +108,7 @@ public class SubscriberTool
             subThreads[i].start();
         }
 
-        final RateReporter rateReporter = new RateReporter(subTool);
+        final RateReporter rateReporter = new RateReporter(subTool, subTool);
 
         /* Wait for threads to exit. */
         try
@@ -143,7 +143,7 @@ public class SubscriberTool
         final long verifiableMessages = subTool.verifiableMessages();
         final long nonVerifiableMessages = subTool.nonVerifiableMessages();
         final long bytesReceived = subTool.bytes();
-        LOG.info("{}", String.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
+        LOG.info("{}", String.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
                 verifiableMessages + nonVerifiableMessages,
                 bytesReceived, verifiableMessages, nonVerifiableMessages));
     }
@@ -219,7 +219,7 @@ public class SubscriberTool
         {
             seed = options.getRandomSeed();
         }
-        LOG.info("{}", String.format("Thread %s using random seed %d.%n", Thread.currentThread().getName(), seed));
+        LOG.info("{}", String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
         return seed;
     }
 
@@ -297,7 +297,7 @@ public class SubscriberTool
                 {
                     if ((streamIdx % options.getThreads()) == this.threadId)
                     {
-                        LOG.info("{}", String.format("subscriber-thread %d subscribing to: %s#%d%n", threadId,
+                        LOG.info("{}", String.format("subscriber-thread %d subscribing to: %s#%d", threadId,
                                 channel.getChannel(), channel.getStreamIdentifiers()[j]));
 
                         /* Add appropriate entries to the messageStreams map. */
@@ -454,7 +454,7 @@ public class SubscriberTool
 
                 if (action == CONTROL_ACTION_NEW_CONNECTION)
                 {
-                    LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d%n",
+                    LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
                             channel, streamId, sessionId));
 
                     /* Create a new MessageStream for this connection if it doesn't already exist. */
@@ -488,7 +488,7 @@ public class SubscriberTool
                 }
                 else if (action == CONTROL_ACTION_INACTIVE_CONNECTION)
                 {
-                    LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d%n",
+                    LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
                             channel, streamId, sessionId));
 
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
@@ -694,5 +694,11 @@ public class SubscriberTool
              * to simulate a slow receiver.  Return the number of bytes we just received. */
             return lastBytesReceived;
         }
+    }
+
+    @Override
+    public void report(final StringBuilder reportString)
+    {
+        LOG.info("{}", reportString);
     }
 }

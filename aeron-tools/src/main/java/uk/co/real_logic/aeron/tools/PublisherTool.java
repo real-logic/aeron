@@ -18,7 +18,7 @@ import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class PublisherTool implements SeedCallback, RateReporter.Stats
+public class PublisherTool implements SeedCallback, RateReporter.Stats, RateReporter.Callback
 {
     static
     {
@@ -114,7 +114,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             pubThreads[i].start();
         }
 
-        final RateReporter rateReporter = new RateReporter(this);
+        final RateReporter rateReporter = new RateReporter(this, this);
 
         /* Wait for threads to exit. */
         try
@@ -149,7 +149,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         final long verifiableMessages = verifiableMessages();
         final long nonVerifiableMessages = nonVerifiableMessages();
         final long bytesSent = bytes();
-        LOG.info("{}", String.format("Exiting. Sent %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
+        LOG.info("{}", String.format("Exiting. Sent %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
                 verifiableMessages + nonVerifiableMessages,
                 bytesSent, verifiableMessages, nonVerifiableMessages));
     }
@@ -187,7 +187,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         {
             seed = options.getRandomSeed();
         }
-        LOG.info("{}", String.format("Thread %s using random seed %d.%n", Thread.currentThread().getName(), seed));
+        LOG.info("{}", String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
         return seed;
     }
 
@@ -307,7 +307,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
                                 channel.getChannel(), channel.getStreamIdentifiers()[j], options.getSessionId());
                         publicationsList.add(pub);
 
-                        LOG.info("{}", String.format("%s publishing %d messages to: %s#%d[%d]%n",
+                        LOG.info("{}", String.format("%s publishing %d messages to: %s#%d[%d]",
                                 ("publisher-" + threadId), messagesToSend, pub.channel(),
                                 pub.streamId(), pub.sessionId()));
                     }
@@ -392,7 +392,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         public void onInactiveConnection(final String channel, final int streamId,
                 final int sessionId, final long position)
         {
-            LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x%n",
+            LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x",
                     channel, streamId, sessionId, position));
         }
 
@@ -400,7 +400,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
         public void onNewConnection(final String channel, final int streamId,
                 final int sessionId, final long position, final String sourceInformation)
         {
-            LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"%n",
+            LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
                     channel, streamId, sessionId, position, sourceInformation));
         }
 
@@ -457,5 +457,11 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats
             return (sendSucceeded ? length : -1);
         }
 
+    }
+
+    @Override
+    public void report(final StringBuilder reportString)
+    {
+        LOG.info("{}", reportString);
     }
 }

@@ -280,6 +280,16 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
+     * Called from the {@link DriverConductor} to determine if the subscribers have drained the connection yet.
+     *
+     * @return true if the subscribers have drained the connection stream.
+     */
+    public boolean isDrained()
+    {
+        return subscribersPosition >= rebuildPosition;
+    }
+
+    /**
      * Called from the {@link LossDetector} when gap is detected.
      *
      * @see NakMessageSender
@@ -348,16 +358,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
-     * Called from the {@link DriverConductor} to determine if the subscribers have drained the connection yet.
-     *
-     * @return true if the subscribers have drained the connection stream.
-     */
-    public boolean isDrained()
-    {
-        return subscribersPosition >= rebuildPosition;
-    }
-
-    /**
      * Insert frame into term buffer.
      *
      * @param buffer for the data packet to insert into the appropriate term.
@@ -401,14 +401,15 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public boolean checkForActivity(final long now, final long connectionLivenessTimeout)
     {
+        boolean activity = true;
+
         if (now > (lastPacketTimestamp + connectionLivenessTimeout))
         {
             status(Status.INACTIVE);
-
-            return false;
+            activity = false;
         }
 
-        return true;
+        return activity;
     }
 
     /**
@@ -500,16 +501,6 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     public long rebuildPosition()
     {
         return rebuildPosition;
-    }
-
-    /**
-     * The initial term id this connection started at.
-     *
-     * @return the initial term id this connection started at.
-     */
-    public int initialTermId()
-    {
-        return initialTermId;
     }
 
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)

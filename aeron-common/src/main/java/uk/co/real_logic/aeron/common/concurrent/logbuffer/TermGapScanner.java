@@ -23,7 +23,7 @@ import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.FRAME_LENGT
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
- * Scans for gaps in the sequence of bytes in a replicated term buffer between the completed and the
+ * Scans for gaps in the sequence of bytes in a replicated term buffer between the completed rebuild and the
  * high-water-mark. This can be used for detecting loss and generating a NACK message to the source.
  *
  * <b>Note:</b> This class is threadsafe to be used across multiple threads.
@@ -48,47 +48,47 @@ public class TermGapScanner
     }
 
     /**
-     * Scan for gaps from the completedOffset up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
+     * Scan for gaps from the rebuildOffset up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
      *
      * @param handler to be notified of gaps.
      * @return true if a gap is found otherwise false.
      */
     public static boolean scanForGap(
-        final UnsafeBuffer termBuffer, final int termId, int completedOffset, final int hwmOffset, final GapHandler handler)
+        final UnsafeBuffer termBuffer, final int termId, int rebuildOffset, final int hwmOffset, final GapHandler handler)
     {
         do
         {
-            final int frameLength = frameLengthVolatile(termBuffer, completedOffset);
+            final int frameLength = frameLengthVolatile(termBuffer, rebuildOffset);
             if (0 == frameLength)
             {
                 break;
             }
 
-            completedOffset += align(frameLength, FRAME_ALIGNMENT);
+            rebuildOffset += align(frameLength, FRAME_ALIGNMENT);
         }
-        while (completedOffset < hwmOffset);
+        while (rebuildOffset < hwmOffset);
 
         boolean gapFound = false;
-        if (completedOffset < hwmOffset)
+        if (rebuildOffset < hwmOffset)
         {
             gapFound = true;
             final int limit = hwmOffset - HEADER_LENGTH;
-            final int gapBeginOffset = completedOffset;
-            completedOffset += FRAME_LENGTH_FIELD_OFFSET;
+            final int gapBeginOffset = rebuildOffset;
+            rebuildOffset += FRAME_LENGTH_FIELD_OFFSET;
 
-            while (completedOffset < limit)
+            while (rebuildOffset < limit)
             {
-                completedOffset += FRAME_ALIGNMENT;
-                final int frameLength = termBuffer.getIntVolatile(completedOffset);
+                rebuildOffset += FRAME_ALIGNMENT;
+                final int frameLength = termBuffer.getIntVolatile(rebuildOffset);
 
                 if (0 != frameLength)
                 {
-                    completedOffset -= HEADER_LENGTH;
+                    rebuildOffset -= HEADER_LENGTH;
                     break;
                 }
             }
 
-            final int gapLength = ((completedOffset - FRAME_LENGTH_FIELD_OFFSET) - gapBeginOffset) + HEADER_LENGTH;
+            final int gapLength = ((rebuildOffset - FRAME_LENGTH_FIELD_OFFSET) - gapBeginOffset) + HEADER_LENGTH;
             handler.onGap(termId, termBuffer, gapBeginOffset, gapLength);
         }
 

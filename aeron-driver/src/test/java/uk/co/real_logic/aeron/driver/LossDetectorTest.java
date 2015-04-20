@@ -89,10 +89,10 @@ public class LossDetectorTest
     @Test
     public void shouldNotSendNakWhenBufferIsEmpty()
     {
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION;
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
         verifyZeroInteractions(nakMessageSender);
@@ -101,13 +101,13 @@ public class LossDetectorTest
     @Test
     public void shouldNakMissingData()
     {
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
 
         verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
@@ -116,13 +116,13 @@ public class LossDetectorTest
     @Test
     public void shouldRetransmitNakForMissingData()
     {
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(60));
 
         verify(nakMessageSender, atLeast(2)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
@@ -131,13 +131,13 @@ public class LossDetectorTest
     @Test
     public void shouldSuppressNakOnReceivingNak()
     {
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         handler.onNak(TERM_ID, offsetOfMessage(1));
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
@@ -148,17 +148,17 @@ public class LossDetectorTest
     @Test
     public void shouldStopNakOnReceivingData()
     {
-        long completedPosition = ACTIVE_TERM_POSITION;
+        long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
         insertDataFrame(offsetOfMessage(1));
-        completedPosition += (ALIGNED_FRAME_LENGTH * 3);
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        rebuildPosition += (ALIGNED_FRAME_LENGTH * 3);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verifyZeroInteractions(nakMessageSender);
@@ -167,7 +167,7 @@ public class LossDetectorTest
     @Test
     public void shouldHandleMoreThan2Gaps()
     {
-        long completedPosition = ACTIVE_TERM_POSITION;
+        long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 7);
 
         insertDataFrame(offsetOfMessage(0));
@@ -175,11 +175,11 @@ public class LossDetectorTest
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(6));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
         insertDataFrame(offsetOfMessage(1));
-        completedPosition += (3 * ALIGNED_FRAME_LENGTH);
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        rebuildPosition += (3 * ALIGNED_FRAME_LENGTH);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(80));
 
         final InOrder inOrder = inOrder(nakMessageSender);
@@ -191,21 +191,21 @@ public class LossDetectorTest
     @Test
     public void shouldReplaceOldNakWithNewNak()
     {
-        long completedPosition = ACTIVE_TERM_POSITION;
+        long rebuildPosition = ACTIVE_TERM_POSITION;
         long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
 
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(1));
-        completedPosition += (ALIGNED_FRAME_LENGTH * 3);
+        rebuildPosition += (ALIGNED_FRAME_LENGTH * 3);
         hwmPosition = (ALIGNED_FRAME_LENGTH * 5);
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verify(nakMessageSender, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
@@ -216,13 +216,13 @@ public class LossDetectorTest
     {
         handler = getLossHandlerWithImmediate();
 
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -230,13 +230,13 @@ public class LossDetectorTest
     @Test
     public void shouldNotNakImmediatelyByDefault()
     {
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verifyZeroInteractions(nakMessageSender);
     }
@@ -246,14 +246,14 @@ public class LossDetectorTest
     {
         handler = getLossHandlerWithImmediate();
 
-        final long completedPosition = ACTIVE_TERM_POSITION;
+        final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
 
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -263,15 +263,15 @@ public class LossDetectorTest
     {
         handler = getLossHandlerWithImmediate();
 
-        long completedPosition = ACTIVE_TERM_POSITION;
+        long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION + TERM_BUFFER_LENGTH + ALIGNED_FRAME_LENGTH;
 
         insertDataFrame(offsetOfMessage(0));
-        completedPosition += ALIGNED_FRAME_LENGTH;
+        rebuildPosition += ALIGNED_FRAME_LENGTH;
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)completedPosition);
+        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)rebuildPosition);
     }
 
     @Test
@@ -279,13 +279,13 @@ public class LossDetectorTest
     {
         handler = getLossHandlerWithImmediate();
 
-        final long completedPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
+        final long rebuildPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3);
         final long hwmPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 5);
 
         insertDataFrame(offsetOfMessage(2));
         insertDataFrame(offsetOfMessage(4));
 
-        handler.scan(termBuffer, completedPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
         verifyNoMoreInteractions(nakMessageSender);

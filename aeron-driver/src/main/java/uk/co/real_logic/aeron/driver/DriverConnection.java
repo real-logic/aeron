@@ -42,7 +42,7 @@ class DriverConnectionPadding1
 
 class DriverConnectionConductorFields extends DriverConnectionPadding1
 {
-    protected long completedPosition;
+    protected long rebuiltPosition;
     protected long subscribersPosition;
     protected long timeOfLastStatusChange;
 
@@ -159,7 +159,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
         this.statusMessagePosition = this.lastStatusMessagePosition;
-        this.completedPosition = initialPosition;
+        this.rebuiltPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
 
@@ -302,7 +302,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      *
      * @return if work has been done or not
      */
-    public int trackCompletion()
+    public int trackRebuild()
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -317,21 +317,21 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         subscribersPosition = minSubscriberPosition;
 
-        final long oldCompletedPosition = this.completedPosition;
-        final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
+        final long oldRebuildPosition = this.rebuiltPosition;
+        final long rebuildPosition = Math.max(oldRebuildPosition, maxSubscriberPosition);
 
         final int positionBitsToShift = this.positionBitsToShift;
-        final int index = indexByPosition(completedPosition, positionBitsToShift);
+        final int index = indexByPosition(rebuildPosition, positionBitsToShift);
 
         final int workCount = lossDetector.scan(
-            termBuffers[index], completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
+            termBuffers[index], rebuildPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
 
-        final int completedTermOffset = (int)completedPosition & termLengthMask;
-        final long newCompletedPosition = (completedPosition - completedTermOffset) + lossDetector.completedOffset();
-        this.completedPosition = newCompletedPosition;
+        final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
+        final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
+        this.rebuiltPosition = newRebuildPosition;
 
-        final int newTermCount = (int)(newCompletedPosition >>> positionBitsToShift);
-        final int oldTermCount = (int)(oldCompletedPosition >>> positionBitsToShift);
+        final int newTermCount = (int)(newRebuildPosition >>> positionBitsToShift);
+        final int oldTermCount = (int)(oldRebuildPosition >>> positionBitsToShift);
         if (newTermCount > oldTermCount)
         {
             final int oldTermCountIndex = indexByTermCount(oldTermCount);
@@ -354,7 +354,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public boolean isDrained()
     {
-        return subscribersPosition >= completedPosition;
+        return subscribersPosition >= rebuiltPosition;
     }
 
     /**
@@ -497,9 +497,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      *
      * @return the position up to which the current stream rebuild is complete for reception.
      */
-    public long completedPosition()
+    public long rebuildPosition()
     {
-        return completedPosition;
+        return rebuiltPosition;
     }
 
     /**

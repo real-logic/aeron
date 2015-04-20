@@ -26,12 +26,12 @@ public interface SenderFlowControl
      * Update the sender flow control strategy based on a status message from the receiver.
      *
      * @param termId               currently active for the receiver.
-     * @param completedTermOffset  within the current active term for the receiver.
+     * @param rebuildTermOffset    within the current active term for the receiver.
      * @param receiverWindowLength supported by the receiver.
      * @param address              of the receiver.
      * @return the new position limit to be employed by the sender.
      */
-    long onStatusMessage(int termId, int completedTermOffset, int receiverWindowLength, InetSocketAddress address);
+    long onStatusMessage(int termId, int rebuildTermOffset, int receiverWindowLength, InetSocketAddress address);
 
     /**
      * Initial limit to which the {@link Sender} position can progress.

@@ -42,9 +42,8 @@ class DriverConnectionPadding1
 
 class DriverConnectionConductorFields extends DriverConnectionPadding1
 {
-    protected long completedPosition;
-    protected long subscribersPosition;
     protected long timeOfLastStatusChange;
+    protected long rebuildPosition;
 
     protected volatile long beginLossChange = -1;
     protected volatile long endLossChange = -1;
@@ -104,7 +103,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final List<PositionIndicator> subscriberPositions;
     private final LossDetector lossDetector;
 
-    private volatile long statusMessagePosition;
+    private volatile long newStatusMessagePosition;
     private volatile Status status = Status.INIT;
 
     public DriverConnection(
@@ -158,8 +157,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
-        this.statusMessagePosition = this.lastStatusMessagePosition;
-        this.completedPosition = initialPosition;
+        this.newStatusMessagePosition = this.lastStatusMessagePosition;
+        this.rebuildPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
 
@@ -243,7 +242,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      *
      * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this connection.
      */
-    public RawLog rawLogBuffers()
+    public RawLog rawLog()
     {
         return rawLog;
     }
@@ -280,6 +279,23 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
+     * Called from the {@link DriverConductor} to determine if the subscribers have drained the connection yet.
+     *
+     * @return true if the subscribers have drained the connection stream.
+     */
+    public boolean isDrained()
+    {
+        long subscriberPosition = Long.MAX_VALUE;
+        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).position());
+        }
+
+        return subscriberPosition >= rebuildPosition;
+    }
+
+    /**
      * Called from the {@link LossDetector} when gap is detected.
      *
      * @see NakMessageSender
@@ -302,7 +318,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      *
      * @return if work has been done or not
      */
-    public int trackCompletion()
+    public int trackRebuild()
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -315,45 +331,34 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        subscribersPosition = minSubscriberPosition;
-
-        final long oldCompletedPosition = this.completedPosition;
-        final long completedPosition = Math.max(oldCompletedPosition, maxSubscriberPosition);
+        final long oldRebuildPosition = this.rebuildPosition;
+        final long rebuildPosition = Math.max(oldRebuildPosition, maxSubscriberPosition);
 
         final int positionBitsToShift = this.positionBitsToShift;
-        final int index = indexByPosition(completedPosition, positionBitsToShift);
+        final int index = indexByPosition(rebuildPosition, positionBitsToShift);
 
         final int workCount = lossDetector.scan(
-            termBuffers[index], completedPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
+            termBuffers[index], rebuildPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
 
-        final int completedTermOffset = (int)completedPosition & termLengthMask;
-        final int completedOffset = lossDetector.completedOffset();
-        final long newCompletedPosition = (completedPosition - completedTermOffset) + completedOffset;
-        this.completedPosition = newCompletedPosition;
+        final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
+        final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
+        this.rebuildPosition = newRebuildPosition;
 
-        if ((newCompletedPosition >>> positionBitsToShift) > (oldCompletedPosition >>> positionBitsToShift))
+        final int newTermCount = (int)(newRebuildPosition >>> positionBitsToShift);
+        final int oldTermCount = (int)(oldRebuildPosition >>> positionBitsToShift);
+        if (newTermCount > oldTermCount)
         {
-            final int oldCompletedPositionIndex = indexByPosition(oldCompletedPosition, positionBitsToShift);
-            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(oldCompletedPositionIndex)];
+            final int oldTermCountIndex = indexByTermCount(oldTermCount);
+            final UnsafeBuffer termBuffer = termBuffers[previousPartitionIndex(oldTermCountIndex)];
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
-        if ((minSubscriberPosition - statusMessagePosition) > currentGain)
+        if (minSubscriberPosition > (newStatusMessagePosition + currentGain))
         {
-            this.statusMessagePosition = minSubscriberPosition;
+            newStatusMessagePosition = minSubscriberPosition;
         }
 
         return workCount;
-    }
-
-    /**
-     * Called from the {@link DriverConductor} to determine if the subscribers have drained the connection yet.
-     *
-     * @return true if the subscribers have drained the connection stream.
-     */
-    public boolean isDrained()
-    {
-        return subscribersPosition >= completedPosition;
     }
 
     /**
@@ -400,14 +405,15 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public boolean checkForActivity(final long now, final long connectionLivenessTimeout)
     {
+        boolean activity = true;
+
         if (now > (lastPacketTimestamp + connectionLivenessTimeout))
         {
             status(Status.INACTIVE);
-
-            return false;
+            activity = false;
         }
 
-        return true;
+        return activity;
     }
 
     /**
@@ -419,24 +425,27 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
+        int workCount = 0;
+
         if (ACTIVE == status)
         {
-            final long statusMessagePosition = this.statusMessagePosition;
+            final long statusMessagePosition = this.newStatusMessagePosition;
             if (statusMessagePosition != lastStatusMessagePosition || now > (lastStatusMessageTimestamp + statusMessageTimeout))
             {
-                final int activeTermId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
+                final int termId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)statusMessagePosition & termLengthMask;
 
                 channelEndpoint.sendStatusMessage(
-                    controlAddress, sessionId, streamId, activeTermId, termOffset, currentWindowLength, (byte)0);
+                    controlAddress, sessionId, streamId, termId, termOffset, currentWindowLength, (byte)0);
 
                 lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
+                workCount = 1;
             }
         }
 
-        return 1;
+        return workCount;
     }
 
     /**
@@ -493,19 +502,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      *
      * @return the position up to which the current stream rebuild is complete for reception.
      */
-    public long completedPosition()
+    public long rebuildPosition()
     {
-        return completedPosition;
-    }
-
-    /**
-     * The initial term id this connection started at.
-     *
-     * @return the initial term id this connection started at.
-     */
-    public int initialTermId()
-    {
-        return initialTermId;
+        return rebuildPosition;
     }
 
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)

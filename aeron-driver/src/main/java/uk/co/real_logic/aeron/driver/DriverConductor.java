@@ -223,7 +223,7 @@ public class DriverConductor implements Agent
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             final DriverConnection connection = connections.get(i);
-            workCount += connection.trackCompletion();
+            workCount += connection.trackRebuild();
         }
 
         final ArrayList<DriverPublication> publications = this.publications;
@@ -496,8 +496,8 @@ public class DriverConductor implements Agent
                     channel,
                     streamId,
                     connection.sessionId(),
-                    connection.completedPosition(),
-                    connection.rawLogBuffers(),
+                    connection.rebuildPosition(),
+                    connection.rawLog(),
                     correlationId,
                     Collections.singletonList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
                     sourceInfo);
@@ -751,7 +751,7 @@ public class DriverConductor implements Agent
                             conn.correlationId(),
                             conn.sessionId(),
                             conn.streamId(),
-                            conn.completedPosition(),
+                            conn.rebuildPosition(),
                             conn.channelUriString());
                     }
                     break;

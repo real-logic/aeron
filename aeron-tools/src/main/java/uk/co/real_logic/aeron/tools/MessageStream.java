@@ -32,8 +32,6 @@ public class MessageStream
     private long messageCount = 0;
     private boolean active = true;
 
-    private final UnsafeBuffer copybuf = new UnsafeBuffer(new byte[1]);
-
     private static final ThreadLocalCRC32 MSG_CHECKSUM = new ThreadLocalCRC32();
 
     private static class ThreadLocalCRC32 extends ThreadLocal<CRC32>
@@ -144,11 +142,10 @@ public class MessageStream
             throw new Exception("Stream has ended.");
         }
 
-        copybuf.wrap(buffer, offset, length);
         /* Assume we've already checked and it appears we have a verifiable message. */
 
         /* Sequence number check first. */
-        final long receivedSequenceNumber = copybuf.getLong(SEQUENCE_NUMBER_OFFSET);
+        final long receivedSequenceNumber = buffer.getLong(offset + SEQUENCE_NUMBER_OFFSET);
         final long expectedSequenceNumber = sequenceNumber + 1;
         if (receivedSequenceNumber != expectedSequenceNumber)
         {
@@ -165,21 +162,26 @@ public class MessageStream
         /* Update SQN for next time. */
         sequenceNumber++;
 
-        /* Save the checksum first, then blank it out. */
-        final int msgCksum = copybuf.getInt(MESSAGE_CHECKSUM_OFFSET);
-
-        copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, 0);
-
+        /* Calculate the checksum - substituting 0's for the checksum
+         * field itself - and then compare it to the received checksum
+         * field. */
         final CRC32 crc = MSG_CHECKSUM.get();
         crc.reset();
-        for (int i = 0; i < length; i++)
+        int i = offset;
+        for (; i < (offset + MESSAGE_CHECKSUM_OFFSET); i++)
         {
-            crc.update(copybuf.getByte(i));
+            crc.update(buffer.getByte(i));
+        }
+        for (; i < (offset + SEQUENCE_NUMBER_OFFSET); i++)
+        {
+            crc.update(0);
+        }
+        for (; i < (offset + length); i++)
+        {
+            crc.update(buffer.getByte(i));
         }
 
-        /* Put originally received checksum back in place. */
-        copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
-
+        final int msgCksum = buffer.getInt(offset + MESSAGE_CHECKSUM_OFFSET);
         if ((int)(crc.getValue()) != msgCksum)
         {
             throw new Exception("Verifiable message per-message checksum invalid; received " +
@@ -188,7 +190,7 @@ public class MessageStream
 
         messageCount++;
         /* Look for an end marker. */
-        if (copybuf.getInt(MAGIC_OFFSET) == MAGIC_END)
+        if (buffer.getInt(offset + MAGIC_OFFSET) == MAGIC_END)
         {
             active = false;
         }

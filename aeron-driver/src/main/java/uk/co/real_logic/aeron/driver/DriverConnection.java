@@ -427,11 +427,11 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             final long statusMessagePosition = this.statusMessagePosition;
             if (statusMessagePosition != lastStatusMessagePosition || now > (lastStatusMessageTimestamp + statusMessageTimeout))
             {
-                final int activeTermId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
+                final int termId = computeTermIdFromPosition(statusMessagePosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)statusMessagePosition & termLengthMask;
 
                 channelEndpoint.sendStatusMessage(
-                    controlAddress, sessionId, streamId, activeTermId, termOffset, currentWindowLength, (byte)0);
+                    controlAddress, sessionId, streamId, termId, termOffset, currentWindowLength, (byte)0);
 
                 lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;

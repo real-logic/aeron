@@ -339,9 +339,9 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
             termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
         }
 
-        if ((minSubscriberPosition - statusMessagePosition) > currentGain)
+        if (minSubscriberPosition > (statusMessagePosition + currentGain))
         {
-            this.statusMessagePosition = minSubscriberPosition;
+            statusMessagePosition = minSubscriberPosition;
         }
 
         return workCount;

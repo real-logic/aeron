@@ -50,8 +50,12 @@ public class TermGapScanner
     /**
      * Scan for gaps from the rebuildOffset up to the high-water-mark. Each gap will be reported to the {@link GapHandler}.
      *
-     * @param handler to be notified of gaps.
-     * @return true if a gap is found otherwise false.
+     * @param termBuffer    to be scanned for a gap.
+     * @param termId        of the current term buffer.
+     * @param rebuildOffset at which to start scanning.
+     * @param hwmOffset     at which to stop scanning.
+     * @param handler       to call if a gap is found.
+     * @return true if a gap has been found otherwise false.
      */
     public static boolean scanForGap(
         final UnsafeBuffer termBuffer, final int termId, int rebuildOffset, final int hwmOffset, final GapHandler handler)

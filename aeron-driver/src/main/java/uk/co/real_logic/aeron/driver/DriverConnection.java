@@ -42,7 +42,7 @@ class DriverConnectionPadding1
 
 class DriverConnectionConductorFields extends DriverConnectionPadding1
 {
-    protected long rebuiltPosition;
+    protected long rebuildPosition;
     protected long subscribersPosition;
     protected long timeOfLastStatusChange;
 
@@ -159,7 +159,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
         this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
         this.statusMessagePosition = this.lastStatusMessagePosition;
-        this.rebuiltPosition = initialPosition;
+        this.rebuildPosition = initialPosition;
         this.hwmPosition.position(initialPosition);
     }
 
@@ -317,7 +317,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         subscribersPosition = minSubscriberPosition;
 
-        final long oldRebuildPosition = this.rebuiltPosition;
+        final long oldRebuildPosition = this.rebuildPosition;
         final long rebuildPosition = Math.max(oldRebuildPosition, maxSubscriberPosition);
 
         final int positionBitsToShift = this.positionBitsToShift;
@@ -328,7 +328,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
 
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
-        this.rebuiltPosition = newRebuildPosition;
+        this.rebuildPosition = newRebuildPosition;
 
         final int newTermCount = (int)(newRebuildPosition >>> positionBitsToShift);
         final int oldTermCount = (int)(oldRebuildPosition >>> positionBitsToShift);
@@ -354,7 +354,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public boolean isDrained()
     {
-        return subscribersPosition >= rebuiltPosition;
+        return subscribersPosition >= rebuildPosition;
     }
 
     /**
@@ -499,7 +499,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public long rebuildPosition()
     {
-        return rebuiltPosition;
+        return rebuildPosition;
     }
 
     /**

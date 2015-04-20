@@ -50,7 +50,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public int doWork() throws Exception
     {
-        final int workCount = commandQueue.drain(this);
+        int workCount = commandQueue.drain(this);
         final int bytesReceived = transportPoller.pollTransports();
 
         final long now = clock.time();
@@ -64,8 +64,8 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
             else
             {
-                connection.sendPendingStatusMessage(now, statusMessageTimeout);
-                connection.sendPendingNak();
+                workCount += connection.sendPendingStatusMessage(now, statusMessageTimeout);
+                workCount += connection.sendPendingNak();
             }
         }
 

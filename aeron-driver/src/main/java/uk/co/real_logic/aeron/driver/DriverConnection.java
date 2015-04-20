@@ -419,6 +419,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
+        int workCount = 0;
+
         if (ACTIVE == status)
         {
             final long statusMessagePosition = this.statusMessagePosition;
@@ -433,10 +435,11 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
                 lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;
                 systemCounters.statusMessagesSent().orderedIncrement();
+                workCount = 1;
             }
         }
 
-        return 1;
+        return workCount;
     }
 
     /**

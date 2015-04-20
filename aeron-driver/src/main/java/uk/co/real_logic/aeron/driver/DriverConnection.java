@@ -243,7 +243,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      *
      * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this connection.
      */
-    public RawLog rawLogBuffers()
+    public RawLog rawLog()
     {
         return rawLog;
     }

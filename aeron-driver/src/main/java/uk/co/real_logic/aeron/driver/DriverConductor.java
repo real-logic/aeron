@@ -473,7 +473,7 @@ public class DriverConductor implements Agent
                     streamId,
                     connection.sessionId(),
                     connection.completedPosition(),
-                    connection.rawLogBuffers(),
+                    connection.rawLog(),
                     correlationId,
                     Collections.singletonList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
                     sourceInfo);

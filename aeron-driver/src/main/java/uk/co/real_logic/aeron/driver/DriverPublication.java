@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.common.protocol.*;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferPartition;
-import uk.co.real_logic.agrona.status.PositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 
 import java.net.InetSocketAddress;
@@ -44,8 +44,8 @@ public class DriverPublication implements AutoCloseable
     private final TermScanner scanner = new TermScanner(DataHeaderFlyweight.HEADER_LENGTH);
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
-    private final PositionReporter publisherLimit;
-    private final PositionReporter senderPosition;
+    private final Position publisherLimit;
+    private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
     private final InetSocketAddress dstAddress;
     private final SystemCounters systemCounters;
@@ -70,8 +70,8 @@ public class DriverPublication implements AutoCloseable
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
         final RawLog rawLog,
-        final PositionReporter senderPosition,
-        final PositionReporter publisherLimit,
+        final Position senderPosition,
+        final Position publisherLimit,
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -104,7 +104,7 @@ public class DriverPublication implements AutoCloseable
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.initialTermId = initialTermId;
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
-        publisherLimit.position(termWindowLength);
+        publisherLimit.setOrdered(termWindowLength);
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
         initSetupFrame(initialTermId, termLength, sessionId, streamId);
@@ -126,7 +126,7 @@ public class DriverPublication implements AutoCloseable
 
         if (isActive)
         {
-            final long senderPosition = this.senderPosition.position();
+            final long senderPosition = this.senderPosition.get();
             final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
             final int termOffset = (int)senderPosition & termLengthMask;
             final long now = clock.time();
@@ -194,7 +194,7 @@ public class DriverPublication implements AutoCloseable
 
     public void onRetransmit(final int termId, int termOffset, final int length)
     {
-        final long senderPosition = this.senderPosition.position();
+        final long senderPosition = this.senderPosition.get();
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
 
         if (termId == activeTermId || termId == (activeTermId - 1))
@@ -260,7 +260,7 @@ public class DriverPublication implements AutoCloseable
         boolean isFlushed = false;
         if (0 == refCount)
         {
-            final long senderPosition = this.senderPosition.position();
+            final long senderPosition = this.senderPosition.getVolatile();
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
             isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailVolatile();
 
@@ -292,10 +292,9 @@ public class DriverPublication implements AutoCloseable
     public int updatePublishersLimit()
     {
         int workCount = 0;
-        final long candidatePublisherLimit = senderPosition.position() + termWindowLength;
-        if (publisherLimit.position() != candidatePublisherLimit)
+        final long candidatePublisherLimit = senderPosition.getVolatile() + termWindowLength;
+        if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
         {
-            publisherLimit.position(candidatePublisherLimit);
             workCount = 1;
         }
 
@@ -323,7 +322,7 @@ public class DriverPublication implements AutoCloseable
                     trackSenderLimits = true;
 
                     bytesSent = available;
-                    this.senderPosition.position(senderPosition + bytesSent + scanner.padding());
+                    this.senderPosition.setOrdered(senderPosition + bytesSent + scanner.padding());
                 }
                 else
                 {

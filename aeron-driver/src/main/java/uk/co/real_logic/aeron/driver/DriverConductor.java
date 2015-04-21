@@ -39,8 +39,7 @@ import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.status.BufferPositionIndicator;
-import uk.co.real_logic.agrona.status.BufferPositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
 import java.util.*;
@@ -376,8 +375,8 @@ public class DriverConductor implements Agent
                 channelEndpoint,
                 clock,
                 rawLog,
-                new BufferPositionReporter(countersBuffer, senderPositionId, countersManager),
-                new BufferPositionReporter(countersBuffer, publisherLimitId, countersManager),
+                new UnsafeBufferPosition(countersBuffer, senderPositionId, countersManager),
+                new UnsafeBufferPosition(countersBuffer, publisherLimitId, countersManager),
                 sessionId,
                 streamId,
                 initialTermId,
@@ -462,11 +461,11 @@ public class DriverConductor implements Agent
             {
                 final int subscriberPositionCounterId = allocatePositionCounter(
                     "subscriber pos", channel, connection.sessionId(), streamId, correlationId);
-                final BufferPositionIndicator indicator = new BufferPositionIndicator(
+                final UnsafeBufferPosition position = new UnsafeBufferPosition(
                     countersBuffer, subscriberPositionCounterId, countersManager);
                 final String sourceInfo = generateSourceInfo(connection.sourceAddress());
-                connection.addSubscription(indicator);
-                subscription.addConnection(connection, indicator);
+                connection.addSubscription(position);
+                subscription.addConnection(connection, position);
 
                 clientProxy.onConnectionReady(
                     channel,
@@ -475,7 +474,7 @@ public class DriverConductor implements Agent
                     connection.rebuildPosition(),
                     connection.rawLog(),
                     correlationId,
-                    Collections.singletonList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
+                    Collections.singletonList(new SubscriberPosition(subscription, position)),
                     sourceInfo);
             }
         }
@@ -544,11 +543,11 @@ public class DriverConductor implements Agent
                 {
                     final int positionCounterId = allocatePositionCounter(
                         "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
-                    final BufferPositionIndicator indicator = new BufferPositionIndicator(
+                    final UnsafeBufferPosition position = new UnsafeBufferPosition(
                         countersBuffer, positionCounterId, countersManager);
                     countersManager.setCounterValue(positionCounterId, joiningPosition);
 
-                    return new SubscriberPosition(subscription, positionCounterId, indicator);
+                    return new SubscriberPosition(subscription, position);
                 })
             .collect(toList());
 
@@ -578,8 +577,8 @@ public class DriverConductor implements Agent
             rawLog,
             timerWheel,
             udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-            subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
-            new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
+            subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
+            new UnsafeBufferPosition(countersBuffer, receiverHwmCounterId, countersManager),
             clock,
             systemCounters,
             sourceAddress,
@@ -589,7 +588,7 @@ public class DriverConductor implements Agent
 
         subscriberPositions.forEach(
             (subscriberPosition) ->
-                subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator()));
+                subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
 
         receiverProxy.newConnection(channelEndpoint, connection);
     }

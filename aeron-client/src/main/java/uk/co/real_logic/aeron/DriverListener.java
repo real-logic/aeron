@@ -27,7 +27,7 @@ interface DriverListener
         String channel,
         int streamId,
         int sessionId,
-        int positionIndicatorId,
+        int publicationLimitId,
         int mtuLength,
         String logFileName,
         long correlationId);

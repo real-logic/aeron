@@ -178,16 +178,9 @@ public class MediaDriverOptions
     private Properties parseProperties(final String arg) throws ParseException
     {
         final Properties p = new Properties();
-        InputStream inputStream;
-        try
-        {
-            inputStream = newFileInputStream(arg);
-        }
-        catch (final FileNotFoundException ex)
-        {
-            throw new ParseException("Could not find properties file " + arg);
-        }
-        try
+
+        // InputStream is AutoClosable
+        try (final InputStream inputStream = newFileInputStream(arg))
         {
             p.load(inputStream);
         }
@@ -231,6 +224,10 @@ public class MediaDriverOptions
             catch (final InstantiationException ex)
             {
                 throw new ParseException("Could not instantiate class '" + arg + "': " + ex.getMessage());
+            }
+            catch (final ClassCastException ex)
+            {
+                throw new ParseException("Class was not an IdleStrategy. " + ex.getMessage());
             }
         }
         return strategy;

@@ -79,7 +79,7 @@ public class PubSubOptions
                 "null", // output
                 "max", // rate
                 "0", // seed
-                "1", // session
+                "default", // session (aeron will generate a random session id)
                 "32", // size
                 "1", // threads
                 "yes" // verify

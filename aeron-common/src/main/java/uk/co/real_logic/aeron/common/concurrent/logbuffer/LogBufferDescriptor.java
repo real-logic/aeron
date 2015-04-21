@@ -88,9 +88,14 @@ public class LogBufferDescriptor
 
     static
     {
-        TERM_TAIL_COUNTER_OFFSET = 0;
-        TERM_STATUS_OFFSET = TERM_TAIL_COUNTER_OFFSET + CACHE_LINE_LENGTH;
-        TERM_META_DATA_LENGTH = CACHE_LINE_LENGTH * 2;
+        int offset = (CACHE_LINE_LENGTH * 2);
+        TERM_TAIL_COUNTER_OFFSET = offset;
+
+        offset += (CACHE_LINE_LENGTH * 2);
+        TERM_STATUS_OFFSET = offset;
+
+        offset += (CACHE_LINE_LENGTH * 2);
+        TERM_META_DATA_LENGTH = offset;
     }
 
     // *******************************
@@ -105,17 +110,17 @@ public class LogBufferDescriptor
     /**
      * Offset within the log meta data where the active term id is stored.
      */
-    public static final int LOG_INITIAL_TERM_ID_OFFSET = 0;
+    public static final int LOG_ACTIVE_TERM_ID_OFFSET;
 
     /**
      * Offset within the log meta data where the active term id is stored.
      */
-    public static final int LOG_ACTIVE_TERM_ID_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
+    public static final int LOG_INITIAL_TERM_ID_OFFSET;
 
     /**
      * Offset within the log meta data which the length field for the frame header is stored.
      */
-    public static final int LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_ACTIVE_TERM_ID_OFFSET + SIZE_OF_INT;
+    public static final int LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET;
 
     /**
      * Offset at which the default frame headers begin.
@@ -125,7 +130,21 @@ public class LogBufferDescriptor
     /**
      * Offset at which the default frame headers begin.
      */
-    public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH;
+    public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
+
+    static
+    {
+        int offset = 0;
+        LOG_ACTIVE_TERM_ID_OFFSET = offset;
+
+        offset += (CACHE_LINE_LENGTH * 2);
+        LOG_INITIAL_TERM_ID_OFFSET = offset;
+        LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
+
+        offset += ((CACHE_LINE_LENGTH * 2) - (SIZE_OF_INT * 2));
+
+        LOG_META_DATA_LENGTH = offset + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
+    }
 
     /**
      * Total length of the log meta data buffer in bytes.
@@ -134,9 +153,12 @@ public class LogBufferDescriptor
      *   0                   1                   2                   3
      *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
      *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *  |                        Initial Term Id                        |
-     *  +---------------------------------------------------------------+
      *  |                        Active Term Id                         |
+     *  +---------------------------------------------------------------+
+     *  |                      Cache Line Padding                      ...
+     * ...                                                              |
+     *  +---------------------------------------------------------------+
+     *  |                        Initial Term Id                        |
      *  +---------------------------------------------------------------+
      *  |                  Default Frame Header Length                  |
      *  +---------------------------------------------------------------+
@@ -154,7 +176,7 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      * </pre>
      */
-    public static final int LOG_META_DATA_LENGTH = CACHE_LINE_LENGTH * 4;
+    public static final int LOG_META_DATA_LENGTH;
 
     /**
      * Check that term buffer is the correct length and alignment.

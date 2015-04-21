@@ -16,13 +16,13 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
+import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.TimerWheel;

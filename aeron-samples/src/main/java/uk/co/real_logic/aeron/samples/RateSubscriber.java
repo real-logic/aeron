@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 

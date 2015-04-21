@@ -17,10 +17,10 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.agrona.console.ContinueBarrier;
 import uk.co.real_logic.agrona.concurrent.*;
 
 import java.nio.ByteBuffer;

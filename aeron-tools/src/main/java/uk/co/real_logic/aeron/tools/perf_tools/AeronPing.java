@@ -23,8 +23,8 @@ import java.util.concurrent.CountDownLatch;
  */
 public class AeronPing
 {
-    private int numMsgs = 10000000;
-    private int numWarmupMsgs = 100000;
+    private int numMsgs = 1000000;
+    private int numWarmupMsgs = 50000;
     private int msgLen = 32;
     private long[][] timestamps = null;
     private boolean warmedUp = false;
@@ -188,6 +188,13 @@ public class AeronPing
             e.printStackTrace();
         }
         System.out.println("Completed");
+        System.out.println("Num Messages: " + numMsgs);
+        System.out.println("Message Length: " + msgLen);
+        System.out.format("Mean: %.3fus\n", mean);
+        System.out.format("Standard Deviation: %.3fus\n", stdDev);
+
+        System.out.println("Min: " + min + " Index: " + minIdx);
+        System.out.println("Max: " + max + " Index: " + maxIdx);
     }
 
     private void generateScatterPlot(Graphics2D g, int x, int y, double min, double max, double percentile)
@@ -201,7 +208,7 @@ public class AeronPing
         double stepX = (double)width / (double)num;
         String title = "Latency Scatterplot (us) " + percentile + " percentile";
 
-        System.out.println("Generating graph for " + percentile + " percentile");
+        //System.out.println("Generating graph for " + percentile + " percentile");
         g.setColor(Color.black);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g.drawString(title, x + 100 + width / 2 - fm.stringWidth(title) / 2, y + 20);

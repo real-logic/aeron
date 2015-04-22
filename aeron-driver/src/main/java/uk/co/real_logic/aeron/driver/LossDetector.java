@@ -99,7 +99,8 @@ public class LossDetector
             final int activeTermLimit = (rebuildTermsCount == hwmTermsCount) ? hwmTermOffset : termBuffer.capacity();
             rebuildOffset = activeTermLimit;
 
-            if (scanForGap(termBuffer, activeTermId, rebuildTermOffset, activeTermLimit, onGapFunc))
+            rebuildOffset = scanForGap(termBuffer, activeTermId, rebuildTermOffset, activeTermLimit, onGapFunc);
+            if (rebuildOffset < activeTermLimit)
             {
                 final Gap gap = scannedGap;
                 if (!timer.isActive() || !gap.matches(activeGap.termId, activeGap.termOffset))

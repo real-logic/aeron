@@ -54,10 +54,12 @@ public class EmbeddedThroughput
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(3);
 
+        final Aeron.Context context = new Aeron.Context();
         final String embeddedDirName = CommonContext.generateEmbeddedDirName();
         ctx.dirName(embeddedDirName);
-        final Aeron.Context context = new Aeron.Context();
         context.dirName(embeddedDirName);
+
+        System.out.format("Aeron dir '%s'\n", embeddedDirName);
 
         final AtomicBoolean running = new AtomicBoolean(true);
 

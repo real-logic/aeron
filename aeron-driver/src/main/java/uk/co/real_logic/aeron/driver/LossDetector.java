@@ -50,9 +50,7 @@ public class LossDetector
      * @param nakMessageSender to call when sending a NAK is indicated
      */
     public LossDetector(
-        final TimerWheel wheel,
-        final FeedbackDelayGenerator delayGenerator,
-        final NakMessageSender nakMessageSender)
+        final TimerWheel wheel, final FeedbackDelayGenerator delayGenerator, final NakMessageSender nakMessageSender)
     {
         this.wheel = wheel;
         this.timer = wheel.newBlankTimer();

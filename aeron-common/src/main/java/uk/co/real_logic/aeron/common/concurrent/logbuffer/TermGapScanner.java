@@ -55,7 +55,7 @@ public class TermGapScanner
      * @param rebuildOffset at which to start scanning.
      * @param hwmOffset     at which to stop scanning.
      * @param handler       to call if a gap is found.
-     * @return true if a gap has been found otherwise false.
+     * @return offset of last contiguous frame
      */
     public static int scanForGap(
         final UnsafeBuffer termBuffer, final int termId, int rebuildOffset, final int hwmOffset, final GapHandler handler)

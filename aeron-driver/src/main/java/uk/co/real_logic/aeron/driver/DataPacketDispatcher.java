@@ -169,7 +169,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         initialisationInProgressMap.put(sessionId, streamId, PENDING_SETUP_FRAME);
 
         channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
-        receiver.addPendingSetup(sessionId, streamId, channelEndpoint);
+        receiver.addPendingSetupMessage(sessionId, streamId, channelEndpoint);
     }
 
     private void createConnection(

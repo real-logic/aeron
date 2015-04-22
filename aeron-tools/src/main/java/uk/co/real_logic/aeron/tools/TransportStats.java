@@ -14,7 +14,7 @@ public class TransportStats
 
   }
 
-  public void setPos(long pos)
+  public void setPos(final long pos)
   {
     if (pos != this.pos)
     {
@@ -23,7 +23,7 @@ public class TransportStats
     }
   }
 
-  protected void parseChannel(String channel)
+  protected void parseChannel(final String channel)
   {
     String input = channel;
     proto = input.substring(0, input.indexOf(':'));
@@ -34,7 +34,7 @@ public class TransportStats
     {
       port = Integer.parseInt(input.substring(0, input.indexOf(' ')));
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       e.printStackTrace();
     }

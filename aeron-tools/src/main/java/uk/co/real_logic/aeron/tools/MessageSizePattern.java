@@ -20,7 +20,7 @@ public class MessageSizePattern
         final int minSize;
         final int maxSize;
 
-        MessageSizeEntry(long count, int minSize, int maxSize)
+        MessageSizeEntry(final long count, final int minSize, final int maxSize)
         {
             this.count = count;
             this.minSize = minSize;
@@ -41,7 +41,7 @@ public class MessageSizePattern
      * @param messageSize
      * @throws Exception when message size is invalid
      */
-    public MessageSizePattern(int messageSize) throws Exception
+    public MessageSizePattern(final int messageSize) throws Exception
     {
         // technically not "always" when using max long value, but close enough.
         this(Long.MAX_VALUE, messageSize, messageSize);
@@ -52,7 +52,7 @@ public class MessageSizePattern
      * @param messageCount
      * @param messageSize
      */
-    public MessageSizePattern(long messageCount, int messageSize) throws Exception
+    public MessageSizePattern(final long messageCount, final int messageSize) throws Exception
     {
         this(messageCount, messageSize, messageSize);
     }
@@ -63,7 +63,7 @@ public class MessageSizePattern
      * @param minSize
      * @param maxSize
      */
-    public MessageSizePattern(long messageCount, int minSize, int maxSize) throws Exception
+    public MessageSizePattern(final long messageCount, final int minSize, final int maxSize) throws Exception
     {
         this.messageCount = 0;
         this.currentIndex = 0;
@@ -74,7 +74,7 @@ public class MessageSizePattern
      * Create a copy of the given pattern with a different random number generator.
      * @param original The instance to copy.
      */
-    public MessageSizePattern(MessageSizePattern original)
+    public MessageSizePattern(final MessageSizePattern original)
     {
         this.messageCount = 0;
         this.currentIndex = 0;
@@ -89,7 +89,7 @@ public class MessageSizePattern
      * @param size
      * @throws Exception
      */
-    public void addPatternEntry(long messageCount, int size) throws Exception
+    public void addPatternEntry(final long messageCount, final int size) throws Exception
     {
         addPatternEntry(messageCount, size, size);
     }
@@ -101,7 +101,7 @@ public class MessageSizePattern
      * @param maxSize The maximum size for a range
      * @throws Exception When input values are invalid.
      */
-    public void addPatternEntry(long messages, int minSize, int maxSize) throws Exception
+    public void addPatternEntry(final long messages, final int minSize, final int maxSize) throws Exception
     {
         if (messages < 1 || minSize < 0 || maxSize < 0)
         {
@@ -119,7 +119,7 @@ public class MessageSizePattern
         {
             patternMaxSize = maxSize;
         }
-        MessageSizeEntry entry = new MessageSizeEntry(messages, minSize, maxSize);
+        final MessageSizeEntry entry = new MessageSizeEntry(messages, minSize, maxSize);
         entries.add(entry);
     }
 

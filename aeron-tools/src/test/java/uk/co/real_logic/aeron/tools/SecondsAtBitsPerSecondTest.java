@@ -40,7 +40,7 @@ public class SecondsAtBitsPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithZeroSeconds() throws Exception
     {
         ivlsList.clear();
@@ -48,7 +48,7 @@ public class SecondsAtBitsPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNegativeSeconds() throws Exception
     {
         ivlsList.clear();
@@ -56,7 +56,7 @@ public class SecondsAtBitsPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNegativeBitsPerSecond() throws Exception
     {
         ivlsList.clear();

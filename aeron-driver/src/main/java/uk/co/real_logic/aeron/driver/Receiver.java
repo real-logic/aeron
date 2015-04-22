@@ -50,7 +50,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public int doWork() throws Exception
     {
-        final int workCount = commandQueue.drain(this);
+        int workCount = commandQueue.drain(this);
         final int bytesReceived = transportPoller.pollTransports();
 
         final long now = clock.time();
@@ -64,19 +64,19 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
             }
             else
             {
-                connection.sendPendingStatusMessage(now, statusMessageTimeout);
-                connection.sendPendingNak();
+                workCount += connection.sendPendingStatusMessage(now, statusMessageTimeout);
+                workCount += connection.sendPendingNak();
             }
         }
 
-        onCheckPendingSetupMessages(now);
+        timeoutPendingSetupMessages(now);
 
         totalBytesReceived.addOrdered(bytesReceived);
 
         return workCount + bytesReceived;
     }
 
-    public void addPendingSetup(final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    public void addPendingSetupMessage(final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(sessionId, streamId, channelEndpoint);
         cmd.timeOfStatusMessage(clock.time());
@@ -99,7 +99,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.dispatcher().addConnection(connection);
     }
 
-    public void onRegisterMediaChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+    public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.registerForRead(transportPoller);
         transportPoller.selectNowWithoutProcessing();
@@ -116,7 +116,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         cmd.execute(this);
     }
 
-    private void onCheckPendingSetupMessages(final long now)
+    private void timeoutPendingSetupMessages(final long now)
     {
         for (int i = pendingSetupMessages.size() - 1; i >= 0; i--)
         {

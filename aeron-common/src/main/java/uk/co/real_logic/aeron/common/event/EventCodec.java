@@ -447,7 +447,7 @@ public class EventCodec
             header.sessionId(),
             header.streamId(),
             header.termId(),
-            header.completedTermOffset(),
+            header.rebuildTermOffset(),
             header.receiverWindowLength());
     }
 
@@ -508,7 +508,7 @@ public class EventCodec
             command.channel(),
             command.sessionId(),
             command.streamId(),
-            command.positionCounterId(),
+            command.publicationLimitCounterId(),
             command.correlationId(),
             command.logFileName());
     }

@@ -19,10 +19,10 @@ public class AeronThroughputencySubscriber
     private Aeron aeron = null;
     private Publication pub = null;
     private Subscription sub = null;
-    private int pubStreamId = 11;
-    private int subStreamId = 10;
-    private String subChannel = "udp://localhost:44444";
-    private String pubChannel = "udp://localhost:55555";
+    private final int pubStreamId = 11;
+    private final int subStreamId = 10;
+    private final String subChannel = "udp://localhost:44444";
+    private final String pubChannel = "udp://localhost:55555";
     private boolean running = true;
     private BufferClaim bufferClaim = null;
 
@@ -47,7 +47,7 @@ public class AeronThroughputencySubscriber
         aeron.close();
     }
 
-    public void msgHandler(DirectBuffer buffer, int offset, int length, Header header)
+    public void msgHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         int iterations = 0;
         if (buffer.getByte(offset) == (byte)'q')
@@ -57,7 +57,7 @@ public class AeronThroughputencySubscriber
         }
         else
         {
-            while (!pub.tryClaim(length, bufferClaim))
+            while (pub.tryClaim(length, bufferClaim) < 0L)
             {
                 iterations++;
             }
@@ -67,11 +67,11 @@ public class AeronThroughputencySubscriber
             }
             try
             {
-                MutableDirectBuffer newBuffer = bufferClaim.buffer();
-                int newOffset = bufferClaim.offset();
+                final MutableDirectBuffer newBuffer = bufferClaim.buffer();
+                final int newOffset = bufferClaim.offset();
                  newBuffer.putBytes(newOffset, buffer, offset, length);
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
             }
@@ -82,7 +82,7 @@ public class AeronThroughputencySubscriber
         }
     }
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         new AeronThroughputencySubscriber();
     }

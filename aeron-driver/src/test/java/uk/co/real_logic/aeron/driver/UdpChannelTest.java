@@ -125,7 +125,7 @@ public class UdpChannelTest
         assertThat(udpChannel.localInterface(), is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
     }
 
-    private Matcher<InetSocketAddress> isMulticastAddress(String addressName, int port) throws UnknownHostException
+    private Matcher<InetSocketAddress> isMulticastAddress(final String addressName, final int port) throws UnknownHostException
     {
         final InetAddress inetAddress = InetAddress.getByName(addressName);
         return is(new InetSocketAddress(inetAddress, port));
@@ -231,28 +231,28 @@ public class UdpChannelTest
     @Test
     public void shouldGetProtocolFamilyForIpV4() throws Exception
     {
-        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=127.0.0.1|remote=127.0.0.1:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=127.0.0.1|remote=127.0.0.1:12345");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV6() throws Exception
     {
-        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=[::1]|remote=[::1]:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=[::1]|remote=[::1]:12345");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV4WithoutLocalSpecified() throws Exception
     {
-        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=127.0.0.1:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=127.0.0.1:12345");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV6WithoutLocalSpecified() throws Exception
     {
-        UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=[::1]:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=[::1]:12345");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
     }
 
@@ -346,7 +346,7 @@ public class UdpChannelTest
             }
 
             @Override
-            protected boolean matchesSafely(NetworkInterface item)
+            protected boolean matchesSafely(final NetworkInterface item)
             {
                 try
                 {
@@ -360,7 +360,7 @@ public class UdpChannelTest
         };
     }
 
-    private String resolveToHexAddress(String host) throws UnknownHostException
+    private String resolveToHexAddress(final String host) throws UnknownHostException
     {
         return BitUtil.toHex(InetAddress.getByName(host).getAddress());
     }

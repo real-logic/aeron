@@ -295,10 +295,21 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Determine the partition index based on number of terms that have passed.
+     *
+     * @param termCount for the number of terms that have passed.
+     * @return the partition index for the term count.
+     */
+    public static int indexByTermCount(final int termCount)
+    {
+        return termCount % PARTITION_COUNT;
+    }
+
+    /**
      * Determine the partition index given a stream position.
      *
      * @param position in the stream in bytes.
-     * @return the partition index for the current term roll.
+     * @return the partition index for the position
      */
     public static int indexByPosition(final long position, final int positionBitsToShift)
     {
@@ -309,17 +320,17 @@ public class LogBufferDescriptor
      * Compute the current position in absolute number of bytes.
      *
      * @param activeTermId        active term id.
-     * @param currentTail         in the term.
+     * @param termOffset          in the term.
      * @param positionBitsToShift number of times to left shift the term count
      * @param initialTermId       the initial term id that this stream started on
      * @return the absolute position in bytes
      */
     public static long computePosition(
-        final int activeTermId, final int currentTail, final int positionBitsToShift, final int initialTermId)
+        final int activeTermId, final int termOffset, final int positionBitsToShift, final int initialTermId)
     {
         final long termCount = activeTermId - initialTermId; // copes with negative activeTermId on rollover
 
-        return (termCount << positionBitsToShift) + currentTail;
+        return (termCount << positionBitsToShift) + termOffset;
     }
 
     /**

@@ -20,7 +20,7 @@ public class ChannelDescriptor
         return channel;
     }
 
-    public void setChannel(String c)
+    public void setChannel(final String c)
     {
         channel = c;
     }
@@ -30,11 +30,12 @@ public class ChannelDescriptor
         return streamIds;
     }
 
-    public void setStreamIdentifiers(int[] ids)
+    public void setStreamIdentifiers(final int[] ids)
     {
         streamIds = ids;
     }
 
+    @Override
     public String toString()
     {
         return channel;

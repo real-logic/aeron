@@ -45,18 +45,18 @@ public class Stats
   private File cncFile = null;
   private MappedByteBuffer cncByteBuffer = null;
   private DirectBuffer metaDataBuffer = null;
-  private int cncVersion;
+  private final int cncVersion;
   private AtomicBuffer labelsBuffer = null;
   private AtomicBuffer valuesBuffer = null;
   private CountersManager countersManager = null;
-  private AtomicBoolean running = null;
+  private final AtomicBoolean running = null;
   private StatsOutput output = null;
 
   private static final int LABEL_SIZE = 1024;
   private static final int NUM_BASE_STATS = 20;
   private static final int UNREGISTERED_LABEL_SIZE = -1;
 
-  public Stats(StatsOutput output, String dirName) throws Exception
+  public Stats(final StatsOutput output, final String dirName) throws Exception
   {
     if (output == null)
     {
@@ -102,8 +102,8 @@ public class Stats
     if (output instanceof StatsNetstatOutput)
     {
       idx = NUM_BASE_STATS;
-      ArrayList<String> tmpKeys = new ArrayList<String>();
-      ArrayList<Long> tmpVals = new ArrayList<Long>();
+      final ArrayList<String> tmpKeys = new ArrayList<String>();
+      final ArrayList<Long> tmpVals = new ArrayList<Long>();
 
       while ((size = isValid(idx)) != 0)
       {
@@ -124,8 +124,8 @@ public class Stats
     }
     else if (output instanceof StatsConsoleOutput)
     {
-      ArrayList<String> tmpKeys = new ArrayList<String>();
-      ArrayList<Long> tmpVals = new ArrayList<Long>();
+      final ArrayList<String> tmpKeys = new ArrayList<String>();
+      final ArrayList<Long> tmpVals = new ArrayList<Long>();
       idx = 0;
 
       while ((size = isValid(idx)) != 0)
@@ -170,19 +170,19 @@ public class Stats
     output.close();
   }
 
-  private int isValid(int idx)
+  private int isValid(final int idx)
   {
     return labelsBuffer.getInt(idx * LABEL_SIZE);
   }
 
-  private String getLabel(int idx)
+  private String getLabel(final int idx)
   {
     return labelsBuffer.getStringUtf8(idx * LABEL_SIZE, nativeOrder());
   }
 
-  private long getValue(int idx)
+  private long getValue(final int idx)
   {
-    int offset = CountersManager.counterOffset(idx);
+    final int offset = CountersManager.counterOffset(idx);
     return valuesBuffer.getLongVolatile(offset);
   }
 }

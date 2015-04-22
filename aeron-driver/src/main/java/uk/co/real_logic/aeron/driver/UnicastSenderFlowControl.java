@@ -26,9 +26,9 @@ public class UnicastSenderFlowControl implements SenderFlowControl
     private int initialTermId;
 
     public long onStatusMessage(
-        final int termId, final int completedTermOffset, final int receiverWindowLength, final InetSocketAddress address)
+        final int termId, final int rebuildTermOffset, final int receiverWindowLength, final InetSocketAddress address)
     {
-        final long position = computePosition(termId, completedTermOffset, positionBitsToShift, initialTermId);
+        final long position = computePosition(termId, rebuildTermOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowLength;
         positionLimit = Math.max(positionLimit, newPositionLimit);
 

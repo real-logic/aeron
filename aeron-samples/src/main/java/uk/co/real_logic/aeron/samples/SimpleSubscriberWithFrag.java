@@ -38,7 +38,7 @@ public class SimpleSubscriberWithFrag
     public static void main(final String[] args) throws Exception
     {
         final int fragmentCountLimit = 10; // Number of message fragments to limit for a single 'poll' operation
-        String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
+        final String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
         final int streamId = 10; //A unique identifier for a Stream within a channel. A value of 0 is reserved
 
         System.out.println("Subscribing to " + channel + " on stream Id " + streamId);

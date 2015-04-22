@@ -1,5 +1,7 @@
 package uk.co.real_logic.aeron.tools.log_analysis;
 
+import static java.nio.ByteOrder.nativeOrder;
+
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
@@ -11,14 +13,12 @@ import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 
-import static java.nio.ByteOrder.nativeOrder;
-
 public class DriverStats
 {
     ArrayList<String> labels = null;
     ArrayList<Long> values = null;
 
-  private CommonContext context = null;
+  private final CommonContext context = null;
     private File cncFile = null;
     private MappedByteBuffer cncByteBuffer = null;
     private DirectBuffer metaDataBuffer = null;
@@ -37,7 +37,7 @@ public class DriverStats
         values = new ArrayList<Long>();
     }
 
-    public String getLabel(int idx)
+    public String getLabel(final int idx)
     {
         return labels.get(idx);
     }
@@ -47,7 +47,7 @@ public class DriverStats
         return populated;
     }
 
-    public long getValue(int idx)
+    public long getValue(final int idx)
     {
         return values.get(idx);
     }
@@ -95,25 +95,26 @@ public class DriverStats
         populated = true;
     }
 
+    @Override
     public String toString()
     {
-        StringBuffer out = new StringBuffer("");
+        final StringBuffer out = new StringBuffer("");
 
         return out.toString();
     }
 
-    private int isValid(int idx)
+    private int isValid(final int idx)
     {
         return labelsBuffer.getInt(idx * LABEL_SIZE);
     }
 
-    private long readValue(int idx)
+    private long readValue(final int idx)
     {
-        int offset = CountersManager.counterOffset(idx);
+        final int offset = CountersManager.counterOffset(idx);
         return valuesBuffer.getLongVolatile(offset);
     }
 
-    private String readLabel(int idx)
+    private String readLabel(final int idx)
     {
         return labelsBuffer.getStringUtf8(idx * LABEL_SIZE, nativeOrder());
     }

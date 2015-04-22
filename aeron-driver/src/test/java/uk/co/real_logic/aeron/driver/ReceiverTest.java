@@ -121,7 +121,7 @@ public class ReceiverTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockTransportPoller)
-            .conductorNioSelector(mockTransportPoller)
+            .senderNioSelector(mockTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
             .conductorTimerWheel(timerWheel)
             .systemCounters(mockSystemCounters)
@@ -143,7 +143,7 @@ public class ReceiverTest
 
         termReaders = rawLog
             .stream()
-            .map((partition) -> new TermReader(partition.termBuffer()))
+            .map((partition) -> new TermReader(INITIAL_TERM_ID, partition.termBuffer()))
             .toArray(TermReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
@@ -161,7 +161,7 @@ public class ReceiverTest
     @Test
     public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -206,7 +206,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        connection.trackCompletion();
+        connection.trackRebuild();
         connection.sendPendingStatusMessage(1000, STATUS_MESSAGE_TIMEOUT);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
@@ -226,7 +226,7 @@ public class ReceiverTest
     @Test
     public void shouldInsertDataIntoLogAfterInitialExchange() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -287,7 +287,7 @@ public class ReceiverTest
     @Test
     public void shouldNotOverwriteDataFrameWithHeartbeat() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -351,7 +351,7 @@ public class ReceiverTest
     @Test
     public void shouldOverwriteHeartbeatWithDataFrame() throws Exception
     {
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();
@@ -419,7 +419,7 @@ public class ReceiverTest
         final int alignedDataFrameLength =
             align(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length, FrameDescriptor.FRAME_ALIGNMENT);
 
-        receiverProxy.registerMediaEndpoint(receiveChannelEndpoint);
+        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
         receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
 
         receiver.doWork();

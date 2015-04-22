@@ -28,7 +28,6 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender.ActionStatus.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 public class LogAppenderTest
@@ -151,7 +150,7 @@ public class LogAppenderTest
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(alignedFrameLength));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
@@ -176,8 +175,8 @@ public class LogAppenderTest
             .thenReturn(0)
             .thenReturn(alignedFrameLength);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(alignedFrameLength));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(alignedFrameLength * 2));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
@@ -208,7 +207,7 @@ public class LogAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
             .thenReturn(TERM_BUFFER_CAPACITY);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(LogAppender.TRIPPED));
 
         verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         verify(termBuffer, atLeastOnce()).capacity();
@@ -228,9 +227,9 @@ public class LogAppenderTest
             .thenReturn(TERM_BUFFER_CAPACITY)
             .thenReturn(TERM_BUFFER_CAPACITY + alignedFrameLength);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(LogAppender.TRIPPED));
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(FAILED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(LogAppender.FAILED));
 
         verify(termBuffer, never()).putBytes(anyInt(), eq(buffer), eq(0), eq(msgLength));
     }
@@ -247,7 +246,7 @@ public class LogAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(LogAppender.TRIPPED));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
@@ -270,7 +269,7 @@ public class LogAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(TRIPPED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(LogAppender.TRIPPED));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
@@ -293,7 +292,7 @@ public class LogAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredCapacity))
             .thenReturn(0);
 
-        assertThat(logAppender.append(buffer, 0, msgLength), is(SUCCEEDED));
+        assertThat(logAppender.append(buffer, 0, msgLength), is(requiredCapacity));
 
         int tail  = 0;
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
@@ -325,7 +324,7 @@ public class LogAppenderTest
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0);
 
-        assertThat(logAppender.claim(msgLength, bufferClaim), is(SUCCEEDED));
+        assertThat(logAppender.claim(msgLength, bufferClaim), is(alignedFrameLength));
 
         assertThat(bufferClaim.buffer(), is(termBuffer));
         assertThat(bufferClaim.offset(), is(tail + headerLength));

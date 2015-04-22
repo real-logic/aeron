@@ -19,21 +19,23 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
+
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 
 public class TermReaderTest
 {
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
-    private static final int HEADER_LENGTH = Header.LENGTH;
+    private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int INITIAL_TERM_ID = 7;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final DataHandler handler = Mockito.mock(DataHandler.class);
@@ -45,7 +47,7 @@ public class TermReaderTest
     {
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
 
-        termReader = new TermReader(termBuffer);
+        termReader = new TermReader(INITIAL_TERM_ID, termBuffer);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -54,7 +56,7 @@ public class TermReaderTest
         final int logBufferCapacity = LogBufferDescriptor.TERM_MIN_LENGTH + FRAME_ALIGNMENT + 1;
         when(termBuffer.capacity()).thenReturn(logBufferCapacity);
 
-        termReader = new TermReader(termBuffer);
+        termReader = new TermReader(INITIAL_TERM_ID, termBuffer);
     }
 
     @Test

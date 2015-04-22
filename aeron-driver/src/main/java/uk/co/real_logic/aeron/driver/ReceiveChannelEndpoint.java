@@ -206,7 +206,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             smHeader.sessionId(sessionId)
                     .streamId(streamId)
                     .termId(termId)
-                    .completedTermOffset(termOffset)
+                    .rebuildTermOffset(termOffset)
                     .receiverWindowLength(window)
                     .flags(flags);
 
@@ -218,7 +218,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         }
     }
 
-    public void sendNak(
+    public void sendNakMessage(
         final InetSocketAddress controlAddress,
         final int sessionId,
         final int streamId,

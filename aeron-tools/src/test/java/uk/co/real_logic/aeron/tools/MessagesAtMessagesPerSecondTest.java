@@ -33,7 +33,7 @@ public class MessagesAtMessagesPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithZeroMessagesPerSecond() throws Exception
     {
         ivlsList.clear();
@@ -41,7 +41,7 @@ public class MessagesAtMessagesPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithZeroMessages() throws Exception
     {
         ivlsList.clear();
@@ -49,7 +49,7 @@ public class MessagesAtMessagesPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNegativeMessages() throws Exception
     {
         ivlsList.clear();
@@ -57,7 +57,7 @@ public class MessagesAtMessagesPerSecondTest
         rc = new RateController(callback, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNegativeMessagesPerSecond() throws Exception
     {
         ivlsList.clear();

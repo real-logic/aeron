@@ -1,5 +1,9 @@
 package uk.co.real_logic.aeron.tools.log_analysis;
 
+import java.io.File;
+import java.util.Observable;
+import java.util.Observer;
+
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
@@ -13,24 +17,21 @@ import javafx.scene.paint.Color;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 
-import java.io.File;
-import java.util.Observable;
-import java.util.Observer;
-
-import javax.swing.*;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
 
 public class LogAnalyzer extends Application implements Observer
 {
     private MenuBar menuBar = null;
     private LogModel model = null;
-    private TermMetadataPanel termMetadataPanel = null;
+    private final TermMetadataPanel termMetadataPanel = null;
     private NavigationPanel navigationPanel = null;
-    private StatsPanel statsPanel = null;
+    private final StatsPanel statsPanel = null;
     private JTextField initialTermId;
     private JTextField activeTermId;
     private JTextField termLength;
-    private JPanel centerPanel = null;
-    private Thread updateThread = null;
+    private final JPanel centerPanel = null;
+    private final Thread updateThread = null;
     private Scene scene = null;
     private Stage stage = null;
 
@@ -76,7 +77,8 @@ public class LogAnalyzer extends Application implements Observer
         */
     }
 
-    public void start(Stage primaryStage)
+    @Override
+    public void start(final Stage primaryStage)
     {
         stage = primaryStage;
         stage.setTitle("Log Analysis");
@@ -92,14 +94,14 @@ public class LogAnalyzer extends Application implements Observer
         stage.show();
     }
 
-    private void addChildren(String filename, TreeItem<String> parent)
+    private void addChildren(final String filename, final TreeItem<String> parent)
     {
-        File files = new File(filename);
+        final File files = new File(filename);
         if (files.listFiles() != null)
         {
             for (int i = 0; i < files.listFiles().length; i++)
             {
-                TreeItem<String> item = new TreeItem(files.list()[i]);
+                final TreeItem<String> item = new TreeItem(files.list()[i]);
                 item.setExpanded(true);
                 parent.getChildren().add(item);
                 if (files.listFiles()[i].isDirectory())
@@ -115,13 +117,14 @@ public class LogAnalyzer extends Application implements Observer
         final DirectoryChooser fc = new DirectoryChooser();
 
         menuBar = new MenuBar();
-        Menu fileMenu = new Menu("File");
-        MenuItem openItem = new MenuItem("Open");
+        final Menu fileMenu = new Menu("File");
+        final MenuItem openItem = new MenuItem("Open");
         openItem.setOnAction(new EventHandler<ActionEvent>()
         {
-            public void handle(ActionEvent e)
+            @Override
+            public void handle(final ActionEvent e)
             {
-                File file = fc.showDialog(stage);
+                final File file = fc.showDialog(stage);
 
                 if (file != null)
                 {
@@ -150,8 +153,9 @@ public class LogAnalyzer extends Application implements Observer
         setJMenuBar(menuBar);
         */
     }
-    public void update(Observable o, Object arg)
-    {/*
+    @Override
+    public void update(final Observable o, final Object arg)
+    { /*
         getContentPane().remove(centerPanel);
         if (model.getLogType() == 1)
         {
@@ -169,7 +173,7 @@ public class LogAnalyzer extends Application implements Observer
         */
     }
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         launch(args);
     }

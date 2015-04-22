@@ -14,7 +14,7 @@ public class BufferVisualization extends JPanel
     }
 
     @Override
-    public void paintComponent(Graphics g)
+    public void paintComponent(final Graphics g)
     {
         g.setColor(Color.black);
         g.fillRect(0, 0, getWidth(), getHeight());

@@ -42,23 +42,23 @@ public class RateControllerTest
         }
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNulls() throws Exception
     {
         rc = new RateController(null, null);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNullCallback() throws Exception
     {
-        RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(ivl);
 
         rc = new RateController(null, ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNullIntervalsList() throws Exception
     {
         class Callback implements RateController.Callback
@@ -75,7 +75,7 @@ public class RateControllerTest
         rc = new RateController(new Callback(), null);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithEmptyIntervalsList() throws Exception
     {
         class Callback implements RateController.Callback
@@ -89,7 +89,7 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         rc = new RateController(new Callback(), ivlsList);
     }
 
@@ -107,8 +107,8 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
         rc = new RateController(new Callback(), ivlsList);
     }
@@ -127,8 +127,8 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
         rc = new RateController(new Callback(), ivlsList);
     }
@@ -147,8 +147,8 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        RateControllerInterval ivl = new SecondsAtBitsPerSecondInterval(1, 1);
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateControllerInterval ivl = new SecondsAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
         rc = new RateController(new Callback(), ivlsList);
     }
@@ -167,13 +167,13 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        RateControllerInterval ivl = new SecondsAtMessagesPerSecondInterval(1, 1);
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateControllerInterval ivl = new SecondsAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
         rc = new RateController(new Callback(), ivlsList);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithZeroIterations() throws Exception
     {
         class Callback implements RateController.Callback
@@ -187,13 +187,13 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
         rc = new RateController(new Callback(), ivlsList, 0);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createWithNegativeIterations() throws Exception
     {
         class Callback implements RateController.Callback
@@ -207,8 +207,8 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
         rc = new RateController(new Callback(), ivlsList, -1);
     }
@@ -227,7 +227,7 @@ public class RateControllerTest
 
         }
 
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, 1));
         ivlsList.add(new SecondsAtBitsPerSecondInterval(1, 1));
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, 1));
@@ -251,8 +251,8 @@ public class RateControllerTest
 
         }
 
-        RateController.Callback callback = new Callback();
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateController.Callback callback = new Callback();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, 1));
         rc = new RateController(callback, ivlsList);
         while (rc.next())
@@ -280,8 +280,8 @@ public class RateControllerTest
 
         }
 
-        RateController.Callback callback = new Callback();
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateController.Callback callback = new Callback();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, 1));
         rc = new RateController(callback, ivlsList);
         while (rc.next())
@@ -309,8 +309,8 @@ public class RateControllerTest
 
         }
 
-        RateController.Callback callback = new Callback();
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateController.Callback callback = new Callback();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(5, Long.MAX_VALUE));
         rc = new RateController(callback, ivlsList);
         while (rc.next())
@@ -340,8 +340,8 @@ public class RateControllerTest
 
         }
 
-        RateController.Callback callback = new Callback();
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateController.Callback callback = new Callback();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, Long.MAX_VALUE));
         ivlsList.add(new MessagesAtBitsPerSecondInterval(1, Long.MAX_VALUE));
         rc = new RateController(callback, ivlsList);
@@ -372,8 +372,8 @@ public class RateControllerTest
 
         }
 
-        RateController.Callback callback = new Callback();
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateController.Callback callback = new Callback();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, Long.MAX_VALUE));
         ivlsList.add(new MessagesAtBitsPerSecondInterval(1, Long.MAX_VALUE));
         rc = new RateController(callback, ivlsList, 2);
@@ -401,8 +401,8 @@ public class RateControllerTest
 
         }
 
-        RateController.Callback callback = new Callback();
-        List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+        final RateController.Callback callback = new Callback();
+        final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, Long.MAX_VALUE));
         rc = new RateController(callback, ivlsList);
 

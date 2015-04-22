@@ -40,12 +40,16 @@ public class BasicSubscriber
     {
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 
         // Create a context for client
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection) // Callback method when a new producer starts
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection); // Callback when at a producer exits
+        if (EMBEDDED_MEDIA_DRIVER)
+        {
+            ctx.dirName(driver.contextDirName());
+        }
 
         // dataHandler method is called for every new datagram received
         final DataHandler dataHandler = printStringMessage(STREAM_ID);

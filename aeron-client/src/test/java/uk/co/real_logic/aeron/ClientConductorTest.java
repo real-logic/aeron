@@ -312,9 +312,10 @@ public class ClientConductorTest
 
         assertFalse(subscription.hasNoConnections());
 
-        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
+        final long position = 0L;
+        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, position, CORRELATION_ID);
 
-        verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, position);
         assertTrue(subscription.hasNoConnections());
         assertFalse(subscription.isConnected(SESSION_ID_1));
     }

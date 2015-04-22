@@ -27,7 +27,8 @@ public interface NewConnectionHandler
      * @param channel           The channel for the new session.
      * @param streamId          The scope within the channel for the new session.
      * @param sessionId         The publisher instance identifier for the new session.
+     * @param joiningPosition   At which the stream is being joined by the subscriber.
      * @param sourceInformation A transport specific string with additional information about the publisher.
      */
-    void onNewConnection(String channel, int streamId, int sessionId, String sourceInformation);
+    void onNewConnection(String channel, int streamId, int sessionId, long joiningPosition, String sourceInformation);
 }

@@ -3,6 +3,7 @@ package uk.co.real_logic.aeron.tools;
 import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 
@@ -13,7 +14,7 @@ public class MediaDriverTool
 {
     private static final Logger LOG = LoggerFactory.getLogger(MediaDriverTool.class);
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         final MediaDriverOptions opts = new MediaDriverOptions();
         int printHelp = 1;
@@ -22,7 +23,7 @@ public class MediaDriverTool
         {
             printHelp = opts.parseArgs(args);
         }
-        catch (ParseException ex)
+        catch (final ParseException ex)
         {
             ex.printStackTrace();
             exitValue = -1;
@@ -38,7 +39,7 @@ public class MediaDriverTool
         driver.run(opts);
     }
 
-    public void run(MediaDriverOptions opts)
+    public void run(final MediaDriverOptions opts)
     {
         if (opts.getProperties() != null)
         {

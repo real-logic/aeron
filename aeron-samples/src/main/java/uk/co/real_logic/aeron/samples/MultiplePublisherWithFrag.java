@@ -55,8 +55,8 @@ public class MultiplePublisherWithFrag
              final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
             // Allocate 2 different session buffer for two streams
-            MessageStream msgStream = new MessageStream(8192);
-            MessageStream msgStream2 = new MessageStream(8192);
+            final MessageStream msgStream = new MessageStream(8192);
+            final MessageStream msgStream2 = new MessageStream(8192);
 
             int len = msgStream.getNext(BUFFER); // BUFFER contains stream data for first stream
             int len2 = msgStream2.getNext(BUFFER_2); // BUFFER2 contains stream data for the second stream
@@ -68,9 +68,9 @@ public class MultiplePublisherWithFrag
                 while (!offerStatus)
                 {
                     // Try to publish buffer from first publisher
-                    final boolean result = publication.offer(BUFFER, 0, len);
+                    final long result = publication.offer(BUFFER, 0, len);
 
-                    if (!result)
+                    if (result < 0L)
                     {
                         // Failed to send data, must be retried
                         System.out.println(" ah? from first publisher with stream ID " + STREAM_ID + "!!");
@@ -85,9 +85,9 @@ public class MultiplePublisherWithFrag
                     }
 
                     // Try to publish buffer from second publisher
-                    final boolean result2 = publication2.offer(BUFFER_2, 0, len2);
+                    final long result2 = publication2.offer(BUFFER_2, 0, len2);
 
-                    if (!result2)
+                    if (result2 < 0L)
                     {
                         // Failed to send data, must be retried
                         System.out.println(" ah? from second publisher with stream ID " +

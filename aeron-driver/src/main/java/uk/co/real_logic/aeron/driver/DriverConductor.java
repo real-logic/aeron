@@ -15,42 +15,64 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.driver.buffer.*;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.aeron.common.event.EventCode;
-import uk.co.real_logic.aeron.common.event.EventConfiguration;
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.status.BufferPositionIndicator;
-import uk.co.real_logic.agrona.status.BufferPositionReporter;
-import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.*;
+import static java.util.stream.Collectors.toList;
+import static uk.co.real_logic.aeron.common.ErrorCode.GENERIC_ERROR;
+import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
+import static uk.co.real_logic.aeron.common.ErrorCode.UNKNOWN_PUBLICATION;
+import static uk.co.real_logic.aeron.common.ErrorCode.UNKNOWN_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_PUBLICATION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.CLIENT_KEEPALIVE;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_PUBLICATION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.driver.Configuration.CONNECTION_LIVENESS_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
 import java.net.InetSocketAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static java.util.stream.Collectors.toList;
-import static uk.co.real_logic.aeron.common.ErrorCode.*;
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.driver.Configuration.CONNECTION_LIVENESS_TIMEOUT_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_DEFAULT_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_DEFAULT_NS;
-import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.Flyweight;
+import uk.co.real_logic.aeron.common.NoNackDelayGenerator;
+import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
+import uk.co.real_logic.aeron.common.StaticDelayGenerator;
+import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
+import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.common.event.EventConfiguration;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.driver.MediaDriver.Context;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
+import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
+import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
+import uk.co.real_logic.agrona.concurrent.Agent;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import uk.co.real_logic.agrona.concurrent.NanoClock;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.status.BufferPositionIndicator;
+import uk.co.real_logic.agrona.status.BufferPositionReporter;
 
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as handle NAKs and retransmissions
@@ -62,8 +84,9 @@ public class DriverConductor implements Agent
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
+
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
-        Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
+            Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
         Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
@@ -79,7 +102,6 @@ public class DriverConductor implements Agent
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
     private final DriverConductorProxy conductorProxy;
-    private final TransportPoller transportPoller;
     private final RawLogFactory rawLogFactory;
     private final RingBuffer toDriverCommands;
     private final RingBuffer toEventReader;
@@ -124,7 +146,6 @@ public class DriverConductor implements Agent
         this.receiverProxy = ctx.receiverProxy();
         this.senderProxy = ctx.senderProxy();
         this.rawLogFactory = ctx.rawLogBuffersFactory();
-        this.transportPoller = ctx.conductorNioSelector();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowLength = ctx.initialWindowLength();
         this.capacity = ctx.termBufferLength();
@@ -162,6 +183,7 @@ public class DriverConductor implements Agent
         toDriverCommands.consumerHeartbeatTimeNs(clock.time());
     }
 
+    @Override
     public void onClose()
     {
         rawLogFactory.close();
@@ -171,6 +193,7 @@ public class DriverConductor implements Agent
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
 
+    @Override
     public String roleName()
     {
         return "driver-conductor";
@@ -186,11 +209,11 @@ public class DriverConductor implements Agent
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
+    @Override
     public int doWork() throws Exception
     {
         int workCount = 0;
 
-        workCount += transportPoller.pollTransports();
         workCount += toDriverCommands.read(onClientCommandFunc);
         workCount += driverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += toEventReader.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
@@ -200,7 +223,7 @@ public class DriverConductor implements Agent
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             final DriverConnection connection = connections.get(i);
-            workCount += connection.trackCompletion();
+            workCount += connection.trackRebuild();
         }
 
         final ArrayList<DriverPublication> publications = this.publications;
@@ -346,14 +369,13 @@ public class DriverConductor implements Agent
         {
             channelEndpoint = new SendChannelEndpoint(
                 udpChannel,
-                transportPoller,
                 logger,
                 Configuration.createLossGenerator(controlLossRate, controlLossSeed),
                 systemCounters);
-            transportPoller.selectNowWithoutProcessing();
 
             channelEndpoint.validateMtuLength(mtuLength);
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
+            senderProxy.registerSendChannelEndpoint(channelEndpoint);
         }
 
         final AeronClient aeronClient = getOrAddClient(clientId);
@@ -383,7 +405,6 @@ public class DriverConductor implements Agent
                 sessionId,
                 streamId,
                 initialTermId,
-                DataHeaderFlyweight.HEADER_LENGTH,
                 mtuLength,
                 senderFlowControl.initialPositionLimit(initialTermId, capacity),
                 systemCounters);
@@ -393,14 +414,14 @@ public class DriverConductor implements Agent
                 systemCounters,
                 DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
                 DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                composeNewRetransmitSender(publication),
+                publication::onRetransmit,
                 initialTermId,
                 capacity);
 
-            channelEndpoint.addPublication(publication, retransmitHandler, senderFlowControl);
+            channelEndpoint.addPublication(publication);
             publications.add(publication);
 
-            senderProxy.newPublication(publication);
+            senderProxy.newPublication(publication, retransmitHandler, senderFlowControl);
         }
 
         final PublicationRegistration existingRegistration = publicationRegistrations.put(
@@ -447,7 +468,7 @@ public class DriverConductor implements Agent
                 udpChannel, conductorProxy, receiverProxy.receiver(), logger, systemCounters, lossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
-            receiverProxy.registerMediaEndpoint(channelEndpoint);
+            receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
         }
 
         channelEndpoint.incRefToStream(streamId);
@@ -475,8 +496,8 @@ public class DriverConductor implements Agent
                     channel,
                     streamId,
                     connection.sessionId(),
-                    connection.completedPosition(),
-                    connection.rawLogBuffers(),
+                    connection.rebuildPosition(),
+                    connection.rawLog(),
                     correlationId,
                     Collections.singletonList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
                     sourceInfo);
@@ -568,26 +589,54 @@ public class DriverConductor implements Agent
             subscriberPositions,
             sourceInfo);
 
-        final DriverConnection connection = new DriverConnection(
-            correlationId,
-            channelEndpoint,
-            controlAddress,
-            sessionId,
-            streamId,
-            initialTermId,
-            activeTermId,
-            initialTermOffset,
-            initialWindowLength,
-            rawLog,
-            timerWheel,
-            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-            subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
-            new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
-            clock,
-            systemCounters,
-            sourceAddress,
-            logger);
+        final DriverConnection connection;
 
+        if (Configuration.dontSendNack())
+        {
+            final NoNackDelayGenerator noNackDelayGenerator = new NoNackDelayGenerator(); //Don't send a NACK (For QA only)
+
+            connection = new DriverConnection(
+                    correlationId,
+                    channelEndpoint,
+                    controlAddress,
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    activeTermId,
+                    initialTermOffset,
+                    initialWindowLength,
+                    rawLog,
+                    timerWheel,
+                    noNackDelayGenerator,
+                    subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
+                    new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
+                    clock,
+                    systemCounters,
+                    sourceAddress,
+                    logger);
+        }
+        else
+        {
+            connection = new DriverConnection(
+                correlationId,
+                channelEndpoint,
+                controlAddress,
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                initialTermOffset,
+                initialWindowLength,
+                rawLog,
+                timerWheel,
+                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+                subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
+                new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
+                clock,
+                systemCounters,
+                sourceAddress,
+                logger);
+        }
         connections.add(connection);
 
         subscriberPositions.forEach(
@@ -636,7 +685,7 @@ public class DriverConductor implements Agent
                 logger.logPublicationRemoval(
                     channelEndpoint.udpChannel().originalUriString(), publication.sessionId(), publication.streamId());
 
-                channelEndpoint.removePublication(publication.sessionId(), publication.streamId());
+                channelEndpoint.removePublication(publication);
                 publications.remove(i);
 
                 senderProxy.closePublication(publication);
@@ -644,8 +693,7 @@ public class DriverConductor implements Agent
                 if (channelEndpoint.sessionCount() == 0)
                 {
                     sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                    channelEndpoint.close();
-                    transportPoller.selectNowWithoutProcessing();
+                    senderProxy.closeSendChannelEndpoint(channelEndpoint);
                 }
             }
         }
@@ -690,27 +738,31 @@ public class DriverConductor implements Agent
         final ArrayList<DriverConnection> connections = this.connections;
         for (int i = connections.size() - 1; i >= 0; i--)
         {
-            final DriverConnection con = connections.get(i);
+            final DriverConnection conn = connections.get(i);
 
-            switch (con.status())
+            switch (conn.status())
             {
                 case INACTIVE:
-                    if (con.isDrained() || now > (con.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (conn.isDrained() || now > (conn.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        con.status(DriverConnection.Status.LINGER);
+                        conn.status(DriverConnection.Status.LINGER);
 
                         clientProxy.onInactiveConnection(
-                            con.correlationId(), con.sessionId(), con.streamId(), con.channelUriString());
+                            conn.correlationId(),
+                            conn.sessionId(),
+                            conn.streamId(),
+                            conn.rebuildPosition(),
+                            conn.channelUriString());
                     }
                     break;
 
                 case LINGER:
-                    if (now > (con.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (now > (conn.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        logger.logConnectionRemoval(con.channelUriString(), con.sessionId(), con.streamId());
+                        logger.logConnectionRemoval(conn.channelUriString(), conn.sessionId(), conn.streamId());
 
                         connections.remove(i);
-                        con.close();
+                        conn.close();
                     }
                     break;
             }
@@ -791,11 +843,6 @@ public class DriverConductor implements Agent
         }
 
         return subscription;
-    }
-
-    private RetransmitSender composeNewRetransmitSender(final DriverPublication publication)
-    {
-        return (termId, termOffset, length) -> senderProxy.retransmit(publication, termId, termOffset, length);
     }
 
     private long generateCreationCorrelationId()

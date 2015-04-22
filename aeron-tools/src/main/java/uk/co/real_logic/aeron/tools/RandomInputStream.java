@@ -43,7 +43,7 @@ public class RandomInputStream extends InputStream
      * @return The value passed in
      */
     @Override
-    public long skip(long b)
+    public long skip(final long b)
     {
         return b;
     }
@@ -54,7 +54,7 @@ public class RandomInputStream extends InputStream
      * @return
      */
     @Override
-    public int read(byte[] b) throws IOException
+    public int read(final byte[] b) throws IOException
     {
         int bytesRead = TLRandom.current().nextInt(400);
         if (bytesRead > b.length)
@@ -72,7 +72,7 @@ public class RandomInputStream extends InputStream
      * @return Always the same as len
      */
     @Override
-    public int read(byte[] b, int off, int len) throws IOException
+    public int read(final byte[] b, final int off, final int len) throws IOException
     {
         int remaining = len;
         int offset = off;

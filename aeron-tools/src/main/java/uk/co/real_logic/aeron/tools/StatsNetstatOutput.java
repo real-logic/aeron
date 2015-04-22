@@ -15,7 +15,8 @@ public class StatsNetstatOutput implements StatsOutput
     subs = new HashMap<String, SubscriberStats>();
   }
 
-  public void format(String[] keys, long[] vals) throws Exception
+  @Override
+public void format(final String[] keys, final long[] vals) throws Exception
   {
     for (int i = 0; i < keys.length; i++)
     {
@@ -35,8 +36,8 @@ public class StatsNetstatOutput implements StatsOutput
     System.out.format("%1$5s %2$8s %3$8s %4$16s %5$10s\n", "proto", "pos", "limit", "location", "session");
     while (itr.hasNext())
     {
-      Map.Entry pair = (Map.Entry)itr.next();
-      System.out.print(((PublisherStats)pair.getValue()));
+      final Map.Entry pair = (Map.Entry)itr.next();
+      System.out.print((pair.getValue()));
     }
 
     System.out.println();
@@ -47,23 +48,24 @@ public class StatsNetstatOutput implements StatsOutput
     System.out.format("%1$5s %2$8s %3$8s %4$16s %5$10s\n", "proto", "pos", "hwm", "location", "session");
     while (itr.hasNext())
     {
-      Map.Entry pair = (Map.Entry)itr.next();
-      System.out.print(((SubscriberStats)pair.getValue()));
+      final Map.Entry pair = (Map.Entry)itr.next();
+      System.out.print((pair.getValue()));
     }
     System.out.println("-----------------------------------------------------------\n");
   }
 
-  public void close() throws Exception
+  @Override
+public void close() throws Exception
   {
 
   }
 
-  private void processSubscriberInfo(String key, long val)
+  private void processSubscriberInfo(final String key, final long val)
   {
     SubscriberStats sub = null;
-    String senderInfoType = key.substring(key.indexOf(' ') + 1, key.indexOf(':'));
-    String current = key.substring(key.indexOf(':') + 2);
-    String channelInfo = current;
+    final String senderInfoType = key.substring(key.indexOf(' ') + 1, key.indexOf(':'));
+    final String current = key.substring(key.indexOf(':') + 2);
+    final String channelInfo = current;
 
     if (subs.containsKey(channelInfo))
     {
@@ -78,12 +80,12 @@ public class StatsNetstatOutput implements StatsOutput
     subs.put(channelInfo, sub);
   }
 
-  private void processPublisherInfo(String key, long val)
+  private void processPublisherInfo(final String key, final long val)
   {
     PublisherStats pub = null;
-    String senderInfoType = key.substring(key.indexOf(' ') + 1, key.indexOf(':'));
-    String current = key.substring(key.indexOf(':') + 2);
-    String channelInfo = current;
+    final String senderInfoType = key.substring(key.indexOf(' ') + 1, key.indexOf(':'));
+    final String current = key.substring(key.indexOf(':') + 2);
+    final String channelInfo = current;
 
     if (pubs.containsKey(channelInfo))
     {
@@ -98,7 +100,7 @@ public class StatsNetstatOutput implements StatsOutput
     pubs.put(channelInfo, pub);
   }
 
-  private void updateField(PublisherStats pub, String key, long val)
+  private void updateField(final PublisherStats pub, final String key, final long val)
   {
     if (key.equalsIgnoreCase("limit"))
     {
@@ -110,7 +112,7 @@ public class StatsNetstatOutput implements StatsOutput
     }
   }
 
-  private void updateField(SubscriberStats sub, String key, long val)
+  private void updateField(final SubscriberStats sub, final String key, final long val)
   {
     if (key.equalsIgnoreCase("hwm"))
     {

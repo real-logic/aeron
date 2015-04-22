@@ -1,18 +1,25 @@
 package uk.co.real_logic.aeron.tools.log_analysis;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.CLEAN;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.NEEDS_CLEANING;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_STATUS_OFFSET;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.activeTermId;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.defaultFrameHeaders;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.indexByTerm;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.initialTermId;
+import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+
 import java.io.File;
 //import java.util.Observable;
 
 import uk.co.real_logic.aeron.LogBuffers;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 public class LogModel
 {
@@ -25,7 +32,7 @@ public class LogModel
     private int activeTermId;
     private int termLength;
     private UnsafeBuffer[] defaultFrameHeaders = null;
-    private int selectedFrameHeader = -1;
+    private final int selectedFrameHeader = -1;
     private DriverStats stats = null;
 
     public LogModel()
@@ -43,17 +50,17 @@ public class LogModel
         stats.populate();
     }
 
-    public void processLogBuffer(String path)
+    public void processLogBuffer(final String path)
     {
         logType = LOG_TYPE_PUB;
 
         try
         {
-            int messageDumpLimit = 100;
-            LogBuffers logBuffers = new LogBuffers(path);
-            UnsafeBuffer[] atomicBuffers = logBuffers.atomicBuffers();
-            DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
-            UnsafeBuffer logMetaDataBuffer = atomicBuffers[PARTITION_COUNT * 2];
+            final int messageDumpLimit = 100;
+            final LogBuffers logBuffers = new LogBuffers(path);
+            final UnsafeBuffer[] atomicBuffers = logBuffers.atomicBuffers();
+            final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
+            final UnsafeBuffer logMetaDataBuffer = atomicBuffers[PARTITION_COUNT * 2];
             termLength = atomicBuffers[0].capacity();
             System.out.format("Initial term id: %d\n", initialTermId(logMetaDataBuffer));
             System.out.format(" Active term id: %d\n", activeTermId(logMetaDataBuffer));
@@ -74,7 +81,7 @@ public class LogModel
 
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
-                UnsafeBuffer metaDataBuffer = atomicBuffers[i + PARTITION_COUNT];
+                final UnsafeBuffer metaDataBuffer = atomicBuffers[i + PARTITION_COUNT];
                 System.out.format("Index %d Term Meta Data status=%s tail=%d\n",
                         i, termStatus(metaDataBuffer),
                         metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET));
@@ -83,7 +90,7 @@ public class LogModel
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
                 System.out.format("Index %d Term Data\n\n", i);
-                UnsafeBuffer termBuffer = logBuffers.atomicBuffers()[i];
+                final UnsafeBuffer termBuffer = logBuffers.atomicBuffers()[i];
                 dataHeaderFlyweight.wrap(termBuffer);
 
                 int offset = 0;
@@ -92,15 +99,15 @@ public class LogModel
                     dataHeaderFlyweight.offset(offset);
                     System.out.println(dataHeaderFlyweight.toString());
 
-                    int frameLength = dataHeaderFlyweight.frameLength();
+                    final int frameLength = dataHeaderFlyweight.frameLength();
                     if (frameLength == 0)
                     {
-                        int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
+                        final int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
                         System.out.println(bytesToHex(termBuffer, offset + HEADER_LENGTH, limit));
                         break;
                     }
 
-                    int limit = Math.min(frameLength - HEADER_LENGTH, messageDumpLimit);
+                    final int limit = Math.min(frameLength - HEADER_LENGTH, messageDumpLimit);
                     System.out.println(bytesToHex(termBuffer, offset + HEADER_LENGTH, limit));
 
                     offset += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
@@ -108,15 +115,15 @@ public class LogModel
                 while (offset < termLength);
             }
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
     }
 
-    private String termStatus(UnsafeBuffer metaDataBuffer)
+    private String termStatus(final UnsafeBuffer metaDataBuffer)
     {
-        int status = metaDataBuffer.getInt(TERM_STATUS_OFFSET);
+        final int status = metaDataBuffer.getInt(TERM_STATUS_OFFSET);
         switch (status)
         {
             case CLEAN:
@@ -132,13 +139,13 @@ public class LogModel
 
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
-    private char[] bytesToHex(DirectBuffer buffer, final int offset, final int length)
+    private char[] bytesToHex(final DirectBuffer buffer, final int offset, final int length)
     {
         final char[] hexChars = new char[length * 2];
 
         for (int i = 0; i < length; i++)
         {
-            int b = buffer.getByte(offset + i) & 0xFF;
+            final int b = buffer.getByte(offset + i) & 0xFF;
             hexChars[i * 2] = HEX_ARRAY[b >>> 4];
             hexChars[i * 2 + 1] = HEX_ARRAY[b & 0x0F];
         }
@@ -176,12 +183,12 @@ public class LogModel
         return defaultFrameHeaders;
     }
 
-    public UnsafeBuffer getDefaultFrameHeader(int idx)
+    public UnsafeBuffer getDefaultFrameHeader(final int idx)
     {
         return defaultFrameHeaders[idx];
     }
 
-    public void setFile(File file)
+    public void setFile(final File file)
     {
 
     }

@@ -41,12 +41,15 @@ public class BasicPublisher
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
-        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launch() : null;
-
+        //Connect to media driver and add a publisher to Aeron instance
+        final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         // Create an Aeron context for client connection to media driver
         final Aeron.Context ctx = new Aeron.Context();
+        if (EMBEDDED_MEDIA_DRIVER)
+        {
+            ctx.dirName(driver.contextDirName());
+        }
 
-        // Connect to media driver and add a publisher to Aeron instance
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
@@ -59,9 +62,9 @@ public class BasicPublisher
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
                 // Try to send the message on configured CHANNEL and STREAM
-                final boolean result = publication.offer(BUFFER, 0, message.getBytes().length);
+                final long result = publication.offer(BUFFER, 0, message.getBytes().length);
 
-                if (!result)
+                if (result < 0L)
                 {
                     // Message offer did not succeed
                     System.out.println(" ah?!");

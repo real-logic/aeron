@@ -35,19 +35,19 @@ public class MessageStreamTest
         ms = new MessageStream(16);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createZeroByteSize() throws Exception
     {
         ms = new MessageStream(0);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createNegativeByteSize() throws Exception
     {
         ms = new MessageStream(-1);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createVerifiableSizeTooSmall() throws Exception
     {
         ms = new MessageStream(15);
@@ -65,13 +65,13 @@ public class MessageStreamTest
         ms = new MessageStream(0, 0, false);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createNegativeSizeNonVerifiable() throws Exception
     {
         ms = new MessageStream(-1, -1, false);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void createMinGreaterThanMaxSize() throws Exception
     {
         ms = new MessageStream(20, 16);
@@ -102,7 +102,7 @@ public class MessageStreamTest
         ms = new MessageStream(0, false, null);
         buf.putStringUtf8(0, "Test test test!", ByteOrder.nativeOrder());
         ms.getNext(buf); /* This shouldn't do anything to the buffer. */
-        String result = buf.getStringUtf8(0, ByteOrder.nativeOrder());
+        final String result = buf.getStringUtf8(0, ByteOrder.nativeOrder());
         assertThat(result, is("Test test test!"));
     }
 
@@ -112,7 +112,7 @@ public class MessageStreamTest
         ms = new MessageStream(16, false, null);
         ms.getNext(buf);
         /* It's unlikely that a verifiable message header showed up by pure chance. */
-        int magic = buf.getInt(0);
+        final int magic = buf.getInt(0);
         assertThat(magic, not(MAGIC));
     }
 
@@ -121,18 +121,18 @@ public class MessageStreamTest
     {
         ms = new MessageStream(16, true, null);
         ms.getNext(buf);
-        int magic = buf.getInt(0);
+        final int magic = buf.getInt(0);
         assertThat(magic, is(MAGIC));
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void verifiableOneByteTooBig() throws Exception
     {
         ms = new MessageStream(BUFFER_SIZE - HEADER_SIZE + 1, true, null);
         ms.getNext(buf);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void nonVerifiableOneByteTooBig() throws Exception
     {
         ms = new MessageStream(BUFFER_SIZE + 1, false, null);
@@ -160,7 +160,7 @@ public class MessageStreamTest
         ms.getNext(buf, 0);
     }
 
-    @Test (expected=Exception.class)
+    @Test (expected = Exception.class)
     public void getNegativeSize() throws Exception
     {
         ms = new MessageStream(BUFFER_SIZE, false, null);

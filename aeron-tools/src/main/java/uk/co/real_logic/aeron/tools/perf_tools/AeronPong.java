@@ -1,5 +1,7 @@
 package uk.co.real_logic.aeron.tools.perf_tools;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
@@ -8,8 +10,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by philip on 4/7/15.
@@ -21,15 +21,15 @@ public class AeronPong
     private Aeron aeron = null;
     private Publication pongPub = null;
     private Subscription pingSub = null;
-    private int pingStreamId = 10;
-    private int pongStreamId = 11;
-    private String pingChannel = "udp://localhost:44444";
-    private String pongChannel = "udp://localhost:55555";
-    private AtomicBoolean running = new AtomicBoolean(true);
+    private final int pingStreamId = 10;
+    private final int pongStreamId = 11;
+    private final String pingChannel = "udp://localhost:44444";
+    private final String pongChannel = "udp://localhost:55555";
+    private final AtomicBoolean running = new AtomicBoolean(true);
     private boolean claim = false;
     private BufferClaim bufferClaim = null;
 
-    public AeronPong(boolean claim)
+    public AeronPong(final boolean claim)
     {
         ctx = new Aeron.Context();
         if (claim)
@@ -66,33 +66,33 @@ public class AeronPong
         aeron.close();
     }
 
-    private void pingHandler(DirectBuffer buffer, int offset, int length, Header header)
+    private void pingHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         if (buffer.getByte(offset + 0) == (byte)'q')
         {
             running.set(false);
             return;
         }
-        while (!pongPub.offer(buffer, offset, length))
+        while (pongPub.offer(buffer, offset, length) < 0L)
         {
         }
     }
 
-    private void pingHandlerClaim(DirectBuffer buffer, int offset, int length, Header header)
+    private void pingHandlerClaim(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         if (buffer.getByte(offset + 0) == (byte)'q')
         {
             running.set(false);
             return;
         }
-        if (pongPub.tryClaim(length, bufferClaim))
+        if (pongPub.tryClaim(length, bufferClaim) >= 0)
         {
             try
             {
-                MutableDirectBuffer newBuffer = bufferClaim.buffer();
+                final MutableDirectBuffer newBuffer = bufferClaim.buffer();
                 newBuffer.putBytes(bufferClaim.offset(), buffer, offset, length);
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
             }
@@ -107,7 +107,7 @@ public class AeronPong
         }
     }
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         AeronPong pong = null;
 

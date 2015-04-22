@@ -311,6 +311,9 @@ public class Configuration
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
 
+    /** Disable the NACKs from media driver (used for QA only)*/
+    public static final String DO_NOT_SEND_NACK_PROP_NAME = "aeron.driver.disable.nack";
+
     /**
      * How far ahead the receiver can get from the subscriber position.
      *
@@ -395,7 +398,7 @@ public class Configuration
         SenderFlowControl senderFlowControl = null;
         try
         {
-             senderFlowControl= (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
+             senderFlowControl = (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {
@@ -478,5 +481,10 @@ public class Configuration
     public static ThreadingMode threadingMode()
     {
         return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, THREADING_MODE_DEFAULT));
+    }
+
+    public static boolean dontSendNack()
+    {
+        return Boolean.parseBoolean(getProperty(DO_NOT_SEND_NACK_PROP_NAME, "false"));
     }
 }

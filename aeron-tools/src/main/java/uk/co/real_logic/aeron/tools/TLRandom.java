@@ -9,7 +9,7 @@ public class TLRandom
     private static final ThreadLocal<Random> RND = new ThreadLocal<Random>();
     private static SeedCallback seedCallback;
 
-    public static void setSeedCallback(SeedCallback callback)
+    public static void setSeedCallback(final SeedCallback callback)
     {
         seedCallback = callback;
     }

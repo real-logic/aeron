@@ -35,7 +35,10 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
  * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |                         Channel Length                        |
+ * |                          Position                             |
+ * |                                                               |
+ * +---------------------------------------------------------------+
+ * |                        Channel Length                         |
  * +---------------------------------------------------------------+
  * |                           Channel                           ...
  * ...                                                             |
@@ -46,7 +49,8 @@ public class ConnectionMessageFlyweight extends Flyweight
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = 8;
     private static final int STREAM_ID_FIELD_OFFSET = 12;
-    private static final int CHANNEL_OFFSET = 16;
+    private static final int POSITION_FIELD_OFFSET =  16;
+    private static final int CHANNEL_OFFSET = 24;
 
     private int lengthOfChannel;
 
@@ -111,6 +115,29 @@ public class ConnectionMessageFlyweight extends Flyweight
     public ConnectionMessageFlyweight streamId(final int streamId)
     {
         buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * The position at which this connection when inactive.
+     *
+     * @return position at which this connection when inactive.
+     */
+    public long position()
+    {
+        return buffer().getLong(offset() + POSITION_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    }
+
+    /**
+     * The position at which this connection when inactive.
+     *
+     * @param position at which this connection when inactive.
+     * @return flyweight
+     */
+    public ConnectionMessageFlyweight position(final long position)
+    {
+        buffer().putLong(offset() + POSITION_FIELD_OFFSET, position, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }

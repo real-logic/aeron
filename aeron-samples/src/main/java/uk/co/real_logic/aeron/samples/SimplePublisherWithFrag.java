@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import java.nio.ByteBuffer;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.tools.MessageStream;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
 
 /**
  * A  Aeron publisher application with fragmented data
@@ -34,7 +34,7 @@ public class SimplePublisherWithFrag
         // 'UnsafeBuffer' class is part of agrona data structure, used for very efficient buffer management
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
 
-        String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
+        final String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
         final int streamId = 10; //A unique identifier for a Stream within a channel. A value of 0 is reserved
 
         System.out.println("Publishing to " + channel + " on stream Id " + streamId);
@@ -47,8 +47,8 @@ public class SimplePublisherWithFrag
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(channel, streamId))
         {
-         // Allocate a session buffer bigger than default Aeron MTU size (4096)
-            MessageStream msgStream = new MessageStream(8192);
+            // Allocate a session buffer bigger than default Aeron MTU size (4096)
+            final MessageStream msgStream = new MessageStream(8192);
             int len = msgStream.getNext(buffer); // Size of 'BUFFER' must be big enough to hold (8192 + 12(header))
             // Try to send 5 messages from publisher. All five messages are considered as a part of a stream
             for (int i = 1; i < 6; i++)
@@ -57,8 +57,8 @@ public class SimplePublisherWithFrag
                     // In case the call fails, it must be retried
                     System.out.print("offering " + i + "/" + 5);
                     // Try to publish buffer from first publisher
-                    final boolean result = publication.offer(buffer, 0, len);
-                    if (!result)
+                    final long result = publication.offer(buffer, 0, len);
+                    if (result < 0L)
                     {
                         System.out.println(" ah? "); // Failed to send the message, Need to retry the send
                     }

@@ -31,8 +31,22 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 
 public class SubscriberTool
-    implements RateReporter.Stats, SeedCallback
+    implements RateReporter.Stats, SeedCallback, RateReporter.Callback
 {
+    static
+    {
+        /* Turn off some of the default clutter of the default logger if the
+         * user hasn't explicitly turned it back on. */
+        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
+        }
+    }
+
     private static final Logger LOG = LoggerFactory.getLogger(SubscriberTool.class);
     private boolean shuttingDown;
     private final PubSubOptions options = new PubSubOptions();
@@ -51,7 +65,7 @@ public class SubscriberTool
      * specific expansions in the future. */
     private static final int CHANNEL_NAME_MAX_LEN = 256;
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         final SubscriberTool subTool = new SubscriberTool();
         try
@@ -64,7 +78,7 @@ public class SubscriberTool
         }
         catch (final ParseException e)
         {
-            System.out.println(e.getMessage());
+            LOG.error(e.getMessage());
             subTool.options.printHelp("SubscriberTool");
             System.exit(-1);
         }
@@ -94,7 +108,7 @@ public class SubscriberTool
             subThreads[i].start();
         }
 
-        final RateReporter rateReporter = new RateReporter(subTool);
+        final RateReporter rateReporter = new RateReporter(subTool, subTool);
 
         /* Wait for threads to exit. */
         try
@@ -129,13 +143,13 @@ public class SubscriberTool
         final long verifiableMessages = subTool.verifiableMessages();
         final long nonVerifiableMessages = subTool.nonVerifiableMessages();
         final long bytesReceived = subTool.bytes();
-        System.out.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.%n",
+        LOG.info("{}", String.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
                 verifiableMessages + nonVerifiableMessages,
-                bytesReceived, verifiableMessages, nonVerifiableMessages);
+                bytesReceived, verifiableMessages, nonVerifiableMessages));
     }
 
     /** Warn about options settings that might cause trouble. */
-    private static void sanityCheckOptions(PubSubOptions options)
+    private static void sanityCheckOptions(final PubSubOptions options)
     {
         if (options.getThreads() > 1)
         {
@@ -205,7 +219,7 @@ public class SubscriberTool
         {
             seed = options.getRandomSeed();
         }
-        System.out.format("Thread %s using random seed %d.%n", Thread.currentThread().getName(), seed);
+        LOG.info("{}", String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
         return seed;
     }
 
@@ -236,7 +250,7 @@ public class SubscriberTool
         private int lastBytesReceived;
 
         @SuppressWarnings("resource")
-        public SubscriberThread(int threadId)
+        public SubscriberThread(final int threadId)
         {
             this.threadId = threadId;
             RateController rc = null;
@@ -244,7 +258,7 @@ public class SubscriberTool
             {
                 rc = new RateController(this, options.getRateIntervals(), options.getIterations());
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
                 System.exit(-1);
@@ -283,8 +297,8 @@ public class SubscriberTool
                 {
                     if ((streamIdx % options.getThreads()) == this.threadId)
                     {
-                        System.out.format("subscriber-thread %d subscribing to: %s#%d%n", threadId,
-                                channel.getChannel(), channel.getStreamIdentifiers()[j]);
+                        LOG.info("{}", String.format("subscriber-thread %d subscribing to: %s#%d", threadId,
+                                channel.getChannel(), channel.getStreamIdentifiers()[j]));
 
                         /* Add appropriate entries to the messageStreams map. */
                         Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
@@ -350,7 +364,7 @@ public class SubscriberTool
         }
 
         /** Looks for a connection in the active subscriptions list; if it's not found, it adds it. */
-        private void makeActive(String channel, int streamId)
+        private void makeActive(final String channel, final int streamId)
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
@@ -381,7 +395,7 @@ public class SubscriberTool
         }
 
         /** Looks for a connection in the active subscriptions list; if it's found, take it out. */
-        private void makeInactive(String channel, int streamId)
+        private void makeInactive(final String channel, final int streamId)
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
@@ -413,14 +427,15 @@ public class SubscriberTool
             private final Int2ObjectHashMap<MessageStream> sessionIdMap;
             private final OutputStream os = options.getOutput();
 
-            public MessageStreamHandler(String channel, int streamId, Int2ObjectHashMap<MessageStream> sessionIdMap)
+            public MessageStreamHandler(final String channel, final int streamId,
+                    final Int2ObjectHashMap<MessageStream> sessionIdMap)
             {
                 this.channel = channel;
                 this.streamId = streamId;
                 this.sessionIdMap = sessionIdMap;
             }
 
-            public void onControl(DirectBuffer buffer, int offset, int length, Header header)
+            public void onControl(final DirectBuffer buffer, final int offset, final int length, final Header header)
             {
                 /* Make sure this was really intended for this app - we might have a bunch
                  * running on the same machine. */
@@ -439,15 +454,15 @@ public class SubscriberTool
 
                 if (action == CONTROL_ACTION_NEW_CONNECTION)
                 {
-                    System.out.format("NEW CONNECTION: channel \"%s\", stream %d, session %d%n",
-                            channel, streamId, sessionId);
+                    LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
+                            channel, streamId, sessionId));
 
                     /* Create a new MessageStream for this connection if it doesn't already exist. */
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
                             messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("WARNING: New connection detected for channel we were not subscribed to.");
+                        LOG.warn("New connection detected for channel we were not subscribed to.");
                     }
                     else
                     {
@@ -455,7 +470,7 @@ public class SubscriberTool
                                 streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("WARNING: New connection detected for channel we were not subscribed to.");
+                            LOG.warn("New connection detected for channel we were not subscribed to.");
                         }
                         else
                         {
@@ -473,14 +488,14 @@ public class SubscriberTool
                 }
                 else if (action == CONTROL_ACTION_INACTIVE_CONNECTION)
                 {
-                    System.out.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d%n",
-                            channel, streamId, sessionId);
+                    LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
+                            channel, streamId, sessionId));
 
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
                             messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("WARNING: Inactive connection detected for unknown connection.");
+                        LOG.warn("Inactive connection detected for unknown connection.");
                     }
                     else
                     {
@@ -488,14 +503,14 @@ public class SubscriberTool
                                 streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("WARNING: Inactive connection detected for unknown connection.");
+                            LOG.warn("Inactive connection detected for unknown connection.");
                         }
                         else
                         {
                             final MessageStream ms = sessionIdMap.get(sessionId);
                             if (ms == null)
                             {
-                                LOG.warn("WARNING: Inactive connection detected for unknown connection.");
+                                LOG.warn("Inactive connection detected for unknown connection.");
                             }
                             else
                             {
@@ -513,11 +528,11 @@ public class SubscriberTool
                 }
                 else
                 {
-                    System.out.format("WARNING: Unknown control message type (%d) received.", action);
+                    LOG.warn("{}", String.format("Unknown control message type (%d) received.", action));
                 }
             }
 
-            public void onMessage(DirectBuffer buffer, int offset, int length, Header header)
+            public void onMessage(final DirectBuffer buffer, final int offset, final int length, final Header header)
             {
                 bytesReceived += length;
                 MessageStream ms = null;
@@ -636,7 +651,7 @@ public class SubscriberTool
             ctx.close();
         }
 
-        private void enqueueControlMessage(int type, String channel, int streamId, int sessionId)
+        private void enqueueControlMessage(final int type, final String channel, final int streamId, final int sessionId)
         {
             /* Don't deliver events for the control channel itself. */
             if ((streamId != CONTROL_STREAMID)
@@ -649,7 +664,7 @@ public class SubscriberTool
                 controlBuffer.putBytes(8, channelBytes);
                 controlBuffer.putInt(8 + channelBytes.length, streamId);
                 controlBuffer.putInt(12 + channelBytes.length, sessionId);
-                while (!controlPublication.offer(controlBuffer, 0, 16 + channelBytes.length))
+                while (controlPublication.offer(controlBuffer, 0, 16 + channelBytes.length) < 0L)
                 {
 
                 }
@@ -657,15 +672,16 @@ public class SubscriberTool
         }
 
         @Override
-        public void onInactiveConnection(String channel, int streamId, int sessionId)
+        public void onInactiveConnection(final String channel, final int streamId,
+                final int sessionId, final long position)
         {
             /* Handle processing the inactive connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_INACTIVE_CONNECTION, channel, streamId, sessionId);
         }
 
         @Override
-        public void onNewConnection(String channel, int streamId, int sessionId,
-                String sourceInformation)
+        public void onNewConnection(final String channel, final int streamId, final int sessionId,
+                final long position, final String sourceInformation)
         {
             /* Handle processing the new connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);
@@ -678,5 +694,11 @@ public class SubscriberTool
              * to simulate a slow receiver.  Return the number of bytes we just received. */
             return lastBytesReceived;
         }
+    }
+
+    @Override
+    public void report(final StringBuilder reportString)
+    {
+        LOG.info("{}", reportString);
     }
 }

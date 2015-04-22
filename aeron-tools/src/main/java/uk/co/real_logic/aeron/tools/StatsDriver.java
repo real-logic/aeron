@@ -1,8 +1,14 @@
 package uk.co.real_logic.aeron.tools;
 
-import org.apache.commons.cli.*;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
+import uk.co.real_logic.aeron.common.concurrent.SigInt;
 
 public class StatsDriver
 {
@@ -12,7 +18,7 @@ public class StatsDriver
   private String file = null;
   private AtomicBoolean running = null;
 
-  public StatsDriver(String[] args)
+  public StatsDriver(final String[] args)
   {
     try
     {
@@ -20,8 +26,9 @@ public class StatsDriver
       running = new AtomicBoolean(true);
       stats = new Stats(output, null);
 
-      Runnable task = new Runnable()
+      final Runnable task = new Runnable()
       {
+        @Override
         public void run()
         {
           try
@@ -33,24 +40,24 @@ public class StatsDriver
             }
             stats.close();
           }
-          catch (Exception e)
+          catch (final Exception e)
           {
             e.printStackTrace();
           }
         }
       };
-      Thread worker = new Thread(task);
+      final Thread worker = new Thread(task);
       worker.start();
 
       SigInt.register(() -> running.set(false));
     }
-    catch (Exception e)
+    catch (final Exception e)
     {
       e.printStackTrace();
     }
   }
 
-  public void parseArgs(String[] args) throws ParseException
+  public void parseArgs(final String[] args) throws ParseException
   {
     options = new Options();
     options.addOption(null, "vmstat", false, "Format transport stats in vmstat format.");
@@ -60,7 +67,7 @@ public class StatsDriver
     options.addOption(null, "file", true, "Output file for csv format stats.");
     options.addOption("h", "help", false, "Display help message.");
 
-    String help = "This application will dump Aeron statistics in a format requested.\n" +
+    final String help = "This application will dump Aeron statistics in a format requested.\n" +
             "Possible formats are console, csv, netstat, and vmstat.\n" +
             "Options: \n" +
             "\t--console    stats are dumped to the console.\n" +
@@ -71,10 +78,10 @@ public class StatsDriver
             "\t--vmstat     The driver statistics are printed in a columnure format.\n" +
             "\t--help       Print this message.\n";
 
-    CommandLineParser parser = new GnuParser();
-    CommandLine command = parser.parse(options, args);
+    final CommandLineParser parser = new GnuParser();
+    final CommandLine command = parser.parse(options, args);
 
-    String opt;
+    final String opt;
 
     if (command.hasOption("help"))
     {
@@ -107,7 +114,7 @@ public class StatsDriver
     }
   }
 
-  public static void main(String[] args)
+  public static void main(final String[] args)
   {
     new StatsDriver(args);
   }

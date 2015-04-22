@@ -59,24 +59,27 @@ public class EmbeddedPingPong
             .sharedNetworkIdleStrategy(new NoOpIdleStrategy())
             .sharedIdleStrategy(new NoOpIdleStrategy())
             .receiverIdleStrategy(new NoOpIdleStrategy())
-            .senderIdleStrategy(new NoOpIdleStrategy());
+            .senderIdleStrategy(new NoOpIdleStrategy())
+            .dirsDeleteOnExit(true);
 
-        try (final MediaDriver ignored = MediaDriver.launch(ctx))
+        try (final MediaDriver ignored = MediaDriver.launchEmbedded(ctx))
         {
-            Thread pongThread = startPong();
+            final Thread pongThread = startPong(ignored.contextDirName());
             pongThread.start();
-            runPing();
+
+            runPing(ignored.contextDirName());
             RUNNING.set(false);
             pongThread.join();
 
             System.out.println("Shutdown Driver...");
         }
     }
-    private static void runPing() throws InterruptedException
+    private static void runPing(final String embeddedDirName) throws InterruptedException
     {
 
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(EmbeddedPingPong::newPongConnectionHandler);
+        ctx.dirName(embeddedDirName);
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
@@ -116,7 +119,7 @@ public class EmbeddedPingPong
         }
     }
 
-    private static Thread startPong()
+    private static Thread startPong(final String embeddedDirName)
     {
         return new Thread()
         {
@@ -126,6 +129,7 @@ public class EmbeddedPingPong
                 System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
 
                 final Aeron.Context ctx = new Aeron.Context();
+                ctx.dirName(embeddedDirName);
                 try (final Aeron aeron = Aeron.connect(ctx);
                      final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
                      final Subscription pingSubscription = aeron.addSubscription(
@@ -155,7 +159,7 @@ public class EmbeddedPingPong
             {
                 ATOMIC_BUFFER.putLong(0, System.nanoTime());
             }
-            while (!pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH));
+            while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
             while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
             {
@@ -173,7 +177,7 @@ public class EmbeddedPingPong
     }
 
     private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
     {
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {
@@ -184,7 +188,7 @@ public class EmbeddedPingPong
     public static void pingHandler(
         final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
-        while (!pongPublication.offer(buffer, offset, length))
+        while (pongPublication.offer(buffer, offset, length) < 0L)
         {
             PING_HANDLER_IDLE_STRATEGY.idle(0);
         }

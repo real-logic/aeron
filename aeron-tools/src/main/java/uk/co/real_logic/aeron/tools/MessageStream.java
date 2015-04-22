@@ -12,12 +12,14 @@ public class MessageStream
     private static final int MAGIC_OFFSET = 0;
     private static final int MESSAGE_CHECKSUM_OFFSET = 4;
     private static final int SEQUENCE_NUMBER_OFFSET = 8;
-    private final int message_offset; /* Either 0 or 16, depending on if a verifiable message header is used. */
+    private final int messageOffset; /* Either 0 or 16, depending on if a verifiable message header is used. */
 
     private static final int HEADER_LENGTH = 16;
 
     private static final int MAGIC = 0x0dd01221; /* That's "2112d00d" when taken a byte at a time... */
     private static final int MAGIC_END = 0xbeba1221; /* That's "2112babe" when taken a byte at a time... */
+
+    private static final int HEX_PRINT_WIDTH = 16;
 
     private final int minSize;
     private final int maxSize;
@@ -26,11 +28,9 @@ public class MessageStream
     private InputStream inputStream;
     private byte[] inputStreamBytes;
 
-    private long sequenceNumber = 0;
+    private long sequenceNumber = -1;
     private long messageCount = 0;
     private boolean active = true;
-
-    private UnsafeBuffer copybuf = new UnsafeBuffer(new byte[1]);
 
     private static final ThreadLocalCRC32 MSG_CHECKSUM = new ThreadLocalCRC32();
 
@@ -42,32 +42,33 @@ public class MessageStream
         }
     }
 
-    public MessageStream(int size) throws Exception
+    public MessageStream(final int size) throws Exception
     {
         this(size, size, true, null);
     }
 
-    public MessageStream(int minSize, int maxSize) throws Exception
+    public MessageStream(final int minSize, final int maxSize) throws Exception
     {
         this(minSize, maxSize, true, null);
     }
 
-    public MessageStream(int size, InputStream inputStream) throws Exception
+    public MessageStream(final int size, final InputStream inputStream) throws Exception
     {
         this(size, size, true, inputStream);
     }
 
-    public MessageStream(int size, boolean verifiable, InputStream inputStream) throws Exception
+    public MessageStream(final int size, final boolean verifiable, final InputStream inputStream) throws Exception
     {
         this(size, size, verifiable, inputStream);
     }
 
-    public MessageStream(int minSize, int maxSize, boolean verifiable) throws Exception
+    public MessageStream(final int minSize, final int maxSize, final boolean verifiable) throws Exception
     {
         this(minSize, maxSize, verifiable, null);
     }
 
-    public MessageStream(int minSize, int maxSize, boolean verifiable, InputStream inputStream) throws Exception
+    public MessageStream(final int minSize, final int maxSize, final boolean verifiable,
+            final InputStream inputStream) throws Exception
     {
         this.inputStream = inputStream;
         if (this.inputStream == null)
@@ -100,13 +101,13 @@ public class MessageStream
         {
             this.minSize = minSize + HEADER_LENGTH;
             this.maxSize = maxSize + HEADER_LENGTH;
-            this.message_offset = 16;
+            this.messageOffset = HEADER_LENGTH;
         }
         else
         {
             this.minSize = minSize;
             this.maxSize = maxSize;
-            this.message_offset = 0;
+            this.messageOffset = 0;
         }
 
         if (this.minSize > this.maxSize)
@@ -120,12 +121,12 @@ public class MessageStream
     {
         this.minSize = 0;
         this.maxSize = 0;
-        this.message_offset = HEADER_LENGTH;
+        this.messageOffset = HEADER_LENGTH;
         this.verifiable = true;
         this.inputStream = null;
     }
 
-    public int payloadOffset(DirectBuffer buffer, int offset)
+    public int payloadOffset(final DirectBuffer buffer, final int offset)
     {
         if (isVerifiable(buffer, offset))
         {
@@ -134,48 +135,53 @@ public class MessageStream
         return 0;
     }
 
-    public void putNext(DirectBuffer buffer, int offset, int length) throws Exception
+    public void putNext(final DirectBuffer buffer, final int offset, final int length) throws Exception
     {
         if (!active)
         {
             throw new Exception("Stream has ended.");
         }
 
-        copybuf.wrap(buffer, offset, length);
         /* Assume we've already checked and it appears we have a verifiable message. */
 
         /* Sequence number check first. */
-        final long receivedSequenceNumber = copybuf.getLong(SEQUENCE_NUMBER_OFFSET);
-        if (receivedSequenceNumber != sequenceNumber)
+        final long receivedSequenceNumber = buffer.getLong(offset + SEQUENCE_NUMBER_OFFSET);
+        final long expectedSequenceNumber = sequenceNumber + 1;
+        if (receivedSequenceNumber != expectedSequenceNumber)
         {
-            Exception e = new Exception("Verifiable message stream received sequence number " +
+            final Exception e = new Exception("Verifiable message stream received sequence number " +
                     receivedSequenceNumber + ", but was expecting " +
-                    sequenceNumber + ". Possibly missed " +
-                    (receivedSequenceNumber - sequenceNumber) +
+                    expectedSequenceNumber + ". Possibly missed " +
+                    (receivedSequenceNumber - expectedSequenceNumber) +
                     " messages.");
             /* Update expected SQN for next time. */
-            sequenceNumber = receivedSequenceNumber + 1;
+            sequenceNumber = receivedSequenceNumber;
             throw e;
         }
 
-        /* Update expected SQN for next time. */
+        /* Update SQN for next time. */
         sequenceNumber++;
 
-        /* Save the checksum first, then blank it out. */
-        int msgCksum = copybuf.getInt(MESSAGE_CHECKSUM_OFFSET);
-
-        copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, 0);
-
-        CRC32 crc = MSG_CHECKSUM.get();
+        /* Calculate the checksum - substituting 0's for the checksum
+         * field itself - and then compare it to the received checksum
+         * field. */
+        final CRC32 crc = MSG_CHECKSUM.get();
         crc.reset();
-        for (int i = 0; i < length; i++)
+        int i = offset;
+        for (; i < (offset + MESSAGE_CHECKSUM_OFFSET); i++)
         {
-            crc.update(copybuf.getByte(i));
+            crc.update(buffer.getByte(i));
+        }
+        for (; i < (offset + SEQUENCE_NUMBER_OFFSET); i++)
+        {
+            crc.update(0);
+        }
+        for (; i < (offset + length); i++)
+        {
+            crc.update(buffer.getByte(i));
         }
 
-        /* Put originally received checksum back in place. */
-        copybuf.putInt(MESSAGE_CHECKSUM_OFFSET, msgCksum);
-
+        final int msgCksum = buffer.getInt(offset + MESSAGE_CHECKSUM_OFFSET);
         if ((int)(crc.getValue()) != msgCksum)
         {
             throw new Exception("Verifiable message per-message checksum invalid; received " +
@@ -184,13 +190,13 @@ public class MessageStream
 
         messageCount++;
         /* Look for an end marker. */
-        if (copybuf.getInt(MAGIC_OFFSET) == MAGIC_END)
+        if (buffer.getInt(offset + MAGIC_OFFSET) == MAGIC_END)
         {
             active = false;
         }
     }
 
-    public void reset(InputStream inputStream)
+    public void reset(final InputStream inputStream)
     {
         reset();
         this.inputStream = inputStream;
@@ -201,26 +207,56 @@ public class MessageStream
         /* Reset stream checksum and set things back to active, 0 messages, etc. */
         active = true;
         messageCount = 0;
-        sequenceNumber = 0;
+        sequenceNumber = -1;
     }
 
+    /**
+     * Returns whether the MessageStream is still active
+     * (ie, has not ended if, for example, a file was being sent).
+     * @return true if the stream is still expecting to generate
+     * or receive more messages, false otherwise
+     */
     public boolean isActive()
     {
         return active;
     }
 
+    /**
+     * Returns the number of messages that have been either generated (if
+     * this is a publisher-side MessageStream) or inserted (if this is a
+     * subscriber-side MessageStream).
+     * @return the number of messages that have been either generated
+     * from or inserted into the MessageStream
+     */
     public long getMessageCount()
     {
         return messageCount;
     }
 
+    /**
+     * Gets the current sequence number of the MessageStream; for a
+     * publisher-side MessageStream, this is the sequence number of
+     * the last message that was generated.  For a subscriber-side
+     * MessageStream, this is the sequence number of the last message
+     * inserted.  If no messages have yet been generated or inserted,
+     * this will return -1.
+     * @return the MessageStream's current sequence number, or -1 if no
+     * messages have been generated or inserted
+     */
     public long getSequenceNumber()
     {
         return sequenceNumber;
     }
 
-    /** Returns true if the buffer is _probably_ a verifiable message, false otherwise. */
-    public static boolean isVerifiable(DirectBuffer buffer, int offset)
+    /** Returns true if the buffer is _probably_ a verifiable message, false otherwise.
+     * This method just looks for a magic word at the beginning of the message; random
+     * data might happen to reproduce one of the magic words about 1 in 2 billion
+     * times.
+     * @param buffer Buffer with a message that may or may not be a verifiable message
+     * @param offset Offset within the buffer where the message starts
+     * @return true if the message appears to be a verifiable message, false otherwise
+     */
+    public static boolean isVerifiable(final DirectBuffer buffer, final int offset)
     {
         if ((buffer.capacity() - offset) < HEADER_LENGTH)
         {
@@ -234,19 +270,17 @@ public class MessageStream
         return false;
     }
 
-    private static final int HEX_PRINT_WIDTH = 16;
-
-    static void printHex(DirectBuffer buffer, int length)
+    static void printHex(final DirectBuffer buffer, final int length)
     {
         printHex(buffer, 0, length);
     }
 
-    static void printHex(UnsafeBuffer buffer, int length)
+    static void printHex(final UnsafeBuffer buffer, final int length)
     {
         printHex(buffer, 0, length);
     }
 
-    static void printHex(UnsafeBuffer buffer, int offset, int length)
+    static void printHex(final UnsafeBuffer buffer, final int offset, final int length)
     {
         int pos = 0;
         for (int i = offset; i < (offset + length); i++)
@@ -260,7 +294,7 @@ public class MessageStream
         System.out.println();
     }
 
-    public static void printHex(DirectBuffer buffer, int offset, int length)
+    public static void printHex(final DirectBuffer buffer, final int offset, final int length)
     {
         int pos = 0;
         for (int i = offset; i < (offset + length); i++)
@@ -274,22 +308,27 @@ public class MessageStream
         System.out.println();
     }
 
-    /** Returns total number of bytes written.
+    /** Generates a message of random (within the constraints the MessageStream was
+     * created with) size and writes it into the given buffer. Returns the number
+     * of bytes actually written to the buffer.
+     * @param buffer The buffer to write a message to.
+     * @return number of bytes written
      * @throws Exception */
-    public int getNext(UnsafeBuffer buffer) throws Exception
+    public int getNext(final UnsafeBuffer buffer) throws Exception
     {
         if (buffer.capacity() < maxSize)
         {
             throw new Exception("Buffer capacity must be at least " + maxSize + " bytes.");
         }
 
-        int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
+        final int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
         return getNext(buffer, size);
     }
 
-    /* This method exists only because of the idiotic 100-line method limit
-     * in checkstyle.  Otherwise it would've all gone in to the top of getNext. */
-    private void checkConstraints(UnsafeBuffer buffer, int size) throws Exception
+    /* This method exists only because of the 100-line method limit
+     * in checkstyle.  The checks here really belong, functionally,
+     * at the top of getNext. */
+    private void checkConstraints(final UnsafeBuffer buffer, final int size) throws Exception
     {
         if (!active)
         {
@@ -312,10 +351,14 @@ public class MessageStream
         }
     }
 
-    /** Generates a message of the desired size (size must be at least 12 bytes for
-     * verifiable message headers if verifiable messages are on).
+    /** Generates a message of the desired size (size must be at least 16 bytes for
+     * verifiable message headers if verifiable messages are on) and writes it
+     * into the given buffer. Returns the number of bytes actually written to the buffer.
+     * @param buffer The buffer to write a message to.
+     * @param size The length of the message to write, in bytes
+     * @return number of bytes written
      * @throws Exception */
-    public int getNext(UnsafeBuffer buffer, int size) throws Exception
+    public int getNext(final UnsafeBuffer buffer, final int size) throws Exception
     {
         checkConstraints(buffer, size);
 
@@ -324,18 +367,18 @@ public class MessageStream
         /* If checksums are on, begin with a message header. */
         if (verifiable)
         {
+            sequenceNumber++;
             buffer.putInt(MAGIC_OFFSET, MAGIC);
             buffer.putInt(MESSAGE_CHECKSUM_OFFSET, 0); /* Initially, checksum is set to 0. */
             buffer.putLong(SEQUENCE_NUMBER_OFFSET, sequenceNumber);
-            sequenceNumber++;
-            pos = message_offset;
+            pos = messageOffset;
         }
         else
         {
             pos = 0;
         }
 
-        int lenleft = size - pos;
+        final int lenleft = size - pos;
 
         /* Try to pull out "size" bytes from the InputStream.  If we
          * can't (stream ends, etc.), then just fill in what we got;
@@ -352,7 +395,7 @@ public class MessageStream
             buffer.putBytes(pos, inputStreamBytes, 0, sizeRead);
             pos += sizeRead;
         }
-        else
+        else if (sizeRead < 0)
         {
             /* I guess the inputStream is done.  So change the
              * message type to an end message (if using verifiable
@@ -367,7 +410,7 @@ public class MessageStream
         /* Now calculate rolling and then per-message checksums if verifiable messages are on. */
         if (verifiable)
         {
-            CRC32 msgCksum = MSG_CHECKSUM.get();
+            final CRC32 msgCksum = MSG_CHECKSUM.get();
             msgCksum.reset();
             for (int i = 0; i < pos; i++)
             {

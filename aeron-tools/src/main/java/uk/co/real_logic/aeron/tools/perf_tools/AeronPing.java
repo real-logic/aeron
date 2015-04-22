@@ -9,10 +9,15 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.PrintWriter;
+import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -162,12 +167,12 @@ public class AeronPing implements NewConnectionHandler
         final Graphics2D g = image.createGraphics();
         g.setColor(Color.white);
         g.fillRect(0, 0, 1800, 1000);
-        generateScatterPlot(g, 0, 0, min, max, .9);
-        generateScatterPlot(g, 600, 0, min, max, .99);
-        generateScatterPlot(g, 1200, 0, min, max, .999);
-        generateScatterPlot(g, 0, 500, min, max, .9999);
-        generateScatterPlot(g, 600, 500, min, max, .99999);
-        generateScatterPlot(g, 1200, 500, min, max, .999999);
+        generateScatterPlot(min, max, .9);
+        generateScatterPlot(min, max, .99);
+        generateScatterPlot(min, max, .999);
+        generateScatterPlot(min, max, .9999);
+        generateScatterPlot(min, max, .99999);
+        generateScatterPlot(min, max, .999999);
 
         g.setColor(Color.black);
         g.drawString(String.format("Mean: %.3fus Std. Dev %.3fus", mean, stdDev), 20, 940);
@@ -194,37 +199,32 @@ public class AeronPing implements NewConnectionHandler
         System.out.println("Max: " + max + " Index: " + maxIdx);
     }
 
-    private void generateScatterPlot(Graphics2D g, int x, int y, double min, double max, double percentile)
+    private void generateScatterPlot(double min, double max, double percentile)
     {
-        final FontMetrics fm = g.getFontMetrics();
         final int width = 390;
         final int height = 370;
         final int num = (int)((numMsgs - 1) * percentile);
         final double newMax = sorted[num];
-        final double stepY = (double)(height / (newMax - min));
-        final double stepX = (double)width / (double)num;
         final String title = "Latency Scatterplot (us) " + percentile + " percentile";
 
-        //System.out.println("Generating graph for " + percentile + " percentile");
-        g.setColor(Color.black);
-        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g.drawString(title, x + 100 + width / 2 - fm.stringWidth(title) / 2, y + 20);
-        g.drawString("" + newMax, x + 10, y + 20);
-        g.drawString("" + min, x + 10, y + 390);
-        g.drawLine(x + 100, y + 20, x + 100, y + 390);
-        g.drawLine(x + 100, y + 390, x + 490, y + 390);
 
-        g.setColor(Color.red);
-        int idx = 0;
-        for (int i = 0; i < numMsgs; i++)
+
+        final File file = new File(percentile + "_percentile.dat");
+        try
         {
-            if (tmp[i] <= newMax)
+            final PrintWriter out = new PrintWriter(file);
+            for (int i = 0; i < numMsgs; i++)
             {
-                final int posX = x + 100 + (int)(stepX * (double)idx);
-                final int posY = y + 390 - (int)(stepY * (tmp[i] - min));
-                g.fillRect(posX, posY, 1, 1);
-                idx++;
+                if (tmp[i] <= newMax)
+                {
+                    out.println(i + "\t" + tmp[i]);
+                }
             }
+            out.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
         }
     }
 
@@ -307,6 +307,84 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
+    public void generateHistogram()
+    {
+        final HashMap<Double, Integer> histogram = new HashMap<Double, Integer>();
+        int num = 0;
+        int maxNum = 0;
+        double maxVal = 0;
+        for (int i = 0; i < tmp.length; i++)
+        {
+            final double val = round(tmp[i], 6, BigDecimal.ROUND_HALF_UP);
+            if (val > maxVal)
+            {
+                maxVal = val;
+            }
+            if (histogram.containsKey(val))
+            {
+                num = histogram.get(val);
+            }
+            else
+            {
+                num = 0;
+            }
+            num++;
+            if (num > maxNum)
+            {
+                maxNum = num;
+            }
+            histogram.put(val, num);
+        }
+
+        System.out.println("There are " + histogram.size() + " histogram values");
+        final BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
+        final Graphics2D g = image.createGraphics();
+        final FontMetrics fm = g.getFontMetrics();
+        g.setColor(Color.white);
+        g.fillRect(0, 0, 1800, 1000);
+        final double stepX = 1600 / maxVal;
+        final double stepY = 900.0 / maxNum;
+        g.setColor(Color.black);
+        g.drawLine(100, 50, 100, 950);
+        g.drawLine(100, 950, 1700, 950);
+        g.drawString("0.0", 100, 960);
+        g.drawString(maxVal + "", 1700, 960);
+        g.drawString("RTT Latency Value (microseconds)", 900 - fm.stringWidth("RTT Latency Value (microseconds)") / 2, 970);
+        g.drawString(maxNum + "", 10, 50);
+        final AffineTransform orig = g.getTransform();
+
+        g.translate(60, 400);
+        g.rotate(-Math.PI / 2);
+        g.drawString("Number of occurrences", -fm.stringWidth("Number of occurrences") / 2, 0);
+        g.rotate(Math.PI / 2);
+        g.translate(-60, -400);
+
+        g.setColor(Color.red);
+        for (Map.Entry<Double, Integer> entry : histogram.entrySet())
+        {
+            final int xPos = 100 + (int)(entry.getKey() * stepX);
+            final int yPos = 950 - ((int)(entry.getValue() * stepY) + 1);
+            g.fillRect(xPos, yPos, 1, (int)(entry.getValue() * stepY) + 1);
+        }
+
+        final String filename = "PingHistogram.png";
+        final File imageFile = new File(filename);
+        try
+        {
+            ImageIO.write(image, "png", imageFile);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    private double round(double unrounded, int precision, int roundingMode)
+    {
+        final BigDecimal bd = new BigDecimal(unrounded);
+        final BigDecimal rounded = bd.setScale(precision, roundingMode);
+        return rounded.doubleValue();
+    }
     public static void main(String[] args)
     {
         AeronPing ping = null;
@@ -331,5 +409,6 @@ public class AeronPing implements NewConnectionHandler
         ping.run();
         ping.shutdown();
         ping.generateGraphs();
+        ping.generateHistogram();
     }
 }

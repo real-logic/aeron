@@ -220,12 +220,12 @@ class ClientConductor implements Agent, DriverListener
             {
                 if (!subscription.isConnected(sessionId))
                 {
-                    for (int i = 0, size = msg.positionIndicatorCount(); i < size; i++)
+                    for (int i = 0, size = msg.subscriberPositionCount(); i < size; i++)
                     {
                         if (subscription.registrationId() == msg.positionIndicatorRegistrationId(i))
                         {
                             final UnsafeBufferPosition position = new UnsafeBufferPosition(
-                                counterValuesBuffer, msg.positionIndicatorCounterId(i));
+                                counterValuesBuffer, msg.subscriberPositionId(i));
 
                             final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
                             final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();

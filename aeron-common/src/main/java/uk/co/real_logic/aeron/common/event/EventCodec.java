@@ -520,7 +520,7 @@ public class EventCodec
              command.channel(),
              command.sessionId(),
              command.streamId(),
-             command.positionIndicatorCount(),
+             command.subscriberPositionCount(),
              command.sourceInfo(),
              command.correlationId(),
              command.logFileName());

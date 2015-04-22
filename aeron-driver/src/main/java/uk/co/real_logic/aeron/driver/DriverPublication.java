@@ -223,7 +223,7 @@ public class DriverPublication implements AutoCloseable
                     break;
                 }
 
-                bytesSent += available + scanner.padding();
+                bytesSent = available + scanner.padding();
                 remainingBytes -= bytesSent;
             }
             while (remainingBytes > 0);

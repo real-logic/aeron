@@ -181,7 +181,6 @@ class ClientConductor implements Agent, DriverListener
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
-        final int mtuLength,
         final String logFileName,
         final long correlationId)
     {
@@ -190,6 +189,7 @@ class ClientConductor implements Agent, DriverListener
         final LogAppender[] appenders = new LogAppender[PARTITION_COUNT];
         final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
         final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
+        final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {

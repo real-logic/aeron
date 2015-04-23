@@ -119,15 +119,13 @@ public class ClientProxy
         final int sessionId,
         final RawLog rawLog,
         final long correlationId,
-        final int positionCounterId,
-        final int mtuLength)
+        final int positionCounterId)
     {
         publicationReady.wrap(tmpBuffer, 0);
         publicationReady.sessionId(sessionId)
                         .streamId(streamId)
                         .correlationId(correlationId)
-                        .publicationLimitCounterId(positionCounterId)
-                        .mtuLength(mtuLength);
+                        .publicationLimitCounterId(positionCounterId);
 
         publicationReady.channel(channel);
         publicationReady.logFileName(rawLog.logFileName());

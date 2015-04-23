@@ -365,6 +365,7 @@ public class DriverConductor implements Agent
             final UnsafeBuffer logMetaData = rawLog.logMetaData();
             LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
             LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
+            LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
 
             final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId, correlationId);
             final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId, correlationId);
@@ -415,8 +416,7 @@ public class DriverConductor implements Agent
             sessionId,
             publication.rawLogBuffers(),
             correlationId,
-            publication.publisherLimitCounterId(),
-            mtuLength);
+            publication.publisherLimitCounterId());
     }
 
     private void onRemovePublication(final long registrationId, final long correlationId)

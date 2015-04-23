@@ -49,10 +49,10 @@ public class RawLogFactory implements AutoCloseable
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
-        subscriptionsDir = fileMappingConvention.subscriptionsDir();
+        subscriptionsDir = fileMappingConvention.connectionsDir();
 
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
-        IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.SUBSCRIPTIONS);
+        IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.CONNECTIONS);
 
         this.publicationTermBufferLength = publicationTermBufferLength;
         this.connectionTermBufferMaxLength = connectionTermBufferMaxLength;
@@ -130,8 +130,8 @@ public class RawLogFactory implements AutoCloseable
         final long correlationId,
         final int termBufferLength)
     {
-        final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
+        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(dir, blankTemplate, termBufferLength, logger);
+        return new MappedRawLog(location, blankTemplate, termBufferLength, logger);
     }
 }

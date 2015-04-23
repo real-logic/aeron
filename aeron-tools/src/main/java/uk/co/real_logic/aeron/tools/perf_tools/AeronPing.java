@@ -79,7 +79,6 @@ public class AeronPing implements NewConnectionHandler
 
     public void run()
     {
-        System.out.println("Sending Warmup Messages");
         for (int i = 0; i < numWarmupMsgs; i++)
         {
             if (!claim)
@@ -93,7 +92,6 @@ public class AeronPing implements NewConnectionHandler
         }
         warmedUp = true;
 
-        System.out.println("Sending Real Messages");
         for (int i = 0; i < numMsgs; i++)
         {
             if (!claim)
@@ -111,7 +109,6 @@ public class AeronPing implements NewConnectionHandler
         {
 
         }
-        System.out.println("Done");
     }
 
     public void shutdown()
@@ -163,10 +160,6 @@ public class AeronPing implements NewConnectionHandler
         }
         stdDev = Math.sqrt(sum / tmp.length);
 
-        final BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
-        final Graphics2D g = image.createGraphics();
-        g.setColor(Color.white);
-        g.fillRect(0, 0, 1800, 1000);
         generateScatterPlot(min, max, .9);
         generateScatterPlot(min, max, .99);
         generateScatterPlot(min, max, .999);
@@ -174,22 +167,6 @@ public class AeronPing implements NewConnectionHandler
         generateScatterPlot(min, max, .99999);
         generateScatterPlot(min, max, .999999);
 
-        g.setColor(Color.black);
-        g.drawString(String.format("Mean: %.3fus Std. Dev %.3fus", mean, stdDev), 20, 940);
-        g.drawString("Min: " + min + " Index: " + minIdx, 20, 960);
-        g.drawString("Max: " + max + " Index: " + maxIdx, 20, 980);
-
-        final String filename = "Aeron_RTT.png";
-        final File imageFile = new File(filename);
-        try
-        {
-            ImageIO.write(image, "png", imageFile);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-        System.out.println("Completed");
         System.out.println("Num Messages: " + numMsgs);
         System.out.println("Message Length: " + msgLen);
         System.out.format("Mean: %.3fus\n", mean);
@@ -205,9 +182,6 @@ public class AeronPing implements NewConnectionHandler
         final int height = 370;
         final int num = (int)((numMsgs - 1) * percentile);
         final double newMax = sorted[num];
-        final String title = "Latency Scatterplot (us) " + percentile + " percentile";
-
-
 
         final File file = new File(percentile + "_percentile.dat");
         try
@@ -219,6 +193,24 @@ public class AeronPing implements NewConnectionHandler
                 {
                     out.println(i + "\t" + tmp[i]);
                 }
+            }
+            out.close();
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+    }
+
+    public void dumpData()
+    {
+        final File file = new File("ping.dat");
+        try
+        {
+            final PrintWriter out = new PrintWriter(file);
+            for (int i = 0; i < numMsgs; i++)
+            {
+                out.println(i + "\t" + tmp[i]);
             }
             out.close();
         }
@@ -307,78 +299,6 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    public void generateHistogram()
-    {
-        final HashMap<Double, Integer> histogram = new HashMap<Double, Integer>();
-        int num = 0;
-        int maxNum = 0;
-        double maxVal = 0;
-        for (int i = 0; i < tmp.length; i++)
-        {
-            final double val = round(tmp[i], 6, BigDecimal.ROUND_HALF_UP);
-            if (val > maxVal)
-            {
-                maxVal = val;
-            }
-            if (histogram.containsKey(val))
-            {
-                num = histogram.get(val);
-            }
-            else
-            {
-                num = 0;
-            }
-            num++;
-            if (num > maxNum)
-            {
-                maxNum = num;
-            }
-            histogram.put(val, num);
-        }
-
-        System.out.println("There are " + histogram.size() + " histogram values");
-        final BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
-        final Graphics2D g = image.createGraphics();
-        final FontMetrics fm = g.getFontMetrics();
-        g.setColor(Color.white);
-        g.fillRect(0, 0, 1800, 1000);
-        final double stepX = 1600 / maxVal;
-        final double stepY = 900.0 / maxNum;
-        g.setColor(Color.black);
-        g.drawLine(100, 50, 100, 950);
-        g.drawLine(100, 950, 1700, 950);
-        g.drawString("0.0", 100, 960);
-        g.drawString(maxVal + "", 1700, 960);
-        g.drawString("RTT Latency Value (microseconds)", 900 - fm.stringWidth("RTT Latency Value (microseconds)") / 2, 970);
-        g.drawString(maxNum + "", 10, 50);
-        final AffineTransform orig = g.getTransform();
-
-        g.translate(60, 400);
-        g.rotate(-Math.PI / 2);
-        g.drawString("Number of occurrences", -fm.stringWidth("Number of occurrences") / 2, 0);
-        g.rotate(Math.PI / 2);
-        g.translate(-60, -400);
-
-        g.setColor(Color.red);
-        for (Map.Entry<Double, Integer> entry : histogram.entrySet())
-        {
-            final int xPos = 100 + (int)(entry.getKey() * stepX);
-            final int yPos = 950 - ((int)(entry.getValue() * stepY) + 1);
-            g.fillRect(xPos, yPos, 1, (int)(entry.getValue() * stepY) + 1);
-        }
-
-        final String filename = "PingHistogram.png";
-        final File imageFile = new File(filename);
-        try
-        {
-            ImageIO.write(image, "png", imageFile);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
     private double round(double unrounded, int precision, int roundingMode)
     {
         final BigDecimal bd = new BigDecimal(unrounded);
@@ -409,6 +329,6 @@ public class AeronPing implements NewConnectionHandler
         ping.run();
         ping.shutdown();
         ping.generateGraphs();
-        ping.generateHistogram();
+        ping.dumpData();
     }
 }

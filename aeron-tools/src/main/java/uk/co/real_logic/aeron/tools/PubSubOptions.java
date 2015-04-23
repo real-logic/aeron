@@ -1441,7 +1441,7 @@ public class PubSubOptions
             "    Send 60 messages at a rate of 1 message per second" + NL +
             NL +
             "-c udp://224.10.10.12:30000#1-10 -r 1Mbps -s 100-200 -m 1000000 -t 2" + NL +
-            "    Create 10 multicast channels on port 30000 using session ID 1 through 10." + NL +
+            "    Create 10 multicast channels on port 30000 using stream ID 1 through 10." + NL +
             "    These channels will be split Round-Robin across 2 threads that will each" + NL +
             "    send messages sized between 100 and 200 bytes at a rate of 1Mbps. After a" + NL +
             "    total of 1 million messages have been sent, the program will exit.";
@@ -1583,7 +1583,7 @@ public class PubSubOptions
             "--verify (yes|no)" + NL +                                                  // |
             "    Each message will reserve space for checksum data that can be used to" + NL +
             "    verify both the individual message and the stream up to that point." + NL +
-            "    The default behavior is 'yes', and will use the first 12 bytes of the" + NL +
+            "    The default behavior is 'yes', and will use the first 16 bytes of the" + NL +
             "    message payload to store verification data. To send messages with less" + NL +
             "    than 16 bytes of payload this option must be set to 'no'. Subscribers" + NL +
             "    can detect that a message is verifiable. The checksums are not written" + NL +

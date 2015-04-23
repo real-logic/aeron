@@ -22,58 +22,76 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
- * A  Aeron publisher application
+ * A very simple Aeron publisher application
+ * Publishes a fixed size message on a fixed channel and stream. Upon completion
+ * of message send, it lingers for 5 seconds before exiting.
  */
 public class SimplePublisher
 {
     public static void main(final String[] args) throws Exception
     {
-        //Allocate enough buffer size to hold maximum stream buffer
-        // 'UnsafeBuffer' class is part of agrona data structure, used for very efficient buffer management
+        // Allocate enough buffer size to hold maximum message size
+        // The UnsafeBuffer class is part of the Agrona library and is
+        // used for efficient buffer management
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(512));
 
-        final String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
-        final int streamId = 10; //A unique identifier for a Stream within a channel. A value of 0 is reserved
+        // An end-point identifier to send the message to
+        final String channel = new String("udp://localhost:40123");
+
+        // A unique identifier for a stream within a channel. A value of 0 is reserved.
+        final int streamId = 10;
 
         System.out.println("Publishing to " + channel + " on stream Id " + streamId);
 
         // Create a context, needed for client connection to media driver
-        // A separate media driver process need to run prior to running this application
+        // A separate media driver process needs to be running prior to starting this application
         final Aeron.Context ctx = new Aeron.Context();
 
         // Create an Aeron instance with client provided context configuration and connect to media driver
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Publication publication = aeron.addPublication(channel, streamId))
+        // Aeron is "AutoClosable" and will automatically clean up resources when this try block is finished
+
+        Publication publication = null;
+        Aeron aeron = null;
+
+        try
         {
-            //Prepare a buffer to be sent
-            String message = "Hello World! " + 1;
+            aeron = Aeron.connect(ctx);
+            publication = aeron.addPublication(channel, streamId);
+            // Prepare a buffer to be sent
+            final String message = "Hello World! ";
             buffer.putBytes(0, message.getBytes());
 
-            // Try to send 5 messages from publisher
-            for (int i = 1; i < 6; i++)
-            {
-                    // Try to publish buffer from first publisher. Call to 'offer' is a non-blocking call.
-                    // In case the call fails, it must be retried
-                    System.out.print("offering " + i + "/" + 5);
-                    final long result = publication.offer(buffer, 0, message.getBytes().length);
+            // Try to publish the buffer. 'offer' is a non-blocking call.
+            // If it returns less than 0, the message was not sent, and the offer should be retried.
+            final long result = publication.offer(buffer, 0, message.getBytes().length);
 
-                    if (result < 0L)
-                    {
-                        System.out.println(" ah? "); // Failed to send the message
-                    }
-                    else
-                    {
-                        // Successfully sent the message
-                        System.out.println(" yay !!");
-                        message = "Hello World! " + (i + 1);
-                        buffer.putBytes(0, message.getBytes());
-                    }
+            if (result < 0L)
+            {
+                // Message offer failed
+                if (result == Publication.BACK_PRESSURE)
+                {
+                    System.out.println(" Offer failed due to back pressure");
                 }
-                Thread.sleep(1000);
+                else if (result == Publication.NOT_CONNECTED)
+                {
+                    System.out.println(" Offer failed because publisher is not yet connected to subscriber");
+                }
+                else
+                {
+                    System.out.println(" Offer failed due to unknown reason");
+                }
+            }
+            else
+            {
+                // Successfully sent the message
+                System.out.println(" yay !!");
             }
             System.out.println("Done sending.");
-            // Linger for 5 seconds before exit so that all the data is drained out
-            System.out.println("Lingering for " + 5000 + " milliseconds...");
-                Thread.sleep(5000);
+        }
+        finally
+        {
+            publication.close();
+            aeron.close();
+        }
     }
 }

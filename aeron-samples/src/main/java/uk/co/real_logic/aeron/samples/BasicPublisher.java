@@ -26,6 +26,15 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Basic Aeron publisher application
+ * This publisher sends a fixed number of fixed-length messages
+ * on a channel and stream ID, then lingers to allow any consumers
+ * that experienced loss to recover any missing data.
+ * The default value for number of messages, channel, stream_id are
+ * defined in {@link SampleConfiguration} which can be changed by overwriting
+ * the default values.
+ * Also, the default
+ * channel and stream can be changed by setting java system properties at command line.
+ * i.e. (-Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20)
  */
 public class BasicPublisher
 {
@@ -43,12 +52,17 @@ public class BasicPublisher
 
         //Connect to media driver and add a publisher to Aeron instance
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
+
         // Create an Aeron context for client connection to media driver
+        // Aeron.Context is Autoclosable
         final Aeron.Context ctx = new Aeron.Context();
         if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }
+
+         // Aeron is "AutoClosable" and will automatically
+         // clean up resources when this try block is finished
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
@@ -56,7 +70,7 @@ public class BasicPublisher
             // Try to send messages
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                //Prepare a buffer to be sent
+                // Prepare a buffer to be sent
                 final String message = "Hello World! " + i;
                 BUFFER.putBytes(0, message.getBytes());
 
@@ -66,15 +80,26 @@ public class BasicPublisher
 
                 if (result < 0L)
                 {
-                    // Message offer did not succeed
-                    System.out.println(" ah?!");
+                    // Message offer failed
+                    if (result == Publication.BACK_PRESSURE)
+                    {
+                        System.out.println(" Offer failed due to back pressure");
+                    }
+                    else if (result == Publication.NOT_CONNECTED)
+                    {
+                        System.out.println(" Offer failed because publisher is not yet connected to subscriber");
+                    }
+                    else
+                    {
+                        System.out.println(" Offer failed due to unknown reason");
+                    }
                 }
                 else
                 {
                     // Successful message send
                     System.out.println(" yay!");
                 }
-                //Sleep for a second
+                // Sleep for a second
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             }
 

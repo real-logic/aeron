@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-//import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -24,60 +23,57 @@ import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.tools.MessageStream;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
-//import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
-
 /**
- * Multiple subscriber application which can receive fragmented messages
- * Create 2 subscribers on a given CHANNEL which can receive two independent stream of messages
+ * A subscriber application with two subscriptions which can receive fragmented messages
+ * Creates two subscriptions on a given CHANNEL which can receive two independent streams of messages.
+ * The default STREAM_ID and CHANNEL is
+ * is configured at {@link SampleConfiguration}. The default
+ * channel and stream can be changed by setting java system properties at the command line.
+ * i.e. (-Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20)
  */
-public class MultipleSubscriberWithFrag
+public class MultipleSubscribersWithFragmentAssembly
 {
     // A unique stream id within a given channel for subscriber one
-    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+    private static final int STREAM_ID_1 = SampleConfiguration.STREAM_ID;
     // A unique stream id within a given channel for subscriber two
     private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
     // Channel ID for the application
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    // Maximum Number of fragments to be read in a single poll operations
+    // Maximum number of fragments to be read in a single poll operation
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
-
-    //Create two message streams for two different subscribers
-    private static final MessageStream MSG_STREAM_1 = new MessageStream();
-    private static final MessageStream MSG_STREAM_2 = new MessageStream();
 
     public static void main(final String[] args) throws Exception
     {
-        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID + " and stream Id " + STREAM_ID_2);
+        System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
 
         // Create a context for a client and specify callback methods when
         // a new connection starts (eventNewConnection)
         // a connection goes inactive (eventInactiveConnection)
-        final Aeron.Context ctx = new Aeron.Context() /* Callback at new producer starts */
-            .newConnectionHandler(MultipleSubscriberWithFrag::eventNewConnection)
-            .inactiveConnectionHandler(MultipleSubscriberWithFrag::eventInactiveConnection);
+        final Aeron.Context ctx = new Aeron.Context()
+            .newConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventNewConnection)
+            .inactiveConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveConnection);
 
         // dataHandler method is called for every new datagram received
         // When a message is completely reassembled, the delegate method 'reassembledStringMessage' is called
-        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(reassembledStringMessage(STREAM_ID));
+        final FragmentAssemblyAdapter dataHandler1 = new FragmentAssemblyAdapter(reassembledStringMessage1(STREAM_ID_1));
 
         // Another Data handler for a different stream
         final FragmentAssemblyAdapter dataHandler2 = new FragmentAssemblyAdapter(reassembledStringMessage2(STREAM_ID_2));
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        //Register a SIGINT handler
+        // Register a SIGINT handler
         SigInt.register(() -> running.set(false));
 
         // Create an Aeron instance with client provided context configuration and connect to media driver
         try (final Aeron aeron = Aeron.connect(ctx);
-                //Add a subscription to Aeron for a given channel and steam. Also,
+                // Add a subscription to Aeron for a given channel and steam. Also,
                 // supply a dataHandler to be called when data arrives
-                final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler);
+                final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
                 final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
                 {
             // Initialize a backoff strategy to avoid excessive spinning
@@ -86,14 +82,13 @@ public class MultipleSubscriberWithFrag
 
                 try
                 {
-                    //Try to read the data for both the subscribers
+                    // Try to read the data for both the subscribers
                     while (running.get())
                     {
-                        final int fragmentsRead = subscription.poll(FRAGMENT_COUNT_LIMIT);
-                        idleStrategy.idle(fragmentsRead); // Call a backoff strategy
-
+                        final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
                         final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
-                        idleStrategy.idle(fragmentsRead2); // Call a backoff strategy
+                        // Call a backoff strategy
+                        idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
                     }
                 }
                 catch (final Exception ex)
@@ -119,19 +114,6 @@ public class MultipleSubscriberWithFrag
             String.format(
                 "new connection on %s streamId %x sessionId %x from %s",
                 channel, streamId, sessionId, sourceInformation));
-      //Reset the stream buffer because streams have restarted
-        if (streamId == STREAM_ID)
-        {
-            MSG_STREAM_1.reset();
-        }
-        else if (streamId == STREAM_ID_2)
-        {
-            MSG_STREAM_2.reset();
-        }
-        else
-        {
-            System.out.println("Invalid Stream ID : " + streamId);
-        }
 
     }
 
@@ -157,7 +139,7 @@ public class MultipleSubscriberWithFrag
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static DataHandler reassembledStringMessage(final int streamId)
+    public static DataHandler reassembledStringMessage1(final int streamId)
     {
         return (buffer, offset, length, header) ->
         {
@@ -166,27 +148,10 @@ public class MultipleSubscriberWithFrag
 
             System.out.println(
                 String.format(
-                    "message to stream %d from session %x term id %x term offset %d (%d@%d)",
-                    streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
-            try
-            {
-                if (streamId == STREAM_ID)
-                {
-                    MSG_STREAM_1.putNext(buffer, offset, length);
-                }
-                else
-                {
-                        System.out.println("Unknown Stream ID");
-                }
-            }
-            catch (final Exception e)
-            {
-                e.printStackTrace();
-            }
+                    "message (%s ) to stream %d from session %x term id %x term offset %d (%d@%d)",
+                    new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
         };
     }
-
-
 
 /**
  * Return a reusable, parameterized {@link DataHandler} that prints to stdout for the second stream (STREAM + 1)
@@ -203,24 +168,8 @@ public static DataHandler reassembledStringMessage2(final int streamId)
 
         System.out.println(
             String.format(
-                "message to stream %d from session %x term id %x term offset %d (%d@%d)",
-                streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
-        try
-        {
-
-            if (streamId == STREAM_ID_2)
-            {
-                MSG_STREAM_2.putNext(buffer, offset, length);
-            }
-            else
-            {
-                    System.out.println("Unknown Stream ID");
-            }
-        }
-        catch (final Exception e)
-        {
-            e.printStackTrace();
-        }
+                "message (%s ) to stream %d from session %x term id %x term offset %d (%d@%d)",
+                new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
     };
 }
 }

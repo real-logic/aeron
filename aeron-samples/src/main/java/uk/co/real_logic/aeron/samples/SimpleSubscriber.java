@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-//import java.io.PrintStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -23,29 +22,56 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 /**
- * Basic Aeron subscriber application which can receive fragmented messages
+ * A very simple Aeron subscriber application which can receive small non-fragmented messages
+ * on a fixed channel and stream.The datahandler method 'printStringMessage' is called when data
+ * is received. This application doesn't handle large fragmented messages. For fragmented message reception,
+ * look at the application at {@link MultipleSubscriberWithFragmentation}
+ *
  */
 public class SimpleSubscriber
 {
     public static void main(final String[] args) throws Exception
     {
-        final int fragmentLimitCount = 10; // Number of message fragments to limit for a single 'poll' operation
-        final String channel = new String("udp://localhost:40123"); // An End-point identifier to receive message from
-        final int streamId = 10; //A unique identifier for a Stream within a channel. A value of 0 is reserved
+        // Number of message fragments to limit for a single 'poll' operation
+        final int fragmentLimitCount = 10;
+
+        // An end-point identifier to receive message from
+        final String channel = new String("udp://localhost:40123");
+
+        // A unique identifier for a Stream within a channel. A value of 0 is reserved
+        final int streamId = 10;
 
         System.out.println("Subscribing to " + channel + " on stream Id " + streamId);
 
         // dataHandler method is called for every new datagram received
-        final DataHandler dataHandler = printStringMessage(streamId);
-
+        //final DataHandler dataHandler = printStringMessage(streamId);
         // Variable 'running' is set to 'true'
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        //Register a SIGINT handler. On receipt of SIGINT, set variable 'running' to 'false'
+        final DataHandler dataHandler = new DataHandler()
+        {
+            @Override
+            public void onData(DirectBuffer buffer, int offset, int length, Header header)
+            {
+                final byte[] data = new byte[length];
+                buffer.getBytes(offset, data);
+
+                System.out.println(
+                    String.format(
+                        "Received message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
+                        new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+                // Received the intended message, time to exit the program
+                running.set(false);
+             }
+        };
+
+        // Register a SIGINT handler. On receipt of SIGINT, set variable 'running' to 'false'
         SigInt.register(() -> running.set(false));
 
         // Create a context, needed for client connection to media driver
@@ -53,55 +79,43 @@ public class SimpleSubscriber
         final Aeron.Context ctx = new Aeron.Context();
 
         // Create an Aeron instance with client provided context configuration and connect to media driver
-        try (final Aeron aeron = Aeron.connect(ctx);
+        Subscription subscription = null;
+        Aeron aeron = null;
+        try
+        {
+            aeron = Aeron.connect(ctx);
 
-                //Add a subscription to Aeron for a given channel and steam. Also,
-                // supply a dataHandler to be called when data arrives
-                // This works only if published data is not fragmented by Aeron
-                final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
-                {
-                    // Initialize an 'Idlestrategy' class for a back off strategy
-                    final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-                            100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+            // Add a subscription to Aeron for a given channel and steam. Also,
+            // supply a dataHandler to be called when data arrives
+            // This works only if published data is not fragmented by Aeron
+            subscription = aeron.addSubscription(channel, streamId, dataHandler);
 
+                final IdleStrategy idleStrategy = new BackoffIdleStrategy(
+                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
                 try
                 {
-                        //Try to read the data from subscriber
+                        // Try to read the data from subscriber
                         while (running.get())
                         {
-                            // poll returns number of fragments read
-                            final int dataRead = subscription.poll(fragmentLimitCount);
-                            idleStrategy.idle(dataRead); // Idle strategy to avoid excessive spinning in case of slow publisher
+                            // poll delivers messages to the datahandler as they arrive
+                            // and returns number of fragments read, otherwise returns 0
+                            // if no data is available.
+                            final int fragmentsRead = subscription.poll(fragmentLimitCount);
+                            // Call a backoff strategy
+                            idleStrategy.idle(fragmentsRead);
                         }
                 }
                 catch (final Exception ex)
                 {
                     ex.printStackTrace();
                 }
-            System.out.println("Shutting down...");
+                System.out.println("Shutting down...");
+        }
+        finally
+        {
+            subscription.close();
+            aeron.close();
         }
     }
-
-    /**
-     * Return a reusable, parameterized {@link DataHandler} that prints to stdout
-     *
-     * @param streamId to show when printing
-     * @return subscription data handler function that prints the message contents
-     */
-    public static DataHandler printStringMessage(final int streamId)
-    {
-        return (buffer, offset, length, header) ->
-        {
-            final byte[] data = new byte[length];
-            buffer.getBytes(offset, data);
-
-            System.out.println(
-                String.format(
-                    "message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
-                    new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
-
-        };
-    }
-
 }
 

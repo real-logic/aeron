@@ -71,12 +71,12 @@ public class StreamingPublisher
         }
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
-        //Create an executer with 2 reusable threads
+        // Create an executer with 2 reusable threads
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         executor.execute(reporter);
 
-        //Connect to media driver and add publisher to send message on CHANNEL and STREAM
+        // Connect to media driver and add publisher to send message on CHANNEL and STREAM
         try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {

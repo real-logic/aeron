@@ -347,8 +347,8 @@ public class ClientConductorTest
         connectionReady.logFileName(sessionId + "-log");
         connectionReady.sourceInfo(SOURCE_NAME);
 
-        connectionReady.positionIndicatorCount(1);
-        connectionReady.positionIndicatorCounterId(0, 0);
+        connectionReady.subscriberPositionCount(1);
+        connectionReady.subscriberPositionId(0, 0);
         connectionReady.positionIndicatorRegistrationId(0, correlationId);
 
         toClientTransmitter.transmit(ON_CONNECTION_READY, atomicSendBuffer, 0, connectionReady.length());

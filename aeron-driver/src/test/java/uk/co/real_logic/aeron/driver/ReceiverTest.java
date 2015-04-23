@@ -19,7 +19,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
-import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -32,12 +31,13 @@ import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
-import uk.co.real_logic.agrona.status.PositionIndicator;
-import uk.co.real_logic.agrona.status.PositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
+import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
+import uk.co.real_logic.agrona.concurrent.status.Position;
+import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -72,14 +72,14 @@ public class ReceiverTest
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
-    private static final PositionIndicator POSITION_INDICATOR = mock(PositionIndicator.class);
-    private static final List<PositionIndicator> POSITION_INDICATORS = Collections.singletonList(POSITION_INDICATOR);
+    private static final ReadOnlyPosition POSITION = mock(ReadOnlyPosition.class);
+    private static final List<ReadOnlyPosition> POSITIONS = Collections.singletonList(POSITION);
 
     private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
-    private final PositionReporter mockHighestReceivedPosition = spy(new HeapPositionReporter());
+    private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());
     private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocate(SetupFlyweight.HEADER_LENGTH);
@@ -112,7 +112,7 @@ public class ReceiverTest
     @Before
     public void setUp() throws Exception
     {
-        when(POSITION_INDICATOR.position())
+        when(POSITION.getVolatile())
             .thenReturn(computePosition(ACTIVE_TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), ACTIVE_TERM_ID));
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));
@@ -181,7 +181,7 @@ public class ReceiverTest
             rawLog,
             timerWheel,
             mockFeedbackDelayGenerator,
-            POSITION_INDICATORS,
+            POSITIONS,
             mockHighestReceivedPosition,
             clock,
             mockSystemCounters,
@@ -253,7 +253,7 @@ public class ReceiverTest
                         rawLog,
                         timerWheel,
                         mockFeedbackDelayGenerator,
-                        POSITION_INDICATORS,
+                        POSITIONS,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -314,7 +314,7 @@ public class ReceiverTest
                         rawLog,
                         timerWheel,
                         mockFeedbackDelayGenerator,
-                        POSITION_INDICATORS,
+                        POSITIONS,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -378,7 +378,7 @@ public class ReceiverTest
                         rawLog,
                         timerWheel,
                         mockFeedbackDelayGenerator,
-                        POSITION_INDICATORS,
+                        POSITIONS,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -446,7 +446,7 @@ public class ReceiverTest
                         rawLog,
                         timerWheel,
                         mockFeedbackDelayGenerator,
-                        POSITION_INDICATORS,
+                        POSITIONS,
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
@@ -456,14 +456,14 @@ public class ReceiverTest
 
         assertThat(messagesRead, is(1));
 
-        verify(mockHighestReceivedPosition).position(initialTermOffset);
+        verify(mockHighestReceivedPosition).setOrdered(initialTermOffset);
 
         receiver.doWork();
 
         fillDataFrame(dataHeader, initialTermOffset, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress);
 
-        verify(mockHighestReceivedPosition).position(initialTermOffset + alignedDataFrameLength);
+        verify(mockHighestReceivedPosition).setOrdered(initialTermOffset + alignedDataFrameLength);
 
         messagesRead = termReaders[ACTIVE_INDEX].read(
             initialTermOffset,

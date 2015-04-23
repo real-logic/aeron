@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 
 import uk.co.real_logic.aeron.common.CncFileDescriptor;
 import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
@@ -57,6 +56,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 
 /**
  * Main class for JVM-based media driver
@@ -81,8 +81,6 @@ public final class MediaDriver implements AutoCloseable
     /** Attempt to delete directories on exit */
     public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
 
-    private final File adminDirectory;
-    private final File dataDirectory;
     private final File parentDirectory;
     private final List<AgentRunner> runners;
     private final Context ctx;
@@ -111,8 +109,6 @@ public final class MediaDriver implements AutoCloseable
     {
         this.ctx = ctx;
 
-        adminDirectory = new File(ctx.adminDirName());
-        dataDirectory = new File(ctx.dataDirName());
         parentDirectory = new File(ctx.dirName());
 
         ensureDirectoriesAreRecreated();
@@ -230,6 +226,15 @@ public final class MediaDriver implements AutoCloseable
         }
     }
 
+    /**
+     * Used to access the configured dirName for this MediaDriver Context typically after the launchIsolated method
+     * @return the context dirName
+     */
+    public String contextDirName()
+    {
+        return ctx.dirName();
+    }
+
     private void freeSocketsForReuseOnWindows()
     {
         ctx.receiverNioSelector().selectNowWithoutProcessing();
@@ -260,27 +265,15 @@ public final class MediaDriver implements AutoCloseable
                 }
             };
 
-        IoUtil.ensureDirectoryIsRecreated(adminDirectory, "conductor", callback);
-        IoUtil.ensureDirectoryIsRecreated(dataDirectory, "data", callback);
+        IoUtil.ensureDirectoryIsRecreated(parentDirectory, "aeron", callback);
     }
 
     private void deleteDirectories() throws Exception
     {
         if (ctx.dirsDeleteOnExit())
         {
-            IoUtil.delete(adminDirectory, false);
-            IoUtil.delete(dataDirectory, false);
             IoUtil.delete(parentDirectory, false);
         }
-    }
-
-    /**
-     * Used to access the configured dirName for this MediaDriver Context typically after the launchIsolated method
-     * @return the context dirName
-     */
-    public String contextDirName()
-    {
-        return ctx.dirName();
     }
 
     public static class Context extends CommonContext
@@ -414,7 +407,7 @@ public final class MediaDriver implements AutoCloseable
                     threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
 
                 rawLogBuffersFactory(new RawLogFactory(
-                    dataDirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
+                    dirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
 
                 concludeIdleStrategies();
             }

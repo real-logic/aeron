@@ -101,11 +101,11 @@ public class ClientProxy
                        .sourceInfo(sourceInfo);
 
         final int size = subscriberPositions.size();
-        connectionReady.positionIndicatorCount(size);
+        connectionReady.subscriberPositionCount(size);
         for (int i = 0; i < size; i++)
         {
             final SubscriberPosition position = subscriberPositions.get(i);
-            connectionReady.positionIndicatorCounterId(i, position.positionCounterId());
+            connectionReady.subscriberPositionId(i, position.positionCounterId());
             connectionReady.positionIndicatorRegistrationId(i, position.subscription().registrationId());
         }
 

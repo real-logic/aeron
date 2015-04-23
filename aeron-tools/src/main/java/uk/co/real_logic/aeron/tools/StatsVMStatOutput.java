@@ -5,16 +5,18 @@ public class StatsVMStatOutput implements StatsOutput
   private int iterations;
   private final String titles[] =
   {
-    "Bytes", "Failed Offers", "NAKs", "SMs", "Heartbeats", "RX", "Flow Control", "Invalid", "Driver", "Short Sends", "Keep"
+    "Bytes", "Failed Offers", "NAKs", "SMs", "Heartbeats", "RX", "Flow Control", "Invalid", "Driver",
+          "Short Sends", "Keep", "FC Limits"
   };
   private final String subTitles[] =
   {
-    "In/Out", "RP/SP/DCP", "In/Out", "In/Out", "", "", "Under/Over", "Packets", "Exceptions", "DF/SF/NF/SMF", "Alives"
+    "In/Out", "RP/SP/DCP", "In/Out", "In/Out", "In/Out", "Sent", "Under/Over", "Packets", "Exceptions",
+          "DP/StatM/SM/NM", "Alives", "Applied"
   };
   private final String formats[] =
           {
                   "%1$-18s", "%1$-18s", "%1$-10s", "%1$-14s", "%1$-12s", "%1$-6s",  "%1$-14s", "%1$-9s",
-                  "%1$-12s", "%1$-18s", "%1$-6s"
+                  "%1$-12s", "%1$-18s", "%1$-7s", "%1$-7s"
           };
 
   public StatsVMStatOutput()
@@ -43,15 +45,16 @@ public void format(final String[] keys, final long[] vals) throws Exception
             humanReadableCount(vals[3], true) + "/" + humanReadableCount(vals[4], true));
     System.out.format(formats[2], humanReadableCount(vals[6], true) + "/" + humanReadableCount(vals[5], true));
     System.out.format(formats[3], humanReadableCount(vals[8], true) + "/" + humanReadableCount(vals[7], true));
-    System.out.format(formats[4], humanReadableCount(vals[9], true));
-    System.out.format(formats[5], humanReadableCount(vals[10], true));
-    System.out.format(formats[6], humanReadableCount(vals[11], true) + "/" + humanReadableCount(vals[12], true));
-    System.out.format(formats[7], humanReadableCount(vals[13], true));
-    System.out.format(formats[8], humanReadableCount(vals[14], true));
-    System.out.format(formats[9], humanReadableCount(vals[15], true) + "/" +
-            humanReadableCount(vals[16], true) + "/" + humanReadableCount(vals[17], true) + "/" +
-            humanReadableCount(vals[18], true));
-    System.out.format(formats[10], humanReadableCount(vals[19], true));
+    System.out.format(formats[4], humanReadableCount(vals[9], true) + "/" + humanReadableCount(vals[10], true));
+    System.out.format(formats[5], humanReadableCount(vals[11], true));
+    System.out.format(formats[6], humanReadableCount(vals[12], true) + "/" + humanReadableCount(vals[13], true));
+    System.out.format(formats[7], humanReadableCount(vals[14], true));
+    System.out.format(formats[8], humanReadableCount(vals[15], true));
+    System.out.format(formats[9], humanReadableCount(vals[16], true) + "/" +
+            humanReadableCount(vals[17], true) + "/" + humanReadableCount(vals[18], true) + "/" +
+            humanReadableCount(vals[19], true));
+    System.out.format(formats[10], humanReadableCount(vals[20], true));
+    System.out.format(formats[11], humanReadableCount(vals[21], true));
     System.out.println();
     iterations++;
   }

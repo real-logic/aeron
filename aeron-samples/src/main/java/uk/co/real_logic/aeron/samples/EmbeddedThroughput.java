@@ -17,10 +17,10 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.console.ContinueBarrier;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.agrona.console.ContinueBarrier;
 import uk.co.real_logic.agrona.concurrent.*;
 
 import java.nio.ByteBuffer;
@@ -54,10 +54,12 @@ public class EmbeddedThroughput
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(3);
 
+        final Aeron.Context context = new Aeron.Context();
         final String embeddedDirName = CommonContext.generateEmbeddedDirName();
         ctx.dirName(embeddedDirName);
-        final Aeron.Context context = new Aeron.Context();
         context.dirName(embeddedDirName);
+
+        System.out.format("Aeron dir '%s'\n", embeddedDirName);
 
         final AtomicBoolean running = new AtomicBoolean(true);
 

@@ -40,9 +40,6 @@ public class CommonContext implements AutoCloseable
     /** Name of the default multicast interface */
     public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
 
-    private static final String DATA_DIR_NAME = "data";
-    private static final String CONDUCTOR_DIR_NAME = "conductor";
-
     private String dirName;
     private File cncFile;
     private UnsafeBuffer counterLabelsBuffer;
@@ -69,7 +66,7 @@ public class CommonContext implements AutoCloseable
     public static String generateEmbeddedDirName()
     {
         final String randomDirName = UUID.randomUUID().toString();
-        String aeronDirName = IoUtil.tmpDirName() + "aeron" + File.separator + randomDirName;
+        String aeronDirName = IoUtil.tmpDirName() + "aeron-" + randomDirName;
 
         // Use shared memory on Linux to avoid contention on the page cache.
         if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
@@ -78,7 +75,7 @@ public class CommonContext implements AutoCloseable
 
             if (devShmDir.exists())
             {
-                aeronDirName = "/dev/shm/aeron/" + randomDirName;
+                aeronDirName = "/dev/shm/aeron-" + randomDirName;
             }
         }
 
@@ -99,7 +96,7 @@ public class CommonContext implements AutoCloseable
      */
     public CommonContext conclude()
     {
-        cncFile = new File(adminDirName(), CncFileDescriptor.CNC_FILE);
+        cncFile = new File(dirName, CncFileDescriptor.CNC_FILE);
         return this;
     }
 
@@ -126,32 +123,12 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Get the directory used by the Media Driver and client to transfer channel data.
-     * @return The data directory.
-     */
-    public String dataDirName()
-    {
-        return dirName + File.separator + DATA_DIR_NAME;
-    }
-
-    /**
-     * Get the directory used by the Media Driver and client to communicate administrative messages.
-     * @return The administration directory.
-     */
-    public String adminDirName()
-    {
-        return dirName + File.separator + CONDUCTOR_DIR_NAME;
-    }
-
-    /**
      * Create a new command and control file in the administration directory.
      * @return The newly created File.
      */
     public static File newDefaultCncFile()
     {
-        return new File(
-            getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT) + File.separator + CONDUCTOR_DIR_NAME,
-            CncFileDescriptor.CNC_FILE);
+        return new File(getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT), CncFileDescriptor.CNC_FILE);
     }
 
     /**

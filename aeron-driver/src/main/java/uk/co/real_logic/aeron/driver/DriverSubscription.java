@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.status.PositionIndicator;
+import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -29,7 +29,7 @@ public class DriverSubscription
     private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
     private final AeronClient aeronClient;
-    private final Map<DriverConnection, PositionIndicator> positionIndicatorByConnection = new IdentityHashMap<>();
+    private final Map<DriverConnection, ReadOnlyPosition> positionByConnection = new IdentityHashMap<>();
 
     public DriverSubscription(
         final long registrationId,
@@ -68,13 +68,13 @@ public class DriverSubscription
         return streamId() == streamId && receiveChannelEndpoint() == channelEndpoint;
     }
 
-    public void addConnection(final DriverConnection connection, final PositionIndicator positionIndicator)
+    public void addConnection(final DriverConnection connection, final ReadOnlyPosition position)
     {
-        positionIndicatorByConnection.put(connection, positionIndicator);
+        positionByConnection.put(connection, position);
     }
 
     public void close()
     {
-        positionIndicatorByConnection.forEach(DriverConnection::removeSubscription);
+        positionByConnection.forEach(DriverConnection::removeSubscription);
     }
 }

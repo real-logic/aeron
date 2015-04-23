@@ -29,10 +29,7 @@ import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.Signal;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.agrona.status.BufferPositionIndicator;
-import uk.co.real_logic.agrona.status.BufferPositionReporter;
-import uk.co.real_logic.agrona.status.PositionIndicator;
-import uk.co.real_logic.agrona.status.PositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -183,7 +180,7 @@ class ClientConductor implements Agent, DriverListener
         final String channel,
         final int streamId,
         final int sessionId,
-        final int publicationLimitCounterId,
+        final int publicationLimitId,
         final int mtuLength,
         final String logFileName,
         final long correlationId)
@@ -199,7 +196,7 @@ class ClientConductor implements Agent, DriverListener
             appenders[i] = new LogAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
         }
 
-        final PositionIndicator publicationLimit = new BufferPositionIndicator(counterValuesBuffer, publicationLimitCounterId);
+        final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
 
         addedPublication = new Publication(
             this, channel, streamId, sessionId, appenders, publicationLimit, logBuffers, logMetaDataBuffer, correlationId);
@@ -223,12 +220,12 @@ class ClientConductor implements Agent, DriverListener
             {
                 if (!subscription.isConnected(sessionId))
                 {
-                    for (int i = 0, size = msg.positionIndicatorCount(); i < size; i++)
+                    for (int i = 0, size = msg.subscriberPositionCount(); i < size; i++)
                     {
                         if (subscription.registrationId() == msg.positionIndicatorRegistrationId(i))
                         {
-                            final PositionReporter positionReporter = new BufferPositionReporter(
-                                counterValuesBuffer, msg.positionIndicatorCounterId(i));
+                            final UnsafeBufferPosition position = new UnsafeBufferPosition(
+                                counterValuesBuffer, msg.subscriberPositionId(i));
 
                             final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
                             final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
@@ -241,7 +238,7 @@ class ClientConductor implements Agent, DriverListener
                             }
 
                             subscription.onConnectionReady(
-                                sessionId, joiningPosition, correlationId, readers, positionReporter, logBuffers);
+                                sessionId, joiningPosition, correlationId, readers, position, logBuffers);
 
                             if (null != newConnectionHandler)
                             {

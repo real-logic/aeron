@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
-import uk.co.real_logic.agrona.status.PositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
@@ -30,7 +30,7 @@ class Connection
     private final LogBuffers logBuffers;
     private final TermReader[] termReaders;
     private final DataHandler dataHandler;
-    private final PositionReporter subscriberPosition;
+    private final Position subscriberPosition;
     private final long correlationId;
     private final int positionBitsToShift;
     private final int termLengthMask;
@@ -42,7 +42,7 @@ class Connection
         final long initialPosition,
         final long correlationId,
         final DataHandler dataHandler,
-        final PositionReporter subscriberPosition,
+        final Position subscriberPosition,
         final LogBuffers logBuffers)
     {
         this.termReaders = readers;
@@ -55,7 +55,7 @@ class Connection
         this.termLengthMask = capacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
 
-        subscriberPosition.position(initialPosition);
+        subscriberPosition.setOrdered(initialPosition);
     }
 
     public int sessionId()
@@ -70,7 +70,7 @@ class Connection
 
     public int poll(final int fragmentCountLimit)
     {
-        final long position = subscriberPosition.position();
+        final long position = subscriberPosition.get();
         final int activeIndex = indexByPosition(position, positionBitsToShift);
         final int termOffset = (int)position & termLengthMask;
 
@@ -78,7 +78,10 @@ class Connection
         final int messagesRead = termReader.read(termOffset, dataHandler, fragmentCountLimit);
 
         final long newPosition = position + (termReader.offset() - termOffset);
-        subscriberPosition.position(newPosition);
+        if (newPosition > position)
+        {
+            subscriberPosition.setOrdered(newPosition);
+        }
 
         return messagesRead;
     }

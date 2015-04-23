@@ -20,7 +20,8 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.status.PositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
+import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.ByteBuffer;
 
@@ -49,7 +50,7 @@ public class SubscriptionTest
     private final ByteBuffer readBuffer = ByteBuffer.allocate(READ_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
-    private final PositionReporter reporter = mock(PositionReporter.class);
+    private final Position position = mock(AtomicLongPosition.class);
     private final DataHandler dataHandler = mock(DataHandler.class);
     private Subscription subscription;
 
@@ -131,6 +132,6 @@ public class SubscriptionTest
 
     private void onTermBuffersMapped(final int sessionId)
     {
-        subscription.onConnectionReady(sessionId, 0, CONNECTION_CORRELATION_ID, readers, reporter, logBuffers);
+        subscription.onConnectionReady(sessionId, 0, CONNECTION_CORRELATION_ID, readers, position, logBuffers);
     }
 }

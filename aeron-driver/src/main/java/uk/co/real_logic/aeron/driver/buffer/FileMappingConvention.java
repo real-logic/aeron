@@ -31,9 +31,9 @@ import java.io.File;
 class FileMappingConvention
 {
     public static final String PUBLICATIONS = "publications";
-    public static final String SUBSCRIPTIONS = "subscriptions";
+    public static final String CONNECTIONS = "connections";
 
-    private final File subscriptionsDir;
+    private final File connectionsDir;
     private final File publicationsDir;
 
     public FileMappingConvention(final String dataDirName)
@@ -42,7 +42,7 @@ class FileMappingConvention
         IoUtil.ensureDirectoryExists(dataDir, "data directory");
 
         publicationsDir = new File(dataDir, PUBLICATIONS);
-        subscriptionsDir = new File(dataDir, SUBSCRIPTIONS);
+        connectionsDir = new File(dataDir, CONNECTIONS);
     }
 
     /**
@@ -60,30 +60,21 @@ class FileMappingConvention
      *
      * @return the directory used for receiver files
      */
-    public File subscriptionsDir()
+    public File connectionsDir()
     {
-        return subscriptionsDir;
+        return connectionsDir;
     }
 
     public static File streamLocation(
         final File rootDir,
-        final String channelDirName,
+        final String channel,
         final int sessionId,
         final int streamId,
-        final long correlationId,
-        final boolean createIfMissing)
+        final long correlationId)
     {
-        final File channelDir = new File(rootDir, channelDirName);
-        final File sessionDir = new File(channelDir, toHexString(sessionId));
-        final File streamDir = new File(sessionDir, toHexString(streamId));
-        final File correlationIdDir = new File(streamDir, toHexString(correlationId));
-
-        if (createIfMissing)
-        {
-            IoUtil.ensureDirectoryExists(correlationIdDir, "channel");
-        }
-
-        return correlationIdDir;
+        final String filename = String.format(
+            "%s-%s-%s-%s.logbuffer", channel, toHexString(sessionId), toHexString(streamId), toHexString(correlationId));
+        return new File(rootDir, filename);
     }
 
     private static String toHexString(final int value)

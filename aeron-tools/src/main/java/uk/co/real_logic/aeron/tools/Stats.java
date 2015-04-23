@@ -53,7 +53,7 @@ public class Stats
   private StatsOutput output = null;
 
   private static final int LABEL_SIZE = 1024;
-  private static final int NUM_BASE_STATS = 20;
+  private static final int NUM_BASE_STATS = 22;
   private static final int UNREGISTERED_LABEL_SIZE = -1;
 
   public Stats(final StatsOutput output, final String dirName) throws Exception

@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.agrona.concurrent.AtomicArray;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
-import uk.co.real_logic.agrona.status.PositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.Position;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
@@ -118,11 +118,11 @@ public class Subscription implements AutoCloseable
         final long initialPosition,
         final long correlationId,
         final TermReader[] termReaders,
-        final PositionReporter positionReporter,
+        final Position position,
         final LogBuffers logBuffers)
     {
         connections.add(
-            new Connection(termReaders, sessionId, initialPosition, correlationId, dataHandler, positionReporter, logBuffers));
+            new Connection(termReaders, sessionId, initialPosition, correlationId, dataHandler, position, logBuffers));
     }
 
     boolean isConnected(final int sessionId)

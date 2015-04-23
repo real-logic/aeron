@@ -55,9 +55,9 @@ public class TermGapScanner
      * @param rebuildOffset at which to start scanning.
      * @param hwmOffset     at which to stop scanning.
      * @param handler       to call if a gap is found.
-     * @return true if a gap has been found otherwise false.
+     * @return offset of last contiguous frame
      */
-    public static boolean scanForGap(
+    public static int scanForGap(
         final UnsafeBuffer termBuffer, final int termId, int rebuildOffset, final int hwmOffset, final GapHandler handler)
     {
         do
@@ -72,12 +72,10 @@ public class TermGapScanner
         }
         while (rebuildOffset < hwmOffset);
 
-        boolean gapFound = false;
+        final int gapBeginOffset = rebuildOffset;
         if (rebuildOffset < hwmOffset)
         {
-            gapFound = true;
             final int limit = hwmOffset - HEADER_LENGTH;
-            final int gapBeginOffset = rebuildOffset;
             rebuildOffset += FRAME_LENGTH_FIELD_OFFSET;
 
             while (rebuildOffset < limit)
@@ -96,6 +94,6 @@ public class TermGapScanner
             handler.onGap(termId, termBuffer, gapBeginOffset, gapLength);
         }
 
-        return gapFound;
+        return gapBeginOffset;
     }
 }

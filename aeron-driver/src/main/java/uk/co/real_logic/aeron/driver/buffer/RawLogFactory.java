@@ -33,7 +33,7 @@ public class RawLogFactory implements AutoCloseable
     private final FileChannel blankTemplate;
 
     private final File publicationsDir;
-    private final File subscriptionsDir;
+    private final File connectionsDir;
 
     private final int publicationTermBufferLength;
     private final int connectionTermBufferMaxLength;
@@ -49,10 +49,10 @@ public class RawLogFactory implements AutoCloseable
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
-        subscriptionsDir = fileMappingConvention.subscriptionsDir();
+        connectionsDir = fileMappingConvention.connectionsDir();
 
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
-        IoUtil.ensureDirectoryExists(subscriptionsDir, FileMappingConvention.SUBSCRIPTIONS);
+        IoUtil.ensureDirectoryExists(connectionsDir, FileMappingConvention.CONNECTIONS);
 
         this.publicationTermBufferLength = publicationTermBufferLength;
         this.connectionTermBufferMaxLength = connectionTermBufferMaxLength;
@@ -111,7 +111,7 @@ public class RawLogFactory implements AutoCloseable
                 "connection term buffer larger than max length: " + termBufferLength + " > " + connectionTermBufferMaxLength);
         }
 
-        return newInstance(subscriptionsDir, channel, sessionId, streamId, correlationId, termBufferLength);
+        return newInstance(connectionsDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
 
     private static FileChannel createTemplateFile(final String dataDir, final String name, final long length)
@@ -130,8 +130,8 @@ public class RawLogFactory implements AutoCloseable
         final long correlationId,
         final int termBufferLength)
     {
-        final File dir = streamLocation(rootDir, channel, sessionId, streamId, correlationId, true);
+        final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(dir, blankTemplate, termBufferLength, logger);
+        return new MappedRawLog(location, blankTemplate, termBufferLength, logger);
     }
 }

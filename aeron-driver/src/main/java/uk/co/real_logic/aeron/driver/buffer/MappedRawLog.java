@@ -37,8 +37,6 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 class MappedRawLog implements RawLog
 {
     private static final int ONE_GIG = 1 << 30;
-    private static final int MAX_TREE_DEPTH = 3;
-    private static final String LOG_FILE_NAME = "stream.log";
 
     private final RawLogPartition[] partitions;
     private final EventLogger logger;
@@ -46,12 +44,10 @@ class MappedRawLog implements RawLog
     private final MappedByteBuffer[] mappedBuffers;
     private final UnsafeBuffer logMetaDataBuffer;
 
-    MappedRawLog(final File directory, final FileChannel blankTemplate, final int termLength, final EventLogger logger)
+    MappedRawLog(final File location, final FileChannel blankTemplate, final int termLength, final EventLogger logger)
     {
-        IoUtil.ensureDirectoryExists(directory, "log buffer directory");
-
         this.logger = logger;
-        logFile = new File(directory, LOG_FILE_NAME);
+        this.logFile = location;
         partitions = new RawLogPartition[PARTITION_COUNT];
 
         try (final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel())
@@ -112,12 +108,7 @@ class MappedRawLog implements RawLog
             IoUtil.unmap(buffer);
         }
 
-        if (logFile.delete())
-        {
-            final File directory = logFile.getParentFile();
-            recursivelyDeleteUpTree(directory, MAX_TREE_DEPTH);
-        }
-        else
+        if (!logFile.delete())
         {
             logger.log(EventCode.ERROR_DELETING_FILE, logFile);
         }
@@ -168,20 +159,5 @@ class MappedRawLog implements RawLog
     public String logFileName()
     {
         return logFile.getAbsolutePath();
-    }
-
-    private void recursivelyDeleteUpTree(final File directory, final int remainingTreeDepth)
-    {
-        if (remainingTreeDepth > 0 && directory.list().length == 0)
-        {
-            if (!directory.delete())
-            {
-                logger.log(EventCode.ERROR_DELETING_FILE, directory);
-            }
-            else
-            {
-                recursivelyDeleteUpTree(directory.getParentFile(), remainingTreeDepth - 1);
-            }
-        }
     }
 }

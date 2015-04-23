@@ -20,7 +20,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.status.PositionIndicator;
+import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -56,7 +56,7 @@ public class Publication implements AutoCloseable
     private final int sessionId;
     private final long registrationId;
     private final LogAppender[] logAppenders;
-    private final PositionIndicator publicationLimit;
+    private final ReadOnlyPosition publicationLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
 
@@ -68,7 +68,7 @@ public class Publication implements AutoCloseable
         final int streamId,
         final int sessionId,
         final LogAppender[] logAppenders,
-        final PositionIndicator publicationLimit,
+        final ReadOnlyPosition publicationLimit,
         final LogBuffers logBuffers,
         final UnsafeBuffer logMetaDataBuffer,
         final long registrationId)
@@ -187,7 +187,7 @@ public class Publication implements AutoCloseable
         final int currentTail = logAppender.tailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
 
-        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.position())
+        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.getVolatile())
         {
             final int newTermOffset = logAppender.append(buffer, offset, length);
             switch (newTermOffset)
@@ -249,7 +249,7 @@ public class Publication implements AutoCloseable
         final int currentTail = logAppender.tailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
 
-        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.position())
+        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.getVolatile())
         {
             final int newTermOffset = logAppender.claim(length, bufferClaim);
             switch (newTermOffset)

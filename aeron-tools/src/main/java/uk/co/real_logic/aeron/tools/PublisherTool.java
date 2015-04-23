@@ -12,7 +12,7 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.InactiveConnectionHandler;
 import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
@@ -303,8 +303,21 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                 {
                     if ((streamIdx % numThreads) == this.threadId)
                     {
-                        final Publication pub = aeron.addPublication(
-                                channel.getChannel(), channel.getStreamIdentifiers()[j], options.getSessionId());
+                        Publication pub;
+                        if (options.getUseSessionId())
+                        {
+                             pub = aeron.addPublication(
+                                    channel.getChannel(),
+                                    channel.getStreamIdentifiers()[j],
+                                    options.getSessionId());
+                        }
+                        else
+                        {
+                            // Aeron will generate a random sessionId
+                            pub = aeron.addPublication(
+                                    channel.getChannel(),
+                                    channel.getStreamIdentifiers()[j]);
+                        }
                         publicationsList.add(pub);
 
                         LOG.info("{}", String.format("%s publishing %d messages to: %s#%d[%d]",

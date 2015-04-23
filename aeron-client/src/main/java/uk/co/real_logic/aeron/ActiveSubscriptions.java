@@ -50,9 +50,13 @@ class ActiveSubscriptions
 
     public synchronized void add(final Subscription subscription)
     {
-        getOrDefault(subscriptionByChannelMap, subscription.channel(), SUPPLIER)
-            .computeIfAbsent(subscription.streamId(), ArrayList::new)
-            .add(subscription);
+        final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap =
+            getOrDefault(subscriptionByChannelMap, subscription.channel(), SUPPLIER);
+
+        final List<Subscription> subscriptions =
+            subscriptionByStreamIdMap.getOrDefault(subscription.streamId(), ArrayList::new);
+
+        subscriptions.add(subscription);
     }
 
     public synchronized void remove(final Subscription subscription)

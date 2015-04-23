@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.status.PositionIndicator;
+import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 
 import java.nio.ByteBuffer;
 
@@ -49,7 +49,7 @@ public class PublicationTest
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]));
 
     private Publication publication;
-    private PositionIndicator limit;
+    private ReadOnlyPosition limit;
     private LogAppender[] appenders;
     private MutableDirectBuffer[] headers;
     private LogBuffers logBuffers = mock(LogBuffers.class);
@@ -59,8 +59,8 @@ public class PublicationTest
     public void setUp()
     {
         final ClientConductor conductor = mock(ClientConductor.class);
-        limit = mock(PositionIndicator.class);
-        when(limit.position()).thenReturn(2L * SEND_BUFFER_CAPACITY);
+        limit = mock(ReadOnlyPosition.class);
+        when(limit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
         when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
 
         appenders = new LogAppender[PARTITION_COUNT];
@@ -116,7 +116,7 @@ public class PublicationTest
     @Test
     public void shouldFailToOfferAMessageWhenLimited()
     {
-        when(limit.position()).thenReturn(0L);
+        when(limit.getVolatile()).thenReturn(0L);
         assertThat(publication.offer(atomicSendBuffer), is(Publication.NOT_CONNECTED));
     }
 
@@ -132,7 +132,7 @@ public class PublicationTest
     {
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(LogAppender.TRIPPED);
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
-        when(limit.position()).thenReturn(Long.MAX_VALUE);
+        when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 
         assertThat(publication.offer(atomicSendBuffer), is(Publication.BACK_PRESSURE));
         assertThat(publication.offer(atomicSendBuffer), greaterThan(0L));
@@ -152,7 +152,7 @@ public class PublicationTest
     {
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(LogAppender.TRIPPED);
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
-        when(limit.position()).thenReturn(Long.MAX_VALUE);
+        when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 
         final BufferClaim bufferClaim = new BufferClaim();
         assertThat(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim), is(Publication.BACK_PRESSURE));

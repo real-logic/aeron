@@ -20,7 +20,6 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import static java.lang.Boolean.*;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -49,7 +48,7 @@ public class TermGapScannerTest
 
         when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(HEADER_LENGTH);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(TRUE));
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(0));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, 0, frameOffset);
     }
@@ -64,7 +63,7 @@ public class TermGapScannerTest
         when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(0);
         when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, tail, HEADER_LENGTH);
     }
@@ -79,8 +78,23 @@ public class TermGapScannerTest
         when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(0);
         when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
 
-        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(TRUE));
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
         verify(gapHandler).onGap(TERM_ID, termBuffer, tail, HEADER_LENGTH);
+    }
+
+    @Test
+    public void shouldReportNoGapWhenHwmIsInPadding()
+    {
+        final int paddingLength = HEADER_LENGTH * 2;
+        final int tail = LOG_BUFFER_CAPACITY - paddingLength;
+        final int highWaterMark = LOG_BUFFER_CAPACITY - paddingLength + HEADER_LENGTH;
+
+        when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(paddingLength);
+        when(termBuffer.getIntVolatile(lengthOffset(tail + HEADER_LENGTH))).thenReturn(0);
+
+        assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(LOG_BUFFER_CAPACITY));
+
+        verifyZeroInteractions(gapHandler);
     }
 }

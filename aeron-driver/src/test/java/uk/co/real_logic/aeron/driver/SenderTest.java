@@ -19,7 +19,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -29,12 +28,13 @@ import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
-import uk.co.real_logic.agrona.status.BufferPositionReporter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
+import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -131,8 +131,8 @@ public class SenderTest
             mockSendChannelEndpoint,
             wheel.clock(),
             rawLog,
-            new HeapPositionReporter(),
-            mock(BufferPositionReporter.class),
+            new AtomicLongPosition(),
+            mock(Position.class),
             SESSION_ID,
             STREAM_ID,
             INITIAL_TERM_ID,

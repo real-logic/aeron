@@ -41,7 +41,6 @@ import java.util.function.Supplier;
 
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.Flyweight;
-import uk.co.real_logic.aeron.common.NoNackDelayGenerator;
 import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
@@ -71,8 +70,7 @@ import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.status.BufferPositionIndicator;
-import uk.co.real_logic.agrona.status.BufferPositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as handle NAKs and retransmissions
@@ -87,6 +85,9 @@ public class DriverConductor implements Agent
 
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
             Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
+
+    public static final StaticDelayGenerator NO_NAK_DELAY_GENERATOR = new StaticDelayGenerator(
+            -1, false);
 
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
         Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
@@ -400,8 +401,8 @@ public class DriverConductor implements Agent
                 channelEndpoint,
                 clock,
                 rawLog,
-                new BufferPositionReporter(countersBuffer, senderPositionId, countersManager),
-                new BufferPositionReporter(countersBuffer, publisherLimitId, countersManager),
+                new UnsafeBufferPosition(countersBuffer, senderPositionId, countersManager),
+                new UnsafeBufferPosition(countersBuffer, publisherLimitId, countersManager),
                 sessionId,
                 streamId,
                 initialTermId,
@@ -486,11 +487,11 @@ public class DriverConductor implements Agent
             {
                 final int subscriberPositionCounterId = allocatePositionCounter(
                     "subscriber pos", channel, connection.sessionId(), streamId, correlationId);
-                final BufferPositionIndicator indicator = new BufferPositionIndicator(
+                final UnsafeBufferPosition position = new UnsafeBufferPosition(
                     countersBuffer, subscriberPositionCounterId, countersManager);
                 final String sourceInfo = generateSourceInfo(connection.sourceAddress());
-                connection.addSubscription(indicator);
-                subscription.addConnection(connection, indicator);
+                connection.addSubscription(position);
+                subscription.addConnection(connection, position);
 
                 clientProxy.onConnectionReady(
                     channel,
@@ -499,7 +500,7 @@ public class DriverConductor implements Agent
                     connection.rebuildPosition(),
                     connection.rawLog(),
                     correlationId,
-                    Collections.singletonList(new SubscriberPosition(subscription, subscriberPositionCounterId, indicator)),
+                    Collections.singletonList(new SubscriberPosition(subscription, position)),
                     sourceInfo);
             }
         }
@@ -568,11 +569,11 @@ public class DriverConductor implements Agent
                 {
                     final int positionCounterId = allocatePositionCounter(
                         "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
-                    final BufferPositionIndicator indicator = new BufferPositionIndicator(
+                    final UnsafeBufferPosition position = new UnsafeBufferPosition(
                         countersBuffer, positionCounterId, countersManager);
                     countersManager.setCounterValue(positionCounterId, joiningPosition);
 
-                    return new SubscriberPosition(subscription, positionCounterId, indicator);
+                    return new SubscriberPosition(subscription, position);
                 })
             .collect(toList());
 
@@ -589,59 +590,32 @@ public class DriverConductor implements Agent
             subscriberPositions,
             sourceInfo);
 
-        final DriverConnection connection;
-
-        if (Configuration.dontSendNack())
-        {
-            final NoNackDelayGenerator noNackDelayGenerator = new NoNackDelayGenerator(); //Don't send a NACK (For QA only)
-
-            connection = new DriverConnection(
-                    correlationId,
-                    channelEndpoint,
-                    controlAddress,
-                    sessionId,
-                    streamId,
-                    initialTermId,
-                    activeTermId,
-                    initialTermOffset,
-                    initialWindowLength,
-                    rawLog,
-                    timerWheel,
-                    noNackDelayGenerator,
-                    subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
-                    new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
-                    clock,
-                    systemCounters,
-                    sourceAddress,
-                    logger);
-        }
-        else
-        {
-            connection = new DriverConnection(
-                correlationId,
-                channelEndpoint,
-                controlAddress,
-                sessionId,
-                streamId,
-                initialTermId,
-                activeTermId,
-                initialTermOffset,
-                initialWindowLength,
-                rawLog,
-                timerWheel,
+        final DriverConnection connection = new DriverConnection(
+            correlationId,
+            channelEndpoint,
+            controlAddress,
+            sessionId,
+            streamId,
+            initialTermId,
+            activeTermId,
+            initialTermOffset,
+            initialWindowLength,
+            rawLog,
+            timerWheel,
+            Configuration.dontSendNack() ? NO_NAK_DELAY_GENERATOR :
                 udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-                subscriberPositions.stream().map(SubscriberPosition::positionIndicator).collect(toList()),
-                new BufferPositionReporter(countersBuffer, receiverHwmCounterId, countersManager),
-                clock,
-                systemCounters,
-                sourceAddress,
-                logger);
-        }
+            subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
+            new UnsafeBufferPosition(countersBuffer, receiverHwmCounterId, countersManager),
+            clock,
+            systemCounters,
+            sourceAddress,
+            logger);
+
         connections.add(connection);
 
         subscriberPositions.forEach(
             (subscriberPosition) ->
-                subscriberPosition.subscription().addConnection(connection, subscriberPosition.positionIndicator()));
+                subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
 
         receiverProxy.newConnection(channelEndpoint, connection);
     }

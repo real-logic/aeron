@@ -37,7 +37,6 @@ import java.util.function.Supplier;
 
 import uk.co.real_logic.aeron.common.CncFileDescriptor;
 import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.concurrent.SigIntBarrier;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
@@ -57,6 +56,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 
 /**
  * Main class for JVM-based media driver

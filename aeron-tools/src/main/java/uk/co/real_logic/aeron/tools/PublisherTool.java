@@ -12,7 +12,7 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.InactiveConnectionHandler;
 import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;

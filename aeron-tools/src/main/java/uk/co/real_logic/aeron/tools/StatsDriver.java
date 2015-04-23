@@ -8,7 +8,7 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 
 public class StatsDriver
 {

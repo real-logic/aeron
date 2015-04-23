@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.tools.MessageStream;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;

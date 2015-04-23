@@ -27,6 +27,7 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import java.io.File;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.mock;
@@ -47,6 +48,8 @@ public class MultiDriverTest
     private static final int NUM_MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_SIZE / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final String ROOT_DIR =
+        IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
     private final MediaDriver.Context driverAContext = new MediaDriver.Context();
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
@@ -67,8 +70,8 @@ public class MultiDriverTest
 
     private void launch()
     {
-        final String baseDirA = IoUtil.tmpDirName() + "aeron-system-tests" + File.separator + "A";
-        final String baseDirB = IoUtil.tmpDirName() + "aeron-system-tests" + File.separator + "B";
+        final String baseDirA = ROOT_DIR + "A";
+        final String baseDirB = ROOT_DIR + "B";
 
         buffer.putInt(0, 1);
 
@@ -112,6 +115,8 @@ public class MultiDriverTest
         clientA.close();
         driverB.close();
         driverA.close();
+
+        IoUtil.delete(new File(ROOT_DIR), true);
     }
 
     @Test(timeout = 10000)

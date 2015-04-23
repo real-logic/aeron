@@ -18,14 +18,14 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.agrona.status.PositionIndicator;
-import uk.co.real_logic.agrona.status.PositionReporter;
-import uk.co.real_logic.aeron.driver.buffer.RawLog;
+import uk.co.real_logic.agrona.concurrent.status.Position;
+import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
 class DriverConnectionPadding1
 {
     @SuppressWarnings("unused")
-    protected long p1, p2, p3, p4, p5, p6, p7;
+    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
 class DriverConnectionConductorFields extends DriverConnectionPadding1
@@ -55,7 +55,7 @@ class DriverConnectionConductorFields extends DriverConnectionPadding1
 class DriverConnectionPadding2 extends DriverConnectionConductorFields
 {
     @SuppressWarnings("unused")
-    protected long p8, p9, p10, p11, p12, p13, p15;
+    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
 class DriverConnectionHotFields extends DriverConnectionPadding2
@@ -69,7 +69,7 @@ class DriverConnectionHotFields extends DriverConnectionPadding2
 class DriverConnectionPadding3 extends DriverConnectionHotFields
 {
     @SuppressWarnings("unused")
-    protected long p16, p17, p18, p19, p20, p21, p22;
+    protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
 /**
@@ -92,16 +92,19 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final int currentGain;
 
     private final RawLog rawLog;
-    private final InetSocketAddress controlAddress;
-    private final ReceiveChannelEndpoint channelEndpoint;
     private final EventLogger logger;
+    private final InetSocketAddress controlAddress;
+    private final InetSocketAddress sourceAddress;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final SystemCounters systemCounters;
     private final NanoClock clock;
     private final UnsafeBuffer[] termBuffers;
-    private final PositionReporter hwmPosition;
-    private final InetSocketAddress sourceAddress;
-    private final List<PositionIndicator> subscriberPositions;
+    private final Position hwmPosition;
+    private final List<ReadOnlyPosition> subscriberPositions;
     private final LossDetector lossDetector;
+
+    @SuppressWarnings("unused")
+    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
 
     private volatile long newStatusMessagePosition;
     private volatile Status status = Status.INIT;
@@ -119,8 +122,8 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final RawLog rawLog,
         final TimerWheel timerwheel,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
-        final List<PositionIndicator> subscriberPositions,
-        final PositionReporter hwmPosition,
+        final List<ReadOnlyPosition> subscriberPositions,
+        final Position hwmPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
         final InetSocketAddress sourceAddress,
@@ -159,7 +162,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
         this.newStatusMessagePosition = this.lastStatusMessagePosition;
         this.rebuildPosition = initialPosition;
-        this.hwmPosition.position(initialPosition);
+        this.hwmPosition.setOrdered(initialPosition);
     }
 
     /**
@@ -169,7 +172,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     {
         hwmPosition.close();
         rawLog.close();
-        subscriberPositions.forEach(PositionIndicator::close);
+        subscriberPositions.forEach(ReadOnlyPosition::close);
     }
 
     public long correlationId()
@@ -286,10 +289,10 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     public boolean isDrained()
     {
         long subscriberPosition = Long.MAX_VALUE;
-        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        final List<ReadOnlyPosition> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).position());
+            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).getVolatile());
         }
 
         return subscriberPosition >= rebuildPosition;
@@ -323,10 +326,10 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
-        final List<PositionIndicator> subscriberPositions = this.subscriberPositions;
+        final List<ReadOnlyPosition> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            final long position = subscriberPositions.get(i).position();
+            final long position = subscriberPositions.get(i).getVolatile();
             minSubscriberPosition = Math.min(minSubscriberPosition, position);
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
@@ -338,7 +341,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
         final int index = indexByPosition(rebuildPosition, positionBitsToShift);
 
         final int workCount = lossDetector.scan(
-            termBuffers[index], rebuildPosition, hwmPosition.position(), termLengthMask, positionBitsToShift, initialTermId);
+            termBuffers[index], rebuildPosition, hwmPosition.getVolatile(), termLengthMask, positionBitsToShift, initialTermId);
 
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();
@@ -477,11 +480,11 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     }
 
     /**
-     * Remove a {@link PositionIndicator} for a subscriber that has been removed so it is not tracked for flow control.
+     * Remove a {@link ReadOnlyPosition} for a subscriber that has been removed so it is not tracked for flow control.
      *
      * @param subscriberPosition for the subscriber that has been removed.
      */
-    public void removeSubscription(final PositionIndicator subscriberPosition)
+    public void removeSubscription(final ReadOnlyPosition subscriberPosition)
     {
         subscriberPositions.remove(subscriberPosition);
         subscriberPosition.close();
@@ -492,7 +495,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      *
      * @param subscriberPosition for the subscriber to be added.
      */
-    public void addSubscription(final PositionIndicator subscriberPosition)
+    public void addSubscription(final ReadOnlyPosition subscriberPosition)
     {
         subscriberPositions.add(subscriberPosition);
     }
@@ -515,11 +518,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private void hwmCandidate(final long proposedPosition)
     {
         lastPacketTimestamp = clock.time();
-
-        if (proposedPosition > hwmPosition.position())
-        {
-            hwmPosition.position(proposedPosition);
-        }
+        hwmPosition.proposeMaxOrdered(proposedPosition);
     }
 
     private boolean isFlowControlUnderRun(final long windowPosition, final long packetPosition)

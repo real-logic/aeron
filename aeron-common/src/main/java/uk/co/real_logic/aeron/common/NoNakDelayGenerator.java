@@ -16,13 +16,13 @@
 package uk.co.real_logic.aeron.common;
 
 /**
- * Delay generator that simply returns a NACK delay of one hour
+ * Delay generator that simply returns a NAK delay of one hour
  */
 /**
  * Default Unicast NAK delay in nanoseconds
  */
 
-public class NoNackDelayGenerator implements FeedbackDelayGenerator
+public class NoNakDelayGenerator implements FeedbackDelayGenerator
 {
     private final long delayInNs;
     private final boolean immediateFeedback;
@@ -33,19 +33,21 @@ public class NoNackDelayGenerator implements FeedbackDelayGenerator
      * @param delayInNs to return
      * @param immediateFeedback or not
      */
-    public NoNackDelayGenerator()
+    public NoNakDelayGenerator()
     {
-        this.delayInNs = -1; //Do not send nack
+        this.delayInNs = -1; //Do not send nak
         this.immediateFeedback = false;
     }
 
     /** {@inheritDoc} */
+    @Override
     public long generateDelay()
     {
         return delayInNs;
     }
 
     /** {@inheritDoc} */
+    @Override
     public boolean shouldFeedbackImmediately()
     {
         return immediateFeedback;

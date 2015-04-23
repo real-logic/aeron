@@ -19,12 +19,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
-import uk.co.real_logic.aeron.common.HeapPositionReporter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.agrona.status.PositionReporter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
+import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.ByteBuffer;
 
@@ -62,7 +62,7 @@ public class ConnectionTest
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[ALIGNED_FRAME_LENGTH]);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final DataHandler mockDataHandler = mock(DataHandler.class);
-    private final PositionReporter positionReporter = spy(new HeapPositionReporter());
+    private final Position position = spy(new AtomicLongPosition());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
 
     private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
@@ -99,9 +99,9 @@ public class ConnectionTest
             eq(DATA.length),
             any(Header.class));
 
-        final InOrder inOrder = Mockito.inOrder(positionReporter);
-        inOrder.verify(positionReporter).position(initialPosition);
-        inOrder.verify(positionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
+        final InOrder inOrder = Mockito.inOrder(position);
+        inOrder.verify(position).setOrdered(initialPosition);
+        inOrder.verify(position).setOrdered(initialPosition + ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -125,9 +125,9 @@ public class ConnectionTest
             eq(DATA.length),
             any(Header.class));
 
-        final InOrder inOrder = Mockito.inOrder(positionReporter);
-        inOrder.verify(positionReporter).position(initialPosition);
-        inOrder.verify(positionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
+        final InOrder inOrder = Mockito.inOrder(position);
+        inOrder.verify(position).setOrdered(initialPosition);
+        inOrder.verify(position).setOrdered(initialPosition + ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -152,15 +152,15 @@ public class ConnectionTest
             eq(DATA.length),
             any(Header.class));
 
-        final InOrder inOrder = Mockito.inOrder(positionReporter);
-        inOrder.verify(positionReporter).position(initialPosition);
-        inOrder.verify(positionReporter).position(initialPosition + ALIGNED_FRAME_LENGTH);
+        final InOrder inOrder = Mockito.inOrder(position);
+        inOrder.verify(position).setOrdered(initialPosition);
+        inOrder.verify(position).setOrdered(initialPosition + ALIGNED_FRAME_LENGTH);
     }
 
     public Connection createConnection(final long initialPosition)
     {
         return new Connection(
-            readers, SESSION_ID, initialPosition, CORRELATION_ID, mockDataHandler, positionReporter, logBuffers);
+            readers, SESSION_ID, initialPosition, CORRELATION_ID, mockDataHandler, position, logBuffers);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

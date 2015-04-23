@@ -4,21 +4,6 @@ package uk.co.real_logic.aeron.tools;
  * Created by mike on 3/31/2015.
  */
 
-import org.apache.commons.cli.*;
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.CloseHelper;
-
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -28,50 +13,72 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static java.lang.System.exit;
+import org.apache.commons.cli.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.CloseHelper;
+
+import uk.co.real_logic.agrona.concurrent.SigInt;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 
-public class ThwackerTool
+
+
+public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHandler
 {
+    static
+    {
+        /* Turn off some of the default clutter of the default logger if the
+         * user hasn't explicitly turned it back on. */
+        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
+        {
+            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
+        }
+        if (System.getProperty("org.slf4j.simpleLogger.defaultLogLevel") == null)
+        {
+            /* Change this property to debug to include debug output */
+            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+        }
+    }
 
     private final ThwackerOptions options = null;
-    /* Buffer used to hold messages for passing into publication.offer() */
-    private static final UnsafeBuffer CONTROL_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(1024 * 10));
+    private static final Logger LOG = LoggerFactory.getLogger(ThwackerTool.class);
     private static final int FRAGMENT_LIMIT = 10;
+    /* Number to retry sending a message if it fails in offer() */
+    private static final int RETRY_LIMIT = 100000;
     /* Stream ID used for the control stream */
     private static final int CONTROL_SID = 9876;
-    private static final int MESSAGE_MIN_SIZE = 35;
-    private static final int MESSAGE_MAX_SIZE = 35;
     private static final int DEFAULT_BUFFER_SIZE = 1024 * 10;
     /* Latch used to know when all threads have finished */
-    private static CountDownLatch allDone = null;
-    private static MediaDriver driver = null;
-    private static Aeron aeron = null;
-    private static ThwackingElement[] pubs = null;
-    private static ThwackingElement[] subs = null;
-    private static Publication controlPub = null;
-    private static Subscription controlSub = null;
-    private static MessageStream controlPublisherMessageStream = null;
-    private static MessageStream controlSubscriberMessageStream = null;
+    private CountDownLatch allDone = null;
+    private MediaDriver driver = null;
+    private Aeron aeron = null;
+    private ThwackingElement[] pubs = null;
+    private ThwackingElement[] subs = null;
+    private ThwackingElement ctrlPub = null;
+    private ThwackingElement ctrlSub = null;
 
     /* Flag signaling when to end the applications execution */
-    private static AtomicBoolean running = null;
+    private boolean running = false;
     /* Flag signaling worker threads to be actively "thwacking" or not */
-    private static AtomicBoolean active = null;
-    /* Global message count for thwacked subs to verify we get messages */
-    private static AtomicInteger msgCount = null;
-    /* Message count of messages received on the control stream */
-    private static AtomicInteger controlMsgCount = null;
-    /* Map used for mapping streams to subscriptions, used for verfiable messages */
-    private static Int2ObjectHashMap<MessageStream> sessionIdMap = null;
-    private static MessageStream cachedStream = null;
-    private static int lastSessionId = 0;
-
+    private boolean active = false;
     /* ExecutorService that handles the running of worker threads */
-    static ExecutorService runStuffs = null;
+    private ExecutorService runStuffs = null;
 
     /*
-            OPTIONS
+     *      CONFIGURABLE OPTIONS
      */
     private String channel;
     private int port;
@@ -88,18 +95,20 @@ public class ThwackerTool
     private boolean useSameStreamID;
     /* Allows each message and stream to be verifiable upon message reception */
     private boolean useVerifiableMessageStream;
-
-    /* Number of threads creating objects (publications or subscriptions
-   Default = 1  This will create one for subs and one for PUBS */
+    /* Number of threads creating objects (publications or subscriptions)
+   Default = 1  This will create one for subs and one for pubs */
     private int createThreadCount = 1;
-    /* Number of threads deleting objects (publications or subscriptions
-       Default = 1  This will create one for subs and one for PUBS */
+    /* Number of threads deleting objects (publications or subscriptions)
+       Default = 1  This will create one for subs and one for pubs */
     private int deleteThreadCount = 1;
     private int senderThreadCount = 1;
     private int receiverThreadCount = 1;
 
     private int iterations;
     private int duration;
+
+    private int maxSize;
+    private int minSize;
 
     public static void main(final String[] args)
     {
@@ -115,7 +124,7 @@ public class ThwackerTool
             if (opts.parseArgs(args) != 0)
             {
                 //TODO: catch this
-                System.out.println("hey we failed!");
+                LOG.error("Parse args failed");
             }
         }
         catch (ParseException e)
@@ -126,6 +135,7 @@ public class ThwackerTool
         createAndInitObjects(opts);
         createAndStartThreads();
         run(duration, iterations);
+        reportMessageCounts();
         cleanUp();
     }
 
@@ -143,34 +153,27 @@ public class ThwackerTool
         pubs = new ThwackingElement[numberOfPublications];
         subs = new ThwackingElement[numberOfSubscriptions];
         populateArrays();
-        SigInt.register(() -> exit(1));
-        //dataHandler = new FragmentAssemblyAdapter(new Handlers()::handler);
-        DataHandler controlDataHandler = new FragmentAssemblyAdapter(new Handlers()::controlHandler);
+        SigInt.register(() -> this.running = false);
+
         final Aeron.Context ctx = new Aeron.Context();
-        ctx.mediaDriverTimeout(99999999999L);
+        ctx.mediaDriverTimeout(9999999999L);
+        ctx.inactiveConnectionHandler(this);
+        ctx.newConnectionHandler(this);
+
         aeron = Aeron.connect(ctx);
-        msgCount = new AtomicInteger(0);
-        controlMsgCount = new AtomicInteger(0);
-        active = new AtomicBoolean(true);
-        running = new AtomicBoolean(true);
-        sessionIdMap = new Int2ObjectHashMap<MessageStream>();
+        active = true;
+        running = true;
 
         final int totalWorkerThreadCount = createThreadCount * 2 + deleteThreadCount * 2 + senderThreadCount +
                 receiverThreadCount;
         allDone = new CountDownLatch(totalWorkerThreadCount);
         runStuffs = Executors.newFixedThreadPool(totalWorkerThreadCount);
 
-        controlSub = aeron.addSubscription(channel + port, CONTROL_SID, controlDataHandler);
-        controlPub = aeron.addPublication(channel + port, CONTROL_SID);
-        try
-        {
-            controlPublisherMessageStream = new MessageStream(MESSAGE_MIN_SIZE, MESSAGE_MAX_SIZE, useVerifiableMessageStream);
-            controlSubscriberMessageStream = new MessageStream(MESSAGE_MIN_SIZE, MESSAGE_MAX_SIZE, useVerifiableMessageStream);
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
+        ctrlSub = new ThwackingElement(channel + port, CONTROL_SID, useVerifiableMessageStream, true);
+        ctrlPub = new ThwackingElement(channel + port, CONTROL_SID, useVerifiableMessageStream, false);
+        ctrlSub.tryAddSub();
+        ctrlPub.tryAddPub();
+
     }
 
     public void populateOptions(ThwackerOptions opts)
@@ -186,9 +189,13 @@ public class ThwackerTool
         createThreadCount = opts.getAdders();
         deleteThreadCount = opts.getRemovers();
         senderThreadCount = opts.getSenders();
-        receiverThreadCount = opts.getReceivers();
+        /* Receiver Threads hard coded to 1.  May add ability to create more receiving
+            threads at another time */
+        receiverThreadCount = 1;
         iterations = opts.getIterations();
         duration = opts.getDuration();
+        maxSize = opts.getMaxMsgSize();
+        minSize = opts.getMinMsgSize();
     }
 
 
@@ -204,13 +211,28 @@ public class ThwackerTool
         for (int i = 0; i < pubs.length; i++)
         {
             port = useChannelPerPub ? this.port + i : this.port;
-            pubs[i] = new ThwackingElement(channel + port, useSameStreamID ? 0 : i, useVerifiableMessageStream);
+            pubs[i] = new ThwackingElement(channel + port, useSameStreamID ? 0 : i, useVerifiableMessageStream, false);
         }
         for (int i = 0; i < subs.length; i++)
         {
             port = useChannelPerPub ? this.port + i : this.port;
-            subs[i] = new ThwackingElement(channel + port, useSameStreamID ? 0 : i, useVerifiableMessageStream);
+            subs[i] = new ThwackingElement(channel + port, useSameStreamID ? 0 : i, useVerifiableMessageStream, true);
         }
+    }
+
+    public void reportMessageCounts()
+    {
+        int sent;
+        int rcvd;
+        for (int i = 0; i < pubs.length; i++)
+        {
+            sent = pubs[i].msgCount.get();
+            LOG.info("Publication " + i + " sent messages:"  + sent);
+            rcvd = subs[i].msgCount.get();
+            LOG.info("Subscription " + i + " received messages:" + rcvd);
+        }
+        LOG.info("Control Publication sent messages:"  + ctrlPub.msgCount.get());
+        LOG.info("Control Subscription received messages:"  + ctrlSub.msgCount.get());
     }
 
     /**
@@ -218,7 +240,7 @@ public class ThwackerTool
      */
     public void createAndStartThreads()
     {
-        System.out.println("Creating and starting threads");
+        LOG.debug("Creating and starting threads");
         for (int i = 0; i < createThreadCount; i++)
         {
             runStuffs.submit(() -> createSubs());
@@ -260,23 +282,21 @@ public class ThwackerTool
 
         for (int i = 0; i < iterations; i++)
         {
-            System.out.println(i + ": Thwacking!!! Rcvd messages: " + msgCount.get());
-            System.out.println("  Control messages received: " + controlMsgCount.get());
             try
             {
                 if (!alwaysOn)
                 {
 
-                    if (active.get())
+                    if (active)
                     {
-                        active.set(false);
-                        System.out.println("Thwacking OFF");
+                        active = false;
+                        LOG.debug("Thwacking OFF");
                         Thread.sleep(3000);
                     }
                     else
                     {
-                        active.set(true);
-                        System.out.println("Thwacking ON");
+                        active = true;
+                        LOG.debug("Thwacking ON");
                         Thread.sleep(duration);
                     }
                 }
@@ -290,9 +310,7 @@ public class ThwackerTool
                 e.printStackTrace();
             }
         }
-        System.out.println("Thwacking!!! Rcvd messages: " + msgCount.get());
-        System.out.println("  Control messages received: " + controlMsgCount.get());
-        running.set(false);
+        running = false;
 
     }
 
@@ -307,12 +325,12 @@ public class ThwackerTool
         {
             e.printStackTrace();
         }
-        System.out.println("Closing now!");
+        LOG.info("All finished, Closing now!");
 
         cleanUpArray(pubs);
         cleanUpArray(subs);
-        controlPub.close();
-        controlSub.close();
+        ctrlPub.close();
+        ctrlSub.close();
         aeron.close();
         runStuffs.shutdown();
         CloseHelper.quietClose(driver);
@@ -337,30 +355,19 @@ public class ThwackerTool
         final Random rand = new Random();
         int i = -1;
         ThwackingElement pub;
-        while (running.get())
+        while (running)
         {
-            if (active.get())
+            if (active)
             {
                 //Get random pub slot
                 i = rand.nextInt(numberOfPublications);
                 pub = pubs[i];
-                if (pub.lock.writeLock().tryLock())
-                {
-                    //If not populated, create new publisher
-                    if (!pub.isActive.get())
-                    {
-                        System.out.println("ADD PUB " + i);
-                        pub.setPub(aeron.addPublication(pub.channel, pub.streamId));
-                        pub.createMessageStream();
-                        pub.isActive.set(true);
-                    }
-                    pub.lock.writeLock().unlock();
-                }
+                pub.tryAddPub();
             }
             Thread.yield();
         }
         allDone.countDown();
-        System.out.println("CreatePubs all done!");
+        LOG.debug("CreatePubs all done!");
     }
 
     /**
@@ -373,30 +380,19 @@ public class ThwackerTool
         final Random rand = new Random();
         int i;
         ThwackingElement pub;
-        while (running.get())
+        while (running)
         {
-            if (active.get())
+            if (active)
             {
                 //Get random pub slot
                 i = rand.nextInt(numberOfPublications);
                 pub = pubs[i];
-                if (pub.lock.writeLock().tryLock())
-                {
-                    //If the publication is active, delete it
-                    if (pub.isActive.get())
-                    {
-                        System.out.println("CLOSE PUB " + i);
-                        pub.getPub().close();
-                        pub.setPub(null);
-                        pub.isActive.set(false);
-                    }
-                    pub.lock.writeLock().unlock();
-                }
+                pub.tryRemovePub();
             }
             Thread.yield();
         }
         allDone.countDown();
-        System.out.println("DeletePubs all done!");
+        LOG.debug("DeletePubs all done!");
     }
 
     /**
@@ -407,71 +403,23 @@ public class ThwackerTool
     public void sendOnRandomPub()
     {
         final Random rand = new Random();
-        int i = -1, bytesSent = 0, retryCount = 0;
+        int i;
         ThwackingElement pub;
+        final long threadId = Thread.currentThread().getId();
 
-        long rc = 0;
-        while (running.get())
+        while (running)
         {
-                //Get random publication slot
-                i = rand.nextInt(numberOfPublications);
-                pub = pubs[i];
-                //Populate a buffer to send
-                //String message = "Hello World!" + i + ":" + msgSent.incrementAndGet();
-                //BUFFER.putBytes(0, message.getBytes());
-
-            if (pub.lock.readLock().tryLock())
-            {
-                //If this pub is active, send the buffer
-                if (pub.isActive.get())
-                {
-                    try
-                    {
-                        bytesSent = pub.ms.getNext(pub.buffer);
-                    }
-                    catch (Exception e)
-                    {
-                        e.printStackTrace();
-                    }
-                    do
-                    {
-                        rc = pub.getPub().offer(pub.buffer, 0, bytesSent);
-                        retryCount++;
-                        if (retryCount == 50)
-                        {
-                            //System.out.println("WHA " + retryCount);
-                        }
-                    }
-                    while (rc <= 0 && retryCount < 50 && running.get());
-                    retryCount = 0;
-                }
-                pub.lock.readLock().unlock();
-            }
-            //Every iteration sends on the control Publication
-            try
-            {
-                bytesSent = controlPublisherMessageStream.getNext(CONTROL_BUFFER);
-            }
-            catch (Exception e)
-            {
-                e.printStackTrace();
-            }
-            do
-            {
-                rc = controlPub.offer(CONTROL_BUFFER, 0, bytesSent);
-                retryCount++;
-                if (retryCount == 50)
-                {
-                    //System.out.println("WHA " + retryCount);
-                }
-            }
-            while (rc < 0 && retryCount < 50 && running.get());
-            retryCount = 0;
+            //Get random publication slot
+            i = rand.nextInt(numberOfPublications);
+            pub = pubs[i];
+            pub.trySendMessage(threadId);
+            /* Every iteration sends on the control Publication */
+            ctrlPub.trySendMessage(threadId);
 
             Thread.yield();
         }
         allDone.countDown();
-        System.out.println("SendPubs all done!");
+        LOG.debug("Sending thread all done!");
     }
 
     /**
@@ -482,30 +430,20 @@ public class ThwackerTool
     public void createSubs()
     {
         final Random rand = new Random();
-        int i = -1;
+        int i;
         ThwackingElement sub;
-        while (running.get())
+        while (running)
         {
-            if (active.get())
+            if (active)
             {
                 i = rand.nextInt(numberOfSubscriptions);
                 sub = subs[i];
-                if (sub.lock.writeLock().tryLock())
-                {
-                    if (!sub.isActive.get())
-                    {
-                        System.out.println("ADD SUB " + i);
-                        final DataHandler dataHandler = new FragmentAssemblyAdapter(new Handlers()::handler);
-                        sub.setSub(aeron.addSubscription(sub.channel, sub.streamId, dataHandler));
-                        sub.isActive.set(true);
-                    }
-                    sub.lock.writeLock().unlock();
-                }
+                sub.tryAddSub();
             }
             Thread.yield();
         }
         allDone.countDown();
-        System.out.println("CreateSubs all done!");
+        LOG.debug("CreateSubs all done!");
     }
 
     /**
@@ -516,30 +454,20 @@ public class ThwackerTool
     public void deleteSubs()
     {
         final Random rand = new Random();
-        int i = -1;
+        int i;
         ThwackingElement sub;
-        while (running.get())
+        while (running)
         {
-            if (active.get())
+            if (active)
             {
                 i = rand.nextInt(numberOfSubscriptions);
                 sub = subs[i];
-                if (sub.lock.writeLock().tryLock())
-                {
-                    if (sub.isActive.get())
-                    {
-                        System.out.println("CLOSE SUB " + i);
-                        sub.getSub().close();
-                        sub.setSub(null);
-                        sub.isActive.set(false);
-                    }
-                    sub.lock.writeLock().unlock();
-                }
+                sub.tryRemoveSub();
             }
             Thread.yield();
         }
         allDone.countDown();
-        System.out.println("DeleteSubs all done!");
+        LOG.debug("DeleteSubs all done!");
     }
 
     /**
@@ -548,118 +476,108 @@ public class ThwackerTool
 
     public void receiveOnSubs()
     {
-        while (running.get())
+        while (running)
         {
-            //Run through each sub slot sequentially
+            /* Run through each sub slot sequentially */
             for (ThwackingElement s : subs)
             {
-                //If the sub is active, call poll() to receive messages
-                if (s.lock.writeLock().tryLock())
-                {
-                    if (s.isActive.get())
-                    {
-                        //System.out.println("RCV SUB " + s.channel() + " : " + s.streamId());
-                        s.getSub().poll(FRAGMENT_LIMIT);
-                    }
-                    s.lock.writeLock().unlock();
-                }
+                s.tryGetMessages();
             }
             Thread.yield();
-            //Every iteration calls poll() on the control subscription
-            controlSub.poll(FRAGMENT_LIMIT);
+            /* Every iteration calls poll() on the control subscription */
+            ctrlSub.tryGetMessages();
         }
         allDone.countDown();
-        System.out.println("RecSubs all done!");
+        LOG.debug("RecSubs all done!");
     }
 
-
-
-    public class Handlers
+    @Override
+    public void onInactiveConnection(final String channel, final int streamId,
+                                     final int sessionId, final long position)
     {
-        /**
-         * Each subscription uses a message handler to increment the total amount of messages received
-         * Message data is verified if set
-         * @param buffer
-         * @param offset
-         * @param length
-         * @param header
-         */
-        public void handler(DirectBuffer buffer, int offset, int length,
-                            Header header)
+        //LOG.error("ON INACTIVE ::: " + channel + streamId + sessionId + position);
+    }
+
+    @Override
+    public void onNewConnection(final String channel, final int streamId, final int sessionId,
+                                final long position, final String sourceInformation)
+    {
+        //LOG.error("ON NEW CONNECTION ::: " + channel + streamId + sessionId + position + sourceInformation);
+    }
+
+    /**
+     * Each subscription uses a message handler to increment the total amount of messages received
+     * Message data is verified if the option has been set
+     */
+    public class Handler
+    {
+        /* Reference to the subscriber that calls this handler for verification purposes */
+        private ThwackingElement sub;
+
+        public Handler(ThwackingElement e)
         {
+            sub = e;
+        }
+
+        public void messageHandler(DirectBuffer buffer, int offset, int length,
+                                   Header header)
+        {
+            MessageStream ms = null;
+            //Retrieve sending threadId
+            final int verifyLength = length - Long.SIZE;
+            final long threadId = buffer.getLong(offset + verifyLength);
+
             if (useVerifiableMessageStream)
             {
-                MessageStream ms = null;
                 if (MessageStream.isVerifiable(buffer, offset))
                 {
-                    final int sessionId = header.sessionId();
 
+                    final int sessionId = header.sessionId();
                     /* See if our cached MessageStream is the right one. */
-                    if (sessionId == lastSessionId)
+                    if (sessionId == sub.lastSessionId && threadId == sub.lastThreadId)
                     {
-                        ms = cachedStream;
+                        ms = sub.cachedMessageStream;
                     }
                     if (ms == null)
                     {
                         /* Didn't have a MessageStream cached or it wasn't the right one. So do
                          * a lookup. */
-                        ms = sessionIdMap.get(sessionId);
+                        Long2ObjectHashMap<MessageStream> threadIdMap = sub.streamMap.get(sessionId);
+                        if (threadIdMap == null)
+                        {
+                            threadIdMap = new Long2ObjectHashMap<MessageStream>();
+                            sub.streamMap.put(sessionId, threadIdMap);
+                        }
+                        ms = threadIdMap.get(threadId);
+
                         if (ms == null)
                         {
-                            try
-                            {
-                                ms = new MessageStream(MESSAGE_MIN_SIZE, MESSAGE_MAX_SIZE, true);
-                                System.out.println("PUTTING IN SESS ID " + sessionId);
-                                sessionIdMap.put(sessionId, ms);
-                            }
-                            catch (Exception e)
-                            {
-                                e.printStackTrace();
-                            }
+                            /* Haven't set things up yet, so do so now. */
+                            ms = new MessageStream();
+                            threadIdMap.put(threadId, ms);
                         }
                     }
                     /* Cache for next time. */
-                    cachedStream = ms;
-                    lastSessionId = sessionId;
+                    sub.cachedMessageStream = ms;
+                    sub.lastSessionId = sessionId;
+                    sub.lastThreadId = threadId;
+
                     try
                     {
-                        ms.putNext(buffer, offset, length);
+                        ms.putNext(buffer, offset, verifyLength);
                     }
                     catch (final Exception e)
                     {
-                        System.out.println("SESS ID FAIL " + sessionId);
-                        System.out.println(e.getMessage());
-                        //e.printStackTrace();
+                        /* Failed verification */
+                        LOG.warn(e.getMessage() + " StreamID" + header.streamId() + ":" + header.sessionId() + ":" + threadId);
                     }
+
                 }
             }
-            msgCount.incrementAndGet();
+            sub.msgCount.incrementAndGet();
         }
 
-        /**
-         * The control subscription has its own handler and message count
-         */
 
-        public void controlHandler(DirectBuffer buffer, int offset, int length,
-                                   Header header)
-        {
-            if (useVerifiableMessageStream)
-            {
-                if (MessageStream.isVerifiable(buffer, offset))
-                {
-                    try
-                    {
-                        controlSubscriberMessageStream.putNext(buffer, offset, length);
-                    }
-                    catch (final Exception e)
-                    {
-                        System.out.println(e.getMessage());
-                        //e.printStackTrace();
-                    }
-                }
-            }
-            controlMsgCount.incrementAndGet();
-        }
     }
 
 
@@ -669,24 +587,38 @@ public class ThwackerTool
      */
     public class ThwackingElement
     {
+        //TODO Make this an interface to generalize Thwacker
         private final UnsafeBuffer buffer;
-        //TODO Make publication and subscription interfaces to generalize Thwacker
         private Publication pub;
         private Subscription sub;
-        public MessageStream ms;
-        public String channel;
-        public int streamId;
-        boolean verify;
+        private MessageStream ms;
+        private final String channel;
+        private final int streamId;
+        private int sessionId = 0;
+        private AtomicInteger msgCount;
+        /* Flag indicating if this element should be using a verifiable stream */
+        private final boolean verify;
         /* Active flag showing whether there is an already created pub or sub in this thwacking element */
-        public AtomicBoolean isActive;
+        private AtomicBoolean isActive;
         /* Lock for create/delete and sending/receiving on a publication or subscription
          * The creation/deletion methods use the write lock to ensure exclusive access.
-         * The sending/receiving methods are thread safe so they use the read lock to allow many threads to offer()
-         * or poll() on the same sub or pub */
-        public ReentrantReadWriteLock lock;
+         * The send method is thread safe so they use the read lock to allow many threads to offer()
+         * on the same pub */
+        private final ReentrantReadWriteLock lock;
+        private DataHandler msgHandler = null;
+        private boolean previousSendFailed = false;
+        private int bytesSent = 0;
+        /* Message stream to threadId map for the sending side */
+        private Long2ObjectHashMap<MessageStream> threadIdMap = null;
+        /* Message stream per threadId per sessionId map for message verification with multiple
+           send threads.  SessionId > threadId > messageStream */
+        private Int2ObjectHashMap<Long2ObjectHashMap<MessageStream>> streamMap = null;
+        private MessageStream cachedMessageStream;
+        private int lastSessionId;
+        private long lastThreadId;
 
 
-        ThwackingElement(String chan, int stId, boolean verifiable)
+        ThwackingElement(String chan, int stId, boolean verifiable, boolean createSubscriber)
         {
             channel = chan;
             streamId = stId;
@@ -694,50 +626,217 @@ public class ThwackerTool
             buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE));
             isActive = new AtomicBoolean(false);
             lock = new ReentrantReadWriteLock();
-        }
-
-        /**
-         * The only time this is called is within pubCreate()
-         */
-        void createMessageStream()
-        {
-            /* If ms is defined upon create, we're using a previously used Pub slot, so reset the stream */
-
-            if (ms != null)
+            msgCount = new AtomicInteger(0);
+            if (createSubscriber)
             {
-                ms.reset();
+                msgHandler = new FragmentAssemblyAdapter(new Handler(this)::messageHandler);
+                streamMap = new Int2ObjectHashMap<Long2ObjectHashMap<MessageStream>>();
             }
             else
             {
-                try
-                {
-                    ms = new MessageStream(MESSAGE_MIN_SIZE, MESSAGE_MAX_SIZE, verify);
-                }
-                catch (Exception e)
-                {
-                    e.printStackTrace();
-                }
+                threadIdMap = new Long2ObjectHashMap<MessageStream>();
             }
         }
 
-        void setPub(Publication p)
+        boolean tryAddPub()
         {
-            pub = p;
+            boolean added = false;
+            if (lock.writeLock().tryLock())
+            {
+                if (!isActive.get())
+                {
+                    //createMessageStream();
+                    pub = aeron.addPublication(this.channel, this.streamId);
+                    isActive.set(true);
+                    added = true;
+                    LOG.debug("Added pub " + streamId);
+                }
+                lock.writeLock().unlock();
+            }
+            return added;
         }
 
-        Publication getPub()
+        boolean tryAddSub()
         {
-            return pub;
+            boolean added = false;
+            if (lock.writeLock().tryLock())
+            {
+                if (!isActive.get())
+                {
+                    //createMessageStream();
+                    sub = aeron.addSubscription(this.channel, this.streamId, this.msgHandler);
+                    isActive.set(true);
+                    added = true;
+                    LOG.debug("Added sub " + streamId);
+                }
+                lock.writeLock().unlock();
+            }
+            return added;
         }
 
-        void setSub(Subscription s)
+        boolean tryRemovePub()
         {
-            sub = s;
+            boolean removed = false;
+            if (lock.writeLock().tryLock())
+            {
+                //If the publication is active, delete it
+                if (isActive.get())
+                {
+                    pub.close();
+                    threadIdMap.clear();
+                    isActive.set(false);
+                    removed = true;
+                    pub = null;
+                    LOG.debug("Removed pub " + streamId);
+
+                }
+                lock.writeLock().unlock();
+            }
+            return removed;
         }
 
-        Subscription getSub()
+        boolean tryRemoveSub()
         {
-            return sub;
+            boolean removed = false;
+            if (lock.writeLock().tryLock())
+            {
+                //If the publication is active, delete it
+                if (isActive.get())
+                {
+                    sub.close();
+                    //sessionIdMap.clear();
+                    isActive.set(false);
+                    removed = true;
+                    sub = null;
+                    LOG.debug("Removed sub " + streamId);
+                }
+                lock.writeLock().unlock();
+            }
+            return removed;
+        }
+
+        /**
+         * Attempts to call poll on a subscriber.  Will attempt to get the lock for a poll and upon failure
+         * gives up and returns to the random subscription remover thread.
+         * @return Amount of fragments returned from poll()
+         */
+        int tryGetMessages()
+        {
+            int rc = -1;
+            if (sub != null)
+            {
+                /* If the sub is active, call poll() to receive messages */
+                if (lock.writeLock().tryLock())
+                {
+                    if (isActive.get())
+                    {
+                        rc = sub.poll(FRAGMENT_LIMIT);
+                    }
+                    lock.writeLock().unlock();
+                }
+            }
+            return rc;
+        }
+
+        /**
+         *  Attempts to send on a publication for up to RETRY_LIMIT times before giving up and
+         *  returning to the random send thread.  If the same publication is picked again after it has failed, it
+         *  should retry the last message from the previous attempt.
+         * @param threadId Thread ID of the calling thread to be sent with message
+         * @return Returns Aeron error codes in failure or the position in success
+         */
+
+        long trySendMessage(long threadId)
+        {
+            MessageStream ms = null;
+            /* See if our cached MessageStream is the right one. */
+            if (threadId == lastThreadId)
+            {
+                ms = cachedMessageStream;
+            }
+            if (ms == null)
+            {
+                /* Didn't have a MessageStream cached or it wasn't the right one. So do
+                 * a lookup. */
+                ms = threadIdMap.get(threadId);
+                if (ms == null)
+                {
+                    /* Haven't set things up yet, so do so now. */
+                    try
+                    {
+                        ms = new MessageStream(minSize, maxSize, verify);
+                    }
+                    catch (Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                    threadIdMap.put(threadId, ms);
+                }
+            }
+
+            /* Cache for next time. */
+            cachedMessageStream = ms;
+            lastThreadId = threadId;
+
+            int retryCount = 0;
+            long rc = 0;
+
+            /* Try to acquire the send lock that allows only senders, not adders/removers */
+            if (lock.readLock().tryLock())
+            {
+                //If this pub is active, send the buffer
+                if (isActive.get())
+                {
+                    /* Check to see if last time we hit our RETRY_LIMIT */
+                    if (!previousSendFailed)
+                    {
+                        try
+                        {
+                            /* Fill in the verifiable buffer then append our threadId */
+                            bytesSent = ms.getNext(buffer);
+                            buffer.putLong(bytesSent, threadId);
+                            bytesSent += Long.SIZE;
+                        }
+                        catch (Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    /* Actually try the offer(). If it fails, retry for RETRY_LIMIT times, then give up and
+                       return.
+                     */
+                    do
+                    {
+                        rc = pub.offer(buffer, 0, bytesSent);
+                        retryCount++;
+                    }
+                    while (rc < 0 && retryCount < RETRY_LIMIT && running);
+
+                    /* Check if send was successful or we hit the RETRY_LIMIT */
+                    if (rc >= 0)
+                    {
+                        if (previousSendFailed)
+                        {
+                            /* A failed offer() of a message has finally completed */
+                        }
+                        previousSendFailed = false;
+                        /* Send success! Increment sent messages counter */
+                        msgCount.incrementAndGet();
+                    }
+                    else
+                    {
+                        /* Send failure after RETRY_LIMIT tries! Set flag to not populate the
+                           buffer with new data if this publication is attempting to send again
+                         */
+                        previousSendFailed = true;
+                    }
+
+                }
+                lock.readLock().unlock();
+            }
+            /* Return the value from offer() */
+            return rc;
         }
 
         void close()
@@ -745,16 +844,12 @@ public class ThwackerTool
             if (pub != null)
             {
                 pub.close();
-                pub = null;
             }
             if (sub != null)
             {
                 sub.close();
-                sub = null;
             }
             isActive = null;
-            lock = null;
-            channel = null;
             ms = null;
         }
     }

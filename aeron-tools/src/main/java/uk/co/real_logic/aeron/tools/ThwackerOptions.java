@@ -7,19 +7,21 @@ import org.apache.commons.cli.*;
  */
 public class ThwackerOptions
 {
-    static final String defaultVerifiableMessageStream = "no";
-    static final String defaultUseSameSID = "no";
-    static final String defaultUseChannelPerPub = "no";
-    static final String defaultUseEmbeddedDriver = "yes";
-    static final String defaultChannel = "udp://localhost:";
-    static final String defaultPort = "51234";
-    static final String defaultDuration = "30000";
-    static final String defaultIterations = "1";
-    static final String defaultSenders = "1";
-    static final String defaultReceivers = "1";
-    static final String defaultAdders = "1";
-    static final String defaultRemovers = "1";
-    static final String defaultElements = "5";
+    static final String DEFAULT_VERIFIABLE_MESSAGE_STREAM = "no";
+    static final String DEFAULT_USE_SAME_SID = "no";
+    static final String DEFAULT_USE_CHANNEL_PER_PUB = "no";
+    static final String DEFAULT_USE_EMBEDDED_DRIVER = "yes";
+    static final String DEFAULT_CHANNEL = "udp://localhost:";
+    static final String DEFAULT_PORT = "51234";
+    static final String DEFAULT_DURATION = "30000";
+    static final String DEFAULT_ITERATIONS = "1";
+    static final String DEFAULT_SENDERS = "1";
+    static final String DEFAULT_RECEIVERS = "1";
+    static final String DEFAULT_ADDERS = "1";
+    static final String DEFAULT_REMOVERS = "1";
+    static final String DEFAULT_ELEMENTS = "10";
+    static final String DEFAULT_MAX_MSG_SIZE = "35";
+    static final String DEFAULT_MIN_MSG_SIZE = "35";
 
 
 
@@ -38,6 +40,8 @@ public class ThwackerOptions
     int adders;
     int removers;
     int elements;
+    int maxSize;
+    int minSize;
 
 
 
@@ -57,6 +61,8 @@ public class ThwackerOptions
         options.addOption(null, "adders", true, "Number of creating threads");
         options.addOption(null, "removers", true, "Number of deleting threads");
         options.addOption("e", "elements", true, "Number of Publications and Subscriptions");
+        options.addOption(null, "min-size", true, "Minimum size message a Publication will send");
+        options.addOption(null, "max-size", true, "Maximum size message a Publication will send");
 
 
         // Init variables, will be overwritten in parseArgs
@@ -73,41 +79,47 @@ public class ThwackerOptions
         adders = 0;
         removers = 0;
         elements = 0;
+        maxSize = 0;
+        minSize = 0;
 
     }
 
     public int parseArgs(String[] args)throws ParseException
     {
-        CommandLineParser parser = new GnuParser();
-        CommandLine command = parser.parse(options, args);
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args);
         String opt;
 
-        opt = command.getOptionValue("verify", defaultVerifiableMessageStream);
+        opt = command.getOptionValue("verify", DEFAULT_VERIFIABLE_MESSAGE_STREAM);
         useVerifiableMessageStream = parseYesNo(opt);
-        opt = command.getOptionValue("same-sid", defaultUseSameSID);
+        opt = command.getOptionValue("same-sid", DEFAULT_USE_SAME_SID);
         useSameSID = parseYesNo(opt);
-        opt = command.getOptionValue("channel-per-pub", defaultUseChannelPerPub);
+        opt = command.getOptionValue("channel-per-pub", DEFAULT_USE_CHANNEL_PER_PUB);
         useChannelPerPub = parseYesNo(opt);
-        opt = command.getOptionValue("channel", defaultChannel);
+        opt = command.getOptionValue("channel", DEFAULT_CHANNEL);
         channel = parseString(opt);
-        opt = command.getOptionValue("embedded", defaultUseEmbeddedDriver);
+        opt = command.getOptionValue("embedded", DEFAULT_USE_EMBEDDED_DRIVER);
         useEmbeddedDriver = parseYesNo(opt);
-        opt = command.getOptionValue("port", defaultPort);
+        opt = command.getOptionValue("port", DEFAULT_PORT);
         port = parsePositiveInt(opt);
-        opt = command.getOptionValue("duration", defaultDuration);
+        opt = command.getOptionValue("duration", DEFAULT_DURATION);
         duration = parsePositiveInt(opt);
-        opt = command.getOptionValue("iterations", defaultIterations);
+        opt = command.getOptionValue("iterations", DEFAULT_ITERATIONS);
         iterations = parsePositiveInt(opt);
-        opt = command.getOptionValue("senders", defaultSenders);
+        opt = command.getOptionValue("senders", DEFAULT_SENDERS);
         senders = parsePositiveInt(opt);
-        opt = command.getOptionValue("receivers", defaultReceivers);
+        opt = command.getOptionValue("receivers", DEFAULT_RECEIVERS);
         receivers = parsePositiveInt(opt);
-        opt = command.getOptionValue("adders", defaultAdders);
+        opt = command.getOptionValue("adders", DEFAULT_ADDERS);
         adders = parsePositiveInt(opt);
-        opt = command.getOptionValue("removers", defaultRemovers);
+        opt = command.getOptionValue("removers", DEFAULT_REMOVERS);
         removers = parsePositiveInt(opt);
-        opt = command.getOptionValue("elements", defaultElements);
+        opt = command.getOptionValue("elements", DEFAULT_ELEMENTS);
         elements = parsePositiveInt(opt);
+        opt = command.getOptionValue("max-size", DEFAULT_MAX_MSG_SIZE);
+        maxSize = parsePositiveInt(opt);
+        opt = command.getOptionValue("min-size", DEFAULT_MIN_MSG_SIZE);
+        minSize = parsePositiveInt(opt);
 
         return 0;
 
@@ -116,11 +128,11 @@ public class ThwackerOptions
     public boolean parseYesNo(String opt) throws ParseException
     {
         boolean rc;
-        if(opt.equalsIgnoreCase("yes"))
+        if (opt.equalsIgnoreCase("yes"))
         {
             rc = true;
         }
-        else if(opt.equalsIgnoreCase("no"))
+        else if (opt.equalsIgnoreCase("no"))
         {
             rc = false;
         }
@@ -144,7 +156,7 @@ public class ThwackerOptions
         {
             rc = Integer.parseInt(opt);
         }
-        catch(NumberFormatException e)
+        catch (NumberFormatException e)
         {
             throw new ParseException("An integer could not be determined from the specified option: " + opt);
         }
@@ -209,5 +221,13 @@ public class ThwackerOptions
     public int getElements()
     {
         return this.elements;
+    }
+    public int getMaxMsgSize()
+    {
+        return maxSize;
+    }
+    public int getMinMsgSize()
+    {
+        return minSize;
     }
 }

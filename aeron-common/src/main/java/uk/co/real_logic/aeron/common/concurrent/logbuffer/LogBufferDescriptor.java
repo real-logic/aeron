@@ -123,6 +123,11 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET;
 
     /**
+     * Offset within the log meta data which the MTU length is stored;
+     */
+    public static final int LOG_MTU_LENGTH_OFFSET;
+
+    /**
      * Offset at which the default frame headers begin.
      */
     public static final int LOG_DEFAULT_FRAME_HEADERS_OFFSET = CACHE_LINE_LENGTH;
@@ -140,8 +145,9 @@ public class LogBufferDescriptor
         offset += (CACHE_LINE_LENGTH * 2);
         LOG_INITIAL_TERM_ID_OFFSET = offset;
         LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
+        LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
 
-        offset += ((CACHE_LINE_LENGTH * 2) - (SIZE_OF_INT * 2));
+        offset += ((CACHE_LINE_LENGTH * 2) - (SIZE_OF_INT * 3));
 
         LOG_META_DATA_LENGTH = offset + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
     }
@@ -161,6 +167,8 @@ public class LogBufferDescriptor
      *  |                        Initial Term Id                        |
      *  +---------------------------------------------------------------+
      *  |                  Default Frame Header Length                  |
+     *  +---------------------------------------------------------------+
+     *  |                          MTU Length                           |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
@@ -246,6 +254,28 @@ public class LogBufferDescriptor
     public static void initialTermId(final UnsafeBuffer logMetaDataBuffer, final int initialTermId)
     {
         logMetaDataBuffer.putInt(LOG_INITIAL_TERM_ID_OFFSET, initialTermId);
+    }
+
+    /**
+     * Get the value of the MTU length used for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of the MTU length used for this log.
+     */
+    public static int mtuLength(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getInt(LOG_MTU_LENGTH_OFFSET);
+    }
+
+    /**
+     * Set the MTU length used for this log.
+     *
+     * @param logMetaDaraBuffer containing the meta data.
+     * @param mtuLength         value to be set.
+     */
+    public static void mtuLength(final UnsafeBuffer logMetaDaraBuffer, final int mtuLength)
+    {
+        logMetaDaraBuffer.putInt(LOG_MTU_LENGTH_OFFSET, mtuLength);
     }
 
     /**

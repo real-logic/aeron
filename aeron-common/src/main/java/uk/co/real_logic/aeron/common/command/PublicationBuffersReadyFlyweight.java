@@ -40,8 +40,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                    Publication Limit Offset                   |
  * +---------------------------------------------------------------+
- * |                           MTU Length                          |
- * +---------------------------------------------------------------+
  * |                         Channel Length                        |
  * +---------------------------------------------------------------+
  * |                            Channel                          ...
@@ -59,8 +57,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int PUBLICATION_LIMIT_COUNTER_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int MTU_LENGTH_OFFSET = PUBLICATION_LIMIT_COUNTER_ID_OFFSET + SIZE_OF_INT;
-    private static final int CHANNEL_FIELD_OFFSET = MTU_LENGTH_OFFSET + SIZE_OF_INT;
+    private static final int CHANNEL_FIELD_OFFSET = PUBLICATION_LIMIT_COUNTER_ID_OFFSET + SIZE_OF_INT;
 
     /**
      * return correlation id field
@@ -150,29 +147,6 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
     public PublicationBuffersReadyFlyweight publicationLimitCounterId(final int positionCounterId)
     {
         buffer().putInt(offset() + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * return mtu length field
-     *
-     * @return mtu length field
-     */
-    public int mtuLength()
-    {
-        return buffer().getInt(offset() + MTU_LENGTH_OFFSET, LITTLE_ENDIAN);
-    }
-
-    /**
-     * set mtu length field
-     *
-     * @param mtuLength field value
-     * @return flyweight
-     */
-    public PublicationBuffersReadyFlyweight mtuLength(final int mtuLength)
-    {
-        buffer().putInt(offset() + MTU_LENGTH_OFFSET, mtuLength, LITTLE_ENDIAN);
 
         return this;
     }

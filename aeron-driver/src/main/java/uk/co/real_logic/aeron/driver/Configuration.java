@@ -64,7 +64,7 @@ public class Configuration
     /**
      * Property name for length of the memory mapped buffers for the counters file
      */
-    public static final String COUNTER_BUFFERS_LENGTH_PROP_NAME = "aeron.dir.counters.length";
+    public static final String COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.dir.counters.length";
 
     /**
      * Property name for length of the initial window
@@ -166,8 +166,11 @@ public class Configuration
     /**
      * Length of the memory mapped buffers for the counters file
      */
-    public static final int COUNTERS_BUFFER_LENGTH_DEFAULT = 64 * 1024 * 1024;
-    public static final int COUNTER_BUFFERS_LENGTH = getInteger(COUNTER_BUFFERS_LENGTH_PROP_NAME, COUNTERS_BUFFER_LENGTH_DEFAULT);
+    public static final int COUNTER_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+    public static final int COUNTER_VALUES_BUFFER_LENGTH = getInteger(
+        COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTER_VALUES_BUFFER_LENGTH_DEFAULT);
+
+    public static final int COUNTER_LABELS_BUFFER_LENGTH = COUNTER_VALUES_BUFFER_LENGTH * 16;
 
     /**
      * Default group size estimate for NAK delay randomization

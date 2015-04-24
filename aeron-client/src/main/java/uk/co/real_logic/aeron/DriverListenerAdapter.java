@@ -71,13 +71,12 @@ class DriverListenerAdapter implements MessageHandler
                     final int sessionId = publicationReady.sessionId();
                     final int streamId = publicationReady.streamId();
                     final int publicationLimitCounterId = publicationReady.publicationLimitCounterId();
-                    final int mtuLength = publicationReady.mtuLength();
                     final String channel = publicationReady.channel();
                     final String logFileName = publicationReady.logFileName();
 
 
                     listener.onNewPublication(
-                        channel, streamId, sessionId, publicationLimitCounterId, mtuLength, logFileName, correlationId);
+                        channel, streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
                 }
                 break;
             }

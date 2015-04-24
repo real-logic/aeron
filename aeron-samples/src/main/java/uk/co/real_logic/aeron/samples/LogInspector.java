@@ -60,7 +60,8 @@ public class LogInspector
             out.format("Initial term id: %d\n", initialTermId(logMetaDataBuffer));
             out.format(" Active term id: %d\n", activeTermId(logMetaDataBuffer));
             out.format("   Active Index: %d\n", indexByTerm(initialTermId(logMetaDataBuffer), activeTermId(logMetaDataBuffer)));
-            out.format("    Term Length: %d\n\n", termLength);
+            out.format("    Term Length: %d\n", termLength);
+            out.format("     MTU Length: %d\n\n", mtuLength(logMetaDataBuffer));
 
             if (!Boolean.getBoolean("loginspector.skipHeaders"))
             {

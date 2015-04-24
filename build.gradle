@@ -108,7 +108,7 @@ subprojects {
         options.addStringOption('XDignore.symbol.file', '-quiet')
     }
     afterEvaluate {
-		if(plugins.hasPlugin(JavaPlugin)) {
+		if (plugins.hasPlugin(JavaPlugin)) {
 
 			// configuration here
 			rootProject.tasks.docs {

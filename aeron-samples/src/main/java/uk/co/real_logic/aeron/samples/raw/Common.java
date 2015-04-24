@@ -20,6 +20,7 @@ import uk.co.real_logic.agrona.IoUtil;
 
 import java.io.*;
 import java.lang.reflect.Field;
+import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.*;
 
@@ -65,6 +66,13 @@ public class Common
     {
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+    }
+    
+    public static void init(final DatagramChannel channel, InetSocketAddress sendAddress) throws IOException
+    {
+        channel.configureBlocking(false);
+        channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        channel.connect(sendAddress);
     }
 
     public static NioSelectedKeySet keySet(final Selector selector)

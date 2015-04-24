@@ -54,9 +54,6 @@ public class SubscriberTool
 
     private static final String CONTROL_CHANNEL = "udp://localhost:62777";
     private static final int CONTROL_STREAMID = 9999;
-    /* Doesn't use TLRandom, since this really does need to be random and shouldn't
-     * be affected by manually setting the seed. */
-    private static final int CONTROL_SESSIONID = ThreadLocalRandom.current().nextInt();
     private static final int CONTROL_ACTION_NEW_CONNECTION = 0;
     private static final int CONTROL_ACTION_INACTIVE_CONNECTION = 1;
 
@@ -243,6 +240,9 @@ public class SubscriberTool
 
         private final Publication controlPublication;
         private final Subscription controlSubscription;
+        /* Doesn't use TLRandom, since this really does need to be random and shouldn't
+         * be affected by manually setting the seed. */
+        private final int controlSessionId = ThreadLocalRandom.current().nextInt();
 
         /* channel -> stream ID -> session ID */
         private final HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>> messageStreams =
@@ -282,7 +282,7 @@ public class SubscriberTool
             aeron = Aeron.connect(ctx);
 
             /* Create the control publication and subscription. */
-            controlPublication = aeron.addPublication(CONTROL_CHANNEL, CONTROL_STREAMID, CONTROL_SESSIONID);
+            controlPublication = aeron.addPublication(CONTROL_CHANNEL, CONTROL_STREAMID, controlSessionId);
             controlSubscription = aeron.addSubscription(CONTROL_CHANNEL, CONTROL_STREAMID,
                     new MessageStreamHandler(CONTROL_CHANNEL, CONTROL_STREAMID, null)::onControl);
 
@@ -439,7 +439,7 @@ public class SubscriberTool
             {
                 /* Make sure this was really intended for this app - we might have a bunch
                  * running on the same machine. */
-                if (header.sessionId() != CONTROL_SESSIONID)
+                if (header.sessionId() != controlSessionId)
                 {
                     return;
                 }
@@ -452,35 +452,37 @@ public class SubscriberTool
                 final int streamId = buffer.getInt(offset + 8 + channelLen);
                 final int sessionId = buffer.getInt(offset + 12 + channelLen);
 
-                /* First check that this is a notice about a channel/stream we are actually subscribed to.
-                 * If not, just ignore it. */
-                final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
-                        messageStreams.get(channel);
-                if (streamIdMap == null)
-                {
-                    return;
-                }
-                final Int2ObjectHashMap<MessageStream> sessionIdMap =
-                        streamIdMap.get(streamId);
-                if (sessionIdMap == null)
-                {
-                    return;
-                }
-                /* Oh good - we are actually subscribed to this channel:stream ID. Now
-                 * we can go ahead and act on the control info. The MessageStream lookup
-                 * below might return null if we haven't seen this session ID yet, so
-                 * be sure to handle creating it in the NEW case below. */
-                final MessageStream ms = sessionIdMap.get(sessionId);
-
                 if (action == CONTROL_ACTION_NEW_CONNECTION)
                 {
                     LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
                             channel, streamId, sessionId));
 
-                    if (ms == null)
+                    /* Create a new MessageStream for this connection if it doesn't already exist. */
+                    final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
+                            messageStreams.get(channel);
+                    if (streamIdMap == null)
                     {
-                        sessionIdMap.put(sessionId, new MessageStream());
+                        LOG.warn("New connection detected for channel we were not subscribed to.");
                     }
+                    else
+                    {
+                        final Int2ObjectHashMap<MessageStream> sessionIdMap =
+                                streamIdMap.get(streamId);
+                        if (sessionIdMap == null)
+                        {
+                            LOG.warn("New connection detected for channel we were not subscribed to.");
+                        }
+                        else
+                        {
+                            MessageStream ms = sessionIdMap.get(sessionId);
+                            if (ms == null)
+                            {
+                                ms = new MessageStream();
+                                sessionIdMap.put(sessionId, ms);
+                            }
+                        }
+                    }
+
                     /* And add this channel/stream ID to the active connections list if it wasn't already in it. */
                     makeActive(channel, streamId);
                 }
@@ -489,21 +491,39 @@ public class SubscriberTool
                     LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
                             channel, streamId, sessionId));
 
-                    if (ms == null)
+                    final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
+                            messageStreams.get(channel);
+                    if (streamIdMap == null)
                     {
                         LOG.warn("Inactive connection detected for unknown connection.");
                     }
                     else
                     {
-                        /* Great, found the message stream.  Now get rid of it. */
-                        sessionIdMap.remove(sessionId);
-                        /* If that was the last sessionId we were subscribed to, go ahead and make
-                         * this connection inactive. */
-                        if (sessionIdMap.isEmpty())
+                        final Int2ObjectHashMap<MessageStream> sessionIdMap =
+                                streamIdMap.get(streamId);
+                        if (sessionIdMap == null)
                         {
-                            makeInactive(channel, streamId);
+                            LOG.warn("Inactive connection detected for unknown connection.");
                         }
-
+                        else
+                        {
+                            final MessageStream ms = sessionIdMap.get(sessionId);
+                            if (ms == null)
+                            {
+                                LOG.warn("Inactive connection detected for unknown connection.");
+                            }
+                            else
+                            {
+                                /* Great, found the message stream.  Now get rid of it. */
+                                sessionIdMap.remove(sessionId);
+                                /* If that was the last sessionId we were subscribed to, go ahead and make
+                                 * this connection inactive. */
+                                if (sessionIdMap.isEmpty())
+                                {
+                                    makeInactive(channel, streamId);
+                                }
+                            }
+                        }
                     }
                 }
                 else

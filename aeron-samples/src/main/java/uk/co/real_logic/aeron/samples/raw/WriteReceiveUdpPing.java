@@ -36,7 +36,7 @@ import static uk.co.real_logic.aeron.samples.raw.Common.init;
  */
 public class WriteReceiveUdpPing 
 {
-	public static void main(final String[] args) throws IOException
+    public static void main(final String[] args) throws IOException
     {
         int numChannels = 1;
         if (1 == args.length)

@@ -357,6 +357,15 @@ public class PubSubOptionsTest
     }
 
     @Test
+    public void numberOfStreams() throws Exception
+    {
+        final String[] args = { "--channels", "udp://localhost:12345#1-10,udp://localhost:12345#11" };
+        opts.parseArgs(args);
+
+        assertThat(opts.getNumberOfStreams(), is(11));
+    }
+
+    @Test
     public void messageSizes() throws Exception
     {
         final String[] args = { "--size", "100" };

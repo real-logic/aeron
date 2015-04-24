@@ -97,7 +97,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         }
 
         /* Create and start publishing threads. */
-        numThreads = Math.min(options.getThreads(), options.getChannels().size());
+        numThreads = Math.min(options.getThreads(), options.getNumberOfStreams());
         if (numThreads < options.getThreads())
         {
             LOG.warn(options.getThreads() + " threads were requested, but only " + options.getChannels().size() +

@@ -29,8 +29,6 @@ public class PubSubOptions
 {
     /** line separator */
     private static final String NL = System.lineSeparator();
-    /** class that holds the default string values of the options */
-    private static final OptionValuesStruct DEFAULT_VALUES;
 
     /** Apache Commons CLI options */
     final Options options;
@@ -55,6 +53,8 @@ public class PubSubOptions
     int threads;
     /** The Aeron channels to open */
     List<ChannelDescriptor> channels;
+    /** The total number of channel + stream Id pairs */
+    int totalStreams;
     /** The message rate sending pattern */
     List<RateControllerInterval> rateIntervals;
     /** The stream used to generate data for a Publisher to send */
@@ -67,24 +67,34 @@ public class PubSubOptions
     private boolean outputNeedsClose;
     private boolean inputNeedsClose;
 
-    static
-    {
-        /* the default string values for each option */
-        DEFAULT_VALUES = new PubSubOptions.OptionValuesStruct(
-                "udp://localhost:31111#1", // channels
-                "external", // driver
-                "null", // input
-                "1", // iterations
-                "unlimited", // messages
-                "null", // output
-                "max", // rate
-                "0", // seed
-                "default", // session (aeron will generate a random session id)
-                "32", // size
-                "1", // threads
-                "yes" // verify
-                );
-    }
+    /* Default values for options */
+    private static final String DEFAULT_CHANNEL = "udp://localhost:31111#1";
+    private static final String DEFAULT_DRIVER = "external";
+    private static final String DEFAULT_INPUT = "null";
+    private static final String DEFAULT_ITERATIONS = "1";
+    private static final String DEFAULT_MESSAGES = "unlimited";
+    private static final String DEFAULT_OUTPUT = "null";
+    private static final String DEFAULT_RATE = "max";
+    private static final String DEFAULT_SEED = "0";
+    private static final String DEFAULT_SESSION = "default";
+    private static final String DEFAULT_SIZE = "32";
+    private static final String DEFAULT_THREADS = "1";
+    private static final String DEFAULT_VERIFY = "yes";
+
+    /** class that holds the default string values of the options */
+    private static final OptionValuesStruct DEFAULT_VALUES = new PubSubOptions.OptionValuesStruct(
+            DEFAULT_CHANNEL,
+            DEFAULT_DRIVER,
+            DEFAULT_INPUT,
+            DEFAULT_ITERATIONS,
+            DEFAULT_MESSAGES,
+            DEFAULT_OUTPUT,
+            DEFAULT_RATE,
+            DEFAULT_SEED,
+            DEFAULT_SESSION,
+            DEFAULT_SIZE,
+            DEFAULT_THREADS,
+            DEFAULT_VERIFY);
 
     public PubSubOptions()
     {
@@ -128,6 +138,7 @@ public class PubSubOptions
         messages = 0;
         iterations = 0;
         sessionId = 0;
+        totalStreams = 0;
         inputNeedsClose = false;
         outputNeedsClose = false;
         useEmbeddedDriver = false;
@@ -582,6 +593,23 @@ public class PubSubOptions
     }
 
     /**
+     * Return the total number of channel + streamId pairs specified by the channels option.
+     * @return total number of channel + streamId paris.
+     */
+    public int getNumberOfStreams()
+    {
+        return totalStreams;
+    }
+
+    /**
+     * Set the number of channel + streamId pairs.
+     * @param value Representing the number of streams
+     */
+    public void setNumberOfStreams(int value)
+    {
+        totalStreams = value;
+    }
+    /**
      * If the parsed arguments created file input or output streams, those need to be closed.
      * This is a convenience method that will handle all the closable cases for you. Call this
      * before shutting down an application. Output streams will also be flushed.
@@ -955,10 +983,10 @@ public class PubSubOptions
     /**
      * Function to add ChannelDescriptor objects to the channels list.
      * @param chan Channel address including port low and high
-     * @param sessionIdLow
-     * @param sessionIdHigh
+     * @param streamIdLow
+     * @param streamIdHigh
      */
-    private void addChannelRanges(final ChannelStruct chan, final int sessionIdLow, final int sessionIdHigh)
+    private void addChannelRanges(final ChannelStruct chan, final int streamIdLow, final int streamIdHigh)
     {
         int currentPort = chan.portLow;
         while (currentPort <= chan.portHigh)
@@ -966,8 +994,8 @@ public class PubSubOptions
             final ChannelDescriptor cd = new ChannelDescriptor();
             cd.setChannel(chan.getChannelWithPort(currentPort));
 
-            final int[] idArray = new int[sessionIdHigh - sessionIdLow + 1];
-            int sessionId = sessionIdLow;
+            final int[] idArray = new int[streamIdHigh - streamIdLow + 1];
+            int sessionId = streamIdLow;
             for (int i = 0; i < idArray.length; i++)
             {
                 // set all the session Ids in the array
@@ -975,6 +1003,7 @@ public class PubSubOptions
             }
             cd.setStreamIdentifiers(idArray);
             channels.add(cd);
+            totalStreams += idArray.length;
             currentPort++;
         }
     }

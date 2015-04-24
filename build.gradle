@@ -272,30 +272,30 @@ task wrapper(type: Wrapper) {
 task docs(type: Javadoc) {
 	title = '<h1>Aeron Transport Protocol </h1>'
 
-        options.bottom = '<i>Copyright &#169; 2014 - 2015 Real Logic Ltd. All Rights Reserved.</i>'
-        options.addStringOption('XDignore.symbol.file', '-quiet')
-        include '**/Aeron.java'
-        include '**/FragmentAssemblyAdapter.java'
-        include '**/InactiveConnectionHandler.java'
-        include '**/NewConnectionHandler.java'
-        include '**/Publication.java'
-        include '**/Subscription.java'
-        include '**/CommonContext.java'
-        include '**/ErrorCode.java'
-        include '**/Header.java'
-        include '**/DataHandler.java'
-        include '**/BufferClaim.java'
-        include '**/RegistrationException.java'
-        include '**/DriverTimeoutException.java'
+    options.bottom = '<i>Copyright &#169; 2014 - 2015 Real Logic Ltd. All Rights Reserved.</i>'
+    options.addStringOption('XDignore.symbol.file', '-quiet')
+    include '**/Aeron.java'
+    include '**/FragmentAssemblyAdapter.java'
+    include '**/InactiveConnectionHandler.java'
+    include '**/NewConnectionHandler.java'
+    include '**/Publication.java'
+    include '**/Subscription.java'
+    include '**/CommonContext.java'
+    include '**/ErrorCode.java'
+    include '**/Header.java'
+    include '**/DataHandler.java'
+    include '**/BufferClaim.java'
+    include '**/RegistrationException.java'
+    include '**/DriverTimeoutException.java'
 	destinationDir = file("$buildDir/docs/all")
 }
 
 task docsJar (type: Jar, dependsOn: docs) {
-        classifier = 'docs'
-        from docs.destinationDir
+    classifier = 'docs'
+    from docs.destinationDir
 }
 
 artifacts {
-       archives docsJar
+   archives docsJar
 }
 

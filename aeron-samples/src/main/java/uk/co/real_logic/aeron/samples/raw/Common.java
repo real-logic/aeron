@@ -67,8 +67,9 @@ public class Common
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
     }
-    
-    public static void init(final DatagramChannel channel, InetSocketAddress sendAddress) throws IOException
+
+    public static void init(final DatagramChannel channel, final InetSocketAddress sendAddress)
+        throws IOException
     {
         channel.configureBlocking(false);
         channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);

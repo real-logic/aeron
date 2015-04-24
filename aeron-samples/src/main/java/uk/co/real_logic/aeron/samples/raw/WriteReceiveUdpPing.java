@@ -15,7 +15,7 @@
 package uk.co.real_logic.aeron.samples.raw;
 
 import org.HdrHistogram.Histogram;
-import uk.co.real_logic.aeron.common.concurrent.SigInt;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.BitUtil;
 
 import java.io.IOException;
@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.samples.raw.Common.init;
  *
  * @see ReceiveWriteUdpPong
  */
-public class WriteReceiveUdpPing 
+public class WriteReceiveUdpPing
 {
     public static void main(final String[] args) throws IOException
     {

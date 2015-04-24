@@ -21,10 +21,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
  * A subscriber application with two subscriptions which can receive fragmented messages
@@ -138,8 +138,9 @@ public class MultipleSubscribersWithFragmentAssembly
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
+     * @throws Exception
      */
-    public static DataHandler reassembledStringMessage1(final int streamId)
+    public static DataHandler reassembledStringMessage1(final int streamId) throws Exception
     {
         return (buffer, offset, length, header) ->
         {
@@ -148,8 +149,20 @@ public class MultipleSubscribersWithFragmentAssembly
 
             System.out.println(
                 String.format(
-                    "message (%s ) to stream %d from session %x term id %x term offset %d (%d@%d)",
-                    new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+                    "message to stream %d from session %x term id %x term offset %d (%d@%d)",
+                    streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+            if (length != 10000)
+            {
+                try
+                {
+                    throw new Exception("Received message is not assembled properly received lenth " +
+                            length + " Expecting " + "10000");
+                }
+                catch (final Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
         };
     }
 
@@ -159,7 +172,7 @@ public class MultipleSubscribersWithFragmentAssembly
  * @param streamId to show when printing
  * @return subscription data handler function that prints the message contents
  */
-public static DataHandler reassembledStringMessage2(final int streamId)
+public static DataHandler reassembledStringMessage2(final int streamId) throws Exception
 {
     return (buffer, offset, length, header) ->
     {
@@ -168,8 +181,20 @@ public static DataHandler reassembledStringMessage2(final int streamId)
 
         System.out.println(
             String.format(
-                "message (%s ) to stream %d from session %x term id %x term offset %d (%d@%d)",
-                new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+                "message to stream %d from session %x term id %x term offset %d (%d@%d)",
+                 streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+        if (length != 9000)
+        {
+            try
+            {
+                throw new Exception("Received message is not assembled properly, received lenth " +
+                                        length + " Expecting " + "9000");
+            }
+            catch (final Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
     };
 }
 }

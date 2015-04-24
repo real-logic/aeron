@@ -34,9 +34,9 @@ public class MultiplePublishersWithFragmentation
     private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    // Allocate enough buffer size to hold maximum stream buffer
+    // Allocate enough buffer for message to get fragmented
     private static final UnsafeBuffer BUFFER_1 = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
-    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
+    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(9000));
 
     public static void main(final String[] args) throws Exception
     {
@@ -54,10 +54,10 @@ public class MultiplePublishersWithFragmentation
             // Prepare a buffer to be sent
             int j = 1;
             int k = 1;
-            String message1 = "Hello World! " + j;
+            final String message1 = "Hello World! " + j;
             BUFFER_1.putBytes(0, message1.getBytes());
             // Prepare a buffer to be sent
-            String message2 = "Hello World! " + k;
+            final String message2 = "Hello World! " + k;
             BUFFER_2.putBytes(0, message2.getBytes());
             // Try to send 5000 messages from each publisher
             while (j <= 5000 || k <= 5000)
@@ -71,7 +71,7 @@ public class MultiplePublishersWithFragmentation
                     // Try to publish buffer from first publisher
                     if (j <= 5000)
                     {
-                        result1 = publication1.offer(BUFFER_1, 0, message1.getBytes().length);
+                        result1 = publication1.offer(BUFFER_1, 0, BUFFER_1.capacity());
                         if (result1 < 0L)
                         {
                             // Message offer failed
@@ -94,23 +94,22 @@ public class MultiplePublishersWithFragmentation
                         {
                             // Successfully send the data, get the next buffer in the stream
                             j++;
-                            message1 = "Hello World! " + j;
-                            BUFFER_1.putBytes(0, message1.getBytes());
                             offerStatus1 = true;
                             System.out.println("Successfully sent data on stream " +
-                                STREAM_ID_1 + " and data length " + message1.getBytes().length + " status " + result1);
+                                STREAM_ID_1 + " and data length " + BUFFER_1.capacity() + " at offset " + result1);
                         }
                     }
                     // Try to publish buffer from second publisher
                     if (k <= 5000)
                     {
-                        result2 = publication2.offer(BUFFER_2, 0, message2.getBytes().length);
+                        result2 = publication2.offer(BUFFER_2, 0, BUFFER_2.capacity());
                         if (result2 < 0L)
                         {
                             // Message offer failed
                             if (result2 == Publication.BACK_PRESSURE)
                             {
-                                System.out.println("Offer failed due to back pressure for stream Id " + STREAM_ID_2);
+                                System.out.println(" Offer failed because publisher is not yet " +
+                                        "connected to subscriber for stream Id "  + STREAM_ID_2);
                             }
                             else if (result2 == Publication.NOT_CONNECTED)
                             {
@@ -126,11 +125,9 @@ public class MultiplePublishersWithFragmentation
                         {
                             // Successfully send the data, get the next buffer in the stream
                             k++;
-                            message2 = "Hello World! " + k;
-                            BUFFER_2.putBytes(0, message2.getBytes());
                             offerStatus2 = true;
                             System.out.println("Successfully sent data on stream " + STREAM_ID_2 +
-                                " and data length " + message2.getBytes().length + " status " + result2);
+                                " and data length " + BUFFER_2.capacity() + " at offset " + result2);
                         }
                     }
                 }

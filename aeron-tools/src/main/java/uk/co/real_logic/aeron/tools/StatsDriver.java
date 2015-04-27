@@ -67,16 +67,6 @@ public class StatsDriver
     options.addOption(null, "file", true, "Output file for csv format stats.");
     options.addOption("h", "help", false, "Display help message.");
 
-    final String help = "This application will dump Aeron statistics in a format requested.\n" +
-            "Possible formats are console, csv, netstat, and vmstat.\n" +
-            "Options: \n" +
-            "\t--console    stats are dumped to the console.\n" +
-            "\t--csv        stats are dumped to a file in comma separated values format.\n" +
-            "\t             By default the file is 'stats.csv', but the filename can be\n" +
-            "\t             changed via the --file option.\n" +
-            "\t--netstat    Only the transport info is shown.\n" +
-            "\t--vmstat     The driver statistics are printed in a columnure format.\n" +
-            "\t--help       Print this message.\n";
 
     final CommandLineParser parser = new GnuParser();
     final CommandLine command = parser.parse(options, args);
@@ -85,7 +75,7 @@ public class StatsDriver
 
     if (command.hasOption("help"))
     {
-      System.out.println(help);
+      System.out.println(options.toString());
       System.exit(0);
     }
 

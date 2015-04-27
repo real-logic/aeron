@@ -13,6 +13,7 @@ import java.util.concurrent.CountDownLatch;
 
 import javax.imageio.ImageIO;
 
+import org.apache.commons.cli.*;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
@@ -41,8 +42,8 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     private CountDownLatch connectionLatch = null;
     private final int pubStreamId = 10;
     private final int subStreamId = 11;
-    private final String pubChannel = "udp://localhost:44444";
-    private final String subChannel = "udp://localhost:55555";
+    private String pubChannel = "udp://localhost:44444";
+    private String reflectChannel = "udp://localhost:55555";
     private Thread subThread = null;
     private boolean running = true;
     private IdleStrategy idle = null;
@@ -55,15 +56,24 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     private final BufferClaim bufferClaim;
     private int warmups = 0;
     private final double means[] = new double[5];
+    private Options options;
 
-    public AeronThroughputencyPublisher()
+    public AeronThroughputencyPublisher(String[] args)
     {
+        try
+        {
+            parseArgs(args);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
         ctx = new Aeron.Context()
                 .newConnectionHandler(this::connectionHandler);
         dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
         aeron = Aeron.connect(ctx);
         pub = aeron.addPublication(pubChannel, pubStreamId);
-        sub = aeron.addSubscription(subChannel, subStreamId, dataHandler);
+        sub = aeron.addSubscription(reflectChannel, subStreamId, dataHandler);
         connectionLatch = new CountDownLatch(1);
         idle = new BusySpinIdleStrategy();
         bufferClaim = new BufferClaim();
@@ -219,7 +229,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     private void connectionHandler(final String channel, final int streamId,
                                    final int sessionId, final long position, final String sourceInfo)
     {
-        if (channel.equals(subChannel) && subStreamId == streamId)
+        if (channel.equals(reflectChannel) && subStreamId == streamId)
         {
             connectionLatch.countDown();
         }
@@ -235,6 +245,28 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         else
         {
             warmups++;
+        }
+    }
+
+    private void parseArgs(final String[] args) throws ParseException
+    {
+        options = new Options();
+        options.addOption("c", "claim", false, "Use Try/Claim");
+        options.addOption("", "pubChannel", false, "Primary publishing channel");
+        options.addOption("", "reflectChannel", false, "Reflection channel");
+
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args);
+
+
+        if (command.hasOption("pubChannel"))
+        {
+            pubChannel = command.getOptionValue("pubChannel", "udp://localhost:44444");
+        }
+
+        if (command.hasOption("reflectChannel"))
+        {
+            reflectChannel = command.getOptionValue("reflecthannel", "udp://localhost:55555");
         }
     }
 
@@ -379,6 +411,6 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     }
     public static void main(final String[] args)
     {
-        new AeronThroughputencyPublisher();
+        new AeronThroughputencyPublisher(args);
     }
 }

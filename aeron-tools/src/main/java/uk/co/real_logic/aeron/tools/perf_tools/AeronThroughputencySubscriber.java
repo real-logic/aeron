@@ -41,8 +41,8 @@ public class AeronThroughputencySubscriber
         ctx = new Aeron.Context();
         dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
         aeron = Aeron.connect(ctx);
-        pub = aeron.addPublication(pubChannel, pubStreamId);
-        sub = aeron.addSubscription(reflectChannel, subStreamId, dataHandler);
+        pub = aeron.addPublication(reflectChannel, pubStreamId);
+        sub = aeron.addSubscription(pubChannel, subStreamId, dataHandler);
         bufferClaim = new BufferClaim();
 
         while (running)

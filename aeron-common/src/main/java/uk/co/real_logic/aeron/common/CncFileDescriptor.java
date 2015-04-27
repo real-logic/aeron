@@ -21,6 +21,8 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
+import static uk.co.real_logic.agrona.BitUtil.align;
+
 /**
  * Description of the command and control file used between driver and clients
  *
@@ -83,7 +85,7 @@ public class CncFileDescriptor
 
     public static final int META_DATA_LENGTH = COUNTER_VALUES_BUFFER_LENGTH_FIELD_OFFSET + BitUtil.SIZE_OF_INT;
 
-    public static final int END_OF_META_DATA_OFFSET = BitUtil.SIZE_OF_INT + META_DATA_LENGTH;
+    public static final int END_OF_META_DATA_OFFSET = align(BitUtil.SIZE_OF_INT + META_DATA_LENGTH, BitUtil.CACHE_LINE_LENGTH);
 
     /**
      * Compute the length of the cnc file and return it.
@@ -93,7 +95,7 @@ public class CncFileDescriptor
      */
     public static int computeCncFileLength(final int totalLengthOfBuffers)
     {
-        return BitUtil.SIZE_OF_INT + META_DATA_LENGTH + totalLengthOfBuffers;
+        return END_OF_META_DATA_OFFSET + totalLengthOfBuffers;
     }
 
     public static int cncVersionOffset(final int baseOffset)
@@ -147,8 +149,7 @@ public class CncFileDescriptor
 
     public static UnsafeBuffer createToClientsBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
     {
-        final int offset = END_OF_META_DATA_OFFSET +
-            metaDataBuffer.getInt(toDriverBufferLengthOffset(0));
+        final int offset = END_OF_META_DATA_OFFSET + metaDataBuffer.getInt(toDriverBufferLengthOffset(0));
 
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(toClientsBufferLengthOffset(0)));
     }

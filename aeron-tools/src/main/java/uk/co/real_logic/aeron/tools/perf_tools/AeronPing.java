@@ -1,5 +1,11 @@
 package uk.co.real_logic.aeron.tools.perf_tools;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
@@ -41,9 +47,18 @@ public class AeronPing implements NewConnectionHandler
     private BufferClaim bufferClaim = null;
     private double sorted[] = null;
     private double tmp[] = null;
+    private Options options;
 
-    public AeronPing(boolean claim)
+    public AeronPing(String[] args)
     {
+        try
+        {
+            parseArgs(args);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
         ctx = new Aeron.Context()
                 .newConnectionHandler(this);
         dataHandler = new FragmentAssemblyAdapter(this::pongHandler);
@@ -169,6 +184,36 @@ public class AeronPing implements NewConnectionHandler
 
         System.out.println("Min: " + min + " Index: " + minIdx);
         System.out.println("Max: " + max + " Index: " + maxIdx);
+    }
+
+    private void parseArgs(final String[] args) throws ParseException
+    {
+        options = new Options();
+        options.addOption("c", "claim", false, "Use Try/Claim");
+        options.addOption("", "pongChannel", false, "Pong channel");
+        options.addOption("", "pingChannel", false, "Ping channel");
+
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args);
+
+        if (command.hasOption("claim"))
+        {
+            claim = true;
+        }
+        else
+        {
+            claim = false;
+        }
+
+        if (command.hasOption("pingChannel"))
+        {
+            pingChannel = command.getOptionValue("pingChannel", "udp://localhost:44444");
+        }
+
+        if (command.hasOption("pongChannel"))
+        {
+            pongChannel = command.getOptionValue("pongChannel", "udp://localhost:55555");
+        }
     }
 
     private void generateScatterPlot(double min, double max, double percentile)
@@ -300,25 +345,10 @@ public class AeronPing implements NewConnectionHandler
         final BigDecimal rounded = bd.setScale(precision, roundingMode);
         return rounded.doubleValue();
     }
+
     public static void main(String[] args)
     {
-        AeronPing ping = null;
-
-        if (args.length == 0)
-        {
-            ping = new AeronPing(false);
-        }
-        else
-        {
-            if (args[0].equalsIgnoreCase("--claim") || args[0].equalsIgnoreCase("-c"))
-            {
-                ping = new AeronPing(true);
-            }
-            else
-            {
-                ping = new AeronPing(false);
-            }
-        }
+        AeronPing ping = new AeronPing(args);
 
         ping.connect();
         ping.run();

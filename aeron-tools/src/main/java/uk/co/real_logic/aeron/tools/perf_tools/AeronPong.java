@@ -1,5 +1,11 @@
 package uk.co.real_logic.aeron.tools.perf_tools;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
+
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.co.real_logic.aeron.Aeron;
@@ -23,14 +29,24 @@ public class AeronPong
     private Subscription pingSub = null;
     private final int pingStreamId = 10;
     private final int pongStreamId = 11;
-    private final String pingChannel = "udp://localhost:44444";
-    private final String pongChannel = "udp://localhost:55555";
+    private String pingChannel = "udp://localhost:44444";
+    private String pongChannel = "udp://localhost:55555";
     private final AtomicBoolean running = new AtomicBoolean(true);
     private boolean claim = false;
     private BufferClaim bufferClaim = null;
+    private Options options;
 
-    public AeronPong(final boolean claim)
+    public AeronPong(String[] args)
     {
+        try
+        {
+            parseArgs(args);
+        }
+        catch (Exception e)
+        {
+            e.printStackTrace();
+        }
+
         ctx = new Aeron.Context();
         if (claim)
         {
@@ -64,6 +80,36 @@ public class AeronPong
         //pongPub.close();
         //pingSub.close();
         aeron.close();
+    }
+
+    private void parseArgs(final String[] args) throws ParseException
+    {
+        options = new Options();
+        options.addOption("c", "claim", false, "Use Try/Claim");
+        options.addOption("", "pongChannel", false, "Pong channel");
+        options.addOption("", "pingChannel", false, "Ping channel");
+
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args);
+
+        if (command.hasOption("claim"))
+        {
+            claim = true;
+        }
+        else
+        {
+            claim = false;
+        }
+
+        if (command.hasOption("pingChannel"))
+        {
+            pingChannel = command.getOptionValue("pingChannel", "udp://localhost:44444");
+        }
+
+        if (command.hasOption("pongChannel"))
+        {
+            pongChannel = command.getOptionValue("pongChannel", "udp://localhost:55555");
+        }
     }
 
     private void pingHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -109,24 +155,7 @@ public class AeronPong
 
     public static void main(final String[] args)
     {
-        AeronPong pong = null;
-
-        if (args.length == 0)
-        {
-            pong = new AeronPong(false);
-        }
-        else
-        {
-            if (args[0].equalsIgnoreCase("--claim") || args[0].equalsIgnoreCase("-c"))
-            {
-                pong = new AeronPong(true);
-            }
-            else
-            {
-                pong = new AeronPong(false);
-            }
-        }
-
+        AeronPong pong = new AeronPong(args);
         pong.run();
         pong.shutdown();
     }

@@ -26,6 +26,7 @@ public class MessageStream
     private final boolean verifiable;
 
     private InputStream inputStream;
+    private final boolean inputStreamIsRandom;
     private byte[] inputStreamBytes;
 
     private long sequenceNumber = -1;
@@ -70,11 +71,16 @@ public class MessageStream
     public MessageStream(final int minSize, final int maxSize, final boolean verifiable,
             final InputStream inputStream) throws Exception
     {
-        this.inputStream = inputStream;
         if (this.inputStream == null)
         {
             // When no input stream is supplied, use random generator.
             this.inputStream = new RandomInputStream();
+            this.inputStreamIsRandom = true;
+        }
+        else
+        {
+            this.inputStream = inputStream;
+            this.inputStreamIsRandom = false;
         }
         if (minSize < 0)
         {
@@ -124,6 +130,7 @@ public class MessageStream
         this.messageOffset = HEADER_LENGTH;
         this.verifiable = true;
         this.inputStream = null;
+        this.inputStreamIsRandom = false;
     }
 
     public int payloadOffset(final DirectBuffer buffer, final int offset)
@@ -393,6 +400,20 @@ public class MessageStream
         {
             /* Copy what was read. */
             buffer.putBytes(pos, inputStreamBytes, 0, sizeRead);
+
+            /* Now... if our input stream is actually random bytes, and
+             * we're _not_ supposed to be doing verifiable messages, then
+             * make things just a touch less random by excluding any
+             * message that just happens to start with a verifiable
+             * message magic value. */
+            if ((sizeRead >= 4) && inputStreamIsRandom && !verifiable)
+            {
+                while (isVerifiable(buffer, 0))
+                {
+                    buffer.putInt(MAGIC_OFFSET, TLRandom.current().nextInt());
+                }
+            }
+
             pos += sizeRead;
         }
         else if (sizeRead < 0)

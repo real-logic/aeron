@@ -348,7 +348,7 @@ public class AeronPing implements NewConnectionHandler
 
     public static void main(String[] args)
     {
-        AeronPing ping = new AeronPing(args);
+        final AeronPing ping = new AeronPing(args);
 
         ping.connect();
         ping.run();

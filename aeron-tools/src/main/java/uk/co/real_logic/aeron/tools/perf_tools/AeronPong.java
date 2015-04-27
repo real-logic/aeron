@@ -155,7 +155,7 @@ public class AeronPong
 
     public static void main(final String[] args)
     {
-        AeronPong pong = new AeronPong(args);
+        final AeronPong pong = new AeronPong(args);
         pong.run();
         pong.shutdown();
     }

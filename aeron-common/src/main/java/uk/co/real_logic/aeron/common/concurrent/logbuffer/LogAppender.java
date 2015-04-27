@@ -74,6 +74,8 @@ public class LogAppender extends LogBufferPartition
 
         checkHeaderLength(defaultHeader.capacity());
         checkMaxFrameLength(maxFrameLength);
+        termBuffer.verifyAlignment();
+        metaDataBuffer.verifyAlignment();
 
         this.defaultHeader = defaultHeader;
         this.headerLength = defaultHeader.capacity();

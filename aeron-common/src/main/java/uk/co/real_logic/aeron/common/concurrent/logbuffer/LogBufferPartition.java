@@ -31,6 +31,8 @@ public class LogBufferPartition
     {
         checkTermBuffer(termBuffer);
         checkMetaDataBuffer(metaDataBuffer);
+        termBuffer.verifyAlignment();
+        metaDataBuffer.verifyAlignment();
 
         this.termBuffer = termBuffer;
         this.metaDataBuffer = metaDataBuffer;

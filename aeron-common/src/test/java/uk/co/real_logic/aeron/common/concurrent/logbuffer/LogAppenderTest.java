@@ -209,6 +209,8 @@ public class LogAppenderTest
 
         assertThat(logAppender.append(buffer, 0, msgLength), is(LogAppender.TRIPPED));
 
+        verify(termBuffer, atLeastOnce()).verifyAlignment();
+        verify(metaDataBuffer, atLeastOnce()).verifyAlignment();
         verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         verify(termBuffer, atLeastOnce()).capacity();
         verifyNoMoreInteractions(termBuffer);

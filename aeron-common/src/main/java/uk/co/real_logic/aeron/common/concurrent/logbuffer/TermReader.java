@@ -42,6 +42,7 @@ public class TermReader
     public TermReader(final int initialTermId, final UnsafeBuffer termBuffer)
     {
         checkTermBuffer(termBuffer);
+        termBuffer.verifyAlignment();
 
         this.termBuffer = termBuffer;
         header = new Header(initialTermId, termBuffer);

@@ -33,6 +33,7 @@ ext {
 
 allprojects {
     apply plugin: 'eclipse'
+    apply plugin: 'idea'
 }
 
 buildscript {

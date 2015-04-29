@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Real Logic Ltd.
+ * Copyright 2015 Kaazing Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
  * A very simple Aeron subscriber application which can receive small non-fragmented messages
@@ -57,7 +57,7 @@ public class SimpleSubscriber
         final DataHandler dataHandler = new DataHandler()
         {
             @Override
-            public void onData(DirectBuffer buffer, int offset, int length, Header header)
+            public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
             {
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);

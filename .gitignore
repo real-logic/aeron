@@ -17,6 +17,12 @@ out
 .classpath
 .settings
 
+# intellij
+*.iml
+*.ipr
+*.iws
+.idea
+
 # editors
 *.sublime-project
 *.sublime-workspace

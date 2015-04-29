@@ -37,6 +37,7 @@ ext {
 
 allprojects {
     apply plugin: 'eclipse'
+    apply plugin: 'idea'
 }
 
 buildscript {
@@ -153,7 +154,7 @@ subprojects {
 
 project(':aeron-common') {
     dependencies {
-        compile 'uk.co.real-logic:Agrona:0.3.1-SNAPSHOT'
+        compile 'uk.co.real-logic:Agrona:0.3.1'
     }
 }
 

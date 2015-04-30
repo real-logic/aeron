@@ -117,17 +117,16 @@ public class MessageStream
 
         this.inputStreamBytes = new byte[maxSize];
 
+        this.minSize = minSize;
+        this.maxSize = maxSize;
+
         this.verifiable = verifiable;
         if (this.verifiable)
         {
-            this.minSize = minSize + HEADER_LENGTH;
-            this.maxSize = maxSize + HEADER_LENGTH;
             this.messageOffset = HEADER_LENGTH;
         }
         else
         {
-            this.minSize = minSize;
-            this.maxSize = maxSize;
             this.messageOffset = 0;
         }
 

@@ -21,11 +21,7 @@ import static org.junit.Assert.assertThat;
 import org.apache.commons.cli.ParseException;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.MockitoAnnotations;
 
-/**
- * Created by mike on 4/16/2015.
- */
 public class ThwackerOptionsTest
 {
 
@@ -34,7 +30,6 @@ public class ThwackerOptionsTest
     @Before
     public void setUp()
     {
-        MockitoAnnotations.initMocks(this);
         opts = new ThwackerOptions();
     }
 
@@ -416,5 +411,18 @@ public class ThwackerOptionsTest
         opts.parseArgs(args);
         assertThat("FAIL: Default for --min-size should be 35",
                 opts.getMinMsgSize(), is(35));
+    }
+    @Test
+    public void help() throws Exception
+    {
+        final String[] args = {"--help"};
+        assertThat(opts.parseArgs(args), is(1));
+    }
+
+    @Test
+    public void helpShorthand() throws Exception
+    {
+        final String[] args = { "-h" };
+        assertThat(opts.parseArgs(args), is(1));
     }
 }

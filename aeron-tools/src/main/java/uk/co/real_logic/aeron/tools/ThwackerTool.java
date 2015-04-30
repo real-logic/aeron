@@ -19,8 +19,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -105,10 +103,8 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
     private boolean running = false;
     /* Flag signaling worker threads to be actively "thwacking" or not */
     private boolean active = false;
-    /* ExecutorService that handles the running of worker threads */
-    private ExecutorService runStuffs = null;
 
-    private ArrayList<Thread> sendThreads = null;
+    private ArrayList<Thread> thwackerThreads = null;
 
     /*
      *      CONFIGURABLE OPTIONS
@@ -204,14 +200,13 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         final int totalWorkerThreadCount = createThreadCount * 2 + deleteThreadCount * 2 + senderThreadCount +
                 receiverThreadCount;
         allDone = new CountDownLatch(totalWorkerThreadCount);
-        runStuffs = Executors.newFixedThreadPool(totalWorkerThreadCount);
 
         ctrlSub = new ThwackingElement(channel + ":" + port, CONTROL_SID, useVerifiableMessageStream, true);
         ctrlPub = new ThwackingElement(channel + ":" + port, CONTROL_SID, useVerifiableMessageStream, false);
         ctrlSub.tryAddSub();
         ctrlPub.tryAddPub();
 
-        sendThreads = new ArrayList<Thread>();
+        thwackerThreads = new ArrayList<Thread>();
 
     }
 
@@ -282,22 +277,29 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.debug("Creating and starting threads");
         for (int i = 0; i < createThreadCount; i++)
         {
-            runStuffs.submit(() -> createSubs());
-            runStuffs.submit(() -> createPubs());
+            thwackerThreads.add(new Thread(() -> createSubs()));
+            thwackerThreads.add(new Thread(() -> createPubs()));
         }
         for (int i = 0; i < deleteThreadCount; i++)
         {
-            runStuffs.submit(() -> deleteSubs());
-            runStuffs.submit(() -> deletePubs());
+            thwackerThreads.add(new Thread(() -> createSubs()));
+            thwackerThreads.add(new Thread(() -> createPubs()));
         }
         for (int i = 0; i < receiverThreadCount; i++)
         {
-            runStuffs.submit(() -> receiveOnSubs());
+            thwackerThreads.add(new Thread(() -> receiveOnSubs()));
         }
         for (int i = 0; i < senderThreadCount; i++)
         {
-            sendThreads.add(i, new Thread(() -> sendOnRandomPub()));
-            sendThreads.get(i).start();
+            thwackerThreads.add(i, new Thread(() -> sendOnRandomPub()));
+        }
+        for (int i = 0; i < thwackerThreads.size(); i++)
+        {
+            thwackerThreads.get(i).start();
+        }
+        for (int i = 0; i < senderThreadCount; i++)
+        {
+            thwackerThreads.add(i, new Thread(() -> sendOnRandomPub()));
         }
 
     }
@@ -367,13 +369,13 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         }
         LOG.info("All finished, Closing now!");
 
-        for (int i = 0; i < senderThreadCount; i++)
+        for (int i = 0; i < thwackerThreads.size(); i++)
         {
             try
             {
-                sendThreads.get(i).join();
+                thwackerThreads.get(i).join();
             }
-            catch (Exception e)
+            catch (InterruptedException e)
             {
                 e.printStackTrace();
             }
@@ -383,7 +385,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         ctrlPub.close();
         ctrlSub.close();
         aeron.close();
-        runStuffs.shutdown();
         CloseHelper.quietClose(driver);
 
     }
@@ -656,14 +657,12 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
     private class ThwackingElement
     {
         //TODO Make this an interface to generalize Thwacker
-        //private final UnsafeBuffer buffer;
         private ThreadLocal<UnsafeBuffer> buffer = null;
         private Publication pub;
         private Subscription sub;
         private MessageStream ms;
         private final String channel;
         private final int streamId;
-        private final int sessionId = 0;
         private final AtomicInteger msgCount;
         /* Flag indicating if this element should be using a verifiable stream */
         private final boolean verify;
@@ -675,7 +674,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
          * on the same pub */
         private final ReentrantReadWriteLock lock;
         private DataHandler msgHandler = null;
-        //private boolean previousSendFailed = false;
         private ThreadLocal<Boolean> previousSendFailed = null;
         private ThreadLocal<Integer> bytesSent = null;
         /* Message stream per threadId per sessionId map for message verification with multiple

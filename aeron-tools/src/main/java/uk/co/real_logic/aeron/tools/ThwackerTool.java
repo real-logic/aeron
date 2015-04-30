@@ -1,3 +1,18 @@
+/*
+ * Copyright 2015 Kaazing Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package uk.co.real_logic.aeron.tools;
 
 /**
@@ -13,20 +28,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.ParseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.InactiveConnectionHandler;
+import uk.co.real_logic.aeron.NewConnectionHandler;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
-
-import uk.co.real_logic.agrona.concurrent.SigInt;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 
@@ -115,7 +134,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         final ThwackerTool app = new ThwackerTool(args);
     }
 
-    public ThwackerTool(String[] args)
+    public ThwackerTool(final String[] args)
     {
 
         final ThwackerOptions opts = new ThwackerOptions();
@@ -127,7 +146,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                 LOG.error("Parse args failed");
             }
         }
-        catch (ParseException e)
+        catch (final ParseException e)
         {
             e.printStackTrace();
         }
@@ -146,7 +165,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
      * createAndInitObjects():
      *  Initializes all the necessary objects used
      */
-    public void createAndInitObjects(ThwackerOptions opts)
+    public void createAndInitObjects(final ThwackerOptions opts)
     {
         populateOptions(opts);
         driver = useEmbeddedDriver ? MediaDriver.launch() : null;
@@ -176,7 +195,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
     }
 
-    public void populateOptions(ThwackerOptions opts)
+    public void populateOptions(final ThwackerOptions opts)
     {
         channel = opts.getChannel();
         port = opts.getPort();
@@ -270,7 +289,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
      * @param duration
      * @param iterations
      */
-    public void run(int duration, int iterations)
+    public void run(final int duration, int iterations)
     {
         boolean alwaysOn = true;
         if (iterations > 1)
@@ -305,7 +324,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     Thread.sleep(duration);
                 }
             }
-            catch (InterruptedException e)
+            catch (final InterruptedException e)
             {
                 e.printStackTrace();
             }
@@ -321,7 +340,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             //Wait for each thwacking thread to finish
             allDone.await();
         }
-        catch (InterruptedException e)
+        catch (final InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -337,9 +356,9 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
     }
 
-    public void cleanUpArray(ThwackingElement[] arr)
+    public void cleanUpArray(final ThwackingElement[] arr)
     {
-        for (ThwackingElement elem : arr)
+        for (final ThwackingElement elem : arr)
         {
             elem.close();
         }
@@ -479,7 +498,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         while (running)
         {
             /* Run through each sub slot sequentially */
-            for (ThwackingElement s : subs)
+            for (final ThwackingElement s : subs)
             {
                 s.tryGetMessages();
             }
@@ -512,15 +531,15 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
     public class Handler
     {
         /* Reference to the subscriber that calls this handler for verification purposes */
-        private ThwackingElement sub;
+        private final ThwackingElement sub;
 
-        public Handler(ThwackingElement e)
+        public Handler(final ThwackingElement e)
         {
             sub = e;
         }
 
-        public void messageHandler(DirectBuffer buffer, int offset, int length,
-                                   Header header)
+        public void messageHandler(final DirectBuffer buffer, final int offset, final int length,
+                                   final Header header)
         {
             MessageStream ms = null;
             //Retrieve sending threadId
@@ -594,8 +613,8 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         private MessageStream ms;
         private final String channel;
         private final int streamId;
-        private int sessionId = 0;
-        private AtomicInteger msgCount;
+        private final int sessionId = 0;
+        private final AtomicInteger msgCount;
         /* Flag indicating if this element should be using a verifiable stream */
         private final boolean verify;
         /* Active flag showing whether there is an already created pub or sub in this thwacking element */
@@ -618,7 +637,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         private long lastThreadId;
 
 
-        ThwackingElement(String chan, int stId, boolean verifiable, boolean createSubscriber)
+        ThwackingElement(final String chan, final int stId, final boolean verifiable, final boolean createSubscriber)
         {
             channel = chan;
             streamId = stId;
@@ -746,7 +765,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
          * @return Returns Aeron error codes in failure or the position in success
          */
 
-        long trySendMessage(long threadId)
+        long trySendMessage(final long threadId)
         {
             MessageStream ms = null;
             /* See if our cached MessageStream is the right one. */
@@ -766,7 +785,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     {
                         ms = new MessageStream(minSize, maxSize, verify);
                     }
-                    catch (Exception e)
+                    catch (final Exception e)
                     {
                         e.printStackTrace();
                     }
@@ -797,7 +816,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                             buffer.putLong(bytesSent, threadId);
                             bytesSent += Long.SIZE;
                         }
-                        catch (Exception e)
+                        catch (final Exception e)
                         {
                             e.printStackTrace();
                         }

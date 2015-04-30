@@ -1,4 +1,26 @@
+/*
+ * Copyright 2015 Kaazing Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package uk.co.real_logic.aeron.tools.perf_tools;
+
+import java.io.File;
+import java.io.PrintWriter;
+import java.math.BigDecimal;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -6,29 +28,25 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.NewConnectionHandler;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import java.io.File;
-import java.io.PrintWriter;
-import java.math.BigDecimal;
-import java.nio.ByteBuffer;
-import java.util.Arrays;
-
-import java.util.concurrent.CountDownLatch;
-
 /**
  * Created by philip on 4/7/15.
  */
 public class AeronPing implements NewConnectionHandler
 {
-    private int numMsgs = 1000000;
-    private int numWarmupMsgs = 50000;
-    private int msgLen = 32;
+    private final int numMsgs = 1000000;
+    private final int numWarmupMsgs = 50000;
+    private final int msgLen = 32;
     private long[][] timestamps = null;
     private boolean warmedUp = false;
     private Aeron.Context ctx = null;
@@ -37,8 +55,8 @@ public class AeronPing implements NewConnectionHandler
     private Publication pub = null;
     private Subscription sub = null;
     private CountDownLatch connectionLatch = null;
-    private int pingStreamId = 10;
-    private int pongStreamId = 11;
+    private final int pingStreamId = 10;
+    private final int pongStreamId = 11;
     private String pingChannel = "udp://localhost:44444";
     private String pongChannel = "udp://localhost:55555";
     private UnsafeBuffer buffer = null;
@@ -49,13 +67,13 @@ public class AeronPing implements NewConnectionHandler
     private double tmp[] = null;
     private Options options;
 
-    public AeronPing(String[] args)
+    public AeronPing(final String[] args)
     {
         try
         {
             parseArgs(args);
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -81,7 +99,7 @@ public class AeronPing implements NewConnectionHandler
         {
             connectionLatch.await();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -216,7 +234,7 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    private void generateScatterPlot(double min, double max, double percentile)
+    private void generateScatterPlot(final double min, final double max, final double percentile)
     {
         final int width = 390;
         final int height = 370;
@@ -236,7 +254,7 @@ public class AeronPing implements NewConnectionHandler
             }
             out.close();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
@@ -254,14 +272,15 @@ public class AeronPing implements NewConnectionHandler
             }
             out.close();
         }
-        catch (Exception e)
+        catch (final Exception e)
         {
             e.printStackTrace();
         }
     }
 
-    public void onNewConnection(String channel, int streamId,
-                                   int sessionId, final long position, String sourceInfo)
+    @Override
+    public void onNewConnection(final String channel, final int streamId,
+                                   final int sessionId, final long position, final String sourceInfo)
     {
         if (channel.equals(pongChannel) && pongStreamId == streamId)
         {
@@ -269,8 +288,8 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    private void pongHandler(DirectBuffer buffer, int offset, int length,
-                             Header header)
+    private void pongHandler(final DirectBuffer buffer, final int offset, final int length,
+                             final Header header)
     {
         if (buffer.getByte(offset + 0) == (byte)'p')
         {
@@ -320,7 +339,7 @@ public class AeronPing implements NewConnectionHandler
                     timestamps[0][msgCount++] = System.nanoTime();
                 }
             }
-            catch (Exception e)
+            catch (final Exception e)
             {
                 e.printStackTrace();
             }
@@ -339,14 +358,14 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    private double round(double unrounded, int precision, int roundingMode)
+    private double round(final double unrounded, final int precision, final int roundingMode)
     {
         final BigDecimal bd = new BigDecimal(unrounded);
         final BigDecimal rounded = bd.setScale(precision, roundingMode);
         return rounded.doubleValue();
     }
 
-    public static void main(String[] args)
+    public static void main(final String[] args)
     {
         final AeronPing ping = new AeronPing(args);
 

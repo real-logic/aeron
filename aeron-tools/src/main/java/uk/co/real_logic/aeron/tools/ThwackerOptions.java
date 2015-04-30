@@ -1,6 +1,25 @@
+/*
+ * Copyright 2015 Kaazing Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package uk.co.real_logic.aeron.tools;
 
-import org.apache.commons.cli.*;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 /**
  * Created by mike on 4/16/2015.
@@ -84,7 +103,7 @@ public class ThwackerOptions
 
     }
 
-    public int parseArgs(String[] args)throws ParseException
+    public int parseArgs(final String[] args)throws ParseException
     {
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);
@@ -125,7 +144,7 @@ public class ThwackerOptions
 
     }
 
-    public boolean parseYesNo(String opt) throws ParseException
+    public boolean parseYesNo(final String opt) throws ParseException
     {
         boolean rc;
         if (opt.equalsIgnoreCase("yes"))
@@ -143,20 +162,20 @@ public class ThwackerOptions
         return rc;
     }
 
-    public String parseString(String opt)
+    public String parseString(final String opt)
     {
         //TODO: Add proper channel parsing
         return opt;
     }
 
-    public int parsePositiveInt(String opt) throws ParseException
+    public int parsePositiveInt(final String opt) throws ParseException
     {
         int rc = 0;
         try
         {
             rc = Integer.parseInt(opt);
         }
-        catch (NumberFormatException e)
+        catch (final NumberFormatException e)
         {
             throw new ParseException("An integer could not be determined from the specified option: " + opt);
         }

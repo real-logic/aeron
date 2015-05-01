@@ -16,14 +16,14 @@
 package uk.co.real_logic.aeron.driver;
 
 /**
- * Tracks a aeron client interest registration in a {@link DriverPublication}.
+ * Tracks a aeron client interest registration in a {@link NetworkPublication}.
  */
 public class PublicationRegistration
 {
-    private final DriverPublication publication;
+    private final NetworkPublication publication;
     private final AeronClient client;
 
-    public PublicationRegistration(final DriverPublication publication, final AeronClient client)
+    public PublicationRegistration(final NetworkPublication publication, final AeronClient client)
     {
         this.publication = publication;
         this.client = client;

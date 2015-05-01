@@ -3,6 +3,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.lang.Integer.valueOf;
@@ -17,10 +18,10 @@ public class TermScannerTest
 {
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int MTU_LENGTH = 1024;
-    private static final int HEADER_LENGTH = 24;
+    private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
-    private final TermScanner scanner = new TermScanner(HEADER_LENGTH);
+    private final TermScanner scanner = new TermScanner();
 
     @Before
     public void setUp()

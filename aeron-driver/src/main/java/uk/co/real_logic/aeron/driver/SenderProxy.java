@@ -68,7 +68,7 @@ public class SenderProxy
         }
     }
 
-    public void closePublication(final DriverPublication publication)
+    public void closePublication(final NetworkPublication publication)
     {
         if (isSharedThread())
         {
@@ -81,7 +81,7 @@ public class SenderProxy
     }
 
     public void newPublication(
-        final DriverPublication publication,
+        final NetworkPublication publication,
         final RetransmitHandler retransmitHandler,
         final SenderFlowControl senderFlowControl)
     {

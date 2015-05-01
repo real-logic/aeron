@@ -340,7 +340,7 @@ public final class MediaDriver implements AutoCloseable
 
                 mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
 
-                final ByteBuffer eventByteBuffer = ByteBuffer.allocate(eventBufferLength);
+                final ByteBuffer eventByteBuffer = ByteBuffer.allocateDirect(eventBufferLength);
 
                 if (null == eventLogger)
                 {

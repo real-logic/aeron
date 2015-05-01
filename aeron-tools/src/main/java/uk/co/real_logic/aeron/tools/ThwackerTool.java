@@ -552,14 +552,12 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.debug("RecSubs all done!");
     }
 
-    @Override
     public void onInactiveConnection(final String channel, final int streamId,
                                      final int sessionId, final long position)
     {
         LOG.debug("ON INACTIVE ::: " + channel + streamId + sessionId + position);
     }
 
-    @Override
     public void onNewConnection(final String channel, final int streamId, final int sessionId,
                                 final long position, final String sourceInformation)
     {
@@ -692,7 +690,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             verify = verifiable;
             buffer = new ThreadLocal<UnsafeBuffer>()
             {
-                @Override protected UnsafeBuffer initialValue()
+                protected UnsafeBuffer initialValue()
                 {
                     return new UnsafeBuffer(ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE));
                 }
@@ -713,7 +711,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                 bytesSent = new ThreadLocal<Integer>();
                 previousSendFailed = new ThreadLocal<Boolean>()
                 {
-                    @Override protected Boolean initialValue()
+                    protected Boolean initialValue()
                     {
                         return false;
                     }

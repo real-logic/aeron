@@ -272,7 +272,6 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    @Override
     public void onNewConnection(final String channel, final int streamId,
                                    final int sessionId, final long position, final String sourceInfo)
     {

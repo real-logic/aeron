@@ -42,7 +42,6 @@ public class SecondsAtBitsPerSecondInterval extends RateControllerInterval
         return seconds;
     }
 
-    @Override
     IntervalInternal makeInternal(final RateController rateController) throws Exception
     {
         return rateController.new SecondsAtBitsPerSecondInternal(rateController, seconds, goalBitsPerSecond);

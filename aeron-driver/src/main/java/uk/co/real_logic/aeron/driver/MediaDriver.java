@@ -209,7 +209,6 @@ public final class MediaDriver implements AutoCloseable
     /**
      * Shutdown the media driver by stopping all threads and freeing resources.
      */
-    @Override
     public void close()
     {
         try
@@ -342,7 +341,6 @@ public final class MediaDriver implements AutoCloseable
             dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
         }
 
-        @Override
         public Context conclude()
         {
             super.conclude();
@@ -836,7 +834,6 @@ public final class MediaDriver implements AutoCloseable
             return toEventReader;
         }
 
-        @Override
         public void close()
         {
             if (null != systemCounters)

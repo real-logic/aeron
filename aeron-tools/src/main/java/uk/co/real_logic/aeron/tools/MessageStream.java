@@ -52,7 +52,7 @@ public class MessageStream
 
     private static class ThreadLocalCRC32 extends ThreadLocal<CRC32>
     {
-        @Override protected CRC32 initialValue()
+        protected CRC32 initialValue()
         {
             return new CRC32();
         }

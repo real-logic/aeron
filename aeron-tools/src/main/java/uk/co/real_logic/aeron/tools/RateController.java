@@ -250,7 +250,6 @@ public class RateController
         }
 
         /** Returns true if you should keep sending. */
-        @Override
         public boolean sendNext()
         {
             /* We've got a fixed size message and a fixed bits/sec. rate.
@@ -294,7 +293,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
@@ -330,7 +328,6 @@ public class RateController
         }
 
         /** Returns true if you should keep sending. */
-        @Override
         public boolean sendNext()
         {
             /* Always start out sending immediately; if the previous
@@ -370,7 +367,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
@@ -406,7 +402,6 @@ public class RateController
         }
 
         /** Returns true if you should keep sending. */
-        @Override
         public boolean sendNext()
         {
             /* As a special case... If we're sending 0 messages per second, then this is really just a sleep.
@@ -456,7 +451,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
@@ -492,7 +486,6 @@ public class RateController
         }
 
         /** Returns true if you should keep sending. */
-        @Override
         public boolean sendNext()
         {
             /* As a special case... If we're sending 0 bits per second, then this is really just a sleep.
@@ -542,7 +535,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;

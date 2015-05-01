@@ -97,7 +97,6 @@ public class MediaDriverOptionsTest
     /** Class instantiated via reflection by MediaDriverOptions */
     static class TestIdleStrategy implements IdleStrategy
     {
-        @Override
         public void idle(final int workCount)
         {
         }

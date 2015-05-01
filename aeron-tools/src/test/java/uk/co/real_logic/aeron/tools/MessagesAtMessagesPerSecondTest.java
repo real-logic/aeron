@@ -30,7 +30,6 @@ public class MessagesAtMessagesPerSecondTest
 
     class Callback implements RateController.Callback
     {
-        @Override
         public int onNext()
         {
             return 0;

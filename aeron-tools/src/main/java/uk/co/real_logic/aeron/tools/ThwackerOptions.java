@@ -18,19 +18,20 @@ package uk.co.real_logic.aeron.tools;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
-/**
- * Created by mike on 4/16/2015.
- */
 public class ThwackerOptions
 {
+    /** line separator */
+    private static final String NL = System.lineSeparator();
+
     static final String DEFAULT_VERIFIABLE_MESSAGE_STREAM = "no";
     static final String DEFAULT_USE_SAME_SID = "no";
     static final String DEFAULT_USE_CHANNEL_PER_PUB = "no";
     static final String DEFAULT_USE_EMBEDDED_DRIVER = "yes";
-    static final String DEFAULT_CHANNEL = "udp://localhost:";
+    static final String DEFAULT_CHANNEL = "udp://localhost";
     static final String DEFAULT_PORT = "51234";
     static final String DEFAULT_DURATION = "30000";
     static final String DEFAULT_ITERATIONS = "1";
@@ -82,6 +83,7 @@ public class ThwackerOptions
         options.addOption("e", "elements", true, "Number of Publications and Subscriptions");
         options.addOption(null, "min-size", true, "Minimum size message a Publication will send");
         options.addOption(null, "max-size", true, "Maximum size message a Publication will send");
+        options.addOption("h", "help", false, " Print help text.");
 
 
         // Init variables, will be overwritten in parseArgs
@@ -108,6 +110,12 @@ public class ThwackerOptions
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);
         String opt;
+
+        if (command.hasOption("help"))
+        {
+            // Don't do anything, just signal the caller that they should call printHelp
+            return 1;
+        }
 
         opt = command.getOptionValue("verify", DEFAULT_VERIFIABLE_MESSAGE_STREAM);
         useVerifiableMessageStream = parseYesNo(opt);
@@ -142,6 +150,16 @@ public class ThwackerOptions
 
         return 0;
 
+    }
+    /**
+     * Print the help message for the available options.
+     * @param program Name of the program calling print help.
+     */
+    public void printHelp(final String program)
+    {
+        final HelpFormatter formatter = new HelpFormatter();
+        formatter.printHelp(program + " [options]", options);
+        System.out.println(NL + USAGE + NL);
     }
 
     public boolean parseYesNo(final String opt) throws ParseException
@@ -249,4 +267,11 @@ public class ThwackerOptions
     {
         return minSize;
     }
+
+    private static final String USAGE = "" +
+            // stay within column 93 (80 when printed). That's here ---------------------> |
+            "Examples:" + NL +
+            "-v no -d 10000 -e 10 -s 1 --max-size 100 --min-size 64" + NL +
+            "    Run for 10s with unverifiable messages, 10 pubs and 10 subs, 1 sending" + NL +
+            "    thread, and random message sizes from 64 to 100 bytes";
 }

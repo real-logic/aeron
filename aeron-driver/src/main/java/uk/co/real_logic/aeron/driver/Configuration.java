@@ -474,6 +474,7 @@ public class Configuration
 
     public static LossGenerator createLossGenerator(final double lossRate, final long lossSeed)
     {
+        LossGenerator lossGenerator = null;
         if (0 == lossRate)
         {
             return (address, length) -> false;
@@ -483,20 +484,18 @@ public class Configuration
         {
             try
             {
-                return new PercentageLossGenerator(lossRate);
+                lossGenerator = new PercentageLossGenerator((int)lossRate);
             }
             catch (final Exception e)
             {
-                // Exit the program if you caught this exception
                 e.printStackTrace();
-                System.exit(-1);
             }
         }
         else
         {
-            return new RandomLossGenerator(lossRate, lossSeed);
+            lossGenerator =  new RandomLossGenerator(lossRate, lossSeed);
         }
-        return null;
+        return lossGenerator;
     }
 
     public static ThreadingMode threadingMode()

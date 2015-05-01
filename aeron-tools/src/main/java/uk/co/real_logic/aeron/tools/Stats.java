@@ -56,148 +56,146 @@ import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 public class Stats
 {
-  private CommonContext context = null;
-  private File cncFile = null;
-  private MappedByteBuffer cncByteBuffer = null;
-  private DirectBuffer metaDataBuffer = null;
-  private final int cncVersion;
-  private AtomicBuffer labelsBuffer = null;
-  private AtomicBuffer valuesBuffer = null;
-  private CountersManager countersManager = null;
-  private final AtomicBoolean running = null;
-  private StatsOutput output = null;
+    private CommonContext context = null;
+    private File cncFile = null;
+    private MappedByteBuffer cncByteBuffer = null;
+    private DirectBuffer metaDataBuffer = null;
+    private final int cncVersion;
+    private AtomicBuffer labelsBuffer = null;
+    private AtomicBuffer valuesBuffer = null;
+    private CountersManager countersManager = null;
+    private final AtomicBoolean running = null;
+    private StatsOutput output = null;
 
-  private static final int LABEL_SIZE = 1024;
-  private static final int NUM_BASE_STATS = 22;
-  private static final int UNREGISTERED_LABEL_SIZE = -1;
+    private static final int LABEL_SIZE = 1024;
+    private static final int NUM_BASE_STATS = 22;
+    private static final int UNREGISTERED_LABEL_SIZE = -1;
 
-  public Stats(final StatsOutput output, final String dirName) throws Exception
-  {
-    if (output == null)
+    public Stats(final StatsOutput output, final String dirName) throws Exception
     {
-      this.output = new StatsConsoleOutput();
-    }
-    else
-    {
-      this.output = output;
-    }
-
-    if (dirName == null)
-    {
-      cncFile = CommonContext.newDefaultCncFile();
-    }
-    else
-    {
-      context = new CommonContext().dirName(dirName).conclude();
-      cncFile = context.cncFile();
-    }
-
-    cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-    metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-    cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-    if (CncFileDescriptor.CNC_VERSION != cncVersion)
-    {
-      throw new IllegalStateException("CNC version not understood: version = " + cncVersion);
-    }
-
-    labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
-    valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
-
-    countersManager = new CountersManager(labelsBuffer, valuesBuffer);
-  }
-
-  public void collectStats() throws Exception
-  {
-    String[] keys = null;
-    long[] vals = null;
-    int size;
-    int idx;
-
-    if (output instanceof StatsNetstatOutput)
-    {
-      idx = NUM_BASE_STATS;
-      final ArrayList<String> tmpKeys = new ArrayList<String>();
-      final ArrayList<Long> tmpVals = new ArrayList<Long>();
-
-      while ((size = isValid(idx)) != 0)
-      {
-        if (size != UNREGISTERED_LABEL_SIZE)
+        if (output == null)
         {
-          tmpKeys.add(getLabel(idx));
-          tmpVals.add(getValue(idx));
+            this.output = new StatsConsoleOutput();
         }
-        idx++;
-      }
-
-      keys = tmpKeys.toArray(new String[tmpKeys.size()]);
-      vals = new long[tmpVals.size()];
-      for (int i = 0; i < vals.length; i++)
-      {
-        vals[i] = tmpVals.get(i).longValue();
-      }
-    }
-    else if (output instanceof StatsConsoleOutput)
-    {
-      final ArrayList<String> tmpKeys = new ArrayList<String>();
-      final ArrayList<Long> tmpVals = new ArrayList<Long>();
-      idx = 0;
-
-      while ((size = isValid(idx)) != 0)
-      {
-        if (size != UNREGISTERED_LABEL_SIZE)
+        else
         {
-          tmpKeys.add(getLabel(idx));
-          tmpVals.add(getValue(idx));
+            this.output = output;
         }
-        idx++;
-      }
 
-      keys = tmpKeys.toArray(new String[tmpKeys.size()]);
-      vals = new long[tmpVals.size()];
-      for (int i = 0; i < vals.length; i++)
-      {
-        vals[i] = tmpVals.get(i).longValue();
-      }
-    }
-    else if (output instanceof StatsVMStatOutput || output instanceof StatsCSVOutput)
-    {
-      keys = new String[NUM_BASE_STATS];
-      vals = new long[NUM_BASE_STATS];
-
-      for (idx = 0; idx < NUM_BASE_STATS; idx++)
-      {
-        if ((size = isValid(idx)) != 0)
+        if (dirName == null)
         {
-          if (size != UNREGISTERED_LABEL_SIZE)
-          {
-            keys[idx] = getLabel(idx);
-            vals[idx] = getValue(idx);
-          }
+            cncFile = CommonContext.newDefaultCncFile();
         }
-      }
+        else
+        {
+            context = new CommonContext().dirName(dirName).conclude();
+            cncFile = context.cncFile();
+        }
+
+        cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+        if (CncFileDescriptor.CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException("CNC version not understood: version = " + cncVersion);
+        }
+
+        labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
+        valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
+
+        countersManager = new CountersManager(labelsBuffer, valuesBuffer);
     }
-    output.format(keys, vals);
-  }
 
-  public void close() throws Exception
-  {
-    output.close();
-  }
+    public void collectStats() throws Exception
+    {
+        String[] keys = null;
+        long[] vals = null;
+        int size;
+        int idx;
 
-  private int isValid(final int idx)
-  {
-    return labelsBuffer.getInt(idx * LABEL_SIZE);
-  }
+        if (output instanceof StatsNetstatOutput)
+        {
+            idx = NUM_BASE_STATS;
+            final ArrayList<String> tmpKeys = new ArrayList<String>();
+            final ArrayList<Long> tmpVals = new ArrayList<Long>();
 
-  private String getLabel(final int idx)
-  {
-    return labelsBuffer.getStringUtf8(idx * LABEL_SIZE, nativeOrder());
-  }
+            while ((size = isValid(idx)) != 0)
+            {
+                if (size != UNREGISTERED_LABEL_SIZE)
+                {
+                    tmpKeys.add(getLabel(idx));
+                    tmpVals.add(getValue(idx));
+                }
+                idx++;
+            }
 
-  private long getValue(final int idx)
-  {
-    final int offset = CountersManager.counterOffset(idx);
-    return valuesBuffer.getLongVolatile(offset);
-  }
+            keys = tmpKeys.toArray(new String[tmpKeys.size()]);
+            vals = new long[tmpVals.size()];
+            for (int i = 0; i < vals.length; i++)
+            {
+                vals[i] = tmpVals.get(i).longValue();
+            }
+        }
+        else if (output instanceof StatsConsoleOutput)
+        {
+            final ArrayList<String> tmpKeys = new ArrayList<String>();
+            final ArrayList<Long> tmpVals = new ArrayList<Long>();
+            idx = 0;
+
+            while ((size = isValid(idx)) != 0)
+            {
+                if (size != UNREGISTERED_LABEL_SIZE)
+                {
+                    tmpKeys.add(getLabel(idx));
+                    tmpVals.add(getValue(idx));
+                }
+                idx++;
+            }
+
+            keys = tmpKeys.toArray(new String[tmpKeys.size()]);
+            vals = new long[tmpVals.size()];
+            for (int i = 0; i < vals.length; i++)
+            {
+                vals[i] = tmpVals.get(i).longValue();
+            }
+        }
+        else if (output instanceof StatsVMStatOutput || output instanceof StatsCSVOutput)
+        {
+            keys = new String[NUM_BASE_STATS];
+            vals = new long[NUM_BASE_STATS];
+
+            for (idx = 0; idx < NUM_BASE_STATS; idx++)
+            {
+                if ((size = isValid(idx)) != 0)
+                {
+                    if (size != UNREGISTERED_LABEL_SIZE)
+                    {
+                        keys[idx] = getLabel(idx);
+                        vals[idx] = getValue(idx);
+                    }
+                }
+            }
+        }
+        output.format(keys, vals);
+    }
+
+    public void close() throws Exception
+    {
+        output.close();
+    }
+
+    private int isValid(final int idx)
+    {
+        return labelsBuffer.getInt(idx * LABEL_SIZE);
+    }
+
+    private String getLabel(final int idx) {
+        return labelsBuffer.getStringUtf8(idx * LABEL_SIZE, nativeOrder());
+    }
+
+    private long getValue(final int idx) {
+        final int offset = CountersManager.counterOffset(idx);
+        return valuesBuffer.getLongVolatile(offset);
+    }
 }

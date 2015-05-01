@@ -31,7 +31,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final NanoClock clock;
-    private final ArrayList<DriverConnection> connections = new ArrayList<>();
+    private final ArrayList<NetworkConnection> connections = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
 
     public Receiver(final MediaDriver.Context ctx)
@@ -56,7 +56,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         final long now = clock.time();
         for (int i = connections.size() - 1; i >= 0; i--)
         {
-            final DriverConnection connection = connections.get(i);
+            final NetworkConnection connection = connections.get(i);
             if (!connection.checkForActivity(now, Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
             {
                 connection.removeFromDispatcher();
@@ -93,7 +93,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.dispatcher().onRemoveSubscription(streamId);
     }
 
-    public void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
+    public void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final NetworkConnection connection)
     {
         connections.add(connection);
         channelEndpoint.dispatcher().addConnection(connection);

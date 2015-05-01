@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.DriverConnection;
+import uk.co.real_logic.aeron.driver.NetworkConnection;
 import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.Receiver;
 
 public class NewConnectionCmd implements ReceiverCmd
 {
     private final ReceiveChannelEndpoint channelEndpoint;
-    private final DriverConnection connection;
+    private final NetworkConnection connection;
 
-    public NewConnectionCmd(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
+    public NewConnectionCmd(final ReceiveChannelEndpoint channelEndpoint, final NetworkConnection connection)
     {
         this.channelEndpoint = channelEndpoint;
         this.connection = connection;

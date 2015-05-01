@@ -169,7 +169,7 @@ public class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
 
-        final DriverConnection connection = new DriverConnection(
+        final NetworkConnection connection = new NetworkConnection(
             CORRELATION_ID, receiveChannelEndpoint,
             senderAddress,
             SESSION_ID,
@@ -241,7 +241,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
-                    new DriverConnection(
+                    new NetworkConnection(
                         CORRELATION_ID, receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,
@@ -302,7 +302,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
-                    new DriverConnection(
+                    new NetworkConnection(
                         CORRELATION_ID, receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,
@@ -366,7 +366,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
-                    new DriverConnection(
+                    new NetworkConnection(
                         CORRELATION_ID, receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,
@@ -434,7 +434,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newConnection(
                     receiveChannelEndpoint,
-                    new DriverConnection(
+                    new NetworkConnection(
                         CORRELATION_ID, receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,

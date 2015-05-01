@@ -86,10 +86,10 @@ public class DriverConductor implements Agent
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final TimerWheel timerWheel;
-    private final ArrayList<DriverPublication> publications = new ArrayList<>();
+    private final ArrayList<NetworkPublication> publications = new ArrayList<>();
     private final Long2ObjectHashMap<PublicationRegistration> publicationRegistrations = new Long2ObjectHashMap<>();
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
-    private final ArrayList<DriverConnection> connections = new ArrayList<>();
+    private final ArrayList<NetworkConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
 
     private final Supplier<SenderFlowControl> unicastSenderFlowControl;
@@ -164,8 +164,8 @@ public class DriverConductor implements Agent
     public void onClose()
     {
         rawLogFactory.close();
-        publications.forEach(DriverPublication::close);
-        connections.forEach(DriverConnection::close);
+        publications.forEach(NetworkPublication::close);
+        connections.forEach(NetworkConnection::close);
         sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
@@ -194,17 +194,17 @@ public class DriverConductor implements Agent
         workCount += toEventReader.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
         workCount += processTimers();
 
-        final ArrayList<DriverConnection> connections = this.connections;
+        final ArrayList<NetworkConnection> connections = this.connections;
         for (int i = 0, size = connections.size(); i < size; i++)
         {
-            final DriverConnection connection = connections.get(i);
+            final NetworkConnection connection = connections.get(i);
             workCount += connection.trackRebuild();
         }
 
-        final ArrayList<DriverPublication> publications = this.publications;
+        final ArrayList<NetworkPublication> publications = this.publications;
         for (int i = 0, size = publications.size(); i < size; i++)
         {
-            final DriverPublication publication = publications.get(i);
+            final NetworkPublication publication = publications.get(i);
             workCount += publication.updatePublishersLimit() + publication.cleanLogBuffer();
         }
 
@@ -354,7 +354,7 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient aeronClient = getOrAddClient(clientId);
-        DriverPublication publication = channelEndpoint.getPublication(sessionId, streamId);
+        NetworkPublication publication = channelEndpoint.getPublication(sessionId, streamId);
         if (publication == null)
         {
             final int initialTermId = BitUtil.generateRandomisedId();
@@ -372,7 +372,7 @@ public class DriverConductor implements Agent
             final SenderFlowControl senderFlowControl =
                 udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
 
-            publication = new DriverPublication(
+            publication = new NetworkPublication(
                 channelEndpoint,
                 clock,
                 rawLog,
@@ -455,7 +455,7 @@ public class DriverConductor implements Agent
         subscriptions.add(subscription);
         clientProxy.operationSucceeded(correlationId);
 
-        for (final DriverConnection connection : connections)
+        for (final NetworkConnection connection : connections)
         {
             if (connection.matches(channelEndpoint, streamId))
             {
@@ -564,7 +564,7 @@ public class DriverConductor implements Agent
             subscriberPositions,
             sourceInfo);
 
-        final DriverConnection connection = new DriverConnection(
+        final NetworkConnection connection = new NetworkConnection(
             correlationId,
             channelEndpoint,
             controlAddress,
@@ -619,10 +619,10 @@ public class DriverConductor implements Agent
 
     private void onCheckPublications(final long now)
     {
-        final ArrayList<DriverPublication> publications = this.publications;
+        final ArrayList<NetworkPublication> publications = this.publications;
         for (int i = publications.size() - 1; i >= 0; i--)
         {
-            final DriverPublication publication = publications.get(i);
+            final NetworkPublication publication = publications.get(i);
 
             if (publication.isUnreferencedAndFlushed(now) &&
                 now > (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS))
@@ -682,17 +682,17 @@ public class DriverConductor implements Agent
 
     private void onCheckConnections(final long now)
     {
-        final ArrayList<DriverConnection> connections = this.connections;
+        final ArrayList<NetworkConnection> connections = this.connections;
         for (int i = connections.size() - 1; i >= 0; i--)
         {
-            final DriverConnection conn = connections.get(i);
+            final NetworkConnection conn = connections.get(i);
 
             switch (conn.status())
             {
                 case INACTIVE:
                     if (conn.isDrained() || now > (conn.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        conn.status(DriverConnection.Status.LINGER);
+                        conn.status(NetworkConnection.Status.LINGER);
 
                         clientProxy.onInactiveConnection(
                             conn.correlationId(),

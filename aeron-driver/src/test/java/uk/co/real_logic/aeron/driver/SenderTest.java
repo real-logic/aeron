@@ -69,7 +69,7 @@ public class SenderTest
         LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, LogBufferDescriptor.TERM_META_DATA_LENGTH);
 
     private LogAppender[] logAppenders;
-    private DriverPublication publication;
+    private NetworkPublication publication;
     private Sender sender;
 
     private final SenderFlowControl senderFlowControl = spy(new UnicastSenderFlowControl());
@@ -127,7 +127,7 @@ public class SenderTest
             .map((log) -> new LogAppender(log.termBuffer(), log.metaDataBuffer(), HEADER, MAX_FRAME_LENGTH))
             .toArray(LogAppender[]::new);
 
-        publication = new DriverPublication(
+        publication = new NetworkPublication(
             mockSendChannelEndpoint,
             wheel.clock(),
             rawLog,

@@ -462,10 +462,10 @@ public class DriverConductorTest
 
     private void verifySenderNotifiedOfNewPublication()
     {
-        final ArgumentCaptor<DriverPublication> captor = ArgumentCaptor.forClass(DriverPublication.class);
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
         verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
-        final DriverPublication publication = captor.getValue();
+        final NetworkPublication publication = captor.getValue();
         assertThat(publication.sessionId(), is(1));
         assertThat(publication.streamId(), is(2));
     }

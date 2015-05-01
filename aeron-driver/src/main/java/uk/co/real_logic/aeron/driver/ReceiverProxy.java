@@ -74,7 +74,7 @@ public class ReceiverProxy
         }
     }
 
-    public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
+    public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final NetworkConnection connection)
     {
         if (isSharedThread())
         {

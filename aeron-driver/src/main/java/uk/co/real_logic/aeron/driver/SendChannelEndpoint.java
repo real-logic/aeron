@@ -29,11 +29,11 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
- * Aggregator of multiple {@link DriverPublication}s onto a single transport session for processing of control frames.
+ * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for processing of control frames.
  */
 public class SendChannelEndpoint implements AutoCloseable
 {
-    private final BiInt2ObjectMap<DriverPublication> publicationByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<NetworkPublication> publicationByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final UdpChannelTransport transport;
     private final UdpChannel udpChannel;
@@ -116,7 +116,7 @@ public class SendChannelEndpoint implements AutoCloseable
      * @param streamId for the publication
      * @return publication
      */
-    public DriverPublication getPublication(final int sessionId, final int streamId)
+    public NetworkPublication getPublication(final int sessionId, final int streamId)
     {
         return publicationByStreamAndSessionIdMap.get(sessionId, streamId);
     }
@@ -126,7 +126,7 @@ public class SendChannelEndpoint implements AutoCloseable
      *
      * @param publication to associate
      */
-    public void addPublication(final DriverPublication publication)
+    public void addPublication(final NetworkPublication publication)
     {
         publicationByStreamAndSessionIdMap.put(publication.sessionId(), publication.streamId(), publication);
     }
@@ -137,7 +137,7 @@ public class SendChannelEndpoint implements AutoCloseable
      * @param publication to remove
      * @return publication removed
      */
-    public DriverPublication removePublication(final DriverPublication publication)
+    public NetworkPublication removePublication(final NetworkPublication publication)
     {
         return publicationByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
     }
@@ -160,7 +160,7 @@ public class SendChannelEndpoint implements AutoCloseable
      * @param senderFlowControl to add to the dispatcher
      */
     public void addToDispatcher(
-        final DriverPublication publication,
+        final NetworkPublication publication,
         final RetransmitHandler retransmitHandler,
         final SenderFlowControl senderFlowControl)
     {
@@ -174,7 +174,7 @@ public class SendChannelEndpoint implements AutoCloseable
      *
      * @param publication to remove
      */
-    public void removeFromDispatcher(final DriverPublication publication)
+    public void removeFromDispatcher(final NetworkPublication publication)
     {
         final PublicationAssembly assembly =
             assemblyByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
@@ -220,12 +220,12 @@ public class SendChannelEndpoint implements AutoCloseable
 
     static final class PublicationAssembly
     {
-        final DriverPublication publication;
+        final NetworkPublication publication;
         final RetransmitHandler retransmitHandler;
         final SenderFlowControl senderFlowControl;
 
         public PublicationAssembly(
-            final DriverPublication publication,
+            final NetworkPublication publication,
             final RetransmitHandler retransmitHandler,
             final SenderFlowControl senderFlowControl)
         {

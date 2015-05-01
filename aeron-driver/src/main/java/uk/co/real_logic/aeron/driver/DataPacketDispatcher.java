@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
 import java.net.InetSocketAddress;
 
 /**
- * Handling of dispatching data packets to {@link DriverConnection}s streams.
+ * Handling of dispatching data packets to {@link NetworkConnection}s streams.
  *
  * All methods should be called via {@link Receiver} thread
  */
@@ -35,7 +35,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
     private static final Integer INIT_IN_PROGRESS = 2;
 
     private final BiInt2ObjectMap<Integer> initialisationInProgressMap = new BiInt2ObjectMap<>();
-    private final Int2ObjectHashMap<Int2ObjectHashMap<DriverConnection>> connectionsByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Int2ObjectHashMap<NetworkConnection>> connectionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -60,21 +60,21 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     public void onRemoveSubscription(final int streamId)
     {
-        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.remove(streamId);
+        final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = connectionsByStreamIdMap.remove(streamId);
         if (null == connectionBySessionIdMap)
         {
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        connectionBySessionIdMap.values().forEach((connection) -> connection.status(DriverConnection.Status.INACTIVE));
+        connectionBySessionIdMap.values().forEach((connection) -> connection.status(NetworkConnection.Status.INACTIVE));
     }
 
-    public void addConnection(final DriverConnection connection)
+    public void addConnection(final NetworkConnection connection)
     {
         final int sessionId = connection.sessionId();
         final int streamId = connection.streamId();
 
-        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
         if (null == connectionBySessionIdMap)
         {
             throw new IllegalStateException("No subscription registered on stream " + streamId);
@@ -83,15 +83,15 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         connectionBySessionIdMap.put(sessionId, connection);
         initialisationInProgressMap.remove(sessionId, streamId);
 
-        connection.status(DriverConnection.Status.ACTIVE);
+        connection.status(NetworkConnection.Status.ACTIVE);
     }
 
-    public void removeConnection(final DriverConnection connection)
+    public void removeConnection(final NetworkConnection connection)
     {
         final int sessionId = connection.sessionId();
         final int streamId = connection.streamId();
 
-        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
         if (null != connectionBySessionIdMap)
         {
             connectionBySessionIdMap.remove(sessionId);
@@ -111,13 +111,13 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
-        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
         if (null != connectionBySessionIdMap)
         {
             final int sessionId = header.sessionId();
             final int termId = header.termId();
-            final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
+            final NetworkConnection connection = connectionBySessionIdMap.get(sessionId);
 
             if (null != connection)
             {
@@ -136,14 +136,14 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final SetupFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
-        final Int2ObjectHashMap<DriverConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = connectionsByStreamIdMap.get(streamId);
 
         if (null != connectionBySessionIdMap)
         {
             final int sessionId = header.sessionId();
             final int initialTermId = header.initialTermId();
             final int activeTermId = header.activeTermId();
-            final DriverConnection connection = connectionBySessionIdMap.get(sessionId);
+            final NetworkConnection connection = connectionBySessionIdMap.get(sessionId);
 
             if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
             {

@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIME
 /**
  * Publication to be sent to registered subscribers.
  */
-public class DriverPublication implements AutoCloseable
+public class NetworkPublication implements AutoCloseable
 {
     private final RawLog rawLog;
     private final NanoClock clock;
@@ -66,7 +66,7 @@ public class DriverPublication implements AutoCloseable
     private volatile boolean isActive = true;
     private volatile boolean shouldSendSetupFrame = true;
 
-    public DriverPublication(
+    public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
         final RawLog rawLog,

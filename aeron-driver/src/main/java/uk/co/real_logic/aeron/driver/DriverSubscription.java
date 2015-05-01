@@ -29,7 +29,7 @@ public class DriverSubscription
     private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
     private final AeronClient aeronClient;
-    private final Map<DriverConnection, ReadOnlyPosition> positionByConnection = new IdentityHashMap<>();
+    private final Map<NetworkConnection, ReadOnlyPosition> positionByConnection = new IdentityHashMap<>();
 
     public DriverSubscription(
         final long registrationId,
@@ -68,13 +68,13 @@ public class DriverSubscription
         return streamId() == streamId && receiveChannelEndpoint() == channelEndpoint;
     }
 
-    public void addConnection(final DriverConnection connection, final ReadOnlyPosition position)
+    public void addConnection(final NetworkConnection connection, final ReadOnlyPosition position)
     {
         positionByConnection.put(connection, position);
     }
 
     public void close()
     {
-        positionByConnection.forEach(DriverConnection::removeSubscription);
+        positionByConnection.forEach(NetworkConnection::removeSubscription);
     }
 }

@@ -42,7 +42,7 @@ public class ClientProxy
 {
     private static final int WRITE_BUFFER_CAPACITY = 4096;
 
-    private final UnsafeBuffer tmpBuffer = new UnsafeBuffer(ByteBuffer.allocate(WRITE_BUFFER_CAPACITY));
+    private final UnsafeBuffer tmpBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
     private final BroadcastTransmitter transmitter;
 
     private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
@@ -73,10 +73,11 @@ public class ClientProxy
         final int frameLength = ErrorFlyweight.HEADER_LENGTH + offendingFlyweightLength + errorBytes.length;
 
         errorFlyweight.wrap(tmpBuffer, 0);
-        errorFlyweight.errorCode(errorCode)
-                      .offendingFlyweight(offendingFlyweight, offendingFlyweightLength)
-                      .errorMessage(errorBytes)
-                      .frameLength(frameLength);
+        errorFlyweight
+            .errorCode(errorCode)
+            .offendingFlyweight(offendingFlyweight, offendingFlyweightLength)
+            .errorMessage(errorBytes)
+            .frameLength(frameLength);
 
         transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorFlyweight.frameLength());
     }
@@ -92,13 +93,14 @@ public class ClientProxy
         final String sourceInfo)
     {
         connectionReady.wrap(tmpBuffer, 0);
-        connectionReady.sessionId(sessionId)
-                       .streamId(streamId)
-                       .joiningPosition(joiningPosition)
-                       .correlationId(correlationId)
-                       .channel(channel)
-                       .logFileName(rawLog.logFileName())
-                       .sourceInfo(sourceInfo);
+        connectionReady
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .joiningPosition(joiningPosition)
+            .correlationId(correlationId)
+            .channel(channel)
+            .logFileName(rawLog.logFileName())
+            .sourceInfo(sourceInfo);
 
         final int size = subscriberPositions.size();
         connectionReady.subscriberPositionCount(size);
@@ -122,10 +124,11 @@ public class ClientProxy
         final int positionCounterId)
     {
         publicationReady.wrap(tmpBuffer, 0);
-        publicationReady.sessionId(sessionId)
-                        .streamId(streamId)
-                        .correlationId(correlationId)
-                        .publicationLimitCounterId(positionCounterId);
+        publicationReady
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .correlationId(correlationId)
+            .publicationLimitCounterId(positionCounterId);
 
         publicationReady.channel(channel);
         publicationReady.logFileName(rawLog.logFileName());
@@ -150,11 +153,12 @@ public class ClientProxy
         final long correlationId, final int sessionId, final int streamId, final long position, final String channel)
     {
         connectionMessage.wrap(tmpBuffer, 0);
-        connectionMessage.correlationId(correlationId)
-                         .sessionId(sessionId)
-                         .streamId(streamId)
-                         .position(position)
-                         .channel(channel);
+        connectionMessage
+            .correlationId(correlationId)
+            .sessionId(sessionId)
+            .streamId(streamId)
+            .position(position)
+            .channel(channel);
 
         logger.log(EventCode.CMD_OUT_ON_INACTIVE_CONNECTION, tmpBuffer, 0, connectionMessage.length());
 

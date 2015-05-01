@@ -38,10 +38,10 @@ public class DriverPublication implements AutoCloseable
     private final RawLog rawLog;
     private final NanoClock clock;
     private final SetupFlyweight setupHeader = new SetupFlyweight();
-    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final TermScanner scanner = new TermScanner(DataHeaderFlyweight.HEADER_LENGTH);
+    private final TermScanner scanner = new TermScanner();
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
     private final Position publisherLimit;

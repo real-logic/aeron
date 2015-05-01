@@ -27,7 +27,8 @@ public class PublisherStats extends TransportStats
 
     public void setLimit(final long limit)
     {
-        if (limit != this.limit) {
+        if (limit != this.limit)
+        {
             this.limit = limit;
             active = true;
         }

@@ -190,11 +190,13 @@ public class Stats
         return labelsBuffer.getInt(idx * LABEL_SIZE);
     }
 
-    private String getLabel(final int idx) {
+    private String getLabel(final int idx)
+    {
         return labelsBuffer.getStringUtf8(idx * LABEL_SIZE, nativeOrder());
     }
 
-    private long getValue(final int idx) {
+    private long getValue(final int idx)
+    {
         final int offset = CountersManager.counterOffset(idx);
         return valuesBuffer.getLongVolatile(offset);
     }

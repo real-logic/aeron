@@ -82,7 +82,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         }
     }
 
-    private final ThwackerOptions options = null;
     private static final Logger LOG = LoggerFactory.getLogger(ThwackerTool.class);
     private static final int FRAGMENT_LIMIT = 10;
     /* Number to retry sending a message if it fails in offer() */
@@ -125,7 +124,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
     /* Allows each message and stream to be verifiable upon message reception */
     private boolean useVerifiableMessageStream;
     /* Number of threads creating objects (publications or subscriptions)
-   Default = 1  This will create one for subs and one for pubs */
+       Default = 1  This will create one for subs and one for pubs */
     private int createThreadCount = 1;
     /* Number of threads deleting objects (publications or subscriptions)
        Default = 1  This will create one for subs and one for pubs */
@@ -198,7 +197,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         running = true;
 
         final int totalWorkerThreadCount = createThreadCount * 2 + deleteThreadCount * 2 + senderThreadCount +
-                receiverThreadCount;
+            receiverThreadCount;
         allDone = new CountDownLatch(totalWorkerThreadCount);
 
         ctrlSub = new ThwackingElement(channel + ":" + port, CONTROL_SID, useVerifiableMessageStream, true);
@@ -282,8 +281,8 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         }
         for (int i = 0; i < deleteThreadCount; i++)
         {
-            thwackerThreads.add(new Thread(() -> createSubs()));
-            thwackerThreads.add(new Thread(() -> createPubs()));
+            thwackerThreads.add(new Thread(() -> deleteSubs()));
+            thwackerThreads.add(new Thread(() -> deletePubs()));
         }
         for (int i = 0; i < receiverThreadCount; i++)
         {
@@ -297,13 +296,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         {
             thwackerThreads.get(i).start();
         }
-        for (int i = 0; i < senderThreadCount; i++)
-        {
-            thwackerThreads.add(i, new Thread(() -> sendOnRandomPub()));
-        }
-
     }
-
 
     /**
      * Run function that allows threads to run for a set duration
@@ -321,14 +314,12 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             iterations *= 2;
         }
 
-
         for (int i = 0; i < iterations; i++)
         {
             try
             {
                 if (!alwaysOn)
                 {
-
                     if (active)
                     {
                         active = false;
@@ -353,7 +344,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             }
         }
         running = false;
-
     }
 
     public void cleanUp()
@@ -552,14 +542,23 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.debug("RecSubs all done!");
     }
 
-    public void onInactiveConnection(final String channel, final int streamId,
-                                     final int sessionId, final long position)
+    @Override
+    public void onInactiveConnection(
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long position)
     {
         LOG.debug("ON INACTIVE ::: " + channel + streamId + sessionId + position);
     }
 
-    public void onNewConnection(final String channel, final int streamId, final int sessionId,
-                                final long position, final String sourceInformation)
+    @Override
+    public void onNewConnection(
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long position,
+        final String sourceInformation)
     {
         LOG.debug("ON NEW CONNECTION ::: " + channel + streamId + sessionId + position + sourceInformation);
     }
@@ -578,8 +577,11 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             sub = e;
         }
 
-        public void messageHandler(final DirectBuffer buffer, final int offset, final int length,
-                                   final Header header)
+        public void messageHandler(
+            final DirectBuffer buffer,
+            final int offset,
+            final int length,
+            final Header header)
         {
             MessageStream ms = null;
             //Retrieve sending threadId
@@ -590,7 +592,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             {
                 if (MessageStream.isVerifiable(buffer, offset))
                 {
-
                     final int sessionId = header.sessionId();
                     /* See if our cached MessageStream is the right one. */
                     if (sessionId == sub.lastSessionId && threadId == sub.lastThreadId)
@@ -635,18 +636,14 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                         if (!e.getMessage().contains("but was expecting 0"))
                         {
                             LOG.warn(e.getMessage() + " StreamID" + header.streamId() + ":" + header.sessionId() + ":" +
-                                    threadId);
+                                threadId);
                         }
                     }
-
                 }
             }
             sub.msgCount.incrementAndGet();
         }
-
-
     }
-
 
     /** Thwacking Element:
      *  Internal object used to contain either a publication or subscription
@@ -688,13 +685,8 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             channel = chan;
             streamId = stId;
             verify = verifiable;
-            buffer = new ThreadLocal<UnsafeBuffer>()
-            {
-                protected UnsafeBuffer initialValue()
-                {
-                    return new UnsafeBuffer(ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE));
-                }
-            };
+            buffer = new ThreadLocal<UnsafeBuffer>().withInitial(
+                () -> new UnsafeBuffer(ByteBuffer.allocateDirect(DEFAULT_BUFFER_SIZE)));
             isActive = new AtomicBoolean(false);
             lock = new ReentrantReadWriteLock();
             msgCount = new AtomicInteger(0);
@@ -706,18 +698,9 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             }
             else
             {
-
                 senderStream = new ThreadLocal<MessageStream>();
                 bytesSent = new ThreadLocal<Integer>();
-                previousSendFailed = new ThreadLocal<Boolean>()
-                {
-                    protected Boolean initialValue()
-                    {
-                        return false;
-                    }
-                };
-
-
+                previousSendFailed = new ThreadLocal<Boolean>().withInitial(() -> false);
             }
         }
 
@@ -768,7 +751,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     removed = true;
                     pub = null;
                     LOG.debug("Removed pub " + streamId);
-
                 }
                 lock.writeLock().unlock();
             }
@@ -845,7 +827,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             }
 
             int retryCount = 0;
-
             long rc = 0;
 
             /* Try to acquire the send lock that allows only senders, not adders/removers */
@@ -906,7 +887,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                          */
                         previousSendFailed.set(true);
                     }
-
                 }
                 lock.readLock().unlock();
             }

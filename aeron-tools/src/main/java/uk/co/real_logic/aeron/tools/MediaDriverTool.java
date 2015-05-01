@@ -22,9 +22,6 @@ import org.slf4j.LoggerFactory;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 
-/**
- * Created by bhorst on 4/10/15.
- */
 public class MediaDriverTool
 {
     private static final Logger LOG = LoggerFactory.getLogger(MediaDriverTool.class);
@@ -62,11 +59,11 @@ public class MediaDriverTool
             System.getProperties().putAll(opts.getProperties());
         }
         final MediaDriver.Context context = new MediaDriver.Context()
-                .conductorIdleStrategy(opts.getConductorIdleStrategy())
-                .senderIdleStrategy(opts.getSenderIdleStrategy())
-                .receiverIdleStrategy(opts.getReceiverIdleStrategy())
-                .sharedNetworkIdleStrategy(opts.getSharedNetworkIdleStrategy())
-                .sharedIdleStrategy(opts.getSharedIdleStrategy());
+            .conductorIdleStrategy(opts.getConductorIdleStrategy())
+            .senderIdleStrategy(opts.getSenderIdleStrategy())
+            .receiverIdleStrategy(opts.getReceiverIdleStrategy())
+            .sharedNetworkIdleStrategy(opts.getSharedNetworkIdleStrategy())
+            .sharedIdleStrategy(opts.getSharedIdleStrategy());
 
         // Everything else can be changed by Aeron settings.
         try (final MediaDriver driver = MediaDriver.launch(context))

@@ -62,8 +62,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --verify should be false",
-                opts.getVerifiable(), is(false));
+        assertThat("FAIL: Default for --verify should be false", opts.getVerifiable(), is(false));
     }
 
     @Test (expected = ParseException.class)
@@ -95,8 +94,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --same-sid should be false",
-                opts.getSameSID(), is(false));
+        assertThat("FAIL: Default for --same-sid should be false", opts.getSameSID(), is(false));
     }
 
     @Test (expected = ParseException.class)
@@ -128,8 +126,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --channel-per-pub should be false",
-                opts.getChannelPerPub(), is(false));
+        assertThat("FAIL: Default for --channel-per-pub should be false", opts.getChannelPerPub(), is(false));
     }
 
     @Test (expected = ParseException.class)
@@ -143,8 +140,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --channel should be " + opts.DEFAULT_CHANNEL,
-                opts.getChannel(), is(opts.DEFAULT_CHANNEL));
+        assertThat("FAIL: Default for --channel should be udp://localhost", opts.getChannel(), is("udp://localhost"));
     }
     @Test
     public void channel() throws Exception
@@ -185,8 +181,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --port should be " + 51234,
-                opts.getPort(), is(51234));
+        assertThat("FAIL: Default for --port should be " + 51234, opts.getPort(), is(51234));
     }
     @Test
     public void durationPass() throws Exception
@@ -213,8 +208,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --duration should be '30000'",
-                opts.getDuration(), is(30000));
+        assertThat("FAIL: Default for --duration should be '30000'", opts.getDuration(), is(30000));
     }
     @Test
      public void iterationsPass() throws Exception
@@ -241,8 +235,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --iterations should be 1",
-                opts.getIterations(), is(1));
+        assertThat("FAIL: Default for --iterations should be 1", opts.getIterations(), is(1));
     }
     @Test
     public void sendersPass() throws Exception
@@ -269,8 +262,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --iterations should be 1",
-                opts.getSenders(), is(1));
+        assertThat("FAIL: Default for --iterations should be 1", opts.getSenders(), is(1));
     }
     @Test
     public void receiversPass() throws Exception
@@ -297,8 +289,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --iterations should be 1",
-                opts.getReceivers(), is(1));
+        assertThat("FAIL: Default for --iterations should be 1", opts.getReceivers(), is(1));
     }
     @Test
     public void addersPass() throws Exception
@@ -318,8 +309,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --adders should be 1",
-                opts.getAdders(), is(1));
+        assertThat("FAIL: Default for --adders should be 1", opts.getAdders(), is(1));
     }
     @Test
     public void removersPass() throws Exception
@@ -339,8 +329,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --removers should be 1",
-                opts.getRemovers(), is(1));
+        assertThat("FAIL: Default for --removers should be 1", opts.getRemovers(), is(1));
     }
     @Test
     public void elementsPass() throws Exception
@@ -367,8 +356,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --elements should be 10",
-                opts.getElements(), is(10));
+        assertThat("FAIL: Default for --elements should be 10", opts.getElements(), is(10));
     }
     @Test
     public void maxSizePass() throws Exception
@@ -388,8 +376,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --max-size should be 35",
-                opts.getMaxMsgSize(), is(35));
+        assertThat("FAIL: Default for --max-size should be 35", opts.getMaxMsgSize(), is(35));
     }
     @Test
     public void minSizePass() throws Exception
@@ -409,8 +396,7 @@ public class ThwackerOptionsTest
     {
         final String[] args = { };
         opts.parseArgs(args);
-        assertThat("FAIL: Default for --min-size should be 35",
-                opts.getMinMsgSize(), is(35));
+        assertThat("FAIL: Default for --min-size should be 35", opts.getMinMsgSize(), is(35));
     }
     @Test
     public void help() throws Exception

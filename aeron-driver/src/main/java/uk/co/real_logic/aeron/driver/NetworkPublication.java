@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIME
 /**
  * Publication to be sent to registered subscribers.
  */
-public class NetworkPublication implements AutoCloseable
+public class NetworkPublication implements RetransmitSender, AutoCloseable
 {
     private final RawLog rawLog;
     private final NanoClock clock;
@@ -192,7 +192,7 @@ public class NetworkPublication implements AutoCloseable
         return timeOfFlush;
     }
 
-    public void onRetransmit(final int termId, int termOffset, final int length)
+    public void resend(final int termId, int termOffset, final int length)
     {
         final long senderPosition = this.senderPosition.get();
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);

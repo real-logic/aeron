@@ -495,7 +495,7 @@ public class DriverConductor implements Agent
                 systemCounters,
                 DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
                 DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                publication::onRetransmit,
+                publication,
                 initialTermId,
                 capacity);
 

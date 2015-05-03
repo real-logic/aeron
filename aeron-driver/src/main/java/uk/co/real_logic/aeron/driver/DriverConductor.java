@@ -80,10 +80,10 @@ public class DriverConductor implements Agent
     private final ArrayList<NetworkConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
 
-    private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
-    private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
-    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
-    private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
+    private final PublicationMessageFlyweight publicationMsgFlyweight = new PublicationMessageFlyweight();
+    private final SubscriptionMessageFlyweight subscriptionMsgFlyweight = new SubscriptionMessageFlyweight();
+    private final CorrelatedMessageFlyweight correlatedMsgFlyweight = new CorrelatedMessageFlyweight();
+    private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
 
     private final NanoClock clock;
     private final TimerWheel timerWheel;
@@ -128,10 +128,10 @@ public class DriverConductor implements Agent
             (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset, length));
 
         final AtomicBuffer buffer = toDriverCommands.buffer();
-        publicationMessage.wrap(buffer, 0);
-        subscriptionMessage.wrap(buffer, 0);
-        correlatedMessage.wrap(buffer, 0);
-        removeMessage.wrap(buffer, 0);
+        publicationMsgFlyweight.wrap(buffer, 0);
+        subscriptionMsgFlyweight.wrap(buffer, 0);
+        correlatedMsgFlyweight.wrap(buffer, 0);
+        removeMsgFlyweight.wrap(buffer, 0);
 
         toDriverCommands.consumerHeartbeatTimeNs(clock.time());
     }
@@ -265,7 +265,7 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
             sessionId, streamId, channelEndpoint, channel, joiningPosition);
 
-        final int receiverHwmId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId, correlationId);
+        final int receiverHwmId = allocateCounter("receiver hwm", channel, sessionId, streamId, correlationId);
         final RawLog rawLog = rawLogFactory.newConnection(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
 
@@ -319,7 +319,7 @@ public class DriverConductor implements Agent
             .map(
                 (subscription) ->
                 {
-                    final int positionId = allocatePositionCounter(
+                    final int positionId = allocateCounter(
                         "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
                     final UnsafeBufferPosition position = new UnsafeBufferPosition(countersBuffer, positionId, countersManager);
                     countersManager.setCounterValue(positionId, joiningPosition);
@@ -341,7 +341,7 @@ public class DriverConductor implements Agent
                 {
                     logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
 
-                    final PublicationMessageFlyweight publicationMessageFlyweight = publicationMessage;
+                    final PublicationMessageFlyweight publicationMessageFlyweight = publicationMsgFlyweight;
                     publicationMessageFlyweight.offset(index);
                     flyweight = publicationMessageFlyweight;
 
@@ -358,7 +358,7 @@ public class DriverConductor implements Agent
                 {
                     logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
 
-                    final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
+                    final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
                     removeMessageFlyweight.offset(index);
                     flyweight = removeMessageFlyweight;
 
@@ -370,7 +370,7 @@ public class DriverConductor implements Agent
                 {
                     logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
 
-                    final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMessage;
+                    final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMsgFlyweight;
                     subscriptionMessageFlyweight.offset(index);
                     flyweight = subscriptionMessageFlyweight;
 
@@ -386,7 +386,7 @@ public class DriverConductor implements Agent
                 {
                     logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
 
-                    final RemoveMessageFlyweight removeMessageFlyweight = removeMessage;
+                    final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
                     removeMessageFlyweight.offset(index);
                     flyweight = removeMessageFlyweight;
 
@@ -398,7 +398,7 @@ public class DriverConductor implements Agent
                 {
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
 
-                    final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMessage;
+                    final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMsgFlyweight;
                     correlatedMessageFlyweight.offset(index);
                     flyweight = correlatedMessageFlyweight;
 
@@ -442,8 +442,8 @@ public class DriverConductor implements Agent
         {
             final int initialTermId = BitUtil.generateRandomisedId();
             final RawLog rawLog = newPublicationLog(sessionId, streamId, correlationId, udpChannel, initialTermId);
-            final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId, correlationId);
-            final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId, correlationId);
+            final int senderPositionId = allocateCounter("sender pos", channel, sessionId, streamId, correlationId);
+            final int publisherLimitId = allocateCounter("publisher limit", channel, sessionId, streamId, correlationId);
             final FlowControl flowControl = udpChannel.isMulticast() ? multicastFlowControl.get() : unicastFlowControl.get();
 
             publication = new NetworkPublication(
@@ -560,7 +560,7 @@ public class DriverConductor implements Agent
             .forEach(
                 (connection) ->
                 {
-                    final int subscriberPositionId = allocatePositionCounter(
+                    final int subscriberPositionId = allocateCounter(
                         "subscriber pos", channel, connection.sessionId(), streamId, correlationId);
                     final UnsafeBufferPosition position = new UnsafeBufferPosition(
                         countersBuffer, subscriberPositionId, countersManager);
@@ -664,7 +664,7 @@ public class DriverConductor implements Agent
                 final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
                 logger.logPublicationRemoval(
-                    channelEndpoint.udpChannel().originalUriString(), publication.sessionId(), publication.streamId());
+                    channelEndpoint.originalUriString(), publication.sessionId(), publication.streamId());
 
                 channelEndpoint.removePublication(publication);
                 publications.remove(i);
@@ -693,9 +693,7 @@ public class DriverConductor implements Agent
                 final int streamId = subscription.streamId();
 
                 logger.logSubscriptionRemoval(
-                    channelEndpoint.udpChannel().originalUriString(),
-                    subscription.streamId(),
-                    subscription.registrationId());
+                    channelEndpoint.originalUriString(), subscription.streamId(), subscription.registrationId());
 
                 subscriptions.remove(i);
                 subscription.close();
@@ -780,11 +778,10 @@ public class DriverConductor implements Agent
         return client;
     }
 
-    private int allocatePositionCounter(
+    private int allocateCounter(
         final String type, final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        return countersManager.allocate(
-            String.format("%s: %s %x %x %x", type, channel, sessionId, streamId, correlationId));
+        return countersManager.allocate(String.format("%s: %s %x %x %x", type, channel, sessionId, streamId, correlationId));
     }
 
     private long generateCreationCorrelationId()

@@ -91,6 +91,11 @@ public class SendChannelEndpoint implements AutoCloseable
         return transport.udpChannel();
     }
 
+    public String originalUriString()
+    {
+        return transport.udpChannel().originalUriString();
+    }
+
     /**
      * Validate the MTU length with the underlying transport
      *

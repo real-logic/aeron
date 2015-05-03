@@ -213,7 +213,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
      */
     public String channelUriString()
     {
-        return channelEndpoint.udpChannel().originalUriString();
+        return channelEndpoint.originalUriString();
     }
 
     /**

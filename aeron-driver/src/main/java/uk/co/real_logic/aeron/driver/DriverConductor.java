@@ -62,60 +62,55 @@ public class DriverConductor implements Agent
     private final int termBufferLength;
     private final int initialWindowLength;
 
-    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> driverConductorCmdQueue;
+    private final RawLogFactory rawLogFactory;
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
     private final DriverConductorProxy conductorProxy;
-    private final RawLogFactory rawLogFactory;
     private final RingBuffer toDriverCommands;
     private final RingBuffer toEventReader;
+    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> driverConductorCmdQueue;
+    private final Supplier<FlowControl> unicastFlowControl;
+    private final Supplier<FlowControl> multicastFlowControl;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
-    private final TimerWheel timerWheel;
-    private final ArrayList<NetworkPublication> publications = new ArrayList<>();
     private final Long2ObjectHashMap<PublicationRegistration> publicationRegistrations = new Long2ObjectHashMap<>();
+    private final ArrayList<NetworkPublication> publications = new ArrayList<>();
     private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
     private final ArrayList<NetworkConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
-
-    private final Supplier<FlowControl> unicastFlowControl;
-    private final Supplier<FlowControl> multicastFlowControl;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
 
-    private final TimerWheel.Timer checkTimeoutTimer;
-    private final CountersManager countersManager;
-    private final UnsafeBuffer countersBuffer;
-    private final EventLogger logger;
-
-    private final SystemCounters systemCounters;
-    private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
-    private final MessageHandler onEventFunc;
     private final NanoClock clock;
+    private final TimerWheel timerWheel;
+    private final TimerWheel.Timer checkTimeoutTimer;
+    private final SystemCounters systemCounters;
+    private final UnsafeBuffer countersBuffer;
+    private final CountersManager countersManager;
+    private final EventLogger logger;
+    private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
+    private final MessageHandler onEventFunc;
 
     public DriverConductor(final Context ctx)
     {
-        this.driverConductorCmdQueue = ctx.conductorCommandQueue();
-        this.receiverProxy = ctx.receiverProxy();
-        this.senderProxy = ctx.senderProxy();
-        this.rawLogFactory = ctx.rawLogBuffersFactory();
-        this.mtuLength = ctx.mtuLength();
-        this.initialWindowLength = ctx.initialWindowLength();
-        this.termBufferLength = ctx.termBufferLength();
-        this.unicastFlowControl = ctx.unicastSenderFlowControl();
-        this.multicastFlowControl = ctx.multicastSenderFlowControl();
-        this.countersManager = ctx.countersManager();
-        this.countersBuffer = ctx.countersBuffer();
-
+        driverConductorCmdQueue = ctx.conductorCommandQueue();
+        receiverProxy = ctx.receiverProxy();
+        senderProxy = ctx.senderProxy();
+        rawLogFactory = ctx.rawLogBuffersFactory();
+        mtuLength = ctx.mtuLength();
+        initialWindowLength = ctx.initialWindowLength();
+        termBufferLength = ctx.termBufferLength();
+        unicastFlowControl = ctx.unicastSenderFlowControl();
+        multicastFlowControl = ctx.multicastSenderFlowControl();
+        countersManager = ctx.countersManager();
+        countersBuffer = ctx.countersBuffer();
         timerWheel = ctx.conductorTimerWheel();
-        this.clock = timerWheel.clock();
-        checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
-
+        clock = timerWheel.clock();
         toDriverCommands = ctx.toDriverCommands();
         toEventReader = ctx.toEventReader();
         clientProxy = ctx.clientProxy();
@@ -125,8 +120,8 @@ public class DriverConductor implements Agent
         dataLossSeed = ctx.dataLossSeed();
         controlLossRate = ctx.controlLossRate();
         controlLossSeed = ctx.controlLossSeed();
-
         systemCounters = ctx.systemCounters();
+        checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
 
         final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc =
@@ -324,11 +319,10 @@ public class DriverConductor implements Agent
             .map(
                 (subscription) ->
                 {
-                    final int positionCounterId = allocatePositionCounter(
+                    final int positionId = allocatePositionCounter(
                         "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
-                    final UnsafeBufferPosition position = new UnsafeBufferPosition(
-                        countersBuffer, positionCounterId, countersManager);
-                    countersManager.setCounterValue(positionCounterId, joiningPosition);
+                    final UnsafeBufferPosition position = new UnsafeBufferPosition(countersBuffer, positionId, countersManager);
+                    countersManager.setCounterValue(positionId, joiningPosition);
 
                     return new SubscriberPosition(subscription, position);
                 })

@@ -92,8 +92,8 @@ public class DriverConductor implements Agent
     private final ArrayList<NetworkConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
 
-    private final Supplier<SenderFlowControl> unicastSenderFlowControl;
-    private final Supplier<SenderFlowControl> multicastSenderFlowControl;
+    private final Supplier<FlowControl> unicastFlowControl;
+    private final Supplier<FlowControl> multicastFlowControl;
 
     private final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
@@ -127,8 +127,8 @@ public class DriverConductor implements Agent
         this.mtuLength = ctx.mtuLength();
         this.initialWindowLength = ctx.initialWindowLength();
         this.capacity = ctx.termBufferLength();
-        this.unicastSenderFlowControl = ctx.unicastSenderFlowControl();
-        this.multicastSenderFlowControl = ctx.multicastSenderFlowControl();
+        this.unicastFlowControl = ctx.unicastSenderFlowControl();
+        this.multicastFlowControl = ctx.multicastSenderFlowControl();
         this.countersManager = ctx.countersManager();
         this.countersBuffer = ctx.countersBuffer();
 
@@ -341,8 +341,7 @@ public class DriverConductor implements Agent
         connections.add(connection);
 
         subscriberPositions.forEach(
-            (subscriberPosition) ->
-                subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
+            (subscriberPosition) -> subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
 
         receiverProxy.newConnection(channelEndpoint, connection);
     }
@@ -476,8 +475,7 @@ public class DriverConductor implements Agent
 
             final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId, correlationId);
             final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId, correlationId);
-            final SenderFlowControl senderFlowControl =
-                udpChannel.isMulticast() ? multicastSenderFlowControl.get() : unicastSenderFlowControl.get();
+            final FlowControl flowControl = udpChannel.isMulticast() ? multicastFlowControl.get() : unicastFlowControl.get();
 
             publication = new NetworkPublication(
                 channelEndpoint,
@@ -489,7 +487,7 @@ public class DriverConductor implements Agent
                 streamId,
                 initialTermId,
                 mtuLength,
-                senderFlowControl.initialPositionLimit(initialTermId, capacity),
+                flowControl.initialPositionLimit(initialTermId, capacity),
                 systemCounters);
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
@@ -504,7 +502,7 @@ public class DriverConductor implements Agent
             channelEndpoint.addPublication(publication);
             publications.add(publication);
 
-            senderProxy.newPublication(publication, retransmitHandler, senderFlowControl);
+            senderProxy.newPublication(publication, retransmitHandler, flowControl);
         }
 
         final PublicationRegistration existingRegistration = publicationRegistrations.put(

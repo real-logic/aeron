@@ -172,7 +172,7 @@ public class RetransmitHandler
 
     private void perform(final RetransmitAction action)
     {
-        retransmitSender.send(action.termId, action.termOffset, action.length);
+        retransmitSender.resend(action.termId, action.termOffset, action.length);
     }
 
     private enum State

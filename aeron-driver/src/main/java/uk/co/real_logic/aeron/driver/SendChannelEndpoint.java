@@ -36,7 +36,6 @@ public class SendChannelEndpoint implements AutoCloseable
     private final BiInt2ObjectMap<NetworkPublication> publicationByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final UdpChannelTransport transport;
-    private final UdpChannel udpChannel;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusMessagesReceived;
 
@@ -48,7 +47,6 @@ public class SendChannelEndpoint implements AutoCloseable
     {
         this.transport = new SenderUdpChannelTransport(
             udpChannel, this::onStatusMessage, this::onNakMessage, logger, lossGenerator);
-        this.udpChannel = udpChannel;
         this.nakMessagesReceived = systemCounters.nakMessagesReceived();
         this.statusMessagesReceived = systemCounters.statusMessagesReceived();
     }
@@ -90,7 +88,7 @@ public class SendChannelEndpoint implements AutoCloseable
      */
     public UdpChannel udpChannel()
     {
-        return udpChannel;
+        return transport.udpChannel();
     }
 
     /**
@@ -157,16 +155,14 @@ public class SendChannelEndpoint implements AutoCloseable
      *
      * @param publication to add to the dispatcher
      * @param retransmitHandler to add to the dispatcher
-     * @param senderFlowControl to add to the dispatcher
+     * @param flowControl to add to the dispatcher
      */
     public void addToDispatcher(
-        final NetworkPublication publication,
-        final RetransmitHandler retransmitHandler,
-        final SenderFlowControl senderFlowControl)
+        final NetworkPublication publication, final RetransmitHandler retransmitHandler, final FlowControl flowControl)
     {
         assemblyByStreamAndSessionIdMap.put(
             publication.sessionId(), publication.streamId(),
-            new PublicationAssembly(publication, retransmitHandler, senderFlowControl));
+            new PublicationAssembly(publication, retransmitHandler, flowControl));
     }
 
     /**
@@ -197,7 +193,7 @@ public class SendChannelEndpoint implements AutoCloseable
             }
             else
             {
-                final long positionLimit = assembly.senderFlowControl.onStatusMessage(
+                final long positionLimit = assembly.flowControl.onStatusMessage(
                     statusMsg.termId(), statusMsg.rebuildTermOffset(), statusMsg.receiverWindowLength(), srcAddress);
 
                 assembly.publication.senderPositionLimit(positionLimit);
@@ -222,16 +218,14 @@ public class SendChannelEndpoint implements AutoCloseable
     {
         final NetworkPublication publication;
         final RetransmitHandler retransmitHandler;
-        final SenderFlowControl senderFlowControl;
+        final FlowControl flowControl;
 
         public PublicationAssembly(
-            final NetworkPublication publication,
-            final RetransmitHandler retransmitHandler,
-            final SenderFlowControl senderFlowControl)
+            final NetworkPublication publication, final RetransmitHandler retransmitHandler, final FlowControl flowControl)
         {
             this.publication = publication;
             this.retransmitHandler = retransmitHandler;
-            this.senderFlowControl = senderFlowControl;
+            this.flowControl = flowControl;
         }
     }
 }

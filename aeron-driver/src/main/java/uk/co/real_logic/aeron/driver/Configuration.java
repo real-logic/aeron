@@ -292,20 +292,20 @@ public class Configuration
     public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
     /**
-     * {@link SenderFlowControl} to be employed for unicast channels.
+     * {@link FlowControl} to be employed for unicast channels.
      */
-    public static final String SENDER_UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
-        "aeron.sender.unicast.flow.control.strategy";
-    public static final String SENDER_UNICAST_FLOW_CONTROL_STRATEGY = getProperty(
-        SENDER_UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastSenderFlowControl");
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
+        "aeron.unicast.flow.control.strategy";
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY = getProperty(
+        UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastFlowControl");
 
     /**
-     * {@link SenderFlowControl} to be employed for multicast channels.
+     * {@link FlowControl} to be employed for multicast channels.
      */
-    public static final String SENDER_MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
-        "aeron.sender.multicast.flow.control.strategy";
-    public static final String SENDER_MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
-        SENDER_MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastSenderFlowControl");
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
+        "aeron.multicast.flow.control.strategy";
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
+        MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.MaxMulticastFlowControl");
 
     /** Length of the maximum transport unit of the media driver's protocol */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
@@ -393,34 +393,34 @@ public class Configuration
         return idleStrategy;
     }
 
-    public static SenderFlowControl unicastSenderFlowControlStrategy()
+    public static FlowControl unicastFlowControlStrategy()
     {
-        SenderFlowControl senderFlowControl = null;
+        FlowControl flowControl = null;
         try
         {
-             senderFlowControl = (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
+             flowControl = (FlowControl)Class.forName(UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return senderFlowControl;
+        return flowControl;
     }
 
-    public static SenderFlowControl multicastSenderFlowControlStrategy()
+    public static FlowControl multicastFlowControlStrategy()
     {
-        SenderFlowControl senderFlowControl = null;
+        FlowControl flowControl = null;
         try
         {
-            senderFlowControl = (SenderFlowControl)Class.forName(SENDER_MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
+            flowControl = (FlowControl)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return senderFlowControl;
+        return flowControl;
     }
 
     public static TimerWheel newConductorTimerWheel()

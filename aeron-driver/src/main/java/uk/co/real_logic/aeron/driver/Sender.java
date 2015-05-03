@@ -72,7 +72,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     public void onNewPublication(
         final NetworkPublication publication,
         final RetransmitHandler retransmitHandler,
-        final SenderFlowControl senderFlowControl)
+        final FlowControl flowControl)
     {
         final NetworkPublication[] oldPublications = publications;
         final int length = oldPublications.length;
@@ -83,7 +83,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
         publications = newPublications;
 
-        publication.sendChannelEndpoint().addToDispatcher(publication, retransmitHandler, senderFlowControl);
+        publication.sendChannelEndpoint().addToDispatcher(publication, retransmitHandler, flowControl);
     }
 
     public void onClosePublication(final NetworkPublication publication)

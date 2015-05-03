@@ -118,8 +118,8 @@ public class DriverConductorTest
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(transportPoller)
             .senderNioSelector(transportPoller)
-            .unicastSenderFlowControl(UnicastSenderFlowControl::new)
-            .multicastSenderFlowControl(MaxMulticastSenderFlowControl::new)
+            .unicastSenderFlowControl(UnicastFlowControl::new)
+            .multicastSenderFlowControl(MaxMulticastFlowControl::new)
             .conductorTimerWheel(wheel)
             // TODO: remove
             .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))

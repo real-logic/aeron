@@ -306,17 +306,6 @@ public class DriverConductor implements Agent
             .collect(toList());
 
         final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId, correlationId);
-        final String sourceInfo = generateSourceInfo(sourceAddress);
-
-        clientProxy.onConnectionReady(
-            channel,
-            streamId,
-            sessionId,
-            joiningPosition,
-            rawLog,
-            correlationId,
-            subscriberPositions,
-            sourceInfo);
 
         final NetworkConnection connection = new NetworkConnection(
             correlationId,
@@ -344,6 +333,16 @@ public class DriverConductor implements Agent
             (subscriberPosition) -> subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
 
         receiverProxy.newConnection(channelEndpoint, connection);
+
+        clientProxy.onConnectionReady(
+            channel,
+            streamId,
+            sessionId,
+            joiningPosition,
+            rawLog,
+            correlationId,
+            subscriberPositions,
+            generateSourceInfo(sourceAddress));
     }
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
@@ -458,13 +457,12 @@ public class DriverConductor implements Agent
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
-        final AeronClient aeronClient = getOrAddClient(clientId);
 
         NetworkPublication publication = channelEndpoint.getPublication(sessionId, streamId);
-        if (publication == null)
+        if (null == publication)
         {
             final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = createPublicationLog(sessionId, streamId, correlationId, udpChannel, initialTermId);
+            final RawLog rawLog = newPublicationLog(sessionId, streamId, correlationId, udpChannel, initialTermId);
             final int senderPositionId = allocatePositionCounter("sender pos", channel, sessionId, streamId, correlationId);
             final int publisherLimitId = allocatePositionCounter("publisher limit", channel, sessionId, streamId, correlationId);
             final FlowControl flowControl = udpChannel.isMulticast() ? multicastFlowControl.get() : unicastFlowControl.get();
@@ -482,26 +480,14 @@ public class DriverConductor implements Agent
                 flowControl.initialPositionLimit(initialTermId, capacity),
                 systemCounters);
 
-            final RetransmitHandler retransmitHandler = new RetransmitHandler(
-                timerWheel,
-                systemCounters,
-                DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-                DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
-                publication,
-                initialTermId,
-                capacity);
-
             channelEndpoint.addPublication(publication);
             publications.add(publication);
-
-            senderProxy.newPublication(publication, retransmitHandler, flowControl);
+            senderProxy.newPublication(publication, newRetransmitHandler(publication, initialTermId), flowControl);
         }
 
-        final PublicationRegistration existingRegistration = publicationRegistrations.put(
-            correlationId, new PublicationRegistration(publication, aeronClient));
-        if (null != existingRegistration)
+        final AeronClient client = getOrAddClient(clientId);
+        if (null != publicationRegistrations.putIfAbsent(correlationId, new PublicationRegistration(publication, client)))
         {
-            publicationRegistrations.put(correlationId, existingRegistration);
             throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
         }
 
@@ -511,12 +497,24 @@ public class DriverConductor implements Agent
             channel,
             streamId,
             sessionId,
-            publication.rawLogBuffers(),
+            publication.rawLog(),
             correlationId,
-            publication.publisherLimitCounterId());
+            publication.publisherLimitId());
     }
 
-    private RawLog createPublicationLog(
+    private RetransmitHandler newRetransmitHandler(final NetworkPublication publication, final int initialTermId)
+    {
+        return new RetransmitHandler(
+            timerWheel,
+            systemCounters,
+            DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
+            DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+            publication,
+            initialTermId,
+            capacity);
+    }
+
+    private RawLog newPublicationLog(
         final int sessionId, final int streamId, final long correlationId, final UdpChannel udpChannel, final int initialTermId)
     {
         final String canonicalForm = udpChannel.canonicalForm();
@@ -656,10 +654,10 @@ public class DriverConductor implements Agent
     {
         systemCounters.clientKeepAlives().addOrdered(1);
 
-        final AeronClient aeronClient = findClient(clients, clientId);
-        if (null != aeronClient)
+        final AeronClient client = findClient(clients, clientId);
+        if (null != client)
         {
-            aeronClient.timeOfLastKeepalive(clock.time());
+            client.timeOfLastKeepalive(clock.time());
         }
     }
 
@@ -779,9 +777,9 @@ public class DriverConductor implements Agent
     {
         for (int i = clients.size() - 1; i >= 0; i--)
         {
-            final AeronClient aeronClient = clients.get(i);
+            final AeronClient client = clients.get(i);
 
-            if (now > (aeronClient.timeOfLastKeepalive() + CONNECTION_LIVENESS_TIMEOUT_NS))
+            if (now > (client.timeOfLastKeepalive() + CONNECTION_LIVENESS_TIMEOUT_NS))
             {
                 clients.remove(i);
             }
@@ -795,14 +793,14 @@ public class DriverConductor implements Agent
 
     private AeronClient getOrAddClient(final long clientId)
     {
-        AeronClient aeronClient = findClient(clients, clientId);
-        if (null == aeronClient)
+        AeronClient client = findClient(clients, clientId);
+        if (null == client)
         {
-            aeronClient = new AeronClient(clientId, clock.time());
-            clients.add(aeronClient);
+            client = new AeronClient(clientId, clock.time());
+            clients.add(client);
         }
 
-        return aeronClient;
+        return client;
     }
 
     private int allocatePositionCounter(

@@ -274,12 +274,12 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         return isFlushed;
     }
 
-    public RawLog rawLogBuffers()
+    public RawLog rawLog()
     {
         return rawLog;
     }
 
-    public int publisherLimitCounterId()
+    public int publisherLimitId()
     {
         return publisherLimit.id();
     }

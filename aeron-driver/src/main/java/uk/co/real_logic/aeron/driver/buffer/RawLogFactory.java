@@ -30,13 +30,11 @@ import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamL
  */
 public class RawLogFactory implements AutoCloseable
 {
-    private final FileChannel blankTemplate;
-
-    private final File publicationsDir;
-    private final File connectionsDir;
-
     private final int publicationTermBufferLength;
     private final int connectionTermBufferMaxLength;
+    private final FileChannel blankTemplate;
+    private final File publicationsDir;
+    private final File connectionsDir;
     private final EventLogger logger;
 
     public RawLogFactory(

@@ -32,7 +32,6 @@ import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -426,11 +425,6 @@ public class DriverConductor implements Agent
         catch (final ControlProtocolException ex)
         {
             clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
-            logger.logException(ex);
-        }
-        catch (final InvalidChannelException ex)
-        {
-            clientProxy.onError(INVALID_CHANNEL, ex.getMessage(), flyweight, length);
             logger.logException(ex);
         }
         catch (final Exception ex)

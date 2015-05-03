@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.Flyweight;
-import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
-import uk.co.real_logic.aeron.common.StaticDelayGenerator;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
@@ -57,22 +54,13 @@ import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
  */
 public class DriverConductor implements Agent
 {
-    public static final int HEARTBEAT_TIMEOUT_MS = 1000;  // how often to check liveness & cleanup
-
-    /**
-     * Unicast NAK delay is immediate initial with delayed subsequent delay
-     */
-    public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
-        Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
-
-    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
-        Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
-
-    /**
-     * Source uses same for unicast and multicast. For ticks.
-     */
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
+    private final long dataLossSeed;
+    private final long controlLossSeed;
+    private final double dataLossRate;
+    private final double controlLossRate;
+    private final int mtuLength;
+    private final int termBufferLength;
+    private final int initialWindowLength;
 
     private final OneToOneConcurrentArrayQueue<DriverConductorCmd> driverConductorCmdQueue;
     private final ReceiverProxy receiverProxy;
@@ -99,13 +87,6 @@ public class DriverConductor implements Agent
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
 
-    private final int mtuLength;
-    private final int capacity;
-    private final int initialWindowLength;
-    private final long dataLossSeed;
-    private final long controlLossSeed;
-    private final double dataLossRate;
-    private final double controlLossRate;
     private final TimerWheel.Timer checkTimeoutTimer;
     private final CountersManager countersManager;
     private final UnsafeBuffer countersBuffer;
@@ -125,7 +106,7 @@ public class DriverConductor implements Agent
         this.rawLogFactory = ctx.rawLogBuffersFactory();
         this.mtuLength = ctx.mtuLength();
         this.initialWindowLength = ctx.initialWindowLength();
-        this.capacity = ctx.termBufferLength();
+        this.termBufferLength = ctx.termBufferLength();
         this.unicastFlowControl = ctx.unicastSenderFlowControl();
         this.multicastFlowControl = ctx.multicastSenderFlowControl();
         this.countersManager = ctx.countersManager();
@@ -481,7 +462,7 @@ public class DriverConductor implements Agent
                 streamId,
                 initialTermId,
                 mtuLength,
-                flowControl.initialPositionLimit(initialTermId, capacity),
+                flowControl.initialPositionLimit(initialTermId, termBufferLength),
                 systemCounters);
 
             channelEndpoint.addPublication(publication);
@@ -511,11 +492,11 @@ public class DriverConductor implements Agent
         return new RetransmitHandler(
             timerWheel,
             systemCounters,
-            DriverConductor.RETRANS_UNICAST_DELAY_GENERATOR,
-            DriverConductor.RETRANS_UNICAST_LINGER_GENERATOR,
+            RETRANS_UNICAST_DELAY_GENERATOR,
+            RETRANS_UNICAST_LINGER_GENERATOR,
             publication,
             initialTermId,
-            capacity);
+            termBufferLength);
     }
 
     private RawLog newPublicationLog(

@@ -283,28 +283,15 @@ public class DriverConductor implements Agent
         final String channel = udpChannel.originalUriString();
         final long correlationId = generateCreationCorrelationId();
 
-        final RawLog rawLog = rawLogFactory.newConnection(
-            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
         final long joiningPosition = LogBufferDescriptor.computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
 
-        final List<SubscriberPosition> subscriberPositions = subscriptions
-            .stream()
-            .filter((subscription) -> subscription.matches(streamId, channelEndpoint))
-            .map(
-                (subscription) ->
-                {
-                    final int positionCounterId = allocatePositionCounter(
-                        "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
-                    final UnsafeBufferPosition position = new UnsafeBufferPosition(
-                        countersBuffer, positionCounterId, countersManager);
-                    countersManager.setCounterValue(positionCounterId, joiningPosition);
-
-                    return new SubscriberPosition(subscription, position);
-                })
-            .collect(toList());
+        final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
+            sessionId, streamId, channelEndpoint, channel, joiningPosition);
 
         final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId, correlationId);
+        final RawLog rawLog = rawLogFactory.newConnection(
+            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
 
         final NetworkConnection connection = new NetworkConnection(
             correlationId,
@@ -326,11 +313,10 @@ public class DriverConductor implements Agent
             sourceAddress,
             logger);
 
-        connections.add(connection);
-
         subscriberPositions.forEach(
             (subscriberPosition) -> subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
 
+        connections.add(connection);
         receiverProxy.newConnection(channelEndpoint, connection);
 
         clientProxy.onConnectionReady(
@@ -342,6 +328,30 @@ public class DriverConductor implements Agent
             correlationId,
             subscriberPositions,
             generateSourceInfo(sourceAddress));
+    }
+
+    public List<SubscriberPosition> listSubscriberPositions(
+        final int sessionId,
+        final int streamId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final String channel,
+        final long joiningPosition)
+    {
+        return subscriptions
+            .stream()
+            .filter((subscription) -> subscription.matches(streamId, channelEndpoint))
+            .map(
+                (subscription) ->
+                {
+                    final int positionCounterId = allocatePositionCounter(
+                        "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
+                    final UnsafeBufferPosition position = new UnsafeBufferPosition(
+                        countersBuffer, positionCounterId, countersManager);
+                    countersManager.setCounterValue(positionCounterId, joiningPosition);
+
+                    return new SubscriberPosition(subscription, position);
+                })
+            .collect(toList());
     }
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)

@@ -145,7 +145,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             final int activeTermId = header.activeTermId();
             final NetworkConnection connection = connectionBySessionIdMap.get(sessionId);
 
-            if (null == connection && !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId)))
+            if (null == connection && isNotAlreadyInProgress(streamId, sessionId))
             {
                 createConnection(
                     srcAddress,
@@ -158,6 +158,11 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
                     header.mtuLength());
             }
         }
+    }
+
+    private boolean isNotAlreadyInProgress(final int streamId, final int sessionId)
+    {
+        return !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId));
     }
 
     private void elicitSetupMessageFromSource(final InetSocketAddress srcAddress, final int streamId, final int sessionId)

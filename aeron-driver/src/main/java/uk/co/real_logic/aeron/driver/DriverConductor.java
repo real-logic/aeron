@@ -270,7 +270,7 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
             sessionId, streamId, channelEndpoint, channel, joiningPosition);
 
-        final int receiverHwmCounterId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId, correlationId);
+        final int receiverHwmId = allocatePositionCounter("receiver hwm", channel, sessionId, streamId, correlationId);
         final RawLog rawLog = rawLogFactory.newConnection(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
 
@@ -288,7 +288,7 @@ public class DriverConductor implements Agent
             timerWheel,
             udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
-            new UnsafeBufferPosition(countersBuffer, receiverHwmCounterId, countersManager),
+            new UnsafeBufferPosition(countersBuffer, receiverHwmId, countersManager),
             clock,
             systemCounters,
             sourceAddress,
@@ -590,7 +590,6 @@ public class DriverConductor implements Agent
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)
     {
         ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
-
         if (null == channelEndpoint)
         {
             final LossGenerator lossGenerator = Configuration.createLossGenerator(dataLossRate, dataLossSeed);
@@ -666,8 +665,7 @@ public class DriverConductor implements Agent
         {
             final NetworkPublication publication = publications.get(i);
 
-            if (publication.isUnreferencedAndFlushed(now) &&
-                now > (publication.timeOfFlush() + PUBLICATION_LINGER_NS))
+            if (publication.isUnreferencedAndFlushed(now) && now > (publication.timeOfFlush() + PUBLICATION_LINGER_NS))
             {
                 final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 

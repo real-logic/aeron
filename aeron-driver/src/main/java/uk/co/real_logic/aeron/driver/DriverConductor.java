@@ -22,7 +22,6 @@ import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventCode;
-import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
@@ -46,6 +45,7 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.common.ErrorCode.*;
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.common.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
@@ -210,7 +210,7 @@ public class DriverConductor implements Agent
 
         workCount += toDriverCommands.read(onClientCommandFunc);
         workCount += driverConductorCmdQueue.drain(onDriverConductorCmdFunc);
-        workCount += toEventReader.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
+        workCount += toEventReader.read(onEventFunc, EVENT_READER_FRAME_LIMIT);
         workCount += processTimers();
 
         final ArrayList<NetworkConnection> connections = this.connections;
@@ -667,7 +667,7 @@ public class DriverConductor implements Agent
             final NetworkPublication publication = publications.get(i);
 
             if (publication.isUnreferencedAndFlushed(now) &&
-                now > (publication.timeOfFlush() + Configuration.PUBLICATION_LINGER_NS))
+                now > (publication.timeOfFlush() + PUBLICATION_LINGER_NS))
             {
                 final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
@@ -695,7 +695,7 @@ public class DriverConductor implements Agent
         {
             final DriverSubscription subscription = subscriptions.get(i);
 
-            if (now > (subscription.timeOfLastKeepaliveFromClient() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS))
+            if (now > (subscription.timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
             {
                 final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
                 final int streamId = subscription.streamId();

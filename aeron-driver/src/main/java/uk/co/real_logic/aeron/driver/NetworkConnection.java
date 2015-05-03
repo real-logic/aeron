@@ -72,10 +72,22 @@ class NetworkConnectionPadding3 extends NetworkConnectionHotFields
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
+class NetworkConnectionStatusFields extends NetworkConnectionPadding3
+{
+    protected volatile long newStatusMessagePosition;
+    protected volatile NetworkConnection.Status status = NetworkConnection.Status.INIT;
+}
+
+class NetworkConnectionPadding4 extends NetworkConnectionStatusFields
+{
+    @SuppressWarnings("unused")
+    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
+}
+
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class NetworkConnection extends NetworkConnectionPadding3 implements AutoCloseable, NakMessageSender
+public class NetworkConnection extends NetworkConnectionPadding4 implements AutoCloseable, NakMessageSender
 {
     public enum Status
     {
@@ -102,12 +114,6 @@ public class NetworkConnection extends NetworkConnectionPadding3 implements Auto
     private final Position hwmPosition;
     private final List<ReadOnlyPosition> subscriberPositions;
     private final LossDetector lossDetector;
-
-    @SuppressWarnings("unused")
-    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
-
-    private volatile long newStatusMessagePosition;
-    private volatile Status status = Status.INIT;
 
     public NetworkConnection(
         final long correlationId,

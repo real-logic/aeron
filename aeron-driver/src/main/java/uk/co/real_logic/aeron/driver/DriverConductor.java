@@ -75,9 +75,9 @@ public class DriverConductor implements Agent
     private final Supplier<FlowControl> multicastFlowControl;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
-    private final Long2ObjectHashMap<PublicationRegistration> publicationRegistrations = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<PublicationLink> publicationLinks = new Long2ObjectHashMap<>();
     private final ArrayList<NetworkPublication> publications = new ArrayList<>();
-    private final ArrayList<DriverSubscription> subscriptions = new ArrayList<>();
+    private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
     private final ArrayList<NetworkConnection> connections = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
 
@@ -159,10 +159,10 @@ public class DriverConductor implements Agent
         return String.format("%s:%d", address.getHostString(), address.getPort());
     }
 
-    private static DriverSubscription removeSubscription(
-        final ArrayList<DriverSubscription> subscriptions, final long registrationId)
+    private static SubscriptionLink removeSubscription(
+        final ArrayList<SubscriptionLink> subscriptions, final long registrationId)
     {
-        DriverSubscription subscription = null;
+        SubscriptionLink subscription = null;
         for (int i = 0, size = subscriptions.size(); i < size; i++)
         {
             subscription = subscriptions.get(i);
@@ -313,7 +313,7 @@ public class DriverConductor implements Agent
         final String channel,
         final long joiningPosition)
     {
-        return subscriptions
+        return subscriptionLinks
             .stream()
             .filter((subscription) -> subscription.matches(channelEndpoint, streamId))
             .map(
@@ -462,7 +462,7 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        if (null != publicationRegistrations.putIfAbsent(correlationId, new PublicationRegistration(publication, client)))
+        if (null != publicationLinks.putIfAbsent(correlationId, new PublicationLink(publication, client)))
         {
             throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
         }
@@ -528,13 +528,13 @@ public class DriverConductor implements Agent
 
     private void onRemovePublication(final long registrationId, final long correlationId)
     {
-        final PublicationRegistration registration = publicationRegistrations.remove(registrationId);
-        if (registration == null)
+        final PublicationLink link = publicationLinks.remove(registrationId);
+        if (null == link)
         {
             throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
         }
 
-        registration.remove();
+        link.remove();
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -546,9 +546,9 @@ public class DriverConductor implements Agent
         receiverProxy.addSubscription(channelEndpoint, streamId);
 
         final AeronClient client = getOrAddClient(clientId);
-        final DriverSubscription subscription = new DriverSubscription(correlationId, channelEndpoint, streamId, client);
+        final SubscriptionLink subscription = new SubscriptionLink(correlationId, channelEndpoint, streamId, client);
 
-        subscriptions.add(subscription);
+        subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(correlationId);
 
         connections
@@ -593,7 +593,7 @@ public class DriverConductor implements Agent
 
     private void onRemoveSubscription(final long registrationId, final long correlationId)
     {
-        final DriverSubscription subscription = removeSubscription(subscriptions, registrationId);
+        final SubscriptionLink subscription = removeSubscription(subscriptionLinks, registrationId);
         if (null == subscription)
         {
             throw new ControlProtocolException(UNKNOWN_SUBSCRIPTION, "Unknown subscription: " + registrationId);
@@ -635,10 +635,10 @@ public class DriverConductor implements Agent
 
     private void onCheckPublicationRegistrations(final long now)
     {
-        final Iterator<PublicationRegistration> iter = publicationRegistrations.values().iterator();
+        final Iterator<PublicationLink> iter = publicationLinks.values().iterator();
         while (iter.hasNext())
         {
-            final PublicationRegistration registration = iter.next();
+            final PublicationLink registration = iter.next();
             if (registration.hasClientTimedOut(now))
             {
                 iter.remove();
@@ -676,10 +676,10 @@ public class DriverConductor implements Agent
 
     private void onCheckSubscriptions(final long now)
     {
-        final ArrayList<DriverSubscription> subscriptions = this.subscriptions;
+        final ArrayList<SubscriptionLink> subscriptions = this.subscriptionLinks;
         for (int i = subscriptions.size() - 1; i >= 0; i--)
         {
-            final DriverSubscription subscription = subscriptions.get(i);
+            final SubscriptionLink subscription = subscriptions.get(i);
 
             if (now > (subscription.timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
             {

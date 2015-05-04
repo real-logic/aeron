@@ -76,136 +76,59 @@ public class RateControllerTest
     @Test (expected = Exception.class)
     public void createWithNullIntervalsList() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
-        rc = new RateController(new Callback(), null);
+        rc = new RateController(() -> { return 0; }, null);
     }
 
     @Test (expected = Exception.class)
     public void createWithEmptyIntervalsList() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test
     public void createWithMessagesAtMessagesPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test
     public void createWithMessagesAtBitsPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test
     public void createWithSecondsAtBitsPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new SecondsAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test
     public void createWithSecondsAtMessagesPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new SecondsAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test (expected = Exception.class)
     public void createWithZeroIterations() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList, 0);
+        rc = new RateController(() -> { return 0; }, ivlsList, 0);
     }
 
     @Test (expected = Exception.class)
@@ -214,29 +137,18 @@ public class RateControllerTest
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(() -> {return 0;}, ivlsList, -1);
+        rc = new RateController(() -> { return 0; }, ivlsList, -1);
     }
 
     @Test
     public void createWithFourIntervals() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, 1));
         ivlsList.add(new SecondsAtBitsPerSecondInterval(1, 1));
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, 1));
         ivlsList.add(new MessagesAtBitsPerSecondInterval(1, 1));
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test
@@ -394,21 +306,9 @@ public class RateControllerTest
     @Test
     public void sendForOneSecond() throws Exception
     {
-        class Callback extends TestCallback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
-        final RateController.Callback callback = new Callback();
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, Long.MAX_VALUE));
-        rc = new RateController(callback, ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
 
         /* Wall-clock time isn't an exact science... so we'll accept a
          * fairly generous range of 0.8 seconds to 1.2 seconds of elapsed

@@ -315,7 +315,7 @@ public class DriverConductor implements Agent
     {
         return subscriptions
             .stream()
-            .filter((subscription) -> subscription.matches(streamId, channelEndpoint))
+            .filter((subscription) -> subscription.matches(channelEndpoint, streamId))
             .map(
                 (subscription) ->
                 {
@@ -549,7 +549,7 @@ public class DriverConductor implements Agent
         receiverProxy.addSubscription(channelEndpoint, streamId);
 
         final AeronClient client = getOrAddClient(clientId);
-        final DriverSubscription subscription = new DriverSubscription(correlationId, channelEndpoint, client, streamId);
+        final DriverSubscription subscription = new DriverSubscription(correlationId, channelEndpoint, streamId, client);
 
         subscriptions.add(subscription);
         clientProxy.operationSucceeded(correlationId);
@@ -606,7 +606,7 @@ public class DriverConductor implements Agent
         }
 
         subscription.close();
-        final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
+        final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
 
         final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
         if (0 == refCount)
@@ -689,7 +689,7 @@ public class DriverConductor implements Agent
 
             if (now > (subscription.timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
             {
-                final ReceiveChannelEndpoint channelEndpoint = subscription.receiveChannelEndpoint();
+                final ReceiveChannelEndpoint channelEndpoint = subscription.channelEndpoint();
                 final int streamId = subscription.streamId();
 
                 logger.logSubscriptionRemoval(

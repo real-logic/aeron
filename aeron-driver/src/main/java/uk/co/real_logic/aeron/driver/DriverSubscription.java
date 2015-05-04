@@ -26,16 +26,16 @@ import java.util.Map;
 public class DriverSubscription
 {
     private final long registrationId;
-    private final ReceiveChannelEndpoint channelEndpoint;
     private final int streamId;
+    private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
-    private final Map<NetworkConnection, ReadOnlyPosition> positionByConnection = new IdentityHashMap<>();
+    private final Map<NetworkConnection, ReadOnlyPosition> positionByConnectionMap = new IdentityHashMap<>();
 
     public DriverSubscription(
         final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
-        final AeronClient aeronClient,
-        final int streamId)
+        final int streamId,
+        final AeronClient aeronClient)
     {
         this.registrationId = registrationId;
         this.channelEndpoint = channelEndpoint;
@@ -48,7 +48,7 @@ public class DriverSubscription
         return registrationId;
     }
 
-    public ReceiveChannelEndpoint receiveChannelEndpoint()
+    public ReceiveChannelEndpoint channelEndpoint()
     {
         return channelEndpoint;
     }
@@ -63,18 +63,18 @@ public class DriverSubscription
         return aeronClient.timeOfLastKeepalive();
     }
 
-    public boolean matches(final int streamId, final ReceiveChannelEndpoint channelEndpoint)
+    public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        return streamId() == streamId && receiveChannelEndpoint() == channelEndpoint;
+        return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
 
     public void addConnection(final NetworkConnection connection, final ReadOnlyPosition position)
     {
-        positionByConnection.put(connection, position);
+        positionByConnectionMap.put(connection, position);
     }
 
     public void close()
     {
-        positionByConnection.forEach(NetworkConnection::removeSubscription);
+        positionByConnectionMap.forEach(NetworkConnection::removeSubscription);
     }
 }

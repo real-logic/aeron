@@ -490,7 +490,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
      *
      * @param subscriberPosition for the subscriber that has been removed.
      */
-    public void removeSubscription(final ReadOnlyPosition subscriberPosition)
+    public void removeSubscriber(final ReadOnlyPosition subscriberPosition)
     {
         subscriberPositions.remove(subscriberPosition);
         subscriberPosition.close();
@@ -501,7 +501,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
      *
      * @param subscriberPosition for the subscriber to be added.
      */
-    public void addSubscription(final ReadOnlyPosition subscriberPosition)
+    public void addSubscriber(final ReadOnlyPosition subscriberPosition)
     {
         subscriberPositions.add(subscriberPosition);
     }

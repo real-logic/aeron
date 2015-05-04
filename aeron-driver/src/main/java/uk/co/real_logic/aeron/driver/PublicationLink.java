@@ -18,13 +18,15 @@ package uk.co.real_logic.aeron.driver;
 /**
  * Tracks a aeron client interest registration in a {@link NetworkPublication}.
  */
-public class PublicationRegistration
+public class PublicationLink
 {
+    private final long registrationId;
     private final NetworkPublication publication;
     private final AeronClient client;
 
-    public PublicationRegistration(final NetworkPublication publication, final AeronClient client)
+    public PublicationLink(final long registrationId, final NetworkPublication publication, final AeronClient client)
     {
+        this.registrationId = registrationId;
         this.publication = publication;
         this.client = client;
     }
@@ -32,6 +34,11 @@ public class PublicationRegistration
     public void remove()
     {
         publication.decRef();
+    }
+
+    public long registrationId()
+    {
+        return registrationId;
     }
 
     public boolean hasClientTimedOut(final long now)

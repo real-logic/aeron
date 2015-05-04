@@ -21,9 +21,9 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
- * Analogue of the client Subscription for the driver used for liveness tracking
+ * Subscription registration from a client used for liveness tracking
  */
-public class DriverSubscription
+public class SubscriptionLink
 {
     private final long registrationId;
     private final int streamId;
@@ -31,7 +31,7 @@ public class DriverSubscription
     private final AeronClient aeronClient;
     private final Map<NetworkConnection, ReadOnlyPosition> positionByConnectionMap = new IdentityHashMap<>();
 
-    public DriverSubscription(
+    public SubscriptionLink(
         final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
         final int streamId,
@@ -75,6 +75,6 @@ public class DriverSubscription
 
     public void close()
     {
-        positionByConnectionMap.forEach(NetworkConnection::removeSubscription);
+        positionByConnectionMap.forEach(NetworkConnection::removeSubscriber);
     }
 }

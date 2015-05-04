@@ -321,22 +321,22 @@ public class PubSubOptions
         }
 
         opt = command.getOptionValue("threads", defaults.threads);
-        setThreads(parseIntCheckPositive(opt));
+        threads(parseIntCheckPositive(opt));
 
         opt = command.getOptionValue("seed", defaults.seed);
-        setRandomSeed(parseLongCheckPositive(opt));
+        randomSeed(parseLongCheckPositive(opt));
 
         opt = command.getOptionValue("messages", defaults.messages);
-        setMessages(parseNumberOfMessages(opt));
+        messages(parseNumberOfMessages(opt));
 
         opt = command.getOptionValue("iterations", defaults.iterations);
-        setIterations(parseIterations(opt));
+        iterations(parseIterations(opt));
 
         opt = command.getOptionValue("session", defaults.session);
-        setSessionId(parseSessionId(opt));
+        sessionId(parseSessionId(opt));
 
         opt = command.getOptionValue("driver", defaults.driver);
-        setUseEmbeddedDriver(parseDriver(opt));
+        useEmbeddedDriver(parseDriver(opt));
 
         opt = command.getOptionValue("input", defaults.input);
         parseInputStream(opt);
@@ -381,7 +381,7 @@ public class PubSubOptions
      * Get the list of channels on which to publish or subscribe.
      * @return
      */
-    public List<ChannelDescriptor> getChannels()
+    public List<ChannelDescriptor> channels()
     {
         return channels;
     }
@@ -390,7 +390,7 @@ public class PubSubOptions
      * Set the list of channels on which to publish or subscribe
      * @param channels
      */
-    public void setChannels(final List<ChannelDescriptor> channels)
+    public void channels(final List<ChannelDescriptor> channels)
     {
         this.channels = channels;
     }
@@ -399,7 +399,7 @@ public class PubSubOptions
      * Get the output stream where a subscriber will write received data.
      * @return
      */
-    public OutputStream getOutput()
+    public OutputStream output()
     {
         return output;
     }
@@ -408,7 +408,7 @@ public class PubSubOptions
      * Set the output stream where a subscriber will write received data.
      * @param output
      */
-    public void setOutput(final OutputStream output)
+    public void output(final OutputStream output)
     {
         this.output = output;
     }
@@ -417,7 +417,7 @@ public class PubSubOptions
      * Get the input stream that a Publisher will read for data to send.
      * @return
      */
-    public InputStream getInput()
+    public InputStream input()
     {
         return input;
     }
@@ -426,7 +426,7 @@ public class PubSubOptions
      * Get if messages use additional space to store checksums for the message and stream.
      * @return
      */
-    public boolean getVerify()
+    public boolean verify()
     {
         return useVerifiableStream;
     }
@@ -435,7 +435,7 @@ public class PubSubOptions
      * Set if messages use additional space to store checksums for the message and stream.
      * @param verify
      */
-    public void setVerify(final boolean verify)
+    public void verify(final boolean verify)
     {
         useVerifiableStream = verify;
     }
@@ -444,17 +444,17 @@ public class PubSubOptions
      * Set the input stream that a Publisher will read for data to send.
      * @param input
      */
-    public void setInput(final InputStream input)
+    public void input(final InputStream input)
     {
         this.input = input;
     }
 
-    public void setRateIntervals(final List<RateControllerInterval> rates)
+    public void rateIntervals(final List<RateControllerInterval> rates)
     {
         this.rateIntervals = rates;
     }
 
-    public List<RateControllerInterval> getRateIntervals()
+    public List<RateControllerInterval> rateIntervals()
     {
         return this.rateIntervals;
     }
@@ -463,7 +463,7 @@ public class PubSubOptions
      * Get the number of threads for the application to use.
      * @return
      */
-    public int getThreads()
+    public int threads()
     {
         return threads;
     }
@@ -472,7 +472,7 @@ public class PubSubOptions
      * Set the number of threads for the application to use.
      * @param t Number of threads.
      */
-    public void setThreads(final int t)
+    public void threads(final int t)
     {
         threads = t;
     }
@@ -481,7 +481,7 @@ public class PubSubOptions
      * Get the total number of messages an application will send or receive before exiting.
      * @return Total number of messages
      */
-    public long getMessages()
+    public long messages()
     {
         return this.messages;
     }
@@ -490,7 +490,7 @@ public class PubSubOptions
      * Set the total number of messages an application will send or receive before exiting.
      * @param messages
      */
-    public void setMessages(final long messages)
+    public void messages(final long messages)
     {
         this.messages = messages;
     }
@@ -499,7 +499,7 @@ public class PubSubOptions
      * The number of times to run the rate sequence.
      * @return
      */
-    public long getIterations()
+    public long iterations()
     {
         return iterations;
     }
@@ -508,7 +508,7 @@ public class PubSubOptions
      * The seed for a random number generator.
      * @return
      */
-    public long getRandomSeed()
+    public long randomSeed()
     {
         return randomSeed;
     }
@@ -517,7 +517,7 @@ public class PubSubOptions
      * Set the seed for a random number generator.
      * @param value
      */
-    public void setRandomSeed(final long value)
+    public void randomSeed(final long value)
     {
         randomSeed = value;
     }
@@ -526,7 +526,7 @@ public class PubSubOptions
      * Set the number of times to run the rate sequence.
      * @param value
      */
-    public void setIterations(final long value)
+    public void iterations(final long value)
     {
         iterations = value;
     }
@@ -535,7 +535,7 @@ public class PubSubOptions
      * True when application should use an embedded Aeron media driver.
      * @return
      */
-    public boolean getUseEmbeddedDriver()
+    public boolean useEmbeddedDriver()
     {
         return useEmbeddedDriver;
     }
@@ -544,17 +544,17 @@ public class PubSubOptions
      * Set the use of an embedded Aeron media driver.
      * @param embedded
      */
-    public void setUseEmbeddedDriver(final boolean embedded)
+    public void useEmbeddedDriver(final boolean embedded)
     {
         useEmbeddedDriver = embedded;
     }
 
     /**
      * Enable or disable the use of a specific session ID.
-     * @see #setSessionId(int)
+     * @see #sessionId(int)
      * @param enabled
      */
-    public void setUseSessionId(final boolean enabled)
+    public void useSessionId(final boolean enabled)
     {
         this.useSessionId = enabled;
     }
@@ -563,28 +563,28 @@ public class PubSubOptions
      * When an Aeron stream should be created with a session ID this will return true. Otherwise
      * no session ID should be given to the Aeron transport.
      * @return True when a session ID should be used.
-     * @see #getSessionId()
+     * @see #sessionId()
      */
-    public boolean getUseSessionId()
+    public boolean useSessionId()
     {
         return this.useSessionId;
     }
 
     /**
-     * Set the session ID to be used when #getUseSessionId() returns true.
-     * @see #getUseSessionId #setSessionId(boolean)
+     * Set the session ID to be used when #useSessionId() returns true.
+     * @see #useSessionId #sessionId(boolean)
      * @param id
      */
-    public void setSessionId(final int id)
+    public void sessionId(final int id)
     {
         this.sessionId = id;
     }
 
     /**
-     * Get the session ID to use for an Aeron transport. Only valid if #getUseSessionId() returns true.
+     * Get the session ID to use for an Aeron transport. Only valid if #useSessionId() returns true.
      * @return The session ID for the Aeron transport.
      */
-    public int getSessionId()
+    public int sessionId()
     {
         return this.sessionId;
     }
@@ -593,7 +593,7 @@ public class PubSubOptions
      * Get the message size pattern used to determine what each messages size should be.
      * @return
      */
-    public MessageSizePattern getMessageSizePattern()
+    public MessageSizePattern messageSizePattern()
     {
         return this.sizePattern;
     }
@@ -602,7 +602,7 @@ public class PubSubOptions
      * Set the message size pattern used to determine what each message size should be.
      * @param pattern
      */
-    public void setMessageSizePattern(final MessageSizePattern pattern)
+    public void messageSizePattern(final MessageSizePattern pattern)
     {
         this.sizePattern = pattern;
     }
@@ -611,7 +611,7 @@ public class PubSubOptions
      * Return the total number of channel + streamId pairs specified by the channels option.
      * @return total number of channel + streamId paris.
      */
-    public int getNumberOfStreams()
+    public int numberOfStreams()
     {
         return totalStreams;
     }
@@ -620,7 +620,7 @@ public class PubSubOptions
      * Set the number of channel + streamId pairs.
      * @param value Representing the number of streams
      */
-    public void setNumberOfStreams(final int value)
+    public void numberOfStreams(final int value)
     {
         totalStreams = value;
     }
@@ -804,8 +804,8 @@ public class PubSubOptions
      * Parse a channel that starts with "aeron:" which is a different way of defining
      * aeron channel that allows for more verbose settings.
      * for UDP unicast:   aeron:udp?remote=<ip>:<port(s)>|local=<interface>
-     * for UDP multicast: aeron:udp?address=<multicast_ip>:<port(s)>|group=<interface>
-     * @param chanString
+     * for UDP multicast: aeron:udp?group=<multicast_ip>:<port(s)>|interface=<interface>
+     * @param chanString Aeron URI
      * @param chanStruct Object is filled with values parsed from the chanString
      */
     private void parseAeronChannelToStruct(final String chanString, final ChannelStruct chanStruct) throws ParseException
@@ -848,7 +848,7 @@ public class PubSubOptions
 
     /**
      * Parse a raw aeron channel in the form: <media><channel>:<port(s)>
-     * @param chanString
+     * @param chanString URI
      * @param chanStruct This object is filled with the values parsed from chanString
      */
     private void parseRawChannelToStruct(final String chanString, final ChannelStruct chanStruct) throws ParseException
@@ -1007,7 +1007,7 @@ public class PubSubOptions
         while (currentPort <= chan.portHigh)
         {
             final ChannelDescriptor cd = new ChannelDescriptor();
-            cd.setChannel(chan.getChannelWithPort(currentPort));
+            cd.channel(chan.getChannelWithPort(currentPort));
 
             final int[] idArray = new int[streamIdHigh - streamIdLow + 1];
             int sessionId = streamIdLow;
@@ -1016,7 +1016,7 @@ public class PubSubOptions
                 // set all the session Ids in the array
                 idArray[i] = sessionId++;
             }
-            cd.setStreamIdentifiers(idArray);
+            cd.streamIdentifiers(idArray);
             channels.add(cd);
             totalStreams += idArray.length;
             currentPort++;
@@ -1273,17 +1273,17 @@ public class PubSubOptions
     {
         if (inputStr.equalsIgnoreCase("null"))
         {
-            setInput(null);
+            input(null);
         }
         else if (inputStr.equalsIgnoreCase("stdin"))
         {
-            setInput(System.in);
+            input(System.in);
         }
         else
         {
             try
             {
-                setInput(new FileInputStream(inputStr));
+                input(new FileInputStream(inputStr));
             }
             catch (final FileNotFoundException ex)
             {
@@ -1298,21 +1298,21 @@ public class PubSubOptions
     {
         if (outputStr.equalsIgnoreCase("null"))
         {
-            setOutput(null);
+            output(null);
         }
         else if (outputStr.equalsIgnoreCase("stdout"))
         {
-            setOutput(System.out);
+            output(System.out);
         }
         else if (outputStr.equalsIgnoreCase("stderr"))
         {
-            setOutput(System.err);
+            output(System.err);
         }
         else
         {
             try
             {
-                setOutput(new FileOutputStream(outputStr));
+                output(new FileOutputStream(outputStr));
             }
             catch (final FileNotFoundException ex)
             {

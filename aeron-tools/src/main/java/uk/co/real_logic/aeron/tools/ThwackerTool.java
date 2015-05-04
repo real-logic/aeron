@@ -199,24 +199,24 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
     public void populateOptions(final ThwackerOptions opts)
     {
-        channel = opts.getChannel();
-        port = opts.getPort();
-        numberOfPublications = opts.getElements();
-        numberOfSubscriptions = opts.getElements();
-        useChannelPerPub = opts.getChannelPerPub();
-        useEmbeddedDriver = opts.getEmbeddedDriver();
-        useSameStreamID = opts.getSameSID();
-        useVerifiableMessageStream = opts.getVerifiable();
-        createThreadCount = opts.getAdders();
-        deleteThreadCount = opts.getRemovers();
-        senderThreadCount = opts.getSenders();
+        channel = opts.channel();
+        port = opts.port();
+        numberOfPublications = opts.elements();
+        numberOfSubscriptions = opts.elements();
+        useChannelPerPub = opts.channelPerPub();
+        useEmbeddedDriver = opts.embeddedDriver();
+        useSameStreamID = opts.sameSID();
+        useVerifiableMessageStream = opts.verifiable();
+        createThreadCount = opts.adders();
+        deleteThreadCount = opts.removers();
+        senderThreadCount = opts.senders();
         /* Receiver Threads hard coded to 1.  May add ability to create more receiving
             threads at another time */
         receiverThreadCount = 1;
-        iterations = opts.getIterations();
-        duration = opts.getDuration();
-        maxSize = opts.getMaxMsgSize();
-        minSize = opts.getMinMsgSize();
+        iterations = opts.iterations();
+        duration = opts.duration();
+        maxSize = opts.maxMsgSize();
+        minSize = opts.minMsgSize();
     }
 
 

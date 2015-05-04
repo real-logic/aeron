@@ -55,22 +55,22 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
      * Warn about options settings that might cause trouble. */
     private void sanityCheckOptions() throws Exception
     {
-        if (options.getThreads() > 1)
+        if (options.threads() > 1)
         {
-            if (options.getInput() != null)
+            if (options.input() != null)
             {
                 LOG.warning("File data may be sent in a non-deterministic order when multiple publisher threads are used.");
             }
         }
-        if (options.getVerify())
+        if (options.verify())
         {
             /* If verifiable messages are used, enforce a minimum of 16 bytes. */
-            if (options.getMessageSizePattern().getMinimum() < 16)
+            if (options.messageSizePattern().minimum() < 16)
             {
                 throw new Exception("Minimum message size must be at least 16 bytes when using verifiable messages.");
             }
         }
-        if (options.getMessageSizePattern().getMinimum() < 1)
+        if (options.messageSizePattern().minimum() < 1)
         {
             throw new Exception(
                     "Minimum message size must be at least 1 byte, as Aeron does not currently support 0-length messages.");
@@ -100,22 +100,22 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
 
         /* Start embedded driver if requested. */
         MediaDriver driver = null;
-        if (options.getUseEmbeddedDriver())
+        if (options.useEmbeddedDriver())
         {
             driver = MediaDriver.launch();
         }
 
         /* Create and start publishing threads. */
-        numThreads = Math.min(options.getThreads(), options.getNumberOfStreams());
-        if (numThreads < options.getThreads())
+        numThreads = Math.min(options.threads(), options.numberOfStreams());
+        if (numThreads < options.threads())
         {
-            LOG.warning(options.getThreads() + " threads were requested, but only " + options.getNumberOfStreams() +
+            LOG.warning(options.threads() + " threads were requested, but only " + options.numberOfStreams() +
                     " channel(s) were specified; using " + numThreads + " thread(s) instead.");
         }
         pubThreads = new Thread[numThreads];
         publishers = new PublisherThread[numThreads];
-        final long messagesPerThread = options.getMessages() / numThreads;
-        long leftoverMessages = options.getMessages() - (messagesPerThread * numThreads);
+        final long messagesPerThread = options.messages() / numThreads;
+        long leftoverMessages = options.messages() - (messagesPerThread * numThreads);
         for (int i = 0; i < numThreads; i++)
         {
             publishers[i] = new PublisherThread(i, messagesPerThread + ((leftoverMessages-- > 0) ? 1 : 0));
@@ -140,7 +140,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         }
 
         /* Close the driver if we had opened it. */
-        if (options.getUseEmbeddedDriver())
+        if (options.useEmbeddedDriver())
         {
             driver.close();
         }
@@ -191,9 +191,9 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
      */
     public long setSeed(long seed)
     {
-        if (options.getRandomSeed() != 0)
+        if (options.randomSeed() != 0)
         {
-            seed = options.getRandomSeed();
+            seed = options.randomSeed();
         }
         LOG.info(String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
         return seed;
@@ -257,7 +257,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         private final MessageSizePattern msp;
         private final RateController rateController;
         private final UnsafeBuffer sendBuffer;
-        private final boolean verifiableMessages = options.getVerify();
+        private final boolean verifiableMessages = options.verify();
         private final Aeron.Context ctx;
         private final Aeron aeron;
 
@@ -267,11 +267,11 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         {
             this.threadId = threadId;
             this.messagesToSend = messages;
-            msp = options.getMessageSizePattern();
+            msp = options.messageSizePattern();
             RateController rc = null;
             try
             {
-                rc = new RateController(this, options.getRateIntervals(), options.getIterations());
+                rc = new RateController(this, options.rateIntervals(), options.iterations());
             }
             catch (final Exception e)
             {
@@ -279,7 +279,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                 System.exit(-1);
             }
             rateController = rc;
-            sendBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msp.getMaximum()));
+            sendBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msp.maximum()));
 
             /* Create a context and subscribe to what we're supposed to
              * according to our thread ID. */
@@ -301,27 +301,27 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             final ArrayList<Publication> publicationsList = new ArrayList<Publication>();
 
             int streamIdx = 0;
-            for (int i = 0; i < options.getChannels().size(); i++)
+            for (int i = 0; i < options.channels().size(); i++)
             {
-                final ChannelDescriptor channel = options.getChannels().get(i);
-                for (int j = 0; j < channel.getStreamIdentifiers().length; j++)
+                final ChannelDescriptor channel = options.channels().get(i);
+                for (int j = 0; j < channel.streamIdentifiers().length; j++)
                 {
                     if ((streamIdx % numThreads) == this.threadId)
                     {
                         Publication pub;
-                        if (options.getUseSessionId())
+                        if (options.useSessionId())
                         {
                              pub = aeron.addPublication(
-                                    channel.getChannel(),
-                                    channel.getStreamIdentifiers()[j],
-                                    options.getSessionId());
+                                    channel.channel(),
+                                    channel.streamIdentifiers()[j],
+                                    options.sessionId());
                         }
                         else
                         {
                             // Aeron will generate a random sessionId
                             pub = aeron.addPublication(
-                                    channel.getChannel(),
-                                    channel.getStreamIdentifiers()[j]);
+                                    channel.channel(),
+                                    channel.streamIdentifiers()[j]);
                         }
                         publicationsList.add(pub);
 
@@ -341,7 +341,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             {
                 try
                 {
-                    messageStreams[i] = new MessageStream(msp.getMaximum(), verifiableMessages, options.getInput());
+                    messageStreams[i] = new MessageStream(msp.maximum(), verifiableMessages, options.input());
                 }
                 catch (final Exception e)
                 {
@@ -392,7 +392,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             {
                 /* Rate controller handles sending. Stop if we
                  * hit our allotted number of messages. */
-                if (rateController.getMessages() == messagesToSend)
+                if (rateController.messages() == messagesToSend)
                 {
                     break;
                 }

@@ -117,62 +117,62 @@ public class MediaDriverOptions
         formatter.printHelp(applicationName + " [options]", options);
     }
 
-    public IdleStrategy getConductorIdleStrategy()
+    public IdleStrategy conductorIdleStrategy()
     {
         return conductorIdleStrategy;
     }
 
-    public void setConductorIdleStrategy(final IdleStrategy conductorIdleStrategy)
+    public void conductorIdleStrategy(final IdleStrategy conductorIdleStrategy)
     {
         this.conductorIdleStrategy = conductorIdleStrategy;
     }
 
-    public IdleStrategy getSenderIdleStrategy()
+    public IdleStrategy senderIdleStrategy()
     {
         return senderIdleStrategy;
     }
 
-    public void setSenderIdleStrategy(final IdleStrategy senderIdleStrategy)
+    public void senderIdleStrategy(final IdleStrategy senderIdleStrategy)
     {
         this.senderIdleStrategy = senderIdleStrategy;
     }
 
-    public IdleStrategy getReceiverIdleStrategy()
+    public IdleStrategy receiverIdleStrategy()
     {
         return receiverIdleStrategy;
     }
 
-    public void setReceiverIdleStrategy(final IdleStrategy receiverIdleStrategy)
+    public void receiverIdleStrategy(final IdleStrategy receiverIdleStrategy)
     {
         this.receiverIdleStrategy = receiverIdleStrategy;
     }
 
-    public IdleStrategy getSharedNetworkIdleStrategy()
+    public IdleStrategy sharedNetworkIdleStrategy()
     {
         return sharedNetworkIdleStrategy;
     }
 
-    public void setSharedNetworkIdleStrategy(final IdleStrategy sharedNetworkIdleStrategy)
+    public void sharedNetworkIdleStrategy(final IdleStrategy sharedNetworkIdleStrategy)
     {
         this.sharedNetworkIdleStrategy = sharedNetworkIdleStrategy;
     }
 
-    public IdleStrategy getSharedIdleStrategy()
+    public IdleStrategy sharedIdleStrategy()
     {
         return sharedIdleStrategy;
     }
 
-    public void setSharedIdleStrategy(final IdleStrategy sharedIdleStrategy)
+    public void sharedIdleStrategy(final IdleStrategy sharedIdleStrategy)
     {
         this.sharedIdleStrategy = sharedIdleStrategy;
     }
 
-    public Properties getProperties()
+    public Properties properties()
     {
         return properties;
     }
 
-    public void setProperties(final Properties properties)
+    public void properties(final Properties properties)
     {
         this.properties = properties;
     }

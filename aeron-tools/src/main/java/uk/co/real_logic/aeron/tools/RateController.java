@@ -604,12 +604,12 @@ public class RateController
         this(callback, intervals, 1);
     }
 
-    public long getMessages()
+    public long messages()
     {
         return messagesSent;
     }
 
-    public long getBytes()
+    public long bytes()
     {
         return bytesSent;
     }

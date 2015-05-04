@@ -110,9 +110,9 @@ public class MessageSizePatternTest
         p.addPatternEntry(1, 1500);
 
         assertThat("FAIL: Pattern minimum value is wrong",
-                p.getMinimum(), is(500));
+                p.minimum(), is(500));
         assertThat("FAIL: Pattern maximum value is wrong",
-                p.getMaximum(), is(1500));
+                p.maximum(), is(1500));
     }
 
     @Test public void checkCurrentRangeMinMax() throws Exception
@@ -122,17 +122,17 @@ public class MessageSizePatternTest
 
         // Check overall min and max
         assertThat("FAIL: Pattern minimum value is wrong",
-                p.getMinimum(), is(1000));
+                p.minimum(), is(1000));
         assertThat("FAIL: Pattern maximum value is wrong",
-                p.getMaximum(), is(3000));
+                p.maximum(), is(3000));
 
         // Now check individual message range
         p.getNext();
-        assertThat(p.getCurrentRangeMinimum(), is(1000));
-        assertThat(p.getCurrentRangeMaximum(), is(2000));
+        assertThat(p.currentRangeMinimum(), is(1000));
+        assertThat(p.currentRangeMaximum(), is(2000));
         p.getNext();
-        assertThat(p.getCurrentRangeMinimum(), is(2000));
-        assertThat(p.getCurrentRangeMaximum(), is(3000));
+        assertThat(p.currentRangeMinimum(), is(2000));
+        assertThat(p.currentRangeMaximum(), is(3000));
     }
 
     @Test

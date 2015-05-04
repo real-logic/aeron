@@ -154,7 +154,7 @@ public class MessageSizePattern
     public int getNext()
     {
         // check current entry to see if we need to get the next one
-        // This needs to be here so getMinimum and getMaximum work
+        // This needs to be here so minimum and maximum work
         if (messageCount >= entries.get(currentIndex).count)
         {
             messageCount = 0;
@@ -187,7 +187,7 @@ public class MessageSizePattern
      * Get the minimum value possible in the entire pattern.
      * @return Minimum possible value
      */
-    public int getMinimum()
+    public int minimum()
     {
         return patternMinSize;
     }
@@ -196,7 +196,7 @@ public class MessageSizePattern
      * Get the maximum value possible in the entire pattern.
      * @return Maximum possible value
      */
-    public int getMaximum()
+    public int maximum()
     {
         return patternMaxSize;
     }
@@ -205,7 +205,7 @@ public class MessageSizePattern
      * Get the range minimum value of the current message.
      * @return
      */
-    public int getCurrentRangeMinimum()
+    public int currentRangeMinimum()
     {
         return entries.get(currentIndex).minSize;
     }
@@ -214,7 +214,7 @@ public class MessageSizePattern
      * Get the range maximum value of the current message.
      * @return
      */
-    public int getCurrentRangeMaximum()
+    public int currentRangeMaximum()
     {
         return entries.get(currentIndex).maxSize;
     }

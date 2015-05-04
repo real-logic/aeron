@@ -205,63 +205,63 @@ public class ThwackerOptions
         return rc;
     }
 
-    public boolean getVerifiable()
+    public boolean verifiable()
     {
         return this.useVerifiableMessageStream;
     }
-    public boolean getSameSID()
+    public boolean sameSID()
     {
         return this.useSameSID;
     }
-    public boolean getChannelPerPub()
+    public boolean channelPerPub()
     {
         return this.useChannelPerPub;
     }
-    public boolean getEmbeddedDriver()
+    public boolean embeddedDriver()
     {
         return this.useEmbeddedDriver;
     }
-    public String getChannel()
+    public String channel()
     {
         return this.channel;
     }
-    public int getPort()
+    public int port()
     {
         return this.port;
     }
-    public int getDuration()
+    public int duration()
     {
         return this.duration;
     }
-    public int getIterations()
+    public int iterations()
     {
         return this.iterations;
     }
-    public int getSenders()
+    public int senders()
     {
         return this.senders;
     }
-    public int getReceivers()
+    public int receivers()
     {
         return this.receivers;
     }
-    public int getAdders()
+    public int adders()
     {
         return this.adders;
     }
-    public int getRemovers()
+    public int removers()
     {
         return this.removers;
     }
-    public int getElements()
+    public int elements()
     {
         return this.elements;
     }
-    public int getMaxMsgSize()
+    public int maxMsgSize()
     {
         return maxSize;
     }
-    public int getMinMsgSize()
+    public int minMsgSize()
     {
         return minSize;
     }

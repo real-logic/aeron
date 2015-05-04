@@ -96,7 +96,7 @@ public class RateReporter implements RateController.Callback, Runnable
      * @param bits The total number of bits (per second) to convert to a human-readable string
      * @return the human-readable bits-per-second string
      */
-    public static String getHumanReadableRate(final long bits)
+    public static String humanReadableRate(final long bits)
     {
         if (bits < 1000)
         {
@@ -110,7 +110,7 @@ public class RateReporter implements RateController.Callback, Runnable
      * @param bits The total number of bits (per second) to convert to a human-readable string
      * @return the human-readable bits-per-second string
      */
-    public static String getHumanReadableRate(final double bits)
+    public static String humanReadableRate(final double bits)
     {
         if (bits < 1000)
         {
@@ -174,8 +174,8 @@ public class RateReporter implements RateController.Callback, Runnable
         sb.setLength(0);
         sb.append(String.format("%.6f: %smsgs/sec %sbps",
                 secondsElapsed,
-                getHumanReadableRate((totalMessages - lastTotalMessages) / secondsElapsed),
-                getHumanReadableRate((long)((((bytesReceived - lastBytes) * 8)) / secondsElapsed))));
+                humanReadableRate((totalMessages - lastTotalMessages) / secondsElapsed),
+                humanReadableRate((long) ((((bytesReceived - lastBytes) * 8)) / secondsElapsed))));
         callback.report(sb);
         lastReportTimeNanos = currentTimeNanos;
         lastVerifiableMessages = verifiableMessages;

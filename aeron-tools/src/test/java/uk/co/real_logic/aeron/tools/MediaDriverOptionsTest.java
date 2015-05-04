@@ -70,12 +70,12 @@ public class MediaDriverOptionsTest
         final String[] args = { "" };
         opts.parseArgs(args);
 
-        assertThat(opts.getProperties(), is(nullValue()));
-        assertThat(opts.getConductorIdleStrategy(), is(nullValue()));
-        assertThat(opts.getSenderIdleStrategy(), is(nullValue()));
-        assertThat(opts.getReceiverIdleStrategy(), is(nullValue()));
-        assertThat(opts.getSharedNetworkIdleStrategy(), is(nullValue()));
-        assertThat(opts.getSharedIdleStrategy(), is(nullValue()));
+        assertThat(opts.properties(), is(nullValue()));
+        assertThat(opts.conductorIdleStrategy(), is(nullValue()));
+        assertThat(opts.senderIdleStrategy(), is(nullValue()));
+        assertThat(opts.receiverIdleStrategy(), is(nullValue()));
+        assertThat(opts.sharedNetworkIdleStrategy(), is(nullValue()));
+        assertThat(opts.sharedIdleStrategy(), is(nullValue()));
     }
 
     @Test
@@ -90,8 +90,8 @@ public class MediaDriverOptionsTest
         final String[] args = { "--properties", "filename" };
         spyOpts.parseArgs(args);
         assertThat("FAIL: Properties object should have been created",
-                spyOpts.getProperties(), is(not(nullValue())));
-        assertThat(spyOpts.getProperties().getProperty("hello.world"), is("testing"));
+                spyOpts.properties(), is(not(nullValue())));
+        assertThat(spyOpts.properties().getProperty("hello.world"), is("testing"));
     }
 
     /** Class instantiated via reflection by MediaDriverOptions */
@@ -107,7 +107,7 @@ public class MediaDriverOptionsTest
     {
         final String[] args = { "--sender", "uk.co.real_logic.aeron.tools.MediaDriverOptionsTest$TestIdleStrategy" };
         opts.parseArgs(args);
-        assertThat(opts.getSenderIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(opts.senderIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -115,7 +115,7 @@ public class MediaDriverOptionsTest
     {
         final String[] args = { "--receiver", "uk.co.real_logic.aeron.tools.MediaDriverOptionsTest$TestIdleStrategy" };
         opts.parseArgs(args);
-        assertThat(opts.getReceiverIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(opts.receiverIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -123,7 +123,7 @@ public class MediaDriverOptionsTest
     {
         final String[] args = { "--conductor", "uk.co.real_logic.aeron.tools.MediaDriverOptionsTest$TestIdleStrategy" };
         opts.parseArgs(args);
-        assertThat(opts.getConductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(opts.conductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -131,7 +131,7 @@ public class MediaDriverOptionsTest
     {
         final String[] args = { "--network", "uk.co.real_logic.aeron.tools.MediaDriverOptionsTest$TestIdleStrategy" };
         opts.parseArgs(args);
-        assertThat(opts.getSharedNetworkIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(opts.sharedNetworkIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -139,7 +139,7 @@ public class MediaDriverOptionsTest
     {
         final String[] args = { "--shared", "uk.co.real_logic.aeron.tools.MediaDriverOptionsTest$TestIdleStrategy" };
         opts.parseArgs(args);
-        assertThat(opts.getSharedIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(opts.sharedIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -152,7 +152,7 @@ public class MediaDriverOptionsTest
 
         final String[] args = { "--properties", "filename" };
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getSenderIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.senderIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -165,7 +165,7 @@ public class MediaDriverOptionsTest
 
         final String[] args = { "--properties", "filename" };
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getReceiverIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.receiverIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -178,7 +178,7 @@ public class MediaDriverOptionsTest
 
         final String[] args = { "--properties", "filename" };
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getConductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.conductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -191,7 +191,7 @@ public class MediaDriverOptionsTest
 
         final String[] args = { "--properties", "filename" };
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getSharedNetworkIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.sharedNetworkIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -204,7 +204,7 @@ public class MediaDriverOptionsTest
 
         final String[] args = { "--properties", "filename" };
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getSharedIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.sharedIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -218,7 +218,7 @@ public class MediaDriverOptionsTest
 
         final String[] args = { "--shared", TestIdleStrategy.class.getName(), "--properties", "filename" };
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getSharedIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.sharedIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -232,7 +232,7 @@ public class MediaDriverOptionsTest
 
         final String[] args = { "--shared", "null", "--properties", "filename" };
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getSharedIdleStrategy(), is(nullValue()));
+        assertThat(spyOpts.sharedIdleStrategy(), is(nullValue()));
     }
 
     @Test
@@ -245,7 +245,7 @@ public class MediaDriverOptionsTest
 
         spyOpts.parseArgs(args);
         // we should get back our test idle strategy, because we modified that makeBackoffIdleStrategy method.
-        assertThat(spyOpts.getConductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.conductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test
@@ -257,7 +257,7 @@ public class MediaDriverOptionsTest
         doReturn(testIdleStrategy).when(spyOpts).makeBackoffIdleStrategy(10, 20, 30, 40);
 
         spyOpts.parseArgs(args);
-        assertThat(spyOpts.getConductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
+        assertThat(spyOpts.conductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
     @Test (expected = ParseException.class)

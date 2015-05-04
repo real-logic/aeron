@@ -53,17 +53,17 @@ public class MediaDriverTool
 
     public void run(final MediaDriverOptions opts)
     {
-        if (opts.getProperties() != null)
+        if (opts.properties() != null)
         {
             // Set system properties (aeron configuration) from the loaded configuration file.
-            System.getProperties().putAll(opts.getProperties());
+            System.getProperties().putAll(opts.properties());
         }
         final MediaDriver.Context context = new MediaDriver.Context()
-            .conductorIdleStrategy(opts.getConductorIdleStrategy())
-            .senderIdleStrategy(opts.getSenderIdleStrategy())
-            .receiverIdleStrategy(opts.getReceiverIdleStrategy())
-            .sharedNetworkIdleStrategy(opts.getSharedNetworkIdleStrategy())
-            .sharedIdleStrategy(opts.getSharedIdleStrategy());
+            .conductorIdleStrategy(opts.conductorIdleStrategy())
+            .senderIdleStrategy(opts.senderIdleStrategy())
+            .receiverIdleStrategy(opts.receiverIdleStrategy())
+            .sharedNetworkIdleStrategy(opts.sharedNetworkIdleStrategy())
+            .sharedIdleStrategy(opts.sharedIdleStrategy());
 
         // Everything else can be changed by Aeron settings.
         try (final MediaDriver driver = MediaDriver.launch(context))

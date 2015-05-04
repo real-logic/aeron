@@ -564,7 +564,6 @@ public class DriverConductor implements Agent
                         "subscriber pos", channel, connection.sessionId(), streamId, correlationId);
                     final UnsafeBufferPosition position = new UnsafeBufferPosition(
                         countersBuffer, subscriberPositionId, countersManager);
-                    final String sourceInfo = generateSourceInfo(connection.sourceAddress());
 
                     connection.addSubscription(position);
                     subscription.addConnection(connection, position);
@@ -577,7 +576,7 @@ public class DriverConductor implements Agent
                         connection.rawLog(),
                         correlationId,
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
-                        sourceInfo);
+                        generateSourceInfo(connection.sourceAddress()));
                 });
     }
 

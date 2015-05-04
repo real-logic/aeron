@@ -44,13 +44,11 @@ public class RateControllerTest
         protected long numMessagesSent = 0;
         protected long numBitsSent = 0;
 
-        @Override
         public long numMessagesSent()
         {
             return numMessagesSent;
         }
 
-        @Override
         public long numBitsSent()
         {
             return numBitsSent;
@@ -157,14 +155,11 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 return 0;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -185,15 +180,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 1;
                 return 1;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -214,15 +206,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 10;
                 return 10;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -245,15 +234,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 10;
                 return 10;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -277,15 +263,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 10;
                 return 10;
             }
-
         }
 
         final RateController.Callback callback = new Callback();

@@ -21,8 +21,8 @@ package uk.co.real_logic.aeron.tools;
  */
 public class ChannelDescriptor
 {
-    String channel;
-    int[] streamIds;
+    private String channel;
+    private int[] streamIds;
 
     ChannelDescriptor()
     {

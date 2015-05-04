@@ -365,7 +365,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             {
                 thwackerThreads.get(i).join();
             }
-            catch (InterruptedException e)
+            catch (final InterruptedException e)
             {
                 e.printStackTrace();
             }
@@ -511,7 +511,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             {
                 Thread.sleep(1);
             }
-            catch (InterruptedException e)
+            catch (final InterruptedException e)
             {
                 e.printStackTrace();
             }
@@ -542,7 +542,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.debug("RecSubs all done!");
     }
 
-    @Override
     public void onInactiveConnection(
         final String channel,
         final int streamId,
@@ -552,7 +551,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.debug("ON INACTIVE ::: " + channel + streamId + sessionId + position);
     }
 
-    @Override
     public void onNewConnection(
         final String channel,
         final int streamId,
@@ -819,7 +817,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                 {
                     ms = new MessageStream(minSize, maxSize, verify);
                 }
-                catch (Exception e)
+                catch (final Exception e)
                 {
                     e.printStackTrace();
                 }
@@ -861,7 +859,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                             rc = pub.offer(buffer.get(), 0, bytesSent.get());
                             retryCount++;
                         }
-                        catch (Exception e)
+                        catch (final Exception e)
                         {
                             e.printStackTrace();
                             LOG.debug("BytesSent: " + bytesSent.get());

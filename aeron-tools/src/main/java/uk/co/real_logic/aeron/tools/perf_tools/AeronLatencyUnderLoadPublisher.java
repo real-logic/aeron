@@ -198,7 +198,15 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         sub.close();
         ctx.close();
         aeron.close();
-        computeStats();
+
+        try
+        {
+            computeStats();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     public int onNext()
@@ -266,7 +274,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         }
     }
 
-    private void computeStats()
+    private void computeStats() throws IOException
     {
         means[0] = computeStats(0, 100, "10mps");
         means[1] = computeStats(100, 1100, "100mps");
@@ -306,7 +314,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         return sum / (end - start);
     }
 
-    private void generateScatterPlot()
+    private void generateScatterPlot() throws IOException
     {
         final BufferedImage image = new BufferedImage(1800, 1000, BufferedImage.TYPE_INT_ARGB);
         final Graphics2D g2 = image.createGraphics();
@@ -376,14 +384,8 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         //g2.setColor(Color.orange);
         //plotSubset(g2, start, end, "3M msgs/sec", 100 + width * 6, width, stepY, means[6]);
 
-        try
-        {
-            ImageIO.write(image, "png", imageFile);
-        }
-        catch (final IOException e)
-        {
-            e.printStackTrace();
-        }
+
+        ImageIO.write(image, "png", imageFile);
     }
 
     private void plotSubset(

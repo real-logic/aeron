@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.tools;
 
+import java.util.logging.Logger;
+
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 
 public class MediaDriverTool
 {
-    private static final Logger LOG = LoggerFactory.getLogger(MediaDriverTool.class);
+    private static final Logger LOG = Logger.getLogger(MediaDriverTool.class.getName());
 
     public static void main(final String[] args)
     {

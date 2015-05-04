@@ -22,10 +22,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Logger;
 
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
@@ -50,20 +49,9 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 {
     static
     {
-        /* Turn off some of the default clutter of the default logger if the
-         * user hasn't explicitly turned it back on. */
-        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        if (System.getProperty("java.util.logging.SimpleFormatter.format") == null)
         {
-            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
-        {
-            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.defaultLogLevel") == null)
-        {
-            /* Change this property to debug to include debug output */
-            System.setProperty("org.slf4j.simpleLogger.defaultLogLevel", "info");
+            System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         }
 
         /* Set some Aeron configuration so we dont blow through memory immediately */
@@ -82,7 +70,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         }
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(ThwackerTool.class);
+    private static final Logger LOG = Logger.getLogger(ThwackerTool.class.getName());
     private static final int FRAGMENT_LIMIT = 10;
     /* Number to retry sending a message if it fails in offer() */
     private static final int RETRY_LIMIT = 100000;
@@ -273,7 +261,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
      */
     public void createAndStartThreads()
     {
-        LOG.debug("Creating and starting threads");
+        LOG.fine("Creating and starting threads");
         for (int i = 0; i < createThreadCount; i++)
         {
             thwackerThreads.add(new Thread(() -> createSubs()));
@@ -323,13 +311,13 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     if (active)
                     {
                         active = false;
-                        LOG.debug("Thwacking Stopped");
+                        LOG.fine("Thwacking Stopped");
                         Thread.sleep(3000);
                     }
                     else
                     {
                         active = true;
-                        LOG.debug("Thwacking Started");
+                        LOG.fine("Thwacking Started");
                         Thread.sleep(duration);
                     }
                 }
@@ -409,7 +397,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             Thread.yield();
         }
         allDone.countDown();
-        LOG.debug("CreatePubs all done!");
+        LOG.fine("CreatePubs all done!");
     }
 
     /**
@@ -434,7 +422,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             Thread.yield();
         }
         allDone.countDown();
-        LOG.debug("DeletePubs all done!");
+        LOG.fine("DeletePubs all done!");
     }
 
     /**
@@ -449,7 +437,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         ThwackingElement pub;
         final long threadId = Thread.currentThread().getId();
 
-        LOG.debug("Sending thread " + threadId + " started!");
+        LOG.fine("Sending thread " + threadId + " started!");
         while (running)
         {
             //Get random publication slot
@@ -462,7 +450,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             Thread.yield();
         }
         allDone.countDown();
-        LOG.debug("Sending thread " + threadId + " all done!");
+        LOG.fine("Sending thread " + threadId + " all done!");
     }
 
     /**
@@ -486,7 +474,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             Thread.yield();
         }
         allDone.countDown();
-        LOG.debug("CreateSubs all done!");
+        LOG.fine("CreateSubs all done!");
     }
 
     /**
@@ -518,7 +506,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             Thread.yield();
         }
         allDone.countDown();
-        LOG.debug("DeleteSubs all done!");
+        LOG.fine("DeleteSubs all done!");
     }
 
     /**
@@ -539,7 +527,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
             ctrlSub.tryGetMessages();
         }
         allDone.countDown();
-        LOG.debug("RecSubs all done!");
+        LOG.fine("RecSubs all done!");
     }
 
     public void onInactiveConnection(
@@ -548,7 +536,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         final int sessionId,
         final long position)
     {
-        LOG.debug("ON INACTIVE ::: " + channel + streamId + sessionId + position);
+        LOG.fine("ON INACTIVE ::: " + channel + streamId + sessionId + position);
     }
 
     public void onNewConnection(
@@ -558,7 +546,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         final long position,
         final String sourceInformation)
     {
-        LOG.debug("ON NEW CONNECTION ::: " + channel + streamId + sessionId + position + sourceInformation);
+        LOG.fine("ON NEW CONNECTION ::: " + channel + streamId + sessionId + position + sourceInformation);
     }
 
     /**
@@ -633,7 +621,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                          */
                         if (!e.getMessage().contains("but was expecting 0"))
                         {
-                            LOG.warn(e.getMessage() + " StreamID" + header.streamId() + ":" + header.sessionId() + ":" +
+                            LOG.warning(e.getMessage() + " StreamID" + header.streamId() + ":" + header.sessionId() + ":" +
                                 threadId);
                         }
                     }
@@ -712,7 +700,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     pub = aeron.addPublication(this.channel, this.streamId);
                     isActive.set(true);
                     added = true;
-                    LOG.debug("Added pub " + streamId);
+                    LOG.fine("Added pub " + streamId);
                 }
                 lock.writeLock().unlock();
             }
@@ -729,7 +717,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     sub = aeron.addSubscription(this.channel, this.streamId, this.msgHandler);
                     isActive.set(true);
                     added = true;
-                    LOG.debug("Added sub " + streamId);
+                    LOG.fine("Added sub " + streamId);
                 }
                 lock.writeLock().unlock();
             }
@@ -748,7 +736,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     isActive.set(false);
                     removed = true;
                     pub = null;
-                    LOG.debug("Removed pub " + streamId);
+                    LOG.fine("Removed pub " + streamId);
                 }
                 lock.writeLock().unlock();
             }
@@ -767,7 +755,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     isActive.set(false);
                     removed = true;
                     sub = null;
-                    LOG.debug("Removed sub " + streamId);
+                    LOG.fine("Removed sub " + streamId);
                 }
                 lock.writeLock().unlock();
             }
@@ -790,7 +778,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     if (isActive.get())
                     {
                         rc = sub.poll(FRAGMENT_LIMIT);
-                        LOG.debug("called poll on sub " + streamId);
+                        LOG.fine("called poll on sub " + streamId);
                     }
                     lock.writeLock().unlock();
                 }
@@ -862,7 +850,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                         catch (final Exception e)
                         {
                             e.printStackTrace();
-                            LOG.debug("BytesSent: " + bytesSent.get());
+                            LOG.fine("BytesSent: " + bytesSent.get());
                         }
                     }
                     while (rc < 0 && retryCount < RETRY_LIMIT && running);

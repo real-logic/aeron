@@ -136,7 +136,8 @@ public class MessageStream
         }
     }
 
-    /** Constructor for the subscribing side. */
+    /**
+     * Constructor for the subscribing side. */
     public MessageStream()
     {
         this.minSize = 0;
@@ -269,7 +270,8 @@ public class MessageStream
         return sequenceNumber;
     }
 
-    /** Returns true if the buffer is _probably_ a verifiable message, false otherwise.
+    /**
+     * Returns true if the buffer is _probably_ a verifiable message, false otherwise.
      * This method just looks for a magic word at the beginning of the message; random
      * data might happen to reproduce one of the magic words about 1 in 2 billion
      * times.
@@ -329,7 +331,8 @@ public class MessageStream
         System.out.println();
     }
 
-    /** Generates a message of random (within the constraints the MessageStream was
+    /**
+     * Generates a message of random (within the constraints the MessageStream was
      * created with) size and writes it into the given buffer. Returns the number
      * of bytes actually written to the buffer.
      * @param buffer The buffer to write a message to.
@@ -372,7 +375,8 @@ public class MessageStream
         }
     }
 
-    /** Generates a message of the desired size (size must be at least 16 bytes for
+    /**
+     * Generates a message of the desired size (size must be at least 16 bytes for
      * verifiable message headers if verifiable messages are on) and writes it
      * into the given buffer. Returns the number of bytes actually written to the buffer.
      * @param buffer The buffer to write a message to.

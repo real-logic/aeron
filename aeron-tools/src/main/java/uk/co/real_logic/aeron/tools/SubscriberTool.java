@@ -21,10 +21,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
@@ -50,19 +49,13 @@ public class SubscriberTool
 {
     static
     {
-        /* Turn off some of the default clutter of the default logger if the
-         * user hasn't explicitly turned it back on. */
-        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        if (System.getProperty("java.util.logging.SimpleFormatter.format") == null)
         {
-            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
-        {
-            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
+            System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         }
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(SubscriberTool.class);
+    private static final Logger LOG = Logger.getLogger(SubscriberTool.class.getName());
     private boolean shuttingDown;
     private final PubSubOptions options = new PubSubOptions();
     private SubscriberThread subscribers[];
@@ -90,7 +83,7 @@ public class SubscriberTool
         }
         catch (final ParseException e)
         {
-            LOG.error(e.getMessage());
+            LOG.severe(e.getMessage());
             subTool.options.printHelp("SubscriberTool");
             System.exit(-1);
         }
@@ -155,7 +148,7 @@ public class SubscriberTool
         final long verifiableMessages = subTool.verifiableMessages();
         final long nonVerifiableMessages = subTool.nonVerifiableMessages();
         final long bytesReceived = subTool.bytes();
-        LOG.info("{}", String.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
+        LOG.info(String.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
                 verifiableMessages + nonVerifiableMessages,
                 bytesReceived, verifiableMessages, nonVerifiableMessages));
     }
@@ -167,7 +160,7 @@ public class SubscriberTool
         {
             if (options.getOutput() != null)
             {
-                LOG.warn("File output may be non-deterministic when multiple subscriber threads are used.");
+                LOG.warning("File output may be non-deterministic when multiple subscriber threads are used.");
             }
         }
     }
@@ -227,7 +220,7 @@ public class SubscriberTool
         {
             seed = options.getRandomSeed();
         }
-        LOG.info("{}", String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
+        LOG.info(String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
         return seed;
     }
 
@@ -284,7 +277,7 @@ public class SubscriberTool
                 throwable.printStackTrace();
                 if (throwable instanceof DriverTimeoutException)
                 {
-                    LOG.error("Driver does not appear to be running or has been unresponsive for ten seconds.");
+                    LOG.severe("Driver does not appear to be running or has been unresponsive for ten seconds.");
                     System.exit(-1);
                 }
             })
@@ -308,7 +301,7 @@ public class SubscriberTool
                 {
                     if ((streamIdx % options.getThreads()) == this.threadId)
                     {
-                        LOG.info("{}", String.format("subscriber-thread %d subscribing to: %s#%d", threadId,
+                        LOG.info(String.format("subscriber-thread %d subscribing to: %s#%d", threadId,
                                 channel.getChannel(), channel.getStreamIdentifiers()[j]));
 
                         /* Add appropriate entries to the messageStreams map. */
@@ -465,7 +458,7 @@ public class SubscriberTool
 
                 if (action == CONTROL_ACTION_NEW_CONNECTION)
                 {
-                    LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
+                    LOG.info(String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
                             channel, streamId, sessionId));
 
                     /* Create a new MessageStream for this connection if it doesn't already exist. */
@@ -473,7 +466,7 @@ public class SubscriberTool
                             messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("New connection detected for channel we were not subscribed to.");
+                        LOG.warning("New connection detected for channel we were not subscribed to.");
                     }
                     else
                     {
@@ -481,7 +474,7 @@ public class SubscriberTool
                                 streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("New connection detected for channel we were not subscribed to.");
+                            LOG.warning("New connection detected for channel we were not subscribed to.");
                         }
                         else
                         {
@@ -499,14 +492,14 @@ public class SubscriberTool
                 }
                 else if (action == CONTROL_ACTION_INACTIVE_CONNECTION)
                 {
-                    LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
+                    LOG.info(String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
                             channel, streamId, sessionId));
 
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
                             messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("Inactive connection detected for unknown connection.");
+                        LOG.warning("Inactive connection detected for unknown connection.");
                     }
                     else
                     {
@@ -514,14 +507,14 @@ public class SubscriberTool
                                 streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("Inactive connection detected for unknown connection.");
+                            LOG.warning("Inactive connection detected for unknown connection.");
                         }
                         else
                         {
                             final MessageStream ms = sessionIdMap.get(sessionId);
                             if (ms == null)
                             {
-                                LOG.warn("Inactive connection detected for unknown connection.");
+                                LOG.warning("Inactive connection detected for unknown connection.");
                             }
                             else
                             {
@@ -539,7 +532,7 @@ public class SubscriberTool
                 }
                 else
                 {
-                    LOG.warn("{}", String.format("Unknown control message type (%d) received.", action));
+                    LOG.warning(String.format("Unknown control message type (%d) received.", action));
                 }
             }
 
@@ -578,7 +571,7 @@ public class SubscriberTool
                     }
                     catch (final Exception e)
                     {
-                        LOG.warn("Channel " + channel + ":" + streamId + "[" + sessionId + "]: " +
+                        LOG.warning("Channel " + channel + ":" + streamId + "[" + sessionId + "]: " +
                                 e.getMessage());
                     }
                 }
@@ -705,6 +698,6 @@ public class SubscriberTool
 
     public void report(final StringBuilder reportString)
     {
-        LOG.info("{}", reportString);
+        LOG.info(reportString.toString());
     }
 }

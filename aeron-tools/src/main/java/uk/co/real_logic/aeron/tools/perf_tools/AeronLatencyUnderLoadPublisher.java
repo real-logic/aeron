@@ -50,7 +50,7 @@ import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-public class AeronThroughputencyPublisher implements RateController.Callback
+public class AeronLatencyUnderLoadPublisher implements RateController.Callback
 {
     private Aeron.Context ctx = null;
     private FragmentAssemblyAdapter dataHandler = null;
@@ -76,7 +76,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     private final double means[] = new double[5];
     private Options options;
 
-    public AeronThroughputencyPublisher(final String[] args)
+    public AeronLatencyUnderLoadPublisher(final String[] args)
     {
         try
         {
@@ -413,6 +413,6 @@ public class AeronThroughputencyPublisher implements RateController.Callback
     }
     public static void main(final String[] args)
     {
-        new AeronThroughputencyPublisher(args);
+        new AeronLatencyUnderLoadPublisher(args);
     }
 }

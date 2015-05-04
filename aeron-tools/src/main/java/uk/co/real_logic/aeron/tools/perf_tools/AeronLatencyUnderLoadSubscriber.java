@@ -30,7 +30,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-public class AeronThroughputencySubscriber
+public class AeronLatencyUnderLoadSubscriber
 {
     private Aeron.Context ctx = null;
     private FragmentAssemblyAdapter dataHandler = null;
@@ -45,7 +45,7 @@ public class AeronThroughputencySubscriber
     private BufferClaim bufferClaim = null;
     private Options options;
 
-    public AeronThroughputencySubscriber(final String[] args)
+    public AeronLatencyUnderLoadSubscriber(final String[] args)
     {
         try
         {
@@ -117,6 +117,6 @@ public class AeronThroughputencySubscriber
 
     public static void main(final String[] args)
     {
-        new AeronThroughputencySubscriber(args);
+        new AeronLatencyUnderLoadSubscriber(args);
     }
 }

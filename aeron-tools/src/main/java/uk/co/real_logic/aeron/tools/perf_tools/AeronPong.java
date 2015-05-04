@@ -54,7 +54,7 @@ public class AeronPong
         {
             parseArgs(args);
         }
-        catch (final Exception e)
+        catch (final ParseException e)
         {
             e.printStackTrace();
         }
@@ -71,7 +71,7 @@ public class AeronPong
         aeron = Aeron.connect(ctx);
         pongPub = aeron.addPublication(pongChannel, pongStreamId);
         pingSub = aeron.addSubscription(pingChannel, pingStreamId, dataHandler);
-        this.claim = claim;
+
         if (claim)
         {
             bufferClaim = new BufferClaim();
@@ -142,19 +142,10 @@ public class AeronPong
         }
         if (pongPub.tryClaim(length, bufferClaim) >= 0)
         {
-            try
-            {
-                final MutableDirectBuffer newBuffer = bufferClaim.buffer();
-                newBuffer.putBytes(bufferClaim.offset(), buffer, offset, length);
-            }
-            catch (final Exception e)
-            {
-                e.printStackTrace();
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
+            final MutableDirectBuffer newBuffer = bufferClaim.buffer();
+            newBuffer.putBytes(bufferClaim.offset(), buffer, offset, length);
+
+            bufferClaim.commit();
         }
         else
         {

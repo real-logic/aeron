@@ -37,9 +37,6 @@ import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.console.ContinueBarrier;
 
-/**
- * Created by philip on 4/22/15.
- */
 public class AeronThroughput
 {
     private static final int STREAM_ID = 10;
@@ -54,17 +51,12 @@ public class AeronThroughput
     private static long iterations = 0;
 
     public static void printRate(
-            final double messagesPerSec,
-            final double bytesPerSec,
-            final long totalMessages,
-            final long totalBytes)
+        final double messagesPerSec,
+        final double bytesPerSec,
+        final long totalMessages,
+        final long totalBytes)
     {
-       // System.out.println(
-         //       String.format(
-           //             "%s msgs/sec, %s/sec, totals %s messages %s",
-             //           humanReadableCount((long)messagesPerSec, true),
-               //         humanReadableByteCount((long)bytesPerSec, false),
-                 //       humanReadableCount(totalMessages, true), humanReadableByteCount(totalBytes, false)));
+
     }
 
     public static DataHandler rateReporterHandler(final RateReporter reporter)
@@ -80,7 +72,9 @@ public class AeronThroughput
     }
 
     public static Consumer<Subscription> subscriberLoop(
-            final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
+        final int limit,
+        final AtomicBoolean running,
+        final IdleStrategy idleStrategy)
     {
         return
                 (subscription) ->
@@ -98,18 +92,6 @@ public class AeronThroughput
                         LangUtil.rethrowUnchecked(ex);
                     }
                 };
-    }
-
-    private static String humanReadableByteCount(final long bytes, final boolean si)
-    {
-        final int unit = si ? 1000 : 1024;
-        if (bytes < unit)
-        {
-            return bytes + "B";
-        }
-        final int exp = (int)(Math.log(bytes) / Math.log(unit));
-        final String pre = (si ? "kMGTPE" : "KMGTPE").charAt(exp - 1) + (si ? "" : "i");
-        return String.format("%.2f%sB", bytes / Math.pow(unit, exp), pre);
     }
 
     private static String humanReadableCount(final long val, final boolean si)
@@ -153,14 +135,6 @@ public class AeronThroughput
             executor.execute(reporter);
             executor.execute(() -> AeronThroughput.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
-            final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
-
-            //System.out.format(
-              //      "\nStreaming %,d messages of size %d bytes to %s on stream Id %d\n",
-                //    NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
-
-            long backPressureCount = 0;
-
             final long start = System.currentTimeMillis();
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
@@ -168,7 +142,6 @@ public class AeronThroughput
 
                 while (publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()) < 0)
                 {
-                    backPressureCount++;
                     OFFER_IDLE_STRATEGY.idle(0);
                 }
             }
@@ -176,11 +149,9 @@ public class AeronThroughput
             System.out.println("Average throughput for " +
                     MESSAGE_LENGTH + " byte messages was: " +
                     humanReadableCount(NUMBER_OF_MESSAGES / ((stop - start) / 1000), false) + " msgs/sec");
-            //System.out.println("Done streaming. backPressureRatio=" + ((double)backPressureCount / NUMBER_OF_MESSAGES));
 
             if (0 < LINGER_TIMEOUT_MS)
             {
-                //System.out.println("Lingering for " + LINGER_TIMEOUT_MS + " milliseconds...");
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
 

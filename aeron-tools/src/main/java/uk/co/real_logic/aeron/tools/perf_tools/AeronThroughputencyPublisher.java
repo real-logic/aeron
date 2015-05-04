@@ -21,6 +21,7 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,9 +50,6 @@ import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-/**
- * Created by philipjohnson1 on 4/2/15.
- */
 public class AeronThroughputencyPublisher implements RateController.Callback
 {
     private Aeron.Context ctx = null;
@@ -84,7 +82,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             parseArgs(args);
         }
-        catch (final Exception e)
+        catch (final ParseException e)
         {
             e.printStackTrace();
         }
@@ -138,7 +136,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             connectionLatch.await();
         }
-        catch (final Exception e)
+        catch (final InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -149,26 +147,16 @@ public class AeronThroughputencyPublisher implements RateController.Callback
             {
                 idle.idle(1);
             }
-            try
-            {
-                final MutableDirectBuffer buffer = bufferClaim.buffer();
-                final int offset = bufferClaim.offset();
-                buffer.putByte(offset, (byte) 'w');
-            }
-            catch (final Exception e)
-            {
-                e.printStackTrace();
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
+            final MutableDirectBuffer buffer = bufferClaim.buffer();
+            final int offset = bufferClaim.offset();
+            buffer.putByte(offset, (byte) 'w');
+            bufferClaim.commit();
         }
         try
         {
             Thread.sleep(1000);
         }
-        catch (final Exception e)
+        catch (final InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -191,7 +179,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             Thread.sleep(1000);
         }
-        catch (final Exception e)
+        catch (final InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -202,7 +190,7 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             subThread.join();
         }
-        catch (final Exception e)
+        catch (final InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -215,37 +203,24 @@ public class AeronThroughputencyPublisher implements RateController.Callback
 
     public int onNext()
     {
-        int iterations = 0;
         while (pub.tryClaim(buffer.capacity(), bufferClaim) < 0L)
         {
-            iterations++;
         }
-        if (iterations > 10)
-        {
-            System.out.println("Took too many tries: " + iterations);
-        }
-        try
-        {
-            final MutableDirectBuffer buffer = bufferClaim.buffer();
-            final int offset = bufferClaim.offset();
-            buffer.putByte(offset, (byte) 'p');
-            buffer.putInt(offset + 1, msgCount++);
-            buffer.putLong(offset + 5, System.nanoTime());
-        }
-        catch (final Exception e)
-        {
-            e.printStackTrace();
-            System.exit(0);
-        }
-        finally
-        {
-            bufferClaim.commit();
-            return msgLen;
-        }
+        final MutableDirectBuffer buffer = bufferClaim.buffer();
+        final int offset = bufferClaim.offset();
+        buffer.putByte(offset, (byte) 'p');
+        buffer.putInt(offset + 1, msgCount++);
+        buffer.putLong(offset + 5, System.nanoTime());
+        bufferClaim.commit();
+        return msgLen;
     }
 
-    private void connectionHandler(final String channel, final int streamId,
-                                   final int sessionId, final long position, final String sourceInfo)
+    private void connectionHandler(
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long position,
+        final String sourceInfo)
     {
         if (channel.equals(reflectChannel) && subStreamId == streamId)
         {
@@ -253,8 +228,11 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         }
     }
 
-    private void msgHandler(final DirectBuffer buffer, final int offset, final int length,
-                            final Header header)
+    private void msgHandler(
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
     {
         if (buffer.getByte(offset) == (byte)'p')
         {
@@ -402,15 +380,21 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         {
             ImageIO.write(image, "png", imageFile);
         }
-        catch (final Exception e)
+        catch (final IOException e)
         {
             e.printStackTrace();
         }
     }
 
-    private void plotSubset(final Graphics2D g, final int start, final int end,
-            final String title, final double startX, final double width,
-            final double stepY, final double mean)
+    private void plotSubset(
+        final Graphics2D g,
+        final int start,
+        final int end,
+        final String title,
+        final double startX,
+        final double width,
+        final double stepY,
+        final double mean)
     {
         final FontMetrics fm = g.getFontMetrics();
         final Color color = g.getColor();

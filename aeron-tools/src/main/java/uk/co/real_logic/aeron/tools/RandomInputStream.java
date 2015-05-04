@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * This is an InputStream that returns random data using {@link uk.co.real_logic.aeron.tools.TLRandom}
+ * This is an InputStream that returns random data using {@link uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom}
  * Data is generated on the read() call and not stored, so marking the stream will not work.
  * There is no end of file for the input stream.
  */
@@ -45,7 +45,7 @@ public class RandomInputStream extends InputStream
 
     public int read() throws IOException
     {
-        return TLRandom.current().nextInt() & 0x0000_00FF;
+        return SeedableThreadLocalRandom.current().nextInt() & 0x0000_00FF;
     }
 
     /**
@@ -65,7 +65,7 @@ public class RandomInputStream extends InputStream
      */
     public int read(final byte[] b) throws IOException
     {
-        int bytesRead = TLRandom.current().nextInt(400);
+        int bytesRead = SeedableThreadLocalRandom.current().nextInt(400);
         if (bytesRead > b.length)
         {
             bytesRead = b.length;
@@ -86,14 +86,14 @@ public class RandomInputStream extends InputStream
         int offset = off;
         while (remaining >= 4)
         {
-            final int data = TLRandom.current().nextInt();
+            final int data = SeedableThreadLocalRandom.current().nextInt();
             b[offset++] = (byte)(data >>> 24);
             b[offset++] = (byte)(data >>> 16);
             b[offset++] = (byte)(data >>> 8);
             b[offset++] = (byte)data;
             remaining -= 4;
         }
-        final int data = TLRandom.current().nextInt();
+        final int data = SeedableThreadLocalRandom.current().nextInt();
         while (remaining > 0)
         {
             b[offset++] = (byte)(data >>> remaining * 8);

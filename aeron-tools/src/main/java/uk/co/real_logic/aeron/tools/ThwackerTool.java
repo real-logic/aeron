@@ -382,7 +382,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
      */
     public void createPubs()
     {
-        final Random rand = TLRandom.current();
+        final Random rand = SeedableThreadLocalRandom.current();
         int i = -1;
         ThwackingElement pub;
         while (running)
@@ -407,7 +407,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
     public void deletePubs()
     {
-        final Random rand = TLRandom.current();
+        final Random rand = SeedableThreadLocalRandom.current();
         int i;
         ThwackingElement pub;
         while (running)
@@ -432,7 +432,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
     public void sendOnRandomPub()
     {
-        final Random rand = TLRandom.current();
+        final Random rand = SeedableThreadLocalRandom.current();
         int i;
         ThwackingElement pub;
         final long threadId = Thread.currentThread().getId();
@@ -460,7 +460,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
      */
     public void createSubs()
     {
-        final Random rand = TLRandom.current();
+        final Random rand = SeedableThreadLocalRandom.current();
         int i;
         ThwackingElement sub;
         while (running)
@@ -484,7 +484,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
     public void deleteSubs()
     {
-        final Random rand = TLRandom.current();
+        final Random rand = SeedableThreadLocalRandom.current();
         int i;
         ThwackingElement sub;
         while (running)

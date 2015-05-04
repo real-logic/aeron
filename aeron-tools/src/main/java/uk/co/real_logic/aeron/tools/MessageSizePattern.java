@@ -173,7 +173,7 @@ public class MessageSizePattern
         if (entry.minSize != entry.maxSize)
         {
             // Use thread local random number generator service.
-            value = TLRandom.current().nextInt(entry.maxSize - entry.minSize + 1) + entry.minSize;
+            value = SeedableThreadLocalRandom.current().nextInt(entry.maxSize - entry.minSize + 1) + entry.minSize;
         }
         else
         {

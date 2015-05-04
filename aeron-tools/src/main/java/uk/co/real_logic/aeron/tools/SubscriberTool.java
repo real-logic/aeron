@@ -35,7 +35,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
+import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -91,7 +91,7 @@ public class SubscriberTool
         sanityCheckOptions(subTool.options);
 
         /* Set pRNG seed callback. */
-        TLRandom.setSeedCallback(subTool);
+        SeedableThreadLocalRandom.setSeedCallback(subTool);
 
         /* Shut down gracefully when we receive SIGINT. */
         SigInt.register(() -> subTool.shuttingDown = true);

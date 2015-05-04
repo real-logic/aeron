@@ -345,7 +345,7 @@ public class MessageStream
             throw new Exception("Buffer capacity must be at least " + maxSize + " bytes.");
         }
 
-        final int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
+        final int size = SeedableThreadLocalRandom.current().nextInt(maxSize - minSize + 1) + minSize;
         return getNext(buffer, size);
     }
 
@@ -428,7 +428,7 @@ public class MessageStream
             {
                 while (isVerifiable(buffer, 0))
                 {
-                    buffer.putInt(MAGIC_OFFSET, TLRandom.current().nextInt());
+                    buffer.putInt(MAGIC_OFFSET, SeedableThreadLocalRandom.current().nextInt());
                 }
             }
 

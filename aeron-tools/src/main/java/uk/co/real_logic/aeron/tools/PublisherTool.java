@@ -28,7 +28,7 @@ import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
+import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -93,7 +93,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         }
 
         /* Set pRNG seed callback. */
-        TLRandom.setSeedCallback(this);
+        SeedableThreadLocalRandom.setSeedCallback(this);
 
         /* Shut down gracefully when we receive SIGINT. */
         SigInt.register(() -> shuttingDown = true);

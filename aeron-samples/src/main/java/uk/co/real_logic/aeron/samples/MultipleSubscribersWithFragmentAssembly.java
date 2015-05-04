@@ -71,30 +71,30 @@ public class MultipleSubscribersWithFragmentAssembly
 
         // Create an Aeron instance with client provided context configuration and connect to media driver
         try (final Aeron aeron = Aeron.connect(ctx);
-                // Add a subscription to Aeron for a given channel and steam. Also,
-                // supply a dataHandler to be called when data arrives
-                final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
-                final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
-                {
+            // Add a subscription to Aeron for a given channel and steam. Also,
+            // supply a dataHandler to be called when data arrives
+            final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
+            final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
+        {
             // Initialize a backoff strategy to avoid excessive spinning
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+                100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
-                try
+            try
+            {
+                // Try to read the data for both the subscribers
+                while (running.get())
                 {
-                    // Try to read the data for both the subscribers
-                    while (running.get())
-                    {
-                        final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
-                        final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
-                        // Call a backoff strategy
-                        idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
-                    }
+                    final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
+                    final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
+                    // Call a backoff strategy
+                    idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
                 }
-                catch (final Exception ex)
-                {
-                    ex.printStackTrace();
-                }
+            }
+            catch (final Exception ex)
+            {
+                ex.printStackTrace();
+            }
             System.out.println("Shutting down...");
         }
     }
@@ -110,10 +110,9 @@ public class MultipleSubscribersWithFragmentAssembly
     public static void eventNewConnection(
         final String channel, final int streamId, final int sessionId, final long position, final String sourceInformation)
     {
-        System.out.println(
-            String.format(
-                "new connection on %s streamId %x sessionId %x from %s",
-                channel, streamId, sessionId, sourceInformation));
+        System.out.format(
+            "new connection on %s streamId %x sessionId %x from %s%n",
+            channel, streamId, sessionId, sourceInformation);
 
     }
 
@@ -127,10 +126,9 @@ public class MultipleSubscribersWithFragmentAssembly
      */
     public static void eventInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
     {
-        System.out.println(
-            String.format(
-                "inactive connection on %s streamId %d sessionId %x",
-                channel, streamId, sessionId));
+        System.out.format(
+            "inactive connection on %s streamId %d sessionId %x%n",
+            channel, streamId, sessionId);
     }
 
     /**
@@ -147,16 +145,15 @@ public class MultipleSubscribersWithFragmentAssembly
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
-            System.out.println(
-                String.format(
-                    "message to stream %d from session %x term id %x term offset %d (%d@%d)",
-                    streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+            System.out.format(
+                "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
+                streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);
             if (length != 10000)
             {
                 try
                 {
-                    throw new Exception("Received message is not assembled properly received lenth " +
-                            length + " Expecting " + "10000");
+                    throw new Exception(
+                        "Received message is not assembled properly received lenth " + length + " Expecting " + "10000");
                 }
                 catch (final Exception e)
                 {
@@ -179,16 +176,15 @@ public static DataHandler reassembledStringMessage2(final int streamId) throws E
         final byte[] data = new byte[length];
         buffer.getBytes(offset, data);
 
-        System.out.println(
-            String.format(
-                "message to stream %d from session %x term id %x term offset %d (%d@%d)",
-                 streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+        System.out.format(
+            "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
+             streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);
         if (length != 9000)
         {
             try
             {
-                throw new Exception("Received message is not assembled properly, received lenth " +
-                                        length + " Expecting " + "9000");
+                throw new Exception(
+                    "Received message is not assembled properly, received lenth " + length + " Expecting " + "9000");
             }
             catch (final Exception e)
             {

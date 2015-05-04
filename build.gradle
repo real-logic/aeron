@@ -18,7 +18,6 @@ import org.gradle.plugins.ide.eclipse.model.Classpath
 apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'eclipse'
-apply plugin: 'distribution'
 
 defaultTasks 'clean', 'build', 'install'
 
@@ -196,7 +195,7 @@ project(':aeron-samples') {
     apply plugin: 'shadow'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-tools'), 'org.hdrhistogram:HdrHistogram:2.1.4'
+        compile project(':aeron-client'), project(':aeron-driver'), 'org.hdrhistogram:HdrHistogram:2.1.4'
     }
 
     shadow {
@@ -234,71 +233,6 @@ project(':aeron-system-tests') {
 
     test {
         systemProperties('aeron.event.log': System.properties['aeron.event.log'])
-    }
-}
-
-project(':aeron-tools') {
-    apply plugin: 'shadow'
-
-    dependencies {
-        compile project(':aeron-client'), project(':aeron-driver')
-        compile group: 'commons-cli', name: 'commons-cli', version: '1.2'
-        compile 'org.slf4j:slf4j-api:1.7.10'
-        compile 'org.slf4j:slf4j-simple:1.7.10'
-        testCompile project(path: ':aeron-common', configuration: 'tests')
-    }
-
-    shadow {
-        outputFile = new File('aeron-tools/build/libs/tools.jar')
-    }
-
-    task stats(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.StatsDriver'
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperties(System.properties);
-        if (project.hasProperty('myargs')) {
-            args(myargs.split(','))
-        }
-    }
-
-    task ping(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronPing'
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperties(System.properties);
-        if (project.hasProperty('myargs')) {
-            args(myargs.split(','))
-        }
-    }
-
-    task pong(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronPong'
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperties(System.properties);
-        if (project.hasProperty('myargs')) {
-            args(myargs.split(','))
-        }
-    }
-
-    task throughputencyPub(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronThroughputencyPublisher'
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperties(System.properties);
-        if (project.hasProperty('myargs')) {
-            args(myargs.split(','))
-        }
-    }
-
-    task throughputencySub(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronThroughputencySubscriber'
-        classpath = sourceSets.main.runtimeClasspath
-        systemProperties(System.properties);
-        if (project.hasProperty('myargs')) {
-            args(myargs.split(','))
-        }
-    }
-
-    build.doLast {
-        tasks.shadowJar.execute()
     }
 }
 
@@ -392,18 +326,4 @@ task docsJar (type: Jar, dependsOn: docs) {
 
 artifacts {
    archives docsJar
-}
-
-distributions {
-    main {
-        baseName = 'Aeron'
-        contents {
-            from { 'aeron-client/build/libs' }
-            from { 'aeron-common/build/libs' }
-            from { 'aeron-driver/build/libs'}
-            from {'aeron-samples/build/libs'}
-            from {'aeron-tools/build/libs'}
-            from {'build/docs' }
-        }
-    }
 }

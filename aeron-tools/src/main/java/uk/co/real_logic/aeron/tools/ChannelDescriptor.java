@@ -50,7 +50,6 @@ public class ChannelDescriptor
         streamIds = ids;
     }
 
-    @Override
     public String toString()
     {
         return channel;

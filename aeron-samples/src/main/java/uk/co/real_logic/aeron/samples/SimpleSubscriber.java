@@ -56,7 +56,6 @@ public class SimpleSubscriber
 
         final DataHandler dataHandler = new DataHandler()
         {
-            @Override
             public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
             {
                 final byte[] data = new byte[length];

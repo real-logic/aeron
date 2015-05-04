@@ -30,7 +30,6 @@ public class RandomInputStream extends InputStream
      * There are always random numbers available.
      * @return Integer.MAX_VALUE
      */
-    @Override
     public int available()
     {
         return Integer.MAX_VALUE;
@@ -40,13 +39,11 @@ public class RandomInputStream extends InputStream
      * Can't go back in the random stream, sorry.
      * @return Always false
      */
-    @Override
     public boolean markSupported()
     {
         return false;
     }
 
-    @Override
     public int read() throws IOException
     {
         return TLRandom.current().nextInt() & 0x0000_00FF;
@@ -57,7 +54,6 @@ public class RandomInputStream extends InputStream
      * @param b
      * @return The value passed in
      */
-    @Override
     public long skip(final long b)
     {
         return b;
@@ -68,7 +64,6 @@ public class RandomInputStream extends InputStream
      * @param b
      * @return
      */
-    @Override
     public int read(final byte[] b) throws IOException
     {
         int bytesRead = TLRandom.current().nextInt(400);
@@ -86,7 +81,6 @@ public class RandomInputStream extends InputStream
      * @param len Amount of bytes to read
      * @return Always the same as len
      */
-    @Override
     public int read(final byte[] b, final int off, final int len) throws IOException
     {
         int remaining = len;

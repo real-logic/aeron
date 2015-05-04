@@ -39,9 +39,6 @@ import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-/**
- * Created by philip on 4/7/15.
- */
 public class AeronPing implements NewConnectionHandler
 {
     private final int numMsgs = 1000000;
@@ -141,13 +138,10 @@ public class AeronPing implements NewConnectionHandler
 
     public void shutdown()
     {
-        //ctx.close();
-        //pub.close();
-        //sub.close();
         aeron.close();
     }
 
-    public void generateGraphs()
+    public void dumpStats()
     {
         double sum = 0.0;
         double max = Double.MIN_VALUE;
@@ -188,12 +182,12 @@ public class AeronPing implements NewConnectionHandler
         }
         stdDev = Math.sqrt(sum / tmp.length);
 
-        generateScatterPlot(min, max, .9);
-        generateScatterPlot(min, max, .99);
-        generateScatterPlot(min, max, .999);
-        generateScatterPlot(min, max, .9999);
-        generateScatterPlot(min, max, .99999);
-        generateScatterPlot(min, max, .999999);
+        dumpPercentileData(min, max, .9);
+        dumpPercentileData(min, max, .99);
+        dumpPercentileData(min, max, .999);
+        dumpPercentileData(min, max, .9999);
+        dumpPercentileData(min, max, .99999);
+        dumpPercentileData(min, max, .999999);
 
         System.out.println("Num Messages: " + numMsgs);
         System.out.println("Message Length: " + msgLen);
@@ -234,7 +228,7 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    private void generateScatterPlot(final double min, final double max, final double percentile)
+    private void dumpPercentileData(final double min, final double max, final double percentile)
     {
         final int width = 390;
         final int height = 370;
@@ -278,7 +272,6 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    @Override
     public void onNewConnection(final String channel, final int streamId,
                                    final int sessionId, final long position, final String sourceInfo)
     {
@@ -372,7 +365,7 @@ public class AeronPing implements NewConnectionHandler
         ping.connect();
         ping.run();
         ping.shutdown();
-        ping.generateGraphs();
+        ping.dumpStats();
         ping.dumpData();
     }
 }

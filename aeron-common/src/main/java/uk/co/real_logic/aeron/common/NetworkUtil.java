@@ -192,7 +192,6 @@ public class NetworkUtil
             this.isLoopback = isLoopback;
         }
 
-        @Override
         public int compareTo(final FilterResult o)
         {
             if (isLoopback == o.isLoopback)

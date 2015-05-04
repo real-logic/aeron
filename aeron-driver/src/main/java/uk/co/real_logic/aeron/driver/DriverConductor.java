@@ -184,7 +184,6 @@ public class DriverConductor implements Agent
         toDriverCommands.consumerHeartbeatTimeNs(clock.time());
     }
 
-    @Override
     public void onClose()
     {
         rawLogFactory.close();
@@ -194,7 +193,6 @@ public class DriverConductor implements Agent
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
 
-    @Override
     public String roleName()
     {
         return "driver-conductor";
@@ -210,7 +208,6 @@ public class DriverConductor implements Agent
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    @Override
     public int doWork() throws Exception
     {
         int workCount = 0;

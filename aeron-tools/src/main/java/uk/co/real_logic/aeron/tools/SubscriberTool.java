@@ -177,7 +177,6 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of verifiable messages received
      */
-    @Override
     public long verifiableMessages()
     {
         long totalMessages = 0;
@@ -193,7 +192,6 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of bytes received
      */
-    @Override
     public long bytes()
     {
         long totalBytes = 0;
@@ -209,7 +207,6 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of non-verifiable messages received
      */
-    @Override
     public long nonVerifiableMessages()
     {
         long totalMessages = 0;
@@ -224,7 +221,6 @@ public class SubscriberTool
      * Optionally sets the random seed used for the TLRandom class, and reports the seed used.
      * @return the seed to use
      */
-    @Override
     public long setSeed(long seed)
     {
         if (options.getRandomSeed() != 0)
@@ -629,7 +625,6 @@ public class SubscriberTool
         /** Subscriber thread.  Creates its own Aeron context, and subscribes
          * on a round-robin'd subset of the channels and stream IDs configured.
          */
-        @Override
         public void run()
         {
             Thread.currentThread().setName("subscriber-thread " + threadId);
@@ -686,7 +681,6 @@ public class SubscriberTool
             }
         }
 
-        @Override
         public void onInactiveConnection(final String channel, final int streamId,
                 final int sessionId, final long position)
         {
@@ -694,7 +688,6 @@ public class SubscriberTool
             enqueueControlMessage(CONTROL_ACTION_INACTIVE_CONNECTION, channel, streamId, sessionId);
         }
 
-        @Override
         public void onNewConnection(final String channel, final int streamId, final int sessionId,
                 final long position, final String sourceInformation)
         {
@@ -702,7 +695,6 @@ public class SubscriberTool
             enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);
         }
 
-        @Override
         public int onNext()
         {
             /* Doesn't really need to do anything; just used for pausing the receiver thread a bit
@@ -711,7 +703,6 @@ public class SubscriberTool
         }
     }
 
-    @Override
     public void report(final StringBuilder reportString)
     {
         LOG.info("{}", reportString);

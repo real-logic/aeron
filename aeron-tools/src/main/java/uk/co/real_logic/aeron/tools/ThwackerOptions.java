@@ -27,43 +27,45 @@ public class ThwackerOptions
     /** line separator */
     private static final String NL = System.lineSeparator();
 
-    static final String DEFAULT_VERIFIABLE_MESSAGE_STREAM = "no";
-    static final String DEFAULT_USE_SAME_SID = "no";
-    static final String DEFAULT_USE_CHANNEL_PER_PUB = "no";
-    static final String DEFAULT_USE_EMBEDDED_DRIVER = "yes";
-    static final String DEFAULT_CHANNEL = "udp://localhost";
-    static final String DEFAULT_PORT = "51234";
-    static final String DEFAULT_DURATION = "30000";
-    static final String DEFAULT_ITERATIONS = "1";
-    static final String DEFAULT_SENDERS = "1";
-    static final String DEFAULT_RECEIVERS = "1";
-    static final String DEFAULT_ADDERS = "1";
-    static final String DEFAULT_REMOVERS = "1";
-    static final String DEFAULT_ELEMENTS = "10";
-    static final String DEFAULT_MAX_MSG_SIZE = "35";
-    static final String DEFAULT_MIN_MSG_SIZE = "35";
+    private static final String DEFAULT_VERIFIABLE_MESSAGE_STREAM = "no";
+    private static final String DEFAULT_USE_SAME_SID = "no";
+    private static final String DEFAULT_USE_CHANNEL_PER_PUB = "no";
+    private static final String DEFAULT_USE_EMBEDDED_DRIVER = "yes";
+    private static final String DEFAULT_CHANNEL = "udp://localhost";
+    private static final String DEFAULT_PORT = "51234";
+    private static final String DEFAULT_DURATION = "30000";
+    private static final String DEFAULT_ITERATIONS = "1";
+    private static final String DEFAULT_SENDERS = "1";
+    private static final String DEFAULT_RECEIVERS = "1";
+    private static final String DEFAULT_ADDERS = "1";
+    private static final String DEFAULT_REMOVERS = "1";
+    private static final String DEFAULT_ELEMENTS = "10";
+    private static final String DEFAULT_MAX_MSG_SIZE = "35";
+    private static final String DEFAULT_MIN_MSG_SIZE = "35";
+    private static final String USAGE = "" +
+        // stay within column 89 (80 when printed). That's here ---------------------> |
+        "Examples:" + NL +
+        "-v no -d 10000 -e 10 -s 1 --max-size 100 --min-size 64" + NL +
+        "    Run for 10s with unverifiable messages, 10 pubs and 10 subs, 1 sending" + NL +
+        "    thread, and random message sizes from 64 to 100 bytes";
 
+    private Options options = null;
 
-
-    Options options = null;
-
-    boolean useVerifiableMessageStream;
-    boolean useSameSID;
-    boolean useChannelPerPub;
-    boolean useEmbeddedDriver;
-    String channel;
-    int port;
-    int duration;
-    int iterations;
-    int senders;
-    int receivers;
-    int adders;
-    int removers;
-    int elements;
-    int maxSize;
-    int minSize;
-
-
+    private boolean useVerifiableMessageStream;
+    private boolean useSameSID;
+    private boolean useChannelPerPub;
+    private boolean useEmbeddedDriver;
+    private String channel;
+    private int port;
+    private int duration;
+    private int iterations;
+    private int senders;
+    private int receivers;
+    private int adders;
+    private int removers;
+    private int elements;
+    private int maxSize;
+    private int minSize;
 
     public ThwackerOptions()
     {
@@ -102,7 +104,6 @@ public class ThwackerOptions
         elements = 0;
         maxSize = 0;
         minSize = 0;
-
     }
 
     public int parseArgs(final String[] args)throws ParseException
@@ -149,7 +150,6 @@ public class ThwackerOptions
         minSize = parsePositiveInt(opt);
 
         return 0;
-
     }
     /**
      * Print the help message for the available options.
@@ -162,7 +162,7 @@ public class ThwackerOptions
         System.out.println(NL + USAGE + NL);
     }
 
-    public boolean parseYesNo(final String opt) throws ParseException
+    private boolean parseYesNo(final String opt) throws ParseException
     {
         boolean rc;
         if (opt.equalsIgnoreCase("yes"))
@@ -180,13 +180,13 @@ public class ThwackerOptions
         return rc;
     }
 
-    public String parseString(final String opt)
+    private String parseString(final String opt)
     {
         //TODO: Add proper channel parsing
         return opt;
     }
 
-    public int parsePositiveInt(final String opt) throws ParseException
+    private int parsePositiveInt(final String opt) throws ParseException
     {
         int rc = 0;
         try
@@ -209,12 +209,10 @@ public class ThwackerOptions
     {
         return this.useVerifiableMessageStream;
     }
-
     public boolean getSameSID()
     {
         return this.useSameSID;
     }
-
     public boolean getChannelPerPub()
     {
         return this.useChannelPerPub;
@@ -267,11 +265,4 @@ public class ThwackerOptions
     {
         return minSize;
     }
-
-    private static final String USAGE = "" +
-            // stay within column 93 (80 when printed). That's here ---------------------> |
-            "Examples:" + NL +
-            "-v no -d 10000 -e 10 -s 1 --max-size 100 --min-size 64" + NL +
-            "    Run for 10s with unverifiable messages, 10 pubs and 10 subs, 1 sending" + NL +
-            "    thread, and random message sizes from 64 to 100 bytes";
 }

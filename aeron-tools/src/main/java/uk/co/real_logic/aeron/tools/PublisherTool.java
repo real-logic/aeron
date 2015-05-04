@@ -195,7 +195,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
      * Optionally sets the random seed used for the TLRandom class, and reports the seed used.
      * @return the seed to use
      */
-    @Override
     public long setSeed(long seed)
     {
         if (options.getRandomSeed() != 0)
@@ -211,7 +210,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
      * sent across all publishing threads.
      * @return current total number of verifiable messages sent
      */
-    @Override
     public long verifiableMessages()
     {
         long totalMessages = 0;
@@ -227,7 +225,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
      * sent across all publishing threads.
      * @return current total number of bytes sent
      */
-    @Override
     public long bytes()
     {
         long totalBytes = 0;
@@ -243,7 +240,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
      * sent across all publishing threads.
      * @return current total number of non-verifiable messages sent
      */
-    @Override
     public long nonVerifiableMessages()
     {
         long totalMessages = 0;
@@ -391,7 +387,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         /** Publisher thread.  Creates its own Aeron context, and publishes
          * on a round-robin'd subset of the channels and stream IDs configured.
          */
-        @Override
         public void run()
         {
             Thread.currentThread().setName("publisher-" + threadId);
@@ -416,7 +411,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             ctx.close();
         }
 
-        @Override
         public void onInactiveConnection(final String channel, final int streamId,
                 final int sessionId, final long position)
         {
@@ -424,7 +418,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                     channel, streamId, sessionId, position));
         }
 
-        @Override
         public void onNewConnection(final String channel, final int streamId,
                 final int sessionId, final long position, final String sourceInformation)
         {
@@ -436,7 +429,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
          * Called by the rate controller when we should send the next message.
          * Returns the number of bytes successfully sent.
          */
-        @Override
         public int onNext()
         {
             int length = -1;
@@ -487,7 +479,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
 
     }
 
-    @Override
     public void report(final StringBuilder reportString)
     {
         LOG.info("{}", reportString);

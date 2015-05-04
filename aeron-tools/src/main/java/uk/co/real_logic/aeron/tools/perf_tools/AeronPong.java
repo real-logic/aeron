@@ -32,9 +32,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-/**
- * Created by philip on 4/7/15.
- */
 public class AeronPong
 {
     private Aeron.Context ctx = null;
@@ -91,9 +88,6 @@ public class AeronPong
 
     public void shutdown()
     {
-        //ctx.close();
-        //pongPub.close();
-        //pingSub.close();
         aeron.close();
     }
 

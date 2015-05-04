@@ -120,7 +120,6 @@ public class AeronThroughputencyPublisher implements RateController.Callback
 
         final Runnable task = new Runnable()
         {
-            @Override
             public void run()
             {
                 while (running)
@@ -214,7 +213,6 @@ public class AeronThroughputencyPublisher implements RateController.Callback
         computeStats();
     }
 
-    @Override
     public int onNext()
     {
         int iterations = 0;

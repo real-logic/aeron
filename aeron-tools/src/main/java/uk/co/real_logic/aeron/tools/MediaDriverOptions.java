@@ -32,9 +32,6 @@ import uk.co.real_logic.aeron.driver.Configuration;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
-/**
- * Created by bhorst on 4/10/15.
- */
 public class MediaDriverOptions
 {
     // Command line options for media driver
@@ -50,16 +47,18 @@ public class MediaDriverOptions
     private IdleStrategy sharedNetworkIdleStrategy;
     private IdleStrategy sharedIdleStrategy;
 
+    private static final String NULL_VALUE = "null";
+
     public MediaDriverOptions()
     {
         options = new Options()
-                .addOption("p", "properties", true, "A properties file containing Aeron options.")
-                .addOption("h", "help", false, "Display help message.")
-                .addOption("c", "conductor", true, "IdleStrategy class for the conductor thread.")
-                .addOption("s", "sender", true, "IdleStrategy class for the sender thread.")
-                .addOption("r", "receiver", true, "IdleStrategy class for the receiver thread.")
-                .addOption("n", "network", true, "IdleStrategy class for the shared network thread.")
-                .addOption("a", "shared", true, "IdleStrategy class for the shared thread.");
+            .addOption("p", "properties", true, "A properties file containing Aeron options.")
+            .addOption("h", "help", false, "Display help message.")
+            .addOption("c", "conductor", true, "IdleStrategy class for the conductor thread.")
+            .addOption("s", "sender", true, "IdleStrategy class for the sender thread.")
+            .addOption("r", "receiver", true, "IdleStrategy class for the receiver thread.")
+            .addOption("n", "network", true, "IdleStrategy class for the shared network thread.")
+            .addOption("a", "shared", true, "IdleStrategy class for the shared thread.");
 
         // Idle strategies are null by default (Aeron should use its default if we pass null)
         conductorIdleStrategy = null;
@@ -87,25 +86,28 @@ public class MediaDriverOptions
             return 1;
         }
 
+        String senderValue = NULL_VALUE;
+        String receiverValue = NULL_VALUE;
+        String sharedNetworkValue = NULL_VALUE;
+        String sharedValue = NULL_VALUE;
+        String conductorValue = NULL_VALUE;
+
         if (command.hasOption("properties"))
         {
             this.properties = parseProperties(command.getOptionValue("properties"));
+            senderValue = properties.getProperty("aeron.tools.mediadriver.sender");
+            receiverValue = properties.getProperty("aeron.tools.mediadriver.receiver");
+            sharedNetworkValue = properties.getProperty("aeron.tools.mediadriver.network");
+            sharedValue = properties.getProperty("aeron.tools.mediadriver.shared");
+            conductorValue = properties.getProperty("aeron.tools.mediadriver.conductor");
         }
-        String defaultValue;
-        defaultValue = properties == null ? "null" : properties.getProperty("aeron.tools.mediadriver.sender");
-        senderIdleStrategy = parseIdleStrategy(command.getOptionValue("sender", defaultValue));
 
-        defaultValue = properties == null ? "null" : properties.getProperty("aeron.tools.mediadriver.receiver");
-        receiverIdleStrategy = parseIdleStrategy(command.getOptionValue("receiver", defaultValue));
+        senderIdleStrategy = parseIdleStrategy(command.getOptionValue("sender", senderValue));
+        receiverIdleStrategy = parseIdleStrategy(command.getOptionValue("receiver", receiverValue));
+        sharedNetworkIdleStrategy = parseIdleStrategy(command.getOptionValue("network", sharedNetworkValue));
+        sharedIdleStrategy = parseIdleStrategy(command.getOptionValue("shared", sharedValue));
+        conductorIdleStrategy = parseIdleStrategy(command.getOptionValue("conductor", conductorValue));
 
-        defaultValue = properties == null ? "null" : properties.getProperty("aeron.tools.mediadriver.network");
-        sharedNetworkIdleStrategy = parseIdleStrategy(command.getOptionValue("network", defaultValue));
-
-        defaultValue = properties == null ? "null" : properties.getProperty("aeron.tools.mediadriver.shared");
-        sharedIdleStrategy = parseIdleStrategy(command.getOptionValue("shared", defaultValue));
-
-        defaultValue = properties == null ? "null" : properties.getProperty("aeron.tools.mediadriver.conductor");
-        conductorIdleStrategy = parseIdleStrategy(command.getOptionValue("conductor", defaultValue));
         return 0;
     }
 
@@ -208,7 +210,7 @@ public class MediaDriverOptions
 
     private IdleStrategy parseIdleStrategy(final String arg) throws ParseException
     {
-        if (arg == null || arg.equalsIgnoreCase("NULL"))
+        if (arg == null || arg.equalsIgnoreCase(NULL_VALUE))
         {
             return null;
         }
@@ -228,27 +230,15 @@ public class MediaDriverOptions
                 final Class clazz = Class.forName(arg);
                 strategy = (IdleStrategy)clazz.newInstance();
             }
-            catch (final ClassNotFoundException ex)
+            catch (final ClassNotFoundException | IllegalAccessException | InstantiationException | ClassCastException ex)
             {
-                throw new ParseException("Class not found: " + ex.getMessage());
-            }
-            catch (final IllegalAccessException ex)
-            {
-                throw new ParseException("Illegal access of class '" + arg + "': " + ex.getMessage());
-            }
-            catch (final InstantiationException ex)
-            {
-                throw new ParseException("Could not instantiate class '" + arg + "': " + ex.getMessage());
-            }
-            catch (final ClassCastException ex)
-            {
-                throw new ParseException("Class was not an IdleStrategy. " + ex.getMessage());
+                throw new ParseException("Error creating new instance of '" + arg + "': " + ex.getMessage());
             }
         }
         return strategy;
     }
 
-    /* Generates a new BackoffIdleStrategy with default parameters, or parsed parameters when present. */
+    // Generates a new BackoffIdleStrategy with default parameters, or parsed parameters when present.
     private IdleStrategy parseBackoffIdleStrategy(final String arg) throws ParseException
     {
         final int openParenIndex = arg.indexOf("(");
@@ -280,8 +270,11 @@ public class MediaDriverOptions
     }
 
     // Broken out into simple method for testing.
-    IdleStrategy makeBackoffIdleStrategy(final long maxSpins, final long maxYields,
-            final long minParkPeriodNs, final long maxParkPeriodNs)
+    IdleStrategy makeBackoffIdleStrategy(
+        final long maxSpins,
+        final long maxYields,
+        final long minParkPeriodNs,
+        final long maxParkPeriodNs)
     {
         return new BackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
     }

@@ -36,7 +36,6 @@ public class RateReporter implements RateController.Callback, Runnable
     private class DefaultCallback implements Callback
     {
 
-        @Override
         public void report(final StringBuilder reportString)
         {
             System.out.println(reportString);
@@ -135,7 +134,6 @@ public class RateReporter implements RateController.Callback, Runnable
         }
     }
 
-    @Override
     public void run()
     {
         final ArrayList<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
@@ -164,7 +162,6 @@ public class RateReporter implements RateController.Callback, Runnable
      * Function called by the RateController once a second; used to report
      * the current aggregate receiving rates.
      */
-    @Override
     public int onNext()
     {
         final long currentTimeNanos = CLOCK.time();

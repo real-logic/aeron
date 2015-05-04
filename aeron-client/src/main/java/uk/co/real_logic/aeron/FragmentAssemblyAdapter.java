@@ -75,7 +75,6 @@ public class FragmentAssemblyAdapter implements DataHandler
      * @param length of the data in bytes.
      * @param header representing the meta data for the data.
      */
-    @Override
     public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
@@ -136,19 +135,16 @@ public class FragmentAssemblyAdapter implements DataHandler
             return this;
         }
 
-        @Override
         public int frameLength()
         {
             return frameLength;
         }
 
-        @Override
         public byte flags()
         {
             return (byte)(super.flags() | UNFRAGMENTED);
         }
 
-        @Override
         public int termOffset()
         {
             return offset() - (frameLength - super.frameLength());

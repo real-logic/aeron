@@ -91,7 +91,7 @@ public class RetransmitHandlerTest
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitSender).send(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -103,7 +103,7 @@ public class RetransmitHandlerTest
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitSender).send(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -115,7 +115,7 @@ public class RetransmitHandlerTest
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(200));
 
-        verify(retransmitSender, times(2)).send(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        verify(retransmitSender, times(2)).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -127,8 +127,8 @@ public class RetransmitHandlerTest
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         final InOrder inOrder = inOrder(retransmitSender);
-        inOrder.verify(retransmitSender).send(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        inOrder.verify(retransmitSender).send(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH);
+        inOrder.verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        inOrder.verify(retransmitSender).resend(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -138,7 +138,7 @@ public class RetransmitHandlerTest
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH * 5);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitSender).send(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH * 5);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH * 5);
     }
 
     @Theory
@@ -149,7 +149,7 @@ public class RetransmitHandlerTest
         handler.onNak(TERM_ID, offsetOfFrame(0), MTU_LENGTH * 2);
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitSender).send(TERM_ID, offsetOfFrame(0), MTU_LENGTH * 2);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), MTU_LENGTH * 2);
     }
 
     @Theory
@@ -172,7 +172,7 @@ public class RetransmitHandlerTest
         handler.onRetransmitReceived(TERM_ID, offsetOfFrame(0));
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
 
-        verify(retransmitSender).send(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -183,7 +183,7 @@ public class RetransmitHandlerTest
 
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
 
-        verify(retransmitSender).send(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory
@@ -196,7 +196,7 @@ public class RetransmitHandlerTest
         processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
         handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
 
-        verify(retransmitSender).send(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
 
     @Theory

@@ -114,8 +114,8 @@ public final class MediaDriver implements AutoCloseable
 
         ensureDirectoriesAreRecreated();
 
-        ctx.unicastSenderFlowControl(Configuration::unicastSenderFlowControlStrategy)
-           .multicastSenderFlowControl(Configuration::multicastSenderFlowControlStrategy)
+        ctx.unicastSenderFlowControl(Configuration::unicastFlowControlStrategy)
+           .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
            .conductorTimerWheel(Configuration.newConductorTimerWheel())
            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
@@ -281,8 +281,8 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private TransportPoller receiverTransportPoller;
         private TransportPoller senderTransportPoller;
-        private Supplier<SenderFlowControl> unicastSenderFlowControl;
-        private Supplier<SenderFlowControl> multicastSenderFlowControl;
+        private Supplier<FlowControl> unicastSenderFlowControl;
+        private Supplier<FlowControl> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue;
         private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
@@ -354,7 +354,7 @@ public final class MediaDriver implements AutoCloseable
 
                 mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
 
-                final ByteBuffer eventByteBuffer = ByteBuffer.allocate(eventBufferLength);
+                final ByteBuffer eventByteBuffer = ByteBuffer.allocateDirect(eventBufferLength);
 
                 if (null == eventLogger)
                 {
@@ -442,13 +442,13 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context unicastSenderFlowControl(final Supplier<SenderFlowControl> senderFlowControl)
+        public Context unicastSenderFlowControl(final Supplier<FlowControl> senderFlowControl)
         {
             this.unicastSenderFlowControl = senderFlowControl;
             return this;
         }
 
-        public Context multicastSenderFlowControl(final Supplier<SenderFlowControl> senderFlowControl)
+        public Context multicastSenderFlowControl(final Supplier<FlowControl> senderFlowControl)
         {
             this.multicastSenderFlowControl = senderFlowControl;
             return this;
@@ -659,12 +659,12 @@ public final class MediaDriver implements AutoCloseable
             return senderTransportPoller;
         }
 
-        public Supplier<SenderFlowControl> unicastSenderFlowControl()
+        public Supplier<FlowControl> unicastSenderFlowControl()
         {
             return unicastSenderFlowControl;
         }
 
-        public Supplier<SenderFlowControl> multicastSenderFlowControl()
+        public Supplier<FlowControl> multicastSenderFlowControl()
         {
             return multicastSenderFlowControl;
         }

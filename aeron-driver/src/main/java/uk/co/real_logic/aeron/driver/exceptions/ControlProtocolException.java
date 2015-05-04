@@ -27,6 +27,12 @@ public class ControlProtocolException extends IllegalArgumentException
         this.code = code;
     }
 
+    public ControlProtocolException(final ErrorCode code, final Exception rootCause)
+    {
+        super(rootCause);
+        this.code = code;
+    }
+
     public ErrorCode errorCode()
     {
         return code;

@@ -27,13 +27,13 @@ import java.util.function.Consumer;
  */
 public class Sender implements Agent, Consumer<SenderCmd>
 {
-    private static final DriverPublication[] EMPTY_DRIVER_PUBLICATIONS = new DriverPublication[0];
+    private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
     private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final AtomicCounter totalBytesSent;
 
-    private DriverPublication[] publications = EMPTY_DRIVER_PUBLICATIONS;
+    private NetworkPublication[] publications = EMPTY_PUBLICATIONS;
     private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.Context ctx)
@@ -70,27 +70,27 @@ public class Sender implements Agent, Consumer<SenderCmd>
     }
 
     public void onNewPublication(
-        final DriverPublication publication,
+        final NetworkPublication publication,
         final RetransmitHandler retransmitHandler,
-        final SenderFlowControl senderFlowControl)
+        final FlowControl flowControl)
     {
-        final DriverPublication[] oldPublications = publications;
+        final NetworkPublication[] oldPublications = publications;
         final int length = oldPublications.length;
-        final DriverPublication[] newPublications = new DriverPublication[length + 1];
+        final NetworkPublication[] newPublications = new NetworkPublication[length + 1];
 
         System.arraycopy(oldPublications, 0, newPublications, 0, length);
         newPublications[length] = publication;
 
         publications = newPublications;
 
-        publication.sendChannelEndpoint().addToDispatcher(publication, retransmitHandler, senderFlowControl);
+        publication.sendChannelEndpoint().addToDispatcher(publication, retransmitHandler, flowControl);
     }
 
-    public void onClosePublication(final DriverPublication publication)
+    public void onClosePublication(final NetworkPublication publication)
     {
-        final DriverPublication[] oldPublications = publications;
+        final NetworkPublication[] oldPublications = publications;
         final int length = oldPublications.length;
-        final DriverPublication[] newPublications = new DriverPublication[length - 1];
+        final NetworkPublication[] newPublications = new NetworkPublication[length - 1];
         for (int i = 0, j = 0; i < length; i++)
         {
             if (oldPublications[i] != publication)
@@ -112,7 +112,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     private int doSend()
     {
         int bytesSent = 0;
-        final DriverPublication[] publications = this.publications;
+        final NetworkPublication[] publications = this.publications;
         final int length = publications.length;
 
         int roundRobinIndex = ++this.roundRobinIndex;

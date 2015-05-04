@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
-import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * Description of the structure for message framing in a log buffer.
@@ -57,11 +57,6 @@ public class FrameDescriptor
     public static final int FRAME_ALIGNMENT = 8;
 
     /**
-     * Word alignment for fields.
-     */
-    public static final int WORD_ALIGNMENT = BitUtil.SIZE_OF_LONG;
-
-    /**
      * Beginning fragment of a frame.
      */
     public static final byte BEGIN_FRAG = (byte)0b1000_0000;
@@ -75,16 +70,6 @@ public class FrameDescriptor
      * End fragment of a frame.
      */
     public static final byte UNFRAGMENTED = (byte)(BEGIN_FRAG | END_FRAG);
-
-    /**
-     * Length in bytes for the base header fields.
-     */
-    public static final int BASE_HEADER_LENGTH = 12;
-
-    /**
-     * Offset within a frame at which the version field begins
-     */
-    public static final int VERSION_OFFSET = 0;
 
     /**
      * Offset within a frame at which the flags field begins
@@ -123,29 +108,18 @@ public class FrameDescriptor
     }
 
     /**
-     * Check the the default header is greater than or equal in length to
-     * {@link #BASE_HEADER_LENGTH} and a multiple of {@link #WORD_ALIGNMENT}.
+     * Check the the default header is equal to {@link uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight#HEADER_LENGTH}
      *
      * @param length to check.
      * @throws IllegalStateException if the default header is invalid.
      */
     public static void checkHeaderLength(final int length)
     {
-        if (length < BASE_HEADER_LENGTH)
+        if (length != HEADER_LENGTH)
         {
             final String s = String.format(
-                "Frame header length must not be less than %d, length=%d",
-                BASE_HEADER_LENGTH,
-                length);
-            throw new IllegalStateException(s);
-        }
-
-        if (length % WORD_ALIGNMENT != 0)
-        {
-            final String s = String.format(
-                "Frame header length must be a multiple of %d, length=%d",
-                WORD_ALIGNMENT,
-                length);
+                "Frame header length %d must be equal to %d",
+                length, HEADER_LENGTH);
             throw new IllegalStateException(s);
         }
     }
@@ -272,7 +246,7 @@ public class FrameDescriptor
     /**
      * Write the length header for a frame in a memory ordered fashion.
      *
-     * @param termBuffer  ontaining the frame.
+     * @param termBuffer  containing the frame.
      * @param frameOffset at which a frame begins.
      * @param frameLength field to be set for the frame.
      */

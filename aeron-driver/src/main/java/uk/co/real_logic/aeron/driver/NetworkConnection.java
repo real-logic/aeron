@@ -32,15 +32,15 @@ import java.util.List;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.aeron.driver.DriverConnection.Status.ACTIVE;
+import static uk.co.real_logic.aeron.driver.NetworkConnection.Status.ACTIVE;
 
-class DriverConnectionPadding1
+class NetworkConnectionPadding1
 {
     @SuppressWarnings("unused")
     protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
-class DriverConnectionConductorFields extends DriverConnectionPadding1
+class NetworkConnectionConductorFields extends NetworkConnectionPadding1
 {
     protected long timeOfLastStatusChange;
     protected long rebuildPosition;
@@ -52,13 +52,13 @@ class DriverConnectionConductorFields extends DriverConnectionPadding1
     protected int lossLength;
 }
 
-class DriverConnectionPadding2 extends DriverConnectionConductorFields
+class NetworkConnectionPadding2 extends NetworkConnectionConductorFields
 {
     @SuppressWarnings("unused")
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
-class DriverConnectionHotFields extends DriverConnectionPadding2
+class NetworkConnectionHotFields extends NetworkConnectionPadding2
 {
     protected long lastPacketTimestamp;
     protected long lastStatusMessageTimestamp;
@@ -66,16 +66,28 @@ class DriverConnectionHotFields extends DriverConnectionPadding2
     protected long lastChangeNumber = -1;
 }
 
-class DriverConnectionPadding3 extends DriverConnectionHotFields
+class NetworkConnectionPadding3 extends NetworkConnectionHotFields
 {
     @SuppressWarnings("unused")
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
+class NetworkConnectionStatusFields extends NetworkConnectionPadding3
+{
+    protected volatile long newStatusMessagePosition;
+    protected volatile NetworkConnection.Status status = NetworkConnection.Status.INIT;
+}
+
+class NetworkConnectionPadding4 extends NetworkConnectionStatusFields
+{
+    @SuppressWarnings("unused")
+    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
+}
+
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class DriverConnection extends DriverConnectionPadding3 implements AutoCloseable, NakMessageSender
+public class NetworkConnection extends NetworkConnectionPadding4 implements AutoCloseable, NakMessageSender
 {
     public enum Status
     {
@@ -103,13 +115,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
     private final List<ReadOnlyPosition> subscriberPositions;
     private final LossDetector lossDetector;
 
-    @SuppressWarnings("unused")
-    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
-
-    private volatile long newStatusMessagePosition;
-    private volatile Status status = Status.INIT;
-
-    public DriverConnection(
+    public NetworkConnection(
         final long correlationId,
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress controlAddress,
@@ -207,7 +213,7 @@ public class DriverConnection extends DriverConnectionPadding3 implements AutoCl
      */
     public String channelUriString()
     {
-        return channelEndpoint.udpChannel().originalUriString();
+        return channelEndpoint.originalUriString();
     }
 
     /**

@@ -28,5 +28,5 @@ public interface RetransmitSender
      * @param termOffset for the NAK
      * @param length     for the NAK
      */
-    void send(int termId, int termOffset, int length);
+    void resend(int termId, int termOffset, int length);
 }

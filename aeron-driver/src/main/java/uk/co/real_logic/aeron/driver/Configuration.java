@@ -15,21 +15,23 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
-
-import java.util.concurrent.TimeUnit;
-
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
-
 import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
+
+import java.util.concurrent.TimeUnit;
+
+import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
+import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
+import uk.co.real_logic.aeron.common.StaticDelayGenerator;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 /**
  * Configuration options for the media driver.
@@ -186,21 +188,42 @@ public class Configuration
      * Default max backoff for NAK delay randomization in msec
      */
     public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
+    /**
+     * Multicast NAK delay is immediate initial with delayed subsequent delay
+     */
+    public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
+        Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
 
     /**
      * Default Unicast NAK delay in nanoseconds
      */
     public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+    /**
+     * Unicast NAK delay is immediate initial with delayed subsequent delay
+     */
+    public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
+        Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
+
+    /**
+     * Do not send any NAKs at all.
+     */
+    public static final StaticDelayGenerator NO_NAK_DELAY_GENERATOR = new StaticDelayGenerator(
+            -1, false);
 
     /**
      * Default delay for retransmission of data for unicast
      */
     public static final long RETRANS_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
+    /**
+     * Source uses same for unicast and multicast. For ticks.
+     */
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
 
     /**
      * Default delay for linger for unicast
      */
     public static final long RETRANS_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
 
     /**
      * Default max number of active retransmissions per Term
@@ -292,20 +315,20 @@ public class Configuration
     public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(200);
 
     /**
-     * {@link SenderFlowControl} to be employed for unicast channels.
+     * {@link FlowControl} to be employed for unicast channels.
      */
-    public static final String SENDER_UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
-        "aeron.sender.unicast.flow.control.strategy";
-    public static final String SENDER_UNICAST_FLOW_CONTROL_STRATEGY = getProperty(
-        SENDER_UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastSenderFlowControl");
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
+        "aeron.unicast.flow.control.strategy";
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY = getProperty(
+        UNICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastFlowControl");
 
     /**
-     * {@link SenderFlowControl} to be employed for multicast channels.
+     * {@link FlowControl} to be employed for multicast channels.
      */
-    public static final String SENDER_MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
-        "aeron.sender.multicast.flow.control.strategy";
-    public static final String SENDER_MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
-        SENDER_MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.UnicastSenderFlowControl");
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME =
+        "aeron.multicast.flow.control.strategy";
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
+        MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.MaxMulticastFlowControl");
 
     /** Length of the maximum transport unit of the media driver's protocol */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
@@ -316,6 +339,11 @@ public class Configuration
 
     /** Disable the NACKs from media driver (used for QA only)*/
     public static final String DO_NOT_SEND_NACK_PROP_NAME = "aeron.driver.disable.nack";
+
+    /**
+     * how often to check liveness & cleanup
+     */
+    public static final int HEARTBEAT_TIMEOUT_MS = 1000;
 
     /**
      * How far ahead the receiver can get from the subscriber position.
@@ -396,34 +424,34 @@ public class Configuration
         return idleStrategy;
     }
 
-    public static SenderFlowControl unicastSenderFlowControlStrategy()
+    public static FlowControl unicastFlowControlStrategy()
     {
-        SenderFlowControl senderFlowControl = null;
+        FlowControl flowControl = null;
         try
         {
-             senderFlowControl = (SenderFlowControl)Class.forName(SENDER_UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
+             flowControl = (FlowControl)Class.forName(UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return senderFlowControl;
+        return flowControl;
     }
 
-    public static SenderFlowControl multicastSenderFlowControlStrategy()
+    public static FlowControl multicastFlowControlStrategy()
     {
-        SenderFlowControl senderFlowControl = null;
+        FlowControl flowControl = null;
         try
         {
-            senderFlowControl = (SenderFlowControl)Class.forName(SENDER_MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
+            flowControl = (FlowControl)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return senderFlowControl;
+        return flowControl;
     }
 
     public static TimerWheel newConductorTimerWheel()

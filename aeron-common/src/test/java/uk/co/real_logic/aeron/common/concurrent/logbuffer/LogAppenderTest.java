@@ -25,7 +25,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -35,7 +35,7 @@ public class LogAppenderTest
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int META_DATA_BUFFER_CAPACITY = TERM_META_DATA_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
-    private static final MutableDirectBuffer DEFAULT_HEADER = new UnsafeBuffer(new byte[BASE_HEADER_LENGTH + SIZE_OF_INT]);
+    private static final MutableDirectBuffer DEFAULT_HEADER = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final UnsafeBuffer metaDataBuffer = mock(UnsafeBuffer.class);
@@ -91,7 +91,7 @@ public class LogAppenderTest
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnDefaultHeaderLengthLessThanBaseHeaderLength()
     {
-        final int length = BASE_HEADER_LENGTH - 1;
+        final int length = HEADER_LENGTH - 1;
         logAppender = new LogAppender(termBuffer, metaDataBuffer, new UnsafeBuffer(new byte[length]), MAX_FRAME_LENGTH);
     }
 

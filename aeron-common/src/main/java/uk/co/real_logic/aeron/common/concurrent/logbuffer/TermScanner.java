@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -29,18 +30,7 @@ import static uk.co.real_logic.agrona.BitUtil.align;
  */
 public final class TermScanner
 {
-    private final int alignedHeaderLength;
     private int padding;
-
-    /**
-     * Create a scanner for checking availability in a term buffer with a fixed header length for all messages.
-     *
-     * @param alignedHeaderLength which all messages will have.
-     */
-    public TermScanner(final int alignedHeaderLength)
-    {
-        this.alignedHeaderLength = alignedHeaderLength;
-    }
 
     /**
      * Scan the term buffer for availability of new messages from a given offset up to a maxLength of bytes.
@@ -68,8 +58,8 @@ public final class TermScanner
             int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
             if (isPaddingFrame(termBuffer, frameOffset))
             {
-                padding = alignedFrameLength - alignedHeaderLength;
-                alignedFrameLength = alignedHeaderLength;
+                padding = alignedFrameLength - DataHeaderFlyweight.HEADER_LENGTH;
+                alignedFrameLength = DataHeaderFlyweight.HEADER_LENGTH;
             }
 
             available += alignedFrameLength;

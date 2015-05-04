@@ -68,7 +68,7 @@ public class SenderProxy
         }
     }
 
-    public void closePublication(final DriverPublication publication)
+    public void closePublication(final NetworkPublication publication)
     {
         if (isSharedThread())
         {
@@ -81,17 +81,15 @@ public class SenderProxy
     }
 
     public void newPublication(
-        final DriverPublication publication,
-        final RetransmitHandler retransmitHandler,
-        final SenderFlowControl senderFlowControl)
+        final NetworkPublication publication, final RetransmitHandler retransmitHandler, final FlowControl flowControl)
     {
         if (isSharedThread())
         {
-            sender.onNewPublication(publication, retransmitHandler, senderFlowControl);
+            sender.onNewPublication(publication, retransmitHandler, flowControl);
         }
         else
         {
-            offer(new NewPublicationCmd(publication, retransmitHandler, senderFlowControl));
+            offer(new NewPublicationCmd(publication, retransmitHandler, flowControl));
         }
     }
 

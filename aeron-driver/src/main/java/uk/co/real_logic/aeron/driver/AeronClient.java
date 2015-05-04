@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
+
 /**
  * Aeron client library tracker.
  */
@@ -46,6 +48,6 @@ public class AeronClient
 
     public boolean hasTimedOut(final long now)
     {
-        return timeOfLastKeepalive() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS < now;
+        return now > (timeOfLastKeepalive + CLIENT_LIVENESS_TIMEOUT_NS);
     }
 }

@@ -565,7 +565,7 @@ public class DriverConductor implements Agent
                     final UnsafeBufferPosition position = new UnsafeBufferPosition(
                         countersBuffer, subscriberPositionId, countersManager);
 
-                    connection.addSubscription(position);
+                    connection.addSubscriber(position);
                     subscription.addConnection(connection, position);
 
                     clientProxy.onConnectionReady(

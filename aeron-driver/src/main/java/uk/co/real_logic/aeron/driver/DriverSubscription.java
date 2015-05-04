@@ -75,6 +75,6 @@ public class DriverSubscription
 
     public void close()
     {
-        positionByConnectionMap.forEach(NetworkConnection::removeSubscription);
+        positionByConnectionMap.forEach(NetworkConnection::removeSubscriber);
     }
 }

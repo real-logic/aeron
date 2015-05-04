@@ -23,9 +23,6 @@ import static org.hamcrest.core.Is.is;
 
 import org.junit.Test;
 
-/**
- * Created by bhorst on 3/6/15.
- */
 public class MessageSizePatternTest
 {
     MessageSizePattern p;
@@ -34,7 +31,7 @@ public class MessageSizePatternTest
     {
         p = new MessageSizePattern(1000);
         assertThat("FAIL: getNext() didn't return correct value",
-                p.getNext(), is(1000));
+            p.getNext(), is(1000));
     }
 
     @Test
@@ -42,7 +39,7 @@ public class MessageSizePatternTest
     {
         p = new MessageSizePattern(200, 1000);
         assertThat("FAIL: getNext() didn't return correct value",
-                p.getNext(), is(1000));
+            p.getNext(), is(1000));
     }
 
     @Test
@@ -50,7 +47,7 @@ public class MessageSizePatternTest
     {
         p = new MessageSizePattern(200, 1000, 1001);
         assertThat("FAIL: getNext() returned unexpected value",
-                p.getNext(), both(greaterThanOrEqualTo(1000)).and(lessThanOrEqualTo(1001)));
+            p.getNext(), both(greaterThanOrEqualTo(1000)).and(lessThanOrEqualTo(1001)));
     }
 
     @Test
@@ -74,7 +71,7 @@ public class MessageSizePatternTest
         p.addPatternEntry(1, 2000);
         p.getNext();
         assertThat("FAIL: 2nd call to getNext() returned unexpected value",
-                p.getNext(), is(2000));
+            p.getNext(), is(2000));
     }
 
     @Test
@@ -84,7 +81,7 @@ public class MessageSizePatternTest
         p.addPatternEntry(1, 1001, 1002);
         p.getNext();
         assertThat("FAIL: 2nd call to getNext() returned out of range value",
-                p.getNext(), both(greaterThanOrEqualTo(1001)).and(lessThanOrEqualTo(1002)));
+            p.getNext(), both(greaterThanOrEqualTo(1001)).and(lessThanOrEqualTo(1002)));
     }
 
     @Test
@@ -110,9 +107,9 @@ public class MessageSizePatternTest
         p.addPatternEntry(1, 1500);
 
         assertThat("FAIL: Pattern minimum value is wrong",
-                p.minimum(), is(500));
+            p.minimum(), is(500));
         assertThat("FAIL: Pattern maximum value is wrong",
-                p.maximum(), is(1500));
+            p.maximum(), is(1500));
     }
 
     @Test public void checkCurrentRangeMinMax() throws Exception
@@ -122,9 +119,9 @@ public class MessageSizePatternTest
 
         // Check overall min and max
         assertThat("FAIL: Pattern minimum value is wrong",
-                p.minimum(), is(1000));
+            p.minimum(), is(1000));
         assertThat("FAIL: Pattern maximum value is wrong",
-                p.maximum(), is(3000));
+            p.maximum(), is(3000));
 
         // Now check individual message range
         p.getNext();
@@ -144,7 +141,7 @@ public class MessageSizePatternTest
         p.getNext();
         p.reset();
         assertThat("FAIL: reset did not go back to the beginning of the pattern",
-                p.getNext(), is(1000));
+            p.getNext(), is(1000));
     }
 
     @Test (expected = Exception.class)

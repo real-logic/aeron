@@ -90,7 +90,7 @@ public class MediaDriverOptionsTest
         final String[] args = { "--properties", "filename" };
         spyOpts.parseArgs(args);
         assertThat("FAIL: Properties object should have been created",
-                spyOpts.properties(), is(not(nullValue())));
+            spyOpts.properties(), is(not(nullValue())));
         assertThat(spyOpts.properties().getProperty("hello.world"), is("testing"));
     }
 
@@ -241,10 +241,10 @@ public class MediaDriverOptionsTest
         final MediaDriverOptions spyOpts = Mockito.spy(opts);
         final TestIdleStrategy testIdleStrategy = new TestIdleStrategy();
         final String[] args = { "--conductor", BackoffIdleStrategy.class.getName() };
-        doReturn(testIdleStrategy).when(spyOpts).makeBackoffIdleStrategy(anyInt(), anyInt(), anyInt(), anyInt());
+        doReturn(testIdleStrategy).when(spyOpts).newBackoffIdleStrategy(anyInt(), anyInt(), anyInt(), anyInt());
 
         spyOpts.parseArgs(args);
-        // we should get back our test idle strategy, because we modified that makeBackoffIdleStrategy method.
+        // we should get back our test idle strategy, because we modified that newBackoffIdleStrategy method.
         assertThat(spyOpts.conductorIdleStrategy(), instanceOf(TestIdleStrategy.class));
     }
 
@@ -254,7 +254,7 @@ public class MediaDriverOptionsTest
         final MediaDriverOptions spyOpts = Mockito.spy(opts);
         final TestIdleStrategy testIdleStrategy = new TestIdleStrategy();
         final String[] args = { "--conductor", BackoffIdleStrategy.class.getName() + "(10, 20, 30 ,40)" };
-        doReturn(testIdleStrategy).when(spyOpts).makeBackoffIdleStrategy(10, 20, 30, 40);
+        doReturn(testIdleStrategy).when(spyOpts).newBackoffIdleStrategy(10, 20, 30, 40);
 
         spyOpts.parseArgs(args);
         assertThat(spyOpts.conductorIdleStrategy(), instanceOf(TestIdleStrategy.class));

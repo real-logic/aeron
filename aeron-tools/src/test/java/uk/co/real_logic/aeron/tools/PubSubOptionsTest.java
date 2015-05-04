@@ -34,9 +34,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-/**
- * Created by bhorst on 3/3/15.
- */
 public class PubSubOptionsTest
 {
     PubSubOptions opts;
@@ -162,7 +159,7 @@ public class PubSubOptionsTest
         final String[] args = { };
         opts.parseArgs(args);
         assertThat("FAIL: default input stream should be null.",
-                opts.input(), is(nullValue()));
+            opts.input(), is(nullValue()));
     }
 
     @Test
@@ -171,7 +168,7 @@ public class PubSubOptionsTest
         final String[] args = { };
         opts.parseArgs(args);
         assertThat("FAIL: Default output stream should be null",
-                opts.output(), is(nullValue()));
+            opts.output(), is(nullValue()));
     }
 
     @Test
@@ -180,7 +177,7 @@ public class PubSubOptionsTest
         final String[] args = { "-o", "NULL" };
         opts.parseArgs(args);
         assertThat("FAIL: Output stream should be null when set to the string 'null'",
-                opts.output(), is(nullValue()));
+            opts.output(), is(nullValue()));
     }
 
     @Test
@@ -189,7 +186,7 @@ public class PubSubOptionsTest
         final String[] args = { "--output", "StdOut" };
         opts.parseArgs(args);
         assertThat("FAIL: Expected output to be the standard out",
-                opts.output(), equalTo(System.out));
+            opts.output(), equalTo(System.out));
     }
 
     @Test
@@ -198,7 +195,7 @@ public class PubSubOptionsTest
         final String[] args = { "--output", "stderr" };
         opts.parseArgs(args);
         assertThat("FAIL: Expected output to be standard error.",
-                opts.output(), equalTo(System.err));
+            opts.output(), equalTo(System.err));
     }
 
     @Test
@@ -207,17 +204,17 @@ public class PubSubOptionsTest
         final String[] args = { "--channels", "udp://127.0.0.1:12345" };
         opts.parseArgs(args);
         assertThat("FAIL: Exactly one channel.",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
 
         final ChannelDescriptor cd = opts.channels().get(0);
         final int[] streamIds = cd.streamIdentifiers();
 
         assertThat("FAIL: Exactly one stream identifier on the channel.",
-                streamIds.length, is(1));
+            streamIds.length, is(1));
         assertThat("FAIL: Channel is udp://127.0.0.1:12345",
-                cd.channel(), is("udp://127.0.0.1:12345"));
+            cd.channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Stream ID is 1",
-                cd.streamIdentifiers()[0], is(1));
+            cd.streamIdentifiers()[0], is(1));
     }
 
     @Test
@@ -227,17 +224,17 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Exactly one channel.",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
 
         final ChannelDescriptor cd = opts.channels().get(0);
         final int[] streamIds = cd.streamIdentifiers();
 
         assertThat("FAIL: Exactly one stream identifier on the channel.",
-                streamIds.length, is(1));
+            streamIds.length, is(1));
         assertThat("FAIL: Channel is udp://127.0.0.1:12345",
-                cd.channel(), is("udp://127.0.0.1:12345"));
+            cd.channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Stream ID is 100",
-                cd.streamIdentifiers()[0], is(100));
+            cd.streamIdentifiers()[0], is(100));
     }
 
     @Test
@@ -247,13 +244,13 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 3 channels.",
-                opts.channels().size(), is(3));
+            opts.channels().size(), is(3));
         assertThat("FAIL: Channel 1 incorrect.",
-                opts.channels().get(0).channel(), is("udp://127.0.0.1:12345"));
+            opts.channels().get(0).channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Channel 2 incorrect",
-                opts.channels().get(1).channel(), is("udp://127.0.0.1:12346"));
+            opts.channels().get(1).channel(), is("udp://127.0.0.1:12346"));
         assertThat("FAIL: Channel 3 incorrect",
-                opts.channels().get(2).channel(), is("udp://127.0.0.1:12347"));
+            opts.channels().get(2).channel(), is("udp://127.0.0.1:12347"));
     }
 
     @Test
@@ -263,17 +260,17 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 1 channel.",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
         final ChannelDescriptor cd = opts.channels().get(0);
 
         assertThat("FAIL: Expected 3 stream IDs on channel.",
-                cd.streamIdentifiers().length, is(3));
+            cd.streamIdentifiers().length, is(3));
         assertThat("FAIL: stream-id 1 is wrong value.",
-                cd.streamIdentifiers()[0], is(100));
+            cd.streamIdentifiers()[0], is(100));
         assertThat("FAIL: Stream-id 2 is wrong value.",
-                cd.streamIdentifiers()[1], is(101));
+            cd.streamIdentifiers()[1], is(101));
         assertThat("FAIL: Stream-id 3 is wrong value.",
-                cd.streamIdentifiers()[2], is(102));
+            cd.streamIdentifiers()[2], is(102));
     }
 
     /**
@@ -285,47 +282,47 @@ public class PubSubOptionsTest
     {
         ChannelDescriptor cd;
         final String[] args = { "--channels",
-                "udp://127.0.0.1:5000-5001#1-2,udp://224.9.10.11:6000-6001#600-601,udp://192.168.0.1:7000-7001#700-701"};
+            "udp://127.0.0.1:5000-5001#1-2,udp://224.9.10.11:6000-6001#600-601,udp://192.168.0.1:7000-7001#700-701"};
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 6 channels",
-                opts.channels().size(), is(6));
+            opts.channels().size(), is(6));
 
         cd = opts.channels().get(0);
         assertThat("FAIL: Wrong address for channel 1",
-                cd.channel(), is("udp://127.0.0.1:5000"));
+            cd.channel(), is("udp://127.0.0.1:5000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 1",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(1);
         assertThat("FAIL: Wrong address for channel 2",
-                cd.channel(), is("udp://127.0.0.1:5001"));
+            cd.channel(), is("udp://127.0.0.1:5001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 2",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(2);
         assertThat("FAIL: Wrong address for channel 3",
-                cd.channel(), is("udp://224.9.10.11:6000"));
+            cd.channel(), is("udp://224.9.10.11:6000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 3",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(3);
         assertThat("FAIL: Wrong address for channel 4",
-                cd.channel(), is("udp://224.9.10.11:6001"));
+            cd.channel(), is("udp://224.9.10.11:6001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 4",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(4);
         assertThat("FAIL: Wrong address for channel 5",
-                cd.channel(), is("udp://192.168.0.1:7000"));
+            cd.channel(), is("udp://192.168.0.1:7000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 5",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(5);
         assertThat("FAIL: Wrong address for channel 6",
-                cd.channel(), is("udp://192.168.0.1:7001"));
+            cd.channel(), is("udp://192.168.0.1:7001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 6",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
     }
 
     @Test
@@ -336,10 +333,10 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 1 channel",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
         cd = opts.channels().get(0);
         assertThat("FAIL wrong address for channel 1",
-                cd.channel(), is("udp://[fe80::1234:2345:3456:4567]:12345"));
+            cd.channel(), is("udp://[fe80::1234:2345:3456:4567]:12345"));
     }
 
     @Test
@@ -352,10 +349,10 @@ public class PubSubOptionsTest
         assertThat(opts.channels().size(), is(2));
         cd = opts.channels().get(0);
         assertThat("FAIL: wrong address for channel 1",
-                cd.channel(), is("aeron:udp?remote=192.168.14.101:10000|local=192.168.14.102"));
+            cd.channel(), is("aeron:udp?remote=192.168.14.101:10000|local=192.168.14.102"));
         cd = opts.channels().get(1);
         assertThat("FAIL: wrong address for channel 2",
-                cd.channel(), is("aeron:udp?remote=192.168.14.101:10001|local=192.168.14.102"));
+            cd.channel(), is("aeron:udp?remote=192.168.14.101:10001|local=192.168.14.102"));
     }
 
     @Test
@@ -368,7 +365,7 @@ public class PubSubOptionsTest
         assertThat(opts.channels().size(), is(1));
         cd = opts.channels().get(0);
         assertThat("FAIL: wrong address for channel 1",
-                cd.channel(), is("aeron:udp?remote=[::1]:12345|local=[::1]"));
+            cd.channel(), is("aeron:udp?remote=[::1]:12345|local=[::1]"));
     }
 
     @Test
@@ -622,7 +619,7 @@ public class PubSubOptionsTest
     {
         final String[] args = { "--session", "1000" };
         assertThat("FAIL: useSessionId needs to default to false",
-                opts.useSessionId(), is(false));
+            opts.useSessionId(), is(false));
         opts.parseArgs(args);
         assertThat(opts.sessionId(), is(1000));
         assertThat("FAIL: After successfully setting a session ID, useSessionId should return true.",
@@ -635,7 +632,7 @@ public class PubSubOptionsTest
         final String[] args = { "--session", "default" };
         opts.parseArgs(args);
         assertThat("FAIL: using default session ID means useSessionId should return false.",
-                opts.useSessionId(), is(false));
+            opts.useSessionId(), is(false));
     }
 
     @Test
@@ -653,9 +650,9 @@ public class PubSubOptionsTest
             exceptionThrown = true;
         }
         assertThat("FAIL: parseArgs should have thrown a ParseException for malformed session ID",
-                exceptionThrown, is(true));
+            exceptionThrown, is(true));
         assertThat("FAIL: invalid session ID input should cause useSessionId to return false.",
-                opts.useSessionId(), is(false));
+            opts.useSessionId(), is(false));
     }
 
     @Test
@@ -680,7 +677,7 @@ public class PubSubOptionsTest
         final String[] args = { };
         opts.parseArgs(args);
         assertThat("FAIL: Default for --verify should be true",
-                opts.verify(), is(true));
+            opts.verify(), is(true));
     }
 
     @Test (expected = ParseException.class)
@@ -700,7 +697,7 @@ public class PubSubOptionsTest
         final BufferedReader br = new BufferedReader(reader);
 
         // Make the function return the buffered reader we just created.
-        doReturn(br).when(spyOpts).makeBufferedFileReader("filename");
+        doReturn(br).when(spyOpts).newBufferedFileReader("filename");
         final String[] args = { "--defaults", "filename" };
         spyOpts.parseArgs(args);
 
@@ -720,22 +717,22 @@ public class PubSubOptionsTest
         final PubSubOptions spyOpts = Mockito.spy(opts);
         final String nl = System.lineSeparator();
         final String text = "# This is a comment line and will be ignored." + nl +
-                "   " + nl +              // line with spaces is ignored
-                "-s 100 -r 100mps" + nl + // multiple options on one line works
-                "       -t 3     " + nl + // leading and trailing whitespace ignored
-                "--verify      no" + nl + // number of spaces between entries doesn't matter
-                "-o stdout" + nl +      // a newline will separate options
-                nl; // empty line ignored
+            "   " + nl +              // line with spaces is ignored
+            "-s 100 -r 100mps" + nl + // multiple options on one line works
+            "       -t 3     " + nl + // leading and trailing whitespace ignored
+            "--verify      no" + nl + // number of spaces between entries doesn't matter
+            "-o stdout" + nl +      // a newline will separate options
+            nl; // empty line ignored
         final StringReader reader = new StringReader(text);
         final BufferedReader br = new BufferedReader(reader);
-        doReturn(br).when(spyOpts).makeBufferedFileReader("textfile");
+        doReturn(br).when(spyOpts).newBufferedFileReader("textfile");
 
         final String[] args = { "--defaults", "textfile" };
         spyOpts.parseArgs(args);
 
         // check size
         assertThat("FAIL: Minimum size of messages incorrect.",
-                spyOpts.messageSizePattern().minimum(), is(100));
+            spyOpts.messageSizePattern().minimum(), is(100));
 
         // check rate
         assertThat(spyOpts.rateIntervals().size(), is(1));
@@ -762,16 +759,16 @@ public class PubSubOptionsTest
         final PubSubOptions spyOpts = Mockito.spy(opts);
         final String text = "--verify no --threads 2 --output stdout";
         final BufferedReader br = new BufferedReader(new StringReader(text));
-        doReturn(br).when(spyOpts).makeBufferedFileReader("filename");
+        doReturn(br).when(spyOpts).newBufferedFileReader("filename");
 
         final String[] args = { "--output", "stderr", "--defaults", "filename", "--verify", "yes" };
         spyOpts.parseArgs(args);
 
         assertThat("FAIL: Should be overridden by args",
-                spyOpts.verify(), is(true));
+            spyOpts.verify(), is(true));
         assertThat("FAIL: Should be picked up from the defaults file",
-                spyOpts.threads(), is(2));
+            spyOpts.threads(), is(2));
         assertThat("FAIL: Should be overridden by args",
-                spyOpts.output(), equalTo(System.err));
+            spyOpts.output(), equalTo(System.err));
     }
 }

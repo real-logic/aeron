@@ -34,6 +34,7 @@ import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
@@ -265,7 +266,6 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
             sessionId, streamId, channelEndpoint, channel, joiningPosition);
 
-        final int receiverHwmId = allocateCounter("receiver hwm", channel, sessionId, streamId, correlationId);
         final RawLog rawLog = rawLogFactory.newConnection(
             udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
 
@@ -283,7 +283,7 @@ public class DriverConductor implements Agent
             timerWheel,
             udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
-            new UnsafeBufferPosition(countersBuffer, receiverHwmId, countersManager),
+            newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
             clock,
             systemCounters,
             sourceAddress,
@@ -319,10 +319,10 @@ public class DriverConductor implements Agent
             .map(
                 (subscription) ->
                 {
-                    final int positionId = allocateCounter(
+                    final Position position = newPosition(
                         "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
-                    final UnsafeBufferPosition position = new UnsafeBufferPosition(countersBuffer, positionId, countersManager);
-                    countersManager.setCounterValue(positionId, joiningPosition);
+
+                    position.setOrdered(joiningPosition);
 
                     return new SubscriberPosition(subscription, position);
                 })
@@ -441,17 +441,14 @@ public class DriverConductor implements Agent
         if (null == publication)
         {
             final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newPublicationLog(sessionId, streamId, correlationId, udpChannel, initialTermId);
-            final int senderPositionId = allocateCounter("sender pos", channel, sessionId, streamId, correlationId);
-            final int publisherLimitId = allocateCounter("publisher limit", channel, sessionId, streamId, correlationId);
             final FlowControl flowControl = udpChannel.isMulticast() ? multicastFlowControl.get() : unicastFlowControl.get();
 
             publication = new NetworkPublication(
                 channelEndpoint,
                 clock,
-                rawLog,
-                new UnsafeBufferPosition(countersBuffer, senderPositionId, countersManager),
-                new UnsafeBufferPosition(countersBuffer, publisherLimitId, countersManager),
+                newPublicationLog(sessionId, streamId, correlationId, udpChannel, initialTermId),
+                newPosition("sender pos", channel, sessionId, streamId, correlationId),
+                newPosition("publisher limit", channel, sessionId, streamId, correlationId),
                 sessionId,
                 streamId,
                 initialTermId,
@@ -560,10 +557,8 @@ public class DriverConductor implements Agent
             .forEach(
                 (connection) ->
                 {
-                    final int subscriberPositionId = allocateCounter(
+                    final Position position = newPosition(
                         "subscriber pos", channel, connection.sessionId(), streamId, correlationId);
-                    final UnsafeBufferPosition position = new UnsafeBufferPosition(
-                        countersBuffer, subscriberPositionId, countersManager);
 
                     connection.addSubscriber(position);
                     subscription.addConnection(connection, position);
@@ -775,6 +770,13 @@ public class DriverConductor implements Agent
         }
 
         return client;
+    }
+
+    private Position newPosition(
+        final String name, final String channel, final int sessionId, final int streamId, final long correlationId)
+    {
+        final int positionId = allocateCounter(name, channel, sessionId, streamId, correlationId);
+        return new UnsafeBufferPosition(countersBuffer, positionId, countersManager);
     }
 
     private int allocateCounter(

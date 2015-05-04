@@ -31,7 +31,6 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -75,7 +74,7 @@ public class DriverConductor implements Agent
     private final Supplier<FlowControl> multicastFlowControl;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
-    private final Long2ObjectHashMap<PublicationLink> publicationLinks = new Long2ObjectHashMap<>();
+    private final ArrayList<PublicationLink> publicationLinks = new ArrayList<>();
     private final ArrayList<NetworkPublication> publications = new ArrayList<>();
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
     private final ArrayList<NetworkConnection> connections = new ArrayList<>();
@@ -152,6 +151,24 @@ public class DriverConductor implements Agent
         }
 
         return aeronClient;
+    }
+
+    private static PublicationLink findPublicationLink(
+        final ArrayList<PublicationLink> publicationLinks, final long registrationId)
+    {
+        PublicationLink publicationLink = null;
+
+        for (int i = 0, size = publicationLinks.size(); i < size; i++)
+        {
+            final PublicationLink link = publicationLinks.get(i);
+            if (registrationId == link.registrationId())
+            {
+                publicationLink = link;
+                break;
+            }
+        }
+
+        return publicationLink;
     }
 
     private static String generateSourceInfo(final InetSocketAddress address)
@@ -462,10 +479,7 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        if (null != publicationLinks.putIfAbsent(correlationId, new PublicationLink(publication, client)))
-        {
-            throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
-        }
+        linkPublication(correlationId, publication, client);
 
         publication.incRef();
 
@@ -476,6 +490,16 @@ public class DriverConductor implements Agent
             publication.rawLog(),
             correlationId,
             publication.publisherLimitId());
+    }
+
+    private void linkPublication(final long correlationId, final NetworkPublication publication, final AeronClient client)
+    {
+        if (null != findPublicationLink(publicationLinks, correlationId))
+        {
+            throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
+        }
+
+        publicationLinks.add(new PublicationLink(correlationId, publication, client));
     }
 
     private RetransmitHandler newRetransmitHandler(final NetworkPublication publication, final int initialTermId)
@@ -528,13 +552,25 @@ public class DriverConductor implements Agent
 
     private void onRemovePublication(final long registrationId, final long correlationId)
     {
-        final PublicationLink link = publicationLinks.remove(registrationId);
-        if (null == link)
+        PublicationLink publicationLink = null;
+        final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
+        for (int i = 0, size = publicationLinks.size(); i < size; i++)
+        {
+            final PublicationLink link = publicationLinks.get(i);
+            if (registrationId == link.registrationId())
+            {
+                publicationLink = link;
+                publicationLinks.remove(i);
+                break;
+            }
+        }
+
+        if (null == publicationLink)
         {
             throw new ControlProtocolException(UNKNOWN_PUBLICATION, "Unknown publication: " + registrationId);
         }
 
-        link.remove();
+        publicationLink.remove();
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -635,13 +671,13 @@ public class DriverConductor implements Agent
 
     private void onCheckPublicationRegistrations(final long now)
     {
-        final Iterator<PublicationLink> iter = publicationLinks.values().iterator();
-        while (iter.hasNext())
+        final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
+        for (int i = publicationLinks.size() - 1; i >= 0; i--)
         {
-            final PublicationLink registration = iter.next();
-            if (registration.hasClientTimedOut(now))
+            final PublicationLink link = publicationLinks.get(i);
+            if (link.hasClientTimedOut(now))
             {
-                iter.remove();
+                publicationLinks.remove(i);
             }
         }
     }

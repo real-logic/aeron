@@ -20,11 +20,13 @@ package uk.co.real_logic.aeron.driver;
  */
 public class PublicationLink
 {
+    private final long registrationId;
     private final NetworkPublication publication;
     private final AeronClient client;
 
-    public PublicationLink(final NetworkPublication publication, final AeronClient client)
+    public PublicationLink(final long registrationId, final NetworkPublication publication, final AeronClient client)
     {
+        this.registrationId = registrationId;
         this.publication = publication;
         this.client = client;
     }
@@ -32,6 +34,11 @@ public class PublicationLink
     public void remove()
     {
         publication.decRef();
+    }
+
+    public long registrationId()
+    {
+        return registrationId;
     }
 
     public boolean hasClientTimedOut(final long now)

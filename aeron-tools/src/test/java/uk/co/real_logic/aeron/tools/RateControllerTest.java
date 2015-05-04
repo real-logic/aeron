@@ -211,21 +211,10 @@ public class RateControllerTest
     @Test (expected = Exception.class)
     public void createWithNegativeIterations() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList, -1);
+        rc = new RateController(() -> {return 0;}, ivlsList, -1);
     }
 
     @Test

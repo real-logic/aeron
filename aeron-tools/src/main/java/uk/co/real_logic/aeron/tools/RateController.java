@@ -53,6 +53,74 @@ public class RateController
     private final long iterations;
     private long currentIteration;
 
+    static
+    {
+        /* Calibrate our "sleep strategy" so we know what our
+         * minimum sleep resolution is. */
+
+        /* How long does it take just to call clock.time() itself? */
+        for (int i = 0; i < WARMUP_IDLES; i++)
+        {
+            if (CLOCK.time() < 0)
+            {
+                throw new RuntimeException("Time travel is not permitted.");
+            }
+        }
+        /* And now do a bunch and record how long it takes. */
+        final long timeStartNanos = CLOCK.time();
+        for (int i = 0; i < CALLIBRATION_IDLES; i++)
+        {
+            if (CLOCK.time() < 0)
+            {
+                throw new RuntimeException("Time travel is not permitted.");
+            }
+        }
+        final long timeEndNanos = CLOCK.time();
+        TIME_NANOS = ((timeEndNanos - timeStartNanos) / CALLIBRATION_IDLES) * TIME_NANOS_FUDGE_FACTOR;
+
+        /* OK, test yield()s. */
+        for (int i = 0; i < WARMUP_IDLES; i++)
+        {
+            Thread.yield();
+        }
+        /* And now do a bunch and record how long it takes. */
+        final long yieldStartNanos = CLOCK.time();
+        for (int i = 0; i < CALLIBRATION_IDLES; i++)
+        {
+            Thread.yield();
+        }
+        final long yieldEndNanos = CLOCK.time();
+        final long yieldNanos = ((yieldEndNanos - yieldStartNanos) / CALLIBRATION_IDLES);
+
+        /* Now that we have a value for how long yields take, let's try parking for at least that long.
+         * (We won't ever call park() with a smaller value, since we could've just called yield instead.) */
+        for (int i = 0; i < WARMUP_IDLES; i++)
+        {
+            LockSupport.parkNanos(yieldNanos);
+            if (CLOCK.time() > (yieldEndNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
+            {
+                break;
+            }
+        }
+        /* And now do a bunch and record how long it takes. */
+        final long parkStartNanos = CLOCK.time();
+        int parkNanosLoops;
+        for (parkNanosLoops = 0; parkNanosLoops < CALLIBRATION_IDLES; parkNanosLoops++)
+        {
+            LockSupport.parkNanos(yieldNanos);
+            if (CLOCK.time() > (parkStartNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
+            {
+                parkNanosLoops++;
+                break;
+            }
+        }
+        final long parkEndNanos = CLOCK.time();
+        /* better to over-estimate the time yield takes than to underestimate it, therefore the fudge factor. */
+        YIELD_NANOS = yieldNanos * YIELD_NANOS_FUDGE_FACTOR;
+        /* better to over-estimate the time park takes than to underestimate it, therefore the fudge factor. */
+        PARK_NANOS = ((parkEndNanos - parkStartNanos) / parkNanosLoops) * PARK_NANOS_FUDGE_FACTOR;
+    }
+
     /**
      * This is the most commonly-called RateController method; it calls the Callback associated
      * with this RateController and then pauses the current thread for the time needed, if any,
@@ -139,74 +207,6 @@ public class RateController
         {
             nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
         }
-    }
-
-    static
-    {
-        /* Calibrate our "sleep strategy" so we know what our
-         * minimum sleep resolution is. */
-
-        /* How long does it take just to call clock.time() itself? */
-        for (int i = 0; i < WARMUP_IDLES; i++)
-        {
-            if (CLOCK.time() < 0)
-            {
-                throw new RuntimeException("Time travel is not permitted.");
-            }
-        }
-        /* And now do a bunch and record how long it takes. */
-        final long timeStartNanos = CLOCK.time();
-        for (int i = 0; i < CALLIBRATION_IDLES; i++)
-        {
-            if (CLOCK.time() < 0)
-            {
-                throw new RuntimeException("Time travel is not permitted.");
-            }
-        }
-        final long timeEndNanos = CLOCK.time();
-        TIME_NANOS = ((timeEndNanos - timeStartNanos) / CALLIBRATION_IDLES) * TIME_NANOS_FUDGE_FACTOR;
-
-        /* OK, test yield()s. */
-        for (int i = 0; i < WARMUP_IDLES; i++)
-        {
-            Thread.yield();
-        }
-        /* And now do a bunch and record how long it takes. */
-        final long yieldStartNanos = CLOCK.time();
-        for (int i = 0; i < CALLIBRATION_IDLES; i++)
-        {
-            Thread.yield();
-        }
-        final long yieldEndNanos = CLOCK.time();
-        final long yieldNanos = ((yieldEndNanos - yieldStartNanos) / CALLIBRATION_IDLES);
-
-        /* Now that we have a value for how long yields take, let's try parking for at least that long.
-         * (We won't ever call park() with a smaller value, since we could've just called yield instead.) */
-        for (int i = 0; i < WARMUP_IDLES; i++)
-        {
-            LockSupport.parkNanos(yieldNanos);
-            if (CLOCK.time() > (yieldEndNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
-            {
-                break;
-            }
-        }
-        /* And now do a bunch and record how long it takes. */
-        final long parkStartNanos = CLOCK.time();
-        int parkNanosLoops;
-        for (parkNanosLoops = 0; parkNanosLoops < CALLIBRATION_IDLES; parkNanosLoops++)
-        {
-            LockSupport.parkNanos(yieldNanos);
-            if (CLOCK.time() > (parkStartNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
-            {
-                parkNanosLoops++;
-                break;
-            }
-        }
-        final long parkEndNanos = CLOCK.time();
-        /* better to over-estimate the time yield takes than to underestimate it, therefore the fudge factor. */
-        YIELD_NANOS = yieldNanos * YIELD_NANOS_FUDGE_FACTOR;
-        /* better to over-estimate the time park takes than to underestimate it, therefore the fudge factor. */
-        PARK_NANOS = ((parkEndNanos - parkStartNanos) / parkNanosLoops) * PARK_NANOS_FUDGE_FACTOR;
     }
 
     private void addIntervals(final List<RateControllerInterval> intervals) throws Exception

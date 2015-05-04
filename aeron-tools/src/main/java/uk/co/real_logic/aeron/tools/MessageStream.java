@@ -171,10 +171,10 @@ public class MessageStream
         if (receivedSequenceNumber != expectedSequenceNumber)
         {
             final Exception e = new Exception("Verifiable message stream received sequence number " +
-                    receivedSequenceNumber + ", but was expecting " +
-                    expectedSequenceNumber + ". Possibly missed " +
-                    (receivedSequenceNumber - expectedSequenceNumber) +
-                    " messages.");
+                receivedSequenceNumber + ", but was expecting " +
+                expectedSequenceNumber + ". Possibly missed " +
+                (receivedSequenceNumber - expectedSequenceNumber) +
+                " messages.");
             /* Update expected SQN for next time. */
             sequenceNumber = receivedSequenceNumber;
             throw e;

@@ -22,7 +22,6 @@ import java.io.InputStream;
  * This is an InputStream that returns random data using {@link uk.co.real_logic.aeron.tools.TLRandom}
  * Data is generated on the read() call and not stored, so marking the stream will not work.
  * There is no end of file for the input stream.
- * Created by bhorst on 3/17/15.
  */
 public class RandomInputStream extends InputStream
 {

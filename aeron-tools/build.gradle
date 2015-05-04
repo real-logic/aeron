@@ -81,8 +81,8 @@ project(':aeron-tools') {
         }
     }
 
-    task throughputencyPub(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronThroughputencyPublisher'
+    task latencyUnderLoadPub(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronLatencyUnderLoadPublisher'
         classpath = sourceSets.main.runtimeClasspath
         systemProperties(System.properties);
         if (project.hasProperty('myargs')) {
@@ -90,8 +90,8 @@ project(':aeron-tools') {
         }
     }
 
-    task throughputencySub(type:JavaExec) {
-        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronThroughputencySubscriber'
+    task latencyUnderLoadSub(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronLatencyUnderLoadSubscriber'
         classpath = sourceSets.main.runtimeClasspath
         systemProperties(System.properties);
         if (project.hasProperty('myargs')) {

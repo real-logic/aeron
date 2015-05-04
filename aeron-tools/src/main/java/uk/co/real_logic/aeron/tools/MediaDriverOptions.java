@@ -266,15 +266,15 @@ public class MediaDriverOptions
             maxParkPeriodNs = parseLong(params[3].trim());
 
         }
-        return makeBackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
+        return newBackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
     }
 
     // Broken out into simple method for testing.
-    IdleStrategy makeBackoffIdleStrategy(
-        final long maxSpins,
-        final long maxYields,
-        final long minParkPeriodNs,
-        final long maxParkPeriodNs)
+    IdleStrategy newBackoffIdleStrategy(
+            final long maxSpins,
+            final long maxYields,
+            final long minParkPeriodNs,
+            final long maxParkPeriodNs)
     {
         return new BackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
     }

@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.tools.perf_tools;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.PrintWriter;
-import java.math.BigDecimal;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -70,7 +70,7 @@ public class AeronPing implements NewConnectionHandler
         {
             parseArgs(args);
         }
-        catch (final Exception e)
+        catch (final ParseException e)
         {
             e.printStackTrace();
         }
@@ -83,7 +83,7 @@ public class AeronPing implements NewConnectionHandler
         connectionLatch = new CountDownLatch(1);
         buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msgLen));
         timestamps = new long[2][numMsgs];
-        this.claim = claim;
+
         if (claim)
         {
             bufferClaim = new BufferClaim();
@@ -96,7 +96,7 @@ public class AeronPing implements NewConnectionHandler
         {
             connectionLatch.await();
         }
-        catch (final Exception e)
+        catch (final InterruptedException e)
         {
             e.printStackTrace();
         }
@@ -182,12 +182,12 @@ public class AeronPing implements NewConnectionHandler
         }
         stdDev = Math.sqrt(sum / tmp.length);
 
-        dumpPercentileData(min, max, .9);
-        dumpPercentileData(min, max, .99);
-        dumpPercentileData(min, max, .999);
-        dumpPercentileData(min, max, .9999);
-        dumpPercentileData(min, max, .99999);
-        dumpPercentileData(min, max, .999999);
+        dumpPercentileData(.9);
+        dumpPercentileData(.99);
+        dumpPercentileData(.999);
+        dumpPercentileData(.9999);
+        dumpPercentileData(.99999);
+        dumpPercentileData(.999999);
 
         System.out.println("Num Messages: " + numMsgs);
         System.out.println("Message Length: " + msgLen);
@@ -228,10 +228,8 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    private void dumpPercentileData(final double min, final double max, final double percentile)
+    private void dumpPercentileData(final double percentile)
     {
-        final int width = 390;
-        final int height = 370;
         final int num = (int)((numMsgs - 1) * percentile);
         final double newMax = sorted[num];
 
@@ -248,9 +246,13 @@ public class AeronPing implements NewConnectionHandler
             }
             out.close();
         }
-        catch (final Exception e)
+        catch (final FileNotFoundException e)
         {
             e.printStackTrace();
+        }
+        catch (final SecurityException se)
+        {
+            se.printStackTrace();
         }
     }
 
@@ -266,14 +268,22 @@ public class AeronPing implements NewConnectionHandler
             }
             out.close();
         }
-        catch (final Exception e)
+        catch (final FileNotFoundException e)
         {
             e.printStackTrace();
         }
+        catch (final SecurityException se)
+        {
+            se.printStackTrace();
+        }
     }
 
-    public void onNewConnection(final String channel, final int streamId,
-                                   final int sessionId, final long position, final String sourceInfo)
+    public void onNewConnection(
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long position,
+        final String sourceInfo)
     {
         if (channel.equals(pongChannel) && pongStreamId == streamId)
         {
@@ -281,8 +291,11 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    private void pongHandler(final DirectBuffer buffer, final int offset, final int length,
-                             final Header header)
+    private void pongHandler(
+        final DirectBuffer buffer,
+        final int offset,
+        final int length,
+        final Header header)
     {
         if (buffer.getByte(offset + 0) == (byte)'p')
         {
@@ -317,45 +330,29 @@ public class AeronPing implements NewConnectionHandler
     {
         if (pub.tryClaim(msgLen, bufferClaim) > 0)
         {
-            try
+            final MutableDirectBuffer buffer = bufferClaim.buffer();
+            final int offset = bufferClaim.offset();
+            if (!warmedUp)
             {
-                final MutableDirectBuffer buffer = bufferClaim.buffer();
-                final int offset = bufferClaim.offset();
-                if (!warmedUp)
-                {
-                    buffer.putByte(offset + 0, (byte) 'w');
-                }
-                else
-                {
-                    buffer.putByte(offset + 0, (byte) 'p');
-                    buffer.putInt(offset + 1, msgCount);
-                    timestamps[0][msgCount++] = System.nanoTime();
-                }
+                buffer.putByte(offset + 0, (byte) 'w');
             }
-            catch (final Exception e)
+            else
             {
-                e.printStackTrace();
+                buffer.putByte(offset + 0, (byte) 'p');
+                buffer.putInt(offset + 1, msgCount);
+                timestamps[0][msgCount++] = System.nanoTime();
             }
-            finally
-            {
-                bufferClaim.commit();
-                while (sub.poll(1) <= 0)
-                {
 
-                }
+            bufferClaim.commit();
+            while (sub.poll(1) <= 0)
+            {
+
             }
         }
         else
         {
             sendPingAndReceivePongClaim();
         }
-    }
-
-    private double round(final double unrounded, final int precision, final int roundingMode)
-    {
-        final BigDecimal bd = new BigDecimal(unrounded);
-        final BigDecimal rounded = bd.setScale(precision, roundingMode);
-        return rounded.doubleValue();
     }
 
     public static void main(final String[] args)

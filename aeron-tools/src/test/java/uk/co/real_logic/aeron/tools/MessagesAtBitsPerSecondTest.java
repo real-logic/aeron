@@ -20,9 +20,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-/**
- * Created by ericb on 3/27/15.
- */
 public class MessagesAtBitsPerSecondTest
 {
     RateController rc;

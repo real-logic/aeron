@@ -26,12 +26,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-/**
- * Created by ericb on 3/27/15.
- */
 public class RateControllerTest
 {
-    RateController rc;
+    private RateController rc;
 
     interface TestCallbackStats
     {
@@ -171,7 +168,7 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly one message should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(1L));
+            ((TestCallbackStats) callback).numMessagesSent(), is(1L));
     }
 
     @Test
@@ -197,7 +194,7 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly one bit should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(1L));
+            ((TestCallbackStats) callback).numBitsSent(), is(1L));
     }
 
     @Test
@@ -223,9 +220,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly five messages should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(5L));
+            ((TestCallbackStats) callback).numMessagesSent(), is(5L));
         assertThat("FAIL: Exactly 50 bits should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(50L));
+            ((TestCallbackStats) callback).numBitsSent(), is(50L));
     }
 
     @Test
@@ -252,9 +249,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly two messages should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(2L));
+            ((TestCallbackStats) callback).numMessagesSent(), is(2L));
         assertThat("FAIL: Exactly 20 bits should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(20L));
+            ((TestCallbackStats) callback).numBitsSent(), is(20L));
     }
 
     @Test
@@ -281,9 +278,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly four messages should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(4L));
+            ((TestCallbackStats) callback).numMessagesSent(), is(4L));
         assertThat("FAIL: Exactly 40 bits should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(40L));
+            ((TestCallbackStats) callback).numBitsSent(), is(40L));
     }
 
     @Test
@@ -303,7 +300,7 @@ public class RateControllerTest
         }
         final long endTime = System.nanoTime();
         assertThat("FAIL: Send should have taken about one second",
-                endTime,
-                both(greaterThanOrEqualTo(startTime + 800000000L)).and(lessThanOrEqualTo(startTime + 1200000000L)));
+            endTime,
+            both(greaterThanOrEqualTo(startTime + 800000000L)).and(lessThanOrEqualTo(startTime + 1200000000L)));
     }
 }

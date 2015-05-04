@@ -65,10 +65,10 @@ public class RandomInputStreamTest
         final byte[] array = new byte[8192];
         final int read = stream.read(array, 100, 900);
         assertThat("FAIL: Expected read to return given length",
-                read, is(900));
+            read, is(900));
         assertThat("FAIL: Expected byte before read location to be 0",
-                array[99], is((byte)0));
+            array[99], is((byte)0));
         assertThat("FAIL: Expected byte after read location to be 0",
-                array[1001], is((byte)0));
+            array[1001], is((byte)0));
     }
 }

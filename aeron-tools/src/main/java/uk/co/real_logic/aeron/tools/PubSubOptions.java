@@ -1339,7 +1339,7 @@ public class PubSubOptions
         final ArrayList<String> args = new ArrayList<String>();
         try
         {
-            br = makeBufferedFileReader(filename);
+            br = newBufferedFileReader(filename);
         }
         catch (final FileNotFoundException ex)
         {
@@ -1379,7 +1379,7 @@ public class PubSubOptions
         return new OptionValuesStruct(command, DEFAULT_VALUES);
     }
 
-    BufferedReader makeBufferedFileReader(final String filename) throws FileNotFoundException
+    BufferedReader newBufferedFileReader(final String filename) throws FileNotFoundException
     {
         return new BufferedReader(new FileReader(filename));
     }

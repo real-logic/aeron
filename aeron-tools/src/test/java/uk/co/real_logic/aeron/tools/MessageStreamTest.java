@@ -25,9 +25,6 @@ import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-/**
- * Created by ericb on 3/27/15.
- */
 public class MessageStreamTest
 {
 

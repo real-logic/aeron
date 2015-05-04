@@ -51,7 +51,7 @@ import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
- * Driver Conductor to take commands from publishers and subscribers as well as handle NAKs and retransmissions
+ * Driver Conductor to take commands from publishers and subscribers as well as determining if loss has occurred.
  */
 public class DriverConductor implements Agent
 {

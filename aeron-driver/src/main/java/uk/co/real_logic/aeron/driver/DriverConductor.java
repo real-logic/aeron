@@ -251,9 +251,9 @@ public class DriverConductor implements Agent
 
         onCheckClients(now);
         onCheckPublications(now);
-        onCheckPublicationRegistrations(now);
-        onCheckSubscriptions(now);
+        onCheckPublicationLinks(now);
         onCheckConnections(now);
+        onCheckSubscriptionLinks(now);
 
         timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
     }
@@ -669,7 +669,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void onCheckPublicationRegistrations(final long now)
+    private void onCheckPublicationLinks(final long now)
     {
         final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
         for (int i = publicationLinks.size() - 1; i >= 0; i--)
@@ -710,7 +710,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void onCheckSubscriptions(final long now)
+    private void onCheckSubscriptionLinks(final long now)
     {
         final ArrayList<SubscriptionLink> subscriptions = this.subscriptionLinks;
         for (int i = subscriptions.size() - 1; i >= 0; i--)

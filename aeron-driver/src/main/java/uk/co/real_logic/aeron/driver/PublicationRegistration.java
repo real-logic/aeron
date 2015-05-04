@@ -36,12 +36,11 @@ public class PublicationRegistration
 
     public boolean hasClientTimedOut(final long now)
     {
-        boolean hasClientTimedOut = false;
+        final boolean hasClientTimedOut = client.hasTimedOut(now);
 
-        if (client.hasTimedOut(now))
+        if (hasClientTimedOut)
         {
             publication.decRef();
-            hasClientTimedOut = true;
         }
 
         return hasClientTimedOut;

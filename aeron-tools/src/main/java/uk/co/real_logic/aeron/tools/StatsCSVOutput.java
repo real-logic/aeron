@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.tools;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 
 public class StatsCSVOutput implements StatsOutput
 {
@@ -44,7 +45,7 @@ public class StatsCSVOutput implements StatsOutput
             outFile.createNewFile();
             out = new FileWriter(outFile);
         }
-        catch (final Exception e)
+        catch (final IOException e)
         {
             e.printStackTrace();
         }

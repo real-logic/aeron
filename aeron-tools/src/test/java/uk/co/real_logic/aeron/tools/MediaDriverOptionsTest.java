@@ -36,7 +36,7 @@ import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 /**
- * Created by bhorst on 4/13/15.
+ * Unit tests for the MediaDriverOptions class.
  */
 public class MediaDriverOptionsTest
 {

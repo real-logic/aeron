@@ -55,14 +55,14 @@ public class PubSubOptionsTest
     @Test
     public void helpShorthand() throws Exception
     {
-        final String[] args = { "-h" };
+        final String[] args = {"-h"};
         assertThat(opts.parseArgs(args), is(1));
     }
 
     @Test
     public void threadsShorthandValid() throws Exception
     {
-        final String[] args = { "-t", "1234" };
+        final String[] args = {"-t", "1234"};
         opts.parseArgs(args);
         assertThat(opts.threads(), is(1234));
     }
@@ -70,29 +70,29 @@ public class PubSubOptionsTest
     @Test
     public void threadsLonghandValid() throws Exception
     {
-        final String[] args = { "--threads", "1234" };
+        final String[] args = {"--threads", "1234"};
         opts.parseArgs(args);
         assertThat(opts.threads(), is(1234));
     }
 
-    @Test (expected = ParseException.class)
+    @Test(expected = ParseException.class)
     public void threadsInvalid() throws Exception
     {
-        final String[] args = { "-t", "asdf" };
+        final String[] args = {"-t", "asdf"};
         opts.parseArgs(args);
     }
 
-    @Test (expected = ParseException.class)
+    @Test(expected = ParseException.class)
     public void threadsLonghandInvalid() throws Exception
     {
-        final String[] args = { "--threads", "-1000" };
+        final String[] args = {"--threads", "-1000"};
         opts.parseArgs(args);
     }
 
     @Test
     public void iterations() throws Exception
     {
-        final String[] args = { "--iterations", "1234" };
+        final String[] args = {"--iterations", "1234"};
         opts.parseArgs(args);
         assertThat(opts.iterations(), is(1234L));
     }
@@ -100,7 +100,7 @@ public class PubSubOptionsTest
     @Test
     public void messages() throws Exception
     {
-        final String[] args = { "--messages", "1234" };
+        final String[] args = {"--messages", "1234"};
         opts.parseArgs(args);
         assertThat(opts.messages(), is(1234L));
     }
@@ -108,7 +108,7 @@ public class PubSubOptionsTest
     @Test
     public void messagesShorthand() throws Exception
     {
-        final String[] args = { "-m", "1234" };
+        final String[] args = {"-m", "1234"};
         opts.parseArgs(args);
         assertThat(opts.messages(), is(1234L));
     }
@@ -116,7 +116,7 @@ public class PubSubOptionsTest
     @Test
     public void randomSeed() throws Exception
     {
-        final String[] args = { "--seed", "1234" };
+        final String[] args = {"--seed", "1234"};
         opts.parseArgs(args);
         assertThat(opts.randomSeed(), is(1234L));
     }
@@ -124,7 +124,7 @@ public class PubSubOptionsTest
     @Test
     public void driverEmbedded() throws Exception
     {
-        final String[] args = { "--driver", "embedded" };
+        final String[] args = {"--driver", "embedded"};
         opts.parseArgs(args);
         assertThat(opts.useEmbeddedDriver(), is(true));
     }
@@ -132,7 +132,7 @@ public class PubSubOptionsTest
     @Test
     public void driverExternal() throws Exception
     {
-        final String[] args = { "--driver", "external" };
+        final String[] args = {"--driver", "external"};
         opts.parseArgs(args);
         assertThat(opts.useEmbeddedDriver(), is(false));
     }
@@ -140,7 +140,7 @@ public class PubSubOptionsTest
     @Test
     public void inputStreamStdin() throws Exception
     {
-        final String[] args = { "--input", "stdin" };
+        final String[] args = {"--input", "stdin"};
         opts.parseArgs(args);
         assertThat(opts.input(), equalTo(System.in));
     }
@@ -148,7 +148,7 @@ public class PubSubOptionsTest
     @Test
     public void inputStreamRandomShorthand() throws Exception
     {
-        final String[] args = { "-i", "null" };
+        final String[] args = {"-i", "null"};
         opts.parseArgs(args);
         assertThat(opts.input(), is(nullValue()));
     }
@@ -156,121 +156,121 @@ public class PubSubOptionsTest
     @Test
     public void inputStreamDefault() throws Exception
     {
-        final String[] args = { };
+        final String[] args = {};
         opts.parseArgs(args);
         assertThat("FAIL: default input stream should be null.",
-            opts.input(), is(nullValue()));
+                opts.input(), is(nullValue()));
     }
 
     @Test
     public void outputStreamDefaultNull() throws Exception
     {
-        final String[] args = { };
+        final String[] args = {};
         opts.parseArgs(args);
         assertThat("FAIL: Default output stream should be null",
-            opts.output(), is(nullValue()));
+                opts.output(), is(nullValue()));
     }
 
     @Test
     public void outputStreamSetNull() throws Exception
     {
-        final String[] args = { "-o", "NULL" };
+        final String[] args = {"-o", "NULL"};
         opts.parseArgs(args);
         assertThat("FAIL: Output stream should be null when set to the string 'null'",
-            opts.output(), is(nullValue()));
+                opts.output(), is(nullValue()));
     }
 
     @Test
     public void outputStreamStdout() throws Exception
     {
-        final String[] args = { "--output", "StdOut" };
+        final String[] args = {"--output", "StdOut"};
         opts.parseArgs(args);
         assertThat("FAIL: Expected output to be the standard out",
-            opts.output(), equalTo(System.out));
+                opts.output(), equalTo(System.out));
     }
 
     @Test
     public void outputStreamStderr() throws Exception
     {
-        final String[] args = { "--output", "stderr" };
+        final String[] args = {"--output", "stderr"};
         opts.parseArgs(args);
         assertThat("FAIL: Expected output to be standard error.",
-            opts.output(), equalTo(System.err));
+                opts.output(), equalTo(System.err));
     }
 
     @Test
     public void channel() throws Exception
     {
-        final String[] args = { "--channels", "udp://127.0.0.1:12345" };
+        final String[] args = {"--channels", "udp://127.0.0.1:12345"};
         opts.parseArgs(args);
         assertThat("FAIL: Exactly one channel.",
-            opts.channels().size(), is(1));
+                opts.channels().size(), is(1));
 
         final ChannelDescriptor cd = opts.channels().get(0);
         final int[] streamIds = cd.streamIdentifiers();
 
         assertThat("FAIL: Exactly one stream identifier on the channel.",
-            streamIds.length, is(1));
+                streamIds.length, is(1));
         assertThat("FAIL: Channel is udp://127.0.0.1:12345",
-            cd.channel(), is("udp://127.0.0.1:12345"));
+                cd.channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Stream ID is 1",
-            cd.streamIdentifiers()[0], is(1));
+                cd.streamIdentifiers()[0], is(1));
     }
 
     @Test
     public void channelWithStreamId() throws Exception
     {
-        final String[] args = { "--channels", "udp://127.0.0.1:12345#100" };
+        final String[] args = {"--channels", "udp://127.0.0.1:12345#100"};
         opts.parseArgs(args);
 
         assertThat("FAIL: Exactly one channel.",
-            opts.channels().size(), is(1));
+                opts.channels().size(), is(1));
 
         final ChannelDescriptor cd = opts.channels().get(0);
         final int[] streamIds = cd.streamIdentifiers();
 
         assertThat("FAIL: Exactly one stream identifier on the channel.",
-            streamIds.length, is(1));
+                streamIds.length, is(1));
         assertThat("FAIL: Channel is udp://127.0.0.1:12345",
-            cd.channel(), is("udp://127.0.0.1:12345"));
+                cd.channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Stream ID is 100",
-            cd.streamIdentifiers()[0], is(100));
+                cd.streamIdentifiers()[0], is(100));
     }
 
     @Test
     public void channelWithPortRange() throws Exception
     {
-        final String[] args = { "--channels", "udp://127.0.0.1:12345-12347" };
+        final String[] args = {"--channels", "udp://127.0.0.1:12345-12347"};
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 3 channels.",
-            opts.channels().size(), is(3));
+                opts.channels().size(), is(3));
         assertThat("FAIL: Channel 1 incorrect.",
-            opts.channels().get(0).channel(), is("udp://127.0.0.1:12345"));
+                opts.channels().get(0).channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Channel 2 incorrect",
-            opts.channels().get(1).channel(), is("udp://127.0.0.1:12346"));
+                opts.channels().get(1).channel(), is("udp://127.0.0.1:12346"));
         assertThat("FAIL: Channel 3 incorrect",
-            opts.channels().get(2).channel(), is("udp://127.0.0.1:12347"));
+                opts.channels().get(2).channel(), is("udp://127.0.0.1:12347"));
     }
 
     @Test
     public void channelWithStreamIdRange() throws Exception
     {
-        final String[] args = { "--channels", "udp://127.0.0.1:12345#100-102" };
+        final String[] args = {"--channels", "udp://127.0.0.1:12345#100-102"};
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 1 channel.",
-            opts.channels().size(), is(1));
+                opts.channels().size(), is(1));
         final ChannelDescriptor cd = opts.channels().get(0);
 
         assertThat("FAIL: Expected 3 stream IDs on channel.",
-            cd.streamIdentifiers().length, is(3));
+                cd.streamIdentifiers().length, is(3));
         assertThat("FAIL: stream-id 1 is wrong value.",
-            cd.streamIdentifiers()[0], is(100));
+                cd.streamIdentifiers()[0], is(100));
         assertThat("FAIL: Stream-id 2 is wrong value.",
-            cd.streamIdentifiers()[1], is(101));
+                cd.streamIdentifiers()[1], is(101));
         assertThat("FAIL: Stream-id 3 is wrong value.",
-            cd.streamIdentifiers()[2], is(102));
+                cd.streamIdentifiers()[2], is(102));
     }
 
     /**
@@ -278,102 +278,115 @@ public class PubSubOptionsTest
      * We should end up with 6 total channels, each with 2 stream-ids
      */
     @Test
-    public void channelCsvWithPortAndStreamIdRange() throws  Exception
+    public void channelCsvWithPortAndStreamIdRange() throws Exception
     {
         ChannelDescriptor cd;
-        final String[] args = { "--channels",
-            "udp://127.0.0.1:5000-5001#1-2,udp://224.9.10.11:6000-6001#600-601,udp://192.168.0.1:7000-7001#700-701"};
+        final String[] args = {"--channels",
+                "udp://127.0.0.1:5000-5001#1-2,udp://224.9.10.11:6000-6001#600-601,udp://192.168.0.1:7000-7001#700-701"};
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 6 channels",
-            opts.channels().size(), is(6));
+                opts.channels().size(), is(6));
 
         cd = opts.channels().get(0);
         assertThat("FAIL: Wrong address for channel 1",
-            cd.channel(), is("udp://127.0.0.1:5000"));
+                cd.channel(), is("udp://127.0.0.1:5000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 1",
-            cd.streamIdentifiers().length, is(2));
+                cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(1);
         assertThat("FAIL: Wrong address for channel 2",
-            cd.channel(), is("udp://127.0.0.1:5001"));
+                cd.channel(), is("udp://127.0.0.1:5001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 2",
-            cd.streamIdentifiers().length, is(2));
+                cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(2);
         assertThat("FAIL: Wrong address for channel 3",
-            cd.channel(), is("udp://224.9.10.11:6000"));
+                cd.channel(), is("udp://224.9.10.11:6000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 3",
-            cd.streamIdentifiers().length, is(2));
+                cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(3);
         assertThat("FAIL: Wrong address for channel 4",
-            cd.channel(), is("udp://224.9.10.11:6001"));
+                cd.channel(), is("udp://224.9.10.11:6001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 4",
-            cd.streamIdentifiers().length, is(2));
+                cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(4);
         assertThat("FAIL: Wrong address for channel 5",
-            cd.channel(), is("udp://192.168.0.1:7000"));
+                cd.channel(), is("udp://192.168.0.1:7000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 5",
-            cd.streamIdentifiers().length, is(2));
+                cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(5);
         assertThat("FAIL: Wrong address for channel 6",
-            cd.channel(), is("udp://192.168.0.1:7001"));
+                cd.channel(), is("udp://192.168.0.1:7001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 6",
-            cd.streamIdentifiers().length, is(2));
+                cd.streamIdentifiers().length, is(2));
     }
 
     @Test
     public void channelIPv6() throws Exception
     {
         ChannelDescriptor cd;
-        final String[] args = { "--channels", "udp://[fe80::1234:2345:3456:4567]:12345#5" };
+        final String[] args = {"--channels", "udp://[fe80::1234:2345:3456:4567]:12345#5"};
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 1 channel",
-            opts.channels().size(), is(1));
+                opts.channels().size(), is(1));
         cd = opts.channels().get(0);
         assertThat("FAIL wrong address for channel 1",
-            cd.channel(), is("udp://[fe80::1234:2345:3456:4567]:12345"));
+                cd.channel(), is("udp://[fe80::1234:2345:3456:4567]:12345"));
     }
 
     @Test
     public void channelAeronUnicastIPv4() throws Exception
     {
         ChannelDescriptor cd;
-        final String[] args = { "--channels", "aeron:udp?remote=192.168.14.101:10000-10001|local=192.168.14.102#5" };
+        final String[] args = {"--channels", "aeron:udp?remote=192.168.14.101:10000-10001|local=192.168.14.102#5"};
         opts.parseArgs(args);
 
         assertThat(opts.channels().size(), is(2));
         cd = opts.channels().get(0);
         assertThat("FAIL: wrong address for channel 1",
-            cd.channel(), is("aeron:udp?remote=192.168.14.101:10000|local=192.168.14.102"));
+                cd.channel(), is("aeron:udp?remote=192.168.14.101:10000|local=192.168.14.102"));
         cd = opts.channels().get(1);
         assertThat("FAIL: wrong address for channel 2",
-            cd.channel(), is("aeron:udp?remote=192.168.14.101:10001|local=192.168.14.102"));
+                cd.channel(), is("aeron:udp?remote=192.168.14.101:10001|local=192.168.14.102"));
     }
 
     @Test
     public void channelAeronUnicastIPv6() throws Exception
     {
         ChannelDescriptor cd;
-        final String[] args = { "--channels", "aeron:udp?remote=[::1]:12345|local=[::1]" };
+        final String[] args = {"--channels", "aeron:udp?remote=[::1]:12345|local=[::1]"};
         opts.parseArgs(args);
 
         assertThat(opts.channels().size(), is(1));
         cd = opts.channels().get(0);
         assertThat("FAIL: wrong address for channel 1",
-            cd.channel(), is("aeron:udp?remote=[::1]:12345|local=[::1]"));
+                cd.channel(), is("aeron:udp?remote=[::1]:12345|local=[::1]"));
     }
 
     @Test
     public void numberOfStreams() throws Exception
     {
-        final String[] args = { "--channels", "udp://localhost:12345#1-10,udp://localhost:12345#11" };
+        final String[] args = {"--channels", "udp://localhost:12345#1-10,udp://localhost:12345#11"};
         opts.parseArgs(args);
 
+        assertThat(opts.numberOfStreams(), is(11));
+    }
+
+    @Test
+    public void numberOfStreamsAeronUri() throws Exception
+    {
+        final String[] args = {
+            "--channels",
+            "aeron:udp?group=224.10.20.21:12345#1-10|interface=127.0.0.1,"+
+                "aeron:udp?remote=localhost:13333#1|local=127.0.0.1"
+        };
+
+        opts.parseArgs(args);
         assertThat(opts.numberOfStreams(), is(11));
     }
 

@@ -953,13 +953,21 @@ public class PubSubOptions
     /**
      * Helper function to find the minimum and maximum values in the stream ID section of a channel.
      * This is mostly here so the parse channels function isn't too large.
-     * @param ids String containing the ids, either single integer or 2 integer range with hyphen.
+     * @param inputString String containing the ids, either single integer or 2 integer range with hyphen.
      * @return An array that is always length 2 which contains minimum and maximum stream IDs.
      */
-    private int[] findMinAndMaxStreamIds(final String ids) throws ParseException
+    private int[] findMinAndMaxStreamIds(final String inputString) throws ParseException
     {
         int streamIdLow = 1;
         int streamIdHigh = 1;
+
+        String ids = inputString;
+        // If the ids are part of an aeron: URI it might have a | in it with non channel information after
+        final int indexOfPipe = ids.indexOf("|");
+        if (indexOfPipe != -1)
+        {
+            ids = inputString.substring(0, indexOfPipe);
+        }
 
         if (ids.contains("-"))
         {
@@ -989,7 +997,7 @@ public class PubSubOptions
             }
             catch (final NumberFormatException streamIdEx)
             {
-                throw new ParseException("Stream ID '" + ids + "' did not parse into an int.");
+                throw new ParseException("Stream ID '" + ids + "' did not parse into an integer.");
             }
         }
 
@@ -1011,11 +1019,11 @@ public class PubSubOptions
             cd.channel(chan.getChannelWithPort(currentPort));
 
             final int[] idArray = new int[streamIdHigh - streamIdLow + 1];
-            int sessionId = streamIdLow;
+            int streamId = streamIdLow;
             for (int i = 0; i < idArray.length; i++)
             {
                 // set all the session Ids in the array
-                idArray[i] = sessionId++;
+                idArray[i] = streamId++;
             }
             cd.streamIdentifiers(idArray);
             channels.add(cd);

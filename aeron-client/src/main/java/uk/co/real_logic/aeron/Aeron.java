@@ -35,6 +35,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
@@ -211,6 +212,8 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private final AtomicBoolean isClosed = new AtomicBoolean(false);
+
         private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
@@ -411,9 +414,12 @@ public final class Aeron implements AutoCloseable
          */
         public void close()
         {
-            IoUtil.unmap(cncByteBuffer);
+            if (isClosed.compareAndSet(false, true))
+            {
+                IoUtil.unmap(cncByteBuffer);
 
-            super.close();
+                super.close();
+            }
         }
     }
 }

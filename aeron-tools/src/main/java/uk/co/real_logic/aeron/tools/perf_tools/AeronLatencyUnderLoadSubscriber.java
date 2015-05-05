@@ -67,10 +67,14 @@ public class AeronLatencyUnderLoadSubscriber
             sub.poll(1);
         }
 
-
-        sub.close();
-        pub.close();
-        ctx.close();
+        try
+        {
+            Thread.sleep(500);
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
         aeron.close();
     }
 

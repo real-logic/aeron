@@ -194,9 +194,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         {
             e.printStackTrace();
         }
-        pub.close();
-        sub.close();
-        ctx.close();
+
         aeron.close();
 
         try

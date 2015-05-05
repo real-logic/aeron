@@ -159,7 +159,7 @@ public class PubSubOptionsTest
         final String[] args = {};
         opts.parseArgs(args);
         assertThat("FAIL: default input stream should be null.",
-                opts.input(), is(nullValue()));
+            opts.input(), is(nullValue()));
     }
 
     @Test
@@ -168,7 +168,7 @@ public class PubSubOptionsTest
         final String[] args = {};
         opts.parseArgs(args);
         assertThat("FAIL: Default output stream should be null",
-                opts.output(), is(nullValue()));
+            opts.output(), is(nullValue()));
     }
 
     @Test
@@ -177,7 +177,7 @@ public class PubSubOptionsTest
         final String[] args = {"-o", "NULL"};
         opts.parseArgs(args);
         assertThat("FAIL: Output stream should be null when set to the string 'null'",
-                opts.output(), is(nullValue()));
+            opts.output(), is(nullValue()));
     }
 
     @Test
@@ -186,7 +186,7 @@ public class PubSubOptionsTest
         final String[] args = {"--output", "StdOut"};
         opts.parseArgs(args);
         assertThat("FAIL: Expected output to be the standard out",
-                opts.output(), equalTo(System.out));
+            opts.output(), equalTo(System.out));
     }
 
     @Test
@@ -195,7 +195,7 @@ public class PubSubOptionsTest
         final String[] args = {"--output", "stderr"};
         opts.parseArgs(args);
         assertThat("FAIL: Expected output to be standard error.",
-                opts.output(), equalTo(System.err));
+            opts.output(), equalTo(System.err));
     }
 
     @Test
@@ -204,17 +204,17 @@ public class PubSubOptionsTest
         final String[] args = {"--channels", "udp://127.0.0.1:12345"};
         opts.parseArgs(args);
         assertThat("FAIL: Exactly one channel.",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
 
         final ChannelDescriptor cd = opts.channels().get(0);
         final int[] streamIds = cd.streamIdentifiers();
 
         assertThat("FAIL: Exactly one stream identifier on the channel.",
-                streamIds.length, is(1));
+            streamIds.length, is(1));
         assertThat("FAIL: Channel is udp://127.0.0.1:12345",
-                cd.channel(), is("udp://127.0.0.1:12345"));
+            cd.channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Stream ID is 1",
-                cd.streamIdentifiers()[0], is(1));
+            cd.streamIdentifiers()[0], is(1));
     }
 
     @Test
@@ -224,17 +224,17 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Exactly one channel.",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
 
         final ChannelDescriptor cd = opts.channels().get(0);
         final int[] streamIds = cd.streamIdentifiers();
 
         assertThat("FAIL: Exactly one stream identifier on the channel.",
-                streamIds.length, is(1));
+            streamIds.length, is(1));
         assertThat("FAIL: Channel is udp://127.0.0.1:12345",
-                cd.channel(), is("udp://127.0.0.1:12345"));
+            cd.channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Stream ID is 100",
-                cd.streamIdentifiers()[0], is(100));
+            cd.streamIdentifiers()[0], is(100));
     }
 
     @Test
@@ -244,13 +244,13 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 3 channels.",
-                opts.channels().size(), is(3));
+            opts.channels().size(), is(3));
         assertThat("FAIL: Channel 1 incorrect.",
-                opts.channels().get(0).channel(), is("udp://127.0.0.1:12345"));
+            opts.channels().get(0).channel(), is("udp://127.0.0.1:12345"));
         assertThat("FAIL: Channel 2 incorrect",
-                opts.channels().get(1).channel(), is("udp://127.0.0.1:12346"));
+            opts.channels().get(1).channel(), is("udp://127.0.0.1:12346"));
         assertThat("FAIL: Channel 3 incorrect",
-                opts.channels().get(2).channel(), is("udp://127.0.0.1:12347"));
+            opts.channels().get(2).channel(), is("udp://127.0.0.1:12347"));
     }
 
     @Test
@@ -260,17 +260,17 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 1 channel.",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
         final ChannelDescriptor cd = opts.channels().get(0);
 
         assertThat("FAIL: Expected 3 stream IDs on channel.",
-                cd.streamIdentifiers().length, is(3));
+            cd.streamIdentifiers().length, is(3));
         assertThat("FAIL: stream-id 1 is wrong value.",
-                cd.streamIdentifiers()[0], is(100));
+            cd.streamIdentifiers()[0], is(100));
         assertThat("FAIL: Stream-id 2 is wrong value.",
-                cd.streamIdentifiers()[1], is(101));
+            cd.streamIdentifiers()[1], is(101));
         assertThat("FAIL: Stream-id 3 is wrong value.",
-                cd.streamIdentifiers()[2], is(102));
+            cd.streamIdentifiers()[2], is(102));
     }
 
     /**
@@ -282,47 +282,47 @@ public class PubSubOptionsTest
     {
         ChannelDescriptor cd;
         final String[] args = {"--channels",
-                "udp://127.0.0.1:5000-5001#1-2,udp://224.9.10.11:6000-6001#600-601,udp://192.168.0.1:7000-7001#700-701"};
+            "udp://127.0.0.1:5000-5001#1-2,udp://224.9.10.11:6000-6001#600-601,udp://192.168.0.1:7000-7001#700-701"};
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 6 channels",
-                opts.channels().size(), is(6));
+            opts.channels().size(), is(6));
 
         cd = opts.channels().get(0);
         assertThat("FAIL: Wrong address for channel 1",
-                cd.channel(), is("udp://127.0.0.1:5000"));
+            cd.channel(), is("udp://127.0.0.1:5000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 1",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(1);
         assertThat("FAIL: Wrong address for channel 2",
-                cd.channel(), is("udp://127.0.0.1:5001"));
+            cd.channel(), is("udp://127.0.0.1:5001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 2",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(2);
         assertThat("FAIL: Wrong address for channel 3",
-                cd.channel(), is("udp://224.9.10.11:6000"));
+            cd.channel(), is("udp://224.9.10.11:6000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 3",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(3);
         assertThat("FAIL: Wrong address for channel 4",
-                cd.channel(), is("udp://224.9.10.11:6001"));
+            cd.channel(), is("udp://224.9.10.11:6001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 4",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(4);
         assertThat("FAIL: Wrong address for channel 5",
-                cd.channel(), is("udp://192.168.0.1:7000"));
+            cd.channel(), is("udp://192.168.0.1:7000"));
         assertThat("FAIL: Wrong number of stream IDs on channel 5",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
 
         cd = opts.channels().get(5);
         assertThat("FAIL: Wrong address for channel 6",
-                cd.channel(), is("udp://192.168.0.1:7001"));
+            cd.channel(), is("udp://192.168.0.1:7001"));
         assertThat("FAIL: Wrong number of stream IDs on channel 6",
-                cd.streamIdentifiers().length, is(2));
+            cd.streamIdentifiers().length, is(2));
     }
 
     @Test
@@ -333,10 +333,10 @@ public class PubSubOptionsTest
         opts.parseArgs(args);
 
         assertThat("FAIL: Expected 1 channel",
-                opts.channels().size(), is(1));
+            opts.channels().size(), is(1));
         cd = opts.channels().get(0);
         assertThat("FAIL wrong address for channel 1",
-                cd.channel(), is("udp://[fe80::1234:2345:3456:4567]:12345"));
+            cd.channel(), is("udp://[fe80::1234:2345:3456:4567]:12345"));
     }
 
     @Test
@@ -349,10 +349,10 @@ public class PubSubOptionsTest
         assertThat(opts.channels().size(), is(2));
         cd = opts.channels().get(0);
         assertThat("FAIL: wrong address for channel 1",
-                cd.channel(), is("aeron:udp?remote=192.168.14.101:10000|local=192.168.14.102"));
+            cd.channel(), is("aeron:udp?remote=192.168.14.101:10000|local=192.168.14.102"));
         cd = opts.channels().get(1);
         assertThat("FAIL: wrong address for channel 2",
-                cd.channel(), is("aeron:udp?remote=192.168.14.101:10001|local=192.168.14.102"));
+            cd.channel(), is("aeron:udp?remote=192.168.14.101:10001|local=192.168.14.102"));
     }
 
     @Test
@@ -365,7 +365,7 @@ public class PubSubOptionsTest
         assertThat(opts.channels().size(), is(1));
         cd = opts.channels().get(0);
         assertThat("FAIL: wrong address for channel 1",
-                cd.channel(), is("aeron:udp?remote=[::1]:12345|local=[::1]"));
+            cd.channel(), is("aeron:udp?remote=[::1]:12345|local=[::1]"));
     }
 
     @Test
@@ -380,11 +380,12 @@ public class PubSubOptionsTest
     @Test
     public void numberOfStreamsAeronUri() throws Exception
     {
-        final String[] args = {
-            "--channels",
-            "aeron:udp?group=224.10.20.21:12345#1-10|interface=127.0.0.1,"+
-                "aeron:udp?remote=localhost:13333#1|local=127.0.0.1"
-        };
+        final String[] args =
+            {
+                "--channels",
+                "aeron:udp?group=224.10.20.21:12345#1-10|interface=127.0.0.1," +
+                    "aeron:udp?remote=localhost:13333#1|local=127.0.0.1"
+            };
 
         opts.parseArgs(args);
         assertThat(opts.numberOfStreams(), is(11));
@@ -393,7 +394,7 @@ public class PubSubOptionsTest
     @Test
     public void messageSizes() throws Exception
     {
-        final String[] args = { "--size", "100" };
+        final String[] args = {"--size", "100"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), is(100));
@@ -402,7 +403,7 @@ public class PubSubOptionsTest
     @Test
     public void messageSizeShortHand() throws Exception
     {
-        final String[] args = { "-s", "100" };
+        final String[] args = {"-s", "100"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), is(100));
@@ -411,7 +412,7 @@ public class PubSubOptionsTest
     @Test
     public void messageSizeRange() throws Exception
     {
-        final String[] args = { "--size", "101-102" };
+        final String[] args = {"--size", "101-102"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), both(greaterThanOrEqualTo(101)).and(lessThanOrEqualTo(102)));
@@ -420,7 +421,7 @@ public class PubSubOptionsTest
     @Test
     public void messageNumberAndSize() throws Exception
     {
-        final String[] args = { "--size", "1@100" };
+        final String[] args = {"--size", "1@100"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), is(100));
@@ -429,7 +430,7 @@ public class PubSubOptionsTest
     @Test
     public void messageNumberAndRange() throws Exception
     {
-        final String[] args = { "--size", "1@101-102" };
+        final String[] args = {"--size", "1@101-102"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), both(greaterThanOrEqualTo(101)).and(lessThanOrEqualTo(102)));
@@ -438,7 +439,7 @@ public class PubSubOptionsTest
     @Test
     public void messageNumberAndRangeCsv() throws Exception
     {
-        final String[] args = { "--size", "1@100,1@101-102,98@1000" };
+        final String[] args = {"--size", "1@100,1@101-102,98@1000"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), is(100));
@@ -449,7 +450,7 @@ public class PubSubOptionsTest
     @Test
     public void messageSizeBytesSuffix() throws Exception
     {
-        final String[] args = { "--size", "1@100B,1@101b" };
+        final String[] args = {"--size", "1@100B,1@101b"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), is(100));
@@ -459,7 +460,7 @@ public class PubSubOptionsTest
     @Test
     public void messageSizeKilobytesSuffix() throws Exception
     {
-        final String[] args = { "--size", "1@100K,1@101k,1@102KB,1@103kb" };
+        final String[] args = {"--size", "1@100K,1@101k,1@102KB,1@103kb"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), is(100 * 1024));
@@ -471,7 +472,7 @@ public class PubSubOptionsTest
     @Test
     public void messageSizeMegabytesSuffix() throws Exception
     {
-        final String[] args = { "--size", "1@100M,1@101m,1@102MB,1@103mb" };
+        final String[] args = {"--size", "1@100M,1@101m,1@102MB,1@103mb"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), is(100 * 1024 * 1024));
@@ -483,7 +484,7 @@ public class PubSubOptionsTest
     @Test
     public void messageSizeRangesWithSuffixes() throws Exception
     {
-        final String[] args = { "--size", "1@1023B-1KB,1@1023KB-1MB" };
+        final String[] args = {"--size", "1@1023B-1KB,1@1023KB-1MB"};
         opts.parseArgs(args);
         final MessageSizePattern p = opts.messageSizePattern();
         assertThat(p.getNext(), both(greaterThanOrEqualTo(1023)).and(lessThanOrEqualTo((1024))));
@@ -493,62 +494,62 @@ public class PubSubOptionsTest
     @Test
     public void rateMaximum() throws Exception
     {
-        final String[] args = { "--rate", "max" };
+        final String[] args = {"--rate", "max"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(1));
 
         final RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
-        final SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval)interval;
-        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        final SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval) interval;
+        assertThat(sub.seconds(), is((double) Long.MAX_VALUE));
         assertThat(sub.bitsPerSecond(), is(Long.MAX_VALUE));
     }
 
     @Test
     public void rateMbps() throws Exception
     {
-        final String[] args = { "--rate", "1Gbps" };
+        final String[] args = {"--rate", "1Gbps"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(1));
 
         final RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
-        final SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval)interval;
-        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        final SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval) interval;
+        assertThat(sub.seconds(), is((double) Long.MAX_VALUE));
         assertThat(sub.bitsPerSecond(), is(1_000_000_000L));
     }
 
     @Test
     public void rateMessagesPerSecond() throws Exception
     {
-        final String[] args = { "--rate", "100mps" };
+        final String[] args = {"--rate", "100mps"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(1));
 
         final RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
-        final SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval)interval;
-        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        final SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval) interval;
+        assertThat(sub.seconds(), is((double) Long.MAX_VALUE));
         assertThat(sub.messagesPerSecond(), is(100D));
     }
 
-    @Test (expected = ParseException.class)
+    @Test(expected = ParseException.class)
     public void rateNotValid() throws Exception
     {
-        final String[] args = { "--rate", "1.21 Giga Watts" };
+        final String[] args = {"--rate", "1.21 Giga Watts"};
         opts.parseArgs(args); // will throw ParseException
     }
 
     @Test
     public void rateMessagesAtBitsPerSecond() throws Exception
     {
-        final String[] args = { "--rate", "100m@0.5Mbps" };
+        final String[] args = {"--rate", "100m@0.5Mbps"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(1));
 
         final RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(MessagesAtBitsPerSecondInterval.class));
-        final MessagesAtBitsPerSecondInterval sub = (MessagesAtBitsPerSecondInterval)interval;
+        final MessagesAtBitsPerSecondInterval sub = (MessagesAtBitsPerSecondInterval) interval;
         assertThat(sub.messages(), is(100L));
         assertThat(sub.bitsPerSecond(), is(500000L));
     }
@@ -556,13 +557,13 @@ public class PubSubOptionsTest
     @Test
     public void rateMessagesAtMessagesPerSecond() throws Exception
     {
-        final String[] args = { "--rate", "10m@1mps" };
+        final String[] args = {"--rate", "10m@1mps"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(1));
 
         final RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(MessagesAtMessagesPerSecondInterval.class));
-        final MessagesAtMessagesPerSecondInterval sub = (MessagesAtMessagesPerSecondInterval)interval;
+        final MessagesAtMessagesPerSecondInterval sub = (MessagesAtMessagesPerSecondInterval) interval;
         assertThat(sub.messages(), is(10L));
         assertThat(sub.messagesPerSecond(), is(1D));
     }
@@ -570,13 +571,13 @@ public class PubSubOptionsTest
     @Test
     public void rateSecondsAtBitsPerSecond() throws Exception
     {
-        final String[] args = { "--rate", "10.4s@1.5Kbps" };
+        final String[] args = {"--rate", "10.4s@1.5Kbps"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(1));
 
         final RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
-        final SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval)interval;
+        final SecondsAtBitsPerSecondInterval sub = (SecondsAtBitsPerSecondInterval) interval;
         assertThat(sub.seconds(), is(10.4D));
         assertThat(sub.bitsPerSecond(), is(1500L));
     }
@@ -584,13 +585,13 @@ public class PubSubOptionsTest
     @Test
     public void rateSecondsAtMessagesPerSecond() throws Exception
     {
-        final String[] args = { "--rate", "11s@100mps" };
+        final String[] args = {"--rate", "11s@100mps"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(1));
 
         final RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
-        final SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval)interval;
+        final SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval) interval;
         assertThat(sub.seconds(), is(11D));
         assertThat(sub.messagesPerSecond(), is(100D));
     }
@@ -598,31 +599,31 @@ public class PubSubOptionsTest
     @Test
     public void rateCsv() throws Exception
     {
-        final String[] args = { "--rate", "100m@0.5mps,10s@1.5Mbps,10s@100mps,50m@100bps" };
+        final String[] args = {"--rate", "100m@0.5mps,10s@1.5Mbps,10s@100mps,50m@100bps"};
         opts.parseArgs(args);
         assertThat(opts.rateIntervals().size(), is(4));
 
         RateControllerInterval interval = opts.rateIntervals().get(0);
         assertThat(interval, instanceOf(MessagesAtMessagesPerSecondInterval.class));
-        final MessagesAtMessagesPerSecondInterval sub1 = (MessagesAtMessagesPerSecondInterval)interval;
+        final MessagesAtMessagesPerSecondInterval sub1 = (MessagesAtMessagesPerSecondInterval) interval;
         assertThat(sub1.messages(), is(100L));
         assertThat(sub1.messagesPerSecond(), is(0.5D));
 
         interval = opts.rateIntervals().get(1);
         assertThat(interval, instanceOf(SecondsAtBitsPerSecondInterval.class));
-        final SecondsAtBitsPerSecondInterval sub2 = (SecondsAtBitsPerSecondInterval)interval;
+        final SecondsAtBitsPerSecondInterval sub2 = (SecondsAtBitsPerSecondInterval) interval;
         assertThat(sub2.seconds(), is(10D));
         assertThat(sub2.bitsPerSecond(), is(1_500_000L));
 
         interval = opts.rateIntervals().get(2);
         assertThat(interval, instanceOf(SecondsAtMessagesPerSecondInterval.class));
-        final SecondsAtMessagesPerSecondInterval sub3 = (SecondsAtMessagesPerSecondInterval)interval;
+        final SecondsAtMessagesPerSecondInterval sub3 = (SecondsAtMessagesPerSecondInterval) interval;
         assertThat(sub3.seconds(), is(10D));
         assertThat(sub3.messagesPerSecond(), is(100D));
 
         interval = opts.rateIntervals().get(3);
         assertThat(interval, instanceOf(MessagesAtBitsPerSecondInterval.class));
-        final MessagesAtBitsPerSecondInterval sub4 = (MessagesAtBitsPerSecondInterval)interval;
+        final MessagesAtBitsPerSecondInterval sub4 = (MessagesAtBitsPerSecondInterval) interval;
         assertThat(sub4.messages(), is(50L));
         assertThat(sub4.bitsPerSecond(), is(100L));
     }
@@ -630,19 +631,19 @@ public class PubSubOptionsTest
     @Test
     public void sessionId() throws Exception
     {
-        final String[] args = { "--session", "1000" };
+        final String[] args = {"--session", "1000"};
         assertThat("FAIL: useSessionId needs to default to false",
             opts.useSessionId(), is(false));
         opts.parseArgs(args);
         assertThat(opts.sessionId(), is(1000));
         assertThat("FAIL: After successfully setting a session ID, useSessionId should return true.",
-                opts.useSessionId(), is(true));
+            opts.useSessionId(), is(true));
     }
 
     @Test
     public void sessionIdDefault() throws Exception
     {
-        final String[] args = { "--session", "default" };
+        final String[] args = {"--session", "default"};
         opts.parseArgs(args);
         assertThat("FAIL: using default session ID means useSessionId should return false.",
             opts.useSessionId(), is(false));
@@ -651,7 +652,7 @@ public class PubSubOptionsTest
     @Test
     public void sessionIdFailure()
     {
-        final String[] args = { "--session", "fails" };
+        final String[] args = {"--session", "fails"};
         boolean exceptionThrown = false;
         opts.useSessionId(true);
         try
@@ -671,7 +672,7 @@ public class PubSubOptionsTest
     @Test
     public void verifyOn() throws Exception
     {
-        final String[] args = { "--verify", "Yes" };
+        final String[] args = {"--verify", "Yes"};
         opts.parseArgs(args);
         assertThat(opts.verify(), is(true));
     }
@@ -679,7 +680,7 @@ public class PubSubOptionsTest
     @Test
     public void verifyOff() throws Exception
     {
-        final String[] args = { "--verify", "No" };
+        final String[] args = {"--verify", "No"};
         opts.parseArgs(args);
         assertThat(opts.verify(), is(false));
     }
@@ -687,16 +688,16 @@ public class PubSubOptionsTest
     @Test
     public void verifyDefault() throws Exception
     {
-        final String[] args = { };
+        final String[] args = {};
         opts.parseArgs(args);
         assertThat("FAIL: Default for --verify should be true",
             opts.verify(), is(true));
     }
 
-    @Test (expected = ParseException.class)
+    @Test(expected = ParseException.class)
     public void verifyException() throws Exception
     {
-        final String[] args = { "--verify", "schmerify" };
+        final String[] args = {"--verify", "schmerify"};
         opts.parseArgs(args);
     }
 
@@ -711,7 +712,7 @@ public class PubSubOptionsTest
 
         // Make the function return the buffered reader we just created.
         doReturn(br).when(spyOpts).newBufferedFileReader("filename");
-        final String[] args = { "--defaults", "filename" };
+        final String[] args = {"--defaults", "filename"};
         spyOpts.parseArgs(args);
 
         // Channel should be what was in the file
@@ -740,7 +741,7 @@ public class PubSubOptionsTest
         final BufferedReader br = new BufferedReader(reader);
         doReturn(br).when(spyOpts).newBufferedFileReader("textfile");
 
-        final String[] args = { "--defaults", "textfile" };
+        final String[] args = {"--defaults", "textfile"};
         spyOpts.parseArgs(args);
 
         // check size
@@ -750,8 +751,8 @@ public class PubSubOptionsTest
         // check rate
         assertThat(spyOpts.rateIntervals().size(), is(1));
         assertThat(spyOpts.rateIntervals().get(0), instanceOf(SecondsAtMessagesPerSecondInterval.class));
-        final SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval)spyOpts.rateIntervals().get(0);
-        assertThat(sub.seconds(), is((double)Long.MAX_VALUE));
+        final SecondsAtMessagesPerSecondInterval sub = (SecondsAtMessagesPerSecondInterval) spyOpts.rateIntervals().get(0);
+        assertThat(sub.seconds(), is((double) Long.MAX_VALUE));
         assertThat(sub.messagesPerSecond(), is(100D));
 
         // check threads
@@ -774,7 +775,7 @@ public class PubSubOptionsTest
         final BufferedReader br = new BufferedReader(new StringReader(text));
         doReturn(br).when(spyOpts).newBufferedFileReader("filename");
 
-        final String[] args = { "--output", "stderr", "--defaults", "filename", "--verify", "yes" };
+        final String[] args = {"--output", "stderr", "--defaults", "filename", "--verify", "yes"};
         spyOpts.parseArgs(args);
 
         assertThat("FAIL: Should be overridden by args",

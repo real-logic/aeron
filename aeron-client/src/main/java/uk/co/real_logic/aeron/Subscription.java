@@ -104,8 +104,8 @@ public class Subscription implements AutoCloseable
      */
     public void close()
     {
-        clientConductor.releaseSubscription(this);
         connections.forEach(Connection::close);
+        clientConductor.releaseSubscription(this);
     }
 
     long registrationId()

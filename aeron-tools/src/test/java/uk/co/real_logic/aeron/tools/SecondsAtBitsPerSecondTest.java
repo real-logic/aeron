@@ -25,30 +25,19 @@ public class SecondsAtBitsPerSecondTest
     RateController rc;
     List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
 
-    class Callback implements RateController.Callback
-    {
-        public int onNext()
-        {
-            return 0;
-        }
-
-    }
-
-    Callback callback = new Callback();
-
     @Test
     public void createWithOneAndOne() throws Exception
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtBitsPerSecondInterval(1, 1));
-        rc = new RateController(callback, ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     public void createWithZeroBitsPerSecond() throws Exception
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtBitsPerSecondInterval(1, 0));
-        rc = new RateController(callback, ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test (expected = Exception.class)
@@ -56,7 +45,7 @@ public class SecondsAtBitsPerSecondTest
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtBitsPerSecondInterval(0, 1));
-        rc = new RateController(callback, ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test (expected = Exception.class)
@@ -64,7 +53,7 @@ public class SecondsAtBitsPerSecondTest
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtBitsPerSecondInterval(-1, 1));
-        rc = new RateController(callback, ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 
     @Test (expected = Exception.class)
@@ -72,6 +61,6 @@ public class SecondsAtBitsPerSecondTest
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtBitsPerSecondInterval(1, -1));
-        rc = new RateController(callback, ivlsList);
+        rc = new RateController(() -> { return 0; }, ivlsList);
     }
 }

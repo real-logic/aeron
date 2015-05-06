@@ -172,9 +172,9 @@ public class LogAppender extends LogBufferPartition
 
         final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = termBuffer.capacity();
-        if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
+        if (isBeyondTermCapacity(frameOffset, alignedLength, capacity))
         {
-            if (frameOffset < capacity)
+            if (frameOffset <= (capacity - HEADER_LENGTH))
             {
                 appendPaddingFrame(termBuffer, frameOffset, capacity);
                 return TRIPPED;
@@ -209,9 +209,9 @@ public class LogAppender extends LogBufferPartition
 
         final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = termBuffer.capacity();
-        if (isBeyondLogBufferCapacity(frameOffset, alignedLength, capacity))
+        if (isBeyondTermCapacity(frameOffset, alignedLength, capacity))
         {
-            if (frameOffset < capacity)
+            if (frameOffset <= (capacity - HEADER_LENGTH))
             {
                 appendPaddingFrame(termBuffer, frameOffset, capacity);
                 return TRIPPED;
@@ -245,9 +245,9 @@ public class LogAppender extends LogBufferPartition
 
         final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = termBuffer.capacity();
-        if (isBeyondLogBufferCapacity(frameOffset, requiredCapacity, capacity))
+        if (isBeyondTermCapacity(frameOffset, requiredCapacity, capacity))
         {
-            if (frameOffset < capacity)
+            if (frameOffset <= (capacity - HEADER_LENGTH))
             {
                 appendPaddingFrame(termBuffer, frameOffset, capacity);
                 return TRIPPED;
@@ -293,9 +293,9 @@ public class LogAppender extends LogBufferPartition
         return startingOffset + requiredCapacity;
     }
 
-    private boolean isBeyondLogBufferCapacity(final int frameOffset, final int alignedFrameLength, final int capacity)
+    private static boolean isBeyondTermCapacity(final int frameOffset, final int alignedFrameLength, final int capacity)
     {
-        return (frameOffset + alignedFrameLength + HEADER_LENGTH) > capacity;
+        return (frameOffset + alignedFrameLength) > (capacity - HEADER_LENGTH);
     }
 
     private void appendPaddingFrame(final UnsafeBuffer termBuffer, final int frameOffset, final int capacity)

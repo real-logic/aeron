@@ -33,6 +33,7 @@ public class RateControllerTest
     interface TestCallbackStats
     {
         long numMessagesSent();
+
         long numBitsSent();
     }
 
@@ -52,13 +53,13 @@ public class RateControllerTest
         }
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNulls() throws Exception
     {
         rc = new RateController(null, null);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNullCallback() throws Exception
     {
         final RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
@@ -68,17 +69,21 @@ public class RateControllerTest
         rc = new RateController(null, ivlsList);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNullIntervalsList() throws Exception
     {
-        rc = new RateController(() -> { return 0; }, null);
+        rc = new RateController(() -> {
+            return 0;
+        }, null);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithEmptyIntervalsList() throws Exception
     {
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
@@ -87,7 +92,9 @@ public class RateControllerTest
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
@@ -96,7 +103,9 @@ public class RateControllerTest
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
@@ -105,7 +114,9 @@ public class RateControllerTest
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new SecondsAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
@@ -114,25 +125,31 @@ public class RateControllerTest
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new SecondsAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithZeroIterations() throws Exception
     {
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(() -> { return 0; }, ivlsList, 0);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList, 0);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNegativeIterations() throws Exception
     {
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(() -> { return 0; }, ivlsList, -1);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList, -1);
     }
 
     @Test
@@ -143,7 +160,9 @@ public class RateControllerTest
         ivlsList.add(new SecondsAtBitsPerSecondInterval(1, 1));
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, 1));
         ivlsList.add(new MessagesAtBitsPerSecondInterval(1, 1));
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
@@ -168,7 +187,7 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly one message should have been sent",
-            ((TestCallbackStats) callback).numMessagesSent(), is(1L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(1L));
     }
 
     @Test
@@ -194,7 +213,7 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly one bit should have been sent",
-            ((TestCallbackStats) callback).numBitsSent(), is(1L));
+            ((TestCallbackStats)callback).numBitsSent(), is(1L));
     }
 
     @Test
@@ -220,9 +239,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly five messages should have been sent",
-            ((TestCallbackStats) callback).numMessagesSent(), is(5L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(5L));
         assertThat("FAIL: Exactly 50 bits should have been sent",
-            ((TestCallbackStats) callback).numBitsSent(), is(50L));
+            ((TestCallbackStats)callback).numBitsSent(), is(50L));
     }
 
     @Test
@@ -249,9 +268,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly two messages should have been sent",
-            ((TestCallbackStats) callback).numMessagesSent(), is(2L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(2L));
         assertThat("FAIL: Exactly 20 bits should have been sent",
-            ((TestCallbackStats) callback).numBitsSent(), is(20L));
+            ((TestCallbackStats)callback).numBitsSent(), is(20L));
     }
 
     @Test
@@ -278,9 +297,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly four messages should have been sent",
-            ((TestCallbackStats) callback).numMessagesSent(), is(4L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(4L));
         assertThat("FAIL: Exactly 40 bits should have been sent",
-            ((TestCallbackStats) callback).numBitsSent(), is(40L));
+            ((TestCallbackStats)callback).numBitsSent(), is(40L));
     }
 
     @Test
@@ -288,7 +307,9 @@ public class RateControllerTest
     {
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, Long.MAX_VALUE));
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
 
         /* Wall-clock time isn't an exact science... so we'll accept a
          * fairly generous range of 0.8 seconds to 1.2 seconds of elapsed

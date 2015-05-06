@@ -36,7 +36,7 @@ import org.mockito.MockitoAnnotations;
 
 public class PubSubOptionsTest
 {
-    PubSubOptions opts;
+    private PubSubOptions opts;
 
     @Before
     public void setUp()

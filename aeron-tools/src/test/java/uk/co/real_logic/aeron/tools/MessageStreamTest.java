@@ -27,13 +27,11 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class MessageStreamTest
 {
-
     private static final int MAGIC = 0x0dd01221;
     private static final int BUFFER_SIZE = 200;
-    private static final int HEADER_SIZE = 16;
 
-    MessageStream ms;
-    UnsafeBuffer buf = new UnsafeBuffer(new byte[BUFFER_SIZE]);
+    private MessageStream ms;
+    private UnsafeBuffer buf = new UnsafeBuffer(new byte[BUFFER_SIZE]);
 
     @Test
     public void createSubscriberSide()

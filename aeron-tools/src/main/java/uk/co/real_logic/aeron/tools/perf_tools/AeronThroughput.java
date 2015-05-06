@@ -76,21 +76,21 @@ public class AeronThroughput
         final IdleStrategy idleStrategy)
     {
         return
-                (subscription) ->
+            (subscription) ->
+            {
+                try
                 {
-                    try
+                    while (running.get())
                     {
-                        while (running.get())
-                        {
-                            final int fragmentsRead = subscription.poll(limit);
-                            idleStrategy.idle(fragmentsRead);
-                        }
+                        final int fragmentsRead = subscription.poll(limit);
+                        idleStrategy.idle(fragmentsRead);
                     }
-                    catch (final Exception ex)
-                    {
-                        LangUtil.rethrowUnchecked(ex);
-                    }
-                };
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+            };
     }
 
     private static String humanReadableCount(final long val, final boolean si)
@@ -109,11 +109,11 @@ public class AeronThroughput
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
-                .threadingMode(ThreadingMode.DEDICATED)
-                .conductorIdleStrategy(new NoOpIdleStrategy())
-                .receiverIdleStrategy(new NoOpIdleStrategy())
-                .senderIdleStrategy(new NoOpIdleStrategy())
-                .dirsDeleteOnExit(true);
+            .threadingMode(ThreadingMode.DEDICATED)
+            .conductorIdleStrategy(new NoOpIdleStrategy())
+            .receiverIdleStrategy(new NoOpIdleStrategy())
+            .senderIdleStrategy(new NoOpIdleStrategy())
+            .dirsDeleteOnExit(true);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), AeronThroughput::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
@@ -146,14 +146,13 @@ public class AeronThroughput
             }
             final long stop = System.currentTimeMillis();
             System.out.println("Average throughput for " +
-                    MESSAGE_LENGTH + " byte messages was: " +
-                    humanReadableCount(NUMBER_OF_MESSAGES / ((stop - start) / 1000), false) + " msgs/sec");
+                MESSAGE_LENGTH + " byte messages was: " +
+                humanReadableCount(NUMBER_OF_MESSAGES / ((stop - start) / 1000), false) + " msgs/sec");
 
             if (0 < LINGER_TIMEOUT_MS)
             {
                 Thread.sleep(LINGER_TIMEOUT_MS);
             }
-
 
             running.set(false);
             reporter.halt();

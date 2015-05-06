@@ -71,6 +71,7 @@ public class MediaDriverOptions
 
     /**
      * Parse command line arguments for MediaDriverTool and call the setter functions.
+     *
      * @param args Command line arguments.
      * @return 0 on success, 1 if application should call {@link #printHelp(String)}
      * @throws org.apache.commons.cli.ParseException On string parsing error.
@@ -183,6 +184,7 @@ public class MediaDriverOptions
 
     /**
      * Helper function to be used as a spy for properties file input stream.
+     *
      * @param filename The properties file
      * @return InputStream for reading the file.
      * @throws FileNotFoundException
@@ -205,6 +207,7 @@ public class MediaDriverOptions
         {
             throw new ParseException(ex.getMessage());
         }
+
         return p;
     }
 
@@ -235,6 +238,7 @@ public class MediaDriverOptions
                 throw new ParseException("Error creating new instance of '" + arg + "': " + ex.getMessage());
             }
         }
+
         return strategy;
     }
 
@@ -264,17 +268,17 @@ public class MediaDriverOptions
             maxYields = parseLong(params[1].trim());
             minParkPeriodNs = parseLong(params[2].trim());
             maxParkPeriodNs = parseLong(params[3].trim());
-
         }
+
         return newBackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
     }
 
     // Broken out into simple method for testing.
     IdleStrategy newBackoffIdleStrategy(
-            final long maxSpins,
-            final long maxYields,
-            final long minParkPeriodNs,
-            final long maxParkPeriodNs)
+        final long maxSpins,
+        final long maxYields,
+        final long minParkPeriodNs,
+        final long maxParkPeriodNs)
     {
         return new BackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
     }
@@ -290,6 +294,7 @@ public class MediaDriverOptions
         {
             throw new ParseException("Could not parse '" + longValue + "' as a long value.");
         }
+
         return value;
     }
 }

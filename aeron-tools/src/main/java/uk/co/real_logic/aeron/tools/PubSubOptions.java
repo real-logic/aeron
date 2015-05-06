@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -708,6 +709,7 @@ public class PubSubOptions
         {
             value = parseLongCheckPositive(iterationsStr);
         }
+
         return value;
     }
 
@@ -726,6 +728,7 @@ public class PubSubOptions
         {
             throw new ParseException("Invalid driver option '" + useEmbeddedStr + "'. Must be 'embedded' or 'external'");
         }
+
         return embedded;
     }
 
@@ -898,6 +901,7 @@ public class PubSubOptions
                 break;
             }
         }
+
         return endIdx;
     }
 
@@ -947,6 +951,7 @@ public class PubSubOptions
         {
             throw new ParseException("Address port range '" + ports + "' has low port greater than high port.");
         }
+
         return new int[] { portLow, portHigh };
     }
 
@@ -1369,10 +1374,7 @@ public class PubSubOptions
                 {
                     // Split values by any number of consecutive whitespaces.
                     final String[] arguments = line.split("\\s+");
-                    for (final String arg : arguments)
-                    {
-                        args.add(arg);
-                    }
+                    Collections.addAll(args, arguments);
                 }
             }
             br.close();

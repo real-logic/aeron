@@ -20,7 +20,6 @@ import java.util.concurrent.ThreadLocalRandom;
 
 public class SeedableThreadLocalRandom
 {
-
     private static final ThreadLocal<Random> RND = new ThreadLocal<Random>();
     private static SeedCallback seedCallback;
 

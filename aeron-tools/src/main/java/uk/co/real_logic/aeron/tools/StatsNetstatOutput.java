@@ -26,8 +26,8 @@ public class StatsNetstatOutput implements StatsOutput
 
     public StatsNetstatOutput()
     {
-        pubs = new HashMap<String, PublisherStats>();
-        subs = new HashMap<String, SubscriberStats>();
+        pubs = new HashMap<>();
+        subs = new HashMap<>();
     }
 
     public void format(final String[] keys, final long[] vals) throws Exception
@@ -70,15 +70,13 @@ public class StatsNetstatOutput implements StatsOutput
 
     public void close() throws Exception
     {
-
     }
 
     private void processSubscriberInfo(final String key, final long val)
     {
         SubscriberStats sub = null;
         final String senderInfoType = key.substring(key.indexOf(' ') + 1, key.indexOf(':'));
-        final String current = key.substring(key.indexOf(':') + 2);
-        final String channelInfo = current;
+        final String channelInfo = key.substring(key.indexOf(':') + 2);
 
         if (subs.containsKey(channelInfo))
         {
@@ -97,8 +95,7 @@ public class StatsNetstatOutput implements StatsOutput
     {
         PublisherStats pub = null;
         final String senderInfoType = key.substring(key.indexOf(' ') + 1, key.indexOf(':'));
-        final String current = key.substring(key.indexOf(':') + 2);
-        final String channelInfo = current;
+        final String channelInfo = key.substring(key.indexOf(':') + 2);
 
         if (pubs.containsKey(channelInfo))
         {
@@ -115,11 +112,11 @@ public class StatsNetstatOutput implements StatsOutput
 
     private void updateField(final PublisherStats pub, final String key, final long val)
     {
-        if (key.equalsIgnoreCase("limit"))
+        if ("limit".equalsIgnoreCase(key))
         {
             pub.setLimit(val);
         }
-        else if (key.equalsIgnoreCase("pos"))
+        else if ("pos".equalsIgnoreCase(key))
         {
             pub.setPos(val);
         }
@@ -127,11 +124,11 @@ public class StatsNetstatOutput implements StatsOutput
 
     private void updateField(final SubscriberStats sub, final String key, final long val)
     {
-        if (key.equalsIgnoreCase("hwm"))
+        if ("hwm".equalsIgnoreCase(key))
         {
             sub.setHWM(val);
         }
-        else if (key.equalsIgnoreCase("pos"))
+        else if ("pos".equalsIgnoreCase(key))
         {
             sub.setPos(val);
         }

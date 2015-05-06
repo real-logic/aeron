@@ -134,7 +134,7 @@ public class Stats
             vals = new long[tmpVals.size()];
             for (int i = 0; i < vals.length; i++)
             {
-                vals[i] = tmpVals.get(i).longValue();
+                vals[i] = tmpVals.get(i);
             }
         }
         else if (output instanceof StatsConsoleOutput)
@@ -157,7 +157,7 @@ public class Stats
             vals = new long[tmpVals.size()];
             for (int i = 0; i < vals.length; i++)
             {
-                vals[i] = tmpVals.get(i).longValue();
+                vals[i] = tmpVals.get(i);
             }
         }
         else if (output instanceof StatsVmStatOutput || output instanceof StatsCsvOutput)

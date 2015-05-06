@@ -23,7 +23,6 @@ import uk.co.real_logic.agrona.concurrent.SystemNanoClock;
 
 public class RateController
 {
-
     private static final long WARMUP_IDLES = 5000;
     private static final long CALLIBRATION_IDLES = 50000;
     /* Some platforms (like Windows) have a very coarse parkNanos resolution on the
@@ -128,6 +127,7 @@ public class RateController
      * while (rateController.next())
      * {
      * }
+     *
      * @return true if next should be called again, false if the RateController has now finished
      * all intervals
      */
@@ -165,15 +165,18 @@ public class RateController
     /**
      * Rate controller callback, called at the beginning of each call to {@link #next() next}
      * and supplied by the user of RateController.
-     *
      */
     public interface Callback
     {
-        /** Returns the number of bytes "sent", or -1 to indicate sending should stop. */
+        /**
+         * Returns the number of bytes "sent", or -1 to indicate sending should stop.
+         */
         int onNext();
     }
 
-    /** Resets the RateController back to the beginning, starting at the first interval. */
+    /**
+     * Resets the RateController back to the beginning, starting at the first interval.
+     */
     public void rewind()
     {
         if (activeInterval == null)
@@ -234,7 +237,7 @@ public class RateController
         private final long messages;
 
         protected MessagesAtBitsPerSecondInternal(
-                final RateController rateController, final long messages, final long bitsPerSecond) throws Exception
+            final RateController rateController, final long messages, final long bitsPerSecond) throws Exception
         {
             if (messages <= 0)
             {
@@ -249,7 +252,9 @@ public class RateController
             this.messages = messages;
         }
 
-        /** Returns true if you should keep sending. */
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* We've got a fixed size message and a fixed bits/sec. rate.
@@ -312,7 +317,7 @@ public class RateController
         private final long messages;
 
         protected MessagesAtMessagesPerSecondInternal(
-                final RateController rateController, final long messages, final double messagesPerSecond) throws Exception
+            final RateController rateController, final long messages, final double messagesPerSecond) throws Exception
         {
             if (messages <= 0)
             {
@@ -327,7 +332,9 @@ public class RateController
             this.messages = messages;
         }
 
-        /** Returns true if you should keep sending. */
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* Always start out sending immediately; if the previous
@@ -386,7 +393,7 @@ public class RateController
         private final double seconds;
 
         protected SecondsAtMessagesPerSecondInternal(
-                final RateController rateController, final double seconds, final double messagesPerSecond) throws Exception
+            final RateController rateController, final double seconds, final double messagesPerSecond) throws Exception
         {
             if (seconds <= 0)
             {
@@ -401,7 +408,9 @@ public class RateController
             this.seconds = seconds;
         }
 
-        /** Returns true if you should keep sending. */
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* As a special case... If we're sending 0 messages per second, then this is really just a sleep.
@@ -470,7 +479,7 @@ public class RateController
         private final double seconds;
 
         protected SecondsAtBitsPerSecondInternal(
-                final RateController rateController, final double seconds, final long bitsPerSecond) throws Exception
+            final RateController rateController, final double seconds, final long bitsPerSecond) throws Exception
         {
             if (seconds <= 0)
             {
@@ -485,7 +494,9 @@ public class RateController
             this.seconds = seconds;
         }
 
-        /** Returns true if you should keep sending. */
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* As a special case... If we're sending 0 bits per second, then this is really just a sleep.
@@ -576,7 +587,7 @@ public class RateController
     }
 
     public RateController(final Callback callback, final List<RateControllerInterval> intervals,
-            final long iterations) throws Exception
+        final long iterations) throws Exception
     {
         if (iterations <= 0)
         {

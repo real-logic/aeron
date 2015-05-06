@@ -246,13 +246,9 @@ public class AeronPing implements NewConnectionHandler
             }
             out.close();
         }
-        catch (final FileNotFoundException e)
+        catch (final FileNotFoundException | SecurityException e)
         {
             e.printStackTrace();
-        }
-        catch (final SecurityException se)
-        {
-            se.printStackTrace();
         }
     }
 
@@ -268,13 +264,9 @@ public class AeronPing implements NewConnectionHandler
             }
             out.close();
         }
-        catch (final FileNotFoundException e)
+        catch (final FileNotFoundException | SecurityException e)
         {
             e.printStackTrace();
-        }
-        catch (final SecurityException se)
-        {
-            se.printStackTrace();
         }
     }
 

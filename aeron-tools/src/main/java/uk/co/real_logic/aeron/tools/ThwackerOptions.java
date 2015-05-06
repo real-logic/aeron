@@ -165,11 +165,11 @@ public class ThwackerOptions
     private boolean parseYesNo(final String opt) throws ParseException
     {
         boolean rc;
-        if (opt.equalsIgnoreCase("yes"))
+        if ("yes".equalsIgnoreCase(opt))
         {
             rc = true;
         }
-        else if (opt.equalsIgnoreCase("no"))
+        else if ("no".equalsIgnoreCase(opt))
         {
             rc = false;
         }
@@ -177,6 +177,7 @@ public class ThwackerOptions
         {
             throw new ParseException("An option specified '" + opt + "' can only be 'yes' or 'no'");
         }
+
         return rc;
     }
 

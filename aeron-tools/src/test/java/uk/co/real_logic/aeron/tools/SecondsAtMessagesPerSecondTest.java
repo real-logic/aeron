@@ -23,21 +23,22 @@ import org.junit.Test;
 public class SecondsAtMessagesPerSecondTest
 {
     RateController rc;
-    List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
+    List<RateControllerInterval> ivlsList = new ArrayList<>();
 
     @Test
     public void createWithOneAndOne() throws Exception
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, 1));
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> 0, ivlsList);
     }
 
+    @Test
     public void createWithZeroMessagesPerSecond() throws Exception
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, 0));
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> 0, ivlsList);
     }
 
     @Test (expected = Exception.class)
@@ -45,7 +46,7 @@ public class SecondsAtMessagesPerSecondTest
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(0, 1));
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> 0, ivlsList);
     }
 
     @Test (expected = Exception.class)
@@ -53,7 +54,7 @@ public class SecondsAtMessagesPerSecondTest
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(-1, 1));
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> 0, ivlsList);
     }
 
     @Test (expected = Exception.class)
@@ -61,6 +62,6 @@ public class SecondsAtMessagesPerSecondTest
     {
         ivlsList.clear();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, -1));
-        rc = new RateController(() -> { return 0; }, ivlsList);
+        rc = new RateController(() -> 0, ivlsList);
     }
 }

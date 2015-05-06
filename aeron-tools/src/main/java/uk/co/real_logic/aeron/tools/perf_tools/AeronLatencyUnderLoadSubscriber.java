@@ -83,7 +83,6 @@ public class AeronLatencyUnderLoadSubscriber
         if (buffer.getByte(offset) == (byte)'q')
         {
             running = false;
-            return;
         }
         else
         {
@@ -106,7 +105,6 @@ public class AeronLatencyUnderLoadSubscriber
 
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);
-
 
         if (command.hasOption("pubChannel"))
         {

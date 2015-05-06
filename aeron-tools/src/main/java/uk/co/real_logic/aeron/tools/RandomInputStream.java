@@ -70,6 +70,7 @@ public class RandomInputStream extends InputStream
         {
             bytesRead = b.length;
         }
+
         return read(b, 0, bytesRead);
     }
 
@@ -99,6 +100,7 @@ public class RandomInputStream extends InputStream
             b[offset++] = (byte)(data >>> remaining * 8);
             remaining -= 1;
         }
+
         return len;
     }
 }

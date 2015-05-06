@@ -28,7 +28,8 @@ import org.junit.Test;
  */
 public class RandomInputStreamTest
 {
-    RandomInputStream stream;
+    private RandomInputStream stream;
+
     @Before
     public void setUp()
     {

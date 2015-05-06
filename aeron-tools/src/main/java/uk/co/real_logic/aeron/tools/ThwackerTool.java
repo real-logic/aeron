@@ -42,9 +42,6 @@ import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-
-
-
 public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHandler
 {
     static
@@ -133,7 +130,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
     public ThwackerTool(final String[] args)
     {
-
         final ThwackerOptions opts = new ThwackerOptions();
         try
         {
@@ -155,9 +151,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         reportMessageCounts();
         cleanUp();
     }
-
-
-
 
     /**
      * createAndInitObjects():
@@ -193,7 +186,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         ctrlSub.tryAddSub();
         ctrlPub.tryAddPub();
 
-        thwackerThreads = new ArrayList<Thread>();
+        thwackerThreads = new ArrayList<>();
 
     }
 
@@ -264,21 +257,21 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.fine("Creating and starting threads");
         for (int i = 0; i < createThreadCount; i++)
         {
-            thwackerThreads.add(new Thread(() -> createSubs()));
-            thwackerThreads.add(new Thread(() -> createPubs()));
+            thwackerThreads.add(new Thread(this::createSubs));
+            thwackerThreads.add(new Thread(this::createPubs));
         }
         for (int i = 0; i < deleteThreadCount; i++)
         {
-            thwackerThreads.add(new Thread(() -> deleteSubs()));
-            thwackerThreads.add(new Thread(() -> deletePubs()));
+            thwackerThreads.add(new Thread(this::deleteSubs));
+            thwackerThreads.add(new Thread(this::deletePubs));
         }
         for (int i = 0; i < receiverThreadCount; i++)
         {
-            thwackerThreads.add(new Thread(() -> receiveOnSubs()));
+            thwackerThreads.add(new Thread(this::receiveOnSubs));
         }
         for (int i = 0; i < senderThreadCount; i++)
         {
-            thwackerThreads.add(i, new Thread(() -> sendOnRandomPub()));
+            thwackerThreads.add(i, new Thread(this::sendOnRandomPub));
         }
         for (int i = 0; i < thwackerThreads.size(); i++)
         {
@@ -364,7 +357,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         ctrlSub.close();
         aeron.close();
         CloseHelper.quietClose(driver);
-
     }
 
     public void cleanUpArray(final ThwackingElement[] arr)
@@ -783,6 +775,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
                     lock.writeLock().unlock();
                 }
             }
+
             return rc;
         }
 

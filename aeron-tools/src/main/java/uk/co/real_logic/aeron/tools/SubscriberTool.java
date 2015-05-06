@@ -180,6 +180,7 @@ public class SubscriberTool
         {
             totalMessages += subscribers[i].verifiableMessagesReceived();
         }
+
         return totalMessages;
     }
 
@@ -195,6 +196,7 @@ public class SubscriberTool
         {
             totalBytes += subscribers[i].bytesReceived();
         }
+
         return totalBytes;
     }
 
@@ -210,6 +212,7 @@ public class SubscriberTool
         {
             totalMessages += subscribers[i].nonVerifiableMessagesReceived();
         }
+
         return totalMessages;
     }
 
@@ -224,6 +227,7 @@ public class SubscriberTool
             seed = options.randomSeed();
         }
         LOG.info(String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
+
         return seed;
     }
 
@@ -293,7 +297,7 @@ public class SubscriberTool
 
             /* Create the subscriptionsList and populate it with just the channels this thread is supposed
              * to subscribe to. */
-            final ArrayList<Subscription> subscriptionsList = new ArrayList();
+            final ArrayList<Subscription> subscriptionsList = new ArrayList<>();
             int streamIdx = 0;
             for (int i = 0; i < options.channels().size(); i++)
             {

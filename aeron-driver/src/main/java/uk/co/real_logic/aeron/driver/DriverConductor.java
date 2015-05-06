@@ -298,8 +298,7 @@ public class DriverConductor implements Agent
             initialWindowLength,
             rawLog,
             timerWheel,
-            Configuration.dontSendNack() ? NO_NAK_DELAY_GENERATOR :
-                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
             newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
             clock,

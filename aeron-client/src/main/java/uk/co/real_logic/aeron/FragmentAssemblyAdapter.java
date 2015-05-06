@@ -15,18 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.BEGIN_FRAG;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.END_FRAG;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.UNFRAGMENTED;
-
-import java.util.function.Supplier;
-
 import uk.co.real_logic.aeron.common.BufferBuilder;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+
+import java.util.function.Supplier;
+
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
  * A {@link DataHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages

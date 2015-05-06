@@ -339,11 +339,13 @@ public class UdpChannelTest
     {
         return new TypeSafeMatcher<NetworkInterface>()
         {
+            @Override
             public void describeTo(Description description)
             {
                 description.appendText("Interface supports multicast or is loopack");
             }
 
+            @Override
             protected boolean matchesSafely(final NetworkInterface item)
             {
                 try

@@ -15,23 +15,24 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import static java.lang.Integer.getInteger;
-import static java.lang.Long.getLong;
-import static java.lang.System.getProperty;
-import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
-
-import java.util.concurrent.TimeUnit;
-
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+
+import java.util.concurrent.TimeUnit;
+
+import static java.lang.Integer.getInteger;
+import static java.lang.Long.getLong;
+import static java.lang.System.getProperty;
+
+import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
 /**
  * Configuration options for the media driver.
@@ -205,12 +206,6 @@ public class Configuration
         Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     /**
-     * Do not send any NAKs at all.
-     */
-    public static final StaticDelayGenerator NO_NAK_DELAY_GENERATOR = new StaticDelayGenerator(
-            -1, false);
-
-    /**
      * Default delay for retransmission of data for unicast
      */
     public static final long RETRANS_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
@@ -336,9 +331,6 @@ public class Configuration
 
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
-
-    /** Disable the NACKs from media driver (used for QA only)*/
-    public static final String DO_NOT_SEND_NACK_PROP_NAME = "aeron.driver.disable.nack";
 
     /**
      * how often to check liveness & cleanup
@@ -512,10 +504,5 @@ public class Configuration
     public static ThreadingMode threadingMode()
     {
         return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, THREADING_MODE_DEFAULT));
-    }
-
-    public static boolean dontSendNack()
-    {
-        return Boolean.parseBoolean(getProperty(DO_NOT_SEND_NACK_PROP_NAME, "false"));
     }
 }

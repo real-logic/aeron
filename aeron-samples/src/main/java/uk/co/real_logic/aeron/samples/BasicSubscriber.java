@@ -15,19 +15,27 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.SigInt;
+import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
- * Basic Aeron subscriber application
+ * This is a Basic Aeron subscriber application
+ * The application subscribes to a default stream and channel. The default channel and stream
+ * can be overwritten by changing the default value in {@link SampleConfiguration}. Also, the default
+ * channel and stream can be changed by setting java system properties at the command line.
+ * i.e. (-Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20)
+ * This application only handles non-fragmented data.A Data handler method is called for every
+ *  received  datagram.
+ *  This application doesn't handle large fragmented messages. For fragmented message reception,
+ * look at the application at {link@ MultipleSubscribersWithFragmentAssembly}
  */
 public class BasicSubscriber
 {
@@ -42,22 +50,29 @@ public class BasicSubscriber
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 
+        // Create a context for a client and specify callback methods when
+        // a new connection starts (printNewConnection)
+        // a connection goes inactive (printInactiveConnection)
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
-
         if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }
 
+        // DataHandler method is called for every new datagram is received
         final DataHandler dataHandler = printStringMessage(STREAM_ID);
-
         final AtomicBoolean running = new AtomicBoolean(true);
+
+        // Register a SIGINT handler
         SigInt.register(() -> running.set(false));
 
+        // Create an Aeron instance with client provided context credentials
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+                // Add a subscription to Aeron for a given channel and stream. Also, supply a dataHandler to
+                // be called when data arrives
+                final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             // run the subscriber thread from here
             SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);

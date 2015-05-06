@@ -15,6 +15,15 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.function.IntSupplier;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.common.RateReporter;
@@ -24,15 +33,6 @@ import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.function.IntSupplier;
-
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Publisher that sends as fast as possible a given number of messages at a given length.
@@ -62,6 +62,7 @@ public class StreamingPublisher
         }
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
+        // Create a context for media driver connection
         final Aeron.Context context = new Aeron.Context();
 
         if (EMBEDDED_MEDIA_DRIVER)
@@ -70,13 +71,17 @@ public class StreamingPublisher
         }
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);
+        // Create an executer with 2 reusable threads
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         executor.execute(reporter);
 
+        // Connect to media driver and add publisher to send message on CHANNEL and STREAM
         try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
+
+            // Create a barrier which will ask to restart publisher after program's termination
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -99,6 +104,7 @@ public class StreamingPublisher
 
                     while (publication.offer(ATOMIC_BUFFER, 0, length) < 0L)
                     {
+                        //Returns almost immediately ( Used for low latency)
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
 
@@ -115,9 +121,11 @@ public class StreamingPublisher
 
                 printingActive = false;
             }
+            // Keep repeating the above loop if user answers 'Y' to "Execute again?"
+            // Otherwise, exit the loop
             while (barrier.await());
         }
-
+        // Halt the report
         reporter.halt();
         executor.shutdown();
         CloseHelper.quietClose(driver);

@@ -15,23 +15,24 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import static java.lang.Integer.getInteger;
-import static java.lang.Long.getLong;
-import static java.lang.System.getProperty;
-import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
-
-import java.util.concurrent.TimeUnit;
-
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+
+import java.util.concurrent.TimeUnit;
+
+import static java.lang.Integer.getInteger;
+import static java.lang.Long.getLong;
+import static java.lang.System.getProperty;
+
+import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
 /**
  * Configuration options for the media driver.
@@ -336,11 +337,6 @@ public class Configuration
      */
     public static final int HEARTBEAT_TIMEOUT_MS = 1000;
 
-    /** Disable the NACKs from media driver (used for QA only)*/
-    public static final String DO_NOT_SEND_NACK_PROP_NAME = "aeron.driver.disable.nack";
-
-    /** Variable loss generation (used for QA only)*/
-    public static final String VARIABLE_LOSS_GENERATION_PROP_NAME = "aeron.driver.variable.loss.generation";
     /**
      * How far ahead the receiver can get from the subscriber position.
      *
@@ -497,42 +493,16 @@ public class Configuration
 
     public static LossGenerator createLossGenerator(final double lossRate, final long lossSeed)
     {
-        LossGenerator lossGenerator = null;
         if (0 == lossRate)
         {
             return (address, length) -> false;
         }
 
-        if (generateVariableLoss())
-        {
-            try
-            {
-                lossGenerator = new PercentageLossGenerator((int)lossRate);
-            }
-            catch (final Exception e)
-            {
-                e.printStackTrace();
-            }
-        }
-        else
-        {
-            lossGenerator =  new RandomLossGenerator(lossRate, lossSeed);
-        }
-        return lossGenerator;
+        return new RandomLossGenerator(lossRate, lossSeed);
     }
 
     public static ThreadingMode threadingMode()
     {
         return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, THREADING_MODE_DEFAULT));
-    }
-
-    public static boolean dontSendNack()
-    {
-        return Boolean.parseBoolean(getProperty(DO_NOT_SEND_NACK_PROP_NAME, "false"));
-    }
-
-    public static boolean generateVariableLoss()
-    {
-        return Boolean.parseBoolean(getProperty(VARIABLE_LOSS_GENERATION_PROP_NAME, "false"));
     }
 }

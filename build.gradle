@@ -17,8 +17,11 @@ import org.gradle.plugins.ide.eclipse.model.Classpath
 
 apply plugin: 'maven'
 apply plugin: 'signing'
+apply plugin: 'eclipse'
 
 defaultTasks 'clean', 'build', 'install'
+
+group = aeronGroup
 
 ext {
     group = aeronGroup
@@ -288,7 +291,7 @@ task docs(type: Javadoc) {
     include '**/BufferClaim.java'
     include '**/RegistrationException.java'
     include '**/DriverTimeoutException.java'
-	destinationDir = file("$buildDir/docs/all")
+	destinationDir = file("$buildDir/docs/doc")
 }
 
 task docsJar (type: Jar, dependsOn: docs) {
@@ -299,4 +302,3 @@ task docsJar (type: Jar, dependsOn: docs) {
 artifacts {
    archives docsJar
 }
-

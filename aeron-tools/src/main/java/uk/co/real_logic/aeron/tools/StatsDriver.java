@@ -98,7 +98,7 @@ public class StatsDriver
 
         if (command.hasOption("vmstat"))
         {
-            output = new StatsVMStatOutput();
+            output = new StatsVmStatOutput();
         }
         else if (command.hasOption("console"))
         {
@@ -114,7 +114,7 @@ public class StatsDriver
             {
                 file = command.getOptionValue("file", null);
             }
-            output = new StatsCSVOutput(file);
+            output = new StatsCsvOutput(file);
         }
     }
 

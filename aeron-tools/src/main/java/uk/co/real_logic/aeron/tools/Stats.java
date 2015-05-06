@@ -160,7 +160,7 @@ public class Stats
                 vals[i] = tmpVals.get(i).longValue();
             }
         }
-        else if (output instanceof StatsVMStatOutput || output instanceof StatsCSVOutput)
+        else if (output instanceof StatsVmStatOutput || output instanceof StatsCsvOutput)
         {
             keys = new String[NUM_BASE_STATS];
             vals = new long[NUM_BASE_STATS];

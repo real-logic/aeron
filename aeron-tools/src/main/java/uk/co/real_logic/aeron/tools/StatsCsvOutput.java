@@ -19,7 +19,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-public class StatsCSVOutput implements StatsOutput
+public class StatsCsvOutput implements StatsOutput
 {
     public static final String DEFAULT_FILE = "stats.csv";
 
@@ -27,7 +27,7 @@ public class StatsCSVOutput implements StatsOutput
     private FileWriter out;
     private boolean firstTime = true;
 
-    public StatsCSVOutput(final String file)
+    public StatsCsvOutput(final String file)
     {
         if (file != null)
         {

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-public class StatsVMStatOutput implements StatsOutput
+public class StatsVmStatOutput implements StatsOutput
 {
     private final String titles[] =
             {
@@ -34,7 +34,7 @@ public class StatsVMStatOutput implements StatsOutput
             };
     private int iterations;
 
-    public StatsVMStatOutput()
+    public StatsVmStatOutput()
     {
         iterations = 0;
     }

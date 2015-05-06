@@ -43,7 +43,7 @@ public class PercentageLossGenerator implements LossGenerator
 
     public void setPercentageLossRate(final int myLossRate) throws Exception
     {
-        if (myLossRate <= 0 || myLossRate > 100)
+        if (myLossRate < 0 || myLossRate > 100)
         {
             throw new Exception("Loss rate is out of range " + myLossRate);
         }
@@ -68,7 +68,7 @@ public class PercentageLossGenerator implements LossGenerator
         totalFrameCount++;
         if (simpleOperation)
         {
-            needsToBeDropped = (totalFrameCount % (moduloFactor) == 0) ? true : false;
+            needsToBeDropped = ((totalFrameCount % (moduloFactor) == 0) && (lossRate > 0)) ? true : false;
         }
         else
         {

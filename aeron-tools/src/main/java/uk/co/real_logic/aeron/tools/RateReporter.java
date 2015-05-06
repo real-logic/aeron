@@ -35,13 +35,10 @@ public class RateReporter implements RateController.Callback, Runnable
 
     private class DefaultCallback implements Callback
     {
-
-        @Override
         public void report(final StringBuilder reportString)
         {
             System.out.println(reportString);
         }
-
     }
 
     public interface Callback
@@ -54,6 +51,7 @@ public class RateReporter implements RateController.Callback, Runnable
         /**
          * A snapshot (non-atomic) total of the number of verifiable messages
          * sent/received across all threads.
+         *
          * @return current total number of verifiable messages sent or received
          */
         long verifiableMessages();
@@ -61,6 +59,7 @@ public class RateReporter implements RateController.Callback, Runnable
         /**
          * A snapshot (non-atomic) total of the number of bytes
          * sent/received across all threads.
+         *
          * @return current total number of bytes sent or received
          */
         long bytes();
@@ -68,6 +67,7 @@ public class RateReporter implements RateController.Callback, Runnable
         /**
          * A snapshot (non-atomic) total of the number of non-verifiable messages
          * sent/received across all threads.
+         *
          * @return current total number of non-verifiable messages sent or received
          */
         long nonVerifiableMessages();
@@ -93,35 +93,43 @@ public class RateReporter implements RateController.Callback, Runnable
         this(app, null);
     }
 
-    /** Returns a human-readable bits/messages/whatever-per-second string
+    /**
+     * Returns a human-readable bits/messages/whatever-per-second string
+     *
      * @param bits The total number of bits (per second) to convert to a human-readable string
      * @return the human-readable bits-per-second string
      */
-    public static String getHumanReadableRate(final long bits)
+    public static String humanReadableRate(final long bits)
     {
         if (bits < 1000)
         {
             return bits + " ";
         }
-        final int exp = (int) (Math.log(bits) / Math.log(1000));
+        final int exp = (int)(Math.log(bits) / Math.log(1000));
+
         return String.format("%.1f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp - 1));
     }
 
-    /** Returns a human-readable bits/messages/whatever-per-second string
+    /**
+     * Returns a human-readable bits/messages/whatever-per-second string
+     *
      * @param bits The total number of bits (per second) to convert to a human-readable string
      * @return the human-readable bits-per-second string
      */
-    public static String getHumanReadableRate(final double bits)
+    public static String humanReadableRate(final double bits)
     {
         if (bits < 1000)
         {
-            return String.format("%.3f ",  bits);
+            return String.format("%.3f ", bits);
         }
-        final int exp = (int) (Math.log(bits) / Math.log(1000));
+        final int exp = (int)(Math.log(bits) / Math.log(1000));
+
         return String.format("%.3f %s", bits / Math.pow(1000, exp), "KMGTPE".charAt(exp - 1));
     }
 
-    /** Shuts down the rate reporter thread; blocks until it is finished. */
+    /**
+     * Shuts down the rate reporter thread; blocks until it is finished.
+     */
     public void close()
     {
         shuttingDown = true;
@@ -135,7 +143,6 @@ public class RateReporter implements RateController.Callback, Runnable
         }
     }
 
-    @Override
     public void run()
     {
         final ArrayList<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
@@ -164,7 +171,6 @@ public class RateReporter implements RateController.Callback, Runnable
      * Function called by the RateController once a second; used to report
      * the current aggregate receiving rates.
      */
-    @Override
     public int onNext()
     {
         final long currentTimeNanos = CLOCK.time();
@@ -176,9 +182,9 @@ public class RateReporter implements RateController.Callback, Runnable
         final double secondsElapsed = (currentTimeNanos - lastReportTimeNanos) / 1000000000.0;
         sb.setLength(0);
         sb.append(String.format("%.6f: %smsgs/sec %sbps",
-                secondsElapsed,
-                getHumanReadableRate((totalMessages - lastTotalMessages) / secondsElapsed),
-                getHumanReadableRate((long)((((bytesReceived - lastBytes) * 8)) / secondsElapsed))));
+            secondsElapsed,
+            humanReadableRate((totalMessages - lastTotalMessages) / secondsElapsed),
+            humanReadableRate((long)((((bytesReceived - lastBytes) * 8)) / secondsElapsed))));
         callback.report(sb);
         lastReportTimeNanos = currentTimeNanos;
         lastVerifiableMessages = verifiableMessages;
@@ -189,6 +195,7 @@ public class RateReporter implements RateController.Callback, Runnable
         {
             return -1;
         }
+
         return 0; /* no "bytes" sent. */
     }
 }

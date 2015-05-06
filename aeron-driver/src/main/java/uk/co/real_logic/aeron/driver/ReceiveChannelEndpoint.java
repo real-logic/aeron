@@ -81,6 +81,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return transport.udpChannel();
     }
 
+    public String originalUriString()
+    {
+        return transport.udpChannel().originalUriString();
+    }
+
     public void close()
     {
         transport.close();

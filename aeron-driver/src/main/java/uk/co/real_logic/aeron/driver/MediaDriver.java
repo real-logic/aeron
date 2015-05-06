@@ -15,49 +15,35 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import static java.lang.Boolean.getBoolean;
-import static java.lang.Integer.getInteger;
-import static uk.co.real_logic.aeron.driver.Configuration.CONDUCTOR_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.driver.Configuration.COUNTER_LABELS_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.driver.Configuration.COUNTER_VALUES_BUFFER_LENGTH;
-import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
-import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_PROP_NAME;
-import static uk.co.real_logic.aeron.driver.Configuration.TO_CLIENTS_BUFFER_LENGTH;
-import static uk.co.real_logic.agrona.IoUtil.deleteIfExists;
-import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
-
-import java.io.File;
-import java.nio.ByteBuffer;
-import java.nio.MappedByteBuffer;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import uk.co.real_logic.aeron.common.CncFileDescriptor;
-import uk.co.real_logic.aeron.common.CommonContext;
+import uk.co.real_logic.aeron.common.*;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
+import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CompositeAgent;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.MappedByteBuffer;
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
+import static java.lang.Boolean.getBoolean;
+import static java.lang.Integer.getInteger;
+import static uk.co.real_logic.aeron.driver.Configuration.*;
+import static uk.co.real_logic.agrona.IoUtil.deleteIfExists;
+import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based media driver
@@ -114,8 +100,8 @@ public final class MediaDriver implements AutoCloseable
 
         ensureDirectoriesAreRecreated();
 
-        ctx.unicastSenderFlowControl(Configuration::unicastSenderFlowControlStrategy)
-           .multicastSenderFlowControl(Configuration::multicastSenderFlowControlStrategy)
+        ctx.unicastSenderFlowControl(Configuration::unicastFlowControlStrategy)
+           .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
            .conductorTimerWheel(Configuration.newConductorTimerWheel())
            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
@@ -209,7 +195,6 @@ public final class MediaDriver implements AutoCloseable
     /**
      * Shutdown the media driver by stopping all threads and freeing resources.
      */
-    @Override
     public void close()
     {
         try
@@ -282,8 +267,8 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private TransportPoller receiverTransportPoller;
         private TransportPoller senderTransportPoller;
-        private Supplier<SenderFlowControl> unicastSenderFlowControl;
-        private Supplier<SenderFlowControl> multicastSenderFlowControl;
+        private Supplier<FlowControl> unicastSenderFlowControl;
+        private Supplier<FlowControl> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue;
         private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
@@ -342,7 +327,6 @@ public final class MediaDriver implements AutoCloseable
             dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
         }
 
-        @Override
         public Context conclude()
         {
             super.conclude();
@@ -356,7 +340,7 @@ public final class MediaDriver implements AutoCloseable
 
                 mtuLength(getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT));
 
-                final ByteBuffer eventByteBuffer = ByteBuffer.allocate(eventBufferLength);
+                final ByteBuffer eventByteBuffer = ByteBuffer.allocateDirect(eventBufferLength);
 
                 if (null == eventLogger)
                 {
@@ -444,13 +428,13 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context unicastSenderFlowControl(final Supplier<SenderFlowControl> senderFlowControl)
+        public Context unicastSenderFlowControl(final Supplier<FlowControl> senderFlowControl)
         {
             this.unicastSenderFlowControl = senderFlowControl;
             return this;
         }
 
-        public Context multicastSenderFlowControl(final Supplier<SenderFlowControl> senderFlowControl)
+        public Context multicastSenderFlowControl(final Supplier<FlowControl> senderFlowControl)
         {
             this.multicastSenderFlowControl = senderFlowControl;
             return this;
@@ -661,12 +645,12 @@ public final class MediaDriver implements AutoCloseable
             return senderTransportPoller;
         }
 
-        public Supplier<SenderFlowControl> unicastSenderFlowControl()
+        public Supplier<FlowControl> unicastSenderFlowControl()
         {
             return unicastSenderFlowControl;
         }
 
-        public Supplier<SenderFlowControl> multicastSenderFlowControl()
+        public Supplier<FlowControl> multicastSenderFlowControl()
         {
             return multicastSenderFlowControl;
         }
@@ -836,7 +820,6 @@ public final class MediaDriver implements AutoCloseable
             return toEventReader;
         }
 
-        @Override
         public void close()
         {
             if (null != systemCounters)

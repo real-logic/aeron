@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,38 +47,38 @@ public class PubSubOptions
     private static final String NL = System.lineSeparator();
 
     /** Apache Commons CLI options */
-    final Options options;
+    private final Options options;
 
     /** Application should print advanced usage guide with help */
-    boolean showUsage;
+    private boolean showUsage;
     /** Application should create an embedded Aeron media driver */
-    boolean useEmbeddedDriver;
+    private boolean useEmbeddedDriver;
     /** Application provided a session Id for all strings */
-    boolean useSessionId;
+    private boolean useSessionId;
     /** Messages should include verifiable stream headers */
-    boolean useVerifiableStream;
+    private boolean useVerifiableStream;
     /** The seed for the random number generator */
-    long randomSeed;
+    private long randomSeed;
     /** The number of messages an Application should send before exiting */
-    long messages;
+    private long messages;
     /** The number of times to repeat the sending rate pattern */
-    long iterations;
+    private long iterations;
     /** Use session ID for all streams instead of default random */
-    int sessionId;
+    private int sessionId;
     /** The number of threads to use when sending or receiving in an application */
-    int threads;
+    private int threads;
     /** The Aeron channels to open */
-    List<ChannelDescriptor> channels;
+    private List<ChannelDescriptor> channels;
     /** The total number of channel + stream Id pairs */
-    int totalStreams;
+    private int totalStreams;
     /** The message rate sending pattern */
-    List<RateControllerInterval> rateIntervals;
+    private List<RateControllerInterval> rateIntervals;
     /** The stream used to generate data for a Publisher to send */
-    InputStream input;
+    private InputStream input;
     /** The stream used by a Subscriber to write the data received */
-    OutputStream output;
+    private OutputStream output;
     /** The {@link MessageSizePattern} used to determine next message size */
-    MessageSizePattern sizePattern;
+    private MessageSizePattern sizePattern;
 
     private boolean outputNeedsClose;
     private boolean inputNeedsClose;
@@ -98,54 +99,54 @@ public class PubSubOptions
 
     /** class that holds the default string values of the options */
     private static final OptionValuesStruct DEFAULT_VALUES = new PubSubOptions.OptionValuesStruct(
-            DEFAULT_CHANNEL,
-            DEFAULT_DRIVER,
-            DEFAULT_INPUT,
-            DEFAULT_ITERATIONS,
-            DEFAULT_MESSAGES,
-            DEFAULT_OUTPUT,
-            DEFAULT_RATE,
-            DEFAULT_SEED,
-            DEFAULT_SESSION,
-            DEFAULT_SIZE,
-            DEFAULT_THREADS,
-            DEFAULT_VERIFY);
+        DEFAULT_CHANNEL,
+        DEFAULT_DRIVER,
+        DEFAULT_INPUT,
+        DEFAULT_ITERATIONS,
+        DEFAULT_MESSAGES,
+        DEFAULT_OUTPUT,
+        DEFAULT_RATE,
+        DEFAULT_SEED,
+        DEFAULT_SESSION,
+        DEFAULT_SIZE,
+        DEFAULT_THREADS,
+        DEFAULT_VERIFY);
 
     public PubSubOptions()
     {
         options = new Options();
-        options.addOption("c",  "channels",   true,
-                "Create the given Aeron channels [default: " + DEFAULT_VALUES.channels + "].");
-        options.addOption(null, "defaults",   true,
-                "File overriding default values for the command line options.");
-        options.addOption(null, "driver",     true,
-                "Use 'external' or 'embedded' Aeron driver [default: " + DEFAULT_VALUES.driver + "].");
-        options.addOption("h",  "help",       false,
-                "Display simple usage message.");
-        options.addOption("i",  "input",      true,
-                "Publisher will send random bytes ('null'), " +
-                "bytes read from stdin ('stdin'), or a file " +
-                "(path to file) as data [default: " + DEFAULT_VALUES.input + "].");
+        options.addOption("c",  "channels", true,
+            "Create the given Aeron channels [default: " + DEFAULT_VALUES.channels + "].");
+        options.addOption(null, "defaults", true,
+            "File overriding default values for the command line options.");
+        options.addOption(null, "driver", true,
+            "Use 'external' or 'embedded' Aeron driver [default: " + DEFAULT_VALUES.driver + "].");
+        options.addOption("h",  "help", false,
+            "Display simple usage message.");
+        options.addOption("i",  "input", true,
+            "Publisher will send random bytes ('null'), " +
+            "bytes read from stdin ('stdin'), or a file " +
+            "(path to file) as data [default: " + DEFAULT_VALUES.input + "].");
         options.addOption(null, "iterations", true,
-                "Run the rate sequence n times [default: " + DEFAULT_VALUES.iterations + "].");
-        options.addOption("m",  "messages",   true,
-                "Send or receive n messages before exiting [default: " + DEFAULT_VALUES.messages + "].");
-        options.addOption("o",  "output",     true,
-                "Subscriber will write the stream to the output file.");
-        options.addOption("r",  "rate",       true,
-                "Send/receive rate pattern CSV list [default: " + DEFAULT_VALUES.rate + "].");
-        options.addOption(null, "seed",       true,
-                "Random number generator seed.");
-        options.addOption(null, "session",    true,
-                "Use session id for all publishers [default: " + DEFAULT_VALUES.session + "].");
-        options.addOption("s",  "size",       true,
-                "Message payload size sequence, in bytes [default: " + DEFAULT_VALUES.size + "].");
-        options.addOption("t",  "threads",    true,
-                "Round-Robin channels acress a number of threads [default: " + DEFAULT_VALUES.threads + "].");
-        options.addOption(null, "usage",      false,
-                "Display advanced usage guide.");
-        options.addOption(null, "verify",     true,
-                "Messages and streams are verifiable (yes|no) [default: " + DEFAULT_VALUES.verify + "].");
+            "Run the rate sequence n times [default: " + DEFAULT_VALUES.iterations + "].");
+        options.addOption("m",  "messages", true,
+            "Send or receive n messages before exiting [default: " + DEFAULT_VALUES.messages + "].");
+        options.addOption("o",  "output", true,
+            "Subscriber will write the stream to the output file.");
+        options.addOption("r",  "rate", true,
+            "Send/receive rate pattern CSV list [default: " + DEFAULT_VALUES.rate + "].");
+        options.addOption(null, "seed", true,
+            "Random number generator seed.");
+        options.addOption(null, "session", true,
+            "Use session id for all publishers [default: " + DEFAULT_VALUES.session + "].");
+        options.addOption("s",  "size", true,
+            "Message payload size sequence, in bytes [default: " + DEFAULT_VALUES.size + "].");
+        options.addOption("t",  "threads", true,
+            "Round-Robin channels acress a number of threads [default: " + DEFAULT_VALUES.threads + "].");
+        options.addOption(null, "usage", false,
+            "Display advanced usage guide.");
+        options.addOption(null, "verify", true,
+            "Messages and streams are verifiable (yes|no) [default: " + DEFAULT_VALUES.verify + "].");
 
         // these will all be overridden in parseArgs
         randomSeed = 0;
@@ -221,18 +222,19 @@ public class PubSubOptions
         final String threads;
         final String verify;
 
-        OptionValuesStruct(final String channels,
-                           final String driver,
-                           final String input,
-                           final String iterations,
-                           final String messages,
-                           final String output,
-                           final String rate,
-                           final String seed,
-                           final String session,
-                           final String size,
-                           final String threads,
-                           final String verify)
+        OptionValuesStruct(
+            final String channels,
+            final String driver,
+            final String input,
+            final String iterations,
+            final String messages,
+            final String output,
+            final String rate,
+            final String seed,
+            final String session,
+            final String size,
+            final String threads,
+            final String verify)
         {
             this.channels = channels;
             this.driver = driver;
@@ -321,22 +323,22 @@ public class PubSubOptions
         }
 
         opt = command.getOptionValue("threads", defaults.threads);
-        setThreads(parseIntCheckPositive(opt));
+        threads(parseIntCheckPositive(opt));
 
         opt = command.getOptionValue("seed", defaults.seed);
-        setRandomSeed(parseLongCheckPositive(opt));
+        randomSeed(parseLongCheckPositive(opt));
 
         opt = command.getOptionValue("messages", defaults.messages);
-        setMessages(parseNumberOfMessages(opt));
+        messages(parseNumberOfMessages(opt));
 
         opt = command.getOptionValue("iterations", defaults.iterations);
-        setIterations(parseIterations(opt));
+        iterations(parseIterations(opt));
 
         opt = command.getOptionValue("session", defaults.session);
-        setSessionId(parseSessionId(opt));
+        sessionId(parseSessionId(opt));
 
         opt = command.getOptionValue("driver", defaults.driver);
-        setUseEmbeddedDriver(parseDriver(opt));
+        useEmbeddedDriver(parseDriver(opt));
 
         opt = command.getOptionValue("input", defaults.input);
         parseInputStream(opt);
@@ -381,7 +383,7 @@ public class PubSubOptions
      * Get the list of channels on which to publish or subscribe.
      * @return
      */
-    public List<ChannelDescriptor> getChannels()
+    public List<ChannelDescriptor> channels()
     {
         return channels;
     }
@@ -390,7 +392,7 @@ public class PubSubOptions
      * Set the list of channels on which to publish or subscribe
      * @param channels
      */
-    public void setChannels(final List<ChannelDescriptor> channels)
+    public void channels(final List<ChannelDescriptor> channels)
     {
         this.channels = channels;
     }
@@ -399,7 +401,7 @@ public class PubSubOptions
      * Get the output stream where a subscriber will write received data.
      * @return
      */
-    public OutputStream getOutput()
+    public OutputStream output()
     {
         return output;
     }
@@ -408,7 +410,7 @@ public class PubSubOptions
      * Set the output stream where a subscriber will write received data.
      * @param output
      */
-    public void setOutput(final OutputStream output)
+    public void output(final OutputStream output)
     {
         this.output = output;
     }
@@ -417,7 +419,7 @@ public class PubSubOptions
      * Get the input stream that a Publisher will read for data to send.
      * @return
      */
-    public InputStream getInput()
+    public InputStream input()
     {
         return input;
     }
@@ -426,7 +428,7 @@ public class PubSubOptions
      * Get if messages use additional space to store checksums for the message and stream.
      * @return
      */
-    public boolean getVerify()
+    public boolean verify()
     {
         return useVerifiableStream;
     }
@@ -435,7 +437,7 @@ public class PubSubOptions
      * Set if messages use additional space to store checksums for the message and stream.
      * @param verify
      */
-    public void setVerify(final boolean verify)
+    public void verify(final boolean verify)
     {
         useVerifiableStream = verify;
     }
@@ -444,17 +446,17 @@ public class PubSubOptions
      * Set the input stream that a Publisher will read for data to send.
      * @param input
      */
-    public void setInput(final InputStream input)
+    public void input(final InputStream input)
     {
         this.input = input;
     }
 
-    public void setRateIntervals(final List<RateControllerInterval> rates)
+    public void rateIntervals(final List<RateControllerInterval> rates)
     {
         this.rateIntervals = rates;
     }
 
-    public List<RateControllerInterval> getRateIntervals()
+    public List<RateControllerInterval> rateIntervals()
     {
         return this.rateIntervals;
     }
@@ -463,7 +465,7 @@ public class PubSubOptions
      * Get the number of threads for the application to use.
      * @return
      */
-    public int getThreads()
+    public int threads()
     {
         return threads;
     }
@@ -472,7 +474,7 @@ public class PubSubOptions
      * Set the number of threads for the application to use.
      * @param t Number of threads.
      */
-    public void setThreads(final int t)
+    public void threads(final int t)
     {
         threads = t;
     }
@@ -481,7 +483,7 @@ public class PubSubOptions
      * Get the total number of messages an application will send or receive before exiting.
      * @return Total number of messages
      */
-    public long getMessages()
+    public long messages()
     {
         return this.messages;
     }
@@ -490,7 +492,7 @@ public class PubSubOptions
      * Set the total number of messages an application will send or receive before exiting.
      * @param messages
      */
-    public void setMessages(final long messages)
+    public void messages(final long messages)
     {
         this.messages = messages;
     }
@@ -499,7 +501,7 @@ public class PubSubOptions
      * The number of times to run the rate sequence.
      * @return
      */
-    public long getIterations()
+    public long iterations()
     {
         return iterations;
     }
@@ -508,7 +510,7 @@ public class PubSubOptions
      * The seed for a random number generator.
      * @return
      */
-    public long getRandomSeed()
+    public long randomSeed()
     {
         return randomSeed;
     }
@@ -517,7 +519,7 @@ public class PubSubOptions
      * Set the seed for a random number generator.
      * @param value
      */
-    public void setRandomSeed(final long value)
+    public void randomSeed(final long value)
     {
         randomSeed = value;
     }
@@ -526,7 +528,7 @@ public class PubSubOptions
      * Set the number of times to run the rate sequence.
      * @param value
      */
-    public void setIterations(final long value)
+    public void iterations(final long value)
     {
         iterations = value;
     }
@@ -535,7 +537,7 @@ public class PubSubOptions
      * True when application should use an embedded Aeron media driver.
      * @return
      */
-    public boolean getUseEmbeddedDriver()
+    public boolean useEmbeddedDriver()
     {
         return useEmbeddedDriver;
     }
@@ -544,17 +546,17 @@ public class PubSubOptions
      * Set the use of an embedded Aeron media driver.
      * @param embedded
      */
-    public void setUseEmbeddedDriver(final boolean embedded)
+    public void useEmbeddedDriver(final boolean embedded)
     {
         useEmbeddedDriver = embedded;
     }
 
     /**
      * Enable or disable the use of a specific session ID.
-     * @see #setSessionId(int)
+     * @see #sessionId(int)
      * @param enabled
      */
-    public void setUseSessionId(final boolean enabled)
+    public void useSessionId(final boolean enabled)
     {
         this.useSessionId = enabled;
     }
@@ -563,28 +565,28 @@ public class PubSubOptions
      * When an Aeron stream should be created with a session ID this will return true. Otherwise
      * no session ID should be given to the Aeron transport.
      * @return True when a session ID should be used.
-     * @see #getSessionId()
+     * @see #sessionId()
      */
-    public boolean getUseSessionId()
+    public boolean useSessionId()
     {
         return this.useSessionId;
     }
 
     /**
-     * Set the session ID to be used when #getUseSessionId() returns true.
-     * @see #getUseSessionId #setSessionId(boolean)
+     * Set the session ID to be used when #useSessionId() returns true.
+     * @see #useSessionId #sessionId(boolean)
      * @param id
      */
-    public void setSessionId(final int id)
+    public void sessionId(final int id)
     {
         this.sessionId = id;
     }
 
     /**
-     * Get the session ID to use for an Aeron transport. Only valid if #getUseSessionId() returns true.
+     * Get the session ID to use for an Aeron transport. Only valid if #useSessionId() returns true.
      * @return The session ID for the Aeron transport.
      */
-    public int getSessionId()
+    public int sessionId()
     {
         return this.sessionId;
     }
@@ -593,7 +595,7 @@ public class PubSubOptions
      * Get the message size pattern used to determine what each messages size should be.
      * @return
      */
-    public MessageSizePattern getMessageSizePattern()
+    public MessageSizePattern messageSizePattern()
     {
         return this.sizePattern;
     }
@@ -602,7 +604,7 @@ public class PubSubOptions
      * Set the message size pattern used to determine what each message size should be.
      * @param pattern
      */
-    public void setMessageSizePattern(final MessageSizePattern pattern)
+    public void messageSizePattern(final MessageSizePattern pattern)
     {
         this.sizePattern = pattern;
     }
@@ -611,7 +613,7 @@ public class PubSubOptions
      * Return the total number of channel + streamId pairs specified by the channels option.
      * @return total number of channel + streamId paris.
      */
-    public int getNumberOfStreams()
+    public int numberOfStreams()
     {
         return totalStreams;
     }
@@ -620,7 +622,7 @@ public class PubSubOptions
      * Set the number of channel + streamId pairs.
      * @param value Representing the number of streams
      */
-    public void setNumberOfStreams(final int value)
+    public void numberOfStreams(final int value)
     {
         totalStreams = value;
     }
@@ -707,6 +709,7 @@ public class PubSubOptions
         {
             value = parseLongCheckPositive(iterationsStr);
         }
+
         return value;
     }
 
@@ -725,6 +728,7 @@ public class PubSubOptions
         {
             throw new ParseException("Invalid driver option '" + useEmbeddedStr + "'. Must be 'embedded' or 'external'");
         }
+
         return embedded;
     }
 
@@ -804,8 +808,8 @@ public class PubSubOptions
      * Parse a channel that starts with "aeron:" which is a different way of defining
      * aeron channel that allows for more verbose settings.
      * for UDP unicast:   aeron:udp?remote=<ip>:<port(s)>|local=<interface>
-     * for UDP multicast: aeron:udp?address=<multicast_ip>:<port(s)>|group=<interface>
-     * @param chanString
+     * for UDP multicast: aeron:udp?group=<multicast_ip>:<port(s)>|interface=<interface>
+     * @param chanString Aeron URI
      * @param chanStruct Object is filled with values parsed from the chanString
      */
     private void parseAeronChannelToStruct(final String chanString, final ChannelStruct chanStruct) throws ParseException
@@ -848,7 +852,7 @@ public class PubSubOptions
 
     /**
      * Parse a raw aeron channel in the form: <media><channel>:<port(s)>
-     * @param chanString
+     * @param chanString URI
      * @param chanStruct This object is filled with the values parsed from chanString
      */
     private void parseRawChannelToStruct(final String chanString, final ChannelStruct chanStruct) throws ParseException
@@ -897,6 +901,7 @@ public class PubSubOptions
                 break;
             }
         }
+
         return endIdx;
     }
 
@@ -946,19 +951,28 @@ public class PubSubOptions
         {
             throw new ParseException("Address port range '" + ports + "' has low port greater than high port.");
         }
+
         return new int[] { portLow, portHigh };
     }
 
     /**
      * Helper function to find the minimum and maximum values in the stream ID section of a channel.
      * This is mostly here so the parse channels function isn't too large.
-     * @param ids String containing the ids, either single integer or 2 integer range with hyphen.
+     * @param inputString String containing the ids, either single integer or 2 integer range with hyphen.
      * @return An array that is always length 2 which contains minimum and maximum stream IDs.
      */
-    private int[] findMinAndMaxStreamIds(final String ids) throws ParseException
+    private int[] findMinAndMaxStreamIds(final String inputString) throws ParseException
     {
         int streamIdLow = 1;
         int streamIdHigh = 1;
+
+        String ids = inputString;
+        // If the ids are part of an aeron: URI it might have a | in it with non channel information after
+        final int indexOfPipe = ids.indexOf("|");
+        if (indexOfPipe != -1)
+        {
+            ids = inputString.substring(0, indexOfPipe);
+        }
 
         if (ids.contains("-"))
         {
@@ -988,7 +1002,7 @@ public class PubSubOptions
             }
             catch (final NumberFormatException streamIdEx)
             {
-                throw new ParseException("Stream ID '" + ids + "' did not parse into an int.");
+                throw new ParseException("Stream ID '" + ids + "' did not parse into an integer.");
             }
         }
 
@@ -1007,16 +1021,16 @@ public class PubSubOptions
         while (currentPort <= chan.portHigh)
         {
             final ChannelDescriptor cd = new ChannelDescriptor();
-            cd.setChannel(chan.getChannelWithPort(currentPort));
+            cd.channel(chan.getChannelWithPort(currentPort));
 
             final int[] idArray = new int[streamIdHigh - streamIdLow + 1];
-            int sessionId = streamIdLow;
+            int streamId = streamIdLow;
             for (int i = 0; i < idArray.length; i++)
             {
                 // set all the session Ids in the array
-                idArray[i] = sessionId++;
+                idArray[i] = streamId++;
             }
-            cd.setStreamIdentifiers(idArray);
+            cd.streamIdentifiers(idArray);
             channels.add(cd);
             totalStreams += idArray.length;
             currentPort++;
@@ -1093,8 +1107,11 @@ public class PubSubOptions
         }
     }
 
-    private void addSendRate(final double duration, final boolean isTimeDuration,
-            final double rate, final boolean isBitsPerSecondRate)
+    private void addSendRate(
+        final double duration,
+        final boolean isTimeDuration,
+        final double rate,
+        final boolean isBitsPerSecondRate)
     {
         // There are 4 combinations of potential rates, each with it's own implementation of RateControllerInterval.
         if (isTimeDuration)
@@ -1273,17 +1290,17 @@ public class PubSubOptions
     {
         if (inputStr.equalsIgnoreCase("null"))
         {
-            setInput(null);
+            input(null);
         }
         else if (inputStr.equalsIgnoreCase("stdin"))
         {
-            setInput(System.in);
+            input(System.in);
         }
         else
         {
             try
             {
-                setInput(new FileInputStream(inputStr));
+                input(new FileInputStream(inputStr));
             }
             catch (final FileNotFoundException ex)
             {
@@ -1298,21 +1315,21 @@ public class PubSubOptions
     {
         if (outputStr.equalsIgnoreCase("null"))
         {
-            setOutput(null);
+            output(null);
         }
         else if (outputStr.equalsIgnoreCase("stdout"))
         {
-            setOutput(System.out);
+            output(System.out);
         }
         else if (outputStr.equalsIgnoreCase("stderr"))
         {
-            setOutput(System.err);
+            output(System.err);
         }
         else
         {
             try
             {
-                setOutput(new FileOutputStream(outputStr));
+                output(new FileOutputStream(outputStr));
             }
             catch (final FileNotFoundException ex)
             {
@@ -1335,7 +1352,7 @@ public class PubSubOptions
         final ArrayList<String> args = new ArrayList<String>();
         try
         {
-            br = makeBufferedFileReader(filename);
+            br = newBufferedFileReader(filename);
         }
         catch (final FileNotFoundException ex)
         {
@@ -1357,10 +1374,7 @@ public class PubSubOptions
                 {
                     // Split values by any number of consecutive whitespaces.
                     final String[] arguments = line.split("\\s+");
-                    for (final String arg : arguments)
-                    {
-                        args.add(arg);
-                    }
+                    Collections.addAll(args, arguments);
                 }
             }
             br.close();
@@ -1375,7 +1389,7 @@ public class PubSubOptions
         return new OptionValuesStruct(command, DEFAULT_VALUES);
     }
 
-    BufferedReader makeBufferedFileReader(final String filename) throws FileNotFoundException
+    BufferedReader newBufferedFileReader(final String filename) throws FileNotFoundException
     {
         return new BufferedReader(new FileReader(filename));
     }
@@ -1479,157 +1493,157 @@ public class PubSubOptions
     }
 
     private static final String USAGE_EXAMPLES = "" +
-            // stay within column 93 (80 when printed). That's here ---------------------> |
-            "Examples:" + NL +
-            "-c udp://localhost:31111 -r 60m@1mps" + NL +
-            "    Send 60 messages at a rate of 1 message per second" + NL +
-            NL +
-            "-c udp://224.10.10.12:30000#1-10 -r 1Mbps -s 100-200 -m 1000000 -t 2" + NL +
-            "    Create 10 multicast channels on port 30000 using stream ID 1 through 10." + NL +
-            "    These channels will be split Round-Robin across 2 threads that will each" + NL +
-            "    send messages sized between 100 and 200 bytes at a rate of 1Mbps. After a" + NL +
-            "    total of 1 million messages have been sent, the program will exit.";
+        // stay within column 88 (80 when printed). That's here ---------------------> |
+        "Examples:" + NL +
+        "-c udp://localhost:31111 -r 60m@1mps" + NL +
+        "    Send 60 messages at a rate of 1 message per second" + NL +
+        NL +
+        "-c udp://224.10.10.12:30000#1-10 -r 1Mbps -s 100-200 -m 1000000 -t 2" + NL +
+        "    Create 10 multicast channels on port 30000 using stream ID 1 through 10." + NL +
+        "    These channels will be split Round-Robin across 2 threads that will each" + NL +
+        "    send messages sized between 100 and 200 bytes at a rate of 1Mbps. After a" + NL +
+        "    total of 1 million messages have been sent, the program will exit.";
 
     /** Advanced guide to the function and format of command line parameters */
     private static final String ADVANCED_GUIDE = "" +
-            // stay within column 93 (80 when printed). That's here ---------------------> |
-            "Options Usage Guide" + NL +
-            NL +
-            "-c,--channels '(csv list)'" + NL +
-            "    This is a list of one or more Aeron channels. The value may represent a" + NL +
-            "    single channel or contain ranges for both ports and stream IDs. Many" + NL +
-            "    channels may be defined by using a comma separated list. There are 3 parts" + NL +
-            "    to each channel; Address, port, and stream ID. The port and stream ID can" + NL +
-            "    be either a single value, or a low to high range separated by a '-'. The" + NL +
-            "    port and stream ID values are combined together to create a cartesian" + NL +
-            "    product of channels for the given address." + NL +
-            "    *NOTE: Enclose entire value in single quotes when on a command prompt." + NL +
-            NL +
-            "    Entry Input Format:" + NL +
-            "    'udp://<IP>:port[-portHigh][#streamId[-streamIdHigh]][,...]'" + NL +
-            "    [OR]" + NL +
-            "    'aeron:udp?(group|remote)<IP>:port[-portHigh][|(local|address)<IP>]" + NL +
-            "            [#streamId[-streamIdHigh]][,...]'" + NL +
-            "        For multicast use group and address, for unicast use local and remote." + NL +
-            NL +
-            "    IP addresses can be v4 or v6. IPv6 addresses must be in brackets [ ]." + NL +
-            NL +
-            "    Examples:" + NL +
-            "    udp://localhost:21000" + NL +
-            "        Use one channel on port 21000 with stream ID 1" + NL +
-            "    udp://224.10.10.21:9100-9109#5" + NL +
-            "        Use 10 channels on port 9100 through 9109 all with stream ID 5." + NL +
-            "    udp://localhost:21000#5,udp://224.10.10.20:9100-9109#5" + NL +
-            "        Comma separated list of the previous two examples, 11 total channels." + NL +
-            "    udp://192.168.0.101:9100-9109#5-6" + NL +
-            "        On each port between 9100 and 9109 create a channel with stream ID 5" + NL +
-            "        and another with stream ID 6 for 20 total channels." + NL +
-            "    aeron:udp?group=224.10.10.21:9100|address=192.168.0.101" + NL +
-            "        Send to multicast group 224.10.10.21 port 9100 using an interface." + NL +
-            "    aeron:udp?remote=192.168.0.100:21000|local=192.168.0.121" + NL +
-            "        Send unicast to 192.168.0.100 on port 21000 with stream ID 1." + NL +
-            NL +
-            "--defaults (filename)" + NL +                                              // |
-            "    This allows a file to change the default option values for the program." + NL +
-            "    The file is loaded before applying any other command line parameters, so" + NL +
-            "    any duplicate options on the command line will override the value in the" + NL +
-            "    options file. The syntax for the file is the same as the command line," + NL +
-            "    with the exceptions that a '#' used to start a line is considered a" + NL +
-            "    comment, and a new line can be used in place of a space." + NL +
-            NL +
-            "--driver (embedded|external)" + NL +                                       // |
-            "    Controls whether the application will start an embedded Aeron messaging" + NL +
-            "    driver or communicate with an external one." +
-            "" + NL +
-            "-h,--help" + NL +                                                          // |
-            "    Show the shorthand usage guide." + NL +
-            NL +
-            "-i,--input (null|stdin|<file>)" + NL +                                     // |
-            "    Input data for a Publisher to send. When set to 'null' and by default," + NL +
-            "    the publisher will generate random data. If 'stdin' is used, standard" + NL +
-            "    input will be sent. Any other value is assumed to be a filename. When the" + NL +
-            "    publisher reaches the end of the stream, it will exit." + NL +
-            NL +
-            "--iterations (number)" + NL +                                              // |
-            "    Repeat the send rate pattern the given number of times, then exit. See" + NL +
-            "    the --rate option." + NL +
-            NL +
-            "-m,--messages (number)" + NL +                                             // |
-            "    Exit after the application sends or receives a given number of messages." + NL +
-            NL +
-            "-o,--output (null|stdout|stderr|<file>)" + NL +
-            "    A subscriber will write data received to the given output stream. By" + NL +
-            "    default, the subscriber will not write to any stream. This is the " + NL +
-            "    behavior of the 'null' value." + NL +
-            NL +
-            "-r,--rate (csv list)" + NL +                                               // |
-            "    This is a list of one or more send rates for a publisher. Each rate entry" + NL +
-            "    contains two parts, duration and speed. The duration is the number of" + NL +
-            "    seconds or number of messages, and the speed is the bits per second or" + NL +
-            "    messages per second. With these options there are four valid combinations" + NL +
-            "    of entries; Messages at messages per second, messages at bits per second," + NL +
-            "    seconds at messages per second, and seconds at bits per second. The suffix" + NL +
-            "    that appears after the numbers determines the type. The 'G', 'M', and 'K'" + NL +
-            "    prefix can be used with bps. A sending application will run through the" + NL +
-            "    rate pattern once, or --iterations times before exiting. If the duration" + NL +
-            "    is not supplied, then it is assumed to mean forever." + NL +
-            NL +
-            "    Entry Input Format:" + NL +
-            "    [<duration>(m|s)@]<speed>(mps|bps)[,...]" + NL +
-            NL +                                                                        // |
-            "    Examples:" + NL +
-            "    10Mbps" + NL +
-            "        Send forever at 10 Megabits per second." + NL +
-            "    1000m@10mps" + NL +
-            "        Send 1000 messages at 10 messages per second." + NL +
-            "    10s@1.5Kbps,1s@1Gbps,0.5mps" + NL +
-            "        Send for 10 seconds at 1.5 Kilobit per second, spike to 1" + NL +
-            "        Gigabit per second for 1 second, then send one message every 2 seconds" + NL +
-            "        forever." + NL +
-            NL +
-            "--seed (number)" + NL +                                                    // |
-            "    Set the seed for the random number generator. If multiple threads are" + NL +
-            "    being used, each one will use an incrementing seed value." + NL +
-            NL +
-            "--session (number|default)" + NL +                                         // |
-            "    All publishers will be created using the given number as their session ID." + NL +
-            "    The special value \"default\" can be used to allow Aeron to select an ID" + NL +
-            "    at random." + NL +
-            "" + NL +
-            "-s,--size (csv list)" + NL +                                               // |
-            "    This is a list of one or more message payload sizes. Each entry in the" + NL +
-            "    list contains up to two parts, the number of messages and the size or" + NL +
-            "    range of possible sizes. The size is specified as a number and optional" + NL +
-            "    suffix. A range of sizes is specified by two sizes separated by a hyphen." + NL +
-            "    Possible suffixes are 'GB' or 'G', 'MB' or 'M', 'KB' or 'K', and 'B'. " + NL +
-            "    The values are binary units, so 'KB' is actually 1024 bytes. If the number" + NL +
-            "    of messages not specified then the given size or range will be used" + NL +
-            "    indefinitely. The pattern of message sizes will repeat until the sender" + NL +
-            "    exits." + NL +
-            NL +
-            "    Entry Input Format:" + NL +
-            "    [<messages>@]<size>[B][-<maximum>[B]][,...]" + NL +
-            NL +
-            "    Examples:" + NL +
-            "    100" + NL +
-            "        All messages will be 100 bytes in size." + NL +
-            "    32-1KB" + NL +
-            "        All messages will have a random size between 32 and 1024 bytes." + NL +
-            "    99@8K,1@1MB-2MB" + NL +
-            "        The first 99 messages will be 8 Kilobytes in size, then one message" + NL +
-            "        will be between 1 Megabyte and 2 Megabytes. This pattern will repeat" + NL +
-            "        as long as messages are being sent." + NL +
-            NL +
-            "-t,--threads (number)" + NL +                                              // |
-            "    Use the given number of threads to process channels. Channels are split" + NL +
-            "    Round-Robin across the threads." + NL +
-            NL +
-            "--verify (yes|no)" + NL +                                                  // |
-            "    Each message will reserve space for checksum data that can be used to" + NL +
-            "    verify both the individual message and the stream up to that point." + NL +
-            "    The default behavior is 'yes', and will use the first 16 bytes of the" + NL +
-            "    message payload to store verification data. To send messages with less" + NL +
-            "    than 16 bytes of payload this option must be set to 'no'. Subscribers" + NL +
-            "    can detect that a message is verifiable. The checksums are not written" + NL +
-            "    to the output stream.";
+        // stay within column 88 (80 when printed). That's here ---------------------> |
+        "Options Usage Guide" + NL +
+        NL +
+        "-c,--channels '(csv list)'" + NL +
+        "    This is a list of one or more Aeron channels. The value may represent a" + NL +
+        "    single channel or contain ranges for both ports and stream IDs. Many" + NL +
+        "    channels may be defined by using a comma separated list. There are 3 parts" + NL +
+        "    to each channel; Address, port, and stream ID. The port and stream ID can" + NL +
+        "    be either a single value, or a low to high range separated by a '-'. The" + NL +
+        "    port and stream ID values are combined together to create a cartesian" + NL +
+        "    product of channels for the given address." + NL +
+        "    *NOTE: Enclose entire value in single quotes when on a command prompt." + NL +
+        NL +
+        "    Entry Input Format:" + NL +
+        "    'udp://<IP>:port[-portHigh][#streamId[-streamIdHigh]][,...]'" + NL +
+        "    [OR]" + NL +
+        "    'aeron:udp?(group|remote)<IP>:port[-portHigh][|(local|address)<IP>]" + NL +
+        "            [#streamId[-streamIdHigh]][,...]'" + NL +
+        "        For multicast use group and address, for unicast use local and remote." + NL +
+        NL +
+        "    IP addresses can be v4 or v6. IPv6 addresses must be in brackets [ ]." + NL +
+        NL +
+        "    Examples:" + NL +
+        "    udp://localhost:21000" + NL +
+        "        Use one channel on port 21000 with stream ID 1" + NL +
+        "    udp://224.10.10.21:9100-9109#5" + NL +
+        "        Use 10 channels on port 9100 through 9109 all with stream ID 5." + NL +
+        "    udp://localhost:21000#5,udp://224.10.10.20:9100-9109#5" + NL +
+        "        Comma separated list of the previous two examples, 11 total channels." + NL +
+        "    udp://192.168.0.101:9100-9109#5-6" + NL +
+        "        On each port between 9100 and 9109 create a channel with stream ID 5" + NL +
+        "        and another with stream ID 6 for 20 total channels." + NL +
+        "    aeron:udp?group=224.10.10.21:9100|address=192.168.0.101" + NL +
+        "        Send to multicast group 224.10.10.21 port 9100 using an interface." + NL +
+        "    aeron:udp?remote=192.168.0.100:21000|local=192.168.0.121" + NL +
+        "        Send unicast to 192.168.0.100 on port 21000 with stream ID 1." + NL +
+        NL +
+        "--defaults (filename)" + NL +                                              // |
+        "    This allows a file to change the default option values for the program." + NL +
+        "    The file is loaded before applying any other command line parameters, so" + NL +
+        "    any duplicate options on the command line will override the value in the" + NL +
+        "    options file. The syntax for the file is the same as the command line," + NL +
+        "    with the exceptions that a '#' used to start a line is considered a" + NL +
+        "    comment, and a new line can be used in place of a space." + NL +
+        NL +
+        "--driver (embedded|external)" + NL +                                       // |
+        "    Controls whether the application will start an embedded Aeron messaging" + NL +
+        "    driver or communicate with an external one." +
+        "" + NL +
+        "-h,--help" + NL +                                                          // |
+        "    Show the shorthand usage guide." + NL +
+        NL +
+        "-i,--input (null|stdin|<file>)" + NL +                                     // |
+        "    Input data for a Publisher to send. When set to 'null' and by default," + NL +
+        "    the publisher will generate random data. If 'stdin' is used, standard" + NL +
+        "    input will be sent. Any other value is assumed to be a filename. When the" + NL +
+        "    publisher reaches the end of the stream, it will exit." + NL +
+        NL +
+        "--iterations (number)" + NL +                                              // |
+        "    Repeat the send rate pattern the given number of times, then exit. See" + NL +
+        "    the --rate option." + NL +
+        NL +
+        "-m,--messages (number)" + NL +                                             // |
+        "    Exit after the application sends or receives a given number of messages." + NL +
+        NL +
+        "-o,--output (null|stdout|stderr|<file>)" + NL +
+        "    A subscriber will write data received to the given output stream. By" + NL +
+        "    default, the subscriber will not write to any stream. This is the " + NL +
+        "    behavior of the 'null' value." + NL +
+        NL +
+        "-r,--rate (csv list)" + NL +                                               // |
+        "    This is a list of one or more send rates for a publisher. Each rate entry" + NL +
+        "    contains two parts, duration and speed. The duration is the number of" + NL +
+        "    seconds or number of messages, and the speed is the bits per second or" + NL +
+        "    messages per second. With these options there are four valid combinations" + NL +
+        "    of entries; Messages at messages per second, messages at bits per second," + NL +
+        "    seconds at messages per second, and seconds at bits per second. The suffix" + NL +
+        "    that appears after the numbers determines the type. The 'G', 'M', and 'K'" + NL +
+        "    prefix can be used with bps. A sending application will run through the" + NL +
+        "    rate pattern once, or --iterations times before exiting. If the duration" + NL +
+        "    is not supplied, then it is assumed to mean forever." + NL +
+        NL +
+        "    Entry Input Format:" + NL +
+        "    [<duration>(m|s)@]<speed>(mps|bps)[,...]" + NL +
+        NL +                                                                        // |
+        "    Examples:" + NL +
+        "    10Mbps" + NL +
+        "        Send forever at 10 Megabits per second." + NL +
+        "    1000m@10mps" + NL +
+        "        Send 1000 messages at 10 messages per second." + NL +
+        "    10s@1.5Kbps,1s@1Gbps,0.5mps" + NL +
+        "        Send for 10 seconds at 1.5 Kilobit per second, spike to 1" + NL +
+        "        Gigabit per second for 1 second, then send one message every 2 seconds" + NL +
+        "        forever." + NL +
+        NL +
+        "--seed (number)" + NL +                                                    // |
+        "    Set the seed for the random number generator. If multiple threads are" + NL +
+        "    being used, each one will use an incrementing seed value." + NL +
+        NL +
+        "--session (number|default)" + NL +                                         // |
+        "    All publishers will be created using the given number as their session ID." + NL +
+        "    The special value \"default\" can be used to allow Aeron to select an ID" + NL +
+        "    at random." + NL +
+        "" + NL +
+        "-s,--size (csv list)" + NL +                                               // |
+        "    This is a list of one or more message payload sizes. Each entry in the" + NL +
+        "    list contains up to two parts, the number of messages and the size or" + NL +
+        "    range of possible sizes. The size is specified as a number and optional" + NL +
+        "    suffix. A range of sizes is specified by two sizes separated by a hyphen." + NL +
+        "    Possible suffixes are 'GB' or 'G', 'MB' or 'M', 'KB' or 'K', and 'B'. " + NL +
+        "    The values are binary units, so 'KB' is actually 1024 bytes. If the number" + NL +
+        "    of messages not specified then the given size or range will be used" + NL +
+        "    indefinitely. The pattern of message sizes will repeat until the sender" + NL +
+        "    exits." + NL +
+        NL +
+        "    Entry Input Format:" + NL +
+        "    [<messages>@]<size>[B][-<maximum>[B]][,...]" + NL +
+        NL +
+        "    Examples:" + NL +
+        "    100" + NL +
+        "        All messages will be 100 bytes in size." + NL +
+        "    32-1KB" + NL +
+        "        All messages will have a random size between 32 and 1024 bytes." + NL +
+        "    99@8K,1@1MB-2MB" + NL +
+        "        The first 99 messages will be 8 Kilobytes in size, then one message" + NL +
+        "        will be between 1 Megabyte and 2 Megabytes. This pattern will repeat" + NL +
+        "        as long as messages are being sent." + NL +
+        NL +
+        "-t,--threads (number)" + NL +                                              // |
+        "    Use the given number of threads to process channels. Channels are split" + NL +
+        "    Round-Robin across the threads." + NL +
+        NL +
+        "--verify (yes|no)" + NL +                                                  // |
+        "    Each message will reserve space for checksum data that can be used to" + NL +
+        "    verify both the individual message and the stream up to that point." + NL +
+        "    The default behavior is 'yes', and will use the first 16 bytes of the" + NL +
+        "    message payload to store verification data. To send messages with less" + NL +
+        "    than 16 bytes of payload this option must be set to 'no'. Subscribers" + NL +
+        "    can detect that a message is verifiable. The checksums are not written" + NL +
+        "    to the output stream.";
 }

@@ -18,9 +18,8 @@ package uk.co.real_logic.aeron.tools;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
-public class TLRandom
+public class SeedableThreadLocalRandom
 {
-
     private static final ThreadLocal<Random> RND = new ThreadLocal<Random>();
     private static SeedCallback seedCallback;
 

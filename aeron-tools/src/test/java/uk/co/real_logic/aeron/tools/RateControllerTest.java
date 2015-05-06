@@ -26,16 +26,14 @@ import java.util.List;
 
 import org.junit.Test;
 
-/**
- * Created by ericb on 3/27/15.
- */
 public class RateControllerTest
 {
-    RateController rc;
+    private RateController rc;
 
     interface TestCallbackStats
     {
         long numMessagesSent();
+
         long numBitsSent();
     }
 
@@ -44,26 +42,24 @@ public class RateControllerTest
         protected long numMessagesSent = 0;
         protected long numBitsSent = 0;
 
-        @Override
         public long numMessagesSent()
         {
             return numMessagesSent;
         }
 
-        @Override
         public long numBitsSent()
         {
             return numBitsSent;
         }
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNulls() throws Exception
     {
         rc = new RateController(null, null);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNullCallback() throws Exception
     {
         final RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
@@ -73,181 +69,100 @@ public class RateControllerTest
         rc = new RateController(null, ivlsList);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNullIntervalsList() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
-        rc = new RateController(new Callback(), null);
+        rc = new RateController(() -> {
+            return 0;
+        }, null);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithEmptyIntervalsList() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
     public void createWithMessagesAtMessagesPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
     public void createWithMessagesAtBitsPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
     public void createWithSecondsAtBitsPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new SecondsAtBitsPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
     public void createWithSecondsAtMessagesPerSecond() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new SecondsAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithZeroIterations() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList, 0);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList, 0);
     }
 
-    @Test (expected = Exception.class)
+    @Test(expected = Exception.class)
     public void createWithNegativeIterations() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         final RateControllerInterval ivl = new MessagesAtMessagesPerSecondInterval(1, 1);
         ivlsList.add(ivl);
-        rc = new RateController(new Callback(), ivlsList, -1);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList, -1);
     }
 
     @Test
     public void createWithFourIntervals() throws Exception
     {
-        class Callback implements RateController.Callback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, 1));
         ivlsList.add(new SecondsAtBitsPerSecondInterval(1, 1));
         ivlsList.add(new MessagesAtMessagesPerSecondInterval(1, 1));
         ivlsList.add(new MessagesAtBitsPerSecondInterval(1, 1));
-        rc = new RateController(new Callback(), ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
     }
 
     @Test
@@ -256,14 +171,11 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 return 0;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -275,7 +187,7 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly one message should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(1L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(1L));
     }
 
     @Test
@@ -284,15 +196,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 1;
                 return 1;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -304,7 +213,7 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly one bit should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(1L));
+            ((TestCallbackStats)callback).numBitsSent(), is(1L));
     }
 
     @Test
@@ -313,15 +222,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 10;
                 return 10;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -333,9 +239,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly five messages should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(5L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(5L));
         assertThat("FAIL: Exactly 50 bits should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(50L));
+            ((TestCallbackStats)callback).numBitsSent(), is(50L));
     }
 
     @Test
@@ -344,15 +250,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 10;
                 return 10;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -365,9 +268,9 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly two messages should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(2L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(2L));
         assertThat("FAIL: Exactly 20 bits should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(20L));
+            ((TestCallbackStats)callback).numBitsSent(), is(20L));
     }
 
     @Test
@@ -376,15 +279,12 @@ public class RateControllerTest
 
         class Callback extends TestCallback
         {
-
-            @Override
             public int onNext()
             {
                 numMessagesSent++;
                 numBitsSent += 10;
                 return 10;
             }
-
         }
 
         final RateController.Callback callback = new Callback();
@@ -397,29 +297,19 @@ public class RateControllerTest
 
         }
         assertThat("FAIL: Exactly four messages should have been sent",
-                ((TestCallbackStats) callback).numMessagesSent(), is(4L));
+            ((TestCallbackStats)callback).numMessagesSent(), is(4L));
         assertThat("FAIL: Exactly 40 bits should have been sent",
-                ((TestCallbackStats) callback).numBitsSent(), is(40L));
+            ((TestCallbackStats)callback).numBitsSent(), is(40L));
     }
 
     @Test
     public void sendForOneSecond() throws Exception
     {
-        class Callback extends TestCallback
-        {
-
-            @Override
-            public int onNext()
-            {
-                return 0;
-            }
-
-        }
-
-        final RateController.Callback callback = new Callback();
         final List<RateControllerInterval> ivlsList = new ArrayList<RateControllerInterval>();
         ivlsList.add(new SecondsAtMessagesPerSecondInterval(1, Long.MAX_VALUE));
-        rc = new RateController(callback, ivlsList);
+        rc = new RateController(() -> {
+            return 0;
+        }, ivlsList);
 
         /* Wall-clock time isn't an exact science... so we'll accept a
          * fairly generous range of 0.8 seconds to 1.2 seconds of elapsed
@@ -431,7 +321,7 @@ public class RateControllerTest
         }
         final long endTime = System.nanoTime();
         assertThat("FAIL: Send should have taken about one second",
-                endTime,
-                both(greaterThanOrEqualTo(startTime + 800000000L)).and(lessThanOrEqualTo(startTime + 1200000000L)));
+            endTime,
+            both(greaterThanOrEqualTo(startTime + 800000000L)).and(lessThanOrEqualTo(startTime + 1200000000L)));
     }
 }

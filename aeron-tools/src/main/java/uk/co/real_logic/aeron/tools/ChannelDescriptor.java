@@ -17,12 +17,11 @@ package uk.co.real_logic.aeron.tools;
 
 /**
  * This class is responsible for holding an Aeron channel and all the stream Ids that are on it.
- * Created by bhorst on 3/4/15.
  */
 public class ChannelDescriptor
 {
-    String channel;
-    int[] streamIds;
+    private String channel;
+    private int[] streamIds;
 
     ChannelDescriptor()
     {
@@ -30,27 +29,26 @@ public class ChannelDescriptor
         streamIds = null;
     }
 
-    public String getChannel()
+    public String channel()
     {
         return channel;
     }
 
-    public void setChannel(final String c)
+    public void channel(final String c)
     {
         channel = c;
     }
 
-    public int[] getStreamIdentifiers()
+    public int[] streamIdentifiers()
     {
         return streamIds;
     }
 
-    public void setStreamIdentifiers(final int[] ids)
+    public void streamIdentifiers(final int[] ids)
     {
         streamIds = ids;
     }
 
-    @Override
     public String toString()
     {
         return channel;

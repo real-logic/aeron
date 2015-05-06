@@ -103,15 +103,17 @@ public class EventConfiguration
     public static int bufferLength()
     {
         return Integer.getInteger(
-                EventConfiguration.BUFFER_LENGTH_PROPERTY_NAME,
-                EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
+            EventConfiguration.BUFFER_LENGTH_PROPERTY_NAME,
+            EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
     }
 
     static long makeTagBitSet(final Set<EventCode> eventCodes)
     {
-        return eventCodes.stream()
-                         .mapToLong(EventCode::tagBit)
-                         .reduce(0L, (acc, x) -> acc | x);
+        return
+            eventCodes
+                .stream()
+                .mapToLong(EventCode::tagBit)
+                .reduce(0L, (acc, x) -> acc | x);
     }
 
     /**
@@ -139,9 +141,10 @@ public class EventConfiguration
                 return ADMIN_ONLY_EVENT_CODES;
 
             default:
-                return COMMA.splitAsStream(enabledLoggerEventCodes)
-                            .map(EventCode::valueOf)
-                            .collect(Collectors.toSet());
+                return COMMA
+                    .splitAsStream(enabledLoggerEventCodes)
+                    .map(EventCode::valueOf)
+                    .collect(Collectors.toSet());
         }
     }
 }

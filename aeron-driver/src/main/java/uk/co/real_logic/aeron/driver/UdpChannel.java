@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.UriUtil;
 import uk.co.real_logic.aeron.common.uri.AeronUri;
 import uk.co.real_logic.aeron.common.uri.InterfaceSearchAddress;
@@ -128,7 +129,7 @@ public final class UdpChannel
         }
         catch (final Exception ex)
         {
-            throw new InvalidChannelException(ex);
+            throw new InvalidChannelException(ErrorCode.INVALID_CHANNEL, ex);
         }
     }
 

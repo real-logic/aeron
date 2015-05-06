@@ -15,14 +15,14 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.DriverPublication;
+import uk.co.real_logic.aeron.driver.NetworkPublication;
 import uk.co.real_logic.aeron.driver.Sender;
 
 public class ClosePublicationCmd implements SenderCmd
 {
-    private final DriverPublication publication;
+    private final NetworkPublication publication;
 
-    public ClosePublicationCmd(final DriverPublication publication)
+    public ClosePublicationCmd(final NetworkPublication publication)
     {
         this.publication = publication;
     }

@@ -30,10 +30,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-/**
- * Created by philipjohnson1 on 4/2/15.
- */
-public class AeronThroughputencySubscriber
+public class AeronLatencyUnderLoadSubscriber
 {
     private Aeron.Context ctx = null;
     private FragmentAssemblyAdapter dataHandler = null;
@@ -48,13 +45,13 @@ public class AeronThroughputencySubscriber
     private BufferClaim bufferClaim = null;
     private Options options;
 
-    public AeronThroughputencySubscriber(final String[] args)
+    public AeronLatencyUnderLoadSubscriber(final String[] args)
     {
         try
         {
             parseArgs(args);
         }
-        catch (final Exception e)
+        catch (final ParseException e)
         {
             e.printStackTrace();
         }
@@ -70,45 +67,32 @@ public class AeronThroughputencySubscriber
             sub.poll(1);
         }
 
-
-        sub.close();
-        pub.close();
-        ctx.close();
+        try
+        {
+            Thread.sleep(500);
+        }
+        catch (InterruptedException e)
+        {
+            e.printStackTrace();
+        }
         aeron.close();
     }
 
     public void msgHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        int iterations = 0;
         if (buffer.getByte(offset) == (byte)'q')
         {
             running = false;
-            return;
         }
         else
         {
             while (pub.tryClaim(length, bufferClaim) < 0L)
             {
-                iterations++;
             }
-            if (iterations > 10)
-            {
-                System.out.println("Took too many tries: " + iterations);
-            }
-            try
-            {
-                final MutableDirectBuffer newBuffer = bufferClaim.buffer();
-                final int newOffset = bufferClaim.offset();
-                 newBuffer.putBytes(newOffset, buffer, offset, length);
-            }
-            catch (final Exception e)
-            {
-                e.printStackTrace();
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
+            final MutableDirectBuffer newBuffer = bufferClaim.buffer();
+            final int newOffset = bufferClaim.offset();
+            newBuffer.putBytes(newOffset, buffer, offset, length);
+            bufferClaim.commit();
         }
     }
 
@@ -121,7 +105,6 @@ public class AeronThroughputencySubscriber
 
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);
-
 
         if (command.hasOption("pubChannel"))
         {
@@ -136,6 +119,6 @@ public class AeronThroughputencySubscriber
 
     public static void main(final String[] args)
     {
-        new AeronThroughputencySubscriber(args);
+        new AeronLatencyUnderLoadSubscriber(args);
     }
 }

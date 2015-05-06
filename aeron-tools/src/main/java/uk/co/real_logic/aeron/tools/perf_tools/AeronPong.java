@@ -32,9 +32,6 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-/**
- * Created by philip on 4/7/15.
- */
 public class AeronPong
 {
     private Aeron.Context ctx = null;
@@ -57,7 +54,7 @@ public class AeronPong
         {
             parseArgs(args);
         }
-        catch (final Exception e)
+        catch (final ParseException e)
         {
             e.printStackTrace();
         }
@@ -74,7 +71,7 @@ public class AeronPong
         aeron = Aeron.connect(ctx);
         pongPub = aeron.addPublication(pongChannel, pongStreamId);
         pingSub = aeron.addSubscription(pingChannel, pingStreamId, dataHandler);
-        this.claim = claim;
+
         if (claim)
         {
             bufferClaim = new BufferClaim();
@@ -91,9 +88,6 @@ public class AeronPong
 
     public void shutdown()
     {
-        //ctx.close();
-        //pongPub.close();
-        //pingSub.close();
         aeron.close();
     }
 
@@ -148,19 +142,10 @@ public class AeronPong
         }
         if (pongPub.tryClaim(length, bufferClaim) >= 0)
         {
-            try
-            {
-                final MutableDirectBuffer newBuffer = bufferClaim.buffer();
-                newBuffer.putBytes(bufferClaim.offset(), buffer, offset, length);
-            }
-            catch (final Exception e)
-            {
-                e.printStackTrace();
-            }
-            finally
-            {
-                bufferClaim.commit();
-            }
+            final MutableDirectBuffer newBuffer = bufferClaim.buffer();
+            newBuffer.putBytes(bufferClaim.offset(), buffer, offset, length);
+
+            bufferClaim.commit();
         }
         else
         {

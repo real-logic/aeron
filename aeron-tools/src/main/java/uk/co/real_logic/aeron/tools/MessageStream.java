@@ -52,7 +52,7 @@ public class MessageStream
 
     private static class ThreadLocalCRC32 extends ThreadLocal<CRC32>
     {
-        @Override protected CRC32 initialValue()
+        protected CRC32 initialValue()
         {
             return new CRC32();
         }
@@ -84,7 +84,7 @@ public class MessageStream
     }
 
     public MessageStream(final int minSize, final int maxSize, final boolean verifiable,
-            final InputStream inputStream) throws Exception
+        final InputStream inputStream) throws Exception
     {
         if (this.inputStream == null)
         {
@@ -112,22 +112,21 @@ public class MessageStream
         if (verifiable && (minSize < HEADER_LENGTH))
         {
             throw new Exception("MessageStream minimum size must be at least " +
-                    HEADER_LENGTH + " bytes when using verifiable messages.");
+                HEADER_LENGTH + " bytes when using verifiable messages.");
         }
 
         this.inputStreamBytes = new byte[maxSize];
 
+        this.minSize = minSize;
+        this.maxSize = maxSize;
+
         this.verifiable = verifiable;
         if (this.verifiable)
         {
-            this.minSize = minSize + HEADER_LENGTH;
-            this.maxSize = maxSize + HEADER_LENGTH;
             this.messageOffset = HEADER_LENGTH;
         }
         else
         {
-            this.minSize = minSize;
-            this.maxSize = maxSize;
             this.messageOffset = 0;
         }
 
@@ -137,7 +136,9 @@ public class MessageStream
         }
     }
 
-    /** Constructor for the subscribing side. */
+    /**
+     * Constructor for the subscribing side.
+     */
     public MessageStream()
     {
         this.minSize = 0;
@@ -172,10 +173,10 @@ public class MessageStream
         if (receivedSequenceNumber != expectedSequenceNumber)
         {
             final Exception e = new Exception("Verifiable message stream received sequence number " +
-                    receivedSequenceNumber + ", but was expecting " +
-                    expectedSequenceNumber + ". Possibly missed " +
-                    (receivedSequenceNumber - expectedSequenceNumber) +
-                    " messages.");
+                receivedSequenceNumber + ", but was expecting " +
+                expectedSequenceNumber + ". Possibly missed " +
+                (receivedSequenceNumber - expectedSequenceNumber) +
+                " messages.");
             /* Update expected SQN for next time. */
             sequenceNumber = receivedSequenceNumber;
             throw e;
@@ -207,7 +208,7 @@ public class MessageStream
         if ((int)(crc.getValue()) != msgCksum)
         {
             throw new Exception("Verifiable message per-message checksum invalid; received " +
-                    msgCksum + " but calculated " + (int)(crc.getValue()));
+                msgCksum + " but calculated " + (int)(crc.getValue()));
         }
 
         messageCount++;
@@ -235,6 +236,7 @@ public class MessageStream
     /**
      * Returns whether the MessageStream is still active
      * (ie, has not ended if, for example, a file was being sent).
+     *
      * @return true if the stream is still expecting to generate
      * or receive more messages, false otherwise
      */
@@ -247,6 +249,7 @@ public class MessageStream
      * Returns the number of messages that have been either generated (if
      * this is a publisher-side MessageStream) or inserted (if this is a
      * subscriber-side MessageStream).
+     *
      * @return the number of messages that have been either generated
      * from or inserted into the MessageStream
      */
@@ -262,6 +265,7 @@ public class MessageStream
      * MessageStream, this is the sequence number of the last message
      * inserted.  If no messages have yet been generated or inserted,
      * this will return -1.
+     *
      * @return the MessageStream's current sequence number, or -1 if no
      * messages have been generated or inserted
      */
@@ -270,10 +274,12 @@ public class MessageStream
         return sequenceNumber;
     }
 
-    /** Returns true if the buffer is _probably_ a verifiable message, false otherwise.
+    /**
+     * Returns true if the buffer is _probably_ a verifiable message, false otherwise.
      * This method just looks for a magic word at the beginning of the message; random
      * data might happen to reproduce one of the magic words about 1 in 2 billion
      * times.
+     *
      * @param buffer Buffer with a message that may or may not be a verifiable message
      * @param offset Offset within the buffer where the message starts
      * @return true if the message appears to be a verifiable message, false otherwise
@@ -285,11 +291,8 @@ public class MessageStream
             return false;
         }
         final int magic = buffer.getInt(offset);
-        if ((magic == MAGIC) || (magic == MAGIC_END))
-        {
-            return true;
-        }
-        return false;
+
+        return (magic == MAGIC) || (magic == MAGIC_END);
     }
 
     static void printHex(final DirectBuffer buffer, final int length)
@@ -330,12 +333,15 @@ public class MessageStream
         System.out.println();
     }
 
-    /** Generates a message of random (within the constraints the MessageStream was
+    /**
+     * Generates a message of random (within the constraints the MessageStream was
      * created with) size and writes it into the given buffer. Returns the number
      * of bytes actually written to the buffer.
+     *
      * @param buffer The buffer to write a message to.
      * @return number of bytes written
-     * @throws Exception */
+     * @throws Exception
+     */
     public int getNext(final UnsafeBuffer buffer) throws Exception
     {
         if (buffer.capacity() < maxSize)
@@ -343,7 +349,7 @@ public class MessageStream
             throw new Exception("Buffer capacity must be at least " + maxSize + " bytes.");
         }
 
-        final int size = TLRandom.current().nextInt(maxSize - minSize + 1) + minSize;
+        final int size = SeedableThreadLocalRandom.current().nextInt(maxSize - minSize + 1) + minSize;
         return getNext(buffer, size);
     }
 
@@ -373,13 +379,16 @@ public class MessageStream
         }
     }
 
-    /** Generates a message of the desired size (size must be at least 16 bytes for
+    /**
+     * Generates a message of the desired size (size must be at least 16 bytes for
      * verifiable message headers if verifiable messages are on) and writes it
      * into the given buffer. Returns the number of bytes actually written to the buffer.
+     *
      * @param buffer The buffer to write a message to.
-     * @param size The length of the message to write, in bytes
+     * @param size   The length of the message to write, in bytes
      * @return number of bytes written
-     * @throws Exception */
+     * @throws Exception
+     */
     public int getNext(final UnsafeBuffer buffer, final int size) throws Exception
     {
         checkConstraints(buffer, size);
@@ -425,7 +434,7 @@ public class MessageStream
             {
                 while (isVerifiable(buffer, 0))
                 {
-                    buffer.putInt(MAGIC_OFFSET, TLRandom.current().nextInt());
+                    buffer.putInt(MAGIC_OFFSET, SeedableThreadLocalRandom.current().nextInt());
                 }
             }
 
@@ -458,6 +467,7 @@ public class MessageStream
         }
 
         messageCount++;
+
         return pos;
     }
 }

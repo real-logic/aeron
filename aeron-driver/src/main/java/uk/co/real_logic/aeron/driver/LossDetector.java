@@ -151,10 +151,6 @@ public class LossDetector
     private void activateGap(final int termId, final int termOffset, final int length)
     {
         activeGap.reset(termId, termOffset, length);
-        if (determineNakDelay() == -1)
-        {
-            return; // Nack generation is disabled
-        }
         scheduleTimer();
 
         if (delayGenerator.shouldFeedbackImmediately())

@@ -23,7 +23,6 @@ import uk.co.real_logic.agrona.concurrent.SystemNanoClock;
 
 public class RateController
 {
-
     private static final long WARMUP_IDLES = 5000;
     private static final long CALLIBRATION_IDLES = 50000;
     /* Some platforms (like Windows) have a very coarse parkNanos resolution on the
@@ -52,94 +51,6 @@ public class RateController
 
     private final long iterations;
     private long currentIteration;
-
-    /**
-     * This is the most commonly-called RateController method; it calls the Callback associated
-     * with this RateController and then pauses the current thread for the time needed, if any,
-     * before the next event should occur.  next() will usually be called in an empty loop, like this:
-     * while (rateController.next())
-     * {
-     * }
-     * @return true if next should be called again, false if the RateController has now finished
-     * all intervals
-     */
-    public boolean next()
-    {
-        if (activeInterval == null)
-        {
-            return false;
-        }
-
-        if (!activeInterval.active)
-        {
-            activeInterval.play();
-        }
-
-        if (!(activeInterval.sendNext()))
-        {
-            /* This interval's done; change to next interval. */
-            if (++activeIntervalIndex == intervals.size())
-            {
-                if (++currentIteration == iterations)
-                {
-                    /* We're done. */
-                    return false;
-                }
-                /* Start a new iteration at the beginning of the interval list. */
-                activeIntervalIndex = 0;
-            }
-            activeInterval = intervals.get(activeIntervalIndex);
-        }
-
-        return true;
-    }
-
-    /**
-     * Rate controller callback, called at the beginning of each call to {@link #next() next}
-     * and supplied by the user of RateController.
-     *
-     */
-    public interface Callback
-    {
-        /** Returns the number of bytes "sent", or -1 to indicate sending should stop. */
-        int onNext();
-    }
-
-    /** Resets the RateController back to the beginning, starting at the first interval. */
-    public void rewind()
-    {
-        if (activeInterval == null)
-        {
-            return;
-        }
-        /* Reset all intervals and set active interval back to 0. */
-        for (final IntervalInternal interval : intervals)
-        {
-            interval.reset();
-        }
-        activeIntervalIndex = 0;
-        activeInterval = intervals.get(0);
-    }
-
-    private static void nanoSleep(final long nanoseconds)
-    {
-        long nanoSecondsRemaining = nanoseconds;
-        final long startNanos = CLOCK.time();
-        while (nanoSecondsRemaining > PARK_NANOS)
-        {
-            LockSupport.parkNanos(nanoSecondsRemaining - PARK_NANOS);
-            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
-        }
-        while (nanoSecondsRemaining > YIELD_NANOS)
-        {
-            Thread.yield();
-            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
-        }
-        while (nanoSecondsRemaining > TIME_NANOS)
-        {
-            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
-        }
-    }
 
     static
     {
@@ -209,6 +120,98 @@ public class RateController
         PARK_NANOS = ((parkEndNanos - parkStartNanos) / parkNanosLoops) * PARK_NANOS_FUDGE_FACTOR;
     }
 
+    /**
+     * This is the most commonly-called RateController method; it calls the Callback associated
+     * with this RateController and then pauses the current thread for the time needed, if any,
+     * before the next event should occur.  next() will usually be called in an empty loop, like this:
+     * while (rateController.next())
+     * {
+     * }
+     *
+     * @return true if next should be called again, false if the RateController has now finished
+     * all intervals
+     */
+    public boolean next()
+    {
+        if (activeInterval == null)
+        {
+            return false;
+        }
+
+        if (!activeInterval.active)
+        {
+            activeInterval.play();
+        }
+
+        if (!(activeInterval.sendNext()))
+        {
+            /* This interval's done; change to next interval. */
+            if (++activeIntervalIndex == intervals.size())
+            {
+                if (++currentIteration == iterations)
+                {
+                    /* We're done. */
+                    return false;
+                }
+                /* Start a new iteration at the beginning of the interval list. */
+                activeIntervalIndex = 0;
+            }
+            activeInterval = intervals.get(activeIntervalIndex);
+        }
+
+        return true;
+    }
+
+    /**
+     * Rate controller callback, called at the beginning of each call to {@link #next() next}
+     * and supplied by the user of RateController.
+     */
+    public interface Callback
+    {
+        /**
+         * Returns the number of bytes "sent", or -1 to indicate sending should stop.
+         */
+        int onNext();
+    }
+
+    /**
+     * Resets the RateController back to the beginning, starting at the first interval.
+     */
+    public void rewind()
+    {
+        if (activeInterval == null)
+        {
+            return;
+        }
+        /* Reset all intervals and set active interval back to 0. */
+        for (final IntervalInternal interval : intervals)
+        {
+            interval.reset();
+        }
+        activeIntervalIndex = 0;
+        activeInterval = intervals.get(0);
+    }
+
+    private static void nanoSleep(final long nanoseconds)
+    {
+        long nanoSecondsRemaining = nanoseconds;
+        final long startNanos = CLOCK.time();
+        while (nanoSecondsRemaining > PARK_NANOS)
+        {
+            LockSupport.parkNanos(nanoSecondsRemaining - PARK_NANOS);
+            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
+        }
+        while (nanoSecondsRemaining > YIELD_NANOS)
+        {
+            Thread.yield();
+            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
+        }
+        while (nanoSecondsRemaining > TIME_NANOS)
+        {
+            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
+        }
+    }
+
     private void addIntervals(final List<RateControllerInterval> intervals) throws Exception
     {
         for (final RateControllerInterval interval : intervals)
@@ -234,7 +237,7 @@ public class RateController
         private final long messages;
 
         protected MessagesAtBitsPerSecondInternal(
-                final RateController rateController, final long messages, final long bitsPerSecond) throws Exception
+            final RateController rateController, final long messages, final long bitsPerSecond) throws Exception
         {
             if (messages <= 0)
             {
@@ -249,8 +252,9 @@ public class RateController
             this.messages = messages;
         }
 
-        /** Returns true if you should keep sending. */
-        @Override
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* We've got a fixed size message and a fixed bits/sec. rate.
@@ -294,7 +298,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
@@ -314,7 +317,7 @@ public class RateController
         private final long messages;
 
         protected MessagesAtMessagesPerSecondInternal(
-                final RateController rateController, final long messages, final double messagesPerSecond) throws Exception
+            final RateController rateController, final long messages, final double messagesPerSecond) throws Exception
         {
             if (messages <= 0)
             {
@@ -329,8 +332,9 @@ public class RateController
             this.messages = messages;
         }
 
-        /** Returns true if you should keep sending. */
-        @Override
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* Always start out sending immediately; if the previous
@@ -370,7 +374,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
@@ -390,7 +393,7 @@ public class RateController
         private final double seconds;
 
         protected SecondsAtMessagesPerSecondInternal(
-                final RateController rateController, final double seconds, final double messagesPerSecond) throws Exception
+            final RateController rateController, final double seconds, final double messagesPerSecond) throws Exception
         {
             if (seconds <= 0)
             {
@@ -405,8 +408,9 @@ public class RateController
             this.seconds = seconds;
         }
 
-        /** Returns true if you should keep sending. */
-        @Override
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* As a special case... If we're sending 0 messages per second, then this is really just a sleep.
@@ -456,7 +460,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
@@ -476,7 +479,7 @@ public class RateController
         private final double seconds;
 
         protected SecondsAtBitsPerSecondInternal(
-                final RateController rateController, final double seconds, final long bitsPerSecond) throws Exception
+            final RateController rateController, final double seconds, final long bitsPerSecond) throws Exception
         {
             if (seconds <= 0)
             {
@@ -491,8 +494,9 @@ public class RateController
             this.seconds = seconds;
         }
 
-        /** Returns true if you should keep sending. */
-        @Override
+        /**
+         * Returns true if you should keep sending.
+         */
         public boolean sendNext()
         {
             /* As a special case... If we're sending 0 bits per second, then this is really just a sleep.
@@ -542,7 +546,6 @@ public class RateController
             return true;
         }
 
-        @Override
         protected IntervalInternal makeInternal(final RateController rateController)
         {
             return this;
@@ -584,7 +587,7 @@ public class RateController
     }
 
     public RateController(final Callback callback, final List<RateControllerInterval> intervals,
-            final long iterations) throws Exception
+        final long iterations) throws Exception
     {
         if (iterations <= 0)
         {
@@ -612,12 +615,12 @@ public class RateController
         this(callback, intervals, 1);
     }
 
-    public long getMessages()
+    public long messages()
     {
         return messagesSent;
     }
 
-    public long getBytes()
+    public long bytes()
     {
         return bytesSent;
     }

@@ -33,15 +33,15 @@ import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIME
 /**
  * Publication to be sent to registered subscribers.
  */
-public class DriverPublication implements AutoCloseable
+public class NetworkPublication implements RetransmitSender, AutoCloseable
 {
     private final RawLog rawLog;
     private final NanoClock clock;
     private final SetupFlyweight setupHeader = new SetupFlyweight();
-    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final TermScanner scanner = new TermScanner(DataHeaderFlyweight.HEADER_LENGTH);
+    private final TermScanner scanner = new TermScanner();
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
     private final Position publisherLimit;
@@ -66,7 +66,7 @@ public class DriverPublication implements AutoCloseable
     private volatile boolean isActive = true;
     private volatile boolean shouldSendSetupFrame = true;
 
-    public DriverPublication(
+    public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
         final NanoClock clock,
         final RawLog rawLog,
@@ -192,7 +192,7 @@ public class DriverPublication implements AutoCloseable
         return timeOfFlush;
     }
 
-    public void onRetransmit(final int termId, int termOffset, final int length)
+    public void resend(final int termId, int termOffset, final int length)
     {
         final long senderPosition = this.senderPosition.get();
         final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
@@ -274,12 +274,12 @@ public class DriverPublication implements AutoCloseable
         return isFlushed;
     }
 
-    public RawLog rawLogBuffers()
+    public RawLog rawLog()
     {
         return rawLog;
     }
 
-    public int publisherLimitCounterId()
+    public int publisherLimitId()
     {
         return publisherLimit.id();
     }

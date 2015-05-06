@@ -53,6 +53,7 @@ public class MessageSizePattern
 
     /**
      * Instantiate a MessageSizePattern and always return the given message size.
+     *
      * @param messageSize
      * @throws Exception when message size is invalid
      */
@@ -64,6 +65,7 @@ public class MessageSizePattern
 
     /**
      * Instantiate a MessageSizePattern with a number of messages and their size.
+     *
      * @param messageCount
      * @param messageSize
      */
@@ -74,6 +76,7 @@ public class MessageSizePattern
 
     /**
      * Instantiate a MessageCount with a number of message, and random size range.
+     *
      * @param messageCount
      * @param minSize
      * @param maxSize
@@ -87,6 +90,7 @@ public class MessageSizePattern
 
     /**
      * Create a copy of the given pattern with a different random number generator.
+     *
      * @param original The instance to copy.
      */
     public MessageSizePattern(final MessageSizePattern original)
@@ -100,6 +104,7 @@ public class MessageSizePattern
 
     /**
      * Add a number of messages with the given size to the pattern.
+     *
      * @param messageCount
      * @param size
      * @throws Exception
@@ -111,9 +116,10 @@ public class MessageSizePattern
 
     /**
      * Add a number of messages with a given size range to the pattern.
+     *
      * @param messages Number of messages to send for this entry, must be at least 1.
-     * @param minSize The minimum size for a range
-     * @param maxSize The maximum size for a range
+     * @param minSize  The minimum size for a range
+     * @param maxSize  The maximum size for a range
      * @throws Exception When input values are invalid.
      */
     public void addPatternEntry(final long messages, final int minSize, final int maxSize) throws Exception
@@ -149,12 +155,13 @@ public class MessageSizePattern
 
     /**
      * Get the next message size based on the pattern.
+     *
      * @return expected size of the next message.
      */
     public int getNext()
     {
         // check current entry to see if we need to get the next one
-        // This needs to be here so getMinimum and getMaximum work
+        // This needs to be here so minimum and maximum work
         if (messageCount >= entries.get(currentIndex).count)
         {
             messageCount = 0;
@@ -173,7 +180,7 @@ public class MessageSizePattern
         if (entry.minSize != entry.maxSize)
         {
             // Use thread local random number generator service.
-            value = TLRandom.current().nextInt(entry.maxSize - entry.minSize + 1) + entry.minSize;
+            value = SeedableThreadLocalRandom.current().nextInt(entry.maxSize - entry.minSize + 1) + entry.minSize;
         }
         else
         {
@@ -185,36 +192,40 @@ public class MessageSizePattern
 
     /**
      * Get the minimum value possible in the entire pattern.
+     *
      * @return Minimum possible value
      */
-    public int getMinimum()
+    public int minimum()
     {
         return patternMinSize;
     }
 
     /**
      * Get the maximum value possible in the entire pattern.
+     *
      * @return Maximum possible value
      */
-    public int getMaximum()
+    public int maximum()
     {
         return patternMaxSize;
     }
 
     /**
      * Get the range minimum value of the current message.
+     *
      * @return
      */
-    public int getCurrentRangeMinimum()
+    public int currentRangeMinimum()
     {
         return entries.get(currentIndex).minSize;
     }
 
     /**
      * Get the range maximum value of the current message.
+     *
      * @return
      */
-    public int getCurrentRangeMaximum()
+    public int currentRangeMaximum()
     {
         return entries.get(currentIndex).maxSize;
     }

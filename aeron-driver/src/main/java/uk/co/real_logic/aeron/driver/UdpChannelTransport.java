@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
@@ -282,7 +281,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             logger.log(EventCode.INVALID_VERSION, receiveBuffer, 0, header.frameLength());
             isFrameValid = false;
         }
-        else if (length <= FrameDescriptor.BASE_HEADER_LENGTH)
+        else if (length < HeaderFlyweight.HEADER_LENGTH)
         {
             logger.log(EventCode.MALFORMED_FRAME_LENGTH, receiveBuffer, 0, length);
             isFrameValid = false;

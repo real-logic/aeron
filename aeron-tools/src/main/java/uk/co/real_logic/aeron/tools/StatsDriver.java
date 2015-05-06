@@ -27,100 +27,99 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
 
 public class StatsDriver
 {
-  private Options options;
-  private StatsOutput output = null;
-  private Stats stats = null;
-  private String file = null;
-  private AtomicBoolean running = null;
+    private Options options;
+    private StatsOutput output = null;
+    private Stats stats = null;
+    private String file = null;
+    private AtomicBoolean running = null;
 
-  public StatsDriver(final String[] args)
-  {
-    try
+    public StatsDriver(final String[] args)
     {
-      parseArgs(args);
-      running = new AtomicBoolean(true);
-      stats = new Stats(output, null);
-
-      final Runnable task = new Runnable()
-      {
-        @Override
-        public void run()
+        try
         {
-          try
-          {
-            while (running.get())
+            parseArgs(args);
+            running = new AtomicBoolean(true);
+            stats = new Stats(output, null);
+
+            final Runnable task = new Runnable()
             {
-              stats.collectStats();
-              Thread.sleep(1000);
-            }
-            stats.close();
-          }
-          catch (final Exception e)
-          {
-            e.printStackTrace();
-          }
+                public void run()
+                {
+                    try
+                    {
+                        while (running.get())
+                        {
+                            stats.collectStats();
+                            Thread.sleep(1000);
+                        }
+                        stats.close();
+                    }
+                    catch (final Exception e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
+            };
+            final Thread worker = new Thread(task);
+            worker.start();
+
+            SigInt.register(() -> running.set(false));
         }
-      };
-      final Thread worker = new Thread(task);
-      worker.start();
-
-      SigInt.register(() -> running.set(false));
+        catch (final Exception e)
+        {
+            e.printStackTrace();
+        }
     }
-    catch (final Exception e)
+
+    public void parseArgs(final String[] args) throws ParseException
     {
-      e.printStackTrace();
+        options = new Options();
+        options.addOption(null, "vmstat", false, "Format transport stats in vmstat format.");
+        options.addOption(null, "console", false, "Dump raw stats to the console.");
+        options.addOption(null, "netstat", false, "Format channel info in netstat format.");
+        options.addOption(null, "csv", false, "Format transport stats as comma separated values.");
+        options.addOption(null, "file", true, "Output file for csv format stats.");
+        options.addOption("h", "help", false, "Display help message.");
+
+
+        final CommandLineParser parser = new GnuParser();
+        final CommandLine command = parser.parse(options, args);
+
+        final String opt;
+
+        if (command.hasOption("help"))
+        {
+            System.out.println(options.toString());
+            System.exit(0);
+        }
+
+        /** Default is console output **/
+        output = new StatsConsoleOutput();
+
+        if (command.hasOption("vmstat"))
+        {
+            output = new StatsVmStatOutput();
+        }
+        else if (command.hasOption("console"))
+        {
+            output = new StatsConsoleOutput();
+        }
+        else if (command.hasOption("netstat"))
+        {
+            output = new StatsNetstatOutput();
+        }
+        else if (command.hasOption("csv"))
+        {
+            if (command.hasOption("file"))
+            {
+                file = command.getOptionValue("file", null);
+            }
+            output = new StatsCsvOutput(file);
+        }
     }
-  }
 
-  public void parseArgs(final String[] args) throws ParseException
-  {
-    options = new Options();
-    options.addOption(null, "vmstat", false, "Format transport stats in vmstat format.");
-    options.addOption(null, "console", false, "Dump raw stats to the console.");
-    options.addOption(null, "netstat", false, "Format channel info in netstat format.");
-    options.addOption(null, "csv", false, "Format transport stats as comma separated values.");
-    options.addOption(null, "file", true, "Output file for csv format stats.");
-    options.addOption("h", "help", false, "Display help message.");
-
-
-    final CommandLineParser parser = new GnuParser();
-    final CommandLine command = parser.parse(options, args);
-
-    final String opt;
-
-    if (command.hasOption("help"))
+    public static void main(final String[] args)
     {
-      System.out.println(options.toString());
-      System.exit(0);
+        new StatsDriver(args);
     }
-
-    /** Default is console output **/
-    output = new StatsConsoleOutput();
-
-    if (command.hasOption("vmstat"))
-    {
-      output = new StatsVMStatOutput();
-    }
-    else if (command.hasOption("console"))
-    {
-      output = new StatsConsoleOutput();
-    }
-    else if (command.hasOption("netstat"))
-    {
-      output = new StatsNetstatOutput();
-    }
-    else if (command.hasOption("csv"))
-    {
-      if (command.hasOption("file"))
-      {
-        file = command.getOptionValue("file", null);
-      }
-      output = new StatsCSVOutput(file);
-    }
-  }
-
-  public static void main(final String[] args)
-  {
-    new StatsDriver(args);
-  }
 }

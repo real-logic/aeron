@@ -18,10 +18,9 @@ package uk.co.real_logic.aeron.tools;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.logging.Logger;
 
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.InactiveConnectionHandler;
@@ -29,7 +28,7 @@ import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
+import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -37,20 +36,14 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
 {
     static
     {
-        /* Turn off some of the default clutter of the default logger if the
-         * user hasn't explicitly turned it back on. */
-        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        if (System.getProperty("java.util.logging.SimpleFormatter.format") == null)
         {
-            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
-        {
-            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
+            System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         }
     }
 
     public static final String APP_USAGE = "PublisherTool";
-    private static final Logger LOG = LoggerFactory.getLogger(PublisherTool.class);
+    private static final Logger LOG = Logger.getLogger(PublisherTool.class.getName());
 
     private final PubSubOptions options;
     private final Thread[] pubThreads;
@@ -58,28 +51,30 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
     private final int numThreads;
     private boolean shuttingDown;
 
-    /** Warn about options settings that might cause trouble. */
+    /**
+     * Warn about options settings that might cause trouble.
+     */
     private void sanityCheckOptions() throws Exception
     {
-        if (options.getThreads() > 1)
+        if (options.threads() > 1)
         {
-            if (options.getInput() != null)
+            if (options.input() != null)
             {
-                LOG.warn("File data may be sent in a non-deterministic order when multiple publisher threads are used.");
+                LOG.warning("File data may be sent in a non-deterministic order when multiple publisher threads are used.");
             }
         }
-        if (options.getVerify())
+        if (options.verify())
         {
             /* If verifiable messages are used, enforce a minimum of 16 bytes. */
-            if (options.getMessageSizePattern().getMinimum() < 16)
+            if (options.messageSizePattern().minimum() < 16)
             {
                 throw new Exception("Minimum message size must be at least 16 bytes when using verifiable messages.");
             }
         }
-        if (options.getMessageSizePattern().getMinimum() < 1)
+        if (options.messageSizePattern().minimum() < 1)
         {
             throw new Exception(
-                    "Minimum message size must be at least 1 byte, as Aeron does not currently support 0-length messages.");
+                "Minimum message size must be at least 1 byte, as Aeron does not currently support 0-length messages.");
         }
 
     }
@@ -99,29 +94,29 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         }
 
         /* Set pRNG seed callback. */
-        TLRandom.setSeedCallback(this);
+        SeedableThreadLocalRandom.setSeedCallback(this);
 
         /* Shut down gracefully when we receive SIGINT. */
         SigInt.register(() -> shuttingDown = true);
 
         /* Start embedded driver if requested. */
         MediaDriver driver = null;
-        if (options.getUseEmbeddedDriver())
+        if (options.useEmbeddedDriver())
         {
             driver = MediaDriver.launch();
         }
 
         /* Create and start publishing threads. */
-        numThreads = Math.min(options.getThreads(), options.getNumberOfStreams());
-        if (numThreads < options.getThreads())
+        numThreads = Math.min(options.threads(), options.numberOfStreams());
+        if (numThreads < options.threads())
         {
-            LOG.warn(options.getThreads() + " threads were requested, but only " + options.getNumberOfStreams() +
-                    " channel(s) were specified; using " + numThreads + " thread(s) instead.");
+            LOG.warning(options.threads() + " threads were requested, but only " + options.numberOfStreams() +
+                " channel(s) were specified; using " + numThreads + " thread(s) instead.");
         }
         pubThreads = new Thread[numThreads];
         publishers = new PublisherThread[numThreads];
-        final long messagesPerThread = options.getMessages() / numThreads;
-        long leftoverMessages = options.getMessages() - (messagesPerThread * numThreads);
+        final long messagesPerThread = options.messages() / numThreads;
+        long leftoverMessages = options.messages() - (messagesPerThread * numThreads);
         for (int i = 0; i < numThreads; i++)
         {
             publishers[i] = new PublisherThread(i, messagesPerThread + ((leftoverMessages-- > 0) ? 1 : 0));
@@ -146,7 +141,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         }
 
         /* Close the driver if we had opened it. */
-        if (options.getUseEmbeddedDriver())
+        if (options.useEmbeddedDriver())
         {
             driver.close();
         }
@@ -164,9 +159,9 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         final long verifiableMessages = verifiableMessages();
         final long nonVerifiableMessages = nonVerifiableMessages();
         final long bytesSent = bytes();
-        LOG.info("{}", String.format("Exiting. Sent %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
-                verifiableMessages + nonVerifiableMessages,
-                bytesSent, verifiableMessages, nonVerifiableMessages));
+        LOG.info(String.format("Exiting. Sent %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
+            verifiableMessages + nonVerifiableMessages,
+            bytesSent, verifiableMessages, nonVerifiableMessages));
     }
 
     public static void main(final String[] args)
@@ -193,25 +188,25 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
 
     /**
      * Optionally sets the random seed used for the TLRandom class, and reports the seed used.
+     *
      * @return the seed to use
      */
-    @Override
     public long setSeed(long seed)
     {
-        if (options.getRandomSeed() != 0)
+        if (options.randomSeed() != 0)
         {
-            seed = options.getRandomSeed();
+            seed = options.randomSeed();
         }
-        LOG.info("{}", String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
+        LOG.info(String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
         return seed;
     }
 
     /**
      * A snapshot (non-atomic) total of the number of verifiable messages
      * sent across all publishing threads.
+     *
      * @return current total number of verifiable messages sent
      */
-    @Override
     public long verifiableMessages()
     {
         long totalMessages = 0;
@@ -219,15 +214,16 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         {
             totalMessages += publishers[i].verifiableMessagesSent();
         }
+
         return totalMessages;
     }
 
     /**
      * A snapshot (non-atomic) total of the number of bytes
      * sent across all publishing threads.
+     *
      * @return current total number of bytes sent
      */
-    @Override
     public long bytes()
     {
         long totalBytes = 0;
@@ -235,15 +231,16 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         {
             totalBytes += publishers[i].bytesSent();
         }
+
         return totalBytes;
     }
 
     /**
      * A snapshot (non-atomic) total of the number of non-verifiable messages
      * sent across all publishing threads.
+     *
      * @return current total number of non-verifiable messages sent
      */
-    @Override
     public long nonVerifiableMessages()
     {
         long totalMessages = 0;
@@ -251,6 +248,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         {
             totalMessages += publishers[i].nonVerifiableMessagesSent();
         }
+
         return totalMessages;
     }
 
@@ -267,21 +265,20 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         private final MessageSizePattern msp;
         private final RateController rateController;
         private final UnsafeBuffer sendBuffer;
-        private final boolean verifiableMessages = options.getVerify();
+        private final boolean verifiableMessages = options.verify();
         private final Aeron.Context ctx;
         private final Aeron aeron;
-
 
         @SuppressWarnings("resource")
         public PublisherThread(final int threadId, final long messages)
         {
             this.threadId = threadId;
             this.messagesToSend = messages;
-            msp = options.getMessageSizePattern();
+            msp = options.messageSizePattern();
             RateController rc = null;
             try
             {
-                rc = new RateController(this, options.getRateIntervals(), options.getIterations());
+                rc = new RateController(this, options.rateIntervals(), options.iterations());
             }
             catch (final Exception e)
             {
@@ -289,55 +286,56 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                 System.exit(-1);
             }
             rateController = rc;
-            sendBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msp.getMaximum()));
+            sendBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msp.maximum()));
 
             /* Create a context and subscribe to what we're supposed to
              * according to our thread ID. */
             ctx = new Aeron.Context()
-            .inactiveConnectionHandler(this)
-            .newConnectionHandler(this)
-            .errorHandler((throwable) ->
-            {
-                throwable.printStackTrace();
-                if (throwable instanceof DriverTimeoutException)
-                {
-                    LOG.error("Driver does not appear to be running or has been unresponsive for ten seconds.");
-                    System.exit(-1);
-                }
-            })
-            .mediaDriverTimeout(10000); /* ten seconds */
+                .inactiveConnectionHandler(this)
+                .newConnectionHandler(this)
+                .errorHandler(
+                    (throwable) ->
+                    {
+                        throwable.printStackTrace();
+                        if (throwable instanceof DriverTimeoutException)
+                        {
+                            LOG.severe("Driver does not appear to be running or has been unresponsive for ten seconds.");
+                            System.exit(-1);
+                        }
+                    })
+                .mediaDriverTimeout(10000); /* ten seconds */
 
             aeron = Aeron.connect(ctx);
             final ArrayList<Publication> publicationsList = new ArrayList<Publication>();
 
             int streamIdx = 0;
-            for (int i = 0; i < options.getChannels().size(); i++)
+            for (int i = 0; i < options.channels().size(); i++)
             {
-                final ChannelDescriptor channel = options.getChannels().get(i);
-                for (int j = 0; j < channel.getStreamIdentifiers().length; j++)
+                final ChannelDescriptor channel = options.channels().get(i);
+                for (int j = 0; j < channel.streamIdentifiers().length; j++)
                 {
                     if ((streamIdx % numThreads) == this.threadId)
                     {
                         Publication pub;
-                        if (options.getUseSessionId())
+                        if (options.useSessionId())
                         {
-                             pub = aeron.addPublication(
-                                    channel.getChannel(),
-                                    channel.getStreamIdentifiers()[j],
-                                    options.getSessionId());
+                            pub = aeron.addPublication(
+                                channel.channel(),
+                                channel.streamIdentifiers()[j],
+                                options.sessionId());
                         }
                         else
                         {
                             // Aeron will generate a random sessionId
                             pub = aeron.addPublication(
-                                    channel.getChannel(),
-                                    channel.getStreamIdentifiers()[j]);
+                                channel.channel(),
+                                channel.streamIdentifiers()[j]);
                         }
                         publicationsList.add(pub);
 
-                        LOG.info("{}", String.format("%s publishing %d messages to: %s#%d[%d]",
-                                ("publisher-" + threadId), messagesToSend, pub.channel(),
-                                pub.streamId(), pub.sessionId()));
+                        LOG.info(String.format("%s publishing %d messages to: %s#%d[%d]",
+                            ("publisher-" + threadId), messagesToSend, pub.channel(),
+                            pub.streamId(), pub.sessionId()));
                     }
                     streamIdx++;
                 }
@@ -351,7 +349,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             {
                 try
                 {
-                    messageStreams[i] = new MessageStream(msp.getMaximum(), verifiableMessages, options.getInput());
+                    messageStreams[i] = new MessageStream(msp.maximum(), verifiableMessages, options.input());
                 }
                 catch (final Exception e)
                 {
@@ -361,8 +359,10 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             }
         }
 
-        /** Get the number of bytes of all message types sent so far by this
+        /**
+         * Get the number of bytes of all message types sent so far by this
          * individual publisher thread.
+         *
          * @return the number of bytes sent by this thread
          */
         public long bytesSent()
@@ -372,6 +372,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
 
         /**
          * Gets the number of non-verifiable messages sent by this individual publisher thread.
+         *
          * @return number of non-verifiable messages sent by this thread
          */
         public long nonVerifiableMessagesSent()
@@ -381,6 +382,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
 
         /**
          * Gets the number of verifiable messages sent by this individual publisher thread.
+         *
          * @return number of verifiable messages sent by this thread
          */
         public long verifiableMessagesSent()
@@ -388,20 +390,19 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             return verifiableMessagesSent;
         }
 
-        /** Publisher thread.  Creates its own Aeron context, and publishes
+        /**
+         * Publisher thread.  Creates its own Aeron context, and publishes
          * on a round-robin'd subset of the channels and stream IDs configured.
          */
-        @Override
         public void run()
         {
             Thread.currentThread().setName("publisher-" + threadId);
-
 
             while (!shuttingDown && rateController.next())
             {
                 /* Rate controller handles sending. Stop if we
                  * hit our allotted number of messages. */
-                if (rateController.getMessages() == messagesToSend)
+                if (rateController.messages() == messagesToSend)
                 {
                     break;
                 }
@@ -412,31 +413,29 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             {
                 publications[i].close();
             }
+
             aeron.close();
             ctx.close();
         }
 
-        @Override
         public void onInactiveConnection(final String channel, final int streamId,
-                final int sessionId, final long position)
+            final int sessionId, final long position)
         {
-            LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x",
-                    channel, streamId, sessionId, position));
+            LOG.info(String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x",
+                channel, streamId, sessionId, position));
         }
 
-        @Override
         public void onNewConnection(final String channel, final int streamId,
-                final int sessionId, final long position, final String sourceInformation)
+            final int sessionId, final long position, final String sourceInformation)
         {
-            LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
-                    channel, streamId, sessionId, position, sourceInformation));
+            LOG.info(String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
+                channel, streamId, sessionId, position, sourceInformation));
         }
 
         /**
          * Called by the rate controller when we should send the next message.
          * Returns the number of bytes successfully sent.
          */
-        @Override
         public int onNext()
         {
             int length = -1;
@@ -487,9 +486,8 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
 
     }
 
-    @Override
     public void report(final StringBuilder reportString)
     {
-        LOG.info("{}", reportString);
+        LOG.info(reportString.toString());
     }
 }

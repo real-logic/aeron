@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2015 Real Logic Ltd.
+ * Copyright 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,17 @@
  */
 package uk.co.real_logic.aeron.driver.exceptions;
 
-public class InvalidChannelException extends IllegalArgumentException
+import uk.co.real_logic.aeron.common.ErrorCode;
+
+public class InvalidChannelException extends ControlProtocolException
 {
-    public InvalidChannelException(final Exception cause)
+    public InvalidChannelException(final ErrorCode code, final String msg)
     {
-        super(cause);
+        super(code, msg);
+    }
+
+    public InvalidChannelException(final ErrorCode code, final Exception rootCause)
+    {
+        super(code, rootCause);
     }
 }

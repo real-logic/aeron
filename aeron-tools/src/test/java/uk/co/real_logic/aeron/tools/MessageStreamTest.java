@@ -25,18 +25,13 @@ import org.junit.Test;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-/**
- * Created by ericb on 3/27/15.
- */
 public class MessageStreamTest
 {
-
     private static final int MAGIC = 0x0dd01221;
     private static final int BUFFER_SIZE = 200;
-    private static final int HEADER_SIZE = 16;
 
-    MessageStream ms;
-    UnsafeBuffer buf = new UnsafeBuffer(new byte[BUFFER_SIZE]);
+    private MessageStream ms;
+    private UnsafeBuffer buf = new UnsafeBuffer(new byte[BUFFER_SIZE]);
 
     @Test
     public void createSubscriberSide()
@@ -108,7 +103,7 @@ public class MessageStreamTest
     public void minVerifiableNullInputStream() throws Exception
     {
         ms = new MessageStream(16, null);
-        ms.getNext(buf);
+        assertThat(ms.getNext(buf), is(16));
     }
 
     @Test
@@ -143,7 +138,7 @@ public class MessageStreamTest
     @Test (expected = Exception.class)
     public void verifiableOneByteTooBig() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE - HEADER_SIZE + 1, true, null);
+        ms = new MessageStream(BUFFER_SIZE + 1, true, null);
         ms.getNext(buf);
     }
 
@@ -151,28 +146,28 @@ public class MessageStreamTest
     public void nonVerifiableOneByteTooBig() throws Exception
     {
         ms = new MessageStream(BUFFER_SIZE + 1, false, null);
-        ms.getNext(buf);
+        assertThat(ms.getNext(buf), is(BUFFER_SIZE));
     }
 
     @Test
     public void verifiableExactSize() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE - HEADER_SIZE, true, null);
-        ms.getNext(buf);
+        ms = new MessageStream(BUFFER_SIZE, true, null);
+        assertThat(ms.getNext(buf), is(BUFFER_SIZE));
     }
 
     @Test
     public void nonVerifiableExactSize() throws Exception
     {
         ms = new MessageStream(BUFFER_SIZE, false, null);
-        ms.getNext(buf);
+        assertThat(ms.getNext(buf), is(BUFFER_SIZE));
     }
 
     @Test
     public void getZeroSize() throws Exception
     {
         ms = new MessageStream(BUFFER_SIZE, false, null);
-        ms.getNext(buf, 0);
+        assertThat(ms.getNext(buf, 0), is(0));
     }
 
     @Test (expected = Exception.class)

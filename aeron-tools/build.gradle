@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 Real Logic Ltd.
+ * Copyright 2015 Kaazing Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,3 +14,92 @@
  * limitations under the License.
  */
 
+apply plugin: 'maven'
+apply plugin: 'signing'
+apply plugin: 'eclipse'
+
+
+defaultTasks 'clean', 'build', 'install'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:0.8'
+        classpath 'com.puppycrawl.tools:checkstyle:6.5'
+    }
+}
+
+project(':aeron-tools') {
+    apply plugin: 'java'
+    apply plugin: 'maven'
+    apply plugin: 'checkstyle'
+    apply plugin: 'shadow'
+
+    compileJava {
+        sourceCompatibility = 1.8
+        targetCompatibility = 1.8
+    }
+
+    [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+
+    dependencies {
+        compile project(':aeron-client'), project(':aeron-driver')
+        compile 'commons-cli:commons-cli:1.2'
+        testCompile project(path: ':aeron-common', configuration: 'tests')
+    }
+
+    shadow {
+        outputFile = new File('aeron-tools/build/libs/tools.jar')
+    }
+
+    task stats(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.StatsDriver'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    task ping(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronPing'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    task pong(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronPong'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    task latencyUnderLoadPub(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronLatencyUnderLoadPublisher'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    task latencyUnderLoadSub(type:JavaExec) {
+        main = 'uk.co.real_logic.aeron.tools.perf_tools.AeronLatencyUnderLoadSubscriber'
+        classpath = sourceSets.main.runtimeClasspath
+        systemProperties(System.properties);
+        if (project.hasProperty('myargs')) {
+            args(myargs.split(','))
+        }
+    }
+
+    build.doLast {
+      tasks.shadowJar.execute()
+    }
+}

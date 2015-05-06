@@ -23,7 +23,7 @@ import java.util.Queue;
 import static uk.co.real_logic.aeron.driver.ThreadingMode.SHARED;
 
 /**
- * Proxy for offering into the Receiver Thread's command queue.
+ * Proxy for offering into the {@link Receiver} Thread's command queue.
  */
 public class ReceiverProxy
 {
@@ -74,7 +74,7 @@ public class ReceiverProxy
         }
     }
 
-    public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final DriverConnection connection)
+    public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final NetworkConnection connection)
     {
         if (isSharedThread())
         {

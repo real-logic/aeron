@@ -45,7 +45,6 @@ public class MessagesAtMessagesPerSecondInterval extends RateControllerInterval
         return messages;
     }
 
-    @Override
     IntervalInternal makeInternal(final RateController rateController) throws Exception
     {
         return rateController.new MessagesAtMessagesPerSecondInternal(rateController, messages, goalMessagesPerSecond);

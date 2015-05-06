@@ -21,10 +21,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import org.apache.commons.cli.ParseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
@@ -36,7 +35,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.aeron.tools.TLRandom.SeedCallback;
+import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -50,19 +49,13 @@ public class SubscriberTool
 {
     static
     {
-        /* Turn off some of the default clutter of the default logger if the
-         * user hasn't explicitly turned it back on. */
-        if (System.getProperty("org.slf4j.simpleLogger.showThreadName") == null)
+        if (System.getProperty("java.util.logging.SimpleFormatter.format") == null)
         {
-            System.setProperty("org.slf4j.simpleLogger.showThreadName", "false");
-        }
-        if (System.getProperty("org.slf4j.simpleLogger.showLogName") == null)
-        {
-            System.setProperty("org.slf4j.simpleLogger.showLogName", "false");
+            System.setProperty("java.util.logging.SimpleFormatter.format", "%5$s%n");
         }
     }
 
-    private static final Logger LOG = LoggerFactory.getLogger(SubscriberTool.class);
+    private static final Logger LOG = Logger.getLogger(SubscriberTool.class.getName());
     private boolean shuttingDown;
     private final PubSubOptions options = new PubSubOptions();
     private SubscriberThread subscribers[];
@@ -90,7 +83,7 @@ public class SubscriberTool
         }
         catch (final ParseException e)
         {
-            LOG.error(e.getMessage());
+            LOG.severe(e.getMessage());
             subTool.options.printHelp("SubscriberTool");
             System.exit(-1);
         }
@@ -98,22 +91,22 @@ public class SubscriberTool
         sanityCheckOptions(subTool.options);
 
         /* Set pRNG seed callback. */
-        TLRandom.setSeedCallback(subTool);
+        SeedableThreadLocalRandom.setSeedCallback(subTool);
 
         /* Shut down gracefully when we receive SIGINT. */
         SigInt.register(() -> subTool.shuttingDown = true);
 
         /* Start embedded driver if requested. */
         MediaDriver driver = null;
-        if (subTool.options.getUseEmbeddedDriver())
+        if (subTool.options.useEmbeddedDriver())
         {
             driver = MediaDriver.launch();
         }
 
         /* Create and start receiving threads. */
-        final Thread subThreads[] = new Thread[subTool.options.getThreads()];
-        subTool.subscribers = new SubscriberThread[subTool.options.getThreads()];
-        for (int i = 0; i < subTool.options.getThreads(); i++)
+        final Thread subThreads[] = new Thread[subTool.options.threads()];
+        subTool.subscribers = new SubscriberThread[subTool.options.threads()];
+        for (int i = 0; i < subTool.options.threads(); i++)
         {
             subTool.subscribers[i] = subTool.new SubscriberThread(i);
             subThreads[i] = new Thread(subTool.subscribers[i]);
@@ -137,7 +130,7 @@ public class SubscriberTool
         }
 
         /* Close the driver if we had opened it. */
-        if (subTool.options.getUseEmbeddedDriver())
+        if (subTool.options.useEmbeddedDriver())
         {
             driver.close();
         }
@@ -155,19 +148,22 @@ public class SubscriberTool
         final long verifiableMessages = subTool.verifiableMessages();
         final long nonVerifiableMessages = subTool.nonVerifiableMessages();
         final long bytesReceived = subTool.bytes();
-        LOG.info("{}", String.format("Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
-                verifiableMessages + nonVerifiableMessages,
-                bytesReceived, verifiableMessages, nonVerifiableMessages));
+        LOG.info(String.format(
+            "Exiting. Received %d messages (%d bytes) total. %d verifiable and %d non-verifiable.",
+            verifiableMessages + nonVerifiableMessages,
+            bytesReceived,
+            verifiableMessages,
+            nonVerifiableMessages));
     }
 
     /** Warn about options settings that might cause trouble. */
     private static void sanityCheckOptions(final PubSubOptions options)
     {
-        if (options.getThreads() > 1)
+        if (options.threads() > 1)
         {
-            if (options.getOutput() != null)
+            if (options.output() != null)
             {
-                LOG.warn("File output may be non-deterministic when multiple subscriber threads are used.");
+                LOG.warning("File output may be non-deterministic when multiple subscriber threads are used.");
             }
         }
     }
@@ -177,7 +173,6 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of verifiable messages received
      */
-    @Override
     public long verifiableMessages()
     {
         long totalMessages = 0;
@@ -185,6 +180,7 @@ public class SubscriberTool
         {
             totalMessages += subscribers[i].verifiableMessagesReceived();
         }
+
         return totalMessages;
     }
 
@@ -193,7 +189,6 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of bytes received
      */
-    @Override
     public long bytes()
     {
         long totalBytes = 0;
@@ -201,6 +196,7 @@ public class SubscriberTool
         {
             totalBytes += subscribers[i].bytesReceived();
         }
+
         return totalBytes;
     }
 
@@ -209,7 +205,6 @@ public class SubscriberTool
      * received across all receiving threads.
      * @return current total number of non-verifiable messages received
      */
-    @Override
     public long nonVerifiableMessages()
     {
         long totalMessages = 0;
@@ -217,6 +212,7 @@ public class SubscriberTool
         {
             totalMessages += subscribers[i].nonVerifiableMessagesReceived();
         }
+
         return totalMessages;
     }
 
@@ -224,14 +220,14 @@ public class SubscriberTool
      * Optionally sets the random seed used for the TLRandom class, and reports the seed used.
      * @return the seed to use
      */
-    @Override
     public long setSeed(long seed)
     {
-        if (options.getRandomSeed() != 0)
+        if (options.randomSeed() != 0)
         {
-            seed = options.getRandomSeed();
+            seed = options.randomSeed();
         }
-        LOG.info("{}", String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
+        LOG.info(String.format("Thread %s using random seed %d.", Thread.currentThread().getName(), seed));
+
         return seed;
     }
 
@@ -260,8 +256,7 @@ public class SubscriberTool
         private final int controlSessionId = ThreadLocalRandom.current().nextInt();
 
         /* channel -> stream ID -> session ID */
-        private final HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>> messageStreams =
-                new HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>>();
+        private final HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>> messageStreams = new HashMap<>();
         private int lastBytesReceived;
 
         @SuppressWarnings("resource")
@@ -271,7 +266,7 @@ public class SubscriberTool
             RateController rc = null;
             try
             {
-                rc = new RateController(this, options.getRateIntervals(), options.getIterations());
+                rc = new RateController(this, options.rateIntervals(), options.iterations());
             }
             catch (final Exception e)
             {
@@ -281,65 +276,61 @@ public class SubscriberTool
             rateController = rc;
             /* Create a context and connect to the media driver. */
             ctx = new Aeron.Context()
-            .inactiveConnectionHandler(this)
-            .newConnectionHandler(this)
-            .errorHandler((throwable) ->
-            {
-                throwable.printStackTrace();
-                if (throwable instanceof DriverTimeoutException)
+                .inactiveConnectionHandler(this)
+                .newConnectionHandler(this)
+                .errorHandler((throwable) ->
                 {
-                    LOG.error("Driver does not appear to be running or has been unresponsive for ten seconds.");
-                    System.exit(-1);
-                }
-            })
-            .mediaDriverTimeout(10000); /* ten seconds */
-
+                    throwable.printStackTrace();
+                    if (throwable instanceof DriverTimeoutException)
+                    {
+                        LOG.severe("Driver does not appear to be running or has been unresponsive for ten seconds.");
+                        System.exit(-1);
+                    }
+                })
+                .mediaDriverTimeout(10000); /* ten seconds */
             aeron = Aeron.connect(ctx);
 
             /* Create the control publication and subscription. */
             controlPublication = aeron.addPublication(CONTROL_CHANNEL, CONTROL_STREAMID, controlSessionId);
             controlSubscription = aeron.addSubscription(CONTROL_CHANNEL, CONTROL_STREAMID,
-                    new MessageStreamHandler(CONTROL_CHANNEL, CONTROL_STREAMID, null)::onControl);
+                new MessageStreamHandler(CONTROL_CHANNEL, CONTROL_STREAMID, null)::onControl);
 
             /* Create the subscriptionsList and populate it with just the channels this thread is supposed
              * to subscribe to. */
-            final ArrayList<Subscription> subscriptionsList = new ArrayList<Subscription>();
+            final ArrayList<Subscription> subscriptionsList = new ArrayList<>();
             int streamIdx = 0;
-            for (int i = 0; i < options.getChannels().size(); i++)
+            for (int i = 0; i < options.channels().size(); i++)
             {
-                final ChannelDescriptor channel = options.getChannels().get(i);
-                for (int j = 0; j < channel.getStreamIdentifiers().length; j++)
+                final ChannelDescriptor channel = options.channels().get(i);
+                for (int j = 0; j < channel.streamIdentifiers().length; j++)
                 {
-                    if ((streamIdx % options.getThreads()) == this.threadId)
+                    if ((streamIdx % options.threads()) == this.threadId)
                     {
-                        LOG.info("{}", String.format("subscriber-thread %d subscribing to: %s#%d", threadId,
-                                channel.getChannel(), channel.getStreamIdentifiers()[j]));
+                        LOG.info(String.format("subscriber-thread %d subscribing to: %s#%d",
+                            threadId, channel.channel(), channel.streamIdentifiers()[j]));
 
                         /* Add appropriate entries to the messageStreams map. */
                         Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
-                                messageStreams.get(channel.getChannel());
+                            messageStreams.get(channel.channel());
                         if (streamIdMap == null)
                         {
-                            streamIdMap = new Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>();
-                            messageStreams.put(channel.getChannel(), streamIdMap);
+                            streamIdMap = new Int2ObjectHashMap<>();
+                            messageStreams.put(channel.channel(), streamIdMap);
                         }
+
                         Int2ObjectHashMap<MessageStream> sessionIdMap =
-                                streamIdMap.get(channel.getStreamIdentifiers()[j]);
+                            streamIdMap.get(channel.streamIdentifiers()[j]);
                         if (sessionIdMap == null)
                         {
-                            sessionIdMap = new Int2ObjectHashMap<MessageStream>();
-                            streamIdMap.put(channel.getStreamIdentifiers()[j], sessionIdMap);
+                            sessionIdMap = new Int2ObjectHashMap<>();
+                            streamIdMap.put(channel.streamIdentifiers()[j], sessionIdMap);
                         }
 
-                        final DataHandler dataHandler =
-                                new FragmentAssemblyAdapter(
-                                        new MessageStreamHandler(
-                                                channel.getChannel(), channel.getStreamIdentifiers()[j], sessionIdMap)
-                                                    ::onMessage);
+                        final DataHandler dataHandler = new FragmentAssemblyAdapter(new MessageStreamHandler(
+                            channel.channel(), channel.streamIdentifiers()[j], sessionIdMap)::onMessage);
 
-                        subscriptionsList.add(
-                                aeron.addSubscription(
-                                        channel.getChannel(), channel.getStreamIdentifiers()[j], dataHandler));
+                        subscriptionsList.add(aeron.addSubscription(
+                            channel.channel(), channel.streamIdentifiers()[j], dataHandler));
                     }
                     streamIdx++;
                 }
@@ -384,7 +375,7 @@ public class SubscriberTool
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
                 if ((activeSubscriptions[i].streamId() == streamId)
-                        && (activeSubscriptions[i].channel().equals(channel)))
+                    && (activeSubscriptions[i].channel().equals(channel)))
                 {
                     /* Already in there, nothing to do. */
                     return;
@@ -396,7 +387,7 @@ public class SubscriberTool
             for (int i = 0; i < subscriptions.length; i++)
             {
                 if ((subscriptions[i].streamId() == streamId)
-                        && (subscriptions[i].channel().equals(channel)))
+                    && (subscriptions[i].channel().equals(channel)))
                 {
                     sub = subscriptions[i];
                 }
@@ -415,7 +406,7 @@ public class SubscriberTool
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
                 if ((activeSubscriptions[i].streamId() == streamId)
-                        && (activeSubscriptions[i].channel().equals(channel)))
+                    && (activeSubscriptions[i].channel().equals(channel)))
                 {
                     /* Found it; "remove" it by overwriting it with the last subscription in the array
                      * and decrementing activeSubscriptionsLength. */
@@ -440,10 +431,12 @@ public class SubscriberTool
             private MessageStream cachedMessageStream;
             private int lastSessionId = -1;
             private final Int2ObjectHashMap<MessageStream> sessionIdMap;
-            private final OutputStream os = options.getOutput();
+            private final OutputStream os = options.output();
 
-            public MessageStreamHandler(final String channel, final int streamId,
-                    final Int2ObjectHashMap<MessageStream> sessionIdMap)
+            public MessageStreamHandler(
+                final String channel,
+                final int streamId,
+                final Int2ObjectHashMap<MessageStream> sessionIdMap)
             {
                 this.channel = channel;
                 this.streamId = streamId;
@@ -469,23 +462,21 @@ public class SubscriberTool
 
                 if (action == CONTROL_ACTION_NEW_CONNECTION)
                 {
-                    LOG.info("{}", String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
-                            channel, streamId, sessionId));
+                    LOG.info(String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
+                        channel, streamId, sessionId));
 
                     /* Create a new MessageStream for this connection if it doesn't already exist. */
-                    final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
-                            messageStreams.get(channel);
+                    final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap = messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("New connection detected for channel we were not subscribed to.");
+                        LOG.warning("New connection detected for channel we were not subscribed to.");
                     }
                     else
                     {
-                        final Int2ObjectHashMap<MessageStream> sessionIdMap =
-                                streamIdMap.get(streamId);
+                        final Int2ObjectHashMap<MessageStream> sessionIdMap = streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("New connection detected for channel we were not subscribed to.");
+                            LOG.warning("New connection detected for channel we were not subscribed to.");
                         }
                         else
                         {
@@ -503,29 +494,27 @@ public class SubscriberTool
                 }
                 else if (action == CONTROL_ACTION_INACTIVE_CONNECTION)
                 {
-                    LOG.info("{}", String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
-                            channel, streamId, sessionId));
+                    LOG.info(String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
+                        channel, streamId, sessionId));
 
-                    final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap =
-                            messageStreams.get(channel);
+                    final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap = messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warn("Inactive connection detected for unknown connection.");
+                        LOG.warning("Inactive connection detected for unknown connection.");
                     }
                     else
                     {
-                        final Int2ObjectHashMap<MessageStream> sessionIdMap =
-                                streamIdMap.get(streamId);
+                        final Int2ObjectHashMap<MessageStream> sessionIdMap = streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warn("Inactive connection detected for unknown connection.");
+                            LOG.warning("Inactive connection detected for unknown connection.");
                         }
                         else
                         {
                             final MessageStream ms = sessionIdMap.get(sessionId);
                             if (ms == null)
                             {
-                                LOG.warn("Inactive connection detected for unknown connection.");
+                                LOG.warning("Inactive connection detected for unknown connection.");
                             }
                             else
                             {
@@ -543,7 +532,7 @@ public class SubscriberTool
                 }
                 else
                 {
-                    LOG.warn("{}", String.format("Unknown control message type (%d) received.", action));
+                    LOG.warning(String.format("Unknown control message type (%d) received.", action));
                 }
             }
 
@@ -582,8 +571,7 @@ public class SubscriberTool
                     }
                     catch (final Exception e)
                     {
-                        LOG.warn("Channel " + channel + ":" + streamId + "[" + sessionId + "]: " +
-                                e.getMessage());
+                        LOG.warning("Channel " + channel + ":" + streamId + "[" + sessionId + "]: " + e.getMessage());
                     }
                 }
                 else
@@ -612,7 +600,7 @@ public class SubscriberTool
                 }
 
                 /* See if we've received as many messages as we wanted and should now exit. */
-                if ((nonVerifiableMessagesReceived + verifiableMessagesReceived) == options.getMessages())
+                if ((nonVerifiableMessagesReceived + verifiableMessagesReceived) == options.messages())
                 {
                     shuttingDown = true;
                 }
@@ -629,13 +617,12 @@ public class SubscriberTool
         /** Subscriber thread.  Creates its own Aeron context, and subscribes
          * on a round-robin'd subset of the channels and stream IDs configured.
          */
-        @Override
         public void run()
         {
             Thread.currentThread().setName("subscriber-thread " + threadId);
 
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+                100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
             /* Poll the subscriptions until shutdown. */
             while (!shuttingDown)
@@ -670,7 +657,7 @@ public class SubscriberTool
         {
             /* Don't deliver events for the control channel itself. */
             if ((streamId != CONTROL_STREAMID)
-                    || (!channel.equals(CONTROL_CHANNEL)))
+                || (!channel.equals(CONTROL_CHANNEL)))
             {
                 /* Enqueue the control message. */
                 final byte[] channelBytes = channel.getBytes();
@@ -686,23 +673,27 @@ public class SubscriberTool
             }
         }
 
-        @Override
-        public void onInactiveConnection(final String channel, final int streamId,
-                final int sessionId, final long position)
+        public void onInactiveConnection(
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final long position)
         {
             /* Handle processing the inactive connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_INACTIVE_CONNECTION, channel, streamId, sessionId);
         }
 
-        @Override
-        public void onNewConnection(final String channel, final int streamId, final int sessionId,
-                final long position, final String sourceInformation)
+        public void onNewConnection(
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final long position,
+            final String sourceInformation)
         {
             /* Handle processing the new connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);
         }
 
-        @Override
         public int onNext()
         {
             /* Doesn't really need to do anything; just used for pausing the receiver thread a bit
@@ -711,9 +702,8 @@ public class SubscriberTool
         }
     }
 
-    @Override
     public void report(final StringBuilder reportString)
     {
-        LOG.info("{}", reportString);
+        LOG.info(reportString.toString());
     }
 }

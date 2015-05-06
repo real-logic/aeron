@@ -15,18 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.BEGIN_FRAG;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.END_FRAG;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.UNFRAGMENTED;
-
-import java.util.function.Supplier;
-
 import uk.co.real_logic.aeron.common.BufferBuilder;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+
+import java.util.function.Supplier;
+
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
  * A {@link DataHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
@@ -75,7 +73,6 @@ public class FragmentAssemblyAdapter implements DataHandler
      * @param length of the data in bytes.
      * @param header representing the meta data for the data.
      */
-    @Override
     public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
@@ -136,19 +133,16 @@ public class FragmentAssemblyAdapter implements DataHandler
             return this;
         }
 
-        @Override
         public int frameLength()
         {
             return frameLength;
         }
 
-        @Override
         public byte flags()
         {
             return (byte)(super.flags() | UNFRAGMENTED);
         }
 
-        @Override
         public int termOffset()
         {
             return offset() - (frameLength - super.frameLength());

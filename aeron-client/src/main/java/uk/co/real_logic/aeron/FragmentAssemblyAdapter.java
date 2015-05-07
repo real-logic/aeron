@@ -63,7 +63,7 @@ public class FragmentAssemblyAdapter implements DataHandler
     public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
-        builderFunc = ignore -> new BufferBuilder(initialBufferLength);
+        builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
     }
 
     /**

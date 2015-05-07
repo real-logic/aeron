@@ -135,8 +135,6 @@ public class TermAppender extends LogBufferPartition
      */
     public int append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
-        checkMessageLength(length);
-
         final int resultingOffset;
         if (length <= maxPayloadLength)
         {
@@ -144,6 +142,12 @@ public class TermAppender extends LogBufferPartition
         }
         else
         {
+            if (length > maxMessageLength)
+            {
+                throw new IllegalArgumentException(
+                    String.format("Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
+            }
+
             resultingOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
         }
 
@@ -168,7 +172,7 @@ public class TermAppender extends LogBufferPartition
 
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = getTailAndAdd(alignedLength);
+        final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
         final int resultingOffset = resultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
@@ -192,7 +196,7 @@ public class TermAppender extends LogBufferPartition
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = getTailAndAdd(alignedLength);
+        final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
         final int resultingOffset = resultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
@@ -214,7 +218,7 @@ public class TermAppender extends LogBufferPartition
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = (remainingPayload > 0) ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * maxFrameLength) + lastFrameLength;
-        int frameOffset = getTailAndAdd(requiredLength);
+        int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
         final int resultingOffset = resultingOffset(termBuffer, frameOffset, requiredLength, termBuffer.capacity());
@@ -274,19 +278,5 @@ public class TermAppender extends LogBufferPartition
         }
 
         return resultingOffset;
-    }
-
-    private int getTailAndAdd(final int delta)
-    {
-        return metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, delta);
-    }
-
-    private void checkMessageLength(final int length)
-    {
-        if (length > maxMessageLength)
-        {
-            throw new IllegalArgumentException(
-                String.format("Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
-        }
     }
 }

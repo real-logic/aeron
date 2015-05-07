@@ -188,7 +188,6 @@ public class LogAppender extends LogBufferPartition
         }
 
         termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
-        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
         frameTermOffset(termBuffer, frameOffset, frameOffset);
 
         bufferClaim
@@ -227,7 +226,6 @@ public class LogAppender extends LogBufferPartition
         termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
         termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
 
-        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
         frameTermOffset(termBuffer, frameOffset, frameOffset);
         frameLengthOrdered(termBuffer, frameOffset, frameLength);
 
@@ -303,7 +301,6 @@ public class LogAppender extends LogBufferPartition
         termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
 
         frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
-        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
         frameTermOffset(termBuffer, frameOffset, frameOffset);
         frameLengthOrdered(termBuffer, frameOffset, capacity - frameOffset);
     }

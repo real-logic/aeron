@@ -156,7 +156,6 @@ public class LogAppenderTest
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
         inOrder.verify(termBuffer, times(1)).putBytes(headerLength, buffer, 0, msgLength);
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), UNFRAGMENTED);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
     }
@@ -182,7 +181,6 @@ public class LogAppenderTest
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
         inOrder.verify(termBuffer, times(1)).putBytes(headerLength, buffer, 0, msgLength);
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), UNFRAGMENTED);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
 
@@ -190,7 +188,6 @@ public class LogAppenderTest
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, 0, msgLength);
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), UNFRAGMENTED);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
     }
@@ -254,7 +251,6 @@ public class LogAppenderTest
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
         inOrder.verify(termBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, headerLength);
         inOrder.verify(termBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tailValue), UNFRAGMENTED);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), TERM_BUFFER_CAPACITY - tailValue);
     }
@@ -277,7 +273,6 @@ public class LogAppenderTest
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
         inOrder.verify(termBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, headerLength);
         inOrder.verify(termBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tailValue), UNFRAGMENTED);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), TERM_BUFFER_CAPACITY - tailValue);
     }
@@ -338,7 +333,6 @@ public class LogAppenderTest
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), UNFRAGMENTED);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
     }

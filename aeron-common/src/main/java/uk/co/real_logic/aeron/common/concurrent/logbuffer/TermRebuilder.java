@@ -21,12 +21,9 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
- * Rebuild a log buffer based on incoming frames that can be out-of-order.
- *
- * <b>Note:</b> Only one rebuilder should rebuild a log at any given time. This is not thread safe
- * by rebuilder instance or across rebuilder instances.
+ * Rebuild a term buffer based on incoming frames that can be out-of-order.
  */
-public class LogRebuilder
+public class TermRebuilder
 {
     /**
      * Insert a packet of frames into the log at the appropriate offset as indicated by the term offset header.
@@ -34,17 +31,17 @@ public class LogRebuilder
      * @param termBuffer into which the packet should be inserted.
      * @param termOffset offset in the term at which the packet should be inserted.
      * @param packet     containing a sequence of frames.
-     * @param srcOffset  in the packet at which the frames begin.
+     * @param packetOffset  in the packet at which the frames begin.
      * @param length     of the sequence of frames in bytes.
      */
     public static void insert(
-        final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int srcOffset, final int length)
+        final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int packetOffset, final int length)
     {
-        final int lengthOffset = lengthOffset(srcOffset);
+        final int lengthOffset = lengthOffset(packetOffset);
         final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
         packet.putIntOrdered(lengthOffset, 0);
 
-        termBuffer.putBytes(termOffset, packet, srcOffset, length);
+        termBuffer.putBytes(termOffset, packet, packetOffset, length);
         frameLengthOrdered(termBuffer, termOffset, frameLength);
     }
 }

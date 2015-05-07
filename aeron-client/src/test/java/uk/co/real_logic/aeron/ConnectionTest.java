@@ -177,7 +177,7 @@ public class ConnectionTest
         rcvBuffer.putBytes(dataHeader.dataOffset(), DATA);
 
         final int activeIndex = indexByTerm(INITIAL_TERM_ID, activeTermId);
-        LogRebuilder.insert(termBuffers[activeIndex], termOffset, rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
+        TermRebuilder.insert(termBuffers[activeIndex], termOffset, rcvBuffer, 0, ALIGNED_FRAME_LENGTH);
     }
 
     private int offsetOfFrame(final int index)

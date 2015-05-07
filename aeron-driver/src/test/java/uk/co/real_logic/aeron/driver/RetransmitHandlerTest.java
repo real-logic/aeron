@@ -245,7 +245,7 @@ public class RetransmitHandlerTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), DATA);
 
-        LogRebuilder.insert(termBuffer, offsetOfFrame(msgNum), rcvBuffer, 0, MESSAGE_LENGTH);
+        TermRebuilder.insert(termBuffer, offsetOfFrame(msgNum), rcvBuffer, 0, MESSAGE_LENGTH);
     }
 
     private long processTimersUntil(final BooleanSupplier condition)

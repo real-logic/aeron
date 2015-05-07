@@ -36,7 +36,7 @@ public class SimplePublisher
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(512));
 
         // An end-point identifier to send the message to
-        final String channel = new String("udp://localhost:40123");
+        final String channel = "udp://localhost:40123";
 
         // A unique identifier for a stream within a channel. A value of 0 is reserved.
         final int streamId = 10;

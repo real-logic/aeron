@@ -172,7 +172,7 @@ public class Configuration
     public static final int COUNTER_VALUES_BUFFER_LENGTH = getInteger(
         COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTER_VALUES_BUFFER_LENGTH_DEFAULT);
 
-    public static final int COUNTER_LABELS_BUFFER_LENGTH = COUNTER_VALUES_BUFFER_LENGTH * 16;
+    public static final int COUNTER_LABELS_BUFFER_LENGTH = COUNTER_VALUES_BUFFER_LENGTH;
 
     /**
      * Default group size estimate for NAK delay randomization

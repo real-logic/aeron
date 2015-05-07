@@ -137,17 +137,17 @@ public class LogAppender extends LogBufferPartition
     {
         checkMessageLength(length);
 
-        final int termOffset;
+        final int nextOffset;
         if (length <= maxPayloadLength)
         {
-            termOffset = appendUnfragmentedMessage(srcBuffer, srcOffset, length);
+            nextOffset = appendUnfragmentedMessage(srcBuffer, srcOffset, length);
         }
         else
         {
-            termOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
+            nextOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
         }
 
-        return termOffset;
+        return nextOffset;
     }
 
     /**
@@ -169,36 +169,23 @@ public class LogAppender extends LogBufferPartition
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
-
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = termBuffer.capacity();
-        if (isBeyondTermCapacity(frameOffset, alignedLength, capacity))
-        {
-            if (frameOffset <= (capacity - HEADER_LENGTH))
-            {
-                appendPaddingFrame(termBuffer, frameOffset, capacity);
-                return TRIPPED;
-            }
-            else if (frameOffset == capacity)
-            {
-                return TRIPPED;
-            }
 
-            return FAILED;
+        final int nextOffset = nextOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
+        if (nextOffset > 0)
+        {
+            termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+            frameTermOffset(termBuffer, frameOffset, frameOffset);
+
+            bufferClaim
+                .buffer(termBuffer)
+                .offset(frameOffset + HEADER_LENGTH)
+                .length(length)
+                .frameLengthOffset(lengthOffset(frameOffset))
+                .frameLength(frameLength);
         }
 
-        termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
-        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
-        frameTermOffset(termBuffer, frameOffset, frameOffset);
-
-        bufferClaim
-            .buffer(termBuffer)
-            .offset(frameOffset + HEADER_LENGTH)
-            .length(length)
-            .frameLengthOffset(lengthOffset(frameOffset))
-            .frameLength(frameLength);
-
-        return frameOffset + alignedLength;
+        return nextOffset;
     }
 
     private int appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -206,32 +193,19 @@ public class LogAppender extends LogBufferPartition
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = getTailAndAdd(alignedLength);
-
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = termBuffer.capacity();
-        if (isBeyondTermCapacity(frameOffset, alignedLength, capacity))
-        {
-            if (frameOffset <= (capacity - HEADER_LENGTH))
-            {
-                appendPaddingFrame(termBuffer, frameOffset, capacity);
-                return TRIPPED;
-            }
-            else if (frameOffset == capacity)
-            {
-                return TRIPPED;
-            }
 
-            return FAILED;
+        final int nextOffset = nextOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
+        if (nextOffset > 0)
+        {
+            termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+            termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+
+            frameTermOffset(termBuffer, frameOffset, frameOffset);
+            frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
 
-        termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
-        termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
-
-        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
-        frameTermOffset(termBuffer, frameOffset, frameOffset);
-        frameLengthOrdered(termBuffer, frameOffset, frameLength);
-
-        return frameOffset + alignedLength;
+        return nextOffset;
     }
 
     private int appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -239,73 +213,71 @@ public class LogAppender extends LogBufferPartition
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = (remainingPayload > 0) ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredCapacity = (numMaxPayloads * maxFrameLength) + lastFrameLength;
-        final int startingOffset = getTailAndAdd(requiredCapacity);
-        int frameOffset = startingOffset;
-
+        final int requiredLength = (numMaxPayloads * maxFrameLength) + lastFrameLength;
+        int frameOffset = getTailAndAdd(requiredLength);
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = termBuffer.capacity();
-        if (isBeyondTermCapacity(frameOffset, requiredCapacity, capacity))
+
+        final int nextOffset = nextOffset(termBuffer, frameOffset, requiredLength, termBuffer.capacity());
+        if (nextOffset > 0)
         {
+            byte flags = BEGIN_FRAG;
+            int remaining = length;
+            do
+            {
+                final int bytesToWrite = Math.min(remaining, maxPayloadLength);
+                final int frameLength = bytesToWrite + HEADER_LENGTH;
+                final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+
+                termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+                termBuffer.putBytes(
+                    frameOffset + HEADER_LENGTH,
+                    srcBuffer,
+                    srcOffset + (length - remaining),
+                    bytesToWrite);
+
+                if (remaining <= maxPayloadLength)
+                {
+                    flags |= END_FRAG;
+                }
+
+                frameFlags(termBuffer, frameOffset, flags);
+                frameTermOffset(termBuffer, frameOffset, frameOffset);
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+
+                flags = 0;
+                frameOffset += alignedLength;
+                remaining -= bytesToWrite;
+            }
+            while (remaining > 0);
+        }
+
+        return nextOffset;
+    }
+
+    private int nextOffset(final UnsafeBuffer termBuffer, final int frameOffset, final int length, final int capacity)
+    {
+        int nextOffset = frameOffset + length;
+        if (nextOffset > (capacity - HEADER_LENGTH))
+        {
+            nextOffset = FAILED;
+
             if (frameOffset <= (capacity - HEADER_LENGTH))
             {
-                appendPaddingFrame(termBuffer, frameOffset, capacity);
-                return TRIPPED;
+                termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+
+                frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
+                frameTermOffset(termBuffer, frameOffset, frameOffset);
+                frameLengthOrdered(termBuffer, frameOffset, capacity - frameOffset);
+
+                nextOffset = TRIPPED;
             }
             else if (frameOffset == capacity)
             {
-                return TRIPPED;
+                nextOffset = TRIPPED;
             }
-
-            return FAILED;
         }
 
-        byte flags = BEGIN_FRAG;
-        int remaining = length;
-        do
-        {
-            final int bytesToWrite = Math.min(remaining, maxPayloadLength);
-            final int frameLength = bytesToWrite + HEADER_LENGTH;
-            final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-
-            termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
-            termBuffer.putBytes(
-                frameOffset + HEADER_LENGTH,
-                srcBuffer,
-                srcOffset + (length - remaining),
-                bytesToWrite);
-
-            if (remaining <= maxPayloadLength)
-            {
-                flags |= END_FRAG;
-            }
-
-            frameFlags(termBuffer, frameOffset, flags);
-            frameTermOffset(termBuffer, frameOffset, frameOffset);
-            frameLengthOrdered(termBuffer, frameOffset, frameLength);
-
-            flags = 0;
-            frameOffset += alignedLength;
-            remaining -= bytesToWrite;
-        }
-        while (remaining > 0);
-
-        return startingOffset + requiredCapacity;
-    }
-
-    private static boolean isBeyondTermCapacity(final int frameOffset, final int alignedFrameLength, final int capacity)
-    {
-        return (frameOffset + alignedFrameLength) > (capacity - HEADER_LENGTH);
-    }
-
-    private void appendPaddingFrame(final UnsafeBuffer termBuffer, final int frameOffset, final int capacity)
-    {
-        termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
-
-        frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
-        frameFlags(termBuffer, frameOffset, UNFRAGMENTED);
-        frameTermOffset(termBuffer, frameOffset, frameOffset);
-        frameLengthOrdered(termBuffer, frameOffset, capacity - frameOffset);
+        return nextOffset;
     }
 
     private int getTailAndAdd(final int delta)

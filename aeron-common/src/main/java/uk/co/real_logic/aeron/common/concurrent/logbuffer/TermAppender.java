@@ -30,11 +30,11 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  *
  * <b>Note:</b> This class is threadsafe.
  *
- * Messages are appending to a term using a framing protocol as described in {@link FrameDescriptor}.
+ * Messages are appended to a term using a framing protocol as described in {@link FrameDescriptor}.
  * If a message is larger than what will fit in a single frame will be fragmented up to {@link #maxMessageLength()}.
  *
- * A default message header is applied to each message with the fields filled in for fragment flags, sequence number,
- * and frame length as appropriate.
+ * A default message header is applied to each message with the fields filled in for fragment flags, type, term number,
+ * as appropriate.
  *
  * A message of type {@link FrameDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.

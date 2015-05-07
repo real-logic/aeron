@@ -47,16 +47,12 @@ public class SimplePublisher
         // A separate media driver process needs to be running prior to starting this application
         final Aeron.Context ctx = new Aeron.Context();
 
-        // Create an Aeron instance with client provided context configuration and connect to media driver
-        // Aeron is "AutoClosable" and will automatically clean up resources when this try block is finished
-
-        Publication publication = null;
-        Aeron aeron = null;
-
-        try
+        // Create an Aeron instance with client-provided context configuration and connect to media driver,
+        // and create a Publication.  The Aeron and Publication objects implement AutoCloseable, and will
+        // automatically clean up resources when this try block is finished
+        try (final Aeron aeron = Aeron.connect(ctx);
+            final Publication publication = aeron.addPublication(channel, streamId);)
         {
-            aeron = Aeron.connect(ctx);
-            publication = aeron.addPublication(channel, streamId);
             // Prepare a buffer to be sent
             final String message = "Hello World! ";
             buffer.putBytes(0, message.getBytes());
@@ -90,8 +86,7 @@ public class SimplePublisher
         }
         finally
         {
-            publication.close();
-            aeron.close();
+            ctx.close();
         }
     }
 }

@@ -42,7 +42,7 @@ public class SimpleSubscriber
         final int fragmentLimitCount = 10;
 
         // An end-point identifier to receive message from
-        final String channel = new String("udp://localhost:40123");
+        final String channel = "udp://localhost:40123";
 
         // A unique identifier for a Stream within a channel. A value of 0 is reserved
         final int streamId = 10;
@@ -77,44 +77,36 @@ public class SimpleSubscriber
         // A separate media driver process need to run prior to running this application
         final Aeron.Context ctx = new Aeron.Context();
 
-        // Create an Aeron instance with client provided context configuration and connect to media driver
-        Subscription subscription = null;
-        Aeron aeron = null;
-        try
+        // Create an Aeron instance with client provided context configuration and connect to media driver,
+        // and add a subscription for the given channel and stream, with the supplied dataHandler to be
+        // called when data arrives.
+        try (final Aeron aeron = Aeron.connect(ctx);
+            final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler);)
         {
-            aeron = Aeron.connect(ctx);
-
-            // Add a subscription to Aeron for a given channel and steam. Also,
-            // supply a dataHandler to be called when data arrives
-            // This works only if published data is not fragmented by Aeron
-            subscription = aeron.addSubscription(channel, streamId, dataHandler);
-
-                final IdleStrategy idleStrategy = new BackoffIdleStrategy(
-                    100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
-                try
+            final IdleStrategy idleStrategy = new BackoffIdleStrategy(
+                100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
+            try
+            {
+                // Try to read the data from subscriber
+                while (running.get())
                 {
-                        // Try to read the data from subscriber
-                        while (running.get())
-                        {
-                            // poll delivers messages to the datahandler as they arrive
-                            // and returns number of fragments read, otherwise returns 0
-                            // if no data is available.
-                            final int fragmentsRead = subscription.poll(fragmentLimitCount);
-                            // Call a backoff strategy
-                            idleStrategy.idle(fragmentsRead);
-                        }
+                    // poll delivers messages to the datahandler as they arrive
+                    // and returns number of fragments read, otherwise returns 0
+                    // if no data is available.
+                    final int fragmentsRead = subscription.poll(fragmentLimitCount);
+                    // Call a backoff strategy
+                    idleStrategy.idle(fragmentsRead);
                 }
-                catch (final Exception ex)
-                {
-                    ex.printStackTrace();
-                }
-                System.out.println("Shutting down...");
+            }
+            catch (final Exception ex)
+            {
+                ex.printStackTrace();
+            }
+            System.out.println("Shutting down...");
         }
         finally
         {
-            subscription.close();
-            aeron.close();
+            ctx.close();
         }
     }
 }
-

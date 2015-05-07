@@ -129,7 +129,7 @@ public class TermAppender extends LogBufferPartition
      * @param srcBuffer containing the encoded message.
      * @param srcOffset at which the encoded message begins.
      * @param length    of the message in bytes.
-     * @return the new termOffset on success otherwise {@link #FAILED} if beyond end of the term in the log,
+     * @return the resulting termOffset on success otherwise {@link #FAILED} if beyond end of the term, or
      * {@link #TRIPPED if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
@@ -137,17 +137,17 @@ public class TermAppender extends LogBufferPartition
     {
         checkMessageLength(length);
 
-        final int nextOffset;
+        final int resultingOffset;
         if (length <= maxPayloadLength)
         {
-            nextOffset = appendUnfragmentedMessage(srcBuffer, srcOffset, length);
+            resultingOffset = appendUnfragmentedMessage(srcBuffer, srcOffset, length);
         }
         else
         {
-            nextOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
+            resultingOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
         }
 
-        return nextOffset;
+        return resultingOffset;
     }
 
     /**
@@ -155,7 +155,7 @@ public class TermAppender extends LogBufferPartition
      *
      * @param length      of the message payload
      * @param bufferClaim to be completed for the claim if successful.
-     * @return the new termOffset on success otherwise {@link #FAILED} if beyond end of the term in the log,
+     * @return the resulting termOffset on success otherwise {@link #FAILED} if beyond end of the term, or
      * {@link #TRIPPED if first failure.
      */
     public int claim(final int length, final BufferClaim bufferClaim)
@@ -171,8 +171,8 @@ public class TermAppender extends LogBufferPartition
         final int frameOffset = getTailAndAdd(alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
-        final int nextOffset = nextOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
-        if (nextOffset > 0)
+        final int resultingOffset = resultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
+        if (resultingOffset > 0)
         {
             termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
             frameTermOffset(termBuffer, frameOffset, frameOffset);
@@ -185,7 +185,7 @@ public class TermAppender extends LogBufferPartition
                 .frameLength(frameLength);
         }
 
-        return nextOffset;
+        return resultingOffset;
     }
 
     private int appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -195,8 +195,8 @@ public class TermAppender extends LogBufferPartition
         final int frameOffset = getTailAndAdd(alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
-        final int nextOffset = nextOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
-        if (nextOffset > 0)
+        final int resultingOffset = resultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
+        if (resultingOffset > 0)
         {
             termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
             termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
@@ -205,7 +205,7 @@ public class TermAppender extends LogBufferPartition
             frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
 
-        return nextOffset;
+        return resultingOffset;
     }
 
     private int appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -217,8 +217,8 @@ public class TermAppender extends LogBufferPartition
         int frameOffset = getTailAndAdd(requiredLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
-        final int nextOffset = nextOffset(termBuffer, frameOffset, requiredLength, termBuffer.capacity());
-        if (nextOffset > 0)
+        final int resultingOffset = resultingOffset(termBuffer, frameOffset, requiredLength, termBuffer.capacity());
+        if (resultingOffset > 0)
         {
             byte flags = BEGIN_FRAG;
             int remaining = length;
@@ -251,15 +251,15 @@ public class TermAppender extends LogBufferPartition
             while (remaining > 0);
         }
 
-        return nextOffset;
+        return resultingOffset;
     }
 
-    private int nextOffset(final UnsafeBuffer termBuffer, final int frameOffset, final int length, final int capacity)
+    private int resultingOffset(final UnsafeBuffer termBuffer, final int frameOffset, final int length, final int capacity)
     {
-        int nextOffset = frameOffset + length;
-        if (nextOffset > (capacity - HEADER_LENGTH))
+        int resultingOffset = frameOffset + length;
+        if (resultingOffset > (capacity - HEADER_LENGTH))
         {
-            nextOffset = FAILED;
+            resultingOffset = FAILED;
 
             if (frameOffset <= (capacity - HEADER_LENGTH))
             {
@@ -269,11 +269,11 @@ public class TermAppender extends LogBufferPartition
                 frameTermOffset(termBuffer, frameOffset, frameOffset);
                 frameLengthOrdered(termBuffer, frameOffset, capacity - frameOffset);
 
-                nextOffset = TRIPPED;
+                resultingOffset = TRIPPED;
             }
         }
 
-        return nextOffset;
+        return resultingOffset;
     }
 
     private int getTailAndAdd(final int delta)

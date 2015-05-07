@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
@@ -186,14 +186,14 @@ class ClientConductor implements Agent, DriverListener
     {
         final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final LogAppender[] appenders = new LogAppender[PARTITION_COUNT];
+        final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
         final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
         final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
         final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            appenders[i] = new LogAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
+            appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
         }
 
         final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);

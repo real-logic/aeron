@@ -56,7 +56,7 @@ public class RetransmitHandlerTest
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(META_DATA_BUFFER_LENGTH));
 
-    private final LogAppender logAppender = new LogAppender(
+    private final TermAppender termAppender = new TermAppender(
         termBuffer, metaDataBuffer, DataHeaderFlyweight.createDefaultHeader(0, 0 , 0), 1024);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
@@ -227,7 +227,7 @@ public class RetransmitHandlerTest
     private void addSentDataFrame()
     {
         rcvBuffer.putBytes(0, DATA);
-        logAppender.append(rcvBuffer, 0, DATA.length);
+        termAppender.append(rcvBuffer, 0, DATA.length);
     }
 
     private void addReceivedDataFrame(final int msgNum)

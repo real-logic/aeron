@@ -50,7 +50,7 @@ public class PublicationTest
 
     private Publication publication;
     private ReadOnlyPosition limit;
-    private LogAppender[] appenders;
+    private TermAppender[] appenders;
     private MutableDirectBuffer[] headers;
     private LogBuffers logBuffers = mock(LogBuffers.class);
     private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
@@ -63,11 +63,11 @@ public class PublicationTest
         when(limit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
         when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
 
-        appenders = new LogAppender[PARTITION_COUNT];
+        appenders = new TermAppender[PARTITION_COUNT];
         headers = new MutableDirectBuffer[PARTITION_COUNT];
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            appenders[i] = mock(LogAppender.class);
+            appenders[i] = mock(TermAppender.class);
             final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(0, 0, 0);
             headers[i] = header;
 
@@ -123,14 +123,14 @@ public class PublicationTest
     @Test
     public void shouldFailToOfferWhenAppendFails()
     {
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(LogAppender.FAILED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TermAppender.FAILED);
         assertThat(publication.offer(atomicSendBuffer), is(Publication.BACK_PRESSURE));
     }
 
     @Test
     public void shouldRotateWhenAppendTrips()
     {
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(LogAppender.TRIPPED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TermAppender.TRIPPED);
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 
@@ -150,7 +150,7 @@ public class PublicationTest
     @Test
     public void shouldRotateWhenClaimTrips()
     {
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(LogAppender.TRIPPED);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TermAppender.TRIPPED);
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 

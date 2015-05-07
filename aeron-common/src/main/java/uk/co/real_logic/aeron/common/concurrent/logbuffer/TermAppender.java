@@ -26,11 +26,11 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
 /**
- * Log buffer appender which supports many producers concurrently writing an append-only log.
+ * Term buffer appender which supports many producers concurrently writing an append-only log.
  *
  * <b>Note:</b> This class is threadsafe.
  *
- * Messages are appending to a log using a framing protocol as described in {@link FrameDescriptor}.
+ * Messages are appending to a term using a framing protocol as described in {@link FrameDescriptor}.
  * If a message is larger than what will fit in a single frame will be fragmented up to {@link #maxMessageLength()}.
  *
  * A default message header is applied to each message with the fields filled in for fragment flags, sequence number,
@@ -39,7 +39,7 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  * A message of type {@link FrameDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.
  */
-public class LogAppender extends LogBufferPartition
+public class TermAppender extends LogBufferPartition
 {
     /**
      * The append operation tripped the end of the buffer and needs to rotate.
@@ -57,14 +57,14 @@ public class LogAppender extends LogBufferPartition
     private final MutableDirectBuffer defaultHeader;
 
     /**
-     * Construct a view over a log buffer and state buffer for appending frames.
+     * Construct a view over a term buffer and state buffer for appending frames.
      *
      * @param termBuffer     for where messages are stored.
      * @param metaDataBuffer for where the state of writers is stored manage concurrency.
      * @param defaultHeader  to be applied for each frame logged.
      * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
-    public LogAppender(
+    public TermAppender(
         final UnsafeBuffer termBuffer,
         final UnsafeBuffer metaDataBuffer,
         final MutableDirectBuffer defaultHeader,
@@ -84,9 +84,9 @@ public class LogAppender extends LogBufferPartition
     }
 
     /**
-     * The maximum length of a message that can be recorded in the log.
+     * The maximum length of a message that can be recorded in the term.
      *
-     * @return the maximum length of a message that can be recorded in the log.
+     * @return the maximum length of a message that can be recorded in the term.
      */
     public int maxMessageLength()
     {
@@ -96,7 +96,7 @@ public class LogAppender extends LogBufferPartition
     /**
      * The maximum length of a message payload within a frame before fragmentation takes place.
      *
-     * @return the maximum length of a message that can be recorded in the log.
+     * @return the maximum length of a message that can be recorded in the term.
      */
     public int maxPayloadLength()
     {
@@ -104,9 +104,9 @@ public class LogAppender extends LogBufferPartition
     }
 
     /**
-     * The maximum length of a frame, including header, that can be recorded in the log.
+     * The maximum length of a frame, including header, that can be recorded in the term.
      *
-     * @return the maximum length of a frame, including header, that can be recorded in the log.
+     * @return the maximum length of a frame, including header, that can be recorded in the term.
      */
     public int maxFrameLength()
     {
@@ -124,12 +124,12 @@ public class LogAppender extends LogBufferPartition
     }
 
     /**
-     * Append a message to the log if sufficient capacity exists.
+     * Append a message to the term if sufficient capacity exists.
      *
      * @param srcBuffer containing the encoded message.
      * @param srcOffset at which the encoded message begins.
      * @param length    of the message in bytes.
-     * @return the new termOffset on success otherwise {@link #FAILED} if beyond end of the log in the log,
+     * @return the new termOffset on success otherwise {@link #FAILED} if beyond end of the term in the log,
      * {@link #TRIPPED if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
@@ -155,7 +155,7 @@ public class LogAppender extends LogBufferPartition
      *
      * @param length      of the message payload
      * @param bufferClaim to be completed for the claim if successful.
-     * @return the new termOffset on success otherwise {@link #FAILED} if beyond end of the log in the log,
+     * @return the new termOffset on success otherwise {@link #FAILED} if beyond end of the term in the log,
      * {@link #TRIPPED if first failure.
      */
     public int claim(final int length, final BufferClaim bufferClaim)
@@ -269,10 +269,6 @@ public class LogAppender extends LogBufferPartition
                 frameTermOffset(termBuffer, frameOffset, frameOffset);
                 frameLengthOrdered(termBuffer, frameOffset, capacity - frameOffset);
 
-                nextOffset = TRIPPED;
-            }
-            else if (frameOffset == capacity)
-            {
                 nextOffset = TRIPPED;
             }
         }

@@ -186,23 +186,12 @@ public class Publication implements AutoCloseable
         final TermAppender termAppender = termAppenders[activeIndex];
         final int currentTail = termAppender.tailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < termAppender.termBuffer().capacity() && position < publicationLimit.getVolatile())
+        if (currentTail < capacity && position < publicationLimit.getVolatile())
         {
-            final int newTermOffset = termAppender.append(buffer, offset, length);
-            switch (newTermOffset)
-            {
-                case TermAppender.TRIPPED:
-                    nextPartition(activeTermId, activeIndex);
-                    // fall through
-                case TermAppender.FAILED:
-                    newPosition = BACK_PRESSURE;
-                    break;
-
-                default:
-                    newPosition = (position - currentTail) + newTermOffset;
-                    break;
-            }
+            final int nextOffset = termAppender.append(buffer, offset, length);
+            newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
         }
 
         return newPosition;
@@ -248,23 +237,12 @@ public class Publication implements AutoCloseable
         final TermAppender termAppender = termAppenders[activeIndex];
         final int currentTail = termAppender.tailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < termAppender.termBuffer().capacity() && position < publicationLimit.getVolatile())
+        if (currentTail < capacity && position < publicationLimit.getVolatile())
         {
-            final int newTermOffset = termAppender.claim(length, bufferClaim);
-            switch (newTermOffset)
-            {
-                case TermAppender.TRIPPED:
-                    nextPartition(activeTermId, activeIndex);
-                    // fall through
-                case TermAppender.FAILED:
-                    newPosition = BACK_PRESSURE;
-                    break;
-
-                default:
-                    newPosition = (position - currentTail) + newTermOffset;
-                    break;
-            }
+            final int nextOffset = termAppender.claim(length, bufferClaim);
+            newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
         }
 
         return newPosition;
@@ -283,23 +261,38 @@ public class Publication implements AutoCloseable
         }
     }
 
-    private void nextPartition(final int activeTermId, final int activeIndex)
+    private long newPosition(
+        final int activeTermId, final int activeIndex, final int currentTail, final long position, final int nextOffset)
     {
-        final int newTermId = activeTermId + 1;
-        final int nextIndex = nextPartitionIndex(activeIndex);
+        final long newPosition;
+        switch (nextOffset)
+        {
+            case TermAppender.TRIPPED:
+                final int newTermId = activeTermId + 1;
+                final int nextIndex = nextPartitionIndex(activeIndex);
 
-        final TermAppender[] termAppenders = this.termAppenders;
-        termAppenders[nextIndex].defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
+                final TermAppender[] termAppenders = this.termAppenders;
+                termAppenders[nextIndex].defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
 
-        final int previousIndex = previousPartitionIndex(activeIndex);
-        final TermAppender previousAppender = termAppenders[previousIndex];
+                final int previousIndex = previousPartitionIndex(activeIndex);
+                final TermAppender previousAppender = termAppenders[previousIndex];
 
-        // Need to advance the term id in case a publication takes an interrupt between reading the active term
-        // and incrementing the tail. This covers the case of interrupt talking over one term in duration.
-        previousAppender.defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId + 1, LITTLE_ENDIAN);
+                // Need to advance the term id in case a publication takes an interrupt between reading the active term
+                // and incrementing the tail. This covers the case of interrupt talking over one term in duration.
+                previousAppender.defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId + 1, LITTLE_ENDIAN);
+                previousAppender.statusOrdered(NEEDS_CLEANING);
+                LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
 
-        previousAppender.statusOrdered(NEEDS_CLEANING);
+                // fall through
+            case TermAppender.FAILED:
+                newPosition = BACK_PRESSURE;
+                break;
 
-        LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
+            default:
+                newPosition = (position - currentTail) + nextOffset;
+                break;
+        }
+
+        return newPosition;
     }
 }

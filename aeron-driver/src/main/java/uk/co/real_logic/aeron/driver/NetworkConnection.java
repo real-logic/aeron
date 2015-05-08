@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -397,7 +397,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         else
         {
             final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
-            LogRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
+            TermRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
 
             hwmCandidate(proposedPosition);
         }

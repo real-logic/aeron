@@ -29,19 +29,29 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class DataHeaderFlyweight extends HeaderFlyweight
 {
-    /** Length of the Data Header */
+    /**
+     * Length of the Data Header
+     */
     public static final int HEADER_LENGTH = 24;
 
-    /** Begin Flag */
+    /**
+     * Begin Flag
+     */
     public static final short BEGIN_FLAG = 0x80;
 
-    /** End Flag */
+    /**
+     * End Flag
+     */
     public static final short END_FLAG = 0x40;
 
-    /** Begin and End Flags */
+    /**
+     * Begin and End Flags
+     */
     public static final short BEGIN_AND_END_FLAGS = BEGIN_FLAG | END_FLAG;
 
-    /** Default header for a Data Frame (for ease of use with LogAppender) */
+    /**
+     * Default header for a Data Frame (for ease of use with LogAppender)
+     */
     public static final byte[] DEFAULT_HEADER_NULL_IDS =
         {
             HeaderFlyweight.CURRENT_VERSION, (byte)BEGIN_AND_END_FLAGS, HeaderFlyweight.HDR_TYPE_DATA, 0,
@@ -60,6 +70,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * return session id field
+     *
      * @return session id field
      */
     public int sessionId()
@@ -69,6 +80,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
     /**
      * set session id field
+     *
      * @param sessionId field value
      * @return flyweight
      */
@@ -159,12 +171,11 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Return a customized default Data Frame Header suitable for use with
-     * {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender}
+     * Return an initialised default Data Frame Header.
      *
      * @param sessionId for the header
-     * @param streamId for the header
-     * @param termId for the header
+     * @param streamId  for the header
+     * @param termId    for the header
      * @return byte array containing the header
      */
     public static MutableDirectBuffer createDefaultHeader(final int sessionId, final int streamId, final int termId)

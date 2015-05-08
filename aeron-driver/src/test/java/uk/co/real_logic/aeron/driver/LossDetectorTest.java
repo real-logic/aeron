@@ -19,7 +19,7 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogRebuilder;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -314,7 +314,7 @@ public class LossDetectorTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
 
-        LogRebuilder.insert(termBuffer, offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+        TermRebuilder.insert(termBuffer, offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)

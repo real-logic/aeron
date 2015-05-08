@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
@@ -55,7 +55,7 @@ public class Publication implements AutoCloseable
     private final int streamId;
     private final int sessionId;
     private final long registrationId;
-    private final LogAppender[] logAppenders;
+    private final TermAppender[] termAppenders;
     private final ReadOnlyPosition publicationLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
@@ -67,7 +67,7 @@ public class Publication implements AutoCloseable
         final String channel,
         final int streamId,
         final int sessionId,
-        final LogAppender[] logAppenders,
+        final TermAppender[] termAppenders,
         final ReadOnlyPosition publicationLimit,
         final LogBuffers logBuffers,
         final UnsafeBuffer logMetaDataBuffer,
@@ -80,11 +80,11 @@ public class Publication implements AutoCloseable
         this.logBuffers = logBuffers;
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
-        this.logAppenders = logAppenders;
+        this.termAppenders = termAppenders;
         this.publicationLimit = publicationLimit;
 
         activeTermId(logMetaDataBuffer, initialTermId(logMetaDataBuffer));
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(logAppenders[0].termBuffer().capacity());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termAppenders[0].termBuffer().capacity());
     }
 
     /**
@@ -124,7 +124,7 @@ public class Publication implements AutoCloseable
      */
     public int maxMessageLength()
     {
-        return logAppenders[0].maxMessageLength();
+        return termAppenders[0].maxMessageLength();
     }
 
     /**
@@ -152,8 +152,8 @@ public class Publication implements AutoCloseable
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final LogAppender logAppender = logAppenders[activeIndex];
-        final int currentTail = logAppender.tailVolatile();
+        final TermAppender termAppender = termAppenders[activeIndex];
+        final int currentTail = termAppender.tailVolatile();
 
         return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
     }
@@ -183,26 +183,15 @@ public class Publication implements AutoCloseable
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final LogAppender logAppender = logAppenders[activeIndex];
-        final int currentTail = logAppender.tailVolatile();
+        final TermAppender termAppender = termAppenders[activeIndex];
+        final int currentTail = termAppender.tailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.getVolatile())
+        if (currentTail < capacity && position < publicationLimit.getVolatile())
         {
-            final int newTermOffset = logAppender.append(buffer, offset, length);
-            switch (newTermOffset)
-            {
-                case LogAppender.TRIPPED:
-                    nextPartition(activeTermId, activeIndex);
-                    // fall through
-                case LogAppender.FAILED:
-                    newPosition = BACK_PRESSURE;
-                    break;
-
-                default:
-                    newPosition = (position - currentTail) + newTermOffset;
-                    break;
-            }
+            final int nextOffset = termAppender.append(buffer, offset, length);
+            newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
         }
 
         return newPosition;
@@ -245,26 +234,15 @@ public class Publication implements AutoCloseable
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final LogAppender logAppender = logAppenders[activeIndex];
-        final int currentTail = logAppender.tailVolatile();
+        final TermAppender termAppender = termAppenders[activeIndex];
+        final int currentTail = termAppender.tailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < logAppender.termBuffer().capacity() && position < publicationLimit.getVolatile())
+        if (currentTail < capacity && position < publicationLimit.getVolatile())
         {
-            final int newTermOffset = logAppender.claim(length, bufferClaim);
-            switch (newTermOffset)
-            {
-                case LogAppender.TRIPPED:
-                    nextPartition(activeTermId, activeIndex);
-                    // fall through
-                case LogAppender.FAILED:
-                    newPosition = BACK_PRESSURE;
-                    break;
-
-                default:
-                    newPosition = (position - currentTail) + newTermOffset;
-                    break;
-            }
+            final int nextOffset = termAppender.claim(length, bufferClaim);
+            newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
         }
 
         return newPosition;
@@ -283,23 +261,38 @@ public class Publication implements AutoCloseable
         }
     }
 
-    private void nextPartition(final int activeTermId, final int activeIndex)
+    private long newPosition(
+        final int activeTermId, final int activeIndex, final int currentTail, final long position, final int nextOffset)
     {
-        final int newTermId = activeTermId + 1;
-        final int nextIndex = nextPartitionIndex(activeIndex);
+        final long newPosition;
+        switch (nextOffset)
+        {
+            case TermAppender.TRIPPED:
+                final int newTermId = activeTermId + 1;
+                final int nextIndex = nextPartitionIndex(activeIndex);
 
-        final LogAppender[] logAppenders = this.logAppenders;
-        logAppenders[nextIndex].defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
+                final TermAppender[] termAppenders = this.termAppenders;
+                termAppenders[nextIndex].defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
 
-        final int previousIndex = previousPartitionIndex(activeIndex);
-        final LogAppender previousAppender = logAppenders[previousIndex];
+                final int previousIndex = previousPartitionIndex(activeIndex);
+                final TermAppender previousAppender = termAppenders[previousIndex];
 
-        // Need to advance the term id in case a publication takes an interrupt between reading the active term
-        // and incrementing the tail. This covers the case of interrupt talking over one term in duration.
-        previousAppender.defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId + 1, LITTLE_ENDIAN);
+                // Need to advance the term id in case a publication takes an interrupt between reading the active term
+                // and incrementing the tail. This covers the case of interrupt talking over one term in duration.
+                previousAppender.defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId + 1, LITTLE_ENDIAN);
+                previousAppender.statusOrdered(NEEDS_CLEANING);
+                LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
 
-        previousAppender.statusOrdered(NEEDS_CLEANING);
+                // fall through
+            case TermAppender.FAILED:
+                newPosition = BACK_PRESSURE;
+                break;
 
-        LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
+            default:
+                newPosition = (position - currentTail) + nextOffset;
+                break;
+        }
+
+        return newPosition;
     }
 }

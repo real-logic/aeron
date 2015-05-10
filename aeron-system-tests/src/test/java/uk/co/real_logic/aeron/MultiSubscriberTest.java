@@ -54,7 +54,7 @@ public class MultiSubscriberTest
              final Subscription subscriptionOne = subscriberClient.addSubscription(CHANNEL, STREAM_ID, adapterOne);
              final Subscription subscriptionTwo = subscriberClient.addSubscription(CHANNEL, STREAM_ID, adapterTwo))
         {
-            final byte[] expectedBytes = "Hello, World!".getBytes();
+            final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
 
             while (publication.offer(srcBuffer) < 0L)

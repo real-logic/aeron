@@ -538,10 +538,12 @@ public class DriverConductor implements Agent
         final UdpChannel udpChannel,
         final long correlationId)
     {
-        final RawLog rawLog = rawLogFactory.newConnection(
-            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
+        final String canonicalForm = udpChannel.canonicalForm();
+        final RawLog rawLog = rawLogFactory.newConnection(canonicalForm, sessionId, streamId, correlationId, termBufferLength);
 
+        final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
+        LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, senderMtuLength);
 

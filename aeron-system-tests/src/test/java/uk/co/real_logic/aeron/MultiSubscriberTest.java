@@ -56,6 +56,9 @@ public class MultiSubscriberTest
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
 
+            assertThat(subscriptionOne.poll(FRAGMENT_COUNT_LIMIT), is(0));
+            assertThat(subscriptionTwo.poll(FRAGMENT_COUNT_LIMIT), is(0));
+
             while (publication.offer(srcBuffer) < 0L)
             {
                 Thread.yield();

@@ -48,11 +48,10 @@ public class MultiSubscriberTest
         final FragmentAssemblyAdapter adapterTwo = new FragmentAssemblyAdapter(mockDataHandlerTwo);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron publisherClient = Aeron.connect(new Aeron.Context());
-             final Aeron subscriberClient = Aeron.connect(new Aeron.Context());
-             final Publication publication = publisherClient.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscriptionOne = subscriberClient.addSubscription(CHANNEL, STREAM_ID, adapterOne);
-             final Subscription subscriptionTwo = subscriberClient.addSubscription(CHANNEL, STREAM_ID, adapterTwo))
+             final Aeron client = Aeron.connect(new Aeron.Context());
+             final Publication publication = client.addPublication(CHANNEL, STREAM_ID);
+             final Subscription subscriptionOne = client.addSubscription(CHANNEL, STREAM_ID, adapterOne);
+             final Subscription subscriptionTwo = client.addSubscription(CHANNEL, STREAM_ID, adapterTwo))
         {
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);

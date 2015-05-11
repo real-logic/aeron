@@ -141,7 +141,7 @@ public class NetworkUtilTest
     }
 
     @Test
-    public void shouldFilerBySubnetAndFindOneIpV6Result() throws Exception
+    public void shouldFilterBySubnetAndFindOneIpV6Result() throws Exception
     {
         final NetworkInterfaceStub stub = new NetworkInterfaceStub();
 
@@ -149,7 +149,7 @@ public class NetworkUtilTest
         stub.add("fe80:0:0:0002:0003:0:0:1/80");
 
         final Collection<NetworkInterface> filteredBySubnet =
-            filterBySubnet(stub, getByName("fe80:0:0:0001:0:0:0:0"), 80);
+            filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
 
         assertThat(filteredBySubnet.size(), is(1));
         assertThat(first(filteredBySubnet), is(ifc1));

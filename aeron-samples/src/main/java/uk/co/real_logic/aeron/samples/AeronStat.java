@@ -15,36 +15,36 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.common.CncFileDescriptor;
-import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.agrona.concurrent.SigInt;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import uk.co.real_logic.aeron.common.CncFileDescriptor;
+import uk.co.real_logic.aeron.common.CommonContext;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.SigInt;
+
 /**
- * Application to print out status counters and labels
- * A command and control memory file is maintained by media driver in shared memory.
- * This application reads the the cnc file and prints the statistics counters.
+ * Application to print out counters and their labels
+ * A command-and-control (cnc) file is maintained by media driver in shared memory.
+ * This application reads the the cnc file and prints the counters.
  * Layout of the cnc file is described in {@link CncFileDescriptor}.
  */
 public class AeronStat
 {
     public static void main(final String[] args) throws Exception
     {
-        // Get command and control file path
+        // Get command-and-control file path
         final File cncFile = CommonContext.newDefaultCncFile();
 
-        // Print command and control file path
+        // Print command-and-control file path
         System.out.println("Command `n Control file " + cncFile);
 
-        // Check that command and control file exists, open file, and return MappedByteBuffer for entire file
+        // Check that command-and-control file exists, open file, and return MappedByteBuffer for entire file
         final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
 
         // Create a DirectBuffer for cnc's metadata
@@ -53,7 +53,7 @@ public class AeronStat
         // Extract version number of cnc from meta data
         final int cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
-        // Throw an exception if CNC version number mismatch is detected between this app and memory mapped cnc file
+        // Throw an exception if a version number mismatch is detected between this app and the memory mapped cnc file
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
             throw new IllegalStateException("CNC version not understood: version=" + cncVersion);
@@ -63,7 +63,7 @@ public class AeronStat
         final AtomicBuffer labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
         final AtomicBuffer valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
 
-        // Create a new counter Manager over the labels and the values buffer
+        // Create a new CountersManager over the labels and the values buffer
         final CountersManager countersManager = new CountersManager(labelsBuffer, valuesBuffer);
 
         // Setup the SIGINT handler for graceful shutdown

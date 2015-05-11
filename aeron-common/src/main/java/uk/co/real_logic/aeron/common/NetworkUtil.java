@@ -133,7 +133,7 @@ public class NetworkUtil
 
             return
                 (upperMask & toLong(a, 0)) == (upperMask & toLong(b, 0)) &&
-                (lowerMask & toLong(b, 8)) == (lowerMask & toLong(b, 8));
+                (lowerMask & toLong(a, 8)) == (lowerMask & toLong(b, 8));
         }
 
         throw new IllegalArgumentException("How many bytes does an IP address have again?");

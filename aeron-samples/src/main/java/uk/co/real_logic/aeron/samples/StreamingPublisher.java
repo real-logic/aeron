@@ -28,11 +28,11 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 /**
  * Publisher that sends as fast as possible a given number of messages at a given length.
@@ -76,12 +76,13 @@ public class StreamingPublisher
 
         executor.execute(reporter);
 
-        // Connect to media driver and add publisher to send message on CHANNEL and STREAM
+        // Connect to media driver and add publication to send messages on the configured
+        // channel and stream ID.
+        // The Aeron and Publication classes implement AutoCloseable, and will automatically
+        // clean up resources when this try block is finished.
         try (final Aeron aeron = Aeron.connect(context, executor);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-
-            // Create a barrier which will ask to restart publisher after program's termination
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -104,7 +105,9 @@ public class StreamingPublisher
 
                     while (publication.offer(ATOMIC_BUFFER, 0, length) < 0L)
                     {
-                        //Returns almost immediately ( Used for low latency)
+                        // The offer failed, which is usually due to the publication
+                        // being temporarily blocked.  Retry the offer after a short
+                        // spin/yield/sleep, depending on the chosen IdleStrategy.
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
 
@@ -125,7 +128,6 @@ public class StreamingPublisher
             // Otherwise, exit the loop
             while (barrier.await());
         }
-        // Halt the report
         reporter.halt();
         executor.shutdown();
         CloseHelper.quietClose(driver);

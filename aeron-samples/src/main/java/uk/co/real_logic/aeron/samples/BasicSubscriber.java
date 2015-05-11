@@ -28,14 +28,14 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
  * This is a Basic Aeron subscriber application
- * The application subscribes to a default stream and channel. The default channel and stream
- * can be overwritten by changing the default value in {@link SampleConfiguration}. Also, the default
- * channel and stream can be changed by setting java system properties at the command line.
- * i.e. (-Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20)
- * This application only handles non-fragmented data.A Data handler method is called for every
- *  received  datagram.
- *  This application doesn't handle large fragmented messages. For fragmented message reception,
- * look at the application at {link@ MultipleSubscribersWithFragmentAssembly}
+ * The application subscribes to a default channel and stream ID.  These defaults can
+ * be overwritten by changing their value in {@link SampleConfiguration} or by
+ * setting their corresponding Java system properties at the command line, e.g.:
+ * -Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20
+ * This application only handles non-fragmented data. A DataHandler method is called
+ * for every received message or message fragment.
+ * For an example that implements reassembly of large, fragmented messages, see
+ * {link@ MultipleSubscribersWithFragmentAssembly}.
  */
 public class BasicSubscriber
 {
@@ -52,7 +52,7 @@ public class BasicSubscriber
 
         // Create a context for a client and specify callback methods when
         // a new connection starts (printNewConnection)
-        // a connection goes inactive (printInactiveConnection)
+        // and for when a connection goes inactive (printInactiveConnection)
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
@@ -65,16 +65,18 @@ public class BasicSubscriber
         final DataHandler dataHandler = printStringMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        // Register a SIGINT handler
+        // Register a SIGINT handler for graceful shutdown.
         SigInt.register(() -> running.set(false));
 
-        // Create an Aeron instance with client provided context credentials
+        // Create an Aeron instance using the configured Context and create a
+        // Subscription on that instance that subscribes to the configured
+        // channel and stream ID.
+        // The Aeron and Subscription classes implement "AutoCloseable" and will automatically
+        // clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-                // Add a subscription to Aeron for a given channel and stream. Also, supply a dataHandler to
-                // be called when data arrives
                 final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
-            // run the subscriber thread from here
+            // Poll the subscription for new messages and deliver any that are found.
             SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
             System.out.println("Shutting down...");

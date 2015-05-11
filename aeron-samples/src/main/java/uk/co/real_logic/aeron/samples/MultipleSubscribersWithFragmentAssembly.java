@@ -28,20 +28,19 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
  * A subscriber application with two subscriptions which can receive fragmented messages
- * Creates two subscriptions on a given CHANNEL which can receive two independent streams of messages.
- * The default STREAM_ID and CHANNEL is
- * is configured at {@link SampleConfiguration}. The default
- * channel and stream can be changed by setting java system properties at the command line.
- * i.e. (-Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20)
+ * Creates two subscriptions on a given channel subscribed to two different stream IDs.
+ * The default STREAM_ID and CHANNEL are configured in {@link SampleConfiguration}. The default
+ * channel and stream IDs can be changed by setting Java system properties at the command line, e.g.:
+ * -Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20
  */
 public class MultipleSubscribersWithFragmentAssembly
 {
-    // A unique stream id within a given channel for subscriber one
-    private static final int STREAM_ID_1 = SampleConfiguration.STREAM_ID;
-    // A unique stream id within a given channel for subscriber two
-    private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
-    // Channel ID for the application
+    // The channel to subscribe to
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
+    // A unique stream ID within the channel for subscriber one
+    private static final int STREAM_ID_1 = SampleConfiguration.STREAM_ID;
+    // A unique stream ID within the channel for subscriber two
+    private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
 
     // Maximum number of fragments to be read in a single poll operation
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
@@ -58,22 +57,23 @@ public class MultipleSubscribersWithFragmentAssembly
         .newConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventNewConnection)
         .inactiveConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveConnection);
 
-        // dataHandler method is called for every new datagram received
+        // dataHandler method is called for every new message received
         // When a message is completely reassembled, the delegate method 'reassembledStringMessage' is called
         final FragmentAssemblyAdapter dataHandler1 = new FragmentAssemblyAdapter(reassembledStringMessage1(STREAM_ID_1));
 
-        // Another Data handler for a different stream
+        // Another Data handler for the second stream
         final FragmentAssemblyAdapter dataHandler2 = new FragmentAssemblyAdapter(reassembledStringMessage2(STREAM_ID_2));
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        // Register a SIGINT handler
+        // Register a SIGINT handler for graceful shutdown
         SigInt.register(() -> running.set(false));
 
-        // Create an Aeron instance with client provided context configuration and connect to media driver
+        // Create an Aeron instance using the default configuration set in the Context, and
+        // add two subscriptions with two different stream IDs.
+        // The Aeron and Subscription classes both implement "AutoCloseable" and will
+        // automatically clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-            // Add a subscription to Aeron for a given channel and steam. Also,
-            // supply a dataHandler to be called when data arrives
             final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
             final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
         {
@@ -88,7 +88,8 @@ public class MultipleSubscribersWithFragmentAssembly
                 {
                     final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
                     final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
-                    // Call a backoff strategy
+                    // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
+                    // use if no messages were received.
                     idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
                 }
             }

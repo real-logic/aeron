@@ -35,10 +35,11 @@ public class SimplePublisher
         // used for efficient buffer management
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(512));
 
-        // An end-point identifier to send the message to
+        // The channel (an endpoint identifier) to send the message to
         final String channel = "udp://localhost:40123";
 
-        // A unique identifier for a stream within a channel. A value of 0 is reserved.
+        // A unique identifier for a stream within a channel. Stream ID 0 is reserved
+        // for internal use and should not be used by applications.
         final int streamId = 10;
 
         System.out.println("Publishing to " + channel + " on stream Id " + streamId);
@@ -47,9 +48,9 @@ public class SimplePublisher
         // A separate media driver process needs to be running prior to starting this application
         final Aeron.Context ctx = new Aeron.Context();
 
-        // Create an Aeron instance with client-provided context configuration and connect to media driver,
-        // and create a Publication.  The Aeron and Publication objects implement AutoCloseable, and will
-        // automatically clean up resources when this try block is finished
+        // Create an Aeron instance with client-provided context configuration and connect to the
+        // media driver, and create a Publication.  The Aeron and Publication classes implement
+        // AutoCloseable, and will automatically clean up resources when this try block is finished.
         try (final Aeron aeron = Aeron.connect(ctx);
             final Publication publication = aeron.addPublication(channel, streamId);)
         {

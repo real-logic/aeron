@@ -48,6 +48,7 @@ public class RateSubscriber
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final ExecutorService executor = Executors.newFixedThreadPool(2);
+
         // Create a context with newConnectionHandler and inactiveConnectionHandler
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
@@ -58,26 +59,30 @@ public class RateSubscriber
             ctx.dirName(driver.contextDirName());
         }
 
-        // Create a rate reporter which will call reporter function every one second
+        // Create a RateReporter instance to print, once per second, the current rate at which messages are
+        // being received
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
 
         // Create a data handler to be called when a message is received
         final DataHandler rateReporterHandler = new FragmentAssemblyAdapter(rateReporterHandler(reporter));
 
         final AtomicBoolean running = new AtomicBoolean(true);
-        // Register an SIGINT handler
+
+        // Register an SIGINT handler for graceful shutdown
         SigInt.register(
             () ->
             {
                 reporter.halt();
                 running.set(false);
             });
-        // Add a subscriber to receive data from CHANNEL and STREAM_ID
+
+        // Add a subscriber to receive data from the configured channel and stream ID
+        // The Aeron and Subscription classes implement "AutoCloseable", so their
+        // resources will be automatically cleaned up at the end of this try block.
         try (final Aeron aeron = Aeron.connect(ctx, executor);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
-            // Receive Data at subscriber in a separate thread
-
+            // Receive data on subscription in a separate thread
             final Future future = executor.submit(
                 () -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 

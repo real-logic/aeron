@@ -23,10 +23,10 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
  * A publisher application with multiple publications which send
- * fragmented data to a channel and two different streams. The default STREAM_ID and CHANNEL is
- * configured at {@link SampleConfiguration}. The default
- * channel and stream can be changed by setting java system properties at the command line.
- * i.e. (-Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20)
+ * fragmented messages to a channel and two different stream IDs. The default STREAM_ID and CHANNEL are
+ * configured in {@link SampleConfiguration}. The default
+ * channel and stream IDs can be changed by setting Java system properties at the command line, e.g.:
+ * -Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20
  */
 public class MultiplePublishersWithFragmentation
 {
@@ -34,32 +34,34 @@ public class MultiplePublishersWithFragmentation
     private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    // Allocate enough buffer for message to get fragmented
+    // Allocate enough buffer space for large messages that will fragment.
     private static final UnsafeBuffer BUFFER_1 = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
     private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(9000));
 
     public static void main(final String[] args) throws Exception
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
+
         // Create a context for client connection
         final Aeron.Context ctx = new Aeron.Context();
 
-        // Create an Aeron instance using connection parameter specified by context
-        // and add 2 publisher with two different session Ids
-        // Aeron is "AutoClosable" and will automatically clean up resources when this try block is finished
+        // Create an Aeron instance using the default configuration set in the Context, and
+        // add two publications with two different stream IDs.
+        // The Aeron and Publication classes both implement "AutoCloseable" and will
+        // automatically clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
              final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
-            // Prepare a buffer to be sent
+            // Prepare two buffers for sending
             int j = 1;
             int k = 1;
             final String message1 = "Hello World! " + j;
             BUFFER_1.putBytes(0, message1.getBytes());
-            // Prepare a buffer to be sent
             final String message2 = "Hello World! " + k;
             BUFFER_2.putBytes(0, message2.getBytes());
-            // Try to send 5000 messages from each publisher
+
+            // Try to send 5000 messages from each publication
             while (j <= 5000 || k <= 5000)
             {
                 boolean offerStatus1 = false;
@@ -68,7 +70,7 @@ public class MultiplePublishersWithFragmentation
                 long result2 = 0;
                 while (!(offerStatus1 || offerStatus2))
                 {
-                    // Try to publish buffer from first publisher
+                    // Try to publish the buffer for the first publication
                     if (j <= 5000)
                     {
                         result1 = publication1.offer(BUFFER_1, 0, BUFFER_1.capacity());
@@ -92,14 +94,14 @@ public class MultiplePublishersWithFragmentation
                         }
                         else
                         {
-                            // Successfully send the data, get the next buffer in the stream
+                            // Successfully sent the data; get the next buffer in the stream
                             j++;
                             offerStatus1 = true;
                             System.out.println("Successfully sent data on stream " +
                                 STREAM_ID_1 + " and data length " + BUFFER_1.capacity() + " at offset " + result1);
                         }
                     }
-                    // Try to publish buffer from second publisher
+                    // Try to publish the buffer for the second publisher
                     if (k <= 5000)
                     {
                         result2 = publication2.offer(BUFFER_2, 0, BUFFER_2.capacity());
@@ -123,7 +125,7 @@ public class MultiplePublishersWithFragmentation
                         }
                         else
                         {
-                            // Successfully send the data, get the next buffer in the stream
+                            // Successfully sent the data; get the next buffer in the stream
                             k++;
                             offerStatus2 = true;
                             System.out.println("Successfully sent data on stream " + STREAM_ID_2 +

@@ -29,31 +29,31 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
  * A very simple Aeron subscriber application which can receive small non-fragmented messages
- * on a fixed channel and stream.The datahandler method 'printStringMessage' is called when data
- * is received. This application doesn't handle large fragmented messages. For fragmented message reception,
- * look at the application at {@link MultipleSubscriberWithFragmentation}
- *
+ * on a fixed channel and stream ID. The DataHandler method 'printStringMessage' is called when data
+ * is received. This application doesn't handle large fragmented messages. For an example of
+ * fragmented message reception, see {@link MultipleSubscriberWithFragmentation}.
  */
 public class SimpleSubscriber
 {
     public static void main(final String[] args) throws Exception
     {
-        // Number of message fragments to limit for a single 'poll' operation
+        // Maximum number of message fragments to receive during a single 'poll' operation
         final int fragmentLimitCount = 10;
 
-        // An end-point identifier to receive message from
+        // The channel (an endpoint identifier) to receive messages from
         final String channel = "udp://localhost:40123";
 
-        // A unique identifier for a Stream within a channel. A value of 0 is reserved
+        // A unique identifier for a stream within a channel. Stream ID 0 is reserved
+        // for internal use and should not be used by applications.
         final int streamId = 10;
 
         System.out.println("Subscribing to " + channel + " on stream Id " + streamId);
 
-        // dataHandler method is called for every new datagram received
-        //final DataHandler dataHandler = printStringMessage(streamId);
-        // Variable 'running' is set to 'true'
         final AtomicBoolean running = new AtomicBoolean(true);
+        // Register a SIGINT handler for graceful shutdown.
+        SigInt.register(() -> running.set(false));
 
+        // dataHandler method is called for every new datagram received
         final DataHandler dataHandler = new DataHandler()
         {
             public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -70,16 +70,15 @@ public class SimpleSubscriber
              }
         };
 
-        // Register a SIGINT handler. On receipt of SIGINT, set variable 'running' to 'false'
-        SigInt.register(() -> running.set(false));
-
         // Create a context, needed for client connection to media driver
         // A separate media driver process need to run prior to running this application
         final Aeron.Context ctx = new Aeron.Context();
 
-        // Create an Aeron instance with client provided context configuration and connect to media driver,
-        // and add a subscription for the given channel and stream, with the supplied dataHandler to be
-        // called when data arrives.
+        // Create an Aeron instance with client-provided context configuration, connect to the
+        // media driver, and add a subscription for the given channel and stream using the supplied
+        // dataHandler method, which will be called with new messages as they are received.
+        // The Aeron and Subscription classes implement AutoCloseable, and will automatically
+        // clean up resources when this try block is finished.
         try (final Aeron aeron = Aeron.connect(ctx);
             final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler);)
         {
@@ -90,11 +89,12 @@ public class SimpleSubscriber
                 // Try to read the data from subscriber
                 while (running.get())
                 {
-                    // poll delivers messages to the datahandler as they arrive
-                    // and returns number of fragments read, otherwise returns 0
+                    // poll delivers messages to the dataHandler as they arrive
+                    // and returns number of fragments read, or 0
                     // if no data is available.
                     final int fragmentsRead = subscription.poll(fragmentLimitCount);
-                    // Call a backoff strategy
+                    // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
+                    // use if no messages were received.
                     idleStrategy.idle(fragmentsRead);
                 }
             }

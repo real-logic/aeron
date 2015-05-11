@@ -76,6 +76,13 @@ public class SubscriptionTest
         subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void shouldEnsureTheSubscriptionIsOpenWhenPolling()
+    {
+        subscription.close();
+        subscription.poll(FRAGMENT_COUNT_LIMIT);
+    }
+
     @Test
     public void shouldReadNothingWithNoConnections()
     {

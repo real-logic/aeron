@@ -37,14 +37,15 @@ import uk.co.real_logic.agrona.concurrent.status.Position;
  */
 public class Subscription implements AutoCloseable
 {
-    private final String channel;
-    private final int streamId;
     private final long registrationId;
+    private final int streamId;
+    private final String channel;
+    private final ClientConductor clientConductor;
     private final AtomicArray<Connection> connections = new AtomicArray<>();
     private final DataHandler dataHandler;
-    private final ClientConductor clientConductor;
 
     private int roundRobinIndex = 0;
+    private volatile boolean isClosed = false;
 
     Subscription(
         final ClientConductor conductor,
@@ -88,9 +89,12 @@ public class Subscription implements AutoCloseable
      *
      * @param fragmentCountLimit number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
+     * @throws IllegalStateException if the subscription is closed.
      */
     public int poll(final int fragmentCountLimit)
     {
+        ensureOpen();
+
         if (connections.size() >= ++roundRobinIndex)
         {
             roundRobinIndex = 0;
@@ -104,7 +108,9 @@ public class Subscription implements AutoCloseable
      */
     public void close()
     {
+        isClosed = true;
         connections.forEach(Connection::close);
+        connections.clear();
         clientConductor.releaseSubscription(this);
     }
 
@@ -146,5 +152,14 @@ public class Subscription implements AutoCloseable
     boolean hasNoConnections()
     {
         return connections.isEmpty();
+    }
+
+    private void ensureOpen()
+    {
+        if (isClosed)
+        {
+            throw new IllegalStateException(String.format(
+                "Subscription is closed: channel=%s streamId=%d registrationId=%d", channel, streamId, registrationId));
+        }
     }
 }

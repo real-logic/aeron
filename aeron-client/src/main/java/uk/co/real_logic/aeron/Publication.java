@@ -49,18 +49,19 @@ public class Publication implements AutoCloseable
      */
     public static final long BACK_PRESSURE = -2;
 
-    private final ClientConductor clientConductor;
-    private final LogBuffers logBuffers;
-    private final String channel;
+    private final long registrationId;
     private final int streamId;
     private final int sessionId;
-    private final long registrationId;
+    private final String channel;
+    private final ClientConductor clientConductor;
+    private final LogBuffers logBuffers;
     private final TermAppender[] termAppenders;
     private final ReadOnlyPosition publicationLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
 
     private int refCount = 1;
+    private volatile boolean isClosed = false;
 
     Publication(
         final ClientConductor clientConductor,
@@ -129,6 +130,8 @@ public class Publication implements AutoCloseable
 
     /**
      * Release resources used by this Publication.
+     *
+     * Publications are reference counted and are only truly closed when the ref count reaches zero.
      */
     public void close()
     {
@@ -136,6 +139,7 @@ public class Publication implements AutoCloseable
         {
             if (--refCount == 0)
             {
+                isClosed = true;
                 logBuffers.close();
                 clientConductor.releasePublication(this);
             }
@@ -146,9 +150,12 @@ public class Publication implements AutoCloseable
      * Get the current position to which the publication has advanced for this stream.
      *
      * @return the current position to which the publication has advanced for this stream.
+     * @throws IllegalStateException if the publication is closed.
      */
     public long position()
     {
+        ensureOpen();
+
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
@@ -176,9 +183,12 @@ public class Publication implements AutoCloseable
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
      * @return The new stream position on success, otherwise {@link #BACK_PRESSURE} or {@link #NOT_CONNECTED}.
+     * @throws IllegalStateException if the publication is closed.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
+        ensureOpen();
+
         long newPosition = NOT_CONNECTED;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
@@ -226,10 +236,13 @@ public class Publication implements AutoCloseable
      * @param bufferClaim to be populate if the claim succeeds.
      * @return The new stream position on success, otherwise {@link #BACK_PRESSURE} or {@link #NOT_CONNECTED}.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
+     * @throws IllegalStateException if the publication is closed.
      * @see uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim#commit()
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
+        ensureOpen();
+
         long newPosition = NOT_CONNECTED;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
@@ -294,5 +307,15 @@ public class Publication implements AutoCloseable
         }
 
         return newPosition;
+    }
+
+    private void ensureOpen()
+    {
+        if (isClosed)
+        {
+            throw new IllegalStateException(String.format(
+                "Publication is closed: channel=%s streamId=%d sessionId=%d registrationId=%d",
+                channel, streamId, sessionId, registrationId));
+        }
     }
 }

@@ -90,6 +90,28 @@ public class PublicationTest
             CORRELATION_ID);
     }
 
+    @Test(expected = IllegalStateException.class)
+    public void shouldEnsureThePublicationIsOpenBeforeReadingPosition()
+    {
+        publication.close();
+        publication.position();
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldEnsureThePublicationIsOpenBeforeOffer()
+    {
+        publication.close();
+        publication.offer(atomicSendBuffer);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldEnsureThePublicationIsOpenBeforeClaim()
+    {
+        publication.close();
+        final BufferClaim bufferClaim = new BufferClaim();
+        publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim);
+    }
+
     @Test
     public void shouldReportInitialPosition()
     {

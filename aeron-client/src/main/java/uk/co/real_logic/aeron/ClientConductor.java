@@ -45,10 +45,10 @@ class ClientConductor implements Agent, DriverListener
     private static final int KEEPALIVE_TIMEOUT_MS = 500;
     private static final long NO_CORRELATION_ID = -1;
 
-    private final DriverListenerAdapter driverListenerAdapter;
-    private final LogBuffersFactory logBuffersFactory;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
+    private final DriverListenerAdapter driverListenerAdapter;
+    private final LogBuffersFactory logBuffersFactory;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
 
@@ -56,18 +56,16 @@ class ClientConductor implements Agent, DriverListener
     private final DriverProxy driverProxy;
     private final Signal correlationSignal;
     private final TimerWheel timerWheel;
+    private final TimerWheel.Timer keepaliveTimer;
     private final Consumer<Throwable> errorHandler;
-
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
     private long activeCorrelationId = -1; // Guarded by this
-    private Publication addedPublication; // Guarded by this
     private boolean operationSucceeded = false; // Guarded by this
-    private RegistrationException registrationException; // Guarded by this
-
-    private final TimerWheel.Timer keepaliveTimer;
     private volatile boolean driverActive = true;
+    private Publication addedPublication; // Guarded by this
+    private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(
         final CopyBroadcastReceiver broadcastReceiver,

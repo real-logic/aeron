@@ -54,7 +54,7 @@ class ActiveSubscriptions
             getOrDefault(subscriptionByChannelMap, subscription.channel(), SUPPLIER);
 
         final List<Subscription> subscriptions =
-            subscriptionByStreamIdMap.getOrDefault(subscription.streamId(), ArrayList::new);
+            subscriptionByStreamIdMap.computeIfAbsent(subscription.streamId(), ignore -> new ArrayList<>());
 
         subscriptions.add(subscription);
     }

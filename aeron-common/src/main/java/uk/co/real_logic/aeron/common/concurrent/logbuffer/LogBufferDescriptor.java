@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -446,18 +447,18 @@ public class LogBufferDescriptor
      */
     public static void storeDefaultFrameHeaders(final UnsafeBuffer logMetaDataBuffer, final DirectBuffer defaultHeader)
     {
-        final int defaultHeaderLength = defaultHeader.capacity();
-        if (defaultHeaderLength > LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH)
+        if (defaultHeader.capacity() != HEADER_LENGTH)
         {
-            throw new IllegalArgumentException("Default header larger than: " + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+            throw new IllegalArgumentException(String.format(
+                "Default header of %d not equal to %d", defaultHeader.capacity(), HEADER_LENGTH));
         }
 
-        logMetaDataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, defaultHeaderLength);
+        logMetaDataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, HEADER_LENGTH);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
             final int offset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (i * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-            logMetaDataBuffer.putBytes(offset, defaultHeader, 0, defaultHeaderLength);
+            logMetaDataBuffer.putBytes(offset, defaultHeader, 0, HEADER_LENGTH);
         }
     }
 
@@ -470,12 +471,11 @@ public class LogBufferDescriptor
     public static UnsafeBuffer[] defaultFrameHeaders(final UnsafeBuffer logMetaDataBuffer)
     {
         final UnsafeBuffer[] defaultFrameHeaders = new UnsafeBuffer[PARTITION_COUNT];
-        final int defaultHeaderLength = logMetaDataBuffer.getInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
             final int offset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (i * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-            defaultFrameHeaders[i] = new UnsafeBuffer(logMetaDataBuffer, offset, defaultHeaderLength);
+            defaultFrameHeaders[i] = new UnsafeBuffer(logMetaDataBuffer, offset, HEADER_LENGTH);
         }
 
         return defaultFrameHeaders;

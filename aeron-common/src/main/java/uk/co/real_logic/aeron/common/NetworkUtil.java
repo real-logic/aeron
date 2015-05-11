@@ -113,27 +113,27 @@ public class NetworkUtil
     // Byte matching and calculation.
     //
 
-    static boolean isMatchWithPrefix(final byte[] a, final byte[] b, final int prefixLength)
+    static boolean isMatchWithPrefix(final byte[] candidate, final byte[] expected, final int prefixLength)
     {
-        if (a.length != b.length)
+        if (candidate.length != expected.length)
         {
             return false;
         }
 
-        if (a.length == 4)
+        if (candidate.length == 4)
         {
             final int mask = prefixLengthToIpV4Mask(prefixLength);
 
-            return (toInt(a) & mask) == (toInt(b) & mask);
+            return (toInt(candidate) & mask) == (toInt(expected) & mask);
         }
-        else if (a.length == 16)
+        else if (candidate.length == 16)
         {
             final long upperMask = prefixLengthToIpV6Mask(min(prefixLength, 64));
             final long lowerMask = prefixLengthToIpV6Mask(max(prefixLength - 64, 0));
 
             return
-                (upperMask & toLong(a, 0)) == (upperMask & toLong(b, 0)) &&
-                (lowerMask & toLong(b, 8)) == (lowerMask & toLong(b, 8));
+                (upperMask & toLong(candidate, 0)) == (upperMask & toLong(expected, 0)) &&
+                    (lowerMask & toLong(candidate, 8)) == (lowerMask & toLong(expected, 8));
         }
 
         throw new IllegalArgumentException("How many bytes does an IP address have again?");
@@ -157,9 +157,14 @@ public class NetworkUtil
 
     static long toLong(final byte[] b, final int offset)
     {
-        return ((b[offset + 7] & 0xFFL)) + ((b[offset + 6] & 0xFFL) << 8) + ((b[offset + 5] & 0xFFL) << 16) +
-            ((b[offset + 4] & 0xFFL) << 24) + ((b[offset + 3] & 0xFFL) << 32) + ((b[offset + 2] & 0xFFL) << 40) +
-            ((b[offset + 1] & 0xFFL) << 48) + (((long) b[offset]) << 56);
+        return ((b[offset + 7] & 0xFFL)) +
+            ((b[offset + 6] & 0xFFL) << 8) +
+            ((b[offset + 5] & 0xFFL) << 16) +
+            ((b[offset + 4] & 0xFFL) << 24) +
+            ((b[offset + 3] & 0xFFL) << 32) +
+            ((b[offset + 2] & 0xFFL) << 40) +
+            ((b[offset + 1] & 0xFFL) << 48) +
+            (((long)b[offset]) << 56);
     }
 
     public static ProtocolFamily getProtocolFamily(InetAddress address)
@@ -192,18 +197,17 @@ public class NetworkUtil
             this.isLoopback = isLoopback;
         }
 
-        @Override
-        public int compareTo(final FilterResult o)
+        public int compareTo(final FilterResult other)
         {
-            if (isLoopback == o.isLoopback)
+            if (isLoopback == other.isLoopback)
             {
                 return -compare(
                     interfaceAddress.getNetworkPrefixLength(),
-                    o.interfaceAddress.getNetworkPrefixLength());
+                    other.interfaceAddress.getNetworkPrefixLength());
             }
             else
             {
-                return compare(isLoopback, o.isLoopback);
+                return compare(isLoopback, other.isLoopback);
             }
         }
     }

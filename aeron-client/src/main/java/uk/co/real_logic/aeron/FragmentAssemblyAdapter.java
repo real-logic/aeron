@@ -16,13 +16,13 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.BufferBuilder;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 
-import java.util.function.Supplier;
+import java.util.function.IntFunction;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
@@ -42,7 +42,7 @@ public class FragmentAssemblyAdapter implements DataHandler
     private final DataHandler delegate;
     private final AssemblyHeader assemblyHeader = new AssemblyHeader();
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
-    private final Supplier<BufferBuilder> builderSupplier;
+    private final IntFunction<BufferBuilder> builderFunc;
 
     /**
      * Construct an adapter to reassemble message fragments and delegate on only whole messages.
@@ -63,7 +63,7 @@ public class FragmentAssemblyAdapter implements DataHandler
     public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
-        builderSupplier = () -> new BufferBuilder(initialBufferLength);
+        builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
     }
 
     /**
@@ -85,7 +85,7 @@ public class FragmentAssemblyAdapter implements DataHandler
         {
             if ((flags & BEGIN_FRAG) == BEGIN_FRAG)
             {
-                final BufferBuilder builder = builderBySessionIdMap.getOrDefault(header.sessionId(), builderSupplier);
+                final BufferBuilder builder = builderBySessionIdMap.computeIfAbsent(header.sessionId(), builderFunc);
                 builder.reset().append(buffer, offset, length);
             }
             else

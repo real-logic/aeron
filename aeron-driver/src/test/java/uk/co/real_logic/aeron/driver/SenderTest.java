@@ -22,7 +22,7 @@ import org.mockito.stubbing.Answer;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
@@ -68,7 +68,7 @@ public class SenderTest
     private final RawLog rawLog =
         LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, LogBufferDescriptor.TERM_META_DATA_LENGTH);
 
-    private LogAppender[] logAppenders;
+    private TermAppender[] termAppenders;
     private NetworkPublication publication;
     private Sender sender;
 
@@ -122,10 +122,10 @@ public class SenderTest
                 .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger));
 
-        logAppenders = rawLog
+        termAppenders = rawLog
             .stream()
-            .map((log) -> new LogAppender(log.termBuffer(), log.metaDataBuffer(), HEADER, MAX_FRAME_LENGTH))
-            .toArray(LogAppender[]::new);
+            .map((log) -> new TermAppender(log.termBuffer(), log.metaDataBuffer(), HEADER, MAX_FRAME_LENGTH))
+            .toArray(TermAppender[]::new);
 
         publication = new NetworkPublication(
             mockSendChannelEndpoint,
@@ -208,7 +208,7 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -234,9 +234,9 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         sender.doWork();
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(2));
@@ -272,8 +272,8 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));
@@ -305,7 +305,7 @@ public class SenderTest
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
 
         sender.doWork();
         assertThat(receivedFrames.size(), is(0));
@@ -333,7 +333,7 @@ public class SenderTest
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         publication.senderPositionLimit(
             flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
@@ -352,7 +352,7 @@ public class SenderTest
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(0));
@@ -367,7 +367,7 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send ticks
@@ -396,7 +396,7 @@ public class SenderTest
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
-        logAppenders[0].append(buffer, 0, PAYLOAD.length);
+        termAppenders[0].append(buffer, 0, PAYLOAD.length);
         sender.doWork();
 
         assertThat(receivedFrames.size(), is(1));  // should send ticks

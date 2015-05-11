@@ -283,8 +283,8 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
             sessionId, streamId, channelEndpoint, channel, joiningPosition);
 
-        final RawLog rawLog = rawLogFactory.newConnection(
-            udpChannel.canonicalForm(), sessionId, streamId, correlationId, termBufferLength);
+        final RawLog rawLog = newConnectionLog(
+            sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, correlationId);
 
         final NetworkConnection connection = new NetworkConnection(
             correlationId,
@@ -463,7 +463,7 @@ public class DriverConductor implements Agent
             publication = new NetworkPublication(
                 channelEndpoint,
                 clock,
-                newPublicationLog(sessionId, streamId, correlationId, udpChannel, initialTermId),
+                newPublicationLog(sessionId, streamId, initialTermId, udpChannel, correlationId),
                 newPosition("sender pos", channel, sessionId, streamId, correlationId),
                 newPosition("publisher limit", channel, sessionId, streamId, correlationId),
                 sessionId,
@@ -515,7 +515,7 @@ public class DriverConductor implements Agent
     }
 
     private RawLog newPublicationLog(
-        final int sessionId, final int streamId, final long correlationId, final UdpChannel udpChannel, final int initialTermId)
+        final int sessionId, final int streamId, final int initialTermId, final UdpChannel udpChannel, final long correlationId)
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final RawLog rawLog = rawLogFactory.newPublication(canonicalForm, sessionId, streamId, correlationId);
@@ -525,6 +525,27 @@ public class DriverConductor implements Agent
         LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
+
+        return rawLog;
+    }
+
+    private RawLog newConnectionLog(
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final int termBufferLength,
+        final int senderMtuLength,
+        final UdpChannel udpChannel,
+        final long correlationId)
+    {
+        final String canonicalForm = udpChannel.canonicalForm();
+        final RawLog rawLog = rawLogFactory.newConnection(canonicalForm, sessionId, streamId, correlationId, termBufferLength);
+
+        final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
+        final UnsafeBuffer logMetaData = rawLog.logMetaData();
+        LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
+        LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
+        LogBufferDescriptor.mtuLength(logMetaData, senderMtuLength);
 
         return rawLog;
     }

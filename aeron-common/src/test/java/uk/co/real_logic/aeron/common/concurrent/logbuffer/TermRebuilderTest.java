@@ -27,12 +27,10 @@ import static java.lang.Integer.valueOf;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
-public class LogRebuilderTest
+public class TermRebuilderTest
 {
     private static final int TERM_BUFFER_CAPACITY = LogBufferDescriptor.TERM_MIN_LENGTH;
-    private static final int META_DATA_BUFFER_CAPACITY = TERM_META_DATA_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
@@ -52,7 +50,7 @@ public class LogRebuilderTest
         packet.putInt(lengthOffset(srcOffset), length, LITTLE_ENDIAN);
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
 
-        LogRebuilder.insert(termBuffer, termOffset, packet, srcOffset, length);
+        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, length);
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).putBytes(termOffset, packet, srcOffset, length);
@@ -73,7 +71,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
-        LogRebuilder.insert(termBuffer, termOffset, packet, srcOffset, frameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, frameLength);
 
         verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);
     }
@@ -92,7 +90,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        LogRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
 
         verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
     }
@@ -109,7 +107,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        LogRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
@@ -126,7 +124,7 @@ public class LogRebuilderTest
         when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
 
-        LogRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }

@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogAppender;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
@@ -45,10 +45,10 @@ class ClientConductor implements Agent, DriverListener
     private static final int KEEPALIVE_TIMEOUT_MS = 500;
     private static final long NO_CORRELATION_ID = -1;
 
-    private final DriverListenerAdapter driverListenerAdapter;
-    private final LogBuffersFactory logBuffersFactory;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
+    private final DriverListenerAdapter driverListenerAdapter;
+    private final LogBuffersFactory logBuffersFactory;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
 
@@ -56,18 +56,16 @@ class ClientConductor implements Agent, DriverListener
     private final DriverProxy driverProxy;
     private final Signal correlationSignal;
     private final TimerWheel timerWheel;
+    private final TimerWheel.Timer keepaliveTimer;
     private final Consumer<Throwable> errorHandler;
-
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
     private long activeCorrelationId = -1; // Guarded by this
-    private Publication addedPublication; // Guarded by this
     private boolean operationSucceeded = false; // Guarded by this
-    private RegistrationException registrationException; // Guarded by this
-
-    private final TimerWheel.Timer keepaliveTimer;
     private volatile boolean driverActive = true;
+    private Publication addedPublication; // Guarded by this
+    private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(
         final CopyBroadcastReceiver broadcastReceiver,
@@ -186,14 +184,14 @@ class ClientConductor implements Agent, DriverListener
     {
         final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final LogAppender[] appenders = new LogAppender[PARTITION_COUNT];
+        final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
         final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
         final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
         final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            appenders[i] = new LogAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
+            appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
         }
 
         final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);

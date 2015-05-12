@@ -86,7 +86,7 @@ public class MessageStream
     public MessageStream(final int minSize, final int maxSize, final boolean verifiable,
         final InputStream inputStream) throws Exception
     {
-        if (this.inputStream == null)
+        if (inputStream == null)
         {
             // When no input stream is supplied, use random generator.
             this.inputStream = new RandomInputStream();

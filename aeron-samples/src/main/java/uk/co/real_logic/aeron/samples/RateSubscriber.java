@@ -15,17 +15,22 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.SigInt;
+import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.RateReporter;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
  * Example that displays current rate while receiving data
@@ -44,6 +49,7 @@ public class RateSubscriber
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
+        // Create a context with newConnectionHandler and inactiveConnectionHandler
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
@@ -53,10 +59,16 @@ public class RateSubscriber
             ctx.dirName(driver.contextDirName());
         }
 
+        // Create a RateReporter instance to print, once per second, the current rate at which messages are
+        // being received
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
+
+        // Create a data handler to be called when a message is received
         final DataHandler rateReporterHandler = new FragmentAssemblyAdapter(rateReporterHandler(reporter));
 
         final AtomicBoolean running = new AtomicBoolean(true);
+
+        // Register an SIGINT handler for graceful shutdown
         SigInt.register(
             () ->
             {
@@ -64,9 +76,13 @@ public class RateSubscriber
                 running.set(false);
             });
 
+        // Add a subscriber to receive data from the configured channel and stream ID
+        // The Aeron and Subscription classes implement "AutoCloseable", so their
+        // resources will be automatically cleaned up at the end of this try block.
         try (final Aeron aeron = Aeron.connect(ctx, executor);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
+            // Receive data on subscription in a separate thread
             final Future future = executor.submit(
                 () -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 

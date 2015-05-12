@@ -15,17 +15,25 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
 /**
  * Basic Aeron publisher application
+ * This publisher sends a fixed number of fixed-length messages
+ * on a channel and stream ID, then lingers to allow any consumers
+ * that may have experienced loss a chance to NAK for and recover
+ * any missing data.
+ * The default values for number of messages, channel, and stream ID are
+ * defined in {@link SampleConfiguration} and can be overridden by
+ * setting their corresponding properties via the command-line; e.g.:
+ * -Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20
  */
 public class BasicPublisher
 {
@@ -41,30 +49,55 @@ public class BasicPublisher
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
+        // If configured to do so, create an embedded media driver within this application rather
+        // than relying on an external one.
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
+
+        // Create an Aeron context for client connection to media driver
         final Aeron.Context ctx = new Aeron.Context();
         if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }
 
+        // Connect a new Aeron instance to the media driver and create a publication on
+        // the given channel and stream ID.
+        // The Aeron and Publication classes implement "AutoCloseable" and will automatically
+        // clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
+            // Try to send messages
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
+                // Prepare a buffer to be sent
                 final String message = "Hello World! " + i;
                 BUFFER.putBytes(0, message.getBytes());
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
+
+                // Try to send the message on the configured channel and stream ID
                 final long result = publication.offer(BUFFER, 0, message.getBytes().length);
 
                 if (result < 0L)
                 {
-                    System.out.println(" ah?!");
+                    // Message offer failed
+                    if (result == Publication.BACK_PRESSURE)
+                    {
+                        System.out.println(" Offer failed due to back pressure");
+                    }
+                    else if (result == Publication.NOT_CONNECTED)
+                    {
+                        System.out.println(" Offer failed because publisher is not yet connected to subscriber");
+                    }
+                    else
+                    {
+                        System.out.println(" Offer failed due to unknown reason");
+                    }
                 }
                 else
                 {
+                    // Successful message send
                     System.out.println(" yay!");
                 }
 

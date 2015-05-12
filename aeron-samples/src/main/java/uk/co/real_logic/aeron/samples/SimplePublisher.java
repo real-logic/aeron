@@ -52,7 +52,7 @@ public class SimplePublisher
         // media driver, and create a Publication.  The Aeron and Publication classes implement
         // AutoCloseable, and will automatically clean up resources when this try block is finished.
         try (final Aeron aeron = Aeron.connect(ctx);
-            final Publication publication = aeron.addPublication(channel, streamId);)
+             final Publication publication = aeron.addPublication(channel, streamId))
         {
             // Prepare a buffer to be sent
             final String message = "Hello World! ";

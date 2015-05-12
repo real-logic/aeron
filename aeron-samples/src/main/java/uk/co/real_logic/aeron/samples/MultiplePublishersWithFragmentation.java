@@ -42,7 +42,6 @@ public class MultiplePublishersWithFragmentation
     {
         System.out.println("Publishing to " + CHANNEL + " on stream Id " + STREAM_ID_1 + " and stream Id " + STREAM_ID_2);
 
-        // Create a context for client connection
         final Aeron.Context ctx = new Aeron.Context();
 
         // Create an Aeron instance using the default configuration set in the Context, and
@@ -53,7 +52,6 @@ public class MultiplePublishersWithFragmentation
              final Publication publication1 = aeron.addPublication(CHANNEL, STREAM_ID_1);
              final Publication publication2 = aeron.addPublication(CHANNEL, STREAM_ID_2))
         {
-            // Prepare two buffers for sending
             int j = 1;
             int k = 1;
             final String message1 = "Hello World! " + j;
@@ -66,8 +64,9 @@ public class MultiplePublishersWithFragmentation
             {
                 boolean offerStatus1 = false;
                 boolean offerStatus2 = false;
-                long result1 = 0;
-                long result2 = 0;
+                long result1;
+                long result2;
+
                 while (!(offerStatus1 || offerStatus2))
                 {
                     // Try to publish the buffer for the first publication
@@ -84,7 +83,7 @@ public class MultiplePublishersWithFragmentation
                             else if (result1 == Publication.NOT_CONNECTED)
                             {
                                 System.out.println(" Offer failed because publisher is not yet " +
-                                    "connected to subscriber for stream Id "  + STREAM_ID_1);
+                                    "connected to subscriber for stream Id " + STREAM_ID_1);
                             }
                             else
                             {
@@ -101,6 +100,7 @@ public class MultiplePublishersWithFragmentation
                                 STREAM_ID_1 + " and data length " + BUFFER_1.capacity() + " at offset " + result1);
                         }
                     }
+
                     // Try to publish the buffer for the second publisher
                     if (k <= 5000)
                     {
@@ -111,7 +111,7 @@ public class MultiplePublishersWithFragmentation
                             if (result2 == Publication.BACK_PRESSURE)
                             {
                                 System.out.println(" Offer failed because publisher is not yet " +
-                                        "connected to subscriber for stream Id "  + STREAM_ID_2);
+                                    "connected to subscriber for stream Id " + STREAM_ID_2);
                             }
                             else if (result2 == Publication.NOT_CONNECTED)
                             {
@@ -134,8 +134,9 @@ public class MultiplePublishersWithFragmentation
                     }
                 }
             }
+
             System.out.println("Done sending total messages for stream Id " +
-                    STREAM_ID_1 + " = " + (j - 1) + " and stream Id " + STREAM_ID_2 + " = " + (k - 1));
+                STREAM_ID_1 + " = " + (j - 1) + " and stream Id " + STREAM_ID_2 + " = " + (k - 1));
         }
     }
 }

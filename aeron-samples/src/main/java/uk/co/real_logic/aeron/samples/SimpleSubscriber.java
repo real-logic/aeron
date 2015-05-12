@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;
@@ -31,7 +29,7 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
  * A very simple Aeron subscriber application which can receive small non-fragmented messages
  * on a fixed channel and stream ID. The DataHandler method 'printStringMessage' is called when data
  * is received. This application doesn't handle large fragmented messages. For an example of
- * fragmented message reception, see {@link MultipleSubscriberWithFragmentation}.
+ * fragmented message reception, see {@link MultipleSubscribersWithFragmentAssembly}.
  */
 public class SimpleSubscriber
 {
@@ -54,21 +52,17 @@ public class SimpleSubscriber
         SigInt.register(() -> running.set(false));
 
         // dataHandler method is called for every new datagram received
-        final DataHandler dataHandler = new DataHandler()
-        {
-            public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
-            {
+        final DataHandler dataHandler =
+            (buffer, offset, length, header) -> {
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);
 
-                System.out.println(
-                    String.format(
-                        "Received message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
-                        new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+                System.out.println(String.format(
+                    "Received message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
+                    new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
                 // Received the intended message, time to exit the program
                 running.set(false);
-             }
-        };
+            };
 
         // Create a context, needed for client connection to media driver
         // A separate media driver process need to run prior to running this application
@@ -80,7 +74,7 @@ public class SimpleSubscriber
         // The Aeron and Subscription classes implement AutoCloseable, and will automatically
         // clean up resources when this try block is finished.
         try (final Aeron aeron = Aeron.connect(ctx);
-            final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler);)
+             final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
         {
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                 100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));

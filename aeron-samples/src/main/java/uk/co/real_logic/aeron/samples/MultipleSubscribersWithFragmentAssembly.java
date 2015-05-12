@@ -54,8 +54,8 @@ public class MultipleSubscribersWithFragmentAssembly
         // a new connection starts (eventNewConnection)
         // a connection goes inactive (eventInactiveConnection)
         final Aeron.Context ctx = new Aeron.Context()
-        .newConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventNewConnection)
-        .inactiveConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveConnection);
+            .newConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventNewConnection)
+            .inactiveConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveConnection);
 
         // dataHandler method is called for every new message received
         // When a message is completely reassembled, the delegate method 'reassembledStringMessage' is called
@@ -74,8 +74,8 @@ public class MultipleSubscribersWithFragmentAssembly
         // The Aeron and Subscription classes both implement "AutoCloseable" and will
         // automatically clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-            final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
-            final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
+             final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
+             final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
         {
             // Initialize a backoff strategy to avoid excessive spinning
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
@@ -97,9 +97,11 @@ public class MultipleSubscribersWithFragmentAssembly
             {
                 ex.printStackTrace();
             }
+
             System.out.println("Shutting down...");
         }
     }
+
     /**
      * Print the information for a new connection to stdout.
      *
@@ -110,7 +112,7 @@ public class MultipleSubscribersWithFragmentAssembly
      * @param sourceInformation that is transport specific
      */
     public static void eventNewConnection(
-            final String channel, final int streamId, final int sessionId, final long position, final String sourceInformation)
+        final String channel, final int streamId, final int sessionId, final long position, final String sourceInformation)
     {
         System.out.format(
             "new connection on %s streamId %x sessionId %x from %s%n",
@@ -142,20 +144,22 @@ public class MultipleSubscribersWithFragmentAssembly
      */
     public static DataHandler reassembledStringMessage1(final int streamId) throws Exception
     {
-        return (buffer, offset, length, header) ->
-        {
-            final byte[] data = new byte[length];
-            buffer.getBytes(offset, data);
-
-            System.out.format(
-                "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
-                streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);
-            if (length != 10000)
+        return
+            (buffer, offset, length, header) ->
             {
-                System.out.format("Received message was not assembled properly; received length was %d," +
-                    " but was expecting 10000%n", length);
-            }
-        };
+                final byte[] data = new byte[length];
+                buffer.getBytes(offset, data);
+
+                System.out.format(
+                    "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
+                    streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);
+
+                if (length != 10000)
+                {
+                    System.out.format("Received message was not assembled properly; received length was %d," +
+                        " but was expecting 10000%n", length);
+                }
+            };
     }
 
     /**
@@ -166,19 +170,21 @@ public class MultipleSubscribersWithFragmentAssembly
      */
     public static DataHandler reassembledStringMessage2(final int streamId) throws Exception
     {
-        return (buffer, offset, length, header) ->
-        {
-            final byte[] data = new byte[length];
-            buffer.getBytes(offset, data);
-
-            System.out.format(
-                "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
-                streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);
-            if (length != 9000)
+        return
+            (buffer, offset, length, header) ->
             {
-                System.out.format("Received message was not assembled properly; received length was %d," +
-                    " but was expecting 9000%n", length);
-            }
-        };
+                final byte[] data = new byte[length];
+                buffer.getBytes(offset, data);
+
+                System.out.format(
+                    "message to stream %d from session %x term id %x term offset %d (%d@%d)%n",
+                    streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset);
+
+                if (length != 9000)
+                {
+                    System.out.format("Received message was not assembled properly; received length was %d," +
+                        " but was expecting 9000%n", length);
+                }
+            };
     }
 }

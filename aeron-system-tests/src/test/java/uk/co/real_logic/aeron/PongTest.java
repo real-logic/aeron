@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -41,6 +42,7 @@ public class PongTest
 
     private static final int PING_STREAM_ID = 1;
     private static final int PONG_STREAM_ID = 2;
+    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private final MediaDriver.Context context = new MediaDriver.Context();
     private final Aeron.Context pingAeronContext = new Aeron.Context();
@@ -61,6 +63,7 @@ public class PongTest
     public void setUp() throws Exception
     {
         context.dirsDeleteOnExit(true);
+        context.threadingMode(THREADING_MODE);
 
         driver = MediaDriver.launch(context);
         pingClient = Aeron.connect(pingAeronContext);

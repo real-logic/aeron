@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Test;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
@@ -43,6 +44,7 @@ public class MultiDriverTest
 
     private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
+    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private static final int TERM_BUFFER_SIZE = 64 * 1024;
     private static final int NUM_MESSAGES_PER_TERM = 64;
@@ -78,12 +80,14 @@ public class MultiDriverTest
         driverAContext.termBufferLength(TERM_BUFFER_SIZE);
         driverAContext.dirsDeleteOnExit(true);
         driverAContext.dirName(baseDirA);
+        driverAContext.threadingMode(THREADING_MODE);
 
         aeronAContext.dirName(driverAContext.dirName());
 
         driverBContext.termBufferLength(TERM_BUFFER_SIZE);
         driverBContext.dirsDeleteOnExit(true);
         driverBContext.dirName(baseDirB);
+        driverBContext.threadingMode(THREADING_MODE);
 
         aeronBContext.dirName(driverBContext.dirName());
 

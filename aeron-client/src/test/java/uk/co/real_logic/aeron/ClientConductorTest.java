@@ -75,7 +75,7 @@ public class ClientConductorTest
     private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
 
-    private final UnsafeBuffer toClientBuffer = new UnsafeBuffer(new byte[BROADCAST_BUFFER_LENGTH]);
+    private final UnsafeBuffer toClientBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BROADCAST_BUFFER_LENGTH));
     private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 

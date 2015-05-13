@@ -124,10 +124,10 @@ public class ClientConductorTest
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final UnsafeBuffer termBuffersSession1 = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-            final UnsafeBuffer metaDataBuffersSession1 = new UnsafeBuffer(new byte[TERM_META_DATA_LENGTH]);
-            final UnsafeBuffer termBuffersSession2 = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-            final UnsafeBuffer metaDataBuffersSession2 = new UnsafeBuffer(new byte[TERM_META_DATA_LENGTH]);
+            final UnsafeBuffer termBuffersSession1 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+            final UnsafeBuffer metaDataBuffersSession1 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
+            final UnsafeBuffer termBuffersSession2 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+            final UnsafeBuffer metaDataBuffersSession2 = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
 
             atomicBuffersSession1[i] = termBuffersSession1;
             atomicBuffersSession1[i + PARTITION_COUNT] = metaDataBuffersSession1;
@@ -135,8 +135,8 @@ public class ClientConductorTest
             atomicBuffersSession2[i + PARTITION_COUNT] = metaDataBuffersSession2;
         }
 
-        atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
-        atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(new byte[TERM_BUFFER_LENGTH]);
+        atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+        atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
 
         final MutableDirectBuffer header1 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_1, STREAM_ID_1, 0);
         final MutableDirectBuffer header2 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_2, STREAM_ID_2, 0);

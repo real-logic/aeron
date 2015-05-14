@@ -47,7 +47,7 @@ public class SubscriptionTest
     private static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
-    private final ByteBuffer readBuffer = ByteBuffer.allocate(READ_BUFFER_CAPACITY);
+    private final ByteBuffer readBuffer = ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final Position position = mock(AtomicLongPosition.class);

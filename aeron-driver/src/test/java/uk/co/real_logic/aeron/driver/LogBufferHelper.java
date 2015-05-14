@@ -38,7 +38,7 @@ public class LogBufferHelper
                 newTestLogBuffer(termLength, metaDataLength),
             };
 
-            private final UnsafeBuffer logMetaData = new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]);
+            private final UnsafeBuffer logMetaData = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
 
             public Stream<RawLogPartition> stream()
             {

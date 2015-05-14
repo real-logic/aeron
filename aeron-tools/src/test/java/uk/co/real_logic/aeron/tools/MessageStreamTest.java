@@ -30,150 +30,150 @@ public class MessageStreamTest
     private static final int MAGIC = 0x0dd01221;
     private static final int BUFFER_SIZE = 200;
 
-    private MessageStream ms;
-    private UnsafeBuffer buf = new UnsafeBuffer(new byte[BUFFER_SIZE]);
+    private MessageStream messageStream;
+    private UnsafeBuffer buffer = new UnsafeBuffer(new byte[BUFFER_SIZE]);
 
     @Test
     public void createSubscriberSide()
     {
-        ms = new MessageStream();
+        messageStream = new MessageStream();
     }
 
     @Test
     public void createSixteenByteSize() throws Exception
     {
-        ms = new MessageStream(16);
+        messageStream = new MessageStream(16);
     }
 
     @Test (expected = Exception.class)
     public void createZeroByteSize() throws Exception
     {
-        ms = new MessageStream(0);
+        messageStream = new MessageStream(0);
     }
 
     @Test (expected = Exception.class)
     public void createNegativeByteSize() throws Exception
     {
-        ms = new MessageStream(-1);
+        messageStream = new MessageStream(-1);
     }
 
     @Test (expected = Exception.class)
     public void createVerifiableSizeTooSmall() throws Exception
     {
-        ms = new MessageStream(15);
+        messageStream = new MessageStream(15);
     }
 
     @Test
     public void createNonVerifiable() throws Exception
     {
-        ms = new MessageStream(1, 1, false);
+        messageStream = new MessageStream(1, 1, false);
     }
 
     @Test
     public void createZeroSizeNonVerifiable() throws Exception
     {
-        ms = new MessageStream(0, 0, false);
+        messageStream = new MessageStream(0, 0, false);
     }
 
     @Test (expected = Exception.class)
     public void createNegativeSizeNonVerifiable() throws Exception
     {
-        ms = new MessageStream(-1, -1, false);
+        messageStream = new MessageStream(-1, -1, false);
     }
 
     @Test (expected = Exception.class)
     public void createMinGreaterThanMaxSize() throws Exception
     {
-        ms = new MessageStream(20, 16);
+        messageStream = new MessageStream(20, 16);
     }
 
     @Test
     public void createMinEqualToMaxSize() throws Exception
     {
-        ms = new MessageStream(20, 20);
+        messageStream = new MessageStream(20, 20);
     }
 
     @Test
     public void createNullInputStream() throws Exception
     {
-        ms = new MessageStream(16, null);
+        messageStream = new MessageStream(16, null);
     }
 
     @Test
     public void minVerifiableNullInputStream() throws Exception
     {
-        ms = new MessageStream(16, null);
-        assertThat(ms.getNext(buf), is(16));
+        messageStream = new MessageStream(16, null);
+        assertThat(messageStream.getNext(buffer), is(16));
     }
 
     @Test
     public void minNonVerifiableNullInputStream() throws Exception
     {
-        ms = new MessageStream(0, false, null);
-        buf.putStringUtf8(0, "Test test test!", ByteOrder.nativeOrder());
-        ms.getNext(buf); /* This shouldn't do anything to the buffer. */
-        final String result = buf.getStringUtf8(0, ByteOrder.nativeOrder());
+        messageStream = new MessageStream(0, false, null);
+        buffer.putStringUtf8(0, "Test test test!", ByteOrder.nativeOrder());
+        messageStream.getNext(buffer); /* This shouldn't do anything to the buffer. */
+        final String result = buffer.getStringUtf8(0, ByteOrder.nativeOrder());
         assertThat(result, is("Test test test!"));
     }
 
     @Test
     public void nonVerifiableNullInputStream() throws Exception
     {
-        ms = new MessageStream(16, false, null);
-        ms.getNext(buf);
+        messageStream = new MessageStream(16, false, null);
+        messageStream.getNext(buffer);
         /* It's unlikely that a verifiable message header showed up by pure chance. */
-        final int magic = buf.getInt(0);
+        final int magic = buffer.getInt(0);
         assertThat(magic, not(MAGIC));
     }
 
     @Test
     public void verifiableNullInputStream() throws Exception
     {
-        ms = new MessageStream(16, true, null);
-        ms.getNext(buf);
-        final int magic = buf.getInt(0);
+        messageStream = new MessageStream(16, true, null);
+        messageStream.getNext(buffer);
+        final int magic = buffer.getInt(0);
         assertThat(magic, is(MAGIC));
     }
 
     @Test (expected = Exception.class)
     public void verifiableOneByteTooBig() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE + 1, true, null);
-        ms.getNext(buf);
+        messageStream = new MessageStream(BUFFER_SIZE + 1, true, null);
+        messageStream.getNext(buffer);
     }
 
     @Test (expected = Exception.class)
     public void nonVerifiableOneByteTooBig() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE + 1, false, null);
-        assertThat(ms.getNext(buf), is(BUFFER_SIZE));
+        messageStream = new MessageStream(BUFFER_SIZE + 1, false, null);
+        assertThat(messageStream.getNext(buffer), is(BUFFER_SIZE));
     }
 
     @Test
     public void verifiableExactSize() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE, true, null);
-        assertThat(ms.getNext(buf), is(BUFFER_SIZE));
+        messageStream = new MessageStream(BUFFER_SIZE, true, null);
+        assertThat(messageStream.getNext(buffer), is(BUFFER_SIZE));
     }
 
     @Test
     public void nonVerifiableExactSize() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE, false, null);
-        assertThat(ms.getNext(buf), is(BUFFER_SIZE));
+        messageStream = new MessageStream(BUFFER_SIZE, false, null);
+        assertThat(messageStream.getNext(buffer), is(BUFFER_SIZE));
     }
 
     @Test
     public void getZeroSize() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE, false, null);
-        assertThat(ms.getNext(buf, 0), is(0));
+        messageStream = new MessageStream(BUFFER_SIZE, false, null);
+        assertThat(messageStream.getNext(buffer, 0), is(0));
     }
 
     @Test (expected = Exception.class)
     public void getNegativeSize() throws Exception
     {
-        ms = new MessageStream(BUFFER_SIZE, false, null);
-        ms.getNext(buf, -1);
+        messageStream = new MessageStream(BUFFER_SIZE, false, null);
+        messageStream.getNext(buffer, -1);
     }
 }

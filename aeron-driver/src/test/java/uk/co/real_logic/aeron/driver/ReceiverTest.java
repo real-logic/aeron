@@ -80,9 +80,9 @@ public class ReceiverTest
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
     private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());
-    private final ByteBuffer dataFrameBuffer = ByteBuffer.allocate(2 * 1024);
+    private final ByteBuffer dataFrameBuffer = ByteBuffer.allocateDirect(2 * 1024);
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
-    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocate(SetupFlyweight.HEADER_LENGTH);
+    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final UnsafeBuffer setupBuffer = new UnsafeBuffer(setupFrameBuffer);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();

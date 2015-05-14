@@ -257,15 +257,15 @@ public class UdpChannelTest
     }
 
     @Test
-    public void shouldHandleCanonicalFormWithExampleCom() throws Exception
+    public void shouldHandleCanonicalFormWithNsLookup() throws Exception
     {
-        final String exampleDotCom = resolveToHexAddress("example.com");
+        final String localhostIpAsHex = resolveToHexAddress("localhost");
 
-        final UdpChannel udpChannelExampleCom0 = UdpChannel.parse("aeron:udp?remote=example.com:40456");
-        assertThat(udpChannelExampleCom0.canonicalForm(), is("UDP-00000000-0-" + exampleDotCom + "-40456"));
+        final UdpChannel udpChannelExampleCom0 = UdpChannel.parse("aeron:udp?remote=localhost:40456");
+        assertThat(udpChannelExampleCom0.canonicalForm(), is("UDP-00000000-0-" + localhostIpAsHex + "-40456"));
 
-        final UdpChannel udpChannelExampleCom1 = UdpChannel.parse("udp://example.com:40456");
-        assertThat(udpChannelExampleCom1.canonicalForm(), is("UDP-00000000-0-" + exampleDotCom + "-40456"));
+        final UdpChannel udpChannelExampleCom1 = UdpChannel.parse("udp://localhost:40456");
+        assertThat(udpChannelExampleCom1.canonicalForm(), is("UDP-00000000-0-" + localhostIpAsHex + "-40456"));
     }
 
     @Test

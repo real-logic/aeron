@@ -38,7 +38,6 @@ public class SocketAddressUtilTest
     public void shouldParseHostAddressAndPort() throws Exception
     {
         assertCorrectParse("localhost", 55);
-        assertCorrectParse("example.com", 55);
     }
 
     @Test(expected = IllegalArgumentException.class)

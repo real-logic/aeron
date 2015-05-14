@@ -80,7 +80,7 @@ public class LogBufferHelper
     private static RawLogPartition newTestLogBuffer(final int termBufferLength, final int metaDataBufferLength)
     {
         return new RawLogPartition(
-            new UnsafeBuffer(ByteBuffer.allocate(termBufferLength)),
-            new UnsafeBuffer(ByteBuffer.allocate(metaDataBufferLength)));
+            new UnsafeBuffer(ByteBuffer.allocateDirect(termBufferLength)),
+            new UnsafeBuffer(ByteBuffer.allocateDirect(metaDataBufferLength)));
     }
 }

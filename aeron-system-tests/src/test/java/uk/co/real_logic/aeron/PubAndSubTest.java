@@ -22,6 +22,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
@@ -51,6 +52,7 @@ public class PubAndSubTest
 
     private static final int STREAM_ID = 1;
     private static final int SESSION_ID = 2;
+    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private final MediaDriver.Context context = new MediaDriver.Context();
     private final Aeron.Context publishingAeronContext = new Aeron.Context();
@@ -68,6 +70,7 @@ public class PubAndSubTest
     private void launch(final String channel) throws Exception
     {
         context.dirsDeleteOnExit(true);
+        context.threadingMode(THREADING_MODE);
 
         driver = MediaDriver.launch(context);
         publishingClient = Aeron.connect(publishingAeronContext);

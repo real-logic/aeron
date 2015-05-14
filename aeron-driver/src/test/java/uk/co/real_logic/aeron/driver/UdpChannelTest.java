@@ -283,7 +283,7 @@ public class UdpChannelTest
     {
         final UdpChannel udpChannel = UdpChannel.parse("udp://localhost@224.0.1.1:40456");
         final UdpChannel udpChannelLocal = UdpChannel.parse("udp://127.0.0.1@224.0.1.1:40456");
-        final UdpChannel udpChannelAllSystems = UdpChannel.parse("udp://localhost@all-systems.mcast.net:40456");
+        final UdpChannel udpChannelAllSystems = UdpChannel.parse("udp://localhost@224.0.0.1:40456");
         final UdpChannel udpChannelDefault = UdpChannel.parse("udp://224.0.1.1:40456");
 
         final UdpChannel udpChannelSubnet = UdpChannel.parse("udp://localhost@224.0.1.1:40456?subnetPrefix=24");
@@ -304,7 +304,7 @@ public class UdpChannelTest
         final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|group=224.0.1.1:40456");
         final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?interface=127.0.0.1|group=224.0.1.1:40456");
         final UdpChannel udpChannelAllSystems =
-            UdpChannel.parse("aeron:udp?interface=localhost|group=all-systems.mcast.net:40456");
+            UdpChannel.parse("aeron:udp?interface=localhost|group=224.0.0.1:40456");
         final UdpChannel udpChannelDefault = UdpChannel.parse("aeron:udp?group=224.0.1.1:40456");
         final UdpChannel udpChannelSubnet = UdpChannel.parse("aeron:udp?interface=localhost/24|group=224.0.1.1:40456");
         final UdpChannel udpChannelSubnetLocal = UdpChannel.parse("aeron:udp?interface=127.0.0.0/24|group=224.0.1.1:40456");

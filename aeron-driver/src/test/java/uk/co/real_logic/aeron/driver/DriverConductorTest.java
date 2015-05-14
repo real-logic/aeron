@@ -65,9 +65,8 @@ public class DriverConductorTest
     private static final long CLIENT_ID = 1433;
     private static final int BUFFER_LENGTH = 1024 * 1024;
 
-    private final ByteBuffer toDriverBuffer = ByteBuffer.allocate(Configuration.CONDUCTOR_BUFFER_LENGTH);
-
-    private final ByteBuffer toEventBuffer = ByteBuffer.allocate(
+    private final ByteBuffer toDriverBuffer = ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH);
+    private final ByteBuffer toEventBuffer = ByteBuffer.allocateDirect(
         EventConfiguration.BUFFER_LENGTH_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final TransportPoller transportPoller = mock(TransportPoller.class);
@@ -81,7 +80,7 @@ public class DriverConductorTest
     private final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
     private final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
-    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(ByteBuffer.allocate(256));
+    private final UnsafeBuffer writeBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
 
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
 
@@ -112,8 +111,9 @@ public class DriverConductorTest
 
         currentTime = 0;
 
-        final UnsafeBuffer counterBuffer = new UnsafeBuffer(new byte[BUFFER_LENGTH]);
-        final CountersManager countersManager = new CountersManager(new UnsafeBuffer(new byte[BUFFER_LENGTH]), counterBuffer);
+        final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
+        final CountersManager countersManager = new CountersManager(
+            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH)), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .receiverNioSelector(transportPoller)

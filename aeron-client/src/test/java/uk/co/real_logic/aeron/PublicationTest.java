@@ -42,11 +42,11 @@ public class PublicationTest
     private static final int CORRELATION_ID = 2000;
     private static final int SEND_BUFFER_CAPACITY = 1024;
 
-    private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
+    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
     private final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
 
-    private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(new byte[LOG_META_DATA_LENGTH]));
+    private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH)));
 
     private Publication publication;
     private ReadOnlyPosition limit;

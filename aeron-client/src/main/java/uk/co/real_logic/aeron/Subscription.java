@@ -95,12 +95,13 @@ public class Subscription implements AutoCloseable
     {
         ensureOpen();
 
-        if (connections.size() >= ++roundRobinIndex)
+        int index = ++roundRobinIndex;
+        if (index >= connections.size())
         {
-            roundRobinIndex = 0;
+            roundRobinIndex = index = 0;
         }
 
-        return connections.doLimitedAction(roundRobinIndex, fragmentCountLimit, Connection::poll);
+        return connections.doLimitedAction(index, fragmentCountLimit, Connection::poll);
     }
 
     /**

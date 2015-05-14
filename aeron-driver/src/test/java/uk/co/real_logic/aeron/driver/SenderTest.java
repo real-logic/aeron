@@ -99,7 +99,7 @@ public class SenderTest
             final ByteBuffer buffer = (ByteBuffer)args[0];
 
             final int length = buffer.limit() - buffer.position();
-            receivedFrames.add(ByteBuffer.allocate(length).put(buffer));
+            receivedFrames.add(ByteBuffer.allocateDirect(length).put(buffer));
 
             // we don't pass on the args, so don't reset buffer.position() back
             return length;
@@ -205,7 +205,7 @@ public class SenderTest
         publication.senderPositionLimit(
             flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         termAppenders[0].append(buffer, 0, PAYLOAD.length);
@@ -231,7 +231,7 @@ public class SenderTest
         publication.senderPositionLimit(
             flowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         termAppenders[0].append(buffer, 0, PAYLOAD.length);
@@ -269,7 +269,7 @@ public class SenderTest
         publication.senderPositionLimit(
             flowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         termAppenders[0].append(buffer, 0, PAYLOAD.length);
@@ -303,7 +303,7 @@ public class SenderTest
     @Test
     public void shouldNotSendUntilStatusMessageReceived() throws Exception
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         termAppenders[0].append(buffer, 0, PAYLOAD.length);
 
@@ -331,7 +331,7 @@ public class SenderTest
     @Test
     public void shouldNotBeAbleToSendAfterUsingUpYourWindow() throws Exception
     {
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
         termAppenders[0].append(buffer, 0, PAYLOAD.length);
         publication.senderPositionLimit(
@@ -364,7 +364,7 @@ public class SenderTest
         publication.senderPositionLimit(
             flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         termAppenders[0].append(buffer, 0, PAYLOAD.length);
@@ -393,7 +393,7 @@ public class SenderTest
         publication.senderPositionLimit(
             flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
 
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocate(PAYLOAD.length));
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
         buffer.putBytes(0, PAYLOAD);
 
         termAppenders[0].append(buffer, 0, PAYLOAD.length);

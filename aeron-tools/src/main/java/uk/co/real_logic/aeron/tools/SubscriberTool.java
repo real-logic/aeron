@@ -44,6 +44,8 @@ import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import static java.nio.ByteBuffer.allocateDirect;
+
 
 public class SubscriberTool
     implements RateReporter.Stats, SeedCallback, RateReporter.Callback
@@ -121,9 +123,9 @@ public class SubscriberTool
         /* Wait for threads to exit. */
         try
         {
-            for (int i = 0; i < subThreads.length; i++)
+            for (final Thread subThread : subThreads)
             {
-                subThreads[i].join();
+                subThread.join();
             }
             rateReporter.close();
         }
@@ -133,7 +135,7 @@ public class SubscriberTool
         }
 
         /* Close the driver if we had opened it. */
-        if (subTool.options.useEmbeddedDriver())
+        if (null != driver)
         {
             driver.close();
         }
@@ -179,9 +181,9 @@ public class SubscriberTool
     public long verifiableMessages()
     {
         long totalMessages = 0;
-        for (int i = 0; i < subscribers.length; i++)
+        for (final SubscriberThread subscriber : subscribers)
         {
-            totalMessages += subscribers[i].verifiableMessagesReceived();
+            totalMessages += subscriber.verifiableMessagesReceived();
         }
 
         return totalMessages;
@@ -195,9 +197,9 @@ public class SubscriberTool
     public long bytes()
     {
         long totalBytes = 0;
-        for (int i = 0; i < subscribers.length; i++)
+        for (final SubscriberThread subscriber : subscribers)
         {
-            totalBytes += subscribers[i].bytesReceived();
+            totalBytes += subscriber.bytesReceived();
         }
 
         return totalBytes;
@@ -211,9 +213,9 @@ public class SubscriberTool
     public long nonVerifiableMessages()
     {
         long totalMessages = 0;
-        for (int i = 0; i < subscribers.length; i++)
+        for (final SubscriberThread subscriber : subscribers)
         {
-            totalMessages += subscribers[i].nonVerifiableMessagesReceived();
+            totalMessages += subscriber.nonVerifiableMessagesReceived();
         }
 
         return totalMessages;
@@ -243,7 +245,7 @@ public class SubscriberTool
         private byte[] bytesToWrite = new byte[1];
         private final Aeron.Context ctx;
         private final Aeron aeron;
-        private final UnsafeBuffer controlBuffer = new UnsafeBuffer(new byte[4 + 4 + CHANNEL_NAME_MAX_LEN + 4 + 4]);
+        private final UnsafeBuffer controlBuffer = new UnsafeBuffer(allocateDirect(4 + 4 + CHANNEL_NAME_MAX_LEN + 4 + 4));
         private final RateController rateController;
 
         /* All subscriptions we're interested in. */
@@ -406,14 +408,15 @@ public class SubscriberTool
             /* Didn't find it, add it at the end.  Need to find it in the overall
              * list of subscriptions first. */
             Subscription sub = null;
-            for (int i = 0; i < subscriptions.length; i++)
+            for (final Subscription subscription : subscriptions)
             {
-                if ((subscriptions[i].streamId() == streamId)
-                    && (subscriptions[i].channel().equals(channel)))
+                if ((subscription.streamId() == streamId)
+                    && (subscription.channel().equals(channel)))
                 {
-                    sub = subscriptions[i];
+                    sub = subscription;
                 }
             }
+
             if (sub == null)
             {
                 throw new RuntimeException("Tried to activate a subscription we weren't supposed to be subscribed to.");
@@ -659,7 +662,7 @@ public class SubscriberTool
                  * there's anything there. */
                 while (0 != controlSubscription.poll(1))
                 {
-                    /* Control messages are handled in onControl callback. */
+                    Thread.yield();
                 }
 
                 for (int i = 0; i < activeSubscriptionsLength; i++)
@@ -670,9 +673,9 @@ public class SubscriberTool
             }
 
             /* Shut down... */
-            for (int i = 0; i < subscriptions.length; i++)
+            for (final Subscription subscription : subscriptions)
             {
-                subscriptions[i].close();
+                subscription.close();
             }
             controlSubscription.close();
             controlPublication.close();
@@ -695,7 +698,7 @@ public class SubscriberTool
                 controlBuffer.putInt(12 + channelBytes.length, sessionId);
                 while (controlPublication.offer(controlBuffer, 0, 16 + channelBytes.length) < 0L)
                 {
-
+                    Thread.yield();
                 }
             }
         }

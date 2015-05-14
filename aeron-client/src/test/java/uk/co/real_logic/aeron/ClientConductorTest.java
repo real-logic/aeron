@@ -72,14 +72,14 @@ public class ClientConductorTest
     private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final ErrorFlyweight errorHeader = new ErrorFlyweight();
 
-    private final ByteBuffer sendBuffer = ByteBuffer.allocate(SEND_BUFFER_CAPACITY);
+    private final ByteBuffer sendBuffer = ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY);
     private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(sendBuffer);
 
     private final UnsafeBuffer toClientBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BROADCAST_BUFFER_LENGTH));
     private final CopyBroadcastReceiver toClientReceiver = new CopyBroadcastReceiver(new BroadcastReceiver(toClientBuffer));
     private final BroadcastTransmitter toClientTransmitter = new BroadcastTransmitter(toClientBuffer);
 
-    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(new byte[COUNTER_BUFFER_LENGTH]);
+    private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(COUNTER_BUFFER_LENGTH));
 
     private final TimerWheel timerWheel = mock(TimerWheel.class);
     private final Consumer<Throwable> mockClientErrorHandler = Throwable::printStackTrace;

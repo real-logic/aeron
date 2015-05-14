@@ -253,11 +253,11 @@ public class SubscriberTool
         int activeSubscriptionsLength = 0;
 
         private final Publication controlPublication;
-        private final Subscription controlSubscription;
+        private Subscription controlSubscription;
         /* Doesn't use TLRandom, since this really does need to be random and shouldn't
          * be affected by manually setting the seed. */
         private final int controlSessionId = ThreadLocalRandom.current().nextInt();
-        private final ThreadLocal<String> controlChannel;
+        private String controlChannel;
 
         /* channel -> stream ID -> session ID */
         private final HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>> messageStreams = new HashMap<>();
@@ -295,32 +295,27 @@ public class SubscriberTool
             aeron = Aeron.connect(ctx);
 
             /* Create the control publication and subscription. */
-            Subscription tempSubscription = null;
-            String tempChannel = null;
             final MessageStreamHandler controlHandler = new MessageStreamHandler("control_channel", CONTROL_STREAMID, null);
-
-            /* Try 1000 ports and if we don't get one, just exit */
             for (int i = 0; i < 1000; i++)
             {
-                tempChannel = CONTROL_CHANNEL + Integer.toString(CONTROL_PORT_START + i);
-                controlHandler.channel(tempChannel);
+                /* Try 1000 ports and if we don't get one, just exit */
+                controlChannel = CONTROL_CHANNEL + Integer.toString(CONTROL_PORT_START + i);
+                controlHandler.channel(controlChannel);
                 try
                 {
-                    tempSubscription = aeron.addSubscription(tempChannel, CONTROL_STREAMID, controlHandler::onControl);
+                    controlSubscription = aeron.addSubscription(controlChannel, CONTROL_STREAMID, controlHandler::onControl);
+                    break;
                 }
                 catch (RegistrationException ignore)
                 {
                 }
             }
-            if (tempSubscription == null)
+            if (controlSubscription == null)
             {
                 LOG.severe("Couldn't create control channel.");
                 System.exit(1);
             }
-            final String channelValue = tempChannel;
-            controlChannel = new ThreadLocal<>().withInitial(() -> channelValue);
-            controlSubscription = tempSubscription;
-            controlPublication = aeron.addPublication(controlChannel.get(), CONTROL_STREAMID, controlSessionId);
+            controlPublication = aeron.addPublication(controlChannel, CONTROL_STREAMID, controlSessionId);
 
             /* Create the subscriptionsList and populate it with just the channels this thread is supposed
              * to subscribe to. */
@@ -689,7 +684,7 @@ public class SubscriberTool
         {
             /* Don't deliver events for the control channel itself. */
             if ((streamId != CONTROL_STREAMID)
-                || (!channel.equals(controlChannel.get())))
+                || (!channel.equals(controlChannel)))
             {
                 /* Enqueue the control message. */
                 final byte[] channelBytes = channel.getBytes();

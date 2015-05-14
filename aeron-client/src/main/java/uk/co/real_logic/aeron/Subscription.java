@@ -95,7 +95,7 @@ public class Subscription implements AutoCloseable
     {
         ensureOpen();
 
-        if (connections.size() >= ++roundRobinIndex)
+        if (++roundRobinIndex >= connections.size())
         {
             roundRobinIndex = 0;
         }

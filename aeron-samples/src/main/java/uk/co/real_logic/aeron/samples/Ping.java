@@ -138,6 +138,8 @@ public class Ping
     private static void newPongConnectionHandler(
         final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
     {
+        System.out.format("new connection: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
+
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {
             PONG_CONNECTION_LATCH.countDown();

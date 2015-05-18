@@ -48,6 +48,18 @@ class ActiveSubscriptions
         }
     }
 
+    public synchronized void forEach(final int streamId, final Consumer<Subscription> handler)
+    {
+        for (final Int2ObjectHashMap<List<Subscription>> idMap : subscriptionByChannelMap.values())
+        {
+            final List<Subscription> subscriptions = idMap.get(streamId);
+            if (null != subscriptions)
+            {
+                subscriptions.forEach(handler);
+            }
+        }
+    }
+
     public synchronized void add(final Subscription subscription)
     {
         final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap =

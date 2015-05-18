@@ -71,12 +71,11 @@ class DriverListenerAdapter implements MessageHandler
                     final int sessionId = publicationReady.sessionId();
                     final int streamId = publicationReady.streamId();
                     final int publicationLimitCounterId = publicationReady.publicationLimitCounterId();
-                    final String channel = publicationReady.channel();
                     final String logFileName = publicationReady.logFileName();
 
 
                     listener.onNewPublication(
-                        channel, streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
+                        streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
                 }
                 break;
             }
@@ -88,12 +87,11 @@ class DriverListenerAdapter implements MessageHandler
                 final int sessionId = connectionReady.sessionId();
                 final int streamId = connectionReady.streamId();
                 final long joiningPosition = connectionReady.joiningPosition();
-                final String channel = connectionReady.channel();
                 final String logFileName = connectionReady.logFileName();
                 final long correlationId = connectionReady.correlationId();
 
                 listener.onNewConnection(
-                    channel, streamId, sessionId, joiningPosition, logFileName, connectionReady, correlationId);
+                    streamId, sessionId, joiningPosition, logFileName, connectionReady, correlationId);
                 break;
             }
 
@@ -108,7 +106,6 @@ class DriverListenerAdapter implements MessageHandler
             case ON_INACTIVE_CONNECTION:
                 connectionMessage.wrap(buffer, index);
                 listener.onInactiveConnection(
-                    connectionMessage.channel(),
                     connectionMessage.streamId(),
                     connectionMessage.sessionId(),
                     connectionMessage.position(),

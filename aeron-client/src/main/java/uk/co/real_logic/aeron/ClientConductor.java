@@ -65,6 +65,7 @@ class ClientConductor implements Agent, DriverListener
     private boolean operationSucceeded = false; // Guarded by this
     private volatile boolean driverActive = true;
     private Publication addedPublication; // Guarded by this
+    private String addedChannel; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(
@@ -116,6 +117,7 @@ class ClientConductor implements Agent, DriverListener
         Publication publication = publicationMap.get(channel, sessionId, streamId);
         if (publication == null)
         {
+            addedChannel = channel;
             activeCorrelationId = driverProxy.addPublication(channel, streamId, sessionId);
 
             final long startTime = System.currentTimeMillis();
@@ -127,6 +129,7 @@ class ClientConductor implements Agent, DriverListener
             publication = addedPublication;
             publicationMap.put(channel, sessionId, streamId, publication);
             addedPublication = null;
+            addedChannel = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
         else
@@ -175,7 +178,6 @@ class ClientConductor implements Agent, DriverListener
     }
 
     public void onNewPublication(
-        final String channel,
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
@@ -197,13 +199,12 @@ class ClientConductor implements Agent, DriverListener
         final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
 
         addedPublication = new Publication(
-            this, channel, streamId, sessionId, appenders, publicationLimit, logBuffers, logMetaDataBuffer, correlationId);
+            this, addedChannel, streamId, sessionId, appenders, publicationLimit, logBuffers, logMetaDataBuffer, correlationId);
 
         correlationSignal.signal();
     }
 
     public void onNewConnection(
-        final String channel,
         final int streamId,
         final int sessionId,
         final long joiningPosition,
@@ -212,7 +213,6 @@ class ClientConductor implements Agent, DriverListener
         final long correlationId)
     {
         activeSubscriptions.forEach(
-            channel,
             streamId,
             (subscription) ->
             {
@@ -241,7 +241,8 @@ class ClientConductor implements Agent, DriverListener
                             if (null != newConnectionHandler)
                             {
                                 final String info = msg.sourceInfo();
-                                newConnectionHandler.onNewConnection(channel, streamId, sessionId, joiningPosition, info);
+                                newConnectionHandler.onNewConnection(
+                                    subscription.channel(), streamId, sessionId, joiningPosition, info);
                             }
 
                             break;
@@ -264,10 +265,12 @@ class ClientConductor implements Agent, DriverListener
     }
 
     public void onInactiveConnection(
-        final String channel, final int streamId, final int sessionId, final long position, final long correlationId)
+        final int streamId,
+        final int sessionId,
+        final long position,
+        final long correlationId)
     {
         activeSubscriptions.forEach(
-            channel,
             streamId,
             (subscription) ->
             {
@@ -275,7 +278,7 @@ class ClientConductor implements Agent, DriverListener
                 {
                     if (null != inactiveConnectionHandler)
                     {
-                        inactiveConnectionHandler.onInactiveConnection(channel, streamId, sessionId, position);
+                        inactiveConnectionHandler.onInactiveConnection(subscription.channel(), streamId, sessionId, position);
                     }
                 }
             });

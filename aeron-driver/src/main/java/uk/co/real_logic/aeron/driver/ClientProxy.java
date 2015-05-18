@@ -98,7 +98,6 @@ public class ClientProxy
             .streamId(streamId)
             .joiningPosition(joiningPosition)
             .correlationId(correlationId)
-            .channel(channel)
             .logFileName(rawLog.logFileName())
             .sourceInfo(sourceInfo);
 
@@ -116,7 +115,6 @@ public class ClientProxy
     }
 
     public void onPublicationReady(
-        final String channel,
         final int streamId,
         final int sessionId,
         final RawLog rawLog,
@@ -130,7 +128,6 @@ public class ClientProxy
             .correlationId(correlationId)
             .publicationLimitCounterId(positionCounterId);
 
-        publicationReady.channel(channel);
         publicationReady.logFileName(rawLog.logFileName());
 
         logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());

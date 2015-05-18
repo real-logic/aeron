@@ -331,7 +331,6 @@ public class ClientConductorTest
                         .sessionId(sessionId)
                         .correlationId(correlationId);
 
-        publicationReady.channel(CHANNEL);
         publicationReady.logFileName(sessionId + "-log");
 
         toClientTransmitter.transmit(ON_PUBLICATION_READY, atomicSendBuffer, 0, publicationReady.length());
@@ -343,7 +342,6 @@ public class ClientConductorTest
                        .sessionId(sessionId)
                        .correlationId(correlationId);
 
-        connectionReady.channel(CHANNEL);
         connectionReady.logFileName(sessionId + "-log");
         connectionReady.sourceInfo(SOURCE_NAME);
 

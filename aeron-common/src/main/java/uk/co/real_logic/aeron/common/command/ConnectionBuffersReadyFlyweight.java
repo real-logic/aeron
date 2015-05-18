@@ -43,11 +43,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                   Subscriber Position Count                   |
  * +---------------------------------------------------------------+
- * |                         Channel Length                        |
- * +---------------------------------------------------------------+
- * |                            Channel                          ...
- * ...                                                             |
- * +---------------------------------------------------------------+
  * |                         Log File Length                       |
  * +---------------------------------------------------------------+
  * |                          Log File Name                      ...
@@ -78,7 +73,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
     private static final int SESSION_ID_OFFSET = JOINING_POSITION_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int SUBSCRIBER_POSITION_COUNT_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
-    private static final int CHANNEL_FIELD_OFFSET = SUBSCRIBER_POSITION_COUNT_OFFSET + SIZE_OF_INT;
+    private static final int LOGFILE_FIELD_OFFSET = SUBSCRIBER_POSITION_COUNT_OFFSET + SIZE_OF_INT;
 
     private static final int SUBSCRIBER_POSITION_FIELD_SIZE = SIZE_OF_LONG + SIZE_OF_INT;
 
@@ -196,43 +191,15 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
         return this;
     }
 
-    /**
-     * return channel field
-     *
-     * @return channel field
-     */
-    public String channel()
-    {
-        return buffer().getStringUtf8(offset() + CHANNEL_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * set channel field
-     *
-     * @param channel field value
-     * @return flyweight
-     */
-    public ConnectionBuffersReadyFlyweight channel(final String channel)
-    {
-        buffer().putStringUtf8(offset() + CHANNEL_FIELD_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
-        return this;
-    }
-
     public String logFileName()
     {
-        return buffer().getStringUtf8(logFileNameOffset(), LITTLE_ENDIAN);
+        return buffer().getStringUtf8(offset() + LOGFILE_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     public ConnectionBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer().putStringUtf8(logFileNameOffset(), logFileName, ByteOrder.LITTLE_ENDIAN);
+        buffer().putStringUtf8(offset() + LOGFILE_FIELD_OFFSET, logFileName, ByteOrder.LITTLE_ENDIAN);
         return this;
-    }
-
-    private int logFileNameOffset()
-    {
-        final int channelStart = offset() + CHANNEL_FIELD_OFFSET;
-        return buffer().getInt(channelStart) + channelStart + SIZE_OF_INT;
     }
 
     public String sourceInfo()
@@ -248,7 +215,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
 
     private int sourceInfoOffset()
     {
-        final int logFileNameOffset = logFileNameOffset();
+        final int logFileNameOffset = offset() + LOGFILE_FIELD_OFFSET;
         return buffer().getInt(logFileNameOffset) + logFileNameOffset + SIZE_OF_INT;
     }
 

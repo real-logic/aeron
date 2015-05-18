@@ -55,6 +55,8 @@ public class EventCodec
         ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
     private static final ThreadLocal<ConnectionMessageFlyweight> CONNECTION_MSG =
         ThreadLocal.withInitial(ConnectionMessageFlyweight::new);
+    private static final ThreadLocal<RemoveMessageFlyweight> REMOVE_MSG =
+        ThreadLocal.withInitial(RemoveMessageFlyweight::new);
 
     private static final int LOG_HEADER_LENGTH = 16;
     private static final int SOCKET_ADDRESS_MAX_LENGTH = 24;
@@ -211,17 +213,22 @@ public class EventCodec
         switch (code)
         {
             case CMD_IN_ADD_PUBLICATION:
-            case CMD_IN_REMOVE_PUBLICATION:
                 final PublicationMessageFlyweight pubCommand = PUB_MESSAGE.get();
                 pubCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(pubCommand));
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
-            case CMD_IN_REMOVE_SUBSCRIPTION:
                 final SubscriptionMessageFlyweight subCommand = SUB_MESSAGE.get();
                 subCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(subCommand));
+                break;
+
+            case CMD_IN_REMOVE_PUBLICATION:
+            case CMD_IN_REMOVE_SUBSCRIPTION:
+                final RemoveMessageFlyweight removeCmd = REMOVE_MSG.get();
+                removeCmd.wrap(buffer, offset + relativeOffset);
+                builder.append(dissect(removeCmd));
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
@@ -504,8 +511,7 @@ public class EventCodec
     private static String dissect(final PublicationBuffersReadyFlyweight command)
     {
         return String.format(
-            "%s %x:%x:%x [%x]\n    %s",
-            command.channel(),
+            "%x:%x %x [%x]\n    %s",
             command.sessionId(),
             command.streamId(),
             command.publicationLimitCounterId(),
@@ -515,20 +521,34 @@ public class EventCodec
 
     private static String dissect(final ConnectionBuffersReadyFlyweight command)
     {
+        final StringBuilder positions = new StringBuilder();
+
+        for (int i = 0; i < command.subscriberPositionCount(); i++)
+        {
+            positions.append(
+                String.format(
+                    "[%d:%x:%x]",
+                    i,
+                    command.subscriberPositionId(i),
+                    command.positionIndicatorRegistrationId(i)));
+        }
+
         return String.format(
-            "%s %x:%x %x %s [%x]\n    %s",
-             command.channel(),
-             command.sessionId(),
-             command.streamId(),
-             command.subscriberPositionCount(),
-             command.sourceInfo(),
-             command.correlationId(),
-             command.logFileName());
+            "%x:%x %s \"%s\" [%x]\n    %s",
+            command.sessionId(),
+            command.streamId(),
+            positions.toString(),
+            command.sourceInfo(),
+            command.correlationId(),
+            command.logFileName());
     }
 
     private static String dissect(final CorrelatedMessageFlyweight command)
     {
-        return String.format("[%x:%x]", command.clientId(), command.correlationId());
+        return String.format(
+            "[%x:%x]",
+            command.clientId(),
+            command.correlationId());
     }
 
     private static String dissect(final ConnectionMessageFlyweight command)
@@ -538,6 +558,15 @@ public class EventCodec
             command.channel(),
             command.sessionId(),
             command.streamId(),
+            command.correlationId());
+    }
+
+    private static String dissect(final RemoveMessageFlyweight command)
+    {
+        return String.format(
+            "%x [%x:%x]",
+            command.registrationId(),
+            command.clientId(),
             command.correlationId());
     }
 }

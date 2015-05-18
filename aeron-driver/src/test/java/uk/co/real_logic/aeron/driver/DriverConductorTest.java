@@ -162,8 +162,7 @@ public class DriverConductorTest
         verifySenderNotifiedOfNewPublication();
 
         verify(mockClientProxy).onPublicationReady(
-            eq(CHANNEL_URI + 4000), eq(2), anyInt(),
-            any(), anyLong(), anyInt());
+            eq(2), anyInt(), any(), anyLong(), anyInt());
     }
 
     @Test

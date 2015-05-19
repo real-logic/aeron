@@ -35,6 +35,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
+import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
@@ -62,8 +63,10 @@ public class SubscriberTool
     private final PubSubOptions options = new PubSubOptions();
     private SubscriberThread subscribers[];
 
-    private static final String CONTROL_CHANNEL = "udp://localhost:62777";
+    private static final String CONTROL_CHANNEL = "udp://localhost:";
+    private static final int CONTROL_PORT_START = 62777;
     private static final int CONTROL_STREAMID = 9999;
+
     private static final int CONTROL_ACTION_NEW_CONNECTION = 0;
     private static final int CONTROL_ACTION_INACTIVE_CONNECTION = 1;
 
@@ -252,10 +255,11 @@ public class SubscriberTool
         int activeSubscriptionsLength = 0;
 
         private final Publication controlPublication;
-        private final Subscription controlSubscription;
+        private Subscription controlSubscription;
         /* Doesn't use TLRandom, since this really does need to be random and shouldn't
          * be affected by manually setting the seed. */
         private final int controlSessionId = ThreadLocalRandom.current().nextInt();
+        private String controlChannel;
 
         /* channel -> stream ID -> session ID */
         private final HashMap<String, Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>>> messageStreams = new HashMap<>();
@@ -293,9 +297,27 @@ public class SubscriberTool
             aeron = Aeron.connect(ctx);
 
             /* Create the control publication and subscription. */
-            controlPublication = aeron.addPublication(CONTROL_CHANNEL, CONTROL_STREAMID, controlSessionId);
-            controlSubscription = aeron.addSubscription(CONTROL_CHANNEL, CONTROL_STREAMID,
-                new MessageStreamHandler(CONTROL_CHANNEL, CONTROL_STREAMID, null)::onControl);
+            final MessageStreamHandler controlHandler = new MessageStreamHandler("control_channel", CONTROL_STREAMID, null);
+            for (int i = 0; i < 1000; i++)
+            {
+                /* Try 1000 ports and if we don't get one, just exit */
+                controlChannel = CONTROL_CHANNEL + Integer.toString(CONTROL_PORT_START + i);
+                controlHandler.channel(controlChannel);
+                try
+                {
+                    controlSubscription = aeron.addSubscription(controlChannel, CONTROL_STREAMID, controlHandler::onControl);
+                    break;
+                }
+                catch (RegistrationException ignore)
+                {
+                }
+            }
+            if (controlSubscription == null)
+            {
+                LOG.severe("Couldn't create control channel.");
+                System.exit(1);
+            }
+            controlPublication = aeron.addPublication(controlChannel, CONTROL_STREAMID, controlSessionId);
 
             /* Create the subscriptionsList and populate it with just the channels this thread is supposed
              * to subscribe to. */
@@ -429,7 +451,7 @@ public class SubscriberTool
          */
         public class MessageStreamHandler
         {
-            private final String channel;
+            private String channel;
             private final int streamId;
             private MessageStream cachedMessageStream;
             private int lastSessionId = -1;
@@ -444,6 +466,11 @@ public class SubscriberTool
                 this.channel = channel;
                 this.streamId = streamId;
                 this.sessionIdMap = sessionIdMap;
+            }
+
+            public void channel(String channel)
+            {
+                this.channel = channel;
             }
 
             public void onControl(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -660,7 +687,7 @@ public class SubscriberTool
         {
             /* Don't deliver events for the control channel itself. */
             if ((streamId != CONTROL_STREAMID)
-                || (!channel.equals(CONTROL_CHANNEL)))
+                || (!channel.equals(controlChannel)))
             {
                 /* Enqueue the control message. */
                 final byte[] channelBytes = channel.getBytes();

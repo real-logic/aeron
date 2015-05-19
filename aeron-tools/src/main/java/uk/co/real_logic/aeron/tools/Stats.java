@@ -67,11 +67,11 @@ public class Stats
     private final AtomicBoolean running = null;
     private StatsOutput output = null;
 
-    private static final int LABEL_SIZE = 1024;
+    private static final int LABEL_SIZE = CountersManager.LABEL_LENGTH;
     private static final int NUM_BASE_STATS = 22;
-    private static final int UNREGISTERED_LABEL_SIZE = -1;
+    private static final int UNREGISTERED_LABEL_SIZE = CountersManager.UNREGISTERED_LABEL_LENGTH;
 
-    public Stats(final StatsOutput output, final String dirName) throws Exception
+    public Stats(final StatsOutput output) throws Exception
     {
         if (output == null)
         {
@@ -82,15 +82,7 @@ public class Stats
             this.output = output;
         }
 
-        if (dirName == null)
-        {
-            cncFile = CommonContext.newDefaultCncFile();
-        }
-        else
-        {
-            context = new CommonContext().dirName(dirName).conclude();
-            cncFile = context.cncFile();
-        }
+        cncFile = CommonContext.newDefaultCncFile();
 
         cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
         metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
@@ -145,6 +137,7 @@ public class Stats
 
             while ((size = isValid(idx)) != 0)
             {
+                System.out.println(idx);
                 if (size != UNREGISTERED_LABEL_SIZE)
                 {
                     tmpKeys.add(getLabel(idx));

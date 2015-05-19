@@ -95,8 +95,8 @@ public class AeronPong
     {
         options = new Options();
         options.addOption("c", "claim", false, "Use Try/Claim");
-        options.addOption("", "pongChannel", false, "Pong channel");
-        options.addOption("", "pingChannel", false, "Ping channel");
+        options.addOption("", "pongChannel", true, "Pong channel");
+        options.addOption("", "pingChannel", true, "Ping channel");
 
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);

@@ -39,7 +39,7 @@ public class StatsDriver
         {
             parseArgs(args);
             running = new AtomicBoolean(true);
-            stats = new Stats(output, null);
+            stats = new Stats(output);
 
             final Runnable task = new Runnable()
             {

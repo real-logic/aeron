@@ -95,6 +95,7 @@ public class AeronPing implements NewConnectionHandler
         try
         {
             connectionLatch.await();
+            System.out.println("Connected");
         }
         catch (final InterruptedException e)
         {
@@ -115,6 +116,7 @@ public class AeronPing implements NewConnectionHandler
                 sendPingAndReceivePongClaim();
             }
         }
+        System.out.println("Warmed up");
         warmedUp = true;
 
         for (int i = 0; i < numMsgs; i++)
@@ -202,8 +204,8 @@ public class AeronPing implements NewConnectionHandler
     {
         options = new Options();
         options.addOption("c", "claim", false, "Use Try/Claim");
-        options.addOption("", "pongChannel", false, "Pong channel");
-        options.addOption("", "pingChannel", false, "Ping channel");
+        options.addOption("", "pongChannel", true, "Pong channel");
+        options.addOption("", "pingChannel", true, "Ping channel");
 
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);

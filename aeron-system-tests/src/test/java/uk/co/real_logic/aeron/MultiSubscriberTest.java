@@ -31,7 +31,8 @@ import static org.mockito.Mockito.verify;
 
 public class MultiSubscriberTest
 {
-    public static final String CHANNEL = "udp://localhost:54325";
+    public static final String CHANNEL_1 = "aeron:udp?remote=localhost:54325|fruit=banana";
+    public static final String CHANNEL_2 = "aeron:udp?remote=localhost:54325|fruit=apple";
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
@@ -49,9 +50,9 @@ public class MultiSubscriberTest
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());
-             final Publication publication = client.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscriptionOne = client.addSubscription(CHANNEL, STREAM_ID, adapterOne);
-             final Subscription subscriptionTwo = client.addSubscription(CHANNEL, STREAM_ID, adapterTwo))
+             final Publication publication = client.addPublication(CHANNEL_1, STREAM_ID);
+             final Subscription subscriptionOne = client.addSubscription(CHANNEL_1, STREAM_ID, adapterOne);
+             final Subscription subscriptionTwo = client.addSubscription(CHANNEL_2, STREAM_ID, adapterTwo))
         {
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);

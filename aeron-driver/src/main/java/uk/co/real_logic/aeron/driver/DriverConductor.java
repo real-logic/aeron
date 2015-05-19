@@ -484,7 +484,6 @@ public class DriverConductor implements Agent
         publication.incRef();
 
         clientProxy.onPublicationReady(
-            channel,
             streamId,
             sessionId,
             publication.rawLog(),

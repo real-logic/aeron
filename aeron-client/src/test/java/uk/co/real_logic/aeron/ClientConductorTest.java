@@ -313,7 +313,7 @@ public class ClientConductorTest
         assertFalse(subscription.hasNoConnections());
 
         final long position = 0L;
-        conductor.onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, position, CORRELATION_ID);
+        conductor.onInactiveConnection(STREAM_ID_1, SESSION_ID_1, position, CORRELATION_ID);
 
         verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, position);
         assertTrue(subscription.hasNoConnections());
@@ -331,7 +331,6 @@ public class ClientConductorTest
                         .sessionId(sessionId)
                         .correlationId(correlationId);
 
-        publicationReady.channel(CHANNEL);
         publicationReady.logFileName(sessionId + "-log");
 
         toClientTransmitter.transmit(ON_PUBLICATION_READY, atomicSendBuffer, 0, publicationReady.length());
@@ -343,7 +342,6 @@ public class ClientConductorTest
                        .sessionId(sessionId)
                        .correlationId(correlationId);
 
-        connectionReady.channel(CHANNEL);
         connectionReady.logFileName(sessionId + "-log");
         connectionReady.sourceInfo(SOURCE_NAME);
 

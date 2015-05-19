@@ -24,7 +24,6 @@ import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 interface DriverListener
 {
     void onNewPublication(
-        String channel,
         int streamId,
         int sessionId,
         int publicationLimitId,
@@ -32,7 +31,6 @@ interface DriverListener
         long correlationId);
 
     void onNewConnection(
-        String channel,
         int streamId,
         int sessionId,
         long initialPosition,
@@ -41,7 +39,6 @@ interface DriverListener
         long correlationId);
 
     void onInactiveConnection(
-        String channel,
         int streamId,
         int sessionId,
         long position,

@@ -18,41 +18,27 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Function;
-
-import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
- * Threadsafe for getting to {@link uk.co.real_logic.aeron.Subscription}s by channel and streamId.
+ * Threadsafe for getting to {@link uk.co.real_logic.aeron.Subscription}s by streamId
  */
 class ActiveSubscriptions
 {
-    private static final Function<String, Int2ObjectHashMap<List<Subscription>>> SUPPLIER = (ignore) -> new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
 
-    private final Map<String, Int2ObjectHashMap<List<Subscription>>> subscriptionByChannelMap = new HashMap<>();
-
-    public synchronized void forEach(final String channel, final int streamId, final Consumer<Subscription> handler)
+    public synchronized void forEach(final int streamId, final Consumer<Subscription> handler)
     {
-        final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap = subscriptionByChannelMap.get(channel);
-        if (null != subscriptionByStreamIdMap)
+        final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
+        if (null != subscriptions)
         {
-            final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
-            if (null != subscriptions)
-            {
-                subscriptions.forEach(handler);
-            }
+            subscriptions.forEach(handler);
         }
     }
 
     public synchronized void add(final Subscription subscription)
     {
-        final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap =
-            getOrDefault(subscriptionByChannelMap, subscription.channel(), SUPPLIER);
-
         final List<Subscription> subscriptions =
             subscriptionByStreamIdMap.computeIfAbsent(subscription.streamId(), ignore -> new ArrayList<>());
 
@@ -61,24 +47,14 @@ class ActiveSubscriptions
 
     public synchronized void remove(final Subscription subscription)
     {
-        final String channel = subscription.channel();
         final int streamId = subscription.streamId();
-
-        final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap = subscriptionByChannelMap.get(channel);
-        if (null != subscriptionByStreamIdMap)
+        final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
+        if (subscriptions.remove(subscription) && subscriptions.isEmpty())
         {
-            final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
-            if (subscriptions.remove(subscription) && subscriptions.isEmpty())
+            subscriptionByStreamIdMap.remove(streamId);
+            if (subscriptionByStreamIdMap.isEmpty())
             {
                 subscriptionByStreamIdMap.remove(streamId);
-                if (subscriptionByStreamIdMap.isEmpty())
-                {
-                    subscriptionByStreamIdMap.remove(streamId);
-                    if (subscriptionByStreamIdMap.isEmpty())
-                    {
-                        subscriptionByChannelMap.remove(channel);
-                    }
-                }
             }
         }
     }

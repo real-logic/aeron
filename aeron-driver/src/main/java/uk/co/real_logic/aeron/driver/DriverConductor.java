@@ -15,6 +15,35 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import static java.util.stream.Collectors.toList;
+import static uk.co.real_logic.aeron.common.ErrorCode.GENERIC_ERROR;
+import static uk.co.real_logic.aeron.common.ErrorCode.UNKNOWN_PUBLICATION;
+import static uk.co.real_logic.aeron.common.ErrorCode.UNKNOWN_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_PUBLICATION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.CLIENT_KEEPALIVE;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_PUBLICATION;
+import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_SUBSCRIPTION;
+import static uk.co.real_logic.aeron.common.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.CONNECTION_LIVENESS_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.HEARTBEAT_TIMEOUT_MS;
+import static uk.co.real_logic.aeron.driver.Configuration.NAK_MULTICAST_DELAY_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.NAK_UNICAST_DELAY_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.NO_NAK_DELAY_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_GENERATOR;
+
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 import uk.co.real_logic.aeron.common.Flyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
@@ -24,6 +53,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.driver.MediaDriver.Context;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
@@ -31,23 +61,16 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.Agent;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import uk.co.real_logic.agrona.concurrent.NanoClock;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
-
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
-import java.util.function.Supplier;
-
-import static java.util.stream.Collectors.toList;
-import static uk.co.real_logic.aeron.common.ErrorCode.*;
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.common.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
-import static uk.co.real_logic.aeron.driver.Configuration.*;
-import static uk.co.real_logic.aeron.driver.MediaDriver.Context;
 
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as determining if loss has occurred.
@@ -298,7 +321,8 @@ public class DriverConductor implements Agent
             initialWindowLength,
             rawLog,
             timerWheel,
-            udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+            Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
+                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
             newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
             clock,

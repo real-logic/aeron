@@ -16,9 +16,7 @@
 package uk.co.real_logic.aeron.tools;
 
 import java.util.logging.Logger;
-
 import org.apache.commons.cli.ParseException;
-
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 
@@ -63,7 +61,9 @@ public class MediaDriverTool
             .senderIdleStrategy(opts.senderIdleStrategy())
             .receiverIdleStrategy(opts.receiverIdleStrategy())
             .sharedNetworkIdleStrategy(opts.sharedNetworkIdleStrategy())
-            .sharedIdleStrategy(opts.sharedIdleStrategy());
+            .sharedIdleStrategy(opts.sharedIdleStrategy())
+            .dataLossGenerator(opts.dataLossGenerator())
+            .controlLossGenerator(opts.controlLossGenerator());
 
         // Everything else can be changed by Aeron settings.
         try (final MediaDriver driver = MediaDriver.launch(context))
@@ -98,5 +98,9 @@ public class MediaDriverTool
         "aeron.tools.mediadriver.receiver" + NL +
         "aeron.tools.mediadriver.conductor" + NL +
         "aeron.tools.mediadriver.network" + NL +
-        "areon.tools.mediadriver.shared" + NL;
+        "areon.tools.mediadriver.shared" + NL +
+        NL +
+        "Set the loss generator classes for data and control using these properties:" + NL +
+        "aeron.tools.mediadriver.data.loss" + NL +
+        "aeron.tools.mediadriver.control.loss" + NL;
 }

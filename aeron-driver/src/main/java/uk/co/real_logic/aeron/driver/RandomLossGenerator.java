@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
 import java.net.InetSocketAddress;
 import java.util.Random;
 
@@ -49,7 +51,7 @@ public class RandomLossGenerator implements LossGenerator
     }
 
     /** {@inheritDoc} */
-    public boolean shouldDropFrame(final InetSocketAddress address, final int length)
+    public boolean shouldDropFrame(final InetSocketAddress address, final int length, final UnsafeBuffer buffer)
     {
         return random.nextDouble() <= lossRate;
     }

@@ -97,7 +97,7 @@ class ClientConductor implements Agent, DriverListener
         int workCount = 0;
 
         workCount += processTimers();
-        workCount += driverListenerAdapter.receiveMessages();
+        workCount += driverListenerAdapter.pollMessage();
 
         return workCount;
     }

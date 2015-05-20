@@ -46,7 +46,7 @@ class DriverListenerAdapter implements MessageHandler
         this.listener = listener;
     }
 
-    public int receiveMessages()
+    public int pollMessage()
     {
         return broadcastReceiver.receive(this);
     }

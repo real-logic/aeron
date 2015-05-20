@@ -33,6 +33,8 @@ import java.util.function.Consumer;
 
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
@@ -55,6 +57,7 @@ public class ClientConductorTest
     private static final long CORRELATION_ID = 2000;
     private static final long CORRELATION_ID_2 = 2002;
     private static final long CLOSE_CORRELATION_ID = 2001;
+    private static final long UNKNOWN_CORRELATION_ID = 3000;
 
     private static final int AWAIT_TIMEOUT = 100;
 
@@ -324,6 +327,30 @@ public class ClientConductorTest
 
         verify(driverProxy).removePublication(CORRELATION_ID);
         verify(driverProxy, never()).removePublication(CORRELATION_ID_2);
+    }
+
+    @Test
+    public void shouldNotMapBuffersForUnknownCorrelationId() throws Exception
+    {
+        doAnswer(
+            (invocation) ->
+            {
+                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", UNKNOWN_CORRELATION_ID);
+                return 1;
+            }).when(mockToClientReceiver).receive(anyObject());
+
+        doAnswer(
+            (invocation) ->
+            {
+                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
+                return 1;
+            }).when(mockToClientReceiver).receive(anyObject());
+
+        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        conductor.doWork();
+
+        verify(logBuffersFactory, times(1)).map(anyString());
+        assertThat(publication.registrationId(), is(CORRELATION_ID));
     }
 
     // ---------------------------------

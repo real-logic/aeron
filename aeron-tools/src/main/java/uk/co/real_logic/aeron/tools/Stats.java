@@ -58,7 +58,6 @@ public class Stats
     private final AtomicBuffer labelsBuffer;
     private final AtomicBuffer valuesBuffer;
     private final StatsOutput output;
-    private final CountersManager countersManager;
 
     private static final int NUM_BASE_STATS = 22;
 
@@ -79,8 +78,6 @@ public class Stats
 
         labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
         valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
-
-        countersManager = new CountersManager(labelsBuffer, valuesBuffer);
     }
 
     public void collectStats() throws Exception

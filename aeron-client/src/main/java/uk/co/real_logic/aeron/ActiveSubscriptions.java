@@ -36,8 +36,8 @@ class ActiveSubscriptions
 
     public void add(final Subscription subscription)
     {
-        final List<Subscription> subscriptions =
-            subscriptionByStreamIdMap.computeIfAbsent(subscription.streamId(), ignore -> new ArrayList<>());
+        final List<Subscription> subscriptions = subscriptionByStreamIdMap.computeIfAbsent(
+            subscription.streamId(), (ignore) -> new ArrayList<>());
 
         subscriptions.add(subscription);
     }

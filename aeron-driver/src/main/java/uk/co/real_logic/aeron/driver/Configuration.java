@@ -337,7 +337,7 @@ public class Configuration
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
 
-    /** Disable the NAKs from media driver (used for QA only)*/
+    /** Disable sending NAKs from the media driver. */
     public static final String DO_NOT_SEND_NAK_PROP_NAME = "aeron.driver.disable.naks";
 
     /**

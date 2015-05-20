@@ -21,14 +21,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
-/**
- * Threadsafe for getting to {@link uk.co.real_logic.aeron.Subscription}s by streamId
- */
 class ActiveSubscriptions
 {
     private final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
 
-    public synchronized void forEach(final int streamId, final Consumer<Subscription> handler)
+    public void forEach(final int streamId, final Consumer<Subscription> handler)
     {
         final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
         if (null != subscriptions)
@@ -37,7 +34,7 @@ class ActiveSubscriptions
         }
     }
 
-    public synchronized void add(final Subscription subscription)
+    public void add(final Subscription subscription)
     {
         final List<Subscription> subscriptions =
             subscriptionByStreamIdMap.computeIfAbsent(subscription.streamId(), ignore -> new ArrayList<>());
@@ -45,7 +42,7 @@ class ActiveSubscriptions
         subscriptions.add(subscription);
     }
 
-    public synchronized void remove(final Subscription subscription)
+    public void remove(final Subscription subscription)
     {
         final int streamId = subscription.streamId();
         final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);

@@ -44,7 +44,10 @@ interface DriverListener
         long position,
         long correlationId);
 
-    void onError(ErrorCode errorCode, String message);
+    void onError(
+        ErrorCode errorCode,
+        String message,
+        long correlationId);
 
-    void operationSucceeded();
+    void operationSucceeded(long correlationId);
 }

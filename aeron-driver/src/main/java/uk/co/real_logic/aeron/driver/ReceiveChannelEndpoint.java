@@ -211,7 +211,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             smHeader.sessionId(sessionId)
                     .streamId(streamId)
                     .termId(termId)
-                    .rebuildTermOffset(termOffset)
+                    .consumptionTermOffset(termOffset)
                     .receiverWindowLength(window)
                     .flags(flags);
 

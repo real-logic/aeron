@@ -86,6 +86,7 @@ public class Ping
             do
             {
                 HISTOGRAM.reset();
+                System.gc();
                 System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
                 sendPingAndReceivePong(aeron, NUMBER_OF_MESSAGES);
@@ -103,13 +104,12 @@ public class Ping
     {
         pongConnectionLatch = new CountDownLatch(1);
         final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
+        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
         try (final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
              final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
         {
             pongConnectionLatch.await();
-
-            final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
             for (int i = 0; i < numMessages; i++)
             {

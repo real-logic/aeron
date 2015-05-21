@@ -54,7 +54,7 @@ public class Ping
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-    private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
+    private static volatile CountDownLatch pongConnectionLatch;
 
     public static void main(final String[] args) throws Exception
     {
@@ -69,24 +69,16 @@ public class Ping
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
-        System.out.println("Message size of " + MESSAGE_LENGTH + " bytes");
+        System.out.println("Message length of " + MESSAGE_LENGTH + " bytes");
 
-        final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
-
-        try (final Aeron aeron = Aeron.connect(ctx);
-             final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-             final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+        try (final Aeron aeron = Aeron.connect(ctx))
         {
-            System.out.println("Waiting for new connection from Pong...");
-
-            PONG_CONNECTION_LATCH.await();
-
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
-                sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
+                sendPingAndReceivePong(aeron, WARMUP_NUMBER_OF_MESSAGES);
             }
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
@@ -96,7 +88,7 @@ public class Ping
                 HISTOGRAM.reset();
                 System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-                sendPingAndReceivePong(pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
+                sendPingAndReceivePong(aeron, NUMBER_OF_MESSAGES);
 
                 System.out.println("Histogram of RTT latencies in microseconds.");
                 HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -107,22 +99,30 @@ public class Ping
         CloseHelper.quietClose(driver);
     }
 
-    private static void sendPingAndReceivePong(
-        final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
+    private static void sendPingAndReceivePong(final Aeron aeron, final int numMessages) throws InterruptedException
     {
-        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
+        pongConnectionLatch = new CountDownLatch(1);
+        final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
 
-        for (int i = 0; i < numMessages; i++)
+        try (final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
+             final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
         {
-            do
-            {
-                ATOMIC_BUFFER.putLong(0, System.nanoTime());
-            }
-            while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
+            pongConnectionLatch.await();
 
-            while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+            final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
+
+            for (int i = 0; i < numMessages; i++)
             {
-                idleStrategy.idle(0);
+                do
+                {
+                    ATOMIC_BUFFER.putLong(0, System.nanoTime());
+                }
+                while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
+
+                while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+                {
+                    idleStrategy.idle(0);
+                }
             }
         }
     }
@@ -142,7 +142,7 @@ public class Ping
 
         if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
         {
-            PONG_CONNECTION_LATCH.countDown();
+            pongConnectionLatch.countDown();
         }
     }
 }

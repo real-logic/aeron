@@ -44,7 +44,6 @@ class ClientConductor implements Agent, DriverListener
     private static final int KEEPALIVE_TIMEOUT_MS = 500;
     private static final long NO_CORRELATION_ID = -1;
 
-    private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private final DriverListenerAdapter driverListenerAdapter;
     private final LogBuffersFactory logBuffersFactory;
@@ -80,7 +79,6 @@ class ClientConductor implements Agent, DriverListener
         this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
         this.inactiveConnectionHandler = inactiveConnectionHandler;
-        this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = TimeUnit.MILLISECONDS.toNanos(driverTimeoutMs);
 
         this.driverListenerAdapter = new DriverListenerAdapter(broadcastReceiver, this);
@@ -304,7 +302,8 @@ class ClientConductor implements Agent, DriverListener
         {
             driverActive = false;
 
-            final String msg = String.format("Driver has been inactive for over %dms", driverTimeoutMs);
+            final String msg = String.format(
+                "Driver has been inactive for over %dms", TimeUnit.NANOSECONDS.toMillis(driverTimeoutNs));
             errorHandler.accept(new DriverTimeoutException(msg));
         }
     }

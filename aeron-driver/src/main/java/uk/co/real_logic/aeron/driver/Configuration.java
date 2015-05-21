@@ -312,7 +312,7 @@ public class Configuration
     public static final long PUBLICATION_SETUP_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
     /** Timeout between heartbeats for publications */
-    public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(200);
+    public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
     /**
      * {@link FlowControl} to be employed for unicast channels.
@@ -392,11 +392,6 @@ public class Configuration
         {
             throw new IllegalStateException("Initial window length must be >= to MTU length: " + mtuLength);
         }
-    }
-
-    public static IdleStrategy eventReaderIdleStrategy()
-    {
-        return new BackoffIdleStrategy(0, 0, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
     }
 
     public static IdleStrategy agentIdleStrategy()

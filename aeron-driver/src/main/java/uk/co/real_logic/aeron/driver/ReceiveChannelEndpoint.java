@@ -210,7 +210,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             smBuffer.clear();
             smHeader.sessionId(sessionId)
                     .streamId(streamId)
-                    .termId(termId)
+                    .consumptionTermId(termId)
                     .consumptionTermOffset(termOffset)
                     .receiverWindowLength(window)
                     .flags(flags);

@@ -32,7 +32,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
 
     private static final int SESSION_ID_FIELD_OFFSET = 8;
     private static final int STREAM_ID_FIELD_OFFSET = 12;
-    private static final int TERM_ID_FIELD_OFFSET = 16;
+    private static final int CONSUMPTION_TERM_ID_FIELD_OFFSET = 16;
     private static final int CONSUMPTION_TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
 
@@ -104,24 +104,24 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     }
 
     /**
-     * return term id field
+     * return highest consumption term id field
      *
-     * @return term id field
+     * @return highest consumption term id field
      */
-    public int termId()
+    public int consumptionTermId()
     {
-        return buffer().getInt(offset() + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + CONSUMPTION_TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
-     * set term id field
+     * set highest consumption term id field
      *
      * @param termId field value
      * @return flyweight
      */
-    public StatusMessageFlyweight termId(final int termId)
+    public StatusMessageFlyweight consumptionTermId(final int termId)
     {
-        buffer().putInt(offset() + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        buffer().putInt(offset() + CONSUMPTION_TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }

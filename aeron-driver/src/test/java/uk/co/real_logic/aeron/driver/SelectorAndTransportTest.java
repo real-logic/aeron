@@ -243,7 +243,7 @@ public class SelectorAndTransportTest
         statusMessage.wrap(buffer, 0);
         statusMessage.streamId(STREAM_ID)
                      .sessionId(SESSION_ID)
-                     .termId(TERM_ID)
+                     .consumptionTermId(TERM_ID)
                      .receiverWindowLength(1000)
                      .consumptionTermOffset(0)
                      .version(HeaderFlyweight.CURRENT_VERSION)

@@ -26,7 +26,7 @@ import java.io.File;
  * Senders are under "${aeron.data.dir}/publications"
  * Receivers are under "${aeron.data.dir}/subscriptions"
  *
- * Both publications and subscriptions share the same structure of "sessionId/streamId/termId".
+ * Both publications and subscriptions share the same structure of "sessionId/streamId/consumptionTermId".
  */
 class FileMappingConvention
 {

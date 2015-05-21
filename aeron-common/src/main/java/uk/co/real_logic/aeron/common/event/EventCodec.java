@@ -453,7 +453,7 @@ public class EventCodec
             header.frameLength(),
             header.sessionId(),
             header.streamId(),
-            header.termId(),
+            header.consumptionTermId(),
             header.consumptionTermOffset(),
             header.receiverWindowLength());
     }

@@ -199,7 +199,10 @@ public class SendChannelEndpoint implements AutoCloseable
             else
             {
                 final long positionLimit = assembly.flowControl.onStatusMessage(
-                    statusMsg.termId(), statusMsg.consumptionTermOffset(), statusMsg.receiverWindowLength(), srcAddress);
+                    statusMsg.consumptionTermId(),
+                    statusMsg.consumptionTermOffset(),
+                    statusMsg.receiverWindowLength(),
+                    srcAddress);
 
                 assembly.publication.senderPositionLimit(positionLimit);
             }

@@ -219,7 +219,7 @@ public class ReceiverTest
         assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(statusHeader.streamId(), is(STREAM_ID));
         assertThat(statusHeader.sessionId(), is(SESSION_ID));
-        assertThat(statusHeader.termId(), is(ACTIVE_TERM_ID));
+        assertThat(statusHeader.consumptionTermId(), is(ACTIVE_TERM_ID));
         assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
     }
 

@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 interface DriverListener
 {
     void onNewPublication(
+        String channel,
         int streamId,
         int sessionId,
         int publicationLimitId,

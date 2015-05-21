@@ -59,12 +59,7 @@ class ClientConductor implements Agent, DriverListener
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
-    private long lastReceivedCorrelationId = NO_CORRELATION_ID;
-    private long activeCorrelationId = NO_CORRELATION_ID;
-
     private volatile boolean driverActive = true;
-    private Publication addedPublication; // Guarded by this
-    private String addedChannel; // Guarded by this
     private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(
@@ -94,12 +89,7 @@ class ClientConductor implements Agent, DriverListener
 
     public synchronized int doWork()
     {
-        int workCount = 0;
-
-        workCount += processTimers();
-        workCount += driverListenerAdapter.pollMessage();
-
-        return workCount;
+        return doWork(NO_CORRELATION_ID, null);
     }
 
     public String roleName()
@@ -114,21 +104,12 @@ class ClientConductor implements Agent, DriverListener
         Publication publication = publicationMap.get(channel, sessionId, streamId);
         if (publication == null)
         {
-            addedChannel = channel;
-            activeCorrelationId = driverProxy.addPublication(channel, streamId, sessionId);
+            final long correlationId = driverProxy.addPublication(channel, streamId, sessionId);
             final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
-            doWorkUntil(activeCorrelationId, timeout);
+            doWorkUntil(correlationId, timeout, channel);
 
-            /*
-             * TODO: avoid having addedPublication by storing it in the publicationMap and using a get
-             * (only if correlationId was used)
-             */
-
-            publication = addedPublication;
-            publicationMap.put(channel, sessionId, streamId, publication);
-            addedChannel = null;
-            activeCorrelationId = NO_CORRELATION_ID;
+            publication = publicationMap.get(channel, sessionId, streamId);
         }
         else
         {
@@ -146,7 +127,7 @@ class ClientConductor implements Agent, DriverListener
         publicationMap.remove(publication.channel(), publication.sessionId(), publication.streamId());
         final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
-        doWorkUntil(correlationId, timeout);
+        doWorkUntil(correlationId, timeout, publication.channel());
     }
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
@@ -159,7 +140,7 @@ class ClientConductor implements Agent, DriverListener
         final Subscription subscription = new Subscription(this, handler, channel, streamId, correlationId);
         activeSubscriptions.add(subscription);
 
-        doWorkUntil(correlationId, timeout);
+        doWorkUntil(correlationId, timeout, channel);
 
         return subscription;
     }
@@ -171,47 +152,45 @@ class ClientConductor implements Agent, DriverListener
         final long correlationId = driverProxy.removeSubscription(subscription.registrationId());
         final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
-        doWorkUntil(correlationId, timeout);
+        doWorkUntil(correlationId, timeout, subscription.channel());
 
         activeSubscriptions.remove(subscription);
     }
 
     public void onNewPublication(
+        final String channel,
         final int streamId,
         final int sessionId,
         final int publicationLimitId,
         final String logFileName,
         final long correlationId)
     {
-        if (correlationId == activeCorrelationId)
+        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+        final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
+        final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
+        final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
+        final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
-            final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-            final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
-            final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
-            final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
-            final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
-
-            for (int i = 0; i < PARTITION_COUNT; i++)
-            {
-                appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
-            }
-
-            final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
-
-            addedPublication = new Publication(
-                this,
-                addedChannel,
-                streamId,
-                sessionId,
-                appenders,
-                publicationLimit,
-                logBuffers,
-                logMetaDataBuffer,
-                correlationId);
+            appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
         }
 
-        lastReceivedCorrelationId = correlationId;
+        final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
+
+        final Publication publication = new Publication(
+            this,
+            channel,
+            streamId,
+            sessionId,
+            appenders,
+            publicationLimit,
+            logBuffers,
+            logMetaDataBuffer,
+            correlationId);
+
+        publicationMap.put(publication.channel(), publication.sessionId(), publication.streamId(), publication);
     }
 
     public void onNewConnection(
@@ -265,12 +244,10 @@ class ClientConductor implements Agent, DriverListener
     public void onError(final ErrorCode errorCode, final String message, final long correlationId)
     {
         registrationException = new RegistrationException(errorCode, message);
-        lastReceivedCorrelationId = correlationId;
     }
 
     public void operationSucceeded(final long correlationId)
     {
-        lastReceivedCorrelationId = correlationId;
     }
 
     public void onInactiveConnection(
@@ -291,6 +268,11 @@ class ClientConductor implements Agent, DriverListener
                     }
                 }
             });
+    }
+
+    public DriverListenerAdapter driverListenerAdapter()
+    {
+        return driverListenerAdapter;
     }
 
     private int processTimers()
@@ -335,16 +317,25 @@ class ClientConductor implements Agent, DriverListener
         }
     }
 
-    private void doWorkUntil(final long correlationId, final long timeout)
+    private int doWork(final long correlationId, final String expectedChannel)
+    {
+        int workCount = 0;
+
+        workCount += processTimers();
+        workCount += driverListenerAdapter.pollMessage(correlationId, expectedChannel);
+
+        return workCount;
+    }
+
+    private void doWorkUntil(final long correlationId, final long timeout, final String expectedChannel)
     {
         registrationException = null;
-        lastReceivedCorrelationId = NO_CORRELATION_ID;
 
         do
         {
-            doWork();
+            doWork(correlationId, expectedChannel);
 
-            if (lastReceivedCorrelationId == correlationId)
+            if (driverListenerAdapter.lastReceivedCorrelationId() == correlationId)
             {
                 if (null != registrationException)
                 {

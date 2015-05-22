@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
@@ -41,15 +40,15 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  */
 class ClientConductor implements Agent, DriverListener
 {
-    private static final int KEEPALIVE_TIMEOUT_MS = 500;
     private static final long NO_CORRELATION_ID = -1;
+    private static final int KEEPALIVE_TIMEOUT_MS = 500;
 
     private final long driverTimeoutNs;
     private volatile boolean driverActive = true;
 
     private final DriverListenerAdapter driverListenerAdapter;
     private final LogBuffersFactory logBuffersFactory;
-    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>();
+    private final ActivePublications activePublications = new ActivePublications();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
@@ -99,7 +98,7 @@ class ClientConductor implements Agent, DriverListener
     {
         verifyDriverIsActive();
 
-        Publication publication = publicationMap.get(channel, sessionId, streamId);
+        Publication publication = activePublications.get(channel, sessionId, streamId);
         if (publication == null)
         {
             final long correlationId = driverProxy.addPublication(channel, streamId, sessionId);
@@ -107,7 +106,7 @@ class ClientConductor implements Agent, DriverListener
 
             doWorkUntil(correlationId, timeout, channel);
 
-            publication = publicationMap.get(channel, sessionId, streamId);
+            publication = activePublications.get(channel, sessionId, streamId);
         }
         else
         {
@@ -122,7 +121,7 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         final long correlationId = driverProxy.removePublication(publication.registrationId());
-        publicationMap.remove(publication.channel(), publication.sessionId(), publication.streamId());
+        activePublications.remove(publication.channel(), publication.sessionId(), publication.streamId());
         final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
         doWorkUntil(correlationId, timeout, publication.channel());
@@ -188,7 +187,7 @@ class ClientConductor implements Agent, DriverListener
             logMetaDataBuffer,
             correlationId);
 
-        publicationMap.put(publication.channel(), publication.sessionId(), publication.streamId(), publication);
+        activePublications.put(publication.channel(), publication.sessionId(), publication.streamId(), publication);
     }
 
     public void onNewConnection(

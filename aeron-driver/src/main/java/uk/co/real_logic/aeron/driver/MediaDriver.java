@@ -308,6 +308,9 @@ public final class MediaDriver implements AutoCloseable
         private ThreadingMode threadingMode;
         private boolean dirsDeleteOnExit;
 
+        private LossGenerator dataLossGenerator;
+        private LossGenerator controlLossGenerator;
+
         public Context()
         {
             termBufferLength(Configuration.termBufferLength());
@@ -395,6 +398,7 @@ public final class MediaDriver implements AutoCloseable
                     dirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
 
                 concludeIdleStrategies();
+                concludeLossGenerators();
             }
             catch (final Exception ex)
             {
@@ -614,6 +618,18 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context dataLossGenerator(final LossGenerator generator)
+        {
+            this.dataLossGenerator = generator;
+            return this;
+        }
+
+        public Context controlLossGenerator(final LossGenerator generator)
+        {
+            this.controlLossGenerator = generator;
+            return this;
+        }
+
         /**
          * Set whether or not this application will attempt to delete the Aeron directories when exiting.
          * @param dirsDeleteOnExit Attempt deletion.
@@ -785,6 +801,16 @@ public final class MediaDriver implements AutoCloseable
             return mtuLength;
         }
 
+        public LossGenerator dataLossGenerator()
+        {
+            return dataLossGenerator;
+        }
+
+        public LossGenerator controlLossGenerator()
+        {
+            return controlLossGenerator;
+        }
+
         public CommonContext mtuLength(final int mtuLength)
         {
             this.mtuLength = mtuLength;
@@ -880,6 +906,18 @@ public final class MediaDriver implements AutoCloseable
             if (null == sharedIdleStrategy)
             {
                 sharedIdleStrategy(Configuration.agentIdleStrategy());
+            }
+        }
+
+        private void concludeLossGenerators()
+        {
+            if (null == dataLossGenerator)
+            {
+                dataLossGenerator(Configuration.createLossGenerator(dataLossRate, dataLossSeed));
+            }
+            if (null == controlLossGenerator)
+            {
+                controlLossGenerator(Configuration.createLossGenerator(controlLossRate, controlLossSeed));
             }
         }
     }

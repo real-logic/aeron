@@ -249,7 +249,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         if (null != srcAddress)
         {
             final int length = receiveByteBuffer.position();
-            if (lossGenerator.shouldDropFrame(srcAddress, length))
+            if (lossGenerator.shouldDropFrame(srcAddress, length, receiveBuffer))
             {
                 logger.logFrameInDropped(receiveByteBuffer, 0, length, srcAddress);
             }

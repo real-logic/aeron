@@ -25,6 +25,7 @@ import static org.mockito.Mockito.doReturn;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 
 import org.apache.commons.cli.ParseException;
 import org.junit.Before;
@@ -32,8 +33,10 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
+import uk.co.real_logic.aeron.driver.LossGenerator;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Unit tests for the MediaDriverOptions class.
@@ -41,6 +44,23 @@ import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 public class MediaDriverOptionsTest
 {
     MediaDriverOptions opts;
+
+    /* IdleStrategy instantiated via reflection by MediaDriverOptions */
+    static class TestIdleStrategy implements IdleStrategy
+    {
+        public void idle(final int workCount)
+        {
+        }
+    }
+
+    /* LossGenerator instantiated via reflection by MediaDriverOptions */
+    static class TestLossGenerator implements LossGenerator
+    {
+        public boolean shouldDropFrame(final InetSocketAddress address, final int length, final UnsafeBuffer buffer)
+        {
+            return false;
+        }
+    }
 
     @Before
     public void setUp()
@@ -76,6 +96,8 @@ public class MediaDriverOptionsTest
         assertThat(opts.receiverIdleStrategy(), is(nullValue()));
         assertThat(opts.sharedNetworkIdleStrategy(), is(nullValue()));
         assertThat(opts.sharedIdleStrategy(), is(nullValue()));
+        assertThat(opts.dataLossGenerator(), is(nullValue()));
+        assertThat(opts.controlLossGenerator(), is(nullValue()));
     }
 
     @Test
@@ -92,14 +114,6 @@ public class MediaDriverOptionsTest
         assertThat("FAIL: Properties object should have been created",
             spyOpts.properties(), is(not(nullValue())));
         assertThat(spyOpts.properties().getProperty("hello.world"), is("testing"));
-    }
-
-    /** Class instantiated via reflection by MediaDriverOptions */
-    static class TestIdleStrategy implements IdleStrategy
-    {
-        public void idle(final int workCount)
-        {
-        }
     }
 
     @Test
@@ -265,5 +279,73 @@ public class MediaDriverOptionsTest
     {
         final String[] args = { "--conductor", BackoffIdleStrategy.class.getName() + "(10,20,30)" };
         opts.parseArgs(args);
+    }
+
+    @Test
+    public void testDataLossGenerator() throws Exception
+    {
+        final String[] args = { "--data-loss", TestLossGenerator.class.getName() };
+        opts.parseArgs(args);
+        assertThat(opts.dataLossGenerator(), instanceOf(TestLossGenerator.class));
+    }
+
+    @Test
+    public void testControlLossGenerator() throws Exception
+    {
+        final String[] args = { "--control-loss", TestLossGenerator.class.getName() };
+        opts.parseArgs(args);
+        assertThat(opts.controlLossGenerator(), instanceOf(TestLossGenerator.class));
+    }
+
+    @Test
+    public void testDataLossGeneratorFromProperties() throws Exception
+    {
+        final MediaDriverOptions spyOpts = Mockito.spy(opts);
+        final String fileText = "aeron.tools.mediadriver.data.loss=" + TestLossGenerator.class.getName();
+        final InputStream inputStream = new ByteArrayInputStream(fileText.getBytes());
+        final String[] args = { "--properties", "filename" };
+
+        doReturn(inputStream).when(spyOpts).newFileInputStream("filename");
+        spyOpts.parseArgs(args);
+        assertThat(spyOpts.dataLossGenerator(), instanceOf(TestLossGenerator.class));
+    }
+
+    @Test
+    public void testControlLossGeneratorFromProperties() throws Exception
+    {
+        final MediaDriverOptions spyOpts = Mockito.spy(opts);
+        final String fileText = "aeron.tools.mediadriver.control.loss=" + TestLossGenerator.class.getName();
+        final InputStream inputStream = new ByteArrayInputStream(fileText.getBytes());
+        final String[] args = { "--properties", "filename" };
+
+        doReturn(inputStream).when(spyOpts).newFileInputStream("filename");
+        spyOpts.parseArgs(args);
+        assertThat(spyOpts.controlLossGenerator(), instanceOf(TestLossGenerator.class));
+    }
+
+    @Test
+    public void testDataLossGeneratorCommandLineOverridesProperties() throws Exception
+    {
+        final MediaDriverOptions spyOpts = Mockito.spy(opts);
+        final String fileText = "aeron.tools.mediadriver.data.loss=null";
+        final InputStream inputStream = new ByteArrayInputStream(fileText.getBytes());
+        final String[] args = { "--properties", "filename", "--data-loss", TestLossGenerator.class.getName() };
+
+        doReturn(inputStream).when(spyOpts).newFileInputStream("filename");
+        spyOpts.parseArgs(args);
+        assertThat(spyOpts.dataLossGenerator(), instanceOf(TestLossGenerator.class));
+    }
+
+    @Test
+    public void testControlLossGeneratorCommandLineOverridesProperties() throws Exception
+    {
+        final MediaDriverOptions spyOpts = Mockito.spy(opts);
+        final String fileText = "aeron.tools.mediadriver.control.loss=null";
+        final InputStream inputStream = new ByteArrayInputStream(fileText.getBytes());
+        final String[] args = { "--properties", "filename", "--control-loss", TestLossGenerator.class.getName() };
+
+        doReturn(inputStream).when(spyOpts).newFileInputStream("filename");
+        spyOpts.parseArgs(args);
+        assertThat(spyOpts.controlLossGenerator(), instanceOf(TestLossGenerator.class));
     }
 }

@@ -77,10 +77,6 @@ import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
  */
 public class DriverConductor implements Agent
 {
-    private final long dataLossSeed;
-    private final long controlLossSeed;
-    private final double dataLossRate;
-    private final double controlLossRate;
     private final int mtuLength;
     private final int termBufferLength;
     private final int initialWindowLength;
@@ -118,6 +114,8 @@ public class DriverConductor implements Agent
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
     private final MessageHandler onEventFunc;
+    private final LossGenerator dataLossGenerator;
+    private final LossGenerator controlLossGenerator;
 
     public DriverConductor(final Context ctx)
     {
@@ -139,12 +137,10 @@ public class DriverConductor implements Agent
         clientProxy = ctx.clientProxy();
         conductorProxy = ctx.driverConductorProxy();
         logger = ctx.eventLogger();
-        dataLossRate = ctx.dataLossRate();
-        dataLossSeed = ctx.dataLossSeed();
-        controlLossRate = ctx.controlLossRate();
-        controlLossSeed = ctx.controlLossSeed();
         systemCounters = ctx.systemCounters();
         checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
+        dataLossGenerator = ctx.dataLossGenerator();
+        controlLossGenerator = ctx.controlLossGenerator();
 
         final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc =
@@ -583,7 +579,7 @@ public class DriverConductor implements Agent
             channelEndpoint = new SendChannelEndpoint(
                 udpChannel,
                 logger,
-                Configuration.createLossGenerator(controlLossRate, controlLossSeed),
+                controlLossGenerator,
                 systemCounters);
 
             channelEndpoint.validateMtuLength(mtuLength);
@@ -660,9 +656,8 @@ public class DriverConductor implements Agent
         ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
-            final LossGenerator lossGenerator = Configuration.createLossGenerator(dataLossRate, dataLossSeed);
             channelEndpoint = new ReceiveChannelEndpoint(
-                udpChannel, conductorProxy, receiverProxy.receiver(), logger, systemCounters, lossGenerator);
+                udpChannel, conductorProxy, receiverProxy.receiver(), logger, systemCounters, dataLossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);

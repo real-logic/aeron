@@ -19,12 +19,8 @@ import uk.co.real_logic.aeron.common.CncFileDescriptor;
 import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.*;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -67,16 +63,12 @@ public final class Aeron implements AutoCloseable
             }
         };
 
-    private static final long IDLE_MAX_SPINS = 0;
-    private static final long IDLE_MAX_YIELDS = 0;
-    private static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
-    private static final long IDLE_MAX_PARK_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
-    private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
-    private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
-
+    private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
     private static final long NULL_TIMEOUT = -1;
     private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10_000;
+    private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
+    private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -244,7 +236,7 @@ public final class Aeron implements AutoCloseable
 
                 if (null == idleStrategy)
                 {
-                    idleStrategy = new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
+                    idleStrategy = new SleepingIdleStrategy(IDLE_SLEEP_NS);
                 }
 
                 if (cncFile() != null)

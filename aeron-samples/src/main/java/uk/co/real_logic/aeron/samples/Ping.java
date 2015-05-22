@@ -25,9 +25,7 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 import java.nio.ByteBuffer;
@@ -61,6 +59,7 @@ public class Ping
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(Ping::newPongConnectionHandler);
+        final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
 
         if (EMBEDDED_MEDIA_DRIVER)
         {
@@ -76,20 +75,39 @@ public class Ping
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
-            for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
+            pongConnectionLatch = new CountDownLatch(1);
+
+            try (final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
+                 final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
             {
-                sendPingAndReceivePong(aeron, WARMUP_NUMBER_OF_MESSAGES);
+                pongConnectionLatch.await();
+
+                for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
+                {
+                    sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
+                }
             }
+
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
             {
-                HISTOGRAM.reset();
-                System.gc();
-                System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
+                pongConnectionLatch = new CountDownLatch(1);
 
-                sendPingAndReceivePong(aeron, NUMBER_OF_MESSAGES);
+                try (final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
+                     final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+                {
+                    pongConnectionLatch.await();
+
+                    HISTOGRAM.reset();
+                    System.gc();
+                    Thread.sleep(1000);
+
+                    System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
+
+                    sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
+                }
 
                 System.out.println("Histogram of RTT latencies in microseconds.");
                 HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -100,29 +118,23 @@ public class Ping
         CloseHelper.quietClose(driver);
     }
 
-    private static void sendPingAndReceivePong(final Aeron aeron, final int numMessages) throws InterruptedException
+    private static void sendPingAndReceivePong(
+        final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
+        throws InterruptedException
     {
-        pongConnectionLatch = new CountDownLatch(1);
-        final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
-        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
+        final IdleStrategy idleStrategy = new NoOpIdleStrategy();
 
-        try (final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-             final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+        for (int i = 0; i < numMessages; i++)
         {
-            pongConnectionLatch.await();
-
-            for (int i = 0; i < numMessages; i++)
+            do
             {
-                do
-                {
-                    ATOMIC_BUFFER.putLong(0, System.nanoTime());
-                }
-                while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
+                ATOMIC_BUFFER.putLong(0, System.nanoTime());
+            }
+            while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-                while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
-                {
-                    idleStrategy.idle(0);
-                }
+            while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+            {
+                idleStrategy.idle(0);
             }
         }
     }

@@ -32,10 +32,10 @@ import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |R|                       Frame Length                          |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  *  |  Version      |B|E| Flags     |             Type              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- *  |R|                       Frame Length                          |
- *  +-+-------------------------------------------------------------+
  *  |R|                       Term Offset                           |
  *  +-+-------------------------------------------------------------+
  *  |                      Additional Fields                       ...
@@ -72,19 +72,19 @@ public class FrameDescriptor
     public static final byte UNFRAGMENTED = (byte)(BEGIN_FRAG | END_FRAG);
 
     /**
+     * Offset within a frame at which the length field begins
+     */
+    public static final int LENGTH_OFFSET = 0;
+
+    /**
      * Offset within a frame at which the flags field begins
      */
-    public static final int FLAGS_OFFSET = 1;
+    public static final int FLAGS_OFFSET = 5;
 
     /**
      * Offset within a frame at which the type field begins
      */
-    public static final int TYPE_OFFSET = 2;
-
-    /**
-     * Offset within a frame at which the length field begins
-     */
-    public static final int LENGTH_OFFSET = 4;
+    public static final int TYPE_OFFSET = 6;
 
     /**
      * Offset within a frame at which the term offset field begins

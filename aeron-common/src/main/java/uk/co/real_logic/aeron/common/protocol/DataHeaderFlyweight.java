@@ -185,7 +185,8 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         final String formattedFlags = String.format("%1$8s", Integer.toBinaryString(flags())).replace(' ', '0');
 
         sb.append("Data Header{")
-            .append("version=").append(version())
+            .append("frame_length=").append(frameLength())
+            .append(" version=").append(version())
             .append(" flags=").append(formattedFlags)
             .append(" type=").append(headerType())
             .append(" frame_length=").append(frameLength())

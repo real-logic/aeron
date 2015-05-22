@@ -25,8 +25,8 @@ import java.util.Random;
  */
 public class RandomLossGenerator implements LossGenerator
 {
-    private final Random random;
     private final double lossRate;
+    private final Random random;
 
     /**
      * Construct loss generator with given loss rate as percentage.
@@ -50,7 +50,6 @@ public class RandomLossGenerator implements LossGenerator
         this.lossRate = lossRate;
     }
 
-    /** {@inheritDoc} */
     public boolean shouldDropFrame(final InetSocketAddress address, final UnsafeBuffer buffer, final int length)
     {
         return random.nextDouble() <= lossRate;

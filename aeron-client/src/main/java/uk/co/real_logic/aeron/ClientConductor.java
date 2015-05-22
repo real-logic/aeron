@@ -45,11 +45,12 @@ class ClientConductor implements Agent, DriverListener
     private static final long NO_CORRELATION_ID = -1;
 
     private final long driverTimeoutNs;
+    private volatile boolean driverActive = true;
+
     private final DriverListenerAdapter driverListenerAdapter;
     private final LogBuffersFactory logBuffersFactory;
     private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
-
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final TimerWheel timerWheel;
@@ -58,7 +59,6 @@ class ClientConductor implements Agent, DriverListener
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
-    private volatile boolean driverActive = true;
     private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(

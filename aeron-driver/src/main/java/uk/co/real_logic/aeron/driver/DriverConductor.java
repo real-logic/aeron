@@ -857,7 +857,7 @@ public class DriverConductor implements Agent
     private int allocateCounter(
         final String type, final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        return countersManager.allocate(String.format("%s: %s %x %x %x", type, channel, sessionId, streamId, correlationId));
+        return countersManager.allocate(String.format("%s: %s %d %d %d", type, channel, sessionId, streamId, correlationId));
     }
 
     private long generateCreationCorrelationId()

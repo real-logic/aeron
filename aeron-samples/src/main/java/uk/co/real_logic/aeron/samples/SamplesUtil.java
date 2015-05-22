@@ -88,7 +88,7 @@ public class SamplesUtil
 
             System.out.println(
                 String.format(
-                    "Message to stream %d from session %x (%d@%d) <<%s>>",
+                    "Message to stream %d from session %d (%d@%d) <<%s>>",
                     streamId, header.sessionId(), length, offset, new String(data)));
         };
     }
@@ -158,7 +158,7 @@ public class SamplesUtil
     {
         System.out.println(
             String.format(
-                "New connection on %s streamId %d sessionId %x @ position %d from %s",
+                "New connection on %s streamId=%d sessionId=%d at position=%d from %s",
                 channel, streamId, sessionId, joiningPosition, sourceInformation));
     }
 
@@ -174,7 +174,7 @@ public class SamplesUtil
     {
         System.out.println(
             String.format(
-                "Inactive connection on %s streamId %d sessionId %x @ position %d",
+                "Inactive connection on %s streamId=%d sessionId=%d at position=%d",
                 channel, streamId, sessionId, position));
     }
 }

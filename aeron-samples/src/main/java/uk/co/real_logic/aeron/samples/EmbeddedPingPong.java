@@ -55,9 +55,7 @@ public class EmbeddedPingPong
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
-            .sharedNetworkIdleStrategy(new NoOpIdleStrategy())
-            .sharedIdleStrategy(new NoOpIdleStrategy())
+            .conductorIdleStrategy(new NoOpIdleStrategy())
             .receiverIdleStrategy(new NoOpIdleStrategy())
             .senderIdleStrategy(new NoOpIdleStrategy())
             .dirsDeleteOnExit(true);

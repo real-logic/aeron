@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
 import java.net.InetSocketAddress;
 
 /**
@@ -25,12 +26,12 @@ import java.net.InetSocketAddress;
 public interface LossGenerator
 {
     /**
-     * Should the frame be dropped?
+     * Should a frame be dropped?
      *
      * @param address The source address of the frame.
-     * @param length The length of the frame.
-     * @param buffer The buffer containing the frame data.
+     * @param buffer  The buffer containing the frame data.
+     * @param length  The length of the frame.
      * @return true to drop, false to process
      */
-    boolean shouldDropFrame(final InetSocketAddress address, final int length, final UnsafeBuffer buffer);
+    boolean shouldDropFrame(InetSocketAddress address, UnsafeBuffer buffer, int length);
 }

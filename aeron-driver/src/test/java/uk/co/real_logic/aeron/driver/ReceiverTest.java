@@ -152,7 +152,7 @@ public class ReceiverTest
             receiver,
             mockLogger,
             mockSystemCounters,
-            (address, length, buffer) -> false);
+            (address, buffer, length) -> false);
     }
 
     @After

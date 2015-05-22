@@ -498,7 +498,7 @@ public class Configuration
     {
         if (0 == lossRate)
         {
-            return (address, length, buffer) -> false;
+            return (address, buffer, length) -> false;
         }
 
         return new RandomLossGenerator(lossRate, lossSeed);

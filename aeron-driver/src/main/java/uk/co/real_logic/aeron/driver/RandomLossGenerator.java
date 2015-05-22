@@ -51,7 +51,7 @@ public class RandomLossGenerator implements LossGenerator
     }
 
     /** {@inheritDoc} */
-    public boolean shouldDropFrame(final InetSocketAddress address, final int length, final UnsafeBuffer buffer)
+    public boolean shouldDropFrame(final InetSocketAddress address, final UnsafeBuffer buffer, final int length)
     {
         return random.nextDouble() <= lossRate;
     }

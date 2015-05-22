@@ -45,7 +45,7 @@ public class SelectorAndTransportTest
     private static final UdpChannel SRC_DST = UdpChannel.parse("udp://localhost:" + SRC_PORT + "@localhost:" + RCV_PORT);
     private static final UdpChannel RCV_DST = UdpChannel.parse("udp://localhost:" + RCV_PORT);
 
-    private static final LossGenerator NO_LOSS = (address, length, header) -> false;
+    private static final LossGenerator NO_LOSS = (address, header, length) -> false;
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);

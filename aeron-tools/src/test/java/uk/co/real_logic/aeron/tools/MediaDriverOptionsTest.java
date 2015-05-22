@@ -56,7 +56,7 @@ public class MediaDriverOptionsTest
     /* LossGenerator instantiated via reflection by MediaDriverOptions */
     static class TestLossGenerator implements LossGenerator
     {
-        public boolean shouldDropFrame(final InetSocketAddress address, final int length, final UnsafeBuffer buffer)
+        public boolean shouldDropFrame(final InetSocketAddress address, final UnsafeBuffer buffer, final int length)
         {
             return false;
         }

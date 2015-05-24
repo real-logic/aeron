@@ -190,8 +190,7 @@ public class ReceiverTest
             mockHighestReceivedPosition,
             clock,
             mockSystemCounters,
-            SOURCE_ADDRESS,
-            mockLogger);
+            SOURCE_ADDRESS);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -262,8 +261,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));
@@ -323,8 +321,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));
@@ -387,8 +384,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));
@@ -455,8 +451,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));

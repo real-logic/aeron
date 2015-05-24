@@ -323,8 +323,7 @@ public class DriverConductor implements Agent
             newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
             clock,
             systemCounters,
-            sourceAddress,
-            logger);
+            sourceAddress);
 
         subscriberPositions.forEach(
             (subscriberPosition) -> subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));

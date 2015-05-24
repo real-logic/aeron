@@ -63,13 +63,4 @@ public class EventCodecTest
         assertThat(written, containsString(FILE));
         assertThat(written, containsString(":" + LINE_NUMBER));
     }
-
-    @Test
-    public void dissectAsStringShouldContainTheValuesEncoded()
-    {
-        final int size = EventCodec.encode(buffer, MESSAGE);
-        final String written = EventCodec.dissectAsString(EventCode.FRAME_OUT_INCOMPLETE_SEND, buffer, 0, size);
-
-        assertThat(written, containsString(MESSAGE));
-    }
 }

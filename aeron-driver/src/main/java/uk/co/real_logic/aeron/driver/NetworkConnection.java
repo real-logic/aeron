@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermRebuilder;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
@@ -104,7 +103,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     private final int currentGain;
 
     private final RawLog rawLog;
-    private final EventLogger logger;
     private final InetSocketAddress controlAddress;
     private final InetSocketAddress sourceAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -132,8 +130,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         final Position hwmPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
-        final InetSocketAddress sourceAddress,
-        final EventLogger logger)
+        final InetSocketAddress sourceAddress)
     {
         this.correlationId = correlationId;
         this.channelEndpoint = channelEndpoint;
@@ -145,7 +142,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
         this.sourceAddress = sourceAddress;
-        this.logger = logger;
 
         this.clock = clock;
         final long time = clock.time();
@@ -545,7 +541,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, windowPosition, currentWindowLength);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

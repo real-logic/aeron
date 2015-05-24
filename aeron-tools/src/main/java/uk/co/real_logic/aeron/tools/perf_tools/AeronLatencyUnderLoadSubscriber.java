@@ -32,18 +32,11 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class AeronLatencyUnderLoadSubscriber
 {
-    private Aeron.Context ctx = null;
-    private FragmentAssemblyAdapter dataHandler = null;
-    private Aeron aeron = null;
-    private Publication pub = null;
-    private Subscription sub = null;
-    private final int pubStreamId = 11;
-    private final int subStreamId = 10;
+    private final Publication pub;
+    private final BufferClaim bufferClaim;
     private String pubChannel = "udp://localhost:44444";
     private String reflectChannel = "udp://localhost:55555";
-    private boolean running = true;
-    private BufferClaim bufferClaim = null;
-    private Options options;
+    private volatile boolean running = true;
 
     public AeronLatencyUnderLoadSubscriber(final String[] args)
     {
@@ -51,15 +44,18 @@ public class AeronLatencyUnderLoadSubscriber
         {
             parseArgs(args);
         }
-        catch (final ParseException e)
+        catch (final ParseException ex)
         {
-            e.printStackTrace();
+           throw new RuntimeException(ex);
         }
-        ctx = new Aeron.Context();
-        dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
-        aeron = Aeron.connect(ctx);
+
+        final Aeron.Context ctx = new Aeron.Context();
+        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
+        final Aeron aeron = Aeron.connect(ctx);
+        final int pubStreamId = 11;
         pub = aeron.addPublication(reflectChannel, pubStreamId);
-        sub = aeron.addSubscription(pubChannel, subStreamId, dataHandler);
+        final int subStreamId = 10;
+        final Subscription sub = aeron.addSubscription(pubChannel, subStreamId, dataHandler);
         bufferClaim = new BufferClaim();
 
         while (running)
@@ -98,7 +94,7 @@ public class AeronLatencyUnderLoadSubscriber
 
     private void parseArgs(final String[] args) throws ParseException
     {
-        options = new Options();
+        final Options options = new Options();
         options.addOption("c", "claim", false, "Use Try/Claim");
         options.addOption("", "pubChannel", false, "Primary publishing channel");
         options.addOption("", "reflectChannel", false, "Reflection channel");

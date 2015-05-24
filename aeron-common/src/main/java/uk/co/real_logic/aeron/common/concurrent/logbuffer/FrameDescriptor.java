@@ -72,11 +72,6 @@ public class FrameDescriptor
     public static final byte UNFRAGMENTED = (byte)(BEGIN_FRAG | END_FRAG);
 
     /**
-     * Offset within a frame at which the length field begins
-     */
-    public static final int LENGTH_OFFSET = 0;
-
-    /**
      * Offset within a frame at which the flags field begins
      */
     public static final int FLAGS_OFFSET = 5;
@@ -125,20 +120,6 @@ public class FrameDescriptor
     }
 
     /**
-     * Check that a given offset is at the correct {@link FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
-     *
-     * @param offset to be checked.
-     * @throws IllegalArgumentException if the offset is not on a frame alignment boundary.
-     */
-    public static void checkOffsetAlignment(final int offset)
-    {
-        if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
-        {
-            throw new IllegalArgumentException("Cannot seek to an offset that isn't a multiple of " + FRAME_ALIGNMENT);
-        }
-    }
-
-    /**
      * Check the max frame length is a multiple of {@link #FRAME_ALIGNMENT}
      *
      * @param length to be applied to all logged frames.
@@ -176,17 +157,6 @@ public class FrameDescriptor
     public static int typeOffset(final int frameOffset)
     {
         return frameOffset + TYPE_OFFSET;
-    }
-
-    /**
-     * The buffer offset at which the length field begins.
-     *
-     * @param frameOffset at which the frame begins.
-     * @return the offset at which the length field begins.
-     */
-    public static int lengthOffset(final int frameOffset)
-    {
-        return frameOffset + LENGTH_OFFSET;
     }
 
     /**
@@ -233,7 +203,7 @@ public class FrameDescriptor
      */
     public static int frameLengthVolatile(final UnsafeBuffer termBuffer, final int frameOffset)
     {
-        int frameLength = termBuffer.getIntVolatile(lengthOffset(frameOffset));
+        int frameLength = termBuffer.getIntVolatile(frameOffset);
 
         if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
         {
@@ -257,7 +227,7 @@ public class FrameDescriptor
             frameLength = Integer.reverseBytes(frameLength);
         }
 
-        termBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
+        termBuffer.putIntOrdered(frameOffset, frameLength);
     }
 
     /**

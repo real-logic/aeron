@@ -23,7 +23,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 
 public class TermGapScannerTest
 {
@@ -46,7 +45,7 @@ public class TermGapScannerTest
         final int frameOffset = HEADER_LENGTH * 3;
         final int highWaterMark = frameOffset + HEADER_LENGTH;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler), is(0));
 
@@ -59,9 +58,9 @@ public class TermGapScannerTest
         final int tail = HEADER_LENGTH;
         final int highWaterMark = HEADER_LENGTH * 3;
 
-        when(termBuffer.getIntVolatile(lengthOffset(tail - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
-        when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(0);
-        when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(tail - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(tail)).thenReturn(0);
+        when(termBuffer.getIntVolatile(highWaterMark - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
@@ -74,9 +73,9 @@ public class TermGapScannerTest
         final int tail = LOG_BUFFER_CAPACITY - (HEADER_LENGTH * 2);
         final int highWaterMark = LOG_BUFFER_CAPACITY;
 
-        when(termBuffer.getIntVolatile(lengthOffset(tail - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
-        when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(0);
-        when(termBuffer.getIntVolatile(lengthOffset(highWaterMark - HEADER_LENGTH))).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(tail - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(tail)).thenReturn(0);
+        when(termBuffer.getIntVolatile(highWaterMark - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
@@ -90,8 +89,8 @@ public class TermGapScannerTest
         final int tail = LOG_BUFFER_CAPACITY - paddingLength;
         final int highWaterMark = LOG_BUFFER_CAPACITY - paddingLength + HEADER_LENGTH;
 
-        when(termBuffer.getIntVolatile(lengthOffset(tail))).thenReturn(paddingLength);
-        when(termBuffer.getIntVolatile(lengthOffset(tail + HEADER_LENGTH))).thenReturn(0);
+        when(termBuffer.getIntVolatile(tail)).thenReturn(paddingLength);
+        when(termBuffer.getIntVolatile(tail + HEADER_LENGTH)).thenReturn(0);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(LOG_BUFFER_CAPACITY));
 

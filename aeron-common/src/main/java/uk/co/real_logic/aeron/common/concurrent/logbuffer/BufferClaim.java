@@ -15,22 +15,21 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
  * <p>
- * The claimed space is in #buffer() between #offset() and #offset() + #length(). When the buffer is filled
- * with message data, use #commit() to make it available to subscribers.
+ * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
+ * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
  */
 public class BufferClaim
 {
     private AtomicBuffer buffer;
     private int offset;
     private int length;
-    private int frameLengthOffset;
-    private int frameLength;
 
     /**
      * The referenced buffer to be used.
@@ -99,35 +98,11 @@ public class BufferClaim
     }
 
     /**
-     * Set frame length field offset of the record header in the buffer.
-     *
-     * @param frameLengthOffset of the record header in the buffer.
-     * @return this instance for fluent API usage.
-     */
-    BufferClaim frameLengthOffset(final int frameLengthOffset)
-    {
-        this.frameLengthOffset = frameLengthOffset;
-        return this;
-    }
-
-    /**
-     * Set frame length field value of the record header in the buffer.
-     *
-     * @param frameLength value of the record header in the buffer.
-     * @return this instance for fluent API usage.
-     */
-    BufferClaim frameLength(final int frameLength)
-    {
-        this.frameLength = frameLength;
-        return this;
-    }
-
-    /**
      * Commit the message to the log buffer so that is it available to subscribers.
      */
     public void commit()
     {
-        buffer.putIntOrdered(frameLengthOffset, frameLength);
+        buffer.putIntOrdered(offset - DataHeaderFlyweight.HEADER_LENGTH, length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 }
 

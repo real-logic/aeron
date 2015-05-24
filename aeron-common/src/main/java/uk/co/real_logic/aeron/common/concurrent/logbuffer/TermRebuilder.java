@@ -37,9 +37,8 @@ public class TermRebuilder
     public static void insert(
         final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int packetOffset, final int length)
     {
-        final int lengthOffset = lengthOffset(packetOffset);
-        final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
-        packet.putIntOrdered(lengthOffset, 0);
+        final int frameLength = packet.getInt(0, LITTLE_ENDIAN);
+        packet.putIntOrdered(0, 0);
 
         termBuffer.putBytes(termOffset, packet, packetOffset, length);
         frameLengthOrdered(termBuffer, termOffset, frameLength);

@@ -144,8 +144,8 @@ public class TermAppender extends LogBufferPartition
         {
             if (length > maxMessageLength)
             {
-                throw new IllegalArgumentException(
-                    String.format("Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
+                throw new IllegalArgumentException(String.format(
+                    "Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
             }
 
             resultingOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
@@ -166,8 +166,8 @@ public class TermAppender extends LogBufferPartition
     {
         if (length > maxPayloadLength)
         {
-            throw new IllegalArgumentException(
-                String.format("Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
+            throw new IllegalArgumentException(String.format(
+                "Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
         }
 
         final int frameLength = length + HEADER_LENGTH;
@@ -184,9 +184,7 @@ public class TermAppender extends LogBufferPartition
             bufferClaim
                 .buffer(termBuffer)
                 .offset(frameOffset + HEADER_LENGTH)
-                .length(length)
-                .frameLengthOffset(lengthOffset(frameOffset))
-                .frameLength(frameLength);
+                .length(length);
         }
 
         return resultingOffset;

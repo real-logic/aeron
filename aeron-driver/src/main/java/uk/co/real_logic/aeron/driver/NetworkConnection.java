@@ -29,7 +29,6 @@ import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.NetworkConnection.Status.ACTIVE;
 
@@ -514,7 +513,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
 
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
     {
-        return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(lengthOffset(0)) == 0;
+        return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(0) == 0;
     }
 
     private void hwmCandidate(final long proposedPosition)

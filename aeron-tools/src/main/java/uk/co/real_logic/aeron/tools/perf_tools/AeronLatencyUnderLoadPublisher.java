@@ -52,29 +52,20 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class AeronLatencyUnderLoadPublisher implements RateController.Callback
 {
-    private Aeron.Context ctx = null;
-    private FragmentAssemblyAdapter dataHandler = null;
-    private Aeron aeron = null;
     private Publication pub = null;
     private Subscription sub = null;
     private CountDownLatch connectionLatch = null;
-    private final int pubStreamId = 10;
     private final int subStreamId = 11;
     private String pubChannel = "udp://localhost:44444";
     private String reflectChannel = "udp://localhost:55555";
-    private Thread subThread = null;
     private boolean running = true;
-    private IdleStrategy idle = null;
-    private final int warmUpMsgs = 100000;
     private final int msgLen = 20;
-    private RateController rateCtlr = null;
     private UnsafeBuffer buffer = null;
     private final long timestamps[] = new long[1111100];
     private int msgCount = 0;
     private final BufferClaim bufferClaim;
     private int warmups = 0;
     private final double means[] = new double[5];
-    private Options options;
 
     public AeronLatencyUnderLoadPublisher(final String[] args)
     {
@@ -84,19 +75,21 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         }
         catch (final ParseException e)
         {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        ctx = new Aeron.Context()
-                .newConnectionHandler(this::connectionHandler);
-        dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
-        aeron = Aeron.connect(ctx);
+
+        final Aeron.Context ctx = new Aeron.Context()
+            .newConnectionHandler(this::connectionHandler);
+        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
+        final Aeron aeron = Aeron.connect(ctx);
+        final int pubStreamId = 10;
         pub = aeron.addPublication(pubChannel, pubStreamId);
         sub = aeron.addSubscription(reflectChannel, subStreamId, dataHandler);
         connectionLatch = new CountDownLatch(1);
-        idle = new BusySpinIdleStrategy();
+        final IdleStrategy idle = new BusySpinIdleStrategy();
         bufferClaim = new BufferClaim();
 
-        final List<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
+        final List<RateControllerInterval> intervals = new ArrayList<>();
         intervals.add(new MessagesAtMessagesPerSecondInterval(100, 10));
         intervals.add(new MessagesAtMessagesPerSecondInterval(1000, 100));
         intervals.add(new MessagesAtMessagesPerSecondInterval(10000, 1000));
@@ -107,29 +100,26 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msgLen));
         msgCount = 0;
 
+        RateController rateController = null;
         try
         {
-            rateCtlr = new RateController(this, intervals);
+            rateController = new RateController(this, intervals);
         }
-        catch (final Exception e)
+        catch (final Exception ex)
         {
-            e.printStackTrace();
+            throw new RuntimeException(ex);
         }
 
-        final Runnable task = new Runnable()
-        {
-            public void run()
+        final Runnable task = () -> {
+            while (running)
             {
-                while (running)
+                while (sub.poll(1) <= 0 && running)
                 {
-                    while (sub.poll(1) <= 0 && running)
-                    {
-                    }
                 }
-                System.out.println("Done");
             }
+            System.out.println("Done");
         };
-        subThread = new Thread(task);
+        final Thread subThread = new Thread(task);
         subThread.start();
 
         try
@@ -141,6 +131,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
             e.printStackTrace();
         }
 
+        final int warmUpMsgs = 100000;
         for (int i = 0; i < warmUpMsgs; i++)
         {
             while (pub.tryClaim(buffer.capacity(), bufferClaim) < 0L)
@@ -162,7 +153,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         }
         System.out.println("warmup msgs received: " + warmups);
         final int start = (int)System.currentTimeMillis();
-        while (rateCtlr.next())
+        while (rateController.next())
         {
 
         }
@@ -212,6 +203,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         while (pub.tryClaim(buffer.capacity(), bufferClaim) < 0L)
         {
         }
+
         final MutableDirectBuffer buffer = bufferClaim.buffer();
         final int offset = bufferClaim.offset();
         buffer.putByte(offset, (byte) 'p');
@@ -252,7 +244,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
 
     private void parseArgs(final String[] args) throws ParseException
     {
-        options = new Options();
+        final Options options = new Options();
         options.addOption("c", "claim", false, "Use Try/Claim");
         options.addOption("", "pubChannel", false, "Primary publishing channel");
         options.addOption("", "reflectChannel", false, "Reflection channel");
@@ -323,9 +315,9 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         final int height = 940;
         double min = Double.MAX_VALUE;
         double max = Double.MIN_VALUE;
-        for (int i = 0; i < timestamps.length; i++)
+        for (final long timestamp : timestamps)
         {
-            final double ts = timestamps[i] / 1000.0;
+            final double ts = timestamp / 1000.0;
             if (ts < min)
             {
                 min = ts;

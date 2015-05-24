@@ -66,13 +66,13 @@ public class TermReaderTest
         final int frameLength = HEADER_LENGTH + msgLength;
         final int termOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(0)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(0))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(termReader.read(termOffset, handler, Integer.MAX_VALUE), is(1));
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(0));
+        inOrder.verify(termBuffer).getIntVolatile(0);
         verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
@@ -83,7 +83,7 @@ public class TermReaderTest
         final int frameLength = HEADER_LENGTH + msgLength;
         final int termOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(0)).thenReturn(frameLength);
 
         assertThat(termReader.read(termOffset, handler, 0), is(0));
 
@@ -97,7 +97,7 @@ public class TermReaderTest
 
         assertThat(termReader.read(termOffset, handler, Integer.MAX_VALUE), is(0));
 
-        verify(termBuffer).getIntVolatile(lengthOffset(0));
+        verify(termBuffer).getIntVolatile(0);
         verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
     }
 
@@ -114,7 +114,7 @@ public class TermReaderTest
         assertThat(termReader.read(termOffset, handler, 1), is(1));
 
         final InOrder inOrder = inOrder(termBuffer, handler);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(0));
+        inOrder.verify(termBuffer).getIntVolatile(0);
         inOrder.verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
         inOrder.verifyNoMoreInteractions();
     }
@@ -127,17 +127,17 @@ public class TermReaderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int termOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(0))).thenReturn(frameLength);
-        when(termBuffer.getIntVolatile(lengthOffset(alignedFrameLength))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(0)).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(alignedFrameLength)).thenReturn(frameLength);
         when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(termReader.read(termOffset, handler, Integer.MAX_VALUE), is(2));
 
         final InOrder inOrder = inOrder(termBuffer, handler);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(0));
+        inOrder.verify(termBuffer).getIntVolatile(0);
         inOrder.verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
 
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(alignedFrameLength));
+        inOrder.verify(termBuffer).getIntVolatile(alignedFrameLength);
         inOrder.verify(handler).onData(eq(termBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
@@ -149,13 +149,13 @@ public class TermReaderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(termReader.read(frameOffset, handler, Integer.MAX_VALUE), is(1));
 
         final InOrder inOrder = inOrder(termBuffer, handler);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(handler).onData(eq(termBuffer), eq(frameOffset + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
@@ -167,13 +167,13 @@ public class TermReaderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)PADDING_FRAME_TYPE);
 
         assertThat(termReader.read(frameOffset, handler, Integer.MAX_VALUE), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
     }
 }

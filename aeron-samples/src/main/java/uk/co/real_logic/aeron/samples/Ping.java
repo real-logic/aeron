@@ -152,7 +152,7 @@ public class Ping
     {
         System.out.format("new connection: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
 
-        if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
+        if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
         {
             pongConnectionLatch.countDown();
         }

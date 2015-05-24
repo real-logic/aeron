@@ -47,7 +47,6 @@ public class AeronThroughput
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
-    private static long iterations = 0;
 
     public static void printRate(
         final double messagesPerSec,
@@ -55,7 +54,6 @@ public class AeronThroughput
         final long totalMessages,
         final long totalBytes)
     {
-
     }
 
     public static DataHandler rateReporterHandler(final RateReporter reporter)
@@ -117,7 +115,7 @@ public class AeronThroughput
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), AeronThroughput::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
-        final ExecutorService executor = Executors.newFixedThreadPool(3);
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final String embeddedDirName = CommonContext.generateEmbeddedDirName();
         ctx.dirName(embeddedDirName);
@@ -127,7 +125,7 @@ public class AeronThroughput
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect(context, executor);
+             final Aeron aeron = Aeron.connect(context);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {

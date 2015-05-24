@@ -28,7 +28,6 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.MappedByteBuffer;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -107,20 +106,6 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
-     * Create an Aeron instance and connect to the media driver.
-     * <p>
-     * Threads for interacting with the media driver are run via the the provided {@link Executor}.
-     *
-     * @param ctx      for configuration of the client.
-     * @param executor to run the internal threads for communicating with the media driver.
-     * @return the new {@link Aeron} instance connected to the Media Driver.
-     */
-    public static Aeron connect(final Context ctx, final Executor executor)
-    {
-        return new Aeron(ctx).start(executor);
-    }
-
-    /**
      * Clean up and release all Aeron internal resources and shutdown threads.
      */
     public void close()
@@ -187,13 +172,6 @@ public final class Aeron implements AutoCloseable
         return this;
     }
 
-    private Aeron start(final Executor executor)
-    {
-        executor.execute(conductorRunner);
-
-        return this;
-    }
-
     /**
      * This class provides configuration for the {@link Aeron} class via the {@link Aeron#connect(Aeron.Context)}
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
@@ -202,20 +180,17 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private long mediaDriverTimeoutMs = NULL_TIMEOUT;
         private final AtomicBoolean isClosed = new AtomicBoolean(false);
-
         private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
         private MappedByteBuffer cncByteBuffer;
         private DirectBuffer cncMetaDataBuffer;
-
         private LogBuffersFactory logBuffersFactory;
-
         private Consumer<Throwable> errorHandler;
         private NewConnectionHandler newConnectionHandler;
         private InactiveConnectionHandler inactiveConnectionHandler;
-        private long mediaDriverTimeoutMs = NULL_TIMEOUT;
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.

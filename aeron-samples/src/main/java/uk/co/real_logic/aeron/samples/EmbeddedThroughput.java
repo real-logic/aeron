@@ -52,7 +52,7 @@ public class EmbeddedThroughput
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
-        final ExecutorService executor = Executors.newFixedThreadPool(3);
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context context = new Aeron.Context();
         final String embeddedDirName = CommonContext.generateEmbeddedDirName();
@@ -64,7 +64,7 @@ public class EmbeddedThroughput
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect(context, executor);
+             final Aeron aeron = Aeron.connect(context);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {

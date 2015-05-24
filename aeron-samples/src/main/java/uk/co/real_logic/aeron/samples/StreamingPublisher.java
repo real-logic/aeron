@@ -119,8 +119,6 @@ public class StreamingPublisher
 
                 printingActive = false;
             }
-            // Keep repeating the above loop if user answers 'Y' to "Execute again?"
-            // Otherwise, exit the loop
             while (barrier.await());
         }
         reporter.halt();

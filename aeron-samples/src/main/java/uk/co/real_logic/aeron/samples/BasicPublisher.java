@@ -53,7 +53,6 @@ public class BasicPublisher
         // than relying on an external one.
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
 
-        // Create an Aeron context for client connection to media driver
         final Aeron.Context ctx = new Aeron.Context();
         if (EMBEDDED_MEDIA_DRIVER)
         {
@@ -67,38 +66,33 @@ public class BasicPublisher
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID))
         {
-            // Try to send messages
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
-                // Prepare a buffer to be sent
                 final String message = "Hello World! " + i;
                 BUFFER.putBytes(0, message.getBytes());
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
 
-                // Try to send the message on the configured channel and stream ID
                 final long result = publication.offer(BUFFER, 0, message.getBytes().length);
 
                 if (result < 0L)
                 {
-                    // Message offer failed
                     if (result == Publication.BACK_PRESSURE)
                     {
-                        System.out.println(" Offer failed due to back pressure");
+                        System.out.println("Offer failed due to back pressure");
                     }
                     else if (result == Publication.NOT_CONNECTED)
                     {
-                        System.out.println(" Offer failed because publisher is not yet connected to subscriber");
+                        System.out.println("Offer failed because publisher is not yet connected to subscriber");
                     }
                     else
                     {
-                        System.out.println(" Offer failed due to unknown reason");
+                        System.out.println("Offer failed due to unknown reason");
                     }
                 }
                 else
                 {
-                    // Successful message send
-                    System.out.println(" yay!");
+                    System.out.println("yay!");
                 }
 
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));

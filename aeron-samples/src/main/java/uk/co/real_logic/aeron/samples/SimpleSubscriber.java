@@ -53,13 +53,15 @@ public class SimpleSubscriber
 
         // dataHandler method is called for every new datagram received
         final DataHandler dataHandler =
-            (buffer, offset, length, header) -> {
+            (buffer, offset, length, header) ->
+            {
                 final byte[] data = new byte[length];
                 buffer.getBytes(offset, data);
 
                 System.out.println(String.format(
                     "Received message (%s) to stream %d from session %x term id %x term offset %d (%d@%d)",
                     new String(data), streamId, header.sessionId(), header.termId(), header.termOffset(), length, offset));
+
                 // Received the intended message, time to exit the program
                 running.set(false);
             };
@@ -78,24 +80,19 @@ public class SimpleSubscriber
         {
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                 100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
-            try
+
+            // Try to read the data from subscriber
+            while (running.get())
             {
-                // Try to read the data from subscriber
-                while (running.get())
-                {
-                    // poll delivers messages to the dataHandler as they arrive
-                    // and returns number of fragments read, or 0
-                    // if no data is available.
-                    final int fragmentsRead = subscription.poll(fragmentLimitCount);
-                    // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
-                    // use if no messages were received.
-                    idleStrategy.idle(fragmentsRead);
-                }
+                // poll delivers messages to the dataHandler as they arrive
+                // and returns number of fragments read, or 0
+                // if no data is available.
+                final int fragmentsRead = subscription.poll(fragmentLimitCount);
+                // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
+                // use if no messages were received.
+                idleStrategy.idle(fragmentsRead);
             }
-            catch (final Exception ex)
-            {
-                ex.printStackTrace();
-            }
+
             System.out.println("Shutting down...");
         }
         finally

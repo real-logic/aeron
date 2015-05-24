@@ -72,9 +72,9 @@ public class EmbeddedPingPong
             System.out.println("Shutdown Driver...");
         }
     }
+
     private static void runPing(final String embeddedDirName) throws InterruptedException
     {
-
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(EmbeddedPingPong::newPongConnectionHandler);
         ctx.dirName(embeddedDirName);
@@ -177,7 +177,7 @@ public class EmbeddedPingPong
     private static void newPongConnectionHandler(
         final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
     {
-        if (channel.equals(PONG_CHANNEL) && PONG_STREAM_ID == streamId)
+        if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
         {
             PONG_CONNECTION_LATCH.countDown();
         }

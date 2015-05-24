@@ -31,8 +31,8 @@ import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
 
 public class EmbeddedThroughput
 {
-    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
+    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;

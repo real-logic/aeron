@@ -48,8 +48,6 @@ public class RateSubscriber
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final ExecutorService executor = Executors.newFixedThreadPool(1);
-
-        // Create a context with newConnectionHandler and inactiveConnectionHandler
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
@@ -86,7 +84,6 @@ public class RateSubscriber
             final Future future = executor.submit(
                 () -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
-            // run the rate reporter loop
             reporter.run();
 
             System.out.println("Shutting down...");

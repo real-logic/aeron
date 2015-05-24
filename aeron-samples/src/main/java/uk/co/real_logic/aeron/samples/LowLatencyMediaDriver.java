@@ -21,6 +21,9 @@ import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 
+/**
+ * Sample setup for a {@link MediaDriver} that is configured for low latency communications.
+ */
 public class LowLatencyMediaDriver
 {
     public static void main(final String[] args) throws Exception
@@ -28,8 +31,6 @@ public class LowLatencyMediaDriver
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
-            .sharedNetworkIdleStrategy(new NoOpIdleStrategy())
-            .sharedIdleStrategy(new NoOpIdleStrategy())
             .receiverIdleStrategy(new NoOpIdleStrategy())
             .senderIdleStrategy(new NoOpIdleStrategy());
 

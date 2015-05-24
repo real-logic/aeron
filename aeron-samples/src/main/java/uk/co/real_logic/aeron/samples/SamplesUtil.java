@@ -86,10 +86,9 @@ public class SamplesUtil
             final byte[] data = new byte[length];
             buffer.getBytes(offset, data);
 
-            System.out.println(
-                String.format(
-                    "Message to stream %d from session %d (%d@%d) <<%s>>",
-                    streamId, header.sessionId(), length, offset, new String(data)));
+            System.out.println(String.format(
+                "Message to stream %d from session %d (%d@%d) <<%s>>",
+                streamId, header.sessionId(), length, offset, new String(data)));
         };
     }
 
@@ -138,10 +137,9 @@ public class SamplesUtil
         final long totalMessages,
         final long totalBytes)
     {
-        System.out.println(
-            String.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
-                messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
+        System.out.println(String.format(
+            "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB",
+            messagesPerSec, bytesPerSec, totalMessages, totalBytes / (1024 * 1024)));
     }
 
     /**
@@ -156,10 +154,9 @@ public class SamplesUtil
     public static void printNewConnection(
         final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInformation)
     {
-        System.out.println(
-            String.format(
-                "New connection on %s streamId=%d sessionId=%d at position=%d from %s",
-                channel, streamId, sessionId, joiningPosition, sourceInformation));
+        System.out.println(String.format(
+            "New connection on %s streamId=%d sessionId=%d at position=%d from %s",
+            channel, streamId, sessionId, joiningPosition, sourceInformation));
     }
 
     /**
@@ -172,9 +169,8 @@ public class SamplesUtil
      */
     public static void printInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
     {
-        System.out.println(
-            String.format(
-                "Inactive connection on %s streamId=%d sessionId=%d at position=%d",
-                channel, streamId, sessionId, position));
+        System.out.println(String.format(
+            "Inactive connection on %s streamId=%d sessionId=%d at position=%d",
+            channel, streamId, sessionId, position));
     }
 }

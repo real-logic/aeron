@@ -49,6 +49,4 @@ interface DriverListener
         ErrorCode errorCode,
         String message,
         long correlationId);
-
-    void operationSucceeded(long correlationId);
 }

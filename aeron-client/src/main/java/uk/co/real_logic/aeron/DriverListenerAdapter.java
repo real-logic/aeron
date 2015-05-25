@@ -109,11 +109,8 @@ class DriverListenerAdapter implements MessageHandler
                 correlatedMessage.wrap(buffer, index);
 
                 final long correlationId = correlatedMessage.correlationId();
-
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.operationSucceeded(correlationId);
-
                     lastReceivedCorrelationId = correlationId;
                 }
                 break;

@@ -241,10 +241,6 @@ class ClientConductor implements Agent, DriverListener
         registrationException = new RegistrationException(errorCode, message);
     }
 
-    public void operationSucceeded(final long correlationId)
-    {
-    }
-
     public void onInactiveConnection(
         final int streamId,
         final int sessionId,

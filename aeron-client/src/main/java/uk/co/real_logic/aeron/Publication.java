@@ -158,8 +158,7 @@ public class Publication implements AutoCloseable
 
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final int currentTail = termAppenders[activeIndex].tailVolatile();
+        final int currentTail = termAppenders[indexByTerm(initialTermId, activeTermId)].tailVolatile();
 
         return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
     }
@@ -192,7 +191,7 @@ public class Publication implements AutoCloseable
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.tailVolatile();
+        final int currentTail = termAppender.rawTailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
         final int capacity = termAppender.termBuffer().capacity();
 
@@ -248,7 +247,7 @@ public class Publication implements AutoCloseable
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.tailVolatile();
+        final int currentTail = termAppender.rawTailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
         final int capacity = termAppender.termBuffer().capacity();
 

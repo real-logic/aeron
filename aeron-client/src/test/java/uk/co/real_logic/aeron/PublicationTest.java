@@ -129,7 +129,8 @@ public class PublicationTest
     {
         final long expectedPosition = (long)atomicSendBuffer.capacity();
         when(appenders[0].append(atomicSendBuffer, 0, atomicSendBuffer.capacity())).thenReturn(atomicSendBuffer.capacity());
-        when(appenders[0].tailVolatile()).thenReturn(0).thenReturn((int)expectedPosition);
+        when(appenders[0].rawTailVolatile()).thenReturn(0).thenReturn((int)expectedPosition);
+        when(appenders[0].tailVolatile()).thenReturn((int)expectedPosition);
 
         assertThat(publication.offer(atomicSendBuffer), is(expectedPosition));
         assertThat(publication.position(), is(expectedPosition));
@@ -153,7 +154,7 @@ public class PublicationTest
     public void shouldRotateWhenAppendTrips()
     {
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TermAppender.TRIPPED);
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].rawTailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 
         assertThat(publication.offer(atomicSendBuffer), is(Publication.BACK_PRESSURE));
@@ -173,7 +174,7 @@ public class PublicationTest
     public void shouldRotateWhenClaimTrips()
     {
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TermAppender.TRIPPED);
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].rawTailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 
         final BufferClaim bufferClaim = new BufferClaim();

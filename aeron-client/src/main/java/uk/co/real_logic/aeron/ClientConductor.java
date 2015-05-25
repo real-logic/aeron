@@ -342,8 +342,8 @@ class ClientConductor implements Agent, DriverListener
 
                 return;
             }
-
-        } while (timerWheel.clock().time() < timeout);
+        }
+        while (timerWheel.clock().time() < timeout);
 
         throw new DriverTimeoutException("No response from driver within timeout");
     }

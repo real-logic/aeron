@@ -185,7 +185,7 @@ class ClientConductor implements Agent, DriverListener
             logMetaDataBuffer,
             correlationId);
 
-        activePublications.put(publication.channel(), publication.sessionId(), publication.streamId(), publication);
+        activePublications.put(channel, sessionId, streamId, publication);
     }
 
     public void onNewConnection(

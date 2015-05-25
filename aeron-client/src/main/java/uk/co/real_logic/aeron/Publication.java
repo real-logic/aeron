@@ -189,7 +189,6 @@ public class Publication implements AutoCloseable
     {
         ensureOpen();
 
-        long newPosition = NOT_CONNECTED;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
@@ -198,7 +197,10 @@ public class Publication implements AutoCloseable
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
         final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < capacity && position < publicationLimit.getVolatile())
+        final long limit = publicationLimit.getVolatile();
+        long newPosition = limit > 0 ? BACK_PRESSURE : NOT_CONNECTED;
+
+        if (currentTail < capacity && position < limit)
         {
             final int nextOffset = termAppender.append(buffer, offset, length);
             newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
@@ -243,7 +245,6 @@ public class Publication implements AutoCloseable
     {
         ensureOpen();
 
-        long newPosition = NOT_CONNECTED;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
@@ -252,7 +253,10 @@ public class Publication implements AutoCloseable
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
         final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < capacity && position < publicationLimit.getVolatile())
+        final long limit = publicationLimit.getVolatile();
+        long newPosition = limit > 0 ? BACK_PRESSURE : NOT_CONNECTED;
+
+        if (currentTail < capacity && position < limit)
         {
             final int nextOffset = termAppender.claim(length, bufferClaim);
             newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);

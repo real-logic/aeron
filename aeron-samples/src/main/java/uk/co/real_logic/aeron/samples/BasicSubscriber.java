@@ -52,6 +52,7 @@ public class BasicSubscriber
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
+
         if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
@@ -69,7 +70,7 @@ public class BasicSubscriber
         // The Aeron and Subscription classes implement "AutoCloseable" and will automatically
         // clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-                final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
             SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 

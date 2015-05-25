@@ -137,10 +137,9 @@ public class Subscription implements AutoCloseable
         return null != connections.findFirst((e) -> e.sessionId() == sessionId);
     }
 
-    boolean removeConnection(final int sessionId, final long correlationId)
+    boolean removeConnection(final long correlationId)
     {
-        final Connection connection =
-            connections.remove((conn) -> conn.sessionId() == sessionId && conn.correlationId() == correlationId);
+        final Connection connection = connections.remove((conn) -> conn.correlationId() == correlationId);
 
         if (connection != null)
         {

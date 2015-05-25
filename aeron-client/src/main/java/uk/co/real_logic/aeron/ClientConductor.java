@@ -255,7 +255,7 @@ class ClientConductor implements Agent, DriverListener
             streamId,
             (subscription) ->
             {
-                if (subscription.removeConnection(sessionId, correlationId))
+                if (subscription.removeConnection(correlationId))
                 {
                     if (null != inactiveConnectionHandler)
                     {

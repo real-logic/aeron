@@ -23,15 +23,18 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
+import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 /**
@@ -41,7 +44,9 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
 class ClientConductor implements Agent, DriverListener
 {
     private static final long NO_CORRELATION_ID = -1;
-    private static final int KEEPALIVE_TIMEOUT_MS = 500;
+    private static final long KEEPALIVE_TIMEOUT_MS = 500;
+    private static final long RESOURCE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(1);
+    private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(5);
 
     private final long driverTimeoutNs;
     private volatile boolean driverActive = true;
@@ -50,10 +55,12 @@ class ClientConductor implements Agent, DriverListener
     private final LogBuffersFactory logBuffersFactory;
     private final ActivePublications activePublications = new ActivePublications();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
+    private final ArrayList<ManagedResource> managedResources = new ArrayList<>();
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final TimerWheel timerWheel;
     private final TimerWheel.Timer keepaliveTimer;
+    private final TimerWheel.Timer managedResourceTimer;
     private final Consumer<Throwable> errorHandler;
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
@@ -78,10 +85,16 @@ class ClientConductor implements Agent, DriverListener
         this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
         this.inactiveConnectionHandler = inactiveConnectionHandler;
-        this.driverTimeoutNs = TimeUnit.MILLISECONDS.toNanos(driverTimeoutMs);
+        this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
 
         this.driverListenerAdapter = new DriverListenerAdapter(broadcastReceiver, this);
-        this.keepaliveTimer = timerWheel.newTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onKeepalive);
+        this.keepaliveTimer = timerWheel.newTimeout(KEEPALIVE_TIMEOUT_MS, MILLISECONDS, this::onKeepalive);
+        this.managedResourceTimer = timerWheel.newTimeout(RESOURCE_TIMEOUT_MS, MILLISECONDS, this::checkManagedResources);
+    }
+
+    public void onClose()
+    {
+        managedResources.forEach(ManagedResource::delete);
     }
 
     public synchronized int doWork()
@@ -266,6 +279,12 @@ class ClientConductor implements Agent, DriverListener
         return driverListenerAdapter;
     }
 
+    public void lingerResource(final ManagedResource managedResource)
+    {
+        managedResource.timeOfLastStateChange(timerWheel.clock().nanoTime());
+        managedResources.add(managedResource);
+    }
+
     private int processTimers()
     {
         int workCount = 0;
@@ -283,7 +302,24 @@ class ClientConductor implements Agent, DriverListener
         driverProxy.sendClientKeepalive();
         checkDriverHeartbeat();
 
-        timerWheel.rescheduleTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, keepaliveTimer);
+        timerWheel.rescheduleTimeout(KEEPALIVE_TIMEOUT_MS, MILLISECONDS, keepaliveTimer);
+    }
+
+    private void checkManagedResources()
+    {
+        final long now = timerWheel.clock().nanoTime();
+
+        for (int i = managedResources.size() - 1; i >= 0; i--)
+        {
+            final ManagedResource resource = managedResources.get(i);
+            if (now > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
+            {
+                managedResources.remove(i);
+                resource.delete();
+            }
+        }
+
+        timerWheel.rescheduleTimeout(RESOURCE_TIMEOUT_MS, MILLISECONDS, managedResourceTimer);
     }
 
     private void checkDriverHeartbeat()

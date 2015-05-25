@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
+import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -25,16 +26,18 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescri
  * Represents an incoming Connection from a publisher to a {@link Subscription}. Each connection identifies source publisher
  * by session id.
  */
-class Connection
+class Connection implements ManagedResource
 {
-    private final LogBuffers logBuffers;
-    private final TermReader[] termReaders;
-    private final DataHandler dataHandler;
-    private final Position subscriberPosition;
+    private long timeOfLastStateChange = 0;
     private final long correlationId;
     private final int positionBitsToShift;
     private final int termLengthMask;
     private final int sessionId;
+
+    private final LogBuffers logBuffers;
+    private final TermReader[] termReaders;
+    private final DataHandler dataHandler;
+    private final Position subscriberPosition;
 
     public Connection(
         final TermReader[] readers,
@@ -86,7 +89,17 @@ class Connection
         return messagesRead;
     }
 
-    public void close()
+    public void timeOfLastStateChange(final long time)
+    {
+        this.timeOfLastStateChange = time;
+    }
+
+    public long timeOfLastStateChange()
+    {
+        return timeOfLastStateChange;
+    }
+
+    public void delete()
     {
         logBuffers.close();
     }

@@ -20,6 +20,8 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
@@ -37,15 +39,18 @@ import uk.co.real_logic.agrona.concurrent.status.Position;
  */
 public class Subscription implements AutoCloseable
 {
+    private static final AtomicIntegerFieldUpdater<Subscription> IS_CLOSED_UPDATER =
+        AtomicIntegerFieldUpdater.newUpdater(Subscription.class, "isClosed");
+
     private final long registrationId;
     private final int streamId;
+    private int roundRobinIndex = 0;
+    private volatile int isClosed = 0;
+
     private final String channel;
     private final ClientConductor clientConductor;
     private final AtomicArray<Connection> connections = new AtomicArray<>();
     private final DataHandler dataHandler;
-
-    private int roundRobinIndex = 0;
-    private volatile boolean isClosed = false;
 
     Subscription(
         final ClientConductor conductor,
@@ -109,10 +114,15 @@ public class Subscription implements AutoCloseable
      */
     public void close()
     {
-        isClosed = true;
-        connections.forEach(Connection::close);
-        connections.clear();
-        clientConductor.releaseSubscription(this);
+        if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
+        {
+            synchronized (clientConductor)
+            {
+                connections.forEach(clientConductor::lingerResource);
+                connections.clear();
+                clientConductor.releaseSubscription(this);
+            }
+        }
     }
 
     long registrationId()
@@ -143,7 +153,7 @@ public class Subscription implements AutoCloseable
 
         if (connection != null)
         {
-            connection.close();
+            clientConductor.lingerResource(connection);
         }
 
         return connection != null;
@@ -156,7 +166,7 @@ public class Subscription implements AutoCloseable
 
     private void ensureOpen()
     {
-        if (isClosed)
+        if (1 == isClosed)
         {
             throw new IllegalStateException(String.format(
                 "Subscription is closed: channel=%s streamId=%d registrationId=%d", channel, streamId, registrationId));

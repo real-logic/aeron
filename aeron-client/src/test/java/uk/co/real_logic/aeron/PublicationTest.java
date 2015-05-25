@@ -93,6 +93,7 @@ public class PublicationTest
     @Test(expected = IllegalStateException.class)
     public void shouldEnsureThePublicationIsOpenBeforeReadingPosition()
     {
+        publication.incRef();
         publication.close();
         publication.position();
     }
@@ -193,7 +194,9 @@ public class PublicationTest
     @Test
     public void shouldUnmapBuffersWhenReleased() throws Exception
     {
+        publication.incRef();
         publication.close();
+
         verify(logBuffers, times(1)).close();
     }
 
@@ -201,13 +204,16 @@ public class PublicationTest
     public void shouldNotUnmapBuffersBeforeLastRelease() throws Exception
     {
         publication.incRef();
+        publication.incRef();
         publication.close();
+
         verify(logBuffers, never()).close();
     }
 
     @Test
     public void shouldUnmapBuffersWithMultipleReferences() throws Exception
     {
+        publication.incRef();
         publication.incRef();
         publication.close();
 

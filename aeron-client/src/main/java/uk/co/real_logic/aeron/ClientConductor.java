@@ -108,10 +108,8 @@ class ClientConductor implements Agent, DriverListener
 
             publication = activePublications.get(channel, sessionId, streamId);
         }
-        else
-        {
-            publication.incRef();
-        }
+
+        publication.incRef();
 
         return publication;
     }

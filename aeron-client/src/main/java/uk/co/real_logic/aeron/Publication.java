@@ -60,7 +60,7 @@ public class Publication implements AutoCloseable
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
 
-    private int refCount = 1;
+    private int refCount = 0;
     private volatile boolean isClosed = false;
 
     Publication(
@@ -137,7 +137,7 @@ public class Publication implements AutoCloseable
     {
         synchronized (clientConductor)
         {
-            if (--refCount == 0)
+            if (--refCount <= 0)
             {
                 isClosed = true;
                 logBuffers.close();

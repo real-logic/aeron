@@ -159,8 +159,7 @@ public class Publication implements AutoCloseable
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.tailVolatile();
+        final int currentTail = termAppenders[activeIndex].tailVolatile();
 
         return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
     }

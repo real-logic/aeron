@@ -102,7 +102,7 @@ class ClientConductor implements Agent, DriverListener
         if (publication == null)
         {
             final long correlationId = driverProxy.addPublication(channel, streamId, sessionId);
-            final long timeout = timerWheel.clock().time() + driverTimeoutNs;
+            final long timeout = timerWheel.clock().nanoTime() + driverTimeoutNs;
 
             doWorkUntil(correlationId, timeout, channel);
 
@@ -122,7 +122,7 @@ class ClientConductor implements Agent, DriverListener
 
         final long correlationId = driverProxy.removePublication(publication.registrationId());
         activePublications.remove(publication.channel(), publication.sessionId(), publication.streamId());
-        final long timeout = timerWheel.clock().time() + driverTimeoutNs;
+        final long timeout = timerWheel.clock().nanoTime() + driverTimeoutNs;
 
         doWorkUntil(correlationId, timeout, publication.channel());
     }
@@ -132,7 +132,7 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
-        final long timeout = timerWheel.clock().time() + driverTimeoutNs;
+        final long timeout = timerWheel.clock().nanoTime() + driverTimeoutNs;
 
         final Subscription subscription = new Subscription(this, handler, channel, streamId, correlationId);
         activeSubscriptions.add(subscription);
@@ -147,7 +147,7 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         final long correlationId = driverProxy.removeSubscription(subscription.registrationId());
-        final long timeout = timerWheel.clock().time() + driverTimeoutNs;
+        final long timeout = timerWheel.clock().nanoTime() + driverTimeoutNs;
 
         doWorkUntil(correlationId, timeout, subscription.channel());
 
@@ -294,7 +294,7 @@ class ClientConductor implements Agent, DriverListener
 
     private void checkDriverHeartbeat()
     {
-        final long now = timerWheel.clock().time();
+        final long now = timerWheel.clock().nanoTime();
         final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepaliveNs();
 
         if (driverActive && (now > (currentDriverKeepaliveTime + driverTimeoutNs)))
@@ -343,7 +343,7 @@ class ClientConductor implements Agent, DriverListener
                 return;
             }
         }
-        while (timerWheel.clock().time() < timeout);
+        while (timerWheel.clock().nanoTime() < timeout);
 
         throw new DriverTimeoutException("No response from driver within timeout");
     }

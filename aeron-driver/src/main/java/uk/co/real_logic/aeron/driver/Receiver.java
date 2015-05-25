@@ -53,7 +53,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         int workCount = commandQueue.drain(this);
         final int bytesReceived = transportPoller.pollTransports();
 
-        final long now = clock.time();
+        final long now = clock.nanoTime();
         for (int i = connections.size() - 1; i >= 0; i--)
         {
             final NetworkConnection connection = connections.get(i);
@@ -79,7 +79,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public void addPendingSetupMessage(final int sessionId, final int streamId, final ReceiveChannelEndpoint channelEndpoint)
     {
         final PendingSetupMessageFromSource cmd = new PendingSetupMessageFromSource(sessionId, streamId, channelEndpoint);
-        cmd.timeOfStatusMessage(clock.time());
+        cmd.timeOfStatusMessage(clock.nanoTime());
         pendingSetupMessages.add(cmd);
     }
 

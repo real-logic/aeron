@@ -152,7 +152,7 @@ public class DriverConductor implements Agent
         correlatedMsgFlyweight.wrap(buffer, 0);
         removeMsgFlyweight.wrap(buffer, 0);
 
-        toDriverCommands.consumerHeartbeatTimeNs(clock.time());
+        toDriverCommands.consumerHeartbeatTimeNs(clock.nanoTime());
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
@@ -264,7 +264,7 @@ public class DriverConductor implements Agent
 
     private void onHeartbeatCheckTimeouts()
     {
-        final long now = clock.time();
+        final long now = clock.nanoTime();
 
         toDriverCommands.consumerHeartbeatTimeNs(now);
 
@@ -703,7 +703,7 @@ public class DriverConductor implements Agent
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(clock.time());
+            client.timeOfLastKeepalive(clock.nanoTime());
         }
     }
 
@@ -839,7 +839,7 @@ public class DriverConductor implements Agent
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
-            client = new AeronClient(clientId, clock.time());
+            client = new AeronClient(clientId, clock.nanoTime());
             clients.add(client);
         }
 

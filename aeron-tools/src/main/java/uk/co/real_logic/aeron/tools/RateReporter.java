@@ -145,7 +145,7 @@ public class RateReporter implements RateController.Callback, Runnable
 
     public void run()
     {
-        final ArrayList<RateControllerInterval> intervals = new ArrayList<RateControllerInterval>();
+        final ArrayList<RateControllerInterval> intervals = new ArrayList<>();
 
         intervals.add(new MessagesAtMessagesPerSecondInterval(Long.MAX_VALUE, 1));
 
@@ -154,7 +154,7 @@ public class RateReporter implements RateController.Callback, Runnable
         try
         {
             rateController = new RateController(this, intervals);
-            lastReportTimeNanos = CLOCK.time() - 1000000000; /* Subtract a second so the first print is correct. */
+            lastReportTimeNanos = CLOCK.nanoTime() - 1000000000; /* Subtract a second so the first print is correct. */
             while (!shuttingDown && rateController.next())
             {
                 /* rateController will call onNext to report the interval's rates. */
@@ -173,7 +173,7 @@ public class RateReporter implements RateController.Callback, Runnable
      */
     public int onNext()
     {
-        final long currentTimeNanos = CLOCK.time();
+        final long currentTimeNanos = CLOCK.nanoTime();
         final long verifiableMessages = app.verifiableMessages();
         final long nonVerifiableMessages = app.nonVerifiableMessages();
         final long totalMessages = verifiableMessages + nonVerifiableMessages;

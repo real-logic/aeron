@@ -209,7 +209,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
         verify(senderProxy).closePublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
@@ -230,7 +230,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.clock().time() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(senderProxy, times(4)).closePublication(any());
     }
@@ -353,7 +353,7 @@ public class DriverConductorTest
 
         verifySenderNotifiedOfNewPublication();
 
-        processTimersUntil(() -> wheel.clock().time() >= Configuration.PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verifyPublicationClosed(times(1));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -368,15 +368,15 @@ public class DriverConductorTest
 
         verifySenderNotifiedOfNewPublication();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verifyPublicationClosed(never());
     }
@@ -391,7 +391,7 @@ public class DriverConductorTest
         verifyReceiverSubscribes();
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verifyReceiverRemovesSubscription(times(1));
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -407,15 +407,15 @@ public class DriverConductorTest
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
         verifyReceiverSubscribes();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().time() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verifyReceiverRemovesSubscription(never());
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -493,7 +493,7 @@ public class DriverConductorTest
 
     private long processTimersUntil(final BooleanSupplier condition) throws Exception
     {
-        final long startTime = wheel.clock().time();
+        final long startTime = wheel.clock().nanoTime();
 
         while (!condition.getAsBoolean())
         {
@@ -505,6 +505,6 @@ public class DriverConductorTest
             driverConductor.doWork();
         }
 
-        return wheel.clock().time() - startTime;
+        return wheel.clock().nanoTime() - startTime;
     }
 }

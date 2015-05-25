@@ -143,7 +143,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         this.sourceAddress = sourceAddress;
 
         this.clock = clock;
-        final long time = clock.time();
+        final long time = clock.nanoTime();
         this.timeOfLastStatusChange = time;
         this.lastPacketTimestamp = time;
 
@@ -268,7 +268,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
      */
     public void status(final Status status)
     {
-        timeOfLastStatusChange = clock.time();
+        timeOfLastStatusChange = clock.nanoTime();
         this.status = status;
     }
 
@@ -518,7 +518,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
 
     private void hwmCandidate(final long proposedPosition)
     {
-        lastPacketTimestamp = clock.time();
+        lastPacketTimestamp = clock.nanoTime();
         hwmPosition.proposeMaxOrdered(proposedPosition);
     }
 

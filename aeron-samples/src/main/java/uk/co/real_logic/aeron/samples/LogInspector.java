@@ -99,7 +99,7 @@ public class LogInspector
                     out.println(dataHeaderFlyweight.toString());
 
                     final int frameLength = dataHeaderFlyweight.frameLength();
-                    if (frameLength == 0)
+                    if (frameLength <= 0)
                     {
                         final int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
                         out.println(bytesToHex(termBuffer, offset + HEADER_LENGTH, limit));

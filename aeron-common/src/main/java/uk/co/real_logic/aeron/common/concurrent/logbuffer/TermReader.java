@@ -89,7 +89,7 @@ public class TermReader
         do
         {
             final int frameLength = frameLengthVolatile(termBuffer, termOffset);
-            if (0 == frameLength)
+            if (frameLength <= 0)
             {
                 break;
             }

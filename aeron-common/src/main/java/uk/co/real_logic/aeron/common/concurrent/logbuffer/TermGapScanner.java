@@ -62,7 +62,7 @@ public class TermGapScanner
         do
         {
             final int frameLength = frameLengthVolatile(termBuffer, rebuildOffset);
-            if (0 == frameLength)
+            if (frameLength <= 0)
             {
                 break;
             }

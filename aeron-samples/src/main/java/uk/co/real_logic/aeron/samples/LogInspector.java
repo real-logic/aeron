@@ -33,6 +33,11 @@ import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_
  */
 public class LogInspector
 {
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+
+    private static final String DATA_FORMAT = System.getProperty("aeron.log.inspector.data.format", "hex").toLowerCase();
+    private static final boolean SKIP_HEADERS = Boolean.getBoolean("aeron.log.inspector.skipHeaders");
+
     public static void main(final String[] args) throws Exception
     {
         final PrintStream out = System.out;
@@ -63,7 +68,7 @@ public class LogInspector
             out.format("    Term Length: %d\n", termLength);
             out.format("     MTU Length: %d\n\n", mtuLength(logMetaDataBuffer));
 
-            if (!Boolean.getBoolean("loginspector.skipHeaders"))
+            if (!SKIP_HEADERS)
             {
                 final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
                 for (int i = 0; i < defaultFrameHeaders.length; i++)
@@ -102,13 +107,13 @@ public class LogInspector
                     if (frameLength <= 0)
                     {
                         final int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
-                        out.println(bytesToHex(termBuffer, offset + HEADER_LENGTH, limit));
+                        out.println(formatBytes(termBuffer, offset + HEADER_LENGTH, limit));
 
                         break;
                     }
 
                     final int limit = Math.min(frameLength - HEADER_LENGTH, messageDumpLimit);
-                    out.println(bytesToHex(termBuffer, offset + HEADER_LENGTH, limit));
+                    out.println(formatBytes(termBuffer, offset + HEADER_LENGTH, limit));
 
                     offset += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
                 }
@@ -117,20 +122,45 @@ public class LogInspector
         }
     }
 
-    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
-
-    public static char[] bytesToHex(final DirectBuffer buffer, final int offset, final int length)
+    public static char[] formatBytes(final DirectBuffer buffer, final int offset, final int length)
     {
-        final char[] hexChars = new char[length * 2];
+        switch (DATA_FORMAT)
+        {
+            case "ascii":
+                return bytesToAscii(buffer, offset, length);
+
+            default:
+                return bytesToHex(buffer, offset, length);
+        }
+    }
+
+    private static char[] bytesToAscii(final DirectBuffer buffer, final int offset, final int length)
+    {
+        final char[] chars = new char[length];
 
         for (int i = 0; i < length; i++)
         {
             final int b = buffer.getByte(offset + i) & 0xFF;
-            hexChars[i * 2] = HEX_ARRAY[b >>> 4];
-            hexChars[i * 2 + 1] = HEX_ARRAY[b & 0x0F];
+
+            chars[i] = (char)b;
         }
 
-        return hexChars;
+        return chars;
+    }
+
+    public static char[] bytesToHex(final DirectBuffer buffer, final int offset, final int length)
+    {
+        final char[] chars = new char[length * 2];
+
+        for (int i = 0; i < length; i++)
+        {
+            final int b = buffer.getByte(offset + i) & 0xFF;
+
+            chars[i * 2] = HEX_ARRAY[b >>> 4];
+            chars[i * 2 + 1] = HEX_ARRAY[b & 0x0F];
+        }
+
+        return chars;
     }
 
     private static String termStatus(final UnsafeBuffer metaDataBuffer)

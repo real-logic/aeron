@@ -104,7 +104,7 @@ public class LogInspector
                     out.println(dataHeaderFlyweight.toString());
 
                     final int frameLength = dataHeaderFlyweight.frameLength();
-                    if (frameLength <= 0)
+                    if (frameLength < DataHeaderFlyweight.HEADER_LENGTH)
                     {
                         try
                         {

@@ -77,49 +77,47 @@ public class Ping
 
             pongConnectionLatch = new CountDownLatch(1);
 
-            try (final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+            try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
+                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
             {
                 pongConnectionLatch.await();
 
                 for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
                 {
-                    sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
                 }
             }
 
-
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
+            pongConnectionLatch = new CountDownLatch(1);
 
-            do
+            try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
+                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
             {
-                pongConnectionLatch = new CountDownLatch(1);
+                pongConnectionLatch.await();
+                Thread.sleep(5000);
 
-                try (final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                     final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+                do
                 {
-                    pongConnectionLatch.await();
-
                     HISTOGRAM.reset();
                     System.gc();
-                    Thread.sleep(1000);
 
                     System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-                    sendPingAndReceivePong(pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(publication, subscription, NUMBER_OF_MESSAGES);
+                    System.out.println("Histogram of RTT latencies in microseconds.");
+                    HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
                 }
-
-                System.out.println("Histogram of RTT latencies in microseconds.");
-                HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
+                while (barrier.await());
             }
-            while (barrier.await());
+
         }
 
         CloseHelper.quietClose(driver);
     }
 
     private static void sendPingAndReceivePong(
-        final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
+        final Publication publication, final Subscription subscription, final int numMessages)
         throws InterruptedException
     {
         final IdleStrategy idleStrategy = new NoOpIdleStrategy();
@@ -130,9 +128,9 @@ public class Ping
             {
                 ATOMIC_BUFFER.putLong(0, System.nanoTime());
             }
-            while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
+            while (publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-            while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+            while (subscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 idleStrategy.idle(0);
             }

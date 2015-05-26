@@ -181,10 +181,7 @@ public class TermAppender extends LogBufferPartition
             termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
             frameTermOffset(termBuffer, frameOffset, frameOffset);
 
-            bufferClaim
-                .buffer(termBuffer)
-                .offset(frameOffset + HEADER_LENGTH)
-                .length(length);
+            bufferClaim.wrap(termBuffer, frameOffset, frameLength);
         }
 
         return resultingOffset;

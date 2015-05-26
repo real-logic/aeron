@@ -39,7 +39,7 @@ public class TermAppenderTest
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final MutableDirectBuffer DEFAULT_HEADER = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_LENGTH));
 
-    private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer termBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
     private final UnsafeBuffer metaDataBuffer = mock(UnsafeBuffer.class);
 
     private TermAppender termAppender;
@@ -285,7 +285,6 @@ public class TermAppenderTest
 
         assertThat(termAppender.claim(msgLength, bufferClaim), is(alignedFrameLength));
 
-        assertThat(bufferClaim.buffer(), is(termBuffer));
         assertThat(bufferClaim.offset(), is(tail + headerLength));
         assertThat(bufferClaim.length(), is(msgLength));
 
@@ -296,6 +295,5 @@ public class TermAppenderTest
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
 }

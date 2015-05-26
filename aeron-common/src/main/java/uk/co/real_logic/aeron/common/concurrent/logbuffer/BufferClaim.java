@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
@@ -25,11 +26,14 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
  * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
  */
-public class BufferClaim
+public final class BufferClaim
 {
-    private AtomicBuffer buffer;
-    private int offset;
-    private int length;
+    private final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
+
+    public void wrap(final AtomicBuffer buffer, final int offset, final int length)
+    {
+        this.buffer.wrap(buffer, offset, length);
+    }
 
     /**
      * The referenced buffer to be used.
@@ -41,17 +45,6 @@ public class BufferClaim
         return buffer;
     }
 
-    /**
-     * Set the referenced buffer to be used.
-     *
-     * @param buffer the referenced buffer to be used.
-     * @return this instance for fluent API usage.
-     */
-    BufferClaim buffer(final AtomicBuffer buffer)
-    {
-        this.buffer = buffer;
-        return this;
-    }
 
     /**
      * The offset in the buffer at which the claimed range begins.
@@ -60,20 +53,9 @@ public class BufferClaim
      */
     public int offset()
     {
-        return offset;
+        return DataHeaderFlyweight.HEADER_LENGTH;
     }
 
-    /**
-     * Set the offset in the buffer at which the range begins.
-     *
-     * @param offset the offset in the buffer at which the range begins.
-     * @return this instance for fluent API usage.
-     */
-    BufferClaim offset(final int offset)
-    {
-        this.offset = offset;
-        return this;
-    }
 
     /**
      * The length of the claimed range in the buffer.
@@ -81,28 +63,17 @@ public class BufferClaim
      * @return length of the range in the buffer.
      */
     public int length()
-     {
-        return length;
+    {
+        return buffer.capacity() - DataHeaderFlyweight.HEADER_LENGTH;
     }
 
-    /**
-     * Set length of the range in the buffer.
-     *
-     * @param length of the range in the buffer.
-     * @return this instance for fluent API usage.
-     */
-    BufferClaim length(final int length)
-    {
-        this.length = length;
-        return this;
-    }
 
     /**
      * Commit the message to the log buffer so that is it available to subscribers.
      */
     public void commit()
     {
-        buffer.putIntOrdered(offset - DataHeaderFlyweight.HEADER_LENGTH, length + DataHeaderFlyweight.HEADER_LENGTH);
+        buffer.putIntOrdered(0, buffer.capacity());
     }
 }
 

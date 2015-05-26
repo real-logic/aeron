@@ -106,8 +106,16 @@ public class LogInspector
                     final int frameLength = dataHeaderFlyweight.frameLength();
                     if (frameLength <= 0)
                     {
-                        final int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
-                        out.println(formatBytes(termBuffer, offset + HEADER_LENGTH, limit));
+                        try
+                        {
+                            final int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
+                            out.println(formatBytes(termBuffer, offset + HEADER_LENGTH, limit));
+                        }
+                        catch (final Exception ex)
+                        {
+                            System.out.printf("frameLength=%d offset=%d\n", frameLength, offset);
+                            ex.printStackTrace();
+                        }
 
                         break;
                     }

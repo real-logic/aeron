@@ -50,7 +50,7 @@ public class TermRebuilderTest
         packet.putInt(srcOffset, length, LITTLE_ENDIAN);
         when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(length);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, length);
+        TermRebuilder.insert(termBuffer, termOffset, packet, length);
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).putBytes(termOffset, packet, srcOffset, length);
@@ -71,7 +71,7 @@ public class TermRebuilderTest
         when(termBuffer.getInt(tail, LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, frameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, frameLength);
 
         verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);
     }
@@ -90,7 +90,7 @@ public class TermRebuilderTest
         when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(alignedFrameLength * 2, LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
     }
@@ -107,7 +107,7 @@ public class TermRebuilderTest
         when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(0);
         when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
@@ -124,7 +124,7 @@ public class TermRebuilderTest
         when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(0);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }

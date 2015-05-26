@@ -314,7 +314,7 @@ public class LossDetectorTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
 
-        TermRebuilder.insert(termBuffer, offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+        TermRebuilder.insert(termBuffer, offset, rcvBuffer, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)

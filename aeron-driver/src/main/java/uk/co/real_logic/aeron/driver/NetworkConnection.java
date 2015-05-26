@@ -392,7 +392,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         else
         {
             final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
-            TermRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
+            TermRebuilder.insert(termBuffer, termOffset, buffer, length);
 
             hwmCandidate(proposedPosition);
         }

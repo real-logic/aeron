@@ -106,7 +106,7 @@ public class Ping
 
                     System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-                    sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
                 }
 
                 System.out.println("Histogram of RTT latencies in microseconds.");

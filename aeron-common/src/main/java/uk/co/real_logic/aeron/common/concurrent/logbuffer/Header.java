@@ -160,7 +160,7 @@ public class Header
      */
     public int frameLength()
     {
-        return buffer.getInt(offset + DataHeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**

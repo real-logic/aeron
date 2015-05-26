@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
@@ -74,17 +75,17 @@ public class FrameDescriptor
     /**
      * Offset within a frame at which the flags field begins
      */
-    public static final int FLAGS_OFFSET = 5;
+    public static final int FLAGS_OFFSET = DataHeaderFlyweight.FLAGS_FIELD_OFFSET;
 
     /**
      * Offset within a frame at which the type field begins
      */
-    public static final int TYPE_OFFSET = 6;
+    public static final int TYPE_OFFSET = DataHeaderFlyweight.TYPE_FIELD_OFFSET;
 
     /**
      * Offset within a frame at which the term offset field begins
      */
-    public static final int TERM_OFFSET = 8;
+    public static final int TERM_OFFSET = DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET;
 
     /**
      * Padding frame type to indicate end of the log is not in use.

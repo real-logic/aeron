@@ -135,7 +135,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int frameLength()
     {
-        return (int)uint32Get(offset() + FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -146,7 +146,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        uint32Put(offset() + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        buffer().putInt(offset() + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
 
         return this;
     }

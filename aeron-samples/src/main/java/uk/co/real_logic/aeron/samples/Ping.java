@@ -95,7 +95,7 @@ public class Ping
                  final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
             {
                 pongConnectionLatch.await();
-                Thread.sleep(5000);
+                Thread.sleep(1000);
 
                 do
                 {

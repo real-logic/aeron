@@ -39,10 +39,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class Ping
 {
-    private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
-    private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
+    private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
+    private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
     private static final int NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final int WARMUP_NUMBER_OF_MESSAGES = SampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
     private static final int WARMUP_NUMBER_OF_ITERATIONS = SampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
@@ -117,7 +117,6 @@ public class Ping
 
     private static void sendPingAndReceivePong(
         final Publication publication, final Subscription subscription, final int numMessages)
-        throws InterruptedException
     {
         final IdleStrategy idleStrategy = new NoOpIdleStrategy();
 
@@ -147,7 +146,7 @@ public class Ping
     private static void newPongConnectionHandler(
         final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
     {
-        System.out.format("new connection: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
+        System.out.format("New connection: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
 
         if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
         {

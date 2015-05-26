@@ -17,13 +17,9 @@ package uk.co.real_logic.aeron.common;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.BitUtil;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Parent class for flyweight implementations both in the messaging
@@ -90,18 +86,6 @@ public class Flyweight
         buffer.putBytes(index, srcFlyweight.buffer, srcFlyweight.offset, length);
     }
 
-    protected boolean uint8GetChoice(final int offset, final int bitIndex)
-    {
-        return 0 != (buffer.getByte(offset) & (1 << bitIndex));
-    }
-
-    protected void uint8PutChoice(final int offset, final int bitIndex, final boolean switchOn)
-    {
-        byte bits = buffer.getByte(offset);
-        bits = (byte)((switchOn ? bits | (1 << bitIndex) : bits & ~(1 << bitIndex)));
-        buffer.putByte(offset, bits);
-    }
-
     protected short uint8Get(final int offset)
     {
         return (short)(buffer.getByte(offset) & 0xFF);
@@ -120,46 +104,6 @@ public class Flyweight
     protected void uint16Put(final int offset, final int value, final ByteOrder byteOrder)
     {
         buffer.putShort(offset, (short)value, byteOrder);
-    }
-
-    protected long uint32Get(final int offset, final ByteOrder byteOrder)
-    {
-        return buffer.getInt(offset, byteOrder) & 0xFFFF_FFFFL;
-    }
-
-    protected void uint32Put(final int offset, final long value, final ByteOrder byteOrder)
-    {
-        buffer.putInt(offset, (int)value, byteOrder);
-    }
-
-    protected long[] uint32ArrayGet(final int offset, final ByteOrder byteOrder)
-    {
-        final int length = buffer.getInt(offset);
-        final long[] values = new long[length];
-        int location = offset + SIZE_OF_INT;
-
-        for (int i = 0; i < length; i++)
-        {
-            values[i] = uint32Get(location, byteOrder);
-            location += SIZE_OF_LONG;
-        }
-
-        return values;
-    }
-
-    protected int uint32ArrayPut(final int offset, final long[] values, final ByteOrder byteOrder)
-    {
-        final int length = values.length;
-        buffer.putInt(offset, length, byteOrder);
-        int location = offset + SIZE_OF_INT;
-
-        for (final long value : values)
-        {
-            uint32Put(location, value, byteOrder);
-            location += SIZE_OF_LONG;
-        }
-
-        return SIZE_OF_INT + (length * BitUtil.SIZE_OF_LONG);
     }
 
     public String stringGet(final int offset, final ByteOrder byteOrder)

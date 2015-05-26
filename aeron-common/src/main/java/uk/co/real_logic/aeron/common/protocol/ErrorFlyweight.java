@@ -62,7 +62,7 @@ public class ErrorFlyweight extends HeaderFlyweight
      */
     public int offendingHeaderFrameLength()
     {
-        return (int)uint32Get(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -73,7 +73,7 @@ public class ErrorFlyweight extends HeaderFlyweight
      */
     public ErrorFlyweight offendingHeaderFrameLength(final int length)
     {
-        uint32Put(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        buffer().putInt(offset() + OFFENDING_HDR_FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
 
         return this;
     }

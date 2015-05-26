@@ -110,7 +110,6 @@ public class Ping
                 }
                 while (barrier.await());
             }
-
         }
 
         CloseHelper.quietClose(driver);

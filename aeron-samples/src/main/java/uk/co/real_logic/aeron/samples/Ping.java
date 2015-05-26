@@ -99,13 +99,13 @@ public class Ping
 
                 do
                 {
+                    System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
                     HISTOGRAM.reset();
                     System.gc();
 
-                    System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
-
                     sendPingAndReceivePong(publication, subscription, NUMBER_OF_MESSAGES);
                     System.out.println("Histogram of RTT latencies in microseconds.");
+
                     HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
                 }
                 while (barrier.await());

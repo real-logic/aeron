@@ -36,7 +36,7 @@ public class LogInspector
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     private static final String DATA_FORMAT = System.getProperty("aeron.log.inspector.data.format", "hex").toLowerCase();
-    private static final boolean SKIP_HEADERS = Boolean.getBoolean("aeron.log.inspector.skipHeaders");
+    private static final boolean SKIP_DEFAULT_HEADERS = Boolean.getBoolean("aeron.log.inspector.skipDefaultHeaders");
 
     public static void main(final String[] args) throws Exception
     {
@@ -64,17 +64,17 @@ public class LogInspector
 
             out.format("Initial term id: %d\n", initialTermId(logMetaDataBuffer));
             out.format(" Active term id: %d\n", activeTermId(logMetaDataBuffer));
-            out.format("   Active Index: %d\n", indexByTerm(initialTermId(logMetaDataBuffer), activeTermId(logMetaDataBuffer)));
-            out.format("    Term Length: %d\n", termLength);
-            out.format("     MTU Length: %d\n\n", mtuLength(logMetaDataBuffer));
+            out.format("   Active index: %d\n", indexByTerm(initialTermId(logMetaDataBuffer), activeTermId(logMetaDataBuffer)));
+            out.format("    Term length: %d\n", termLength);
+            out.format("     MTU length: %d\n\n", mtuLength(logMetaDataBuffer));
 
-            if (!SKIP_HEADERS)
+            if (!SKIP_DEFAULT_HEADERS)
             {
                 final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
                 for (int i = 0; i < defaultFrameHeaders.length; i++)
                 {
                     dataHeaderFlyweight.wrap(defaultFrameHeaders[i]);
-                    out.format("Index %d Default %s\n", i, dataHeaderFlyweight);
+                    out.format("Index %d default %s\n", i, dataHeaderFlyweight);
                 }
             }
 

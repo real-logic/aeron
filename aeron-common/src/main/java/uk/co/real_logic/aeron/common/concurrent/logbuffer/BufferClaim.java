@@ -26,7 +26,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
  * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
  * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
  */
-public final class BufferClaim
+public class BufferClaim
 {
     private final UnsafeBuffer buffer = new UnsafeBuffer(0, 0);
 

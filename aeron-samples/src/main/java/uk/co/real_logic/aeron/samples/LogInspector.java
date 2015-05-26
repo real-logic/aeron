@@ -140,7 +140,12 @@ public class LogInspector
 
         for (int i = 0; i < length; i++)
         {
-            final int b = buffer.getByte(offset + i) & 0xFF;
+            int b = buffer.getByte(offset + i) & 0xFF;
+
+            if (b < 0)
+            {
+                b = 0;
+            }
 
             chars[i] = (char)b;
         }

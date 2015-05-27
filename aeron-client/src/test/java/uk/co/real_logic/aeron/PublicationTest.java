@@ -52,13 +52,13 @@ public class PublicationTest
     private ReadOnlyPosition limit;
     private TermAppender[] appenders;
     private MutableDirectBuffer[] headers;
+    private ClientConductor conductor = mock(ClientConductor.class);
     private LogBuffers logBuffers = mock(LogBuffers.class);
     private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
     @Before
     public void setUp()
     {
-        final ClientConductor conductor = mock(ClientConductor.class);
         limit = mock(ReadOnlyPosition.class);
         when(limit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
         when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
@@ -88,12 +88,13 @@ public class PublicationTest
             logBuffers,
             logMetaDataBuffer,
             CORRELATION_ID);
+
+        publication.incRef();
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldEnsureThePublicationIsOpenBeforeReadingPosition()
     {
-        publication.incRef();
         publication.close();
         publication.position();
     }
@@ -194,16 +195,15 @@ public class PublicationTest
     @Test
     public void shouldUnmapBuffersWhenReleased() throws Exception
     {
-        publication.incRef();
         publication.close();
 
-        verify(logBuffers, times(1)).close();
+        logBuffersClosedOnce();
+        releaseSelfOnce();
     }
 
     @Test
     public void shouldNotUnmapBuffersBeforeLastRelease() throws Exception
     {
-        publication.incRef();
         publication.incRef();
         publication.close();
 
@@ -214,10 +214,30 @@ public class PublicationTest
     public void shouldUnmapBuffersWithMultipleReferences() throws Exception
     {
         publication.incRef();
-        publication.incRef();
         publication.close();
 
         publication.close();
+        logBuffersClosedOnce();
+    }
+
+    @Test
+    public void shouldReleaseResourcesIdempotently() throws Exception
+    {
+        publication.close();
+
+        publication.close();
+
+        logBuffersClosedOnce();
+        releaseSelfOnce();
+    }
+
+    private void logBuffersClosedOnce()
+    {
         verify(logBuffers, times(1)).close();
+    }
+
+    private void releaseSelfOnce()
+    {
+        verify(conductor, times(1)).releasePublication(publication);
     }
 }

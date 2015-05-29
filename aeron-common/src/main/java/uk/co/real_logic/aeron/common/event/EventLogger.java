@@ -133,7 +133,7 @@ public class EventLogger
     {
         if (isEnabled(EventCode.REMOVE_PUBLICATION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
+            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, String.format("%s %d:%d", uri, sessionId, streamId));
         }
     }
 
@@ -141,15 +141,15 @@ public class EventLogger
     {
         if (isEnabled(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, String.format("%s %x %d", uri, streamId, id));
+            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, String.format("%s %d [%d]", uri, streamId, id));
         }
     }
 
-    public void logConnectionRemoval(final CharSequence uri, final int sessionId, final int streamId)
+    public void logConnectionRemoval(final CharSequence uri, final int sessionId, final int streamId, final long id)
     {
         if (isEnabled(EventCode.REMOVE_CONNECTION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_CONNECTION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
+            logString(EventCode.REMOVE_CONNECTION_CLEANUP, String.format("%s %d:%d [%d]", uri, sessionId, streamId, id));
         }
     }
 

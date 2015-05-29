@@ -435,7 +435,7 @@ public class EventCodec
     private static String dissect(final DataHeaderFlyweight header)
     {
         return String.format(
-            "%s %x len %d %x:%x:%x @%x",
+            "%s 0x%x len %d %d:%d:%d @%x",
             header.headerType() == HeaderFlyweight.HDR_TYPE_PAD ? "PAD" : "DATA",
             header.flags(),
             header.frameLength(),
@@ -448,7 +448,7 @@ public class EventCodec
     private static String dissect(final StatusMessageFlyweight header)
     {
         return String.format(
-            "SM %x len %d %x:%x:%x @%x %d",
+            "SM 0x%x len %d %d:%d:%d @%x %d",
             header.flags(),
             header.frameLength(),
             header.sessionId(),
@@ -461,7 +461,7 @@ public class EventCodec
     private static String dissect(final NakFlyweight header)
     {
         return String.format(
-            "NAK %x len %d %x:%x:%x @%x %d",
+            "NAK 0x%x len %d %d:%d:%d @%x %d",
             header.flags(),
             header.frameLength(),
             header.sessionId(),
@@ -474,7 +474,7 @@ public class EventCodec
     private static String dissect(final SetupFlyweight header)
     {
         return String.format(
-            "SETUP %x len %d %x:%x:%x %x @%x %d MTU %d",
+            "SETUP 0x%x len %d %d:%d:%d %d @%x %d MTU %d",
             header.flags(),
             header.frameLength(),
             header.sessionId(),
@@ -489,7 +489,7 @@ public class EventCodec
     private static String dissect(final PublicationMessageFlyweight command)
     {
         return String.format(
-            "%3$s %1$x:%2$x [%5$x:%4$x]",
+            "%3$s %1$d:%2$d [%5$d:%4$d]",
             command.sessionId(),
             command.streamId(),
             command.channel(),
@@ -500,7 +500,7 @@ public class EventCodec
     private static String dissect(final SubscriptionMessageFlyweight command)
     {
         return String.format(
-            "%s %d [%x][%x:%x]",
+            "%s %d [%d][%d:%d]",
             command.channel(),
             command.streamId(),
             command.registrationCorrelationId(),
@@ -511,7 +511,7 @@ public class EventCodec
     private static String dissect(final PublicationBuffersReadyFlyweight command)
     {
         return String.format(
-            "%x:%x %x [%x]\n    %s",
+            "%d:%d %d [%d]\n    %s",
             command.sessionId(),
             command.streamId(),
             command.publicationLimitCounterId(),
@@ -527,14 +527,14 @@ public class EventCodec
         {
             positions.append(
                 String.format(
-                    "[%d:%x:%x]",
+                    "[%d:%d:%d]",
                     i,
                     command.subscriberPositionId(i),
                     command.positionIndicatorRegistrationId(i)));
         }
 
         return String.format(
-            "%x:%x %s \"%s\" [%x]\n    %s",
+            "%d:%d %s \"%s\" [%d]\n    %s",
             command.sessionId(),
             command.streamId(),
             positions.toString(),
@@ -546,7 +546,7 @@ public class EventCodec
     private static String dissect(final CorrelatedMessageFlyweight command)
     {
         return String.format(
-            "[%x:%x]",
+            "[%d:%d]",
             command.clientId(),
             command.correlationId());
     }
@@ -554,7 +554,7 @@ public class EventCodec
     private static String dissect(final ConnectionMessageFlyweight command)
     {
         return String.format(
-            "%s %x:%x [%x]",
+            "%s %d:%d [%d]",
             command.channel(),
             command.sessionId(),
             command.streamId(),
@@ -564,7 +564,7 @@ public class EventCodec
     private static String dissect(final RemoveMessageFlyweight command)
     {
         return String.format(
-            "%x [%x:%x]",
+            "%d [%d:%d]",
             command.registrationId(),
             command.clientId(),
             command.correlationId());

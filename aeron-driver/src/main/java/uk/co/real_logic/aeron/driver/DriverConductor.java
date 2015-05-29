@@ -806,7 +806,8 @@ public class DriverConductor implements Agent
                 case LINGER:
                     if (now > (conn.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        logger.logConnectionRemoval(conn.channelUriString(), conn.sessionId(), conn.streamId());
+                        logger.logConnectionRemoval(
+                            conn.channelUriString(), conn.sessionId(), conn.streamId(), conn.correlationId());
 
                         connections.remove(i);
                         conn.close();

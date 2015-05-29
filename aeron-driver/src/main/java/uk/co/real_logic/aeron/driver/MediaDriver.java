@@ -101,12 +101,13 @@ public final class MediaDriver implements AutoCloseable
         ensureDirectoriesAreRecreated();
 
         ctx.unicastSenderFlowControl(Configuration::unicastFlowControlStrategy)
-           .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
-           .conductorTimerWheel(Configuration.newConductorTimerWheel())
-           .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-           .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-           .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-           .conclude();
+            .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
+            .conductorTimerWheel(Configuration.newConductorTimerWheel())
+            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .conclude();
 
         final AtomicCounter driverExceptions = ctx.systemCounters().driverExceptions();
 
@@ -116,7 +117,8 @@ public final class MediaDriver implements AutoCloseable
 
         ctx.receiverProxy().receiver(receiver);
         ctx.senderProxy().sender(sender);
-        ctx.driverConductorProxy().driverConductor(driverConductor);
+        ctx.fromReceiverDriverConductorProxy().driverConductor(driverConductor);
+        ctx.fromSenderDriverConductorProxy().driverConductor(driverConductor);
 
         switch (ctx.threadingMode)
         {
@@ -270,12 +272,14 @@ public final class MediaDriver implements AutoCloseable
         private Supplier<FlowControl> unicastSenderFlowControl;
         private Supplier<FlowControl> multicastSenderFlowControl;
         private TimerWheel conductorTimerWheel;
-        private OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue;
+        private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue;
+        private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromSenderCommandQueue;
         private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
         private OneToOneConcurrentArrayQueue<SenderCmd> senderCommandQueue;
         private ReceiverProxy receiverProxy;
         private SenderProxy senderProxy;
-        private DriverConductorProxy driverConductorProxy;
+        private DriverConductorProxy fromReceiverDriverConductorProxy;
+        private DriverConductorProxy fromSenderDriverConductorProxy;
         private IdleStrategy conductorIdleStrategy;
         private IdleStrategy senderIdleStrategy;
         private IdleStrategy receiverIdleStrategy;
@@ -389,10 +393,13 @@ public final class MediaDriver implements AutoCloseable
 
                 concludeCounters();
 
-                receiverProxy(new ReceiverProxy(threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
+                receiverProxy(new ReceiverProxy(
+                    threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
                 senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.senderProxyFails()));
-                driverConductorProxy(new DriverConductorProxy(
-                    threadingMode, conductorCommandQueue, systemCounters.conductorProxyFails()));
+                fromReceiverDriverConductorProxy(new DriverConductorProxy(
+                    threadingMode, toConductorFromReceiverCommandQueue, systemCounters.conductorProxyFails()));
+                fromSenderDriverConductorProxy(new DriverConductorProxy(
+                    threadingMode, toConductorFromSenderCommandQueue, systemCounters.conductorProxyFails()));
 
                 rawLogBuffersFactory(new RawLogFactory(
                     dirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
@@ -408,9 +415,17 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context conductorCommandQueue(final OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue)
+        public Context toConductorFromReceiverCommandQueue(
+            final OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue)
         {
-            this.conductorCommandQueue = conductorCommandQueue;
+            this.toConductorFromReceiverCommandQueue = conductorCommandQueue;
+            return this;
+        }
+
+        public Context toConductorFromSenderCommandQueue(
+            final OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue)
+        {
+            this.toConductorFromSenderCommandQueue = conductorCommandQueue;
             return this;
         }
 
@@ -474,9 +489,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context driverConductorProxy(final DriverConductorProxy driverConductorProxy)
+        public Context fromReceiverDriverConductorProxy(final DriverConductorProxy driverConductorProxy)
         {
-            this.driverConductorProxy = driverConductorProxy;
+            this.fromReceiverDriverConductorProxy = driverConductorProxy;
+            return this;
+        }
+
+        public Context fromSenderDriverConductorProxy(final DriverConductorProxy driverConductorProxy)
+        {
+            this.fromSenderDriverConductorProxy = driverConductorProxy;
             return this;
         }
 
@@ -641,9 +662,14 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue()
+        public OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue()
         {
-            return conductorCommandQueue;
+            return toConductorFromReceiverCommandQueue;
+        }
+
+        public OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromSenderCommandQueue()
+        {
+            return toConductorFromSenderCommandQueue;
         }
 
         public RawLogFactory rawLogBuffersFactory()
@@ -696,9 +722,14 @@ public final class MediaDriver implements AutoCloseable
             return senderProxy;
         }
 
-        public DriverConductorProxy driverConductorProxy()
+        public DriverConductorProxy fromReceiverDriverConductorProxy()
         {
-            return driverConductorProxy;
+            return fromReceiverDriverConductorProxy;
+        }
+
+        public DriverConductorProxy fromSenderDriverConductorProxy()
+        {
+            return fromSenderDriverConductorProxy;
         }
 
         public IdleStrategy conductorIdleStrategy()

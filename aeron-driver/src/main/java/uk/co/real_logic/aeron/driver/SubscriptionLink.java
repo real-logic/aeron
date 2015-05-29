@@ -73,6 +73,11 @@ public class SubscriptionLink
         positionByConnectionMap.put(connection, position);
     }
 
+    public void removeConnection(final NetworkConnection connection)
+    {
+        positionByConnectionMap.remove(connection);
+    }
+
     public void close()
     {
         positionByConnectionMap.forEach(NetworkConnection::removeSubscriber);

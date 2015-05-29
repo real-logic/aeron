@@ -68,15 +68,15 @@ public class SenderProxy
         }
     }
 
-    public void closePublication(final NetworkPublication publication)
+    public void removePublication(final NetworkPublication publication)
     {
         if (isSharedThread())
         {
-            sender.onClosePublication(publication);
+            sender.onRemovePublication(publication);
         }
         else
         {
-            offer(new ClosePublicationCmd(publication));
+            offer(new RemovePublicationCmd(publication));
         }
     }
 

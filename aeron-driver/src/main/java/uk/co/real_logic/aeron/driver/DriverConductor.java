@@ -85,10 +85,11 @@ public class DriverConductor implements Agent
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
-    private final DriverConductorProxy conductorProxy;
+    private final DriverConductorProxy fromReceiverConductorProxy;
     private final RingBuffer toDriverCommands;
     private final RingBuffer toEventReader;
-    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> driverConductorCmdQueue;
+    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromReceiverDriverConductorCmdQueue;
+    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromSenderDriverConductorCmdQueue;
     private final Supplier<FlowControl> unicastFlowControl;
     private final Supplier<FlowControl> multicastFlowControl;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
@@ -119,7 +120,8 @@ public class DriverConductor implements Agent
 
     public DriverConductor(final Context ctx)
     {
-        driverConductorCmdQueue = ctx.conductorCommandQueue();
+        fromReceiverDriverConductorCmdQueue = ctx.toConductorFromReceiverCommandQueue();
+        fromSenderDriverConductorCmdQueue = ctx.toConductorFromSenderCommandQueue();
         receiverProxy = ctx.receiverProxy();
         senderProxy = ctx.senderProxy();
         rawLogFactory = ctx.rawLogBuffersFactory();
@@ -135,7 +137,7 @@ public class DriverConductor implements Agent
         toDriverCommands = ctx.toDriverCommands();
         toEventReader = ctx.toEventReader();
         clientProxy = ctx.clientProxy();
-        conductorProxy = ctx.driverConductorProxy();
+        fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
         logger = ctx.eventLogger();
         systemCounters = ctx.systemCounters();
         checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
@@ -241,7 +243,8 @@ public class DriverConductor implements Agent
         int workCount = 0;
 
         workCount += toDriverCommands.read(onClientCommandFunc);
-        workCount += driverConductorCmdQueue.drain(onDriverConductorCmdFunc);
+        workCount += fromReceiverDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
+        workCount += fromSenderDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += toEventReader.read(onEventFunc, EVENT_READER_FRAME_LIMIT);
         workCount += processTimers();
 
@@ -340,6 +343,18 @@ public class DriverConductor implements Agent
             correlationId,
             subscriberPositions,
             generateSourceInfo(sourceAddress));
+    }
+
+    public void onCloseResource(final AutoCloseable resource)
+    {
+        try
+        {
+            resource.close();
+        }
+        catch (Exception ex)
+        {
+            logger.logException(ex);
+        }
     }
 
     public List<SubscriberPosition> listSubscriberPositions(
@@ -656,7 +671,7 @@ public class DriverConductor implements Agent
         if (null == channelEndpoint)
         {
             channelEndpoint = new ReceiveChannelEndpoint(
-                udpChannel, conductorProxy, receiverProxy.receiver(), logger, systemCounters, dataLossGenerator);
+                udpChannel, fromReceiverConductorProxy, receiverProxy.receiver(), logger, systemCounters, dataLossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
@@ -737,7 +752,7 @@ public class DriverConductor implements Agent
                 channelEndpoint.removePublication(publication);
                 publications.remove(i);
 
-                senderProxy.closePublication(publication);
+                senderProxy.removePublication(publication);
 
                 if (channelEndpoint.sessionCount() == 0)
                 {
@@ -810,6 +825,11 @@ public class DriverConductor implements Agent
                             conn.channelUriString(), conn.sessionId(), conn.streamId(), conn.correlationId());
 
                         connections.remove(i);
+
+                        subscriptionLinks.stream()
+                            .filter((link) -> conn.matches(link.channelEndpoint(), link.streamId()))
+                            .forEach((subscriptionLink) -> subscriptionLink.removeConnection(conn));
+
                         conn.close();
                     }
                     break;

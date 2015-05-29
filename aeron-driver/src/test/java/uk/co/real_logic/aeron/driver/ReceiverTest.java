@@ -119,7 +119,7 @@ public class ReceiverTest
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockTransportPoller)
             .senderNioSelector(mockTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
@@ -128,10 +128,10 @@ public class ReceiverTest
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockLogger);
 
-        toConductorQueue = ctx.conductorCommandQueue();
+        toConductorQueue = ctx.toConductorFromReceiverCommandQueue();
         final DriverConductorProxy driverConductorProxy =
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
-        ctx.driverConductorProxy(driverConductorProxy);
+        ctx.fromReceiverDriverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(ThreadingMode.DEDICATED, ctx.receiverCommandQueue(), mock(AtomicCounter.class));
 

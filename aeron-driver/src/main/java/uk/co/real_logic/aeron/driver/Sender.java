@@ -31,6 +31,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     private final TransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
+    private final DriverConductorProxy conductorProxy;
     private final AtomicCounter totalBytesSent;
 
     private NetworkPublication[] publications = EMPTY_PUBLICATIONS;
@@ -40,6 +41,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     {
         this.transportPoller = ctx.senderNioSelector();
         this.commandQueue = ctx.senderCommandQueue();
+        this.conductorProxy = ctx.fromSenderDriverConductorProxy();
         this.totalBytesSent = ctx.systemCounters().bytesSent();
     }
 
@@ -86,7 +88,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         publication.sendChannelEndpoint().addToDispatcher(publication, retransmitHandler, flowControl);
     }
 
-    public void onClosePublication(final NetworkPublication publication)
+    public void onRemovePublication(final NetworkPublication publication)
     {
         final NetworkPublication[] oldPublications = publications;
         final int length = oldPublications.length;
@@ -101,7 +103,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
         publications = newPublications;
         publication.sendChannelEndpoint().removeFromDispatcher(publication);
-        publication.close();
+        conductorProxy.closeResource(publication);
     }
 
     public void accept(final SenderCmd cmd)

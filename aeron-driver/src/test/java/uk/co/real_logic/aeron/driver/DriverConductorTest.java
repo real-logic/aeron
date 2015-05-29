@@ -21,18 +21,18 @@ import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.aeron.common.command.*;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -48,7 +48,6 @@ import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.ADD_PU
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.REMOVE_PUBLICATION;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
-import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
 public class DriverConductorTest
 {
@@ -86,6 +85,8 @@ public class DriverConductorTest
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
     private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
+    private final DriverConductorProxy fromSenderConductorProxy = mock(DriverConductorProxy.class);
+    private final DriverConductorProxy fromReceiverConductorProxy = mock(DriverConductorProxy.class);
 
     private long currentTime;
     private final TimerWheel wheel = new TimerWheel(
@@ -122,7 +123,8 @@ public class DriverConductorTest
             .multicastSenderFlowControl(MaxMulticastFlowControl::new)
             .conductorTimerWheel(wheel)
             // TODO: remove
-            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager);
@@ -139,7 +141,8 @@ public class DriverConductorTest
 
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
-        ctx.driverConductorProxy(new DriverConductorProxy(DEDICATED, ctx.conductorCommandQueue(), mock(AtomicCounter.class)));
+        ctx.fromReceiverDriverConductorProxy(fromReceiverConductorProxy);
+        ctx.fromSenderDriverConductorProxy(fromSenderConductorProxy);
 
         driverConductor = new DriverConductor(ctx);
 
@@ -211,7 +214,7 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
-        verify(senderProxy).closePublication(any());
+        verify(senderProxy).removePublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
     }
 
@@ -232,7 +235,7 @@ public class DriverConductorTest
 
         processTimersUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verify(senderProxy, times(4)).closePublication(any());
+        verify(senderProxy, times(4)).removePublication(any());
     }
 
     // TODO: check publication refs from 0 to 1
@@ -433,7 +436,7 @@ public class DriverConductorTest
 
     private void verifyPublicationClosed(final VerificationMode times)
     {
-        verify(senderProxy, times).closePublication(any());
+        verify(senderProxy, times).removePublication(any());
     }
 
     private void verifyExceptionLogged()

@@ -17,9 +17,10 @@
 #include "Subscription.h"
 #include "ClientConductor.h"
 
-using namespace aeron;
+namespace aeron {
 
-Subscription::Subscription(ClientConductor& conductor, std::int64_t correlationId, const std::string& channel, std::int32_t streamId) :
+Subscription::Subscription(
+    ClientConductor &conductor, std::int64_t correlationId, const std::string &channel, std::int32_t streamId) :
     m_conductor(conductor),
     m_channel(channel),
     m_correlationId(correlationId),
@@ -31,4 +32,6 @@ Subscription::Subscription(ClientConductor& conductor, std::int64_t correlationI
 Subscription::~Subscription()
 {
     m_conductor.releaseSubscription(m_correlationId);
+}
+
 }

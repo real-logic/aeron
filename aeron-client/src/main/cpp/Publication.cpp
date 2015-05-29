@@ -17,15 +17,15 @@
 #include "Publication.h"
 #include "ClientConductor.h"
 
-using namespace aeron;
+namespace aeron {
 
 Publication::Publication(
-    ClientConductor& conductor,
-    const std::string& channel,
+    ClientConductor &conductor,
+    const std::string &channel,
     std::int64_t correlationId,
     std::int32_t streamId,
     std::int32_t sessionId,
-    LogBuffers& buffers)
+    LogBuffers &buffers)
     :
     m_conductor(conductor),
     m_channel(channel),
@@ -40,4 +40,6 @@ Publication::Publication(
 Publication::~Publication()
 {
     m_conductor.releasePublication(m_correlationId);
+}
+
 }

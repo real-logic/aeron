@@ -16,15 +16,15 @@
 
 #include "ClientConductor.h"
 
-using namespace aeron;
+namespace aeron {
 
-std::int64_t ClientConductor::addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)
+std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId, std::int32_t sessionId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
     std::int64_t id;
 
     std::vector<PublicationStateDefn>::const_iterator it = std::find_if(m_publications.begin(), m_publications.end(),
-        [&](PublicationStateDefn & entry)
+        [&](PublicationStateDefn &entry)
         {
             return (streamId == entry.m_streamId && sessionId == entry.m_sessionId && channel == entry.m_channel);
         });
@@ -49,7 +49,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t corre
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
-        [&](PublicationStateDefn & entry)
+        [&](PublicationStateDefn &entry)
         {
             return (correlationId == entry.m_correlationId);
         });
@@ -64,7 +64,8 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t corre
     // construct Publication if we've heard from the driver and have the log buffers around
     if (!pub && ((*it).m_buffers))
     {
-        pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_correlationId, (*it).m_streamId, (*it).m_sessionId, *((*it).m_buffers));
+        pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_correlationId, (*it).m_streamId,
+            (*it).m_sessionId, *((*it).m_buffers));
 
         (*it).m_publication = std::weak_ptr<Publication>(pub);
         return pub;
@@ -78,7 +79,7 @@ void ClientConductor::releasePublication(std::int64_t correlationId)
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
-        [&](PublicationStateDefn & entry)
+        [&](PublicationStateDefn &entry)
         {
             return (correlationId == entry.m_correlationId);
         });
@@ -90,13 +91,14 @@ void ClientConductor::releasePublication(std::int64_t correlationId)
     }
 }
 
-std::int64_t ClientConductor::addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
+std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId,
+    logbuffer::handler_t &handler)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
     std::int64_t id;
 
     std::vector<SubscriptionStateDefn>::const_iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
-        [&](SubscriptionStateDefn& entry)
+        [&](SubscriptionStateDefn &entry)
         {
             return (streamId == entry.m_streamId && channel == entry.m_channel);
         });
@@ -122,7 +124,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t cor
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
-        [&](SubscriptionStateDefn& entry)
+        [&](SubscriptionStateDefn &entry)
         {
             return (correlationId == entry.m_correlationId);
         });
@@ -142,7 +144,7 @@ void ClientConductor::releaseSubscription(std::int64_t correlationId)
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
-        [&](SubscriptionStateDefn& entry)
+        [&](SubscriptionStateDefn &entry)
         {
             return (correlationId == entry.m_correlationId);
         });
@@ -155,18 +157,18 @@ void ClientConductor::releaseSubscription(std::int64_t correlationId)
 }
 
 void ClientConductor::onNewPublication(
-    const std::string& channel,
+    const std::string &channel,
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int32_t limitPositionIndicatorOffset,
     std::int32_t mtuLength,
-    const std::string& logFileName,
+    const std::string &logFileName,
     std::int64_t correlationId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
-        [&](PublicationStateDefn& entry)
+        [&](PublicationStateDefn &entry)
         {
             return (correlationId == entry.m_correlationId);
         });
@@ -178,4 +180,6 @@ void ClientConductor::onNewPublication(
     }
 
     m_onNewPublicationHandler(channel, streamId, sessionId, correlationId);
+}
+
 }

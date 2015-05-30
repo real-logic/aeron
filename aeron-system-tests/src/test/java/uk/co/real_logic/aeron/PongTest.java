@@ -29,8 +29,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;

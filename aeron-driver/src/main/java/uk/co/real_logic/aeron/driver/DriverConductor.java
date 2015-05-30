@@ -263,10 +263,9 @@ public class DriverConductor implements Agent
 
     private void onHeartbeatCheckTimeouts()
     {
-        final long now = nanoClock.nanoTime();
-
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
+        final long now = nanoClock.nanoTime();
         onCheckClients(now);
         onCheckPublications(now);
         onCheckPublicationLinks(now);

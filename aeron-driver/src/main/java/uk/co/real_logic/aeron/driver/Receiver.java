@@ -90,7 +90,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        channelEndpoint.dispatcher().onRemoveSubscription(streamId);
+        channelEndpoint.dispatcher().removeSubscription(streamId);
     }
 
     public void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final NetworkConnection connection)

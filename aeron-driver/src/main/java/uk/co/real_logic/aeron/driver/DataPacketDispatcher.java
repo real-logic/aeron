@@ -58,7 +58,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
     }
 
-    public void onRemoveSubscription(final int streamId)
+    public void removeSubscription(final int streamId)
     {
         final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = sessionsByStreamIdMap.remove(streamId);
         if (null == connectionBySessionIdMap)

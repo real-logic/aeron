@@ -627,8 +627,11 @@ public class DriverConductor implements Agent
     {
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(UdpChannel.parse(channel));
 
-        channelEndpoint.incRefToStream(streamId);
-        receiverProxy.addSubscription(channelEndpoint, streamId);
+        final int refCount = channelEndpoint.incRefToStream(streamId);
+        if (1 == refCount)
+        {
+            receiverProxy.addSubscription(channelEndpoint, streamId);
+        }
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new SubscriptionLink(correlationId, channelEndpoint, streamId, client);

@@ -22,19 +22,17 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.driver.ThreadingMode;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -112,7 +110,10 @@ public class PubAndSubTest
 
         buffer.putInt(0, 1);
 
-        assertThat(publication.offer(buffer, 0, BitUtil.SIZE_OF_INT), greaterThan(0L));
+        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Thread.yield();
+        }
 
         final int fragmentsRead[] = new int[1];
         SystemTestHelper.executeUntil(

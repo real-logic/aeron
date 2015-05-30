@@ -78,6 +78,7 @@ public final class Aeron implements AutoCloseable
         this.ctx = ctx;
 
         conductor = new ClientConductor(
+            ctx.epochClock,
             ctx.toClientBuffer,
             ctx.logBuffersFactory,
             ctx.countersBuffer(),
@@ -181,6 +182,7 @@ public final class Aeron implements AutoCloseable
     {
         private long mediaDriverTimeoutMs = NULL_TIMEOUT;
         private final AtomicBoolean isClosed = new AtomicBoolean(false);
+        private EpochClock epochClock;
         private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
@@ -203,6 +205,11 @@ public final class Aeron implements AutoCloseable
 
             try
             {
+                if (null == epochClock)
+                {
+                    epochClock = new SystemEpochClock();
+                }
+
                 if (mediaDriverTimeoutMs == NULL_TIMEOUT)
                 {
                     mediaDriverTimeoutMs = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
@@ -266,6 +273,18 @@ public final class Aeron implements AutoCloseable
                 throw new IllegalStateException("Could not initialise communication buffers", ex);
             }
 
+            return this;
+        }
+
+        /**
+         * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
+         *
+         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
+         * @return this Aeron.Context for method chainin
+         */
+        public Context epochClock(final EpochClock clock)
+        {
+            this.epochClock = clock;
             return this;
         }
 

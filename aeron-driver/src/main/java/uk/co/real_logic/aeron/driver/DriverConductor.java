@@ -61,13 +61,7 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.NanoClock;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
@@ -105,7 +99,8 @@ public class DriverConductor implements Agent
     private final CorrelatedMessageFlyweight correlatedMsgFlyweight = new CorrelatedMessageFlyweight();
     private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
 
-    private final NanoClock clock;
+    private final EpochClock epochClock;
+    private final NanoClock nanoClock;
     private final TimerWheel timerWheel;
     private final TimerWheel.Timer checkTimeoutTimer;
     private final SystemCounters systemCounters;
@@ -133,7 +128,8 @@ public class DriverConductor implements Agent
         countersManager = ctx.countersManager();
         countersBuffer = ctx.countersBuffer();
         timerWheel = ctx.conductorTimerWheel();
-        clock = timerWheel.clock();
+        epochClock = ctx.epochClock();
+        nanoClock = timerWheel.clock();
         toDriverCommands = ctx.toDriverCommands();
         toEventReader = ctx.toEventReader();
         clientProxy = ctx.clientProxy();
@@ -154,7 +150,7 @@ public class DriverConductor implements Agent
         correlatedMsgFlyweight.wrap(buffer, 0);
         removeMsgFlyweight.wrap(buffer, 0);
 
-        toDriverCommands.consumerHeartbeatTime(clock.nanoTime());
+        toDriverCommands.consumerHeartbeatTime(nanoClock.nanoTime());
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
@@ -267,9 +263,9 @@ public class DriverConductor implements Agent
 
     private void onHeartbeatCheckTimeouts()
     {
-        final long now = clock.nanoTime();
+        final long now = nanoClock.nanoTime();
 
-        toDriverCommands.consumerHeartbeatTime(now);
+        toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
         onCheckClients(now);
         onCheckPublications(now);
@@ -324,7 +320,7 @@ public class DriverConductor implements Agent
                 udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
             subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
             newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
-            clock,
+            nanoClock,
             systemCounters,
             sourceAddress);
 
@@ -496,7 +492,7 @@ public class DriverConductor implements Agent
 
             publication = new NetworkPublication(
                 channelEndpoint,
-                clock,
+                nanoClock,
                 newPublicationLog(sessionId, streamId, initialTermId, udpChannel, correlationId),
                 newPosition("sender pos", channel, sessionId, streamId, correlationId),
                 newPosition("publisher limit", channel, sessionId, streamId, correlationId),
@@ -718,7 +714,7 @@ public class DriverConductor implements Agent
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(clock.nanoTime());
+            client.timeOfLastKeepalive(nanoClock.nanoTime());
         }
     }
 
@@ -860,7 +856,7 @@ public class DriverConductor implements Agent
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
-            client = new AeronClient(clientId, clock.nanoTime());
+            client = new AeronClient(clientId, nanoClock.nanoTime());
             clients.add(client);
         }
 

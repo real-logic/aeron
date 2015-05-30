@@ -26,10 +26,7 @@ import uk.co.real_logic.aeron.common.event.EventConfiguration;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -139,6 +136,7 @@ public class DriverConductorTest
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.clientKeepAlives()).thenReturn(mock(AtomicCounter.class));
 
+        ctx.epochClock(new SystemEpochClock());
         ctx.receiverProxy(receiverProxy);
         ctx.senderProxy(senderProxy);
         ctx.fromReceiverDriverConductorProxy(fromReceiverConductorProxy);

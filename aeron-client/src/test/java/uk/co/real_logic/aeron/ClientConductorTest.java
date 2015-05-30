@@ -26,7 +26,7 @@ import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import java.nio.ByteBuffer;
@@ -80,6 +80,7 @@ public class ClientConductorTest
 
     private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(COUNTER_BUFFER_LENGTH));
 
+    private final EpochClock epochClock = new SystemEpochClock();
     private final TimerWheel timerWheel = mock(TimerWheel.class);
     private final Consumer<Throwable> mockClientErrorHandler = Throwable::printStackTrace;
 
@@ -103,6 +104,7 @@ public class ClientConductorTest
         when(timerWheel.clock()).thenReturn(System::nanoTime);
 
         conductor = new ClientConductor(
+            epochClock,
             mockToClientReceiver,
             logBuffersFactory,
             counterValuesBuffer,

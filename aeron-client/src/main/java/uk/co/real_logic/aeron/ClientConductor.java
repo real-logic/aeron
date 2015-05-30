@@ -25,8 +25,7 @@ import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
@@ -48,9 +47,11 @@ class ClientConductor implements Agent, DriverListener
     private static final long RESOURCE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(1);
     private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(5);
 
+    private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private volatile boolean driverActive = true;
 
+    private final EpochClock epochClock;
     private final DriverListenerAdapter driverListenerAdapter;
     private final LogBuffersFactory logBuffersFactory;
     private final ActivePublications activePublications = new ActivePublications();
@@ -68,6 +69,7 @@ class ClientConductor implements Agent, DriverListener
     private RegistrationException registrationException; // Guarded by this
 
     public ClientConductor(
+        final EpochClock epochClock,
         final CopyBroadcastReceiver broadcastReceiver,
         final LogBuffersFactory logBuffersFactory,
         final UnsafeBuffer counterValuesBuffer,
@@ -78,6 +80,7 @@ class ClientConductor implements Agent, DriverListener
         final InactiveConnectionHandler inactiveConnectionHandler,
         final long driverTimeoutMs)
     {
+        this.epochClock = epochClock;
         this.errorHandler = errorHandler;
         this.counterValuesBuffer = counterValuesBuffer;
         this.driverProxy = driverProxy;
@@ -85,6 +88,7 @@ class ClientConductor implements Agent, DriverListener
         this.timerWheel = timerWheel;
         this.newConnectionHandler = newConnectionHandler;
         this.inactiveConnectionHandler = inactiveConnectionHandler;
+        this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
 
         this.driverListenerAdapter = new DriverListenerAdapter(broadcastReceiver, this);
@@ -324,15 +328,14 @@ class ClientConductor implements Agent, DriverListener
 
     private void checkDriverHeartbeat()
     {
-        final long now = timerWheel.clock().nanoTime();
+        final long now = epochClock.time();
         final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepalive();
 
-        if (driverActive && (now > (currentDriverKeepaliveTime + driverTimeoutNs)))
+        if (driverActive && (now > (currentDriverKeepaliveTime + driverTimeoutMs)))
         {
             driverActive = false;
 
-            final String msg = String.format(
-                "Driver has been inactive for over %dms", TimeUnit.NANOSECONDS.toMillis(driverTimeoutNs));
+            final String msg = String.format("Driver has been inactive for over %dms", driverTimeoutMs);
             errorHandler.accept(new DriverTimeoutException(msg));
         }
     }

@@ -271,6 +271,7 @@ public final class MediaDriver implements AutoCloseable
         private TransportPoller senderTransportPoller;
         private Supplier<FlowControl> unicastSenderFlowControl;
         private Supplier<FlowControl> multicastSenderFlowControl;
+        private EpochClock epochClock;
         private TimerWheel conductorTimerWheel;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromSenderCommandQueue;
@@ -340,6 +341,11 @@ public final class MediaDriver implements AutoCloseable
 
             try
             {
+                if (null == epochClock)
+                {
+                    epochClock = new SystemEpochClock();
+                }
+
                 if (threadingMode == null)
                 {
                     threadingMode = Configuration.threadingMode();
@@ -412,6 +418,12 @@ public final class MediaDriver implements AutoCloseable
                 LangUtil.rethrowUnchecked(ex);
             }
 
+            return this;
+        }
+
+        public Context epochClock(final EpochClock clock)
+        {
+            this.epochClock = clock;
             return this;
         }
 
@@ -660,6 +672,11 @@ public final class MediaDriver implements AutoCloseable
         {
             this.dirsDeleteOnExit = dirsDeleteOnExit;
             return this;
+        }
+
+        public EpochClock epochClock()
+        {
+            return epochClock;
         }
 
         public OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue()

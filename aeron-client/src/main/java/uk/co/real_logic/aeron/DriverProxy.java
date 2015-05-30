@@ -62,9 +62,9 @@ class DriverProxy
         clientId = toDriverCommandBuffer.nextCorrelationId();
     }
 
-    public long timeOfLastDriverKeepaliveNs()
+    public long timeOfLastDriverKeepalive()
     {
-        return toDriverCommandBuffer.consumerHeartbeatTimeNs();
+        return toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
     public long addPublication(final String channel, final int streamId, final int sessionId)

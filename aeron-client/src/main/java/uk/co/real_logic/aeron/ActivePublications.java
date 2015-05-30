@@ -23,47 +23,48 @@ import java.util.Map;
 import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
- * Map for storing information about {@link Publication}s. These are keyed by a triple of channel/session/stream.
+ * Map for navigating to active {@link Publication}s. These are keyed by a triple of channel/sessionId/streamId.
  */
 public class ActivePublications
 {
-    private final Map<String, BiInt2ObjectMap<Publication>> channelMap = new HashMap<>();
+    private final Map<String, BiInt2ObjectMap<Publication>> publicationsByChannelMap = new HashMap<>();
 
     public Publication get(final String channel, final int sessionId, final int streamId)
     {
-        final BiInt2ObjectMap<Publication> idMap = channelMap.get(channel);
+        final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap = publicationsByChannelMap.get(channel);
 
-        if (null == idMap)
+        if (null == publicationBySessionAndStreamMap)
         {
             return null;
         }
 
-        return idMap.get(sessionId, streamId);
+        return publicationBySessionAndStreamMap.get(sessionId, streamId);
     }
 
     public Publication put(final String channel, final int sessionId, final int streamId, final Publication value)
     {
-        final BiInt2ObjectMap<Publication> idMap = getOrDefault(channelMap, channel, (ignore) -> new BiInt2ObjectMap<>());
+        final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap =
+            getOrDefault(publicationsByChannelMap, channel, (ignore) -> new BiInt2ObjectMap<>());
 
-        return idMap.put(sessionId, streamId, value);
+        return publicationBySessionAndStreamMap.put(sessionId, streamId, value);
     }
 
     public Publication remove(final String channel, final int sessionId, final int streamId)
     {
-        final BiInt2ObjectMap<Publication> idMap = channelMap.get(channel);
+        final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap = publicationsByChannelMap.get(channel);
 
-        if (null == idMap)
+        if (null == publicationBySessionAndStreamMap)
         {
             return null;
         }
 
-        final Publication value = idMap.remove(sessionId, streamId);
+        final Publication publication = publicationBySessionAndStreamMap.remove(sessionId, streamId);
 
-        if (idMap.isEmpty())
+        if (publicationBySessionAndStreamMap.isEmpty())
         {
-            channelMap.remove(channel);
+            publicationsByChannelMap.remove(channel);
         }
 
-        return value;
+        return publication;
     }
 }

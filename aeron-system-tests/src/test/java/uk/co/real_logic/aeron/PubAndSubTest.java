@@ -124,7 +124,7 @@ public class PubAndSubTest
                 Thread.yield();
             },
             Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(900));
+            TimeUnit.MILLISECONDS.toNanos(9900));
 
         verify(dataHandler).onData(
             any(UnsafeBuffer.class),

@@ -110,7 +110,10 @@ public class PongTest
     {
         buffer.putInt(0, 1);
 
-        assertThat(pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT), greaterThan(0L));
+        while (pingPublication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Thread.yield();
+        }
 
         final int fragmentsRead[] = new int[1];
 
@@ -146,6 +149,9 @@ public class PongTest
     public void pingHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         // echoes back the ping
-        assertThat(pongPublication.offer(buffer, offset, length), greaterThan(0L));
+        while (pongPublication.offer(buffer, offset, length) < 0L)
+        {
+            Thread.yield();
+        }
     }
 }

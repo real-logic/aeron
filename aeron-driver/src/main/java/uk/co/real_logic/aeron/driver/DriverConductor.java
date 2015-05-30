@@ -154,7 +154,7 @@ public class DriverConductor implements Agent
         correlatedMsgFlyweight.wrap(buffer, 0);
         removeMsgFlyweight.wrap(buffer, 0);
 
-        toDriverCommands.consumerHeartbeatTimeNs(clock.nanoTime());
+        toDriverCommands.consumerHeartbeatTime(clock.nanoTime());
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
@@ -269,7 +269,7 @@ public class DriverConductor implements Agent
     {
         final long now = clock.nanoTime();
 
-        toDriverCommands.consumerHeartbeatTimeNs(now);
+        toDriverCommands.consumerHeartbeatTime(now);
 
         onCheckClients(now);
         onCheckPublications(now);

@@ -325,7 +325,7 @@ class ClientConductor implements Agent, DriverListener
     private void checkDriverHeartbeat()
     {
         final long now = timerWheel.clock().nanoTime();
-        final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepaliveNs();
+        final long currentDriverKeepaliveTime = driverProxy.timeOfLastDriverKeepalive();
 
         if (driverActive && (now > (currentDriverKeepaliveTime + driverTimeoutNs)))
         {

@@ -20,6 +20,8 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
@@ -175,10 +177,10 @@ public class TermAppender extends LogBufferPartition
         final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
-        final int resultingOffset = resultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
+        final int resultingOffset = computeResultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
         if (resultingOffset > 0)
         {
-            termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+            applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultHeader);
             frameTermOffset(termBuffer, frameOffset, frameOffset);
 
             bufferClaim.wrap(termBuffer, frameOffset, frameLength);
@@ -194,10 +196,10 @@ public class TermAppender extends LogBufferPartition
         final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
-        final int resultingOffset = resultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
+        final int resultingOffset = computeResultingOffset(termBuffer, frameOffset, alignedLength, termBuffer.capacity());
         if (resultingOffset > 0)
         {
-            termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+            applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultHeader);
             termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
 
             frameTermOffset(termBuffer, frameOffset, frameOffset);
@@ -216,7 +218,7 @@ public class TermAppender extends LogBufferPartition
         int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
         final UnsafeBuffer termBuffer = termBuffer();
 
-        final int resultingOffset = resultingOffset(termBuffer, frameOffset, requiredLength, termBuffer.capacity());
+        final int resultingOffset = computeResultingOffset(termBuffer, frameOffset, requiredLength, termBuffer.capacity());
         if (resultingOffset > 0)
         {
             byte flags = BEGIN_FRAG;
@@ -227,7 +229,7 @@ public class TermAppender extends LogBufferPartition
                 final int frameLength = bytesToWrite + HEADER_LENGTH;
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-                termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+                applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultHeader);
                 termBuffer.putBytes(
                     frameOffset + HEADER_LENGTH,
                     srcBuffer,
@@ -253,7 +255,11 @@ public class TermAppender extends LogBufferPartition
         return resultingOffset;
     }
 
-    private int resultingOffset(final UnsafeBuffer termBuffer, final int frameOffset, final int length, final int capacity)
+    private int computeResultingOffset(
+        final UnsafeBuffer termBuffer,
+        final int frameOffset,
+        final int length,
+        final int capacity)
     {
         int resultingOffset = frameOffset + length;
         if (resultingOffset > (capacity - HEADER_LENGTH))
@@ -262,16 +268,32 @@ public class TermAppender extends LogBufferPartition
 
             if (frameOffset <= (capacity - HEADER_LENGTH))
             {
-                termBuffer.putBytes(frameOffset, defaultHeader, 0, HEADER_LENGTH);
+                final int frameLength = capacity - frameOffset;
+                applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultHeader);
 
                 frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
                 frameTermOffset(termBuffer, frameOffset, frameOffset);
-                frameLengthOrdered(termBuffer, frameOffset, capacity - frameOffset);
+                frameLengthOrdered(termBuffer, frameOffset, frameLength);
 
                 resultingOffset = TRIPPED;
             }
         }
 
         return resultingOffset;
+    }
+
+    private static void applyDefaultHeader(
+        final UnsafeBuffer buffer, final int frameOffset, final int frameLength, final MutableDirectBuffer defaultHeaderBuffer)
+    {
+        frameLengthOrdered(buffer, frameOffset, -frameLength);
+
+        int headerOffset = SIZE_OF_INT;
+        buffer.putInt(frameOffset + headerOffset, defaultHeaderBuffer.getInt(headerOffset));
+
+        headerOffset += SIZE_OF_INT;
+        buffer.putLong(frameOffset + headerOffset, defaultHeaderBuffer.getLong(headerOffset));
+
+        headerOffset += SIZE_OF_LONG;
+        buffer.putLong(frameOffset + headerOffset, defaultHeaderBuffer.getLong(headerOffset));
     }
 }

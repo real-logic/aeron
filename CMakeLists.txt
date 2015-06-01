@@ -15,6 +15,11 @@
 #
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+    message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory)"
+        "and run CMake from there. You may need to remove CMakeCache.txt.")
+endif()
+
 include(ExternalProject)
 
 project("aeron")
@@ -76,8 +81,8 @@ endif()
 ##########################################################
 # Project variables, etc.
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/binaries")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/binaries")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
 set(AERON_COMMON_PATH "${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp")
 set(AERON_3RDPARTY_PATH "${AERON_COMMON_PATH}/3rdparty")

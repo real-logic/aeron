@@ -1,3 +1,14 @@
-cmake -G "Visual Studio 12 Win64" ..
+setlocal
+
+set SOURCE_DIR=%CD%
+set BUILD_DIR=%CD%\cppbuild\Release
+
+if EXIST %BUILD_DIR% rd /S %BUILD_DIR%
+
+md %BUILD_DIR%
+pushd %BUILD_DIR%
+
+cmake -G "Visual Studio 12 Win64" %SOURCE_DIR%
 #start aeron.sln
 cmake --build . --clean-first
+ctest -C Release

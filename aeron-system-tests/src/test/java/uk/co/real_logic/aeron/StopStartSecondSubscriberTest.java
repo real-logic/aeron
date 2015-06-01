@@ -174,7 +174,7 @@ public class StopStartSecondSubscriberTest
 
     public void doPublisherWork(Publication publication, AtomicBoolean running)
     {
-        while(running.get())
+        while (running.get())
         {
             while (running.get() && publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
             {
@@ -184,14 +184,15 @@ public class StopStartSecondSubscriberTest
     }
 
 
-    public void shouldReceiveMessagesAfterStopStart(final String channel1, final int stream1, final String channel2, final int stream2) throws Exception
+    public void shouldReceiveMessagesAfterStopStart(final String channel1, final int stream1, final String channel2,
+                                                    final int stream2) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final int numMessages = 10000;
         final MutableInteger subscriber2AfterRestartCount = new MutableInteger();
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        DataHandler dataHandler2b = (buffer, offset, length, header) -> subscriber2AfterRestartCount.value++;
+        final DataHandler dataHandler2b = (buffer, offset, length, header) -> subscriber2AfterRestartCount.value++;
 
         launch(channel1, stream1, channel2, stream2);
 
@@ -213,7 +214,9 @@ public class StopStartSecondSubscriberTest
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(4900));
 
-        System.out.println("Values before stop/start: numMessages=" + numMessages + " subscriber1Count=" + subscriber1Count + " subscriber2Count=" + subscriber2Count + " fragmentsRead[0]=" + fragmentsRead[0] + " fragmentsRead[1]=" + fragmentsRead[1]);
+        System.out.println("Values before stop/start: numMessages=" + numMessages +
+                " subscriber1Count=" + subscriber1Count + " subscriber2Count=" + subscriber2Count +
+                " fragmentsRead[0]=" + fragmentsRead[0] + " fragmentsRead[1]=" + fragmentsRead[1]);
 
         assertTrue(subscriber1Count >= numMessages);
         assertTrue(subscriber2Count >= numMessages);
@@ -241,11 +244,14 @@ public class StopStartSecondSubscriberTest
 
         running.set(false);
 
-        System.out.println("Values after stop/start: numMessages=" + numMessages + " subscriber1Count=" + subscriber1Count + " subscriber2bCount=" + subscriber2AfterRestartCount.value + " fragmentsRead[0]=" + fragmentsRead[0] + " fragmentsRead[1]=" + fragmentsRead[1]);
+        System.out.println("Values after stop/start: numMessages=" + numMessages +
+                " subscriber1Count=" + subscriber1Count + " subscriber2bCount=" + subscriber2AfterRestartCount.value +
+                " fragmentsRead[0]=" + fragmentsRead[0] + " fragmentsRead[1]=" + fragmentsRead[1]);
 
         assertTrue("Expecting subscriber1 to receive messages the entire time", subscriber1Count >= numMessages * 2);
         assertTrue("Expecting subscriber2 to receive messages before being stopped and started", subscriber2Count >= numMessages);
-        assertTrue("Expecting subscriber2 to receive messages after being stopped and started", subscriber2AfterRestartCount.value >= numMessages);
+        assertTrue("Expecting subscriber2 to receive messages after being stopped and started",
+                subscriber2AfterRestartCount.value >= numMessages);
 
         executor.shutdown();
     }

@@ -1,4 +1,4 @@
-@echo off
+@if "%DEBUG%" == "" @echo off
 setlocal
 
 set SOURCE_DIR=%CD%

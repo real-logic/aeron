@@ -49,19 +49,15 @@ public class BasicSubscriber
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
-
-        // Create a context for a client and specify callback methods when
-        // a new connection starts (printNewConnection)
-        // and for when a connection goes inactive (printInactiveConnection)
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
+
         if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.dirName(driver.contextDirName());
         }
 
-        // DataHandler method is called for every new datagram is received
         final DataHandler dataHandler = printStringMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
 
@@ -74,9 +70,8 @@ public class BasicSubscriber
         // The Aeron and Subscription classes implement "AutoCloseable" and will automatically
         // clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-                final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
         {
-            // Poll the subscription for new messages and deliver any that are found.
             SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
             System.out.println("Shutting down...");

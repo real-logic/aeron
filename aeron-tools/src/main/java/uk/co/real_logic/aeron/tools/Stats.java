@@ -59,11 +59,9 @@ public class Stats
     private File cncFile = null;
     private MappedByteBuffer cncByteBuffer = null;
     private DirectBuffer metaDataBuffer = null;
-    private final int cncVersion;
     private AtomicBuffer labelsBuffer = null;
     private AtomicBuffer valuesBuffer = null;
     private CountersManager countersManager = null;
-    private final AtomicBoolean running = null;
     private StatsOutput output = null;
 
     private static final int LABEL_SIZE = CountersManager.LABEL_LENGTH;
@@ -103,7 +101,7 @@ public class Stats
 
             while ((length = getLength(idx)) != 0)
             {
-                if (length != CountersManager.UNREGISTERED_LABEL_LENGTH)
+                if (length != LABEL_SIZE)
                 {
                     tmpKeys.add(getLabel(idx));
                     tmpVals.add(getValue(idx));
@@ -128,7 +126,7 @@ public class Stats
             while ((length = getLength(idx)) != 0)
             {
                 System.out.println(idx);
-                if (size != UNREGISTERED_LABEL_SIZE)
+                if (length != UNREGISTERED_LABEL_SIZE)
                 {
                     tmpKeys.add(getLabel(idx));
                     tmpVals.add(getValue(idx));

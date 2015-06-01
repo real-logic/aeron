@@ -28,6 +28,8 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.agrona.BitUtil.align;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -39,7 +41,7 @@ public class TermAppenderTest
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final MutableDirectBuffer DEFAULT_HEADER = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_LENGTH));
 
-    private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final UnsafeBuffer termBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
     private final UnsafeBuffer metaDataBuffer = mock(UnsafeBuffer.class);
 
     private TermAppender termAppender;
@@ -157,10 +159,10 @@ public class TermAppenderTest
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tail, frameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(headerLength, buffer, 0, msgLength);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
 
     @Test
@@ -182,17 +184,17 @@ public class TermAppenderTest
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tail, frameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(headerLength, buffer, 0, msgLength);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
 
         tail = alignedFrameLength;
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tail, frameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, 0, msgLength);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
 
     @Test
@@ -203,6 +205,7 @@ public class TermAppenderTest
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
         final int tailValue = termAppender.termBuffer().capacity() - align(msgLength, FRAME_ALIGNMENT);
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
+        final int frameLength = TERM_BUFFER_LENGTH - tailValue;
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
@@ -211,10 +214,10 @@ public class TermAppenderTest
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
-        inOrder.verify(termBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tailValue, frameLength);
         inOrder.verify(termBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), TERM_BUFFER_LENGTH - tailValue);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tailValue, frameLength);
     }
 
     @Test
@@ -225,6 +228,7 @@ public class TermAppenderTest
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
         final int tailValue = termAppender.termBuffer().capacity() - (requiredFrameSize + (headerLength - FRAME_ALIGNMENT));
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
+        final int frameLength = TERM_BUFFER_LENGTH - tailValue;
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
@@ -233,10 +237,10 @@ public class TermAppenderTest
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
-        inOrder.verify(termBuffer, times(1)).putBytes(tailValue, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tailValue, frameLength);
         inOrder.verify(termBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tailValue), tailValue, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tailValue), TERM_BUFFER_LENGTH - tailValue);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tailValue, frameLength);
     }
 
     @Test
@@ -257,18 +261,18 @@ public class TermAppenderTest
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredCapacity);
 
-        inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tail, termAppender.maxFrameLength());
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, 0, termAppender.maxPayloadLength());
         inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), BEGIN_FRAG);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), termAppender.maxFrameLength());
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, termAppender.maxFrameLength());
 
         tail = termAppender.maxFrameLength();
-        inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tail, frameLength);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, termAppender.maxPayloadLength(), 1);
         inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), END_FRAG);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
 
     @Test
@@ -285,7 +289,6 @@ public class TermAppenderTest
 
         assertThat(termAppender.claim(msgLength, bufferClaim), is(alignedFrameLength));
 
-        assertThat(bufferClaim.buffer(), is(termBuffer));
         assertThat(bufferClaim.offset(), is(tail + headerLength));
         assertThat(bufferClaim.length(), is(msgLength));
 
@@ -294,8 +297,22 @@ public class TermAppenderTest
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        inOrder.verify(termBuffer, times(1)).putBytes(tail, DEFAULT_HEADER, 0, headerLength);
+        verifyDefaultHeader(inOrder, termBuffer, tail, frameLength);
         inOrder.verify(termBuffer, times(1)).putInt(termOffsetOffset(tail), tail, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(lengthOffset(tail), frameLength);
+    }
+
+    private void verifyDefaultHeader(
+        final InOrder inOrder, final UnsafeBuffer termBuffer, final int frameOffset, final int frameLength)
+    {
+        inOrder.verify(termBuffer, times(1)).putIntOrdered(frameOffset, -frameLength);
+
+        int headerOffset = SIZE_OF_INT;
+        inOrder.verify(termBuffer, times(1)).putInt(eq(frameOffset + headerOffset), anyInt());
+
+        headerOffset += SIZE_OF_INT;
+        inOrder.verify(termBuffer, times(1)).putLong(eq(frameOffset + headerOffset), anyLong());
+
+        headerOffset += SIZE_OF_LONG;
+        inOrder.verify(termBuffer, times(1)).putLong(eq(frameOffset + headerOffset), anyLong());
     }
 }

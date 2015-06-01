@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.cmd.CloseResourceCmd;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
@@ -87,6 +88,18 @@ public class DriverConductorProxy
                 controlAddress,
                 srcAddress,
                 channelEndpoint));
+        }
+    }
+
+    public void closeResource(final AutoCloseable resource)
+    {
+        if (isShared())
+        {
+            driverConductor.onCloseResource(resource);
+        }
+        else
+        {
+            offer(new CloseResourceCmd(resource));
         }
     }
 

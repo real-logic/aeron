@@ -47,9 +47,7 @@ public class EventConfiguration
     public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES = EnumSet.of(
         EXCEPTION,
         MALFORMED_FRAME_LENGTH,
-        ERROR_DELETING_FILE,
-        FRAME_OUT_INCOMPLETE_SEND,
-        FLOW_CONTROL_OVERRUN);
+        ERROR_DELETING_FILE);
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
         EXCEPTION,
@@ -67,8 +65,6 @@ public class EventConfiguration
         CMD_OUT_ON_INACTIVE_CONNECTION,
         CMD_OUT_ON_OPERATION_SUCCESS,
         ERROR_DELETING_FILE,
-        FRAME_OUT_INCOMPLETE_SEND,
-        FLOW_CONTROL_OVERRUN,
         CHANNEL_CREATION);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
@@ -93,11 +89,6 @@ public class EventConfiguration
     public static long getEnabledEventCodes()
     {
         return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME)));
-    }
-
-    public static long enabledEventCodes(final String enabledLoggerEventCodes)
-    {
-        return makeTagBitSet(getEnabledEventCodes(enabledLoggerEventCodes));
     }
 
     public static int bufferLength()

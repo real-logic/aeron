@@ -99,7 +99,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         termLengthMask = termLength - 1;
         senderPositionLimit = initialPositionLimit;
 
-        timeOfLastSendOrHeartbeat = clock.time();
+        timeOfLastSendOrHeartbeat = clock.nanoTime();
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.initialTermId = initialTermId;
@@ -129,7 +129,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             final long senderPosition = this.senderPosition.get();
             final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
             final int termOffset = (int)senderPosition & termLengthMask;
-            final long now = clock.time();
+            final long now = clock.nanoTime();
 
             if (shouldSendSetupFrame)
             {

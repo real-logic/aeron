@@ -47,9 +47,7 @@ public class RateSubscriber
         System.out.println("Subscribing to " + CHANNEL + " on stream Id " + STREAM_ID);
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
-        final ExecutorService executor = Executors.newFixedThreadPool(2);
-
-        // Create a context with newConnectionHandler and inactiveConnectionHandler
+        final ExecutorService executor = Executors.newFixedThreadPool(1);
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(SamplesUtil::printNewConnection)
             .inactiveConnectionHandler(SamplesUtil::printInactiveConnection);
@@ -79,14 +77,13 @@ public class RateSubscriber
         // Add a subscriber to receive data from the configured channel and stream ID
         // The Aeron and Subscription classes implement "AutoCloseable", so their
         // resources will be automatically cleaned up at the end of this try block.
-        try (final Aeron aeron = Aeron.connect(ctx, executor);
+        try (final Aeron aeron = Aeron.connect(ctx);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {
             // Receive data on subscription in a separate thread
             final Future future = executor.submit(
                 () -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
-            // run the rate reporter loop
             reporter.run();
 
             System.out.println("Shutting down...");

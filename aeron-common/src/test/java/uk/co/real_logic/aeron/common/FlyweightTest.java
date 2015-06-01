@@ -55,13 +55,13 @@ public class FlyweightTest
         encodeHeader.frameLength(8);
 
         // little endian
-        assertThat(buffer.get(0), is((byte)0x01));
-        assertThat(buffer.get(1), is((byte)0xC0));
-        assertThat(buffer.get(2), is((byte)HeaderFlyweight.HDR_TYPE_DATA));
+        assertThat(buffer.get(0), is((byte)0x08));
+        assertThat(buffer.get(1), is((byte)0x00));
+        assertThat(buffer.get(2), is((byte)0x00));
         assertThat(buffer.get(3), is((byte)0x00));
-        assertThat(buffer.get(4), is((byte)0x08));
-        assertThat(buffer.get(5), is((byte)0x00));
-        assertThat(buffer.get(6), is((byte)0x00));
+        assertThat(buffer.get(4), is((byte)0x01));
+        assertThat(buffer.get(5), is((byte)0xC0));
+        assertThat(buffer.get(6), is((byte)HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(buffer.get(7), is((byte)0x00));
     }
 

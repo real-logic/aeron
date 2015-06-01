@@ -40,15 +40,28 @@ class DriverListenerAdapter implements MessageHandler
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final DriverListener listener;
 
+    private long activeCorrelationId;
+    private long lastReceivedCorrelationId;
+    private String expectedChannel;
+
     public DriverListenerAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverListener listener)
     {
         this.broadcastReceiver = broadcastReceiver;
         this.listener = listener;
     }
 
-    public int pollMessage()
+    public int pollMessage(final long activeCorrelationId, final String expectedChannel)
     {
+        this.activeCorrelationId = activeCorrelationId;
+        this.lastReceivedCorrelationId = -1;
+        this.expectedChannel = expectedChannel;
+
         return broadcastReceiver.receive(this);
+    }
+
+    public long lastReceivedCorrelationId()
+    {
+        return lastReceivedCorrelationId;
     }
 
     public void onMessage(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
@@ -60,13 +73,19 @@ class DriverListenerAdapter implements MessageHandler
                 publicationReady.wrap(buffer, index);
 
                 final long correlationId = publicationReady.correlationId();
-                final int sessionId = publicationReady.sessionId();
-                final int streamId = publicationReady.streamId();
-                final int publicationLimitCounterId = publicationReady.publicationLimitCounterId();
-                final String logFileName = publicationReady.logFileName();
 
-                listener.onNewPublication(
-                    streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
+                if (correlationId == activeCorrelationId)
+                {
+                    final int sessionId = publicationReady.sessionId();
+                    final int streamId = publicationReady.streamId();
+                    final int publicationLimitCounterId = publicationReady.publicationLimitCounterId();
+                    final String logFileName = publicationReady.logFileName();
+
+                    listener.onNewPublication(
+                        expectedChannel, streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
+
+                    lastReceivedCorrelationId = correlationId;
+                }
                 break;
             }
 
@@ -86,12 +105,19 @@ class DriverListenerAdapter implements MessageHandler
             }
 
             case ON_OPERATION_SUCCESS:
+            {
                 correlatedMessage.wrap(buffer, index);
 
-                listener.operationSucceeded(correlatedMessage.correlationId());
+                final long correlationId = correlatedMessage.correlationId();
+                if (correlationId == activeCorrelationId)
+                {
+                    lastReceivedCorrelationId = correlationId;
+                }
                 break;
+            }
 
             case ON_INACTIVE_CONNECTION:
+            {
                 connectionMessage.wrap(buffer, index);
 
                 listener.onInactiveConnection(
@@ -100,16 +126,27 @@ class DriverListenerAdapter implements MessageHandler
                     connectionMessage.position(),
                     connectionMessage.correlationId());
                 break;
+            }
 
             case ON_ERROR:
+            {
                 errorHeader.wrap(buffer, index);
+
                 correlatedMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
 
-                listener.onError(
-                    errorHeader.errorCode(),
-                    errorHeader.errorMessage(),
-                    correlatedMessage.correlationId());
+                final long correlationId = correlatedMessage.correlationId();
+
+                if (correlationId == activeCorrelationId)
+                {
+                    listener.onError(
+                        errorHeader.errorCode(),
+                        errorHeader.errorMessage(),
+                        correlatedMessage.correlationId());
+
+                    lastReceivedCorrelationId = correlationId;
+                }
                 break;
+            }
 
             default:
                 break;

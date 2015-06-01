@@ -31,8 +31,8 @@ import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
 
 public class EmbeddedThroughput
 {
-    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
+    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
@@ -52,7 +52,7 @@ public class EmbeddedThroughput
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
         final DataHandler rateReporterHandler = rateReporterHandler(reporter);
-        final ExecutorService executor = Executors.newFixedThreadPool(3);
+        final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context context = new Aeron.Context();
         final String embeddedDirName = CommonContext.generateEmbeddedDirName();
@@ -64,7 +64,7 @@ public class EmbeddedThroughput
         final AtomicBoolean running = new AtomicBoolean(true);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect(context, executor);
+             final Aeron aeron = Aeron.connect(context);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
         {

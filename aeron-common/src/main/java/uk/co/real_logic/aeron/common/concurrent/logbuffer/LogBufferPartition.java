@@ -90,13 +90,24 @@ public class LogBufferPartition
     }
 
     /**
-     * Get the current tail value in a volatile memory ordering fashion.
+     * Get the current tail value in a volatile memory ordering fashion. If raw tail is greater than
+     * {@link #termBuffer()}.{@link uk.co.real_logic.agrona.DirectBuffer#capacity()} then capacity will be returned.
      *
      * @return the current tail value.
      */
     public int tailVolatile()
     {
         return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
+    }
+
+    /**
+     * Get the raw value current tail value in a volatile memory ordering fashion.
+     *
+     * @return the current tail value.
+     */
+    public int rawTailVolatile()
+    {
+        return metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
     }
 
     /**

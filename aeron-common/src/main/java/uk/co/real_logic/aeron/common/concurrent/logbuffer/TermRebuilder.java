@@ -31,17 +31,14 @@ public class TermRebuilder
      * @param termBuffer into which the packet should be inserted.
      * @param termOffset offset in the term at which the packet should be inserted.
      * @param packet     containing a sequence of frames.
-     * @param packetOffset  in the packet at which the frames begin.
      * @param length     of the sequence of frames in bytes.
      */
-    public static void insert(
-        final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int packetOffset, final int length)
+    public static void insert(final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int length)
     {
-        final int lengthOffset = lengthOffset(packetOffset);
-        final int frameLength = packet.getInt(lengthOffset, LITTLE_ENDIAN);
-        packet.putIntOrdered(lengthOffset, 0);
+        final int firstFrameLength = packet.getInt(0, LITTLE_ENDIAN);
+        packet.putIntOrdered(0, 0);
 
-        termBuffer.putBytes(termOffset, packet, packetOffset, length);
-        frameLengthOrdered(termBuffer, termOffset, frameLength);
+        termBuffer.putBytes(termOffset, packet, 0, length);
+        frameLengthOrdered(termBuffer, termOffset, firstFrameLength);
     }
 }

@@ -45,7 +45,7 @@ public class SelectorAndTransportTest
     private static final UdpChannel SRC_DST = UdpChannel.parse("udp://localhost:" + SRC_PORT + "@localhost:" + RCV_PORT);
     private static final UdpChannel RCV_DST = UdpChannel.parse("udp://localhost:" + RCV_PORT);
 
-    private static final LossGenerator NO_LOSS = (address, length) -> false;
+    private static final LossGenerator NO_LOSS = (address, header, length) -> false;
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
@@ -243,9 +243,9 @@ public class SelectorAndTransportTest
         statusMessage.wrap(buffer, 0);
         statusMessage.streamId(STREAM_ID)
                      .sessionId(SESSION_ID)
-                     .termId(TERM_ID)
+                     .consumptionTermId(TERM_ID)
                      .receiverWindowLength(1000)
-                     .rebuildTermOffset(0)
+                     .consumptionTermOffset(0)
                      .version(HeaderFlyweight.CURRENT_VERSION)
                      .flags((short)0)
                      .headerType(HeaderFlyweight.HDR_TYPE_SM)

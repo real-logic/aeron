@@ -52,13 +52,13 @@ public class PublicationTest
     private ReadOnlyPosition limit;
     private TermAppender[] appenders;
     private MutableDirectBuffer[] headers;
+    private ClientConductor conductor = mock(ClientConductor.class);
     private LogBuffers logBuffers = mock(LogBuffers.class);
     private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
 
     @Before
     public void setUp()
     {
-        final ClientConductor conductor = mock(ClientConductor.class);
         limit = mock(ReadOnlyPosition.class);
         when(limit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
         when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
@@ -88,6 +88,8 @@ public class PublicationTest
             logBuffers,
             logMetaDataBuffer,
             CORRELATION_ID);
+
+        publication.incRef();
     }
 
     @Test(expected = IllegalStateException.class)
@@ -129,7 +131,8 @@ public class PublicationTest
     {
         final long expectedPosition = (long)atomicSendBuffer.capacity();
         when(appenders[0].append(atomicSendBuffer, 0, atomicSendBuffer.capacity())).thenReturn(atomicSendBuffer.capacity());
-        when(appenders[0].tailVolatile()).thenReturn(0).thenReturn((int)expectedPosition);
+        when(appenders[0].rawTailVolatile()).thenReturn(0).thenReturn((int)expectedPosition);
+        when(appenders[0].tailVolatile()).thenReturn((int)expectedPosition);
 
         assertThat(publication.offer(atomicSendBuffer), is(expectedPosition));
         assertThat(publication.position(), is(expectedPosition));
@@ -153,7 +156,7 @@ public class PublicationTest
     public void shouldRotateWhenAppendTrips()
     {
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].append(any(), anyInt(), anyInt())).thenReturn(TermAppender.TRIPPED);
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].rawTailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 
         assertThat(publication.offer(atomicSendBuffer), is(Publication.BACK_PRESSURE));
@@ -173,7 +176,7 @@ public class PublicationTest
     public void shouldRotateWhenClaimTrips()
     {
         when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].claim(anyInt(), any())).thenReturn(TermAppender.TRIPPED);
-        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].tailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
+        when(appenders[indexByTerm(TERM_ID_1, TERM_ID_1)].rawTailVolatile()).thenReturn(TERM_MIN_LENGTH - RECORD_ALIGNMENT);
         when(limit.getVolatile()).thenReturn(Long.MAX_VALUE);
 
         final BufferClaim bufferClaim = new BufferClaim();
@@ -193,7 +196,9 @@ public class PublicationTest
     public void shouldUnmapBuffersWhenReleased() throws Exception
     {
         publication.close();
-        verify(logBuffers, times(1)).close();
+
+        logBuffersClosedOnce();
+        releaseSelfOnce();
     }
 
     @Test
@@ -201,6 +206,7 @@ public class PublicationTest
     {
         publication.incRef();
         publication.close();
+
         verify(logBuffers, never()).close();
     }
 
@@ -211,6 +217,27 @@ public class PublicationTest
         publication.close();
 
         publication.close();
+        logBuffersClosedOnce();
+    }
+
+    @Test
+    public void shouldReleaseResourcesIdempotently() throws Exception
+    {
+        publication.close();
+
+        publication.close();
+
+        logBuffersClosedOnce();
+        releaseSelfOnce();
+    }
+
+    private void logBuffersClosedOnce()
+    {
         verify(logBuffers, times(1)).close();
+    }
+
+    private void releaseSelfOnce()
+    {
+        verify(conductor, times(1)).releasePublication(publication);
     }
 }

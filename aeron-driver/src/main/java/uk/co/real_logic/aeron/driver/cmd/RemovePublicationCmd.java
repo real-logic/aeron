@@ -18,17 +18,17 @@ package uk.co.real_logic.aeron.driver.cmd;
 import uk.co.real_logic.aeron.driver.NetworkPublication;
 import uk.co.real_logic.aeron.driver.Sender;
 
-public class ClosePublicationCmd implements SenderCmd
+public class RemovePublicationCmd implements SenderCmd
 {
     private final NetworkPublication publication;
 
-    public ClosePublicationCmd(final NetworkPublication publication)
+    public RemovePublicationCmd(final NetworkPublication publication)
     {
         this.publication = publication;
     }
 
     public void execute(final Sender sender)
     {
-        sender.onClosePublication(publication);
+        sender.onRemovePublication(publication);
     }
 }

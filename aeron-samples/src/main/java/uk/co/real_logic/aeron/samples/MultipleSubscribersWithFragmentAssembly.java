@@ -35,11 +35,8 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
  */
 public class MultipleSubscribersWithFragmentAssembly
 {
-    // The channel to subscribe to
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
-    // A unique stream ID within the channel for subscriber one
     private static final int STREAM_ID_1 = SampleConfiguration.STREAM_ID;
-    // A unique stream ID within the channel for subscriber two
     private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
 
     // Maximum number of fragments to be read in a single poll operation
@@ -50,9 +47,6 @@ public class MultipleSubscribersWithFragmentAssembly
         System.out.format("Subscribing to %s on stream ID %d and stream ID %d%n",
             CHANNEL, STREAM_ID_1, STREAM_ID_2);
 
-        // Create a context for a client and specify callback methods when
-        // a new connection starts (eventNewConnection)
-        // a connection goes inactive (eventInactiveConnection)
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventNewConnection)
             .inactiveConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveConnection);
@@ -81,21 +75,14 @@ public class MultipleSubscribersWithFragmentAssembly
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                 100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
-            try
+            // Try to read the data for both the subscribers
+            while (running.get())
             {
-                // Try to read the data for both the subscribers
-                while (running.get())
-                {
-                    final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
-                    final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
-                    // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
-                    // use if no messages were received.
-                    idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
-                }
-            }
-            catch (final Exception ex)
-            {
-                ex.printStackTrace();
+                final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
+                // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
+                // use if no messages were received.
+                idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
             }
 
             System.out.println("Shutting down...");

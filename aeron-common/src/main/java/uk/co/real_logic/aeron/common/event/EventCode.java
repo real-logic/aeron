@@ -45,9 +45,7 @@ public enum EventCode
     CMD_OUT_ON_INACTIVE_CONNECTION(17, EventCodec::dissectAsCommand),
     FRAME_IN_DROPPED(18, EventCodec::dissectAsFrame),
     ERROR_DELETING_FILE(19, EventCodec::dissectAsString),
-    FRAME_OUT_INCOMPLETE_SEND(20, EventCodec::dissectAsString),
 
-    FLOW_CONTROL_OVERRUN(21, EventCodec::dissectAsString),
     INVALID_VERSION(22, EventCodec::dissectAsCommand),
 
     CHANNEL_CREATION(23, EventCodec::dissectAsString);

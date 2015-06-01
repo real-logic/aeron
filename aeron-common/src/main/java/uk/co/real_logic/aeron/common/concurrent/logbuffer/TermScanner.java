@@ -50,7 +50,7 @@ public final class TermScanner
         {
             final int frameOffset = offset + available;
             final int frameLength = frameLengthVolatile(termBuffer, frameOffset);
-            if (0 == frameLength)
+            if (frameLength <= 0)
             {
                 break;
             }

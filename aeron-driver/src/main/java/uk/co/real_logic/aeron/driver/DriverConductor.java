@@ -32,8 +32,8 @@ import static uk.co.real_logic.aeron.driver.Configuration.NAK_MULTICAST_DELAY_GE
 import static uk.co.real_logic.aeron.driver.Configuration.NAK_UNICAST_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.driver.Configuration.NO_NAK_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_GENERATOR;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANSMIT_UNICAST_DELAY_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANSMIT_UNICAST_LINGER_GENERATOR;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -61,13 +61,7 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.NanoClock;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
@@ -77,10 +71,6 @@ import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
  */
 public class DriverConductor implements Agent
 {
-    private final long dataLossSeed;
-    private final long controlLossSeed;
-    private final double dataLossRate;
-    private final double controlLossRate;
     private final int mtuLength;
     private final int termBufferLength;
     private final int initialWindowLength;
@@ -89,10 +79,11 @@ public class DriverConductor implements Agent
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
     private final ClientProxy clientProxy;
-    private final DriverConductorProxy conductorProxy;
+    private final DriverConductorProxy fromReceiverConductorProxy;
     private final RingBuffer toDriverCommands;
     private final RingBuffer toEventReader;
-    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> driverConductorCmdQueue;
+    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromReceiverDriverConductorCmdQueue;
+    private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromSenderDriverConductorCmdQueue;
     private final Supplier<FlowControl> unicastFlowControl;
     private final Supplier<FlowControl> multicastFlowControl;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
@@ -108,7 +99,8 @@ public class DriverConductor implements Agent
     private final CorrelatedMessageFlyweight correlatedMsgFlyweight = new CorrelatedMessageFlyweight();
     private final RemoveMessageFlyweight removeMsgFlyweight = new RemoveMessageFlyweight();
 
-    private final NanoClock clock;
+    private final EpochClock epochClock;
+    private final NanoClock nanoClock;
     private final TimerWheel timerWheel;
     private final TimerWheel.Timer checkTimeoutTimer;
     private final SystemCounters systemCounters;
@@ -118,10 +110,13 @@ public class DriverConductor implements Agent
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
     private final MessageHandler onEventFunc;
+    private final LossGenerator dataLossGenerator;
+    private final LossGenerator controlLossGenerator;
 
     public DriverConductor(final Context ctx)
     {
-        driverConductorCmdQueue = ctx.conductorCommandQueue();
+        fromReceiverDriverConductorCmdQueue = ctx.toConductorFromReceiverCommandQueue();
+        fromSenderDriverConductorCmdQueue = ctx.toConductorFromSenderCommandQueue();
         receiverProxy = ctx.receiverProxy();
         senderProxy = ctx.senderProxy();
         rawLogFactory = ctx.rawLogBuffersFactory();
@@ -133,18 +128,17 @@ public class DriverConductor implements Agent
         countersManager = ctx.countersManager();
         countersBuffer = ctx.countersBuffer();
         timerWheel = ctx.conductorTimerWheel();
-        clock = timerWheel.clock();
+        epochClock = ctx.epochClock();
+        nanoClock = timerWheel.clock();
         toDriverCommands = ctx.toDriverCommands();
         toEventReader = ctx.toEventReader();
         clientProxy = ctx.clientProxy();
-        conductorProxy = ctx.driverConductorProxy();
+        fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
         logger = ctx.eventLogger();
-        dataLossRate = ctx.dataLossRate();
-        dataLossSeed = ctx.dataLossSeed();
-        controlLossRate = ctx.controlLossRate();
-        controlLossSeed = ctx.controlLossSeed();
         systemCounters = ctx.systemCounters();
         checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
+        dataLossGenerator = ctx.dataLossGenerator();
+        controlLossGenerator = ctx.controlLossGenerator();
 
         final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc =
@@ -156,7 +150,7 @@ public class DriverConductor implements Agent
         correlatedMsgFlyweight.wrap(buffer, 0);
         removeMsgFlyweight.wrap(buffer, 0);
 
-        toDriverCommands.consumerHeartbeatTimeNs(clock.time());
+        toDriverCommands.consumerHeartbeatTime(nanoClock.nanoTime());
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
@@ -245,7 +239,8 @@ public class DriverConductor implements Agent
         int workCount = 0;
 
         workCount += toDriverCommands.read(onClientCommandFunc);
-        workCount += driverConductorCmdQueue.drain(onDriverConductorCmdFunc);
+        workCount += fromReceiverDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
+        workCount += fromSenderDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += toEventReader.read(onEventFunc, EVENT_READER_FRAME_LIMIT);
         workCount += processTimers();
 
@@ -268,10 +263,9 @@ public class DriverConductor implements Agent
 
     private void onHeartbeatCheckTimeouts()
     {
-        final long now = clock.time();
+        toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
-        toDriverCommands.consumerHeartbeatTimeNs(now);
-
+        final long now = nanoClock.nanoTime();
         onCheckClients(now);
         onCheckPublications(now);
         onCheckPublicationLinks(now);
@@ -306,45 +300,60 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
             sessionId, streamId, channelEndpoint, channel, joiningPosition);
 
-        final RawLog rawLog = newConnectionLog(
-            sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, correlationId);
+        if (subscriberPositions.size() > 0)
+        {
+            final RawLog rawLog = newConnectionLog(
+                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, correlationId);
 
-        final NetworkConnection connection = new NetworkConnection(
-            correlationId,
-            channelEndpoint,
-            controlAddress,
-            sessionId,
-            streamId,
-            initialTermId,
-            activeTermId,
-            initialTermOffset,
-            initialWindowLength,
-            rawLog,
-            timerWheel,
-            Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
-                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-            subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
-            newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
-            clock,
-            systemCounters,
-            sourceAddress,
-            logger);
+            final NetworkConnection connection = new NetworkConnection(
+                correlationId,
+                channelEndpoint,
+                controlAddress,
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                initialTermOffset,
+                initialWindowLength,
+                rawLog,
+                timerWheel,
+                Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
+                    udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+                subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
+                newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
+                nanoClock,
+                systemCounters,
+                sourceAddress);
 
-        subscriberPositions.forEach(
-            (subscriberPosition) -> subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
+            subscriberPositions.forEach(
+                (subscriberPosition) ->
+                    subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
 
-        connections.add(connection);
-        receiverProxy.newConnection(channelEndpoint, connection);
+            connections.add(connection);
+            receiverProxy.newConnection(channelEndpoint, connection);
 
-        clientProxy.onConnectionReady(
-            channel,
-            streamId,
-            sessionId,
-            joiningPosition,
-            rawLog,
-            correlationId,
-            subscriberPositions,
-            generateSourceInfo(sourceAddress));
+            clientProxy.onConnectionReady(
+                channel,
+                streamId,
+                sessionId,
+                joiningPosition,
+                rawLog,
+                correlationId,
+                subscriberPositions,
+                generateSourceInfo(sourceAddress));
+        }
+    }
+
+    public void onCloseResource(final AutoCloseable resource)
+    {
+        try
+        {
+            resource.close();
+        }
+        catch (final Exception ex)
+        {
+            logger.logException(ex);
+        }
     }
 
     public List<SubscriberPosition> listSubscriberPositions(
@@ -486,7 +495,7 @@ public class DriverConductor implements Agent
 
             publication = new NetworkPublication(
                 channelEndpoint,
-                clock,
+                nanoClock,
                 newPublicationLog(sessionId, streamId, initialTermId, udpChannel, correlationId),
                 newPosition("sender pos", channel, sessionId, streamId, correlationId),
                 newPosition("publisher limit", channel, sessionId, streamId, correlationId),
@@ -530,8 +539,8 @@ public class DriverConductor implements Agent
         return new RetransmitHandler(
             timerWheel,
             systemCounters,
-            RETRANS_UNICAST_DELAY_GENERATOR,
-            RETRANS_UNICAST_LINGER_GENERATOR,
+            RETRANSMIT_UNICAST_DELAY_GENERATOR,
+            RETRANSMIT_UNICAST_LINGER_GENERATOR,
             publication,
             initialTermId,
             termBufferLength);
@@ -583,7 +592,7 @@ public class DriverConductor implements Agent
             channelEndpoint = new SendChannelEndpoint(
                 udpChannel,
                 logger,
-                Configuration.createLossGenerator(controlLossRate, controlLossSeed),
+                controlLossGenerator,
                 systemCounters);
 
             channelEndpoint.validateMtuLength(mtuLength);
@@ -622,8 +631,11 @@ public class DriverConductor implements Agent
     {
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(UdpChannel.parse(channel));
 
-        channelEndpoint.incRefToStream(streamId);
-        receiverProxy.addSubscription(channelEndpoint, streamId);
+        final int refCount = channelEndpoint.incRefToStream(streamId);
+        if (1 == refCount)
+        {
+            receiverProxy.addSubscription(channelEndpoint, streamId);
+        }
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new SubscriptionLink(correlationId, channelEndpoint, streamId, client);
@@ -660,9 +672,8 @@ public class DriverConductor implements Agent
         ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
-            final LossGenerator lossGenerator = Configuration.createLossGenerator(dataLossRate, dataLossSeed);
             channelEndpoint = new ReceiveChannelEndpoint(
-                udpChannel, conductorProxy, receiverProxy.receiver(), logger, systemCounters, lossGenerator);
+                udpChannel, fromReceiverConductorProxy, receiverProxy.receiver(), logger, systemCounters, dataLossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);
@@ -709,7 +720,7 @@ public class DriverConductor implements Agent
         final AeronClient client = findClient(clients, clientId);
         if (null != client)
         {
-            client.timeOfLastKeepalive(clock.time());
+            client.timeOfLastKeepalive(nanoClock.nanoTime());
         }
     }
 
@@ -743,7 +754,7 @@ public class DriverConductor implements Agent
                 channelEndpoint.removePublication(publication);
                 publications.remove(i);
 
-                senderProxy.closePublication(publication);
+                senderProxy.removePublication(publication);
 
                 if (channelEndpoint.sessionCount() == 0)
                 {
@@ -812,9 +823,15 @@ public class DriverConductor implements Agent
                 case LINGER:
                     if (now > (conn.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
                     {
-                        logger.logConnectionRemoval(conn.channelUriString(), conn.sessionId(), conn.streamId());
+                        logger.logConnectionRemoval(
+                            conn.channelUriString(), conn.sessionId(), conn.streamId(), conn.correlationId());
 
                         connections.remove(i);
+
+                        subscriptionLinks.stream()
+                            .filter((link) -> conn.matches(link.channelEndpoint(), link.streamId()))
+                            .forEach((subscriptionLink) -> subscriptionLink.removeConnection(conn));
+
                         conn.close();
                     }
                     break;
@@ -845,7 +862,7 @@ public class DriverConductor implements Agent
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
-            client = new AeronClient(clientId, clock.time());
+            client = new AeronClient(clientId, nanoClock.nanoTime());
             clients.add(client);
         }
 
@@ -862,7 +879,7 @@ public class DriverConductor implements Agent
     private int allocateCounter(
         final String type, final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        return countersManager.allocate(String.format("%s: %s %x %x %x", type, channel, sessionId, streamId, correlationId));
+        return countersManager.allocate(String.format("%s: %s %d %d %d", type, channel, sessionId, streamId, correlationId));
     }
 
     private long generateCreationCorrelationId()

@@ -41,7 +41,7 @@ public class RateController
 
     private final Callback sendFunc;
 
-    private final ArrayList<IntervalInternal> intervals = new ArrayList<RateController.IntervalInternal>();
+    private final ArrayList<IntervalInternal> intervals = new ArrayList<>();
     private IntervalInternal activeInterval;
     private int activeIntervalIndex;
 
@@ -60,22 +60,22 @@ public class RateController
         /* How long does it take just to call clock.time() itself? */
         for (int i = 0; i < WARMUP_IDLES; i++)
         {
-            if (CLOCK.time() < 0)
+            if (CLOCK.nanoTime() < 0)
             {
                 throw new RuntimeException("Time travel is not permitted.");
             }
         }
         /* And now do a bunch and record how long it takes. */
-        final long timeStartNanos = CLOCK.time();
+        final long timeStartNs = CLOCK.nanoTime();
         for (int i = 0; i < CALLIBRATION_IDLES; i++)
         {
-            if (CLOCK.time() < 0)
+            if (CLOCK.nanoTime() < 0)
             {
                 throw new RuntimeException("Time travel is not permitted.");
             }
         }
-        final long timeEndNanos = CLOCK.time();
-        TIME_NANOS = ((timeEndNanos - timeStartNanos) / CALLIBRATION_IDLES) * TIME_NANOS_FUDGE_FACTOR;
+        final long timeEndNs = CLOCK.nanoTime();
+        TIME_NANOS = ((timeEndNs - timeStartNs) / CALLIBRATION_IDLES) * TIME_NANOS_FUDGE_FACTOR;
 
         /* OK, test yield()s. */
         for (int i = 0; i < WARMUP_IDLES; i++)
@@ -83,41 +83,43 @@ public class RateController
             Thread.yield();
         }
         /* And now do a bunch and record how long it takes. */
-        final long yieldStartNanos = CLOCK.time();
+        final long yieldStartNs = CLOCK.nanoTime();
         for (int i = 0; i < CALLIBRATION_IDLES; i++)
         {
             Thread.yield();
         }
-        final long yieldEndNanos = CLOCK.time();
-        final long yieldNanos = ((yieldEndNanos - yieldStartNanos) / CALLIBRATION_IDLES);
+        final long yieldEndNs = CLOCK.nanoTime();
+        final long yieldNs = ((yieldEndNs - yieldStartNs) / CALLIBRATION_IDLES);
 
         /* Now that we have a value for how long yields take, let's try parking for at least that long.
          * (We won't ever call park() with a smaller value, since we could've just called yield instead.) */
         for (int i = 0; i < WARMUP_IDLES; i++)
         {
-            LockSupport.parkNanos(yieldNanos);
-            if (CLOCK.time() > (yieldEndNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
+            LockSupport.parkNanos(yieldNs);
+            if (CLOCK.nanoTime() > (yieldEndNs + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
             {
                 break;
             }
         }
+
         /* And now do a bunch and record how long it takes. */
-        final long parkStartNanos = CLOCK.time();
+        final long parkStartNs = CLOCK.nanoTime();
         int parkNanosLoops;
         for (parkNanosLoops = 0; parkNanosLoops < CALLIBRATION_IDLES; parkNanosLoops++)
         {
-            LockSupport.parkNanos(yieldNanos);
-            if (CLOCK.time() > (parkStartNanos + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
+            LockSupport.parkNanos(yieldNs);
+            if (CLOCK.nanoTime() > (parkStartNs + MAX_PARK_NANOS_CALLIBRATION_TIME_NANOS))
             {
                 parkNanosLoops++;
                 break;
             }
         }
-        final long parkEndNanos = CLOCK.time();
+
+        final long parkEndNanos = CLOCK.nanoTime();
         /* better to over-estimate the time yield takes than to underestimate it, therefore the fudge factor. */
-        YIELD_NANOS = yieldNanos * YIELD_NANOS_FUDGE_FACTOR;
+        YIELD_NANOS = yieldNs * YIELD_NANOS_FUDGE_FACTOR;
         /* better to over-estimate the time park takes than to underestimate it, therefore the fudge factor. */
-        PARK_NANOS = ((parkEndNanos - parkStartNanos) / parkNanosLoops) * PARK_NANOS_FUDGE_FACTOR;
+        PARK_NANOS = ((parkEndNanos - parkStartNs) / parkNanosLoops) * PARK_NANOS_FUDGE_FACTOR;
     }
 
     /**
@@ -183,11 +185,10 @@ public class RateController
         {
             return;
         }
+
         /* Reset all intervals and set active interval back to 0. */
-        for (final IntervalInternal interval : intervals)
-        {
-            interval.reset();
-        }
+        intervals.forEach(RateController.IntervalInternal::reset);
+
         activeIntervalIndex = 0;
         activeInterval = intervals.get(0);
     }
@@ -195,20 +196,22 @@ public class RateController
     private static void nanoSleep(final long nanoseconds)
     {
         long nanoSecondsRemaining = nanoseconds;
-        final long startNanos = CLOCK.time();
+        final long startNanos = CLOCK.nanoTime();
         while (nanoSecondsRemaining > PARK_NANOS)
         {
             LockSupport.parkNanos(nanoSecondsRemaining - PARK_NANOS);
-            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
+            nanoSecondsRemaining = nanoseconds - (CLOCK.nanoTime() - startNanos);
         }
+
         while (nanoSecondsRemaining > YIELD_NANOS)
         {
             Thread.yield();
-            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
+            nanoSecondsRemaining = nanoseconds - (CLOCK.nanoTime() - startNanos);
         }
+
         while (nanoSecondsRemaining > TIME_NANOS)
         {
-            nanoSecondsRemaining = nanoseconds - (CLOCK.time() - startNanos);
+            nanoSecondsRemaining = nanoseconds - (CLOCK.nanoTime() - startNanos);
         }
     }
 
@@ -282,7 +285,7 @@ public class RateController
              * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
             final double seconds = (double)bitsSent / (double)goalBitsPerSecond;
             final long nanoSeconds = (long)(seconds * 1000000000L);
-            final long sendEndTime = CLOCK.time();
+            final long sendEndTime = CLOCK.nanoTime();
 
             /* Now - how long should we sleep, if at all? Be sure to count
              * all the wall-clock time that's elapsed since the last time
@@ -358,7 +361,7 @@ public class RateController
              * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
             final double seconds = messagesSent / goalMessagesPerSecond;
             final long nanoSeconds = (long)(seconds * 1000000000L);
-            final long sendEndTime = CLOCK.time();
+            final long sendEndTime = CLOCK.nanoTime();
 
             /* Now - how long should we sleep, if at all? Be sure to count
              * all the wall-clock time that's elapsed since the last time
@@ -443,7 +446,7 @@ public class RateController
              * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
             final double secondsWanted = messagesSent / goalMessagesPerSecond;
             final long nanoSeconds = (long)(secondsWanted * 1000000000L);
-            final long sendEndTime = CLOCK.time();
+            final long sendEndTime = CLOCK.nanoTime();
 
             /* Now - how long should we sleep, if at all? Be sure to count
              * all the wall-clock time that's elapsed since the last time
@@ -451,7 +454,7 @@ public class RateController
             nanoSleep(nanoSeconds - (sendEndTime - beginTimeNanos));
 
             /* End condition. */
-            if ((CLOCK.time() - beginTimeNanos) >= (seconds * 1000000000))
+            if ((CLOCK.nanoTime() - beginTimeNanos) >= (seconds * 1000000000))
             {
                 stop();
                 return false;
@@ -529,7 +532,7 @@ public class RateController
              * long _should_ it have taken?  If we're over-budget, sleep for a bit. */
             final double secondsWanted = bitsSent / goalBitsPerSecond;
             final long nanoSeconds = (long)(secondsWanted * 1000000000L);
-            final long sendEndTime = CLOCK.time();
+            final long sendEndTime = CLOCK.nanoTime();
 
             /* Now - how long should we sleep, if at all? Be sure to count
              * all the wall-clock time that's elapsed since the last time
@@ -537,7 +540,7 @@ public class RateController
             nanoSleep(nanoSeconds - (sendEndTime - beginTimeNanos));
 
             /* End condition. */
-            if ((CLOCK.time() - beginTimeNanos) >= (seconds * 1000000000))
+            if ((CLOCK.nanoTime() - beginTimeNanos) >= (seconds * 1000000000))
             {
                 stop();
                 return false;
@@ -554,8 +557,6 @@ public class RateController
 
     public abstract class IntervalInternal extends RateControllerInterval
     {
-        public static final long MAX = Long.MAX_VALUE;
-
         private final SystemNanoClock clock = new SystemNanoClock();
 
         protected long lastBitsSent;
@@ -573,14 +574,14 @@ public class RateController
 
         public void play()
         {
-            beginTimeNanos = clock.time();
+            beginTimeNanos = clock.nanoTime();
             lastBitsSent = rateController.bytesSent * 8;
             active = true;
         }
 
         public void stop()
         {
-            endTimeNanos = clock.time();
+            endTimeNanos = clock.nanoTime();
             reset();
         }
 

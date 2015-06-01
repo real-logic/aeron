@@ -19,7 +19,6 @@ import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermRebuilder;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
@@ -30,7 +29,6 @@ import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.lengthOffset;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.NetworkConnection.Status.ACTIVE;
 
@@ -104,7 +102,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     private final int currentGain;
 
     private final RawLog rawLog;
-    private final EventLogger logger;
     private final InetSocketAddress controlAddress;
     private final InetSocketAddress sourceAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
@@ -132,8 +129,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         final Position hwmPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
-        final InetSocketAddress sourceAddress,
-        final EventLogger logger)
+        final InetSocketAddress sourceAddress)
     {
         this.correlationId = correlationId;
         this.channelEndpoint = channelEndpoint;
@@ -145,10 +141,9 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         this.hwmPosition = hwmPosition;
         this.systemCounters = systemCounters;
         this.sourceAddress = sourceAddress;
-        this.logger = logger;
 
         this.clock = clock;
-        final long time = clock.time();
+        final long time = clock.nanoTime();
         this.timeOfLastStatusChange = time;
         this.lastPacketTimestamp = time;
 
@@ -267,14 +262,29 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Set status of the connection. Set by {@link DriverConductor}.
+     * Set status of the connection.
+     *
+     * Set by {@link Receiver} for INIT -> ACTIVE -> INACTIVE
+     *
+     * Set by {@link DriverConductor} for INACTIVE -> LINGER
      *
      * @param status of the connection
      */
     public void status(final Status status)
     {
-        timeOfLastStatusChange = clock.time();
+        timeOfLastStatusChange = clock.nanoTime();
         this.status = status;
+    }
+
+    /**
+     * Set status to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
+     */
+    public void ifActiveGoInactive()
+    {
+        if (Status.ACTIVE == this.status)
+        {
+            status(Status.INACTIVE);
+        }
     }
 
     /**
@@ -397,7 +407,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         else
         {
             final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
-            TermRebuilder.insert(termBuffer, termOffset, buffer, 0, length);
+            TermRebuilder.insert(termBuffer, termOffset, buffer, length);
 
             hwmCandidate(proposedPosition);
         }
@@ -418,7 +428,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
 
         if (now > (lastPacketTimestamp + connectionLivenessTimeout))
         {
-            status(Status.INACTIVE);
             activity = false;
         }
 
@@ -518,12 +527,12 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
 
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
     {
-        return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(lengthOffset(0)) == 0;
+        return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(0) == 0;
     }
 
     private void hwmCandidate(final long proposedPosition)
     {
-        lastPacketTimestamp = clock.time();
+        lastPacketTimestamp = clock.nanoTime();
         hwmPosition.proposeMaxOrdered(proposedPosition);
     }
 
@@ -545,7 +554,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
 
         if (isFlowControlOverRun)
         {
-            logger.logOverRun(proposedPosition, windowPosition, currentWindowLength);
             systemCounters.flowControlOverRuns().orderedIncrement();
         }
 

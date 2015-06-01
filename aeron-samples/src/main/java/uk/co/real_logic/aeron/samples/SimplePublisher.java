@@ -30,9 +30,8 @@ public class SimplePublisher
 {
     public static void main(final String[] args) throws Exception
     {
-        // Allocate enough buffer size to hold maximum message size
-        // The UnsafeBuffer class is part of the Agrona library and is
-        // used for efficient buffer management
+        // Allocate enough buffer size to hold maximum message length
+        // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
         final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(512));
 
         // The channel (an endpoint identifier) to send the message to
@@ -54,7 +53,6 @@ public class SimplePublisher
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(channel, streamId))
         {
-            // Prepare a buffer to be sent
             final String message = "Hello World! ";
             buffer.putBytes(0, message.getBytes());
 
@@ -64,7 +62,6 @@ public class SimplePublisher
 
             if (result < 0L)
             {
-                // Message offer failed
                 if (result == Publication.BACK_PRESSURE)
                 {
                     System.out.println(" Offer failed due to back pressure");
@@ -80,9 +77,9 @@ public class SimplePublisher
             }
             else
             {
-                // Successfully sent the message
                 System.out.println(" yay !!");
             }
+
             System.out.println("Done sending.");
         }
         finally

@@ -119,7 +119,7 @@ public class ReceiverTest
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .conductorCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
+            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .receiverNioSelector(mockTransportPoller)
             .senderNioSelector(mockTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
@@ -128,10 +128,10 @@ public class ReceiverTest
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockLogger);
 
-        toConductorQueue = ctx.conductorCommandQueue();
+        toConductorQueue = ctx.toConductorFromReceiverCommandQueue();
         final DriverConductorProxy driverConductorProxy =
             new DriverConductorProxy(ThreadingMode.DEDICATED, toConductorQueue, mock(AtomicCounter.class));
-        ctx.driverConductorProxy(driverConductorProxy);
+        ctx.fromReceiverDriverConductorProxy(driverConductorProxy);
 
         receiverProxy = new ReceiverProxy(ThreadingMode.DEDICATED, ctx.receiverCommandQueue(), mock(AtomicCounter.class));
 
@@ -147,7 +147,12 @@ public class ReceiverTest
             .toArray(TermReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
-            UdpChannel.parse(URI), driverConductorProxy, receiver, mockLogger, mockSystemCounters, (address, length) -> false);
+            UdpChannel.parse(URI),
+            driverConductorProxy,
+            receiver,
+            mockLogger,
+            mockSystemCounters,
+            (address, buffer, length) -> false);
     }
 
     @After
@@ -185,8 +190,7 @@ public class ReceiverTest
             mockHighestReceivedPosition,
             clock,
             mockSystemCounters,
-            SOURCE_ADDRESS,
-            mockLogger);
+            SOURCE_ADDRESS);
 
         final int messagesRead = toConductorQueue.drain(
             (e) ->
@@ -219,7 +223,7 @@ public class ReceiverTest
         assertThat(statusHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));
         assertThat(statusHeader.streamId(), is(STREAM_ID));
         assertThat(statusHeader.sessionId(), is(SESSION_ID));
-        assertThat(statusHeader.termId(), is(ACTIVE_TERM_ID));
+        assertThat(statusHeader.consumptionTermId(), is(ACTIVE_TERM_ID));
         assertThat(statusHeader.frameLength(), is(StatusMessageFlyweight.HEADER_LENGTH));
     }
 
@@ -257,8 +261,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));
@@ -318,8 +321,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));
@@ -382,8 +384,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));
@@ -450,8 +451,7 @@ public class ReceiverTest
                         mockHighestReceivedPosition,
                         clock,
                         mockSystemCounters,
-                        SOURCE_ADDRESS,
-                        mockLogger));
+                        SOURCE_ADDRESS));
             });
 
         assertThat(messagesRead, is(1));

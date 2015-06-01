@@ -19,20 +19,14 @@ import uk.co.real_logic.aeron.common.CncFileDescriptor;
 import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.*;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.MappedByteBuffer;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -67,16 +61,12 @@ public final class Aeron implements AutoCloseable
             }
         };
 
-    private static final long IDLE_MAX_SPINS = 0;
-    private static final long IDLE_MAX_YIELDS = 0;
-    private static final long IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
-    private static final long IDLE_MAX_PARK_NS = TimeUnit.MILLISECONDS.toNanos(1);
 
-    private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
-    private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
-
+    private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
     private static final long NULL_TIMEOUT = -1;
     private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10_000;
+    private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
+    private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -88,6 +78,7 @@ public final class Aeron implements AutoCloseable
         this.ctx = ctx;
 
         conductor = new ClientConductor(
+            ctx.epochClock,
             ctx.toClientBuffer,
             ctx.logBuffersFactory,
             ctx.countersBuffer(),
@@ -112,20 +103,6 @@ public final class Aeron implements AutoCloseable
     public static Aeron connect(final Context ctx)
     {
         return new Aeron(ctx).start();
-    }
-
-    /**
-     * Create an Aeron instance and connect to the media driver.
-     * <p>
-     * Threads for interacting with the media driver are run via the the provided {@link Executor}.
-     *
-     * @param ctx      for configuration of the client.
-     * @param executor to run the internal threads for communicating with the media driver.
-     * @return the new {@link Aeron} instance connected to the Media Driver.
-     */
-    public static Aeron connect(final Context ctx, final Executor executor)
-    {
-        return new Aeron(ctx).start(executor);
     }
 
     /**
@@ -195,13 +172,6 @@ public final class Aeron implements AutoCloseable
         return this;
     }
 
-    private Aeron start(final Executor executor)
-    {
-        executor.execute(conductorRunner);
-
-        return this;
-    }
-
     /**
      * This class provides configuration for the {@link Aeron} class via the {@link Aeron#connect(Aeron.Context)}
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
@@ -210,20 +180,18 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
+        private long mediaDriverTimeoutMs = NULL_TIMEOUT;
         private final AtomicBoolean isClosed = new AtomicBoolean(false);
-
+        private EpochClock epochClock;
         private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
         private MappedByteBuffer cncByteBuffer;
         private DirectBuffer cncMetaDataBuffer;
-
         private LogBuffersFactory logBuffersFactory;
-
         private Consumer<Throwable> errorHandler;
         private NewConnectionHandler newConnectionHandler;
         private InactiveConnectionHandler inactiveConnectionHandler;
-        private long mediaDriverTimeoutMs = NULL_TIMEOUT;
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
@@ -237,6 +205,11 @@ public final class Aeron implements AutoCloseable
 
             try
             {
+                if (null == epochClock)
+                {
+                    epochClock = new SystemEpochClock();
+                }
+
                 if (mediaDriverTimeoutMs == NULL_TIMEOUT)
                 {
                     mediaDriverTimeoutMs = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
@@ -244,7 +217,7 @@ public final class Aeron implements AutoCloseable
 
                 if (null == idleStrategy)
                 {
-                    idleStrategy = new BackoffIdleStrategy(IDLE_MAX_SPINS, IDLE_MAX_YIELDS, IDLE_MIN_PARK_NS, IDLE_MAX_PARK_NS);
+                    idleStrategy = new SleepingIdleStrategy(IDLE_SLEEP_NS);
                 }
 
                 if (cncFile() != null)
@@ -300,6 +273,18 @@ public final class Aeron implements AutoCloseable
                 throw new IllegalStateException("Could not initialise communication buffers", ex);
             }
 
+            return this;
+        }
+
+        /**
+         * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
+         *
+         * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
+         * @return this Aeron.Context for method chainin
+         */
+        public Context epochClock(final EpochClock clock)
+        {
+            this.epochClock = clock;
             return this;
         }
 

@@ -94,7 +94,7 @@ public class LossDetectorTest
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
         verifyZeroInteractions(nakMessageSender);
     }
 
@@ -108,7 +108,7 @@ public class LossDetectorTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(40));
 
         verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -123,7 +123,7 @@ public class LossDetectorTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(60));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(60));
 
         verify(nakMessageSender, atLeast(2)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
     }
@@ -138,9 +138,9 @@ public class LossDetectorTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(20));
         handler.onNak(TERM_ID, offsetOfMessage(1));
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(20));
 
         verifyZeroInteractions(nakMessageSender);
     }
@@ -155,11 +155,11 @@ public class LossDetectorTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(20));
         insertDataFrame(offsetOfMessage(1));
         rebuildPosition += (ALIGNED_FRAME_LENGTH * 3);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verifyZeroInteractions(nakMessageSender);
     }
@@ -176,11 +176,11 @@ public class LossDetectorTest
         insertDataFrame(offsetOfMessage(6));
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(40));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(40));
         insertDataFrame(offsetOfMessage(1));
         rebuildPosition += (3 * ALIGNED_FRAME_LENGTH);
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(80));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(80));
 
         final InOrder inOrder = inOrder(nakMessageSender);
         inOrder.verify(nakMessageSender, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(1), gapLength());
@@ -198,7 +198,7 @@ public class LossDetectorTest
         insertDataFrame(offsetOfMessage(2));
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(20));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(20));
 
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(1));
@@ -206,7 +206,7 @@ public class LossDetectorTest
         hwmPosition = (ALIGNED_FRAME_LENGTH * 5);
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        processTimersUntil(() -> wheel.clock().time() >= TimeUnit.MILLISECONDS.toNanos(100));
+        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
 
         verify(nakMessageSender, atLeast(1)).onLossDetected(TERM_ID, offsetOfMessage(3), gapLength());
     }
@@ -314,7 +314,7 @@ public class LossDetectorTest
 
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
 
-        TermRebuilder.insert(termBuffer, offset, rcvBuffer, 0, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
+        TermRebuilder.insert(termBuffer, offset, rcvBuffer, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }
 
     private int offsetOfMessage(final int index)
@@ -329,7 +329,7 @@ public class LossDetectorTest
 
     private long processTimersUntil(final BooleanSupplier condition)
     {
-        final long startTime = wheel.clock().time();
+        final long startTime = wheel.clock().nanoTime();
 
         while (!condition.getAsBoolean())
         {
@@ -341,6 +341,6 @@ public class LossDetectorTest
             wheel.expireTimers();
         }
 
-        return wheel.clock().time() - startTime;
+        return wheel.clock().nanoTime() - startTime;
     }
 }

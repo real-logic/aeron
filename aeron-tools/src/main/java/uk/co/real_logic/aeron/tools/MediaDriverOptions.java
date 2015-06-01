@@ -29,6 +29,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
 import uk.co.real_logic.aeron.driver.Configuration;
+import uk.co.real_logic.aeron.driver.LossGenerator;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
@@ -36,16 +37,16 @@ public class MediaDriverOptions
 {
     // Command line options for media driver
     private final Options options;
-
     // Properties containing Aeron settings.
     private Properties properties;
 
-    // The 5 idle strategies available for the Media Driver
     private IdleStrategy conductorIdleStrategy;
     private IdleStrategy senderIdleStrategy;
     private IdleStrategy receiverIdleStrategy;
     private IdleStrategy sharedNetworkIdleStrategy;
     private IdleStrategy sharedIdleStrategy;
+    private LossGenerator dataLossGenerator;
+    private LossGenerator controlLossGenerator;
 
     private static final String NULL_VALUE = "null";
 
@@ -58,15 +59,9 @@ public class MediaDriverOptions
             .addOption("s", "sender", true, "IdleStrategy class for the sender thread.")
             .addOption("r", "receiver", true, "IdleStrategy class for the receiver thread.")
             .addOption("n", "network", true, "IdleStrategy class for the shared network thread.")
-            .addOption("a", "shared", true, "IdleStrategy class for the shared thread.");
-
-        // Idle strategies are null by default (Aeron should use its default if we pass null)
-        conductorIdleStrategy = null;
-        senderIdleStrategy = null;
-        receiverIdleStrategy = null;
-        sharedNetworkIdleStrategy = null;
-        sharedIdleStrategy = null;
-        properties = null;
+            .addOption("a", "shared", true, "IdleStrategy class for the shared thread.")
+            .addOption(null, "data-loss", true, "LossGenerator class for dropping incoming data.")
+            .addOption(null, "control-loss", true, "LossGenerator class for dropping incoming control data.");
     }
 
     /**
@@ -92,6 +87,8 @@ public class MediaDriverOptions
         String sharedNetworkValue = NULL_VALUE;
         String sharedValue = NULL_VALUE;
         String conductorValue = NULL_VALUE;
+        String dataLossValue = NULL_VALUE;
+        String controlLossValue = NULL_VALUE;
 
         if (command.hasOption("properties"))
         {
@@ -101,6 +98,8 @@ public class MediaDriverOptions
             sharedNetworkValue = properties.getProperty("aeron.tools.mediadriver.network");
             sharedValue = properties.getProperty("aeron.tools.mediadriver.shared");
             conductorValue = properties.getProperty("aeron.tools.mediadriver.conductor");
+            dataLossValue = properties.getProperty("aeron.tools.mediadriver.data.loss");
+            controlLossValue = properties.getProperty("aeron.tools.mediadriver.control.loss");
         }
 
         senderIdleStrategy = parseIdleStrategy(command.getOptionValue("sender", senderValue));
@@ -108,6 +107,8 @@ public class MediaDriverOptions
         sharedNetworkIdleStrategy = parseIdleStrategy(command.getOptionValue("network", sharedNetworkValue));
         sharedIdleStrategy = parseIdleStrategy(command.getOptionValue("shared", sharedValue));
         conductorIdleStrategy = parseIdleStrategy(command.getOptionValue("conductor", conductorValue));
+        dataLossGenerator = parseLossGenerator(command.getOptionValue("data-loss", dataLossValue));
+        controlLossGenerator = parseLossGenerator(command.getOptionValue("control-loss", controlLossValue));
 
         return 0;
     }
@@ -166,6 +167,26 @@ public class MediaDriverOptions
     public void sharedIdleStrategy(final IdleStrategy sharedIdleStrategy)
     {
         this.sharedIdleStrategy = sharedIdleStrategy;
+    }
+
+    public LossGenerator dataLossGenerator()
+    {
+        return dataLossGenerator;
+    }
+
+    public void dataLossGenerator(LossGenerator lossGenerator)
+    {
+        this.dataLossGenerator = lossGenerator;
+    }
+
+    public LossGenerator controlLossGenerator()
+    {
+        return controlLossGenerator;
+    }
+
+    public void controlLossGenerator(LossGenerator lossGenerator)
+    {
+        this.controlLossGenerator = lossGenerator;
     }
 
     public Properties properties()
@@ -271,6 +292,26 @@ public class MediaDriverOptions
         }
 
         return newBackoffIdleStrategy(maxSpins, maxYields, minParkPeriodNs, maxParkPeriodNs);
+    }
+
+    private LossGenerator parseLossGenerator(final String arg) throws ParseException
+    {
+        if (arg == null || arg.equalsIgnoreCase(NULL_VALUE))
+        {
+            return null;
+        }
+        LossGenerator lossGenerator;
+        try
+        {
+            final Class clazz = Class.forName(arg);
+            lossGenerator = (LossGenerator)clazz.newInstance();
+        }
+        catch (final ClassNotFoundException | IllegalAccessException | InstantiationException | ClassCastException ex)
+        {
+            throw new ParseException("Error creating new instance of '" + arg + "': " + ex.getMessage());
+        }
+
+        return lossGenerator;
     }
 
     // Broken out into simple method for testing.

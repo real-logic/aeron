@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
+import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
@@ -32,10 +33,10 @@ import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+ *  |R|                       Frame Length                          |
+ *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
  *  |  Version      |B|E| Flags     |             Type              |
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
- *  |R|                       Frame Length                          |
- *  +-+-------------------------------------------------------------+
  *  |R|                       Term Offset                           |
  *  +-+-------------------------------------------------------------+
  *  |                      Additional Fields                       ...
@@ -74,22 +75,17 @@ public class FrameDescriptor
     /**
      * Offset within a frame at which the flags field begins
      */
-    public static final int FLAGS_OFFSET = 1;
+    public static final int FLAGS_OFFSET = DataHeaderFlyweight.FLAGS_FIELD_OFFSET;
 
     /**
      * Offset within a frame at which the type field begins
      */
-    public static final int TYPE_OFFSET = 2;
-
-    /**
-     * Offset within a frame at which the length field begins
-     */
-    public static final int LENGTH_OFFSET = 4;
+    public static final int TYPE_OFFSET = DataHeaderFlyweight.TYPE_FIELD_OFFSET;
 
     /**
      * Offset within a frame at which the term offset field begins
      */
-    public static final int TERM_OFFSET = 8;
+    public static final int TERM_OFFSET = DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET;
 
     /**
      * Padding frame type to indicate end of the log is not in use.
@@ -121,20 +117,6 @@ public class FrameDescriptor
                 "Frame header length %d must be equal to %d",
                 length, HEADER_LENGTH);
             throw new IllegalStateException(s);
-        }
-    }
-
-    /**
-     * Check that a given offset is at the correct {@link FrameDescriptor#FRAME_ALIGNMENT} for a frame to begin.
-     *
-     * @param offset to be checked.
-     * @throws IllegalArgumentException if the offset is not on a frame alignment boundary.
-     */
-    public static void checkOffsetAlignment(final int offset)
-    {
-        if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
-        {
-            throw new IllegalArgumentException("Cannot seek to an offset that isn't a multiple of " + FRAME_ALIGNMENT);
         }
     }
 
@@ -176,17 +158,6 @@ public class FrameDescriptor
     public static int typeOffset(final int frameOffset)
     {
         return frameOffset + TYPE_OFFSET;
-    }
-
-    /**
-     * The buffer offset at which the length field begins.
-     *
-     * @param frameOffset at which the frame begins.
-     * @return the offset at which the length field begins.
-     */
-    public static int lengthOffset(final int frameOffset)
-    {
-        return frameOffset + LENGTH_OFFSET;
     }
 
     /**
@@ -233,7 +204,7 @@ public class FrameDescriptor
      */
     public static int frameLengthVolatile(final UnsafeBuffer termBuffer, final int frameOffset)
     {
-        int frameLength = termBuffer.getIntVolatile(lengthOffset(frameOffset));
+        int frameLength = termBuffer.getIntVolatile(frameOffset);
 
         if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
         {
@@ -257,7 +228,7 @@ public class FrameDescriptor
             frameLength = Integer.reverseBytes(frameLength);
         }
 
-        termBuffer.putIntOrdered(lengthOffset(frameOffset), frameLength);
+        termBuffer.putIntOrdered(frameOffset, frameLength);
     }
 
     /**

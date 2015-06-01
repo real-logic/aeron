@@ -74,8 +74,9 @@ public class AeronPing implements NewConnectionHandler
         {
             e.printStackTrace();
         }
+
         ctx = new Aeron.Context()
-                .newConnectionHandler(this);
+            .newConnectionHandler(this);
         dataHandler = new FragmentAssemblyAdapter(this::pongHandler);
         aeron = Aeron.connect(ctx);
         pub = aeron.addPublication(pingChannel, pingStreamId);

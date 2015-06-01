@@ -53,9 +53,9 @@ find_package(Threads)
 
 # all UNIX-based platform compiler flags
 if(UNIX)
-    set(CMAKE_CXX_FLAGS "-Wall -std=c++11 -fexceptions -g -m64")
-    set(CMAKE_CXX_FLAGS_DEBUG "-O0")
-    set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fexceptions -g -m64")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Ofast")
 endif()
 
 # platform specific flags
@@ -67,8 +67,8 @@ elseif(WIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     add_definitions(-DNOMINMAX)
 
-    set(CMAKE_CXX_FLAGS_DEBUG "/MTd /Od /Zi")
-    set(CMAKE_CXX_FLAGS_RELEASE "/MT")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /MTd /Od /Zi")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 
     # TODO: add MSVC flags
 endif()

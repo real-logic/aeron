@@ -60,7 +60,7 @@ public class Publication implements AutoCloseable
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
 
-    private int refCount = 1;
+    private int refCount = 0;
     private volatile boolean isClosed = false;
 
     Publication(
@@ -158,9 +158,7 @@ public class Publication implements AutoCloseable
 
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.tailVolatile();
+        final int currentTail = termAppenders[indexByTerm(initialTermId, activeTermId)].tailVolatile();
 
         return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
     }
@@ -189,16 +187,18 @@ public class Publication implements AutoCloseable
     {
         ensureOpen();
 
-        long newPosition = NOT_CONNECTED;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.tailVolatile();
+        final int currentTail = termAppender.rawTailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
         final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < capacity && position < publicationLimit.getVolatile())
+        final long limit = publicationLimit.getVolatile();
+        long newPosition = limit > 0 ? BACK_PRESSURE : NOT_CONNECTED;
+
+        if (currentTail < capacity && position < limit)
         {
             final int nextOffset = termAppender.append(buffer, offset, length);
             newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
@@ -243,16 +243,18 @@ public class Publication implements AutoCloseable
     {
         ensureOpen();
 
-        long newPosition = NOT_CONNECTED;
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.tailVolatile();
+        final int currentTail = termAppender.rawTailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
         final int capacity = termAppender.termBuffer().capacity();
 
-        if (currentTail < capacity && position < publicationLimit.getVolatile())
+        final long limit = publicationLimit.getVolatile();
+        long newPosition = limit > 0 ? BACK_PRESSURE : NOT_CONNECTED;
+
+        if (currentTail < capacity && position < limit)
         {
             final int nextOffset = termAppender.claim(length, bufferClaim);
             newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);

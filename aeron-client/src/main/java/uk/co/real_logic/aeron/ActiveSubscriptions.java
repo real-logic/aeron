@@ -23,11 +23,11 @@ import java.util.function.Consumer;
 
 class ActiveSubscriptions
 {
-    private final Int2ObjectHashMap<List<Subscription>> subscriptionByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<List<Subscription>> subscriptionsByStreamIdMap = new Int2ObjectHashMap<>();
 
     public void forEach(final int streamId, final Consumer<Subscription> handler)
     {
-        final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
+        final List<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
         if (null != subscriptions)
         {
             subscriptions.forEach(handler);
@@ -36,7 +36,7 @@ class ActiveSubscriptions
 
     public void add(final Subscription subscription)
     {
-        final List<Subscription> subscriptions = subscriptionByStreamIdMap.computeIfAbsent(
+        final List<Subscription> subscriptions = subscriptionsByStreamIdMap.computeIfAbsent(
             subscription.streamId(), (ignore) -> new ArrayList<>());
 
         subscriptions.add(subscription);
@@ -45,13 +45,13 @@ class ActiveSubscriptions
     public void remove(final Subscription subscription)
     {
         final int streamId = subscription.streamId();
-        final List<Subscription> subscriptions = subscriptionByStreamIdMap.get(streamId);
+        final List<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
         if (subscriptions.remove(subscription) && subscriptions.isEmpty())
         {
-            subscriptionByStreamIdMap.remove(streamId);
-            if (subscriptionByStreamIdMap.isEmpty())
+            subscriptionsByStreamIdMap.remove(streamId);
+            if (subscriptionsByStreamIdMap.isEmpty())
             {
-                subscriptionByStreamIdMap.remove(streamId);
+                subscriptionsByStreamIdMap.remove(streamId);
             }
         }
     }

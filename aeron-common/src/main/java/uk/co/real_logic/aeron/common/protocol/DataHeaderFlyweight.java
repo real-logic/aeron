@@ -49,19 +49,6 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public static final short BEGIN_AND_END_FLAGS = BEGIN_FLAG | END_FLAG;
 
-    /**
-     * Default header for a Data Frame (for ease of use with LogAppender)
-     */
-    public static final byte[] DEFAULT_HEADER_NULL_IDS =
-        {
-            HeaderFlyweight.CURRENT_VERSION, (byte)BEGIN_AND_END_FLAGS, HeaderFlyweight.HDR_TYPE_DATA, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 0
-        };
-
     public static final int TERM_OFFSET_FIELD_OFFSET = 8;
     public static final int SESSION_ID_FIELD_OFFSET = 12;
     public static final int STREAM_ID_FIELD_OFFSET = 16;
@@ -182,7 +169,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 
-        buffer.putBytes(0, DEFAULT_HEADER_NULL_IDS);
+        buffer.putByte(VERSION_FIELD_OFFSET, HeaderFlyweight.CURRENT_VERSION);
+        buffer.putByte(FLAGS_FIELD_OFFSET, (byte) BEGIN_AND_END_FLAGS);
+        buffer.putShort(TYPE_FIELD_OFFSET, (short)HeaderFlyweight.HDR_TYPE_DATA, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
@@ -196,7 +185,8 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         final String formattedFlags = String.format("%1$8s", Integer.toBinaryString(flags())).replace(' ', '0');
 
         sb.append("Data Header{")
-            .append("version=").append(version())
+            .append("frame_length=").append(frameLength())
+            .append(" version=").append(version())
             .append(" flags=").append(formattedFlags)
             .append(" type=").append(headerType())
             .append(" frame_length=").append(frameLength())

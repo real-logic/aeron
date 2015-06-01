@@ -19,7 +19,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
@@ -63,7 +62,7 @@ public class TermGapScanner
         do
         {
             final int frameLength = frameLengthVolatile(termBuffer, rebuildOffset);
-            if (0 == frameLength)
+            if (frameLength <= 0)
             {
                 break;
             }
@@ -76,21 +75,19 @@ public class TermGapScanner
         if (rebuildOffset < hwmOffset)
         {
             final int limit = hwmOffset - HEADER_LENGTH;
-            rebuildOffset += FRAME_LENGTH_FIELD_OFFSET;
 
             while (rebuildOffset < limit)
             {
                 rebuildOffset += FRAME_ALIGNMENT;
-                final int frameLength = termBuffer.getIntVolatile(rebuildOffset);
 
-                if (0 != frameLength)
+                if (0 != termBuffer.getIntVolatile(rebuildOffset))
                 {
                     rebuildOffset -= HEADER_LENGTH;
                     break;
                 }
             }
 
-            final int gapLength = ((rebuildOffset - FRAME_LENGTH_FIELD_OFFSET) - gapBeginOffset) + HEADER_LENGTH;
+            final int gapLength = (rebuildOffset - gapBeginOffset) + HEADER_LENGTH;
             handler.onGap(termId, termBuffer, gapBeginOffset, gapLength);
         }
 

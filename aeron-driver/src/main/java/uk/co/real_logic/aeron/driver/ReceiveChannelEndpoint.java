@@ -42,7 +42,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
     private final NakFlyweight nakHeader = new NakFlyweight();
 
-    private volatile boolean closed = false;
+    private volatile boolean isClosed = false;
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -89,12 +89,12 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     public void close()
     {
         transport.close();
-        closed = true;
+        isClosed = true;
     }
 
     public boolean isClosed()
     {
-        return closed;
+        return isClosed;
     }
 
     public void registerForRead(final TransportPoller transportPoller)
@@ -205,13 +205,13 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int window,
         final short flags)
     {
-        if (!closed)
+        if (!isClosed)
         {
             smBuffer.clear();
             smHeader.sessionId(sessionId)
                     .streamId(streamId)
-                    .termId(termId)
-                    .rebuildTermOffset(termOffset)
+                    .consumptionTermId(termId)
+                    .consumptionTermOffset(termOffset)
                     .receiverWindowLength(window)
                     .flags(flags);
 
@@ -231,7 +231,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         final int termOffset,
         final int length)
     {
-        if (!closed)
+        if (!isClosed)
         {
             nakBuffer.clear();
             nakHeader.streamId(streamId)

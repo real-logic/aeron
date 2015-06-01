@@ -18,27 +18,18 @@ package uk.co.real_logic.aeron.common.protocol;
 import uk.co.real_logic.aeron.common.Flyweight;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_SHORT;
 
 /**
  * Flyweight for general Aeron header
  *
- * Fill Usage: (Fluent)
- *
- * flyweight.wrap(...).version(0);
- *
- * Parse Usage:
- *
- * flyweight.wrap(...)
- * val = flyweight.version();
- *
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  * +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- * |  Version    |     Flags     |               Type              |
- * +-------------+---------------+---------------------------------+
  * |                        Frame Length                           |
  * +---------------------------------------------------------------+
+ * |  Version    |     Flags     |               Type              |
+ * +-------------+---------------+---------------------------------+
  * |                       Depends on Type                        ...
  *
  */
@@ -62,11 +53,11 @@ public class HeaderFlyweight extends Flyweight
     /** default version */
     public static final byte CURRENT_VERSION = 0x0;
 
-    public static final int VERSION_FIELD_OFFSET = 0;
-    public static final int FLAGS_FIELD_OFFSET = 1;
-    public static final int TYPE_FIELD_OFFSET = 2;
-    public static final int FRAME_LENGTH_FIELD_OFFSET = 4;
-    public static final int HEADER_LENGTH = FRAME_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
+    public static final int FRAME_LENGTH_FIELD_OFFSET = 0;
+    public static final int VERSION_FIELD_OFFSET = 4;
+    public static final int FLAGS_FIELD_OFFSET = 5;
+    public static final int TYPE_FIELD_OFFSET = 6;
+    public static final int HEADER_LENGTH = TYPE_FIELD_OFFSET + SIZE_OF_SHORT;
 
     /**
      * return version field value
@@ -144,7 +135,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int frameLength()
     {
-        return (int)uint32Get(offset() + FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(offset() + FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -155,7 +146,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        uint32Put(offset() + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        buffer().putInt(offset() + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
 
         return this;
     }

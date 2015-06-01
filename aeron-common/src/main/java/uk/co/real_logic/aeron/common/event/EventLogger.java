@@ -44,9 +44,6 @@ public class EventLogger
     private static final boolean IS_FRAME_OUT_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_OUT.tagBit()) == FRAME_OUT.tagBit();
 
-    private static final boolean IS_FRAME_OUT_INCOMPLETE_SEND_ENABLED =
-        (ENABLED_EVENT_CODES & FRAME_OUT_INCOMPLETE_SEND.tagBit()) == FRAME_OUT_INCOMPLETE_SEND.tagBit();
-
     /**
      *  The index in the stack trace of the method that called logException().
      *
@@ -132,19 +129,11 @@ public class EventLogger
         }
     }
 
-    public void logIncompleteSend(final CharSequence type, final int sent, final int expected)
-    {
-        if (IS_FRAME_OUT_INCOMPLETE_SEND_ENABLED)
-        {
-            logString(EventCode.FRAME_OUT_INCOMPLETE_SEND, String.format("%s %d/%d", type, sent, expected));
-        }
-    }
-
     public void logPublicationRemoval(final CharSequence uri, final int sessionId, final int streamId)
     {
         if (isEnabled(EventCode.REMOVE_PUBLICATION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
+            logString(EventCode.REMOVE_PUBLICATION_CLEANUP, String.format("%s %d:%d", uri, sessionId, streamId));
         }
     }
 
@@ -152,23 +141,15 @@ public class EventLogger
     {
         if (isEnabled(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, String.format("%s %x %d", uri, streamId, id));
+            logString(EventCode.REMOVE_SUBSCRIPTION_CLEANUP, String.format("%s %d [%d]", uri, streamId, id));
         }
     }
 
-    public void logConnectionRemoval(final CharSequence uri, final int sessionId, final int streamId)
+    public void logConnectionRemoval(final CharSequence uri, final int sessionId, final int streamId, final long id)
     {
         if (isEnabled(EventCode.REMOVE_CONNECTION_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_CONNECTION_CLEANUP, String.format("%s %x:%x", uri, sessionId, streamId));
-        }
-    }
-
-    public void logOverRun(final long proposedPos, final long subscriberPos, final long windowLength)
-    {
-        if (isEnabled(EventCode.FLOW_CONTROL_OVERRUN, ENABLED_EVENT_CODES))
-        {
-            logString(EventCode.FLOW_CONTROL_OVERRUN, String.format("%x > %x + %d", proposedPos, subscriberPos, windowLength));
+            logString(EventCode.REMOVE_CONNECTION_CLEANUP, String.format("%s %d:%d [%d]", uri, sessionId, streamId, id));
         }
     }
 

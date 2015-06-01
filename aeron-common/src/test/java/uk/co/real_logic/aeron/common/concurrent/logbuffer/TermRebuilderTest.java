@@ -47,14 +47,14 @@ public class TermRebuilderTest
         final int termOffset = 0;
         final int srcOffset = 0;
         final int length = 256;
-        packet.putInt(lengthOffset(srcOffset), length, LITTLE_ENDIAN);
-        when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(length);
+        packet.putInt(srcOffset, length, LITTLE_ENDIAN);
+        when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(length);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, length);
+        TermRebuilder.insert(termBuffer, termOffset, packet, length);
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).putBytes(termOffset, packet, srcOffset, length);
-        inOrder.verify(termBuffer).putIntOrdered(lengthOffset(termOffset), length);
+        inOrder.verify(termBuffer).putIntOrdered(termOffset, length);
     }
 
     @Test
@@ -66,12 +66,12 @@ public class TermRebuilderTest
         final int termOffset = tail;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(frameLength));
         packet.putShort(typeOffset(srcOffset), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
-        packet.putInt(lengthOffset(srcOffset), frameLength, LITTLE_ENDIAN);
+        packet.putInt(srcOffset, frameLength, LITTLE_ENDIAN);
 
-        when(termBuffer.getInt(lengthOffset(tail), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getInt(tail, LITTLE_ENDIAN)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(tail), LITTLE_ENDIAN)).thenReturn((short)PADDING_FRAME_TYPE);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, frameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, frameLength);
 
         verify(termBuffer).putBytes(tail, packet, srcOffset, frameLength);
     }
@@ -86,11 +86,11 @@ public class TermRebuilderTest
         final int termOffset = tail;
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
 
-        when(termBuffer.getInt(lengthOffset(0))).thenReturn(frameLength);
-        when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(termBuffer.getInt(lengthOffset(alignedFrameLength * 2), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getInt(0)).thenReturn(frameLength);
+        when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getInt(alignedFrameLength * 2, LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(tail, packet, srcOffset, alignedFrameLength);
     }
@@ -104,10 +104,10 @@ public class TermRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
         final int termOffset = alignedFrameLength * 2;
 
-        when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(0);
-        when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(0);
+        when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(frameLength);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }
@@ -121,10 +121,10 @@ public class TermRebuilderTest
         final UnsafeBuffer packet = new UnsafeBuffer(ByteBuffer.allocateDirect(alignedFrameLength));
         final int termOffset = alignedFrameLength * 2;
 
-        when(termBuffer.getInt(lengthOffset(0), LITTLE_ENDIAN)).thenReturn(frameLength);
-        when(termBuffer.getInt(lengthOffset(alignedFrameLength), LITTLE_ENDIAN)).thenReturn(0);
+        when(termBuffer.getInt(0, LITTLE_ENDIAN)).thenReturn(frameLength);
+        when(termBuffer.getInt(alignedFrameLength, LITTLE_ENDIAN)).thenReturn(0);
 
-        TermRebuilder.insert(termBuffer, termOffset, packet, srcOffset, alignedFrameLength);
+        TermRebuilder.insert(termBuffer, termOffset, packet, alignedFrameLength);
 
         verify(termBuffer).putBytes(alignedFrameLength * 2, packet, srcOffset, alignedFrameLength);
     }

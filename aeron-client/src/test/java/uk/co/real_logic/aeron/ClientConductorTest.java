@@ -17,25 +17,28 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.common.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -63,14 +66,21 @@ public class ClientConductorTest
 
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
+    private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
+    private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
+    private final ErrorFlyweight errorMessage = new ErrorFlyweight();
 
-    private final UnsafeBuffer atomicSendBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer connectionReadyBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer correlatedMessageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
+    private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
 
     private final CopyBroadcastReceiver mockToClientReceiver = mock(CopyBroadcastReceiver.class);
 
     private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(COUNTER_BUFFER_LENGTH));
 
+    private final EpochClock epochClock = new SystemEpochClock();
     private final TimerWheel timerWheel = mock(TimerWheel.class);
     private final Consumer<Throwable> mockClientErrorHandler = Throwable::printStackTrace;
 
@@ -94,6 +104,7 @@ public class ClientConductorTest
         when(timerWheel.clock()).thenReturn(System::nanoTime);
 
         conductor = new ClientConductor(
+            epochClock,
             mockToClientReceiver,
             logBuffersFactory,
             counterValuesBuffer,
@@ -104,12 +115,22 @@ public class ClientConductorTest
             mockInactiveConnectionHandler,
             AWAIT_TIMEOUT);
 
-        connectionReady.wrap(atomicSendBuffer, 0);
+        publicationReady.wrap(publicationReadyBuffer, 0);
+        connectionReady.wrap(connectionReadyBuffer, 0);
+        correlatedMessage.wrap(correlatedMessageBuffer, 0);
+        errorMessage.wrap(errorMessageBuffer, 0);
+
+        publicationReady.correlationId(CORRELATION_ID);
+        publicationReady.sessionId(SESSION_ID_1);
+        publicationReady.streamId(STREAM_ID_1);
+        publicationReady.logFileName(SESSION_ID_1 + "-log");
 
         connectionReady.sourceInfo(SOURCE_INFO);
         connectionReady.subscriberPositionCount(1);
         connectionReady.subscriberPositionId(0, 0);
         connectionReady.positionIndicatorRegistrationId(0, CORRELATION_ID);
+
+        correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
 
         final UnsafeBuffer[] atomicBuffersSession1 = new UnsafeBuffer[NUM_BUFFERS];
         final UnsafeBuffer[] atomicBuffersSession2 = new UnsafeBuffer[NUM_BUFFERS];
@@ -151,35 +172,44 @@ public class ClientConductorTest
     // --------------------------------
 
     @Test
-    public void creatingChannelsShouldNotifyMediaDriver() throws Exception
+    public void addPublicationShouldNotifyMediaDriver() throws Exception
     {
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
         verify(driverProxy).addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
     }
 
+    @Test
+    public void addPublicationShouldMapLogFile() throws Exception
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
+
+        conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+
+        verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
+    }
+
     @Test(expected = DriverTimeoutException.class)
-    public void cannotCreatePublisherUntilBuffersMapped()
+    public void addPublicationShouldTimeoutWithoutReadyMessage()
     {
         conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
     }
 
     @Test
-    public void conductorCachesPublicationInstances()
+    public void conductorShouldCachePublicationInstances()
     {
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
         final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
@@ -190,21 +220,17 @@ public class ClientConductorTest
     @Test
     public void closingPublicationShouldNotifyMediaDriver() throws Exception
     {
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.operationSucceeded(CLOSE_CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -214,30 +240,24 @@ public class ClientConductorTest
     @Test
     public void closingPublicationShouldPurgeCache() throws Exception
     {
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.operationSucceeded(CLOSE_CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         firstPublication.close();
 
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
@@ -245,36 +265,65 @@ public class ClientConductorTest
     }
 
     @Test(expected = RegistrationException.class)
-    public void shouldFailToRemoveOnMediaDriverError()
+    public void shouldFailToClosePublicationOnMediaDriverError()
     {
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_ERROR,
+            errorMessageBuffer,
+            (buffer) ->
             {
-                conductor.onError(INVALID_CHANNEL, "channel unknown", CLOSE_CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                final byte[] message = "channel unknown".getBytes();
+                final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
+                removeMessage.wrap(new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY)), 0);
+                removeMessage.correlationId(CLOSE_CORRELATION_ID);
+
+                errorMessage.errorCode(INVALID_CHANNEL);
+                errorMessage.offendingFlyweight(removeMessage, RemoveMessageFlyweight.LENGTH);
+                errorMessage.errorMessage(message);
+                errorMessage.frameLength(ErrorFlyweight.HEADER_LENGTH + message.length + RemoveMessageFlyweight.LENGTH);
+                return errorMessage.frameLength();
+            });
 
         publication.close();
     }
 
-    @Test
-    public void publicationsOnlyRemovedOnLastClose() throws Exception
+    @Test(expected = RegistrationException.class)
+    public void shouldFailToAddPublicationOnMediaDriverError()
     {
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_ERROR,
+            errorMessageBuffer,
+            (buffer) ->
             {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                final byte[] message = "invalid channel".getBytes();
+                final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
+                publicationMessage.wrap(new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY)), 0);
+                publicationMessage.correlationId(CORRELATION_ID);
+
+                errorMessage.errorCode(INVALID_CHANNEL);
+                errorMessage.offendingFlyweight(publicationMessage, publicationMessage.length());
+                errorMessage.errorMessage(message);
+                errorMessage.frameLength(ErrorFlyweight.HEADER_LENGTH + message.length + publicationMessage.length());
+                return errorMessage.frameLength();
+            });
+
+        conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+    }
+
+    @Test
+    public void publicationOnlyRemovedOnLastClose() throws Exception
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
         conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
@@ -283,12 +332,10 @@ public class ClientConductorTest
 
         verify(driverProxy, never()).removePublication(CORRELATION_ID);
 
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.operationSucceeded(CLOSE_CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -296,32 +343,33 @@ public class ClientConductorTest
     }
 
     @Test
-    public void closingAPublicationDoesNotRemoveOtherPublications() throws Exception
+    public void closingPublicationDoesNotRemoveOtherPublications() throws Exception
     {
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) ->
             {
-                conductor.onNewPublication(STREAM_ID_2, SESSION_ID_2, 0, SESSION_ID_2 + "-log", CORRELATION_ID_2);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                publicationReady.streamId(STREAM_ID_2);
+                publicationReady.sessionId(SESSION_ID_2);
+                publicationReady.logFileName(SESSION_ID_2 + "-log");
+                publicationReady.correlationId(CORRELATION_ID_2);
+                return publicationReady.length();
+            });
 
         conductor.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
 
-        doAnswer(
-            (invocation) ->
-            {
-                conductor.operationSucceeded(CLOSE_CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -332,19 +380,23 @@ public class ClientConductorTest
     @Test
     public void shouldNotMapBuffersForUnknownCorrelationId() throws Exception
     {
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) ->
             {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", UNKNOWN_CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                publicationReady.correlationId(UNKNOWN_CORRELATION_ID);
+                return publicationReady.length();
+            });
 
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_PUBLICATION_READY,
+            publicationReadyBuffer,
+            (buffer) ->
             {
-                conductor.onNewPublication(STREAM_ID_1, SESSION_ID_1, 0, SESSION_ID_1 + "-log", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                publicationReady.correlationId(CORRELATION_ID);
+                return publicationReady.length();
+            });
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
         conductor.doWork();
@@ -358,14 +410,16 @@ public class ClientConductorTest
     // ---------------------------------
 
     @Test
-    public void registeringSubscriberNotifiesMediaDriver() throws Exception
+    public void addSubscriptionShouldNotifyMediaDriver() throws Exception
     {
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) ->
             {
-                conductor.operationSucceeded(CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                correlatedMessage.correlationId(CORRELATION_ID);
+                return CorrelatedMessageFlyweight.LENGTH;
+            });
 
         conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
 
@@ -373,23 +427,27 @@ public class ClientConductorTest
     }
 
     @Test
-    public void removingSubscriberNotifiesMediaDriver()
+    public void closingSubscriptionShouldNotifyMediaDriver()
     {
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) ->
             {
-                conductor.operationSucceeded(CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                correlatedMessage.correlationId(CORRELATION_ID);
+                return CorrelatedMessageFlyweight.LENGTH;
+            });
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
 
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) ->
             {
-                conductor.operationSucceeded(CLOSE_CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
+                return CorrelatedMessageFlyweight.LENGTH;
+            });
 
         subscription.close();
 
@@ -397,7 +455,7 @@ public class ClientConductorTest
     }
 
     @Test(expected = DriverTimeoutException.class)
-    public void cannotCreateSubscriberIfMediaDriverDoesNotReply()
+    public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
         conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
     }
@@ -405,25 +463,56 @@ public class ClientConductorTest
     @Test(expected = RegistrationException.class)
     public void shouldFailToAddSubscriptionOnMediaDriverError()
     {
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_ERROR,
+            errorMessageBuffer,
+            (buffer) ->
             {
-                conductor.onError(INVALID_CHANNEL, "Multicast data address must be odd", CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                final byte[] message = "invalid channel".getBytes();
+                final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
+                subscriptionMessage.wrap(new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY)), 0);
+                subscriptionMessage.correlationId(CORRELATION_ID);
+
+                errorMessage.errorCode(INVALID_CHANNEL);
+                errorMessage.offendingFlyweight(subscriptionMessage, subscriptionMessage.length());
+                errorMessage.errorMessage(message);
+                errorMessage.frameLength(ErrorFlyweight.HEADER_LENGTH + message.length + subscriptionMessage.length());
+                return errorMessage.frameLength();
+            });
 
         conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
     }
 
     @Test
+    public void clientNotifiedOfNewConnectionShouldMapLogFile()
+    {
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) ->
+            {
+                correlatedMessage.correlationId(CORRELATION_ID);
+                return CorrelatedMessageFlyweight.LENGTH;
+            });
+
+        conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
+
+        conductor.onNewConnection(STREAM_ID_1, SESSION_ID_1, 0L, SESSION_ID_1 + "-log", connectionReady, CORRELATION_ID);
+
+        verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
+    }
+
+    @Test
     public void clientNotifiedOfNewConnectionsAndInactiveConnections()
     {
-        doAnswer(
-            (invocation) ->
+        whenReceiveBroadcastOnMessage(
+            ControlProtocolEvents.ON_OPERATION_SUCCESS,
+            correlatedMessageBuffer,
+            (buffer) ->
             {
-                conductor.operationSucceeded(CORRELATION_ID);
-                return 1;
-            }).when(mockToClientReceiver).receive(anyObject());
+                correlatedMessage.correlationId(CORRELATION_ID);
+                return CorrelatedMessageFlyweight.LENGTH;
+            });
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
 
@@ -438,5 +527,37 @@ public class ClientConductorTest
         verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, position);
         assertTrue(subscription.hasNoConnections());
         assertFalse(subscription.isConnected(SESSION_ID_1));
+    }
+
+    @Test
+    public void shouldIgnoreUnknownNewConnection()
+    {
+        conductor.onNewConnection(STREAM_ID_2, SESSION_ID_2, 0L, SESSION_ID_2 + "-log", connectionReady, CORRELATION_ID_2);
+
+        verify(logBuffersFactory, never()).map(anyString());
+        verify(mockNewConnectionHandler, never()).onNewConnection(anyString(), anyInt(), anyInt(), anyLong(), anyString());
+    }
+
+    @Test
+    public void shouldIgnoreUnknownInactiveConnection()
+    {
+        conductor.onInactiveConnection(STREAM_ID_2, SESSION_ID_2, 0L, CORRELATION_ID_2);
+
+        verify(logBuffersFactory, never()).map(anyString());
+        verify(mockInactiveConnectionHandler, never()).onInactiveConnection(anyString(), anyInt(), anyInt(), anyLong());
+    }
+
+    private void whenReceiveBroadcastOnMessage(
+        final int msgTypeId,
+        final MutableDirectBuffer buffer,
+        final Function<MutableDirectBuffer, Integer> filler)
+    {
+        doAnswer(
+            (invocation) ->
+            {
+                final int length = filler.apply(buffer);
+                conductor.driverListenerAdapter().onMessage(msgTypeId, buffer, 0, length);
+                return 1;
+            }).when(mockToClientReceiver).receive(anyObject());
     }
 }

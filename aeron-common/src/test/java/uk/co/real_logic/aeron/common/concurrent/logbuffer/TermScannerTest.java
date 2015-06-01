@@ -43,14 +43,14 @@ public class TermScannerTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength));
         assertThat(scanner.padding(), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
     }
 
@@ -63,14 +63,14 @@ public class TermScannerTest
         final int maxLength = alignedFrameLength - 1;
         final int frameOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, maxLength), is(0));
         assertThat(scanner.padding(), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
     }
 
@@ -82,20 +82,20 @@ public class TermScannerTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         int frameOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(frameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength))).thenReturn(alignedFrameLength);
+        when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength * 2));
         assertThat(scanner.padding(), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += alignedFrameLength;
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
     }
 
@@ -107,20 +107,20 @@ public class TermScannerTest
 
         int frameOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(frameOneLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameOneLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength))).thenReturn(frameTwoLength);
+        when(termBuffer.getIntVolatile(frameOffset + frameOneLength)).thenReturn(frameTwoLength);
         when(termBuffer.getShort(typeOffset(frameOffset + frameOneLength))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(frameOneLength + frameTwoLength));
         assertThat(scanner.padding(), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += frameOneLength;
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
     }
 
@@ -131,20 +131,20 @@ public class TermScannerTest
         final int frameOneLength = MTU_LENGTH - (frameTwoLength / 2);
         int frameOffset = 0;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(frameOneLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameOneLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + frameOneLength))).thenReturn(frameTwoLength);
+        when(termBuffer.getIntVolatile(frameOffset + frameOneLength)).thenReturn(frameTwoLength);
         when(termBuffer.getShort(typeOffset(frameOffset + frameOneLength))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(frameOneLength));
         assertThat(scanner.padding(), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
 
         frameOffset += frameOneLength;
-        inOrder.verify(termBuffer).getIntVolatile(lengthOffset(frameOffset));
+        inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(termBuffer).getShort(typeOffset(frameOffset));
     }
 
@@ -154,7 +154,7 @@ public class TermScannerTest
         final int alignedFrameLength = align(HEADER_LENGTH * 2, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset))).thenReturn(alignedFrameLength);
+        when(termBuffer.getIntVolatile(frameOffset)).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength));
@@ -168,9 +168,9 @@ public class TermScannerTest
         final int paddingFrameLength = align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
         final int frameOffset = TERM_BUFFER_CAPACITY - (alignedFrameLength + paddingFrameLength);
 
-        when(valueOf(termBuffer.getIntVolatile(lengthOffset(frameOffset)))).thenReturn(alignedFrameLength);
+        when(valueOf(termBuffer.getIntVolatile(frameOffset))).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength))).thenReturn(paddingFrameLength);
+        when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(paddingFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)PADDING_FRAME_TYPE);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength + HEADER_LENGTH));
@@ -184,9 +184,9 @@ public class TermScannerTest
         final int frameOffset = TERM_BUFFER_CAPACITY - align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
         final int mtu = alignedFrameLength + 8;
 
-        when(valueOf(termBuffer.getIntVolatile(lengthOffset(frameOffset)))).thenReturn(alignedFrameLength);
+        when(valueOf(termBuffer.getIntVolatile(frameOffset))).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
-        when(termBuffer.getIntVolatile(lengthOffset(frameOffset + alignedFrameLength))).thenReturn(alignedFrameLength * 2);
+        when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(alignedFrameLength * 2);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)PADDING_FRAME_TYPE);
 
         assertThat(scanner.scanForAvailability(termBuffer, frameOffset, mtu), is(alignedFrameLength));

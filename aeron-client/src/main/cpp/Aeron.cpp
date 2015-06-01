@@ -16,9 +16,9 @@
 
 #include "Aeron.h"
 
-using namespace aeron;
+namespace aeron {
 
-Aeron::Aeron(Context& context) :
+Aeron::Aeron(Context &context) :
     m_context(context.conclude()),
     m_conductor(
         createDriverProxy(m_context),
@@ -41,7 +41,7 @@ Aeron::~Aeron()
 }
 
 
-inline void Aeron::mapCncFile(Context& context)
+inline void Aeron::mapCncFile(Context &context)
 {
     if (!m_cncBuffer)
     {
@@ -57,7 +57,7 @@ inline void Aeron::mapCncFile(Context& context)
     }
 }
 
-DriverProxy& Aeron::createDriverProxy(Context& context)
+DriverProxy &Aeron::createDriverProxy(Context &context)
 {
     m_toDriverRingBuffer = context.toDriverBuffer();
 
@@ -73,7 +73,7 @@ DriverProxy& Aeron::createDriverProxy(Context& context)
     return *m_driverProxy;
 }
 
-CopyBroadcastReceiver& Aeron::createDriverReceiver(Context &context)
+CopyBroadcastReceiver &Aeron::createDriverReceiver(Context &context)
 {
     m_toClientsCopyReceiver = context.toClientsBuffer();
 
@@ -81,9 +81,13 @@ CopyBroadcastReceiver& Aeron::createDriverReceiver(Context &context)
     {
         mapCncFile(context);
         m_toClientsAtomicBuffer = CncFileDescriptor::createToClientsBuffer(m_cncBuffer);
-        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(new BroadcastReceiver(m_toClientsAtomicBuffer));
-        m_toClientsCopyReceiver = std::unique_ptr<CopyBroadcastReceiver>(new CopyBroadcastReceiver(*m_toClientsBroadcastReceiver));
+        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(
+            new BroadcastReceiver(m_toClientsAtomicBuffer));
+        m_toClientsCopyReceiver = std::unique_ptr<CopyBroadcastReceiver>(
+            new CopyBroadcastReceiver(*m_toClientsBroadcastReceiver));
     }
 
     return *m_toClientsCopyReceiver;
+}
+
 }

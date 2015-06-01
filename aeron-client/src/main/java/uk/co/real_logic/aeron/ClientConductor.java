@@ -19,14 +19,13 @@ import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.collections.ConnectionMap;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.Signal;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
@@ -49,20 +48,20 @@ class ClientConductor implements Agent, DriverListener
     private final long driverTimeoutNs;
     private final DriverListenerAdapter driverListenerAdapter;
     private final LogBuffersFactory logBuffersFactory;
-    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>(); // Guarded by this
+    private final ConnectionMap<String, Publication> publicationMap = new ConnectionMap<>();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
 
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
-    private final Signal correlationSignal;
     private final TimerWheel timerWheel;
     private final TimerWheel.Timer keepaliveTimer;
     private final Consumer<Throwable> errorHandler;
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
-    private long activeCorrelationId = -1; // Guarded by this
-    private boolean operationSucceeded = false; // Guarded by this
+    private long lastReceivedCorrelationId = NO_CORRELATION_ID;
+    private long activeCorrelationId = NO_CORRELATION_ID;
+
     private volatile boolean driverActive = true;
     private Publication addedPublication; // Guarded by this
     private String addedChannel; // Guarded by this
@@ -73,7 +72,6 @@ class ClientConductor implements Agent, DriverListener
         final LogBuffersFactory logBuffersFactory,
         final UnsafeBuffer counterValuesBuffer,
         final DriverProxy driverProxy,
-        final Signal correlationSignal,
         final TimerWheel timerWheel,
         final Consumer<Throwable> errorHandler,
         final NewConnectionHandler newConnectionHandler,
@@ -82,7 +80,6 @@ class ClientConductor implements Agent, DriverListener
     {
         this.errorHandler = errorHandler;
         this.counterValuesBuffer = counterValuesBuffer;
-        this.correlationSignal = correlationSignal;
         this.driverProxy = driverProxy;
         this.logBuffersFactory = logBuffersFactory;
         this.timerWheel = timerWheel;
@@ -95,12 +92,12 @@ class ClientConductor implements Agent, DriverListener
         this.keepaliveTimer = timerWheel.newTimeout(KEEPALIVE_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onKeepalive);
     }
 
-    public int doWork()
+    public synchronized int doWork()
     {
         int workCount = 0;
 
         workCount += processTimers();
-        workCount += driverListenerAdapter.receiveMessages(activeCorrelationId);
+        workCount += driverListenerAdapter.pollMessage();
 
         return workCount;
     }
@@ -119,16 +116,17 @@ class ClientConductor implements Agent, DriverListener
         {
             addedChannel = channel;
             activeCorrelationId = driverProxy.addPublication(channel, streamId, sessionId);
+            final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
-            final long startTime = System.currentTimeMillis();
-            while (addedPublication == null)
-            {
-                await(startTime);
-            }
+            doWorkUntil(activeCorrelationId, timeout);
+
+            /*
+             * TODO: avoid having addedPublication by storing it in the publicationMap and using a get
+             * (only if correlationId was used)
+             */
 
             publication = addedPublication;
             publicationMap.put(channel, sessionId, streamId, publication);
-            addedPublication = null;
             addedChannel = null;
             activeCorrelationId = NO_CORRELATION_ID;
         }
@@ -144,25 +142,24 @@ class ClientConductor implements Agent, DriverListener
     {
         verifyDriverIsActive();
 
-        activeCorrelationId = driverProxy.removePublication(publication.registrationId());
+        final long correlationId = driverProxy.removePublication(publication.registrationId());
         publicationMap.remove(publication.channel(), publication.sessionId(), publication.streamId());
+        final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
-        awaitOperationSucceeded();
+        doWorkUntil(correlationId, timeout);
     }
 
     public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
     {
         verifyDriverIsActive();
 
-        final Subscription subscription;
-        synchronized (activeSubscriptions)
-        {
-            activeCorrelationId = driverProxy.addSubscription(channel, streamId);
-            subscription = new Subscription(this, handler, channel, streamId, activeCorrelationId);
-            activeSubscriptions.add(subscription);
-        }
+        final long correlationId = driverProxy.addSubscription(channel, streamId);
+        final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
-        awaitOperationSucceeded();
+        final Subscription subscription = new Subscription(this, handler, channel, streamId, correlationId);
+        activeSubscriptions.add(subscription);
+
+        doWorkUntil(correlationId, timeout);
 
         return subscription;
     }
@@ -171,10 +168,12 @@ class ClientConductor implements Agent, DriverListener
     {
         verifyDriverIsActive();
 
-        activeSubscriptions.remove(subscription);
-        activeCorrelationId = driverProxy.removeSubscription(subscription.registrationId());
+        final long correlationId = driverProxy.removeSubscription(subscription.registrationId());
+        final long timeout = timerWheel.clock().time() + driverTimeoutNs;
 
-        awaitOperationSucceeded();
+        doWorkUntil(correlationId, timeout);
+
+        activeSubscriptions.remove(subscription);
     }
 
     public void onNewPublication(
@@ -184,24 +183,35 @@ class ClientConductor implements Agent, DriverListener
         final String logFileName,
         final long correlationId)
     {
-        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
-        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
-        final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
-        final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
-        final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
+        if (correlationId == activeCorrelationId)
         {
-            appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
+            final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
+            final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+            final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
+            final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
+            final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
+            final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
+
+            for (int i = 0; i < PARTITION_COUNT; i++)
+            {
+                appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
+            }
+
+            final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
+
+            addedPublication = new Publication(
+                this,
+                addedChannel,
+                streamId,
+                sessionId,
+                appenders,
+                publicationLimit,
+                logBuffers,
+                logMetaDataBuffer,
+                correlationId);
         }
 
-        final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
-
-        addedPublication = new Publication(
-            this, addedChannel, streamId, sessionId, appenders, publicationLimit, logBuffers, logMetaDataBuffer, correlationId);
-
-        correlationSignal.signal();
+        lastReceivedCorrelationId = correlationId;
     }
 
     public void onNewConnection(
@@ -252,16 +262,15 @@ class ClientConductor implements Agent, DriverListener
             });
     }
 
-    public void onError(final ErrorCode errorCode, final String message)
+    public void onError(final ErrorCode errorCode, final String message, final long correlationId)
     {
         registrationException = new RegistrationException(errorCode, message);
-        correlationSignal.signal();
+        lastReceivedCorrelationId = correlationId;
     }
 
-    public void operationSucceeded()
+    public void operationSucceeded(final long correlationId)
     {
-        operationSucceeded = true;
-        correlationSignal.signal();
+        lastReceivedCorrelationId = correlationId;
     }
 
     public void onInactiveConnection(
@@ -282,43 +291,6 @@ class ClientConductor implements Agent, DriverListener
                     }
                 }
             });
-    }
-
-    private void await(final long startTime)
-    {
-        correlationSignal.await(driverTimeoutMs);
-        checkDriverTimeout(startTime);
-        checkRegistrationException();
-    }
-
-    private void awaitOperationSucceeded()
-    {
-        final long startTime = System.currentTimeMillis();
-        while (!operationSucceeded)
-        {
-            await(startTime);
-        }
-
-        operationSucceeded = false;
-    }
-
-    private void checkRegistrationException()
-    {
-        if (registrationException != null)
-        {
-            final RegistrationException exception = registrationException;
-            registrationException = null;
-            throw exception;
-        }
-    }
-
-    private void checkDriverTimeout(final long startTime)
-    {
-        if ((System.currentTimeMillis() - startTime) > driverTimeoutMs)
-        {
-            final String msg = String.format("No response from media driver within %d ms", driverTimeoutMs);
-            throw new DriverTimeoutException(msg);
-        }
     }
 
     private int processTimers()
@@ -361,5 +333,29 @@ class ClientConductor implements Agent, DriverListener
         {
             throw new DriverTimeoutException("Driver is inactive");
         }
+    }
+
+    private void doWorkUntil(final long correlationId, final long timeout)
+    {
+        registrationException = null;
+        lastReceivedCorrelationId = NO_CORRELATION_ID;
+
+        do
+        {
+            doWork();
+
+            if (lastReceivedCorrelationId == correlationId)
+            {
+                if (null != registrationException)
+                {
+                    throw registrationException;
+                }
+
+                return;
+            }
+
+        } while (timerWheel.clock().time() < timeout);
+
+        throw new DriverTimeoutException("No response from driver within timeout");
     }
 }

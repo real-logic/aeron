@@ -18,9 +18,8 @@ package uk.co.real_logic.aeron.samples;
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.SigInt;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -50,7 +49,7 @@ public class Pong
             ctx.dirName(driver.contextDirName());
         }
 
-        final BusySpinIdleStrategy idleStrategy = new BusySpinIdleStrategy();
+        final IdleStrategy idleStrategy = new NoOpIdleStrategy();
 
         System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
@@ -76,7 +75,7 @@ public class Pong
         CloseHelper.quietClose(driver);
     }
 
-    public static void pingHandler(
+    private static void pingHandler(
         final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
         while (pongPublication.offer(buffer, offset, length) < 0L)

@@ -18,20 +18,21 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -121,7 +122,7 @@ public class PongTest
                 Thread.yield();
             },
             Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(900));
+            TimeUnit.MILLISECONDS.toNanos(5900));
 
         fragmentsRead[0] = 0;
 
@@ -133,7 +134,7 @@ public class PongTest
                 Thread.yield();
             },
             Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(900));
+            TimeUnit.MILLISECONDS.toNanos(5900));
 
         verify(pongHandler).onData(
             any(UnsafeBuffer.class),

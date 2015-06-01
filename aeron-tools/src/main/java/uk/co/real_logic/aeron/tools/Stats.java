@@ -20,7 +20,6 @@ import static java.nio.ByteOrder.nativeOrder;
 import java.io.File;
 import java.nio.MappedByteBuffer;
 import java.util.ArrayList;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.co.real_logic.aeron.common.CncFileDescriptor;
 import uk.co.real_logic.aeron.common.CommonContext;
@@ -73,20 +72,13 @@ public class Stats
 
     public Stats(final StatsOutput output) throws Exception
     {
-        if (output == null)
-        {
-            this.output = new StatsConsoleOutput();
-        }
-        else
-        {
-            this.output = output;
-        }
+        this.output = output == null ? new StatsConsoleOutput() : output;
 
         cncFile = CommonContext.newDefaultCncFile();
 
-        cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-        metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-        cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        final DirectBuffer metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
@@ -95,26 +87,23 @@ public class Stats
 
         labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
         valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
-
-        countersManager = new CountersManager(labelsBuffer, valuesBuffer);
     }
 
     public void collectStats() throws Exception
     {
         String[] keys = null;
         long[] vals = null;
-        int size;
-        int idx;
 
         if (output instanceof StatsNetstatOutput)
         {
-            idx = NUM_BASE_STATS;
-            final ArrayList<String> tmpKeys = new ArrayList<String>();
-            final ArrayList<Long> tmpVals = new ArrayList<Long>();
+            int idx = NUM_BASE_STATS;
+            final ArrayList<String> tmpKeys = new ArrayList<>();
+            final ArrayList<Long> tmpVals = new ArrayList<>();
+            int length;
 
-            while ((size = isValid(idx)) != 0)
+            while ((length = getLength(idx)) != 0)
             {
-                if (size != UNREGISTERED_LABEL_SIZE)
+                if (length != CountersManager.UNREGISTERED_LABEL_LENGTH)
                 {
                     tmpKeys.add(getLabel(idx));
                     tmpVals.add(getValue(idx));
@@ -131,11 +120,12 @@ public class Stats
         }
         else if (output instanceof StatsConsoleOutput)
         {
-            final ArrayList<String> tmpKeys = new ArrayList<String>();
-            final ArrayList<Long> tmpVals = new ArrayList<Long>();
-            idx = 0;
+            final ArrayList<String> tmpKeys = new ArrayList<>();
+            final ArrayList<Long> tmpVals = new ArrayList<>();
+            int idx = 0;
+            int length;
 
-            while ((size = isValid(idx)) != 0)
+            while ((length = getLength(idx)) != 0)
             {
                 System.out.println(idx);
                 if (size != UNREGISTERED_LABEL_SIZE)
@@ -158,18 +148,17 @@ public class Stats
             keys = new String[NUM_BASE_STATS];
             vals = new long[NUM_BASE_STATS];
 
-            for (idx = 0; idx < NUM_BASE_STATS; idx++)
+            for (int idx = 0; idx < NUM_BASE_STATS; idx++)
             {
-                if ((size = isValid(idx)) != 0)
+                final int length = getLength(idx);
+                if (length != 0 && length != CountersManager.UNREGISTERED_LABEL_LENGTH)
                 {
-                    if (size != UNREGISTERED_LABEL_SIZE)
-                    {
-                        keys[idx] = getLabel(idx);
-                        vals[idx] = getValue(idx);
-                    }
+                    keys[idx] = getLabel(idx);
+                    vals[idx] = getValue(idx);
                 }
             }
         }
+
         output.format(keys, vals);
     }
 
@@ -178,14 +167,14 @@ public class Stats
         output.close();
     }
 
-    private int isValid(final int idx)
+    private int getLength(final int idx)
     {
-        return labelsBuffer.getInt(idx * LABEL_SIZE);
+        return labelsBuffer.getInt(idx * CountersManager.LABEL_LENGTH);
     }
 
     private String getLabel(final int idx)
     {
-        return labelsBuffer.getStringUtf8(idx * LABEL_SIZE, nativeOrder());
+        return labelsBuffer.getStringUtf8(idx * CountersManager.LABEL_LENGTH, nativeOrder());
     }
 
     private long getValue(final int idx)

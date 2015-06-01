@@ -15,15 +15,14 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
 
 import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
 
@@ -41,18 +40,14 @@ class DriverListenerAdapter implements MessageHandler
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final DriverListener listener;
 
-    private long activeCorrelationId;
-
     public DriverListenerAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverListener listener)
     {
         this.broadcastReceiver = broadcastReceiver;
         this.listener = listener;
     }
 
-    public int receiveMessages(final long correlationId)
+    public int pollMessage()
     {
-        activeCorrelationId = correlationId;
-
         return broadcastReceiver.receive(this);
     }
 
@@ -65,18 +60,13 @@ class DriverListenerAdapter implements MessageHandler
                 publicationReady.wrap(buffer, index);
 
                 final long correlationId = publicationReady.correlationId();
+                final int sessionId = publicationReady.sessionId();
+                final int streamId = publicationReady.streamId();
+                final int publicationLimitCounterId = publicationReady.publicationLimitCounterId();
+                final String logFileName = publicationReady.logFileName();
 
-                if (activeCorrelationId == correlationId)
-                {
-                    final int sessionId = publicationReady.sessionId();
-                    final int streamId = publicationReady.streamId();
-                    final int publicationLimitCounterId = publicationReady.publicationLimitCounterId();
-                    final String logFileName = publicationReady.logFileName();
-
-
-                    listener.onNewPublication(
-                        streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
-                }
+                listener.onNewPublication(
+                    streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
                 break;
             }
 
@@ -97,14 +87,13 @@ class DriverListenerAdapter implements MessageHandler
 
             case ON_OPERATION_SUCCESS:
                 correlatedMessage.wrap(buffer, index);
-                if (correlatedMessage.correlationId() == activeCorrelationId)
-                {
-                    listener.operationSucceeded();
-                }
+
+                listener.operationSucceeded(correlatedMessage.correlationId());
                 break;
 
             case ON_INACTIVE_CONNECTION:
                 connectionMessage.wrap(buffer, index);
+
                 listener.onInactiveConnection(
                     connectionMessage.streamId(),
                     connectionMessage.sessionId(),
@@ -113,29 +102,17 @@ class DriverListenerAdapter implements MessageHandler
                 break;
 
             case ON_ERROR:
-                onError(buffer, index, listener, activeCorrelationId);
+                errorHeader.wrap(buffer, index);
+                correlatedMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
+
+                listener.onError(
+                    errorHeader.errorCode(),
+                    errorHeader.errorMessage(),
+                    correlatedMessage.correlationId());
                 break;
 
             default:
                 break;
         }
-    }
-
-    private void onError(
-        final MutableDirectBuffer buffer, final int index, final DriverListener listener, final long activeCorrelationId)
-    {
-        errorHeader.wrap(buffer, index);
-        final ErrorCode errorCode = errorHeader.errorCode();
-        if (activeCorrelationId == correlationId(buffer, errorHeader.offendingHeaderOffset()))
-        {
-            listener.onError(errorCode, errorHeader.errorMessage());
-        }
-    }
-
-    private long correlationId(final MutableDirectBuffer buffer, final int offset)
-    {
-        correlatedMessage.wrap(buffer, offset);
-
-        return correlatedMessage.correlationId();
     }
 }

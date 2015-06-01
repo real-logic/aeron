@@ -26,7 +26,6 @@ import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.Signal;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -93,7 +92,6 @@ public final class Aeron implements AutoCloseable
             ctx.logBuffersFactory,
             ctx.countersBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
-            new Signal(),
             new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL),
             ctx.errorHandler,
             ctx.newConnectionHandler,

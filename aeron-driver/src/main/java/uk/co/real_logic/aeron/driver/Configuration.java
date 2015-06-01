@@ -41,7 +41,7 @@ public class Configuration
     /**
      * Byte buffer length (in bytes) for reads
      */
-    public static final String READ_BUFFER_LENGTH_PROP_NAME = "aeron.rcv.buffer.length";
+    public static final String RECEIVE_BUFFER_LENGTH_PROP_NAME = "aeron.rcv.buffer.length";
 
     /**
      * Length (in bytes) of the log buffers for publication terms
@@ -138,8 +138,9 @@ public class Configuration
     /**
      * Default byte buffer length for reads
      */
-    public static final int READ_BYTE_BUFFER_LENGTH_DEFAULT = 4096;
-    public static final int READ_BYTE_BUFFER_LENGTH = getInteger(READ_BUFFER_LENGTH_PROP_NAME, READ_BYTE_BUFFER_LENGTH_DEFAULT);
+    public static final int RECEIVE_BYTE_BUFFER_LENGTH_DEFAULT = 4096;
+    public static final int RECEIVE_BYTE_BUFFER_LENGTH = getInteger(
+        RECEIVE_BUFFER_LENGTH_PROP_NAME, RECEIVE_BYTE_BUFFER_LENGTH_DEFAULT);
 
     /**
      * Default term buffer length.
@@ -213,17 +214,17 @@ public class Configuration
     /**
      * Default delay for retransmission of data for unicast
      */
-    public static final long RETRANS_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
+    public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
     /**
      * Source uses same for unicast and multicast. For ticks.
      */
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_DELAY_GENERATOR = () -> RETRANS_UNICAST_DELAY_DEFAULT_NS;
+    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_DELAY_GENERATOR = () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
 
     /**
      * Default delay for linger for unicast
      */
-    public static final long RETRANS_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
-    public static final FeedbackDelayGenerator RETRANS_UNICAST_LINGER_GENERATOR = () -> RETRANS_UNICAST_LINGER_DEFAULT_NS;
+    public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+    public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR = () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
 
     /**
      * Default max number of active retransmissions per Term

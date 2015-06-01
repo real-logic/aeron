@@ -32,8 +32,8 @@ import static uk.co.real_logic.aeron.driver.Configuration.NAK_MULTICAST_DELAY_GE
 import static uk.co.real_logic.aeron.driver.Configuration.NAK_UNICAST_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.driver.Configuration.NO_NAK_DELAY_GENERATOR;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_DELAY_GENERATOR;
-import static uk.co.real_logic.aeron.driver.Configuration.RETRANS_UNICAST_LINGER_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANSMIT_UNICAST_DELAY_GENERATOR;
+import static uk.co.real_logic.aeron.driver.Configuration.RETRANSMIT_UNICAST_LINGER_GENERATOR;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -350,7 +350,7 @@ public class DriverConductor implements Agent
         {
             resource.close();
         }
-        catch (Exception ex)
+        catch (final Exception ex)
         {
             logger.logException(ex);
         }
@@ -539,8 +539,8 @@ public class DriverConductor implements Agent
         return new RetransmitHandler(
             timerWheel,
             systemCounters,
-            RETRANS_UNICAST_DELAY_GENERATOR,
-            RETRANS_UNICAST_LINGER_GENERATOR,
+            RETRANSMIT_UNICAST_DELAY_GENERATOR,
+            RETRANSMIT_UNICAST_LINGER_GENERATOR,
             publication,
             initialTermId,
             termBufferLength);

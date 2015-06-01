@@ -35,7 +35,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
 {
     private final DatagramChannel datagramChannel;
     private final UdpChannel udpChannel;
-    private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.READ_BYTE_BUFFER_LENGTH);
+    private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final EventLogger logger;
@@ -80,13 +80,12 @@ public abstract class UdpChannelTransport implements AutoCloseable
             if (0 != Configuration.SOCKET_SNDBUF_LENGTH)
             {
                 datagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
-                final int soSendbuf = datagramChannel.getOption(StandardSocketOptions.SO_SNDBUF);
+                final int soSndbuf = datagramChannel.getOption(StandardSocketOptions.SO_SNDBUF);
 
-                if (soSendbuf != Configuration.SOCKET_SNDBUF_LENGTH)
+                if (soSndbuf != Configuration.SOCKET_SNDBUF_LENGTH)
                 {
-                    throw new IllegalStateException(
-                        String.format("Failed to set SO_SNDBUF: attempted=%d, actual=%d",
-                                      Configuration.SOCKET_SNDBUF_LENGTH, soSendbuf));
+                    throw new IllegalStateException(String.format(
+                        "Failed to set SO_SNDBUF: attempted=%d, actual=%d", Configuration.SOCKET_SNDBUF_LENGTH, soSndbuf));
                 }
             }
 
@@ -97,9 +96,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
                 if (soRcvbuf != Configuration.SOCKET_RCVBUF_LENGTH)
                 {
-                    throw new IllegalStateException(
-                        String.format("Failed to set SO_RCVBUF: attempted=%d, actual=%d",
-                                      Configuration.SOCKET_RCVBUF_LENGTH, soRcvbuf));
+                    throw new IllegalStateException(String.format(
+                        "Failed to set SO_RCVBUF: attempted=%d, actual=%d", Configuration.SOCKET_RCVBUF_LENGTH, soRcvbuf));
                 }
             }
 
@@ -207,7 +205,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      *
      * @param name of the socket option
      * @param <T>  type of option
-     * @return     option value
+     * @return option value
      */
     public <T> T getOption(final SocketOption<T> name)
     {

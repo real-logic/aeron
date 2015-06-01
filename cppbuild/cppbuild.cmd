@@ -1,3 +1,4 @@
+@echo off
 setlocal
 
 set SOURCE_DIR=%CD%
@@ -10,5 +11,5 @@ pushd %BUILD_DIR%
 
 cmake -G "Visual Studio 12 Win64" %SOURCE_DIR%
 #start aeron.sln
-cmake --build . --clean-first
+cmake --build . --clean-first --config Release
 ctest -C Release

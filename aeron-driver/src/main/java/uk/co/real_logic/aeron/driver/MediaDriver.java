@@ -120,6 +120,8 @@ public final class MediaDriver implements AutoCloseable
         ctx.fromReceiverDriverConductorProxy().driverConductor(driverConductor);
         ctx.fromSenderDriverConductorProxy().driverConductor(driverConductor);
 
+        ctx.toDriverCommands().consumerHeartbeatTime(ctx.epochClock().time());
+
         switch (ctx.threadingMode)
         {
             case SHARED:

@@ -300,44 +300,48 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
             sessionId, streamId, channelEndpoint, channel, joiningPosition);
 
-        final RawLog rawLog = newConnectionLog(
-            sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, correlationId);
+        if (subscriberPositions.size() > 0)
+        {
+            final RawLog rawLog = newConnectionLog(
+                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, correlationId);
 
-        final NetworkConnection connection = new NetworkConnection(
-            correlationId,
-            channelEndpoint,
-            controlAddress,
-            sessionId,
-            streamId,
-            initialTermId,
-            activeTermId,
-            initialTermOffset,
-            initialWindowLength,
-            rawLog,
-            timerWheel,
-            Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
-                udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
-            subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
-            newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
-            nanoClock,
-            systemCounters,
-            sourceAddress);
+            final NetworkConnection connection = new NetworkConnection(
+                correlationId,
+                channelEndpoint,
+                controlAddress,
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                initialTermOffset,
+                initialWindowLength,
+                rawLog,
+                timerWheel,
+                Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
+                    udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
+                subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
+                newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
+                nanoClock,
+                systemCounters,
+                sourceAddress);
 
-        subscriberPositions.forEach(
-            (subscriberPosition) -> subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
+            subscriberPositions.forEach(
+                (subscriberPosition) ->
+                    subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
 
-        connections.add(connection);
-        receiverProxy.newConnection(channelEndpoint, connection);
+            connections.add(connection);
+            receiverProxy.newConnection(channelEndpoint, connection);
 
-        clientProxy.onConnectionReady(
-            channel,
-            streamId,
-            sessionId,
-            joiningPosition,
-            rawLog,
-            correlationId,
-            subscriberPositions,
-            generateSourceInfo(sourceAddress));
+            clientProxy.onConnectionReady(
+                channel,
+                streamId,
+                sessionId,
+                joiningPosition,
+                rawLog,
+                correlationId,
+                subscriberPositions,
+                generateSourceInfo(sourceAddress));
+        }
     }
 
     public void onCloseResource(final AutoCloseable resource)
@@ -627,8 +631,11 @@ public class DriverConductor implements Agent
     {
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(UdpChannel.parse(channel));
 
-        channelEndpoint.incRefToStream(streamId);
-        receiverProxy.addSubscription(channelEndpoint, streamId);
+        final int refCount = channelEndpoint.incRefToStream(streamId);
+        if (1 == refCount)
+        {
+            receiverProxy.addSubscription(channelEndpoint, streamId);
+        }
 
         final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscription = new SubscriptionLink(correlationId, channelEndpoint, streamId, client);

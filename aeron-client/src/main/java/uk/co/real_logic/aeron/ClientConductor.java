@@ -66,7 +66,7 @@ class ClientConductor implements Agent, DriverListener
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
-    private RegistrationException registrationException; // Guarded by this
+    private RegistrationException driverException; // Guarded by this
 
     public ClientConductor(
         final EpochClock epochClock,
@@ -255,7 +255,7 @@ class ClientConductor implements Agent, DriverListener
 
     public void onError(final ErrorCode errorCode, final String message, final long correlationId)
     {
-        registrationException = new RegistrationException(errorCode, message);
+        driverException = new RegistrationException(errorCode, message);
     }
 
     public void onInactiveConnection(
@@ -352,15 +352,22 @@ class ClientConductor implements Agent, DriverListener
     {
         int workCount = 0;
 
-        workCount += processTimers();
-        workCount += driverListenerAdapter.pollMessage(correlationId, expectedChannel);
+        try
+        {
+            workCount += processTimers();
+            workCount += driverListenerAdapter.pollMessage(correlationId, expectedChannel);
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.accept(ex);
+        }
 
         return workCount;
     }
 
     private void doWorkUntil(final long correlationId, final long timeout, final String expectedChannel)
     {
-        registrationException = null;
+        driverException = null;
 
         do
         {
@@ -368,9 +375,9 @@ class ClientConductor implements Agent, DriverListener
 
             if (driverListenerAdapter.lastReceivedCorrelationId() == correlationId)
             {
-                if (null != registrationException)
+                if (null != driverException)
                 {
-                    throw registrationException;
+                    throw driverException;
                 }
 
                 return;

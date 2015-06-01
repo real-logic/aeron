@@ -262,7 +262,11 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Set status of the connection. Set by {@link DriverConductor}.
+     * Set status of the connection.
+     *
+     * Set by {@link Receiver} for INIT -> ACTIVE -> INACTIVE
+     *
+     * Set by {@link DriverConductor} for INACTIVE -> LINGER
      *
      * @param status of the connection
      */
@@ -270,6 +274,17 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     {
         timeOfLastStatusChange = clock.nanoTime();
         this.status = status;
+    }
+
+    /**
+     * Set status to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
+     */
+    public void ifActiveGoInactive()
+    {
+        if (Status.ACTIVE == this.status)
+        {
+            status(Status.INACTIVE);
+        }
     }
 
     /**
@@ -413,7 +428,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
 
         if (now > (lastPacketTimestamp + connectionLivenessTimeout))
         {
-            status(Status.INACTIVE);
             activity = false;
         }
 

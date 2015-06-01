@@ -15,16 +15,14 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
+import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
-
-import static uk.co.real_logic.aeron.driver.NetworkConnection.Status.INACTIVE;
 
 /**
  * Handling of dispatching data packets to {@link NetworkConnection}s streams.
@@ -58,7 +56,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
     }
 
-    public void onRemoveSubscription(final int streamId)
+    public void removeSubscription(final int streamId)
     {
         final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = sessionsByStreamIdMap.remove(streamId);
         if (null == connectionBySessionIdMap)
@@ -66,7 +64,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        connectionBySessionIdMap.values().forEach((connection) -> connection.status(INACTIVE));
+        connectionBySessionIdMap.values().forEach(NetworkConnection::ifActiveGoInactive);
     }
 
     public void addConnection(final NetworkConnection connection)
@@ -97,6 +95,8 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             connectionBySessionIdMap.remove(sessionId);
             initialisationInProgressMap.remove(sessionId, streamId);
         }
+
+        connection.ifActiveGoInactive();
     }
 
     public void removePendingSetup(final int sessionId, final int streamId)

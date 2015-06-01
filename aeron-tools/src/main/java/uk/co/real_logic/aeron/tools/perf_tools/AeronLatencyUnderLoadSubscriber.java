@@ -39,7 +39,8 @@ public class AeronLatencyUnderLoadSubscriber
     private Aeron.Context ctx = null;
     private FragmentAssemblyAdapter dataHandler = null;
     private Aeron aeron = null;
-    private final int pubStreamId = 10;
+    private final int pubStreamId = 11;
+    private final int subStreamId = 10;
     private volatile boolean running = true;
 
     public AeronLatencyUnderLoadSubscriber(final String[] args)
@@ -57,7 +58,7 @@ public class AeronLatencyUnderLoadSubscriber
         aeron = Aeron.connect(ctx);
         System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
         pub = aeron.addPublication(reflectChannel, pubStreamId);
-        final int subStreamId = 10;
+
         final Subscription sub = aeron.addSubscription(pubChannel, subStreamId, dataHandler);
         bufferClaim = new BufferClaim();
 

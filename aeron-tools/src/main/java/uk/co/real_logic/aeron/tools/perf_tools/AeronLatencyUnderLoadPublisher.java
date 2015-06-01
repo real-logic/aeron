@@ -224,6 +224,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         final long position,
         final String sourceInfo)
     {
+        System.out.println(channel + " " + streamId);
         if (channel.equals(reflectChannel) && subStreamId == streamId)
         {
             connectionLatch.countDown();

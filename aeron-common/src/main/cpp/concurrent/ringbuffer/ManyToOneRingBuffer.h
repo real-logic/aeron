@@ -71,7 +71,7 @@ public:
         if (INSUFFICIENT_CAPACITY != recordIndex)
         {
             m_buffer.putInt32(RecordDescriptor::lengthOffset(recordIndex), -recordLength);
-            atomic::fence();
+            atomic::thread_fence();
 
             m_buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
 
@@ -204,7 +204,7 @@ private:
         if (0 != padding)
         {
             m_buffer.putInt32(RecordDescriptor::lengthOffset(tailIndex), -padding);
-            atomic::fence();
+            atomic::thread_fence();
 
             m_buffer.putInt32(RecordDescriptor::typeOffset(tailIndex), RecordDescriptor::PADDING_MSG_TYPE_ID);
             m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(tailIndex), padding);

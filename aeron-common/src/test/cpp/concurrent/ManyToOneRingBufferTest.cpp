@@ -99,14 +99,15 @@ TEST_F(ManyToOneRingBufferTest, shouldWriteToEmptyBuffer)
     util::index_t tail = 0;
     util::index_t tailIndex = 0;
     util::index_t length = 8;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
     util::index_t srcIndex = 0;
-    util::index_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
 
     ASSERT_TRUE(m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, srcIndex, length));
 
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgLengthOffset(tailIndex)), length);
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgTypeOffset(tailIndex)), MSG_TYPE_ID);
-    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail + recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(tailIndex)), recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(tailIndex)), MSG_TYPE_ID);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail + alignedRecordLength);
 }
 
 TEST_F(ManyToOneRingBufferTest, shouldRejectWriteWhenInsufficientSpace)
@@ -142,7 +143,8 @@ TEST_F(ManyToOneRingBufferTest, shouldRejectWriteWhenBufferFull)
 TEST_F(ManyToOneRingBufferTest, shouldInsertPaddingRecordPlusMessageOnBufferWrap)
 {
     util::index_t length = 100;
-    util::index_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
     util::index_t tail = CAPACITY - RecordDescriptor::ALIGNMENT;
     util::index_t head = tail - (RecordDescriptor::ALIGNMENT * 4);
     util::index_t srcIndex = 0;
@@ -152,18 +154,19 @@ TEST_F(ManyToOneRingBufferTest, shouldInsertPaddingRecordPlusMessageOnBufferWrap
 
     ASSERT_TRUE(m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, srcIndex, length));
 
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgTypeOffset(tail)), RecordDescriptor::PADDING_MSG_TYPE_ID);
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgLengthOffset(tail)), RecordDescriptor::ALIGNMENT);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(tail)), RecordDescriptor::PADDING_MSG_TYPE_ID);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(tail)), RecordDescriptor::ALIGNMENT);
 
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgLengthOffset(0)), length);
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgTypeOffset(0)), MSG_TYPE_ID);
-    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail + recordLength + RecordDescriptor::ALIGNMENT);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(0)), recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(0)), MSG_TYPE_ID);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail + alignedRecordLength + RecordDescriptor::ALIGNMENT);
 }
 
 TEST_F(ManyToOneRingBufferTest, shouldInsertPaddingRecordPlusMessageOnBufferWrapWithHeadEqualToTail)
 {
     util::index_t length = 100;
-    util::index_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
     util::index_t tail = CAPACITY - RecordDescriptor::ALIGNMENT;
     util::index_t head = tail;
     util::index_t srcIndex = 0;
@@ -173,12 +176,12 @@ TEST_F(ManyToOneRingBufferTest, shouldInsertPaddingRecordPlusMessageOnBufferWrap
 
     ASSERT_TRUE(m_ringBuffer.write(MSG_TYPE_ID, m_srcAb, srcIndex, length));
 
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgTypeOffset(tail)), RecordDescriptor::PADDING_MSG_TYPE_ID);
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgLengthOffset(tail)), RecordDescriptor::ALIGNMENT);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(tail)), RecordDescriptor::PADDING_MSG_TYPE_ID);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(tail)), RecordDescriptor::ALIGNMENT);
 
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgLengthOffset(0)), length);
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgTypeOffset(0)), MSG_TYPE_ID);
-    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail + recordLength + RecordDescriptor::ALIGNMENT);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(0)), recordLength);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::typeOffset(0)), MSG_TYPE_ID);
+    EXPECT_EQ(m_ab.getInt64(TAIL_COUNTER_INDEX), tail + alignedRecordLength + RecordDescriptor::ALIGNMENT);
 }
 
 TEST_F(ManyToOneRingBufferTest, shouldReadNothingFromEmptyBuffer)
@@ -203,14 +206,15 @@ TEST_F(ManyToOneRingBufferTest, shouldReadSingleMessage)
 {
     util::index_t length = 8;
     util::index_t head = 0;
-    util::index_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
-    util::index_t tail = recordLength;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+    util::index_t tail = alignedRecordLength;
 
     m_ab.putInt64(HEAD_COUNTER_INDEX, head);
     m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
 
-    m_ab.putInt32(RecordDescriptor::msgTypeOffset(0), MSG_TYPE_ID);
-    m_ab.putInt32(RecordDescriptor::msgLengthOffset(0), length);
+    m_ab.putInt32(RecordDescriptor::typeOffset(0), MSG_TYPE_ID);
+    m_ab.putInt32(RecordDescriptor::lengthOffset(0), recordLength);
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
@@ -220,7 +224,7 @@ TEST_F(ManyToOneRingBufferTest, shouldReadSingleMessage)
 
     EXPECT_EQ(messagesRead, 1);
     EXPECT_EQ(timesCalled, 1);
-    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head + recordLength);
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head + alignedRecordLength);
 
     for (int i = 0; i < RecordDescriptor::ALIGNMENT; i += 4)
     {
@@ -232,17 +236,18 @@ TEST_F(ManyToOneRingBufferTest, shouldReadTwoMessages)
 {
     util::index_t length = 8;
     util::index_t head = 0;
-    util::index_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
-    util::index_t tail = recordLength * 2;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+    util::index_t tail = alignedRecordLength * 2;
 
     m_ab.putInt64(HEAD_COUNTER_INDEX, head);
     m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
 
-    m_ab.putInt32(RecordDescriptor::msgTypeOffset(0), MSG_TYPE_ID);
-    m_ab.putInt32(RecordDescriptor::msgLengthOffset(0), length);
+    m_ab.putInt32(RecordDescriptor::typeOffset(0), MSG_TYPE_ID);
+    m_ab.putInt32(RecordDescriptor::lengthOffset(0), recordLength);
 
-    m_ab.putInt32(RecordDescriptor::msgTypeOffset(0 + recordLength), MSG_TYPE_ID);
-    m_ab.putInt32(RecordDescriptor::msgLengthOffset(0 + recordLength), length);
+    m_ab.putInt32(RecordDescriptor::typeOffset(0 + alignedRecordLength), MSG_TYPE_ID);
+    m_ab.putInt32(RecordDescriptor::lengthOffset(0 + alignedRecordLength), recordLength);
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
@@ -252,7 +257,7 @@ TEST_F(ManyToOneRingBufferTest, shouldReadTwoMessages)
 
     EXPECT_EQ(messagesRead, 2);
     EXPECT_EQ(timesCalled, 2);
-    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head + recordLength + recordLength);
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head + alignedRecordLength + alignedRecordLength);
 
     for (int i = 0; i < RecordDescriptor::ALIGNMENT * 2; i += 4)
     {
@@ -264,17 +269,18 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
 {
     util::index_t length = 8;
     util::index_t head = 0;
-    util::index_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
-    util::index_t tail = recordLength * 2;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+    util::index_t tail = alignedRecordLength * 2;
 
     m_ab.putInt64(HEAD_COUNTER_INDEX, head);
     m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
 
-    m_ab.putInt32(RecordDescriptor::msgTypeOffset(0), MSG_TYPE_ID);
-    m_ab.putInt32(RecordDescriptor::msgLengthOffset(0), length);
+    m_ab.putInt32(RecordDescriptor::typeOffset(0), MSG_TYPE_ID);
+    m_ab.putInt32(RecordDescriptor::lengthOffset(0), recordLength);
 
-    m_ab.putInt32(RecordDescriptor::msgTypeOffset(0 + recordLength), MSG_TYPE_ID);
-    m_ab.putInt32(RecordDescriptor::msgLengthOffset(0 + recordLength), length);
+    m_ab.putInt32(RecordDescriptor::typeOffset(0 + alignedRecordLength), MSG_TYPE_ID);
+    m_ab.putInt32(RecordDescriptor::lengthOffset(0 + alignedRecordLength), recordLength);
 
     int timesCalled = 0;
     const int messagesRead = m_ringBuffer.read([&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
@@ -284,13 +290,13 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
 
     EXPECT_EQ(messagesRead, 1);
     EXPECT_EQ(timesCalled, 1);
-    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head + recordLength);
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head + alignedRecordLength);
 
     for (int i = 0; i < RecordDescriptor::ALIGNMENT; i += 4)
     {
         EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
     }
-    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::msgLengthOffset(recordLength)), length);
+    EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(alignedRecordLength)), recordLength);
 }
 
 // TODO: add test for dealing with exception from handler correctly
@@ -397,7 +403,7 @@ TEST(ManyToOneRingBufferConcurrentTest, shouldExchangeMessages)
                     const std::int32_t messageNumber = buffer.getInt32(index + 4);
 
                     EXPECT_EQ(length, 4 + 4);
-                    EXPECT_EQ(msgTypeId, MSG_TYPE_ID);
+                    ASSERT_EQ(msgTypeId, MSG_TYPE_ID);
 
                     EXPECT_EQ(counts[id], messageNumber);
                     counts[id]++;

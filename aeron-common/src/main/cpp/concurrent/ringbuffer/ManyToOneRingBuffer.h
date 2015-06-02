@@ -58,29 +58,33 @@ public:
 
     bool write(std::int32_t msgTypeId, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
     {
+        bool isSuccessful = false;
+
         RecordDescriptor::checkMsgTypeId(msgTypeId);
         checkMsgLength(length);
 
-        const util::index_t requiredCapacity =
-            util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
+        const util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+        const util::index_t requiredCapacity = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
         const util::index_t recordIndex = claimCapacity(requiredCapacity);
-        if (INSUFFICIENT_CAPACITY == recordIndex)
+
+        if (INSUFFICIENT_CAPACITY != recordIndex)
         {
-            return false;
+            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), -recordLength);
+            m_buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
+
+            m_buffer.putInt32(RecordDescriptor::typeOffset(recordIndex), msgTypeId);
+            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), recordLength);
+
+            isSuccessful = true;
         }
 
-        writeMsg(m_buffer, recordIndex, srcBuffer, srcIndex, length);
-
-        msgType(m_buffer, recordIndex, msgTypeId);
-        msgLengthOrdered(m_buffer, recordIndex, length);
-
-        return true;
+        return isSuccessful;
     }
 
     int read(const handler_t& handler, int messageCountLimit)
     {
-        const std::int64_t tail = tailVolatile();
-        const std::int64_t head = headVolatile();
+        const std::int64_t tail = m_buffer.getInt64Volatile(m_tailCounterIndex);
+        const std::int64_t head = m_buffer.getInt64Volatile(m_headCounterIndex);
         const std::int32_t available = (std::int32_t)(tail - head);
         int messagesRead = 0;
 
@@ -93,21 +97,30 @@ public:
             while ((bytesRead < contiguousBlockSize) && (messagesRead < messageCountLimit))
             {
                 const std::int32_t recordIndex = headIndex + bytesRead;
-                const std::int32_t msgLength = waitForMsgLengthVolatile(m_buffer, recordIndex);
-
-                const std::int32_t msgTypeId = msgType(m_buffer, recordIndex);
-
-                bytesRead += util::BitUtil::align(msgLength + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::ALIGNMENT);
-
-                if (msgTypeId != RecordDescriptor::PADDING_MSG_TYPE_ID)
+                const std::int32_t recordLength = m_buffer.getInt32Volatile(
+                    RecordDescriptor::lengthOffset(recordIndex));
+                if (recordLength <= 0)
                 {
-                    ++messagesRead;
-                    handler(msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex), msgLength);
+                    break;
                 }
+
+                bytesRead += util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+
+                const std::int32_t msgTypeId = m_buffer.getInt32(RecordDescriptor::typeOffset(recordIndex));
+                if (RecordDescriptor::PADDING_MSG_TYPE_ID == msgTypeId)
+                {
+                    continue;
+                }
+
+                ++messagesRead;
+                handler(
+                    msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
+                    recordLength - RecordDescriptor::HEADER_LENGTH);
             }
+
             // TODO: RAII for catching exceptions from handler call
-            zeroBuffer(m_buffer, headIndex, bytesRead);
-            headOrdered(head + bytesRead);
+            m_buffer.setMemory(headIndex, bytesRead, 0);
+            m_buffer.putInt64Ordered(m_headCounterIndex, head + bytesRead);
         }
 
         return messagesRead;
@@ -128,12 +141,12 @@ public:
         return m_buffer.getAndAddInt64(m_correlationIdCounterIndex, 1);
     }
 
-    inline void consumerHeartbeatTimeNs(std::int64_t time)
+    inline void consumerHeartbeatTime(std::int64_t time)
     {
         m_buffer.putInt64Ordered(m_consumerHeartbeatIndex, time);
     }
 
-    inline std::int64_t consumerHeartbeatTimeNs() const
+    inline std::int64_t consumerHeartbeatTime() const
     {
         return m_buffer.getInt64Volatile(m_consumerHeartbeatIndex);
     }
@@ -153,7 +166,7 @@ private:
 
     util::index_t claimCapacity(util::index_t requiredCapacity)
     {
-        const std::int64_t head = headVolatile();
+        const std::int64_t head = m_buffer.getInt64Volatile(m_headCounterIndex);
         const util::index_t headIndex = (util::index_t)head & m_mask;
 
         std::int64_t tail;
@@ -161,7 +174,7 @@ private:
         util::index_t padding;
         do
         {
-            tail = tailVolatile();
+            tail = m_buffer.getInt64Volatile(m_tailCounterIndex);
             const util::index_t availableCapacity = m_capacity - (util::index_t)(tail - head);
 
             if (requiredCapacity > availableCapacity)
@@ -171,42 +184,30 @@ private:
 
             padding = 0;
             tailIndex = (util::index_t)tail & m_mask;
-            const util::index_t bufferEndSize = m_capacity - tailIndex;
+            const util::index_t bufferEndLength = m_capacity - tailIndex;
 
-            if (requiredCapacity > bufferEndSize)
+            if (requiredCapacity > bufferEndLength)
             {
                 if (requiredCapacity > headIndex)
                 {
                     return INSUFFICIENT_CAPACITY;
                 }
 
-                padding = bufferEndSize;
+                padding = bufferEndLength;
             }
         }
         while (!m_buffer.compareAndSetInt64(m_tailCounterIndex, tail, tail + requiredCapacity + padding));
 
-        if (padding > 0)
+        if (0 != padding)
         {
-            writePaddingRecord(m_buffer, tailIndex, padding);
+            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(tailIndex), -padding);
+            m_buffer.putInt32(RecordDescriptor::typeOffset(tailIndex), RecordDescriptor::PADDING_MSG_TYPE_ID);
+            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(tailIndex), padding);
+
             tailIndex = 0;
         }
 
         return tailIndex;
-    }
-
-    inline std::int64_t tailVolatile() const
-    {
-        return m_buffer.getInt64Volatile(m_tailCounterIndex);
-    }
-
-    inline std::int64_t headVolatile() const
-    {
-        return m_buffer.getInt64Volatile(m_headCounterIndex);
-    }
-
-    inline void headOrdered(std::int64_t value)
-    {
-        m_buffer.putInt64Ordered(m_headCounterIndex, value);
     }
 
     inline void checkMsgLength(util::index_t length) const
@@ -216,51 +217,6 @@ private:
             throw util::IllegalArgumentException(
                 util::strPrintf("encoded message exceeds maxMsgLength of %d, length=%d", m_maxMsgLength, length), SOURCEINFO);
         }
-    }
-
-    inline static void writePaddingRecord(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, util::index_t padding)
-    {
-        msgType(buffer, recordIndex, RecordDescriptor::PADDING_MSG_TYPE_ID);
-        msgLengthOrdered(buffer, recordIndex, padding);
-    }
-
-    inline static void msgLengthOrdered(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, util::index_t length)
-    {
-        buffer.putInt32Ordered(RecordDescriptor::msgLengthOffset(recordIndex), length);
-    }
-
-    inline static void msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex, std::int32_t msgTypeId)
-    {
-        buffer.putInt32(RecordDescriptor::msgTypeOffset(recordIndex), msgTypeId);
-    }
-
-    inline static void writeMsg(
-        concurrent::AtomicBuffer& buffer, util::index_t recordIndex, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length)
-    {
-        buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
-    }
-
-    inline static std::int32_t waitForMsgLengthVolatile(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
-    {
-        std::int32_t msgLength;
-
-        do
-        {
-            msgLength = buffer.getInt32Volatile(RecordDescriptor::msgLengthOffset(recordIndex));
-        }
-        while (0 == msgLength);
-
-        return msgLength;
-    }
-
-    inline static std::int32_t msgType(concurrent::AtomicBuffer& buffer, util::index_t recordIndex)
-    {
-        return buffer.getInt32(RecordDescriptor::msgTypeOffset(recordIndex));
-    }
-
-    inline static void zeroBuffer(concurrent::AtomicBuffer& buffer, util::index_t position, util::index_t length)
-    {
-        buffer.setMemory(position, length, 0);
     }
 };
 

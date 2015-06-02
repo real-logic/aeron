@@ -45,7 +45,7 @@ public:
 
     inline std::int64_t timeOfLastDriverKeepaliveNs()
     {
-        return m_toDriverCommandBuffer.consumerHeartbeatTimeNs();
+        return m_toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)

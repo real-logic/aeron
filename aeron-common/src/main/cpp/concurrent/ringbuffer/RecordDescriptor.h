@@ -30,9 +30,9 @@ namespace aeron { namespace common { namespace concurrent { namespace ringbuffer
 *   0                   1                   2                   3
 *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-*  |R|                      Message Length                         |
+*  |R|                       Record Length                         |
 *  +-+-------------------------------------------------------------+
-*  |                         Message Type                          |
+*  |                              Type                             |
 *  +---------------------------------------------------------------+
 *  |                       Encoded Message                        ...
 * ...                                                              |
@@ -46,12 +46,12 @@ namespace RecordDescriptor {
     static const util::index_t ALIGNMENT = HEADER_LENGTH;
     static const std::int32_t PADDING_MSG_TYPE_ID = -1;
 
-    inline static util::index_t msgLengthOffset(util::index_t recordOffset)
+    inline static util::index_t lengthOffset(util::index_t recordOffset)
     {
         return recordOffset;
     }
 
-    inline static util::index_t msgTypeOffset(util::index_t recordOffset)
+    inline static util::index_t typeOffset(util::index_t recordOffset)
     {
         return recordOffset + sizeof(std::int32_t);
     }

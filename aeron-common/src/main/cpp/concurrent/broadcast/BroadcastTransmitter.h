@@ -32,7 +32,7 @@ public:
         m_capacity(buffer.getCapacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),
         m_maxMsgLength(RecordDescriptor::calculateMaxMessageLength(m_capacity)),
-        m_tailIntentCountIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
+        m_tailIntentCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
         m_tailCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_COUNTER_OFFSET),
         m_latestCounterIndex(m_capacity + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET)
     {
@@ -89,7 +89,7 @@ private:
     util::index_t m_capacity;
     util::index_t m_mask;
     util::index_t m_maxMsgLength;
-    util::index_t m_tailIntentCountIndex;
+    util::index_t m_tailIntentCounterIndex;
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
@@ -104,7 +104,7 @@ private:
 
     inline void signalTailIntent(AtomicBuffer& buffer, std::int64_t newTail)
     {
-        buffer.putInt64Ordered(m_tailIntentCountIndex, newTail);
+        buffer.putInt64Ordered(m_tailIntentCounterIndex, newTail);
         // store fence = release()
         atomic::release();
     }

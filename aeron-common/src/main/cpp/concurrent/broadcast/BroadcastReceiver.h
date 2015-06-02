@@ -32,7 +32,7 @@ public:
         m_buffer(buffer),
         m_capacity(buffer.getCapacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),
-        m_tailIntentCountIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
+        m_tailIntentCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
         m_tailCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_COUNTER_OFFSET),
         m_latestCounterIndex(m_capacity + BroadcastBufferDescriptor::LATEST_COUNTER_OFFSET),
         m_recordOffset(0),
@@ -65,7 +65,7 @@ public:
 
     inline std::int32_t length()
     {
-        return m_buffer.getInt32(RecordDescriptor::lengthOffset(m_recordOffset));
+        return m_buffer.getInt32(RecordDescriptor::lengthOffset(m_recordOffset)) - RecordDescriptor::HEADER_LENGTH;
     }
 
     inline AtomicBuffer& buffer()
@@ -92,16 +92,18 @@ public:
 
             m_cursor = cursor;
             m_nextRecord = cursor +
-                util::BitUtil::align(RecordDescriptor::HEADER_LENGTH +
-                    m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
+                util::BitUtil::align(
+                    m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)),
+                    RecordDescriptor::RECORD_ALIGNMENT);
 
             if (RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::typeOffset(recordOffset)))
             {
                 recordOffset = 0;
                 m_cursor = m_nextRecord;
                 m_nextRecord +=
-                    util::BitUtil::align(RecordDescriptor::HEADER_LENGTH +
-                        m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
+                    util::BitUtil::align(
+                        m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)),
+                        RecordDescriptor::RECORD_ALIGNMENT);
             }
 
             m_recordOffset = recordOffset;
@@ -113,7 +115,7 @@ public:
 
     inline bool validate()
     {
-        // TODO: load fence = acquire()
+        // load fence = acquire()
         atomic::acquire();
 
         return validate(m_cursor);
@@ -123,7 +125,7 @@ private:
     AtomicBuffer& m_buffer;
     util::index_t m_capacity;
     util::index_t m_mask;
-    util::index_t m_tailIntentCountIndex;
+    util::index_t m_tailIntentCounterIndex;
     util::index_t m_tailCounterIndex;
     util::index_t m_latestCounterIndex;
 
@@ -134,7 +136,7 @@ private:
 
     inline bool validate(std::int64_t cursor)
     {
-        return (cursor + m_capacity) > m_buffer.getInt64Volatile(m_tailIntentCountIndex);
+        return (cursor + m_capacity) > m_buffer.getInt64Volatile(m_tailIntentCounterIndex);
     }
 };
 

@@ -109,10 +109,10 @@ TEST_F(BroadcastReceiverTest, shouldReceiveFirstMessageFromBuffer)
     EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
         .Times(0);
 
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(length));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
@@ -142,17 +142,17 @@ TEST_F(BroadcastReceiverTest, shouldReceiveTwoMessagesFromBuffer)
     EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
         .Times(0);
 
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffsetOne)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffsetOne)))
         .Times(2)
         .WillRepeatedly(testing::Return(length));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffsetOne)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(recordOffsetOne)))
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffsetTwo)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffsetTwo)))
         .Times(2)
         .WillRepeatedly(testing::Return(length));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffsetTwo)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(recordOffsetTwo)))
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
@@ -191,10 +191,10 @@ TEST_F(BroadcastReceiverTest, shouldLateJoinTransmission)
         .Times(1)
         .WillOnce(testing::Return(latestRecord));
 
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(length));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 
@@ -229,26 +229,26 @@ TEST_F(BroadcastReceiverTest, shouldCopeWithPaddingRecordAndWrapOfBufferToNextRe
         .Times(1)
         .WillOnce(testing::Return(latestRecord));
 
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(catchupOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(catchupOffset)))
         .Times(1)
         .WillOnce(testing::Return(length));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(catchupOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(catchupOffset)))
         .Times(1)
         .WillOnce(testing::Return(MSG_TYPE_ID));
 
     const std::int32_t paddingOffset = (std::int32_t)catchupTail & (CAPACITY - 1);
     const std::int32_t recordOffset = (std::int32_t)(postPaddingTail - recordLength) & (CAPACITY - 1);
 
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(paddingOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(paddingOffset)))
         .Times(1)
         .WillOnce(testing::Return(0));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(paddingOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(paddingOffset)))
         .Times(1)
         .WillOnce(testing::Return(RecordDescriptor::PADDING_MSG_TYPE_ID));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(length));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(recordOffset)))
         .Times(1)
         .WillOnce(testing::Return(MSG_TYPE_ID));
 
@@ -280,10 +280,10 @@ TEST_F(BroadcastReceiverTest, shouldDealWithRecordBecomingInvalidDueToOverwrite)
         .WillOnce(testing::Return(tail));
     EXPECT_CALL(m_mockBuffer, getInt64(LATEST_COUNTER_INDEX))
         .Times(0);
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgLengthOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::lengthOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(length));
-    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+    EXPECT_CALL(m_mockBuffer, getInt32(RecordDescriptor::typeOffset(recordOffset)))
         .Times(2)
         .WillRepeatedly(testing::Return(MSG_TYPE_ID));
 

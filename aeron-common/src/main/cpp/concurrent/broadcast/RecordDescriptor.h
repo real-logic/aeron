@@ -27,9 +27,9 @@ namespace aeron { namespace common { namespace concurrent { namespace broadcast 
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |R|                      Message Length                         |
+ *  |R|                          Length                             |
  *  +-+-------------------------------------------------------------+
- *  |                         Message Type                          |
+ *  |                             Type                              |
  *  +---------------------------------------------------------------+
  *  |                       Encoded Message                        ...
  * ...                                                              |
@@ -40,8 +40,8 @@ namespace RecordDescriptor {
 
 static const std::int32_t PADDING_MSG_TYPE_ID = -1;
 
-static const util::index_t MSG_LENGTH_OFFSET = 0;
-static const util::index_t MSG_TYPE_OFFSET = 4;
+static const util::index_t LENGTH_OFFSET = 0;
+static const util::index_t TYPE_OFFSET = 4;
 
 static const util::index_t HEADER_LENGTH = 8;
 static const util::index_t RECORD_ALIGNMENT = HEADER_LENGTH;
@@ -51,14 +51,14 @@ inline static std::int32_t calculateMaxMessageLength(util::index_t capacity)
     return capacity / 8;
 }
 
-inline static util::index_t msgLengthOffset(util::index_t recordOffset)
+inline static util::index_t lengthOffset(util::index_t recordOffset)
 {
-    return recordOffset + MSG_LENGTH_OFFSET;
+    return recordOffset + LENGTH_OFFSET;
 }
 
-inline static util::index_t msgTypeOffset(util::index_t recordOffset)
+inline static util::index_t typeOffset(util::index_t recordOffset)
 {
-    return recordOffset + MSG_TYPE_OFFSET;
+    return recordOffset + TYPE_OFFSET;
 }
 
 inline static util::index_t msgOffset(util::index_t recordOffset)

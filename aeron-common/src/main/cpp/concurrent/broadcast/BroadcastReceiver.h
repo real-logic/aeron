@@ -55,7 +55,7 @@ public:
 
     inline std::int32_t typeId()
     {
-        return m_buffer.getInt32(RecordDescriptor::msgTypeOffset(m_recordOffset));
+        return m_buffer.getInt32(RecordDescriptor::typeOffset(m_recordOffset));
     }
 
     inline util::index_t offset()
@@ -65,7 +65,7 @@ public:
 
     inline std::int32_t length()
     {
-        return m_buffer.getInt32(RecordDescriptor::msgLengthOffset(m_recordOffset));
+        return m_buffer.getInt32(RecordDescriptor::lengthOffset(m_recordOffset));
     }
 
     inline AtomicBuffer& buffer()
@@ -93,15 +93,15 @@ public:
             m_cursor = cursor;
             m_nextRecord = cursor +
                 util::BitUtil::align(RecordDescriptor::HEADER_LENGTH +
-                    m_buffer.getInt32(RecordDescriptor::msgLengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
+                    m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
 
-            if (RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::msgTypeOffset(recordOffset)))
+            if (RecordDescriptor::PADDING_MSG_TYPE_ID == m_buffer.getInt32(RecordDescriptor::typeOffset(recordOffset)))
             {
                 recordOffset = 0;
                 m_cursor = m_nextRecord;
                 m_nextRecord +=
                     util::BitUtil::align(RecordDescriptor::HEADER_LENGTH +
-                        m_buffer.getInt32(RecordDescriptor::msgLengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
+                        m_buffer.getInt32(RecordDescriptor::lengthOffset(recordOffset)), RecordDescriptor::RECORD_ALIGNMENT);
             }
 
             m_recordOffset = recordOffset;

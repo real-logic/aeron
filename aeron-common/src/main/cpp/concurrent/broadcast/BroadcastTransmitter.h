@@ -56,15 +56,16 @@ public:
 
         std::int64_t currentTail = m_buffer.getInt64(m_tailCounterIndex);
         std::int32_t recordOffset = (std::int32_t) currentTail & m_mask;
-        const std::int32_t recordLength = util::BitUtil::align(length + RecordDescriptor::HEADER_LENGTH, RecordDescriptor::RECORD_ALIGNMENT);
-        const std::int64_t newTail = currentTail + recordLength;
+        const std::int32_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+        const std::int32_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::RECORD_ALIGNMENT);
+        const std::int64_t newTail = currentTail + alignedRecordLength;
         const std::int32_t toEndOfBuffer = m_capacity - recordOffset;
 
-        if (toEndOfBuffer < recordLength)
+        if (toEndOfBuffer < alignedRecordLength)
         {
             signalTailIntent(m_buffer, newTail + toEndOfBuffer);
 
-            insertPaddingRecord(m_buffer, recordOffset, toEndOfBuffer - RecordDescriptor::HEADER_LENGTH);
+            insertPaddingRecord(m_buffer, recordOffset, toEndOfBuffer);
 
             currentTail += toEndOfBuffer;
             recordOffset = 0;
@@ -74,13 +75,13 @@ public:
             signalTailIntent(m_buffer, newTail);
         }
 
-        m_buffer.putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length);
-        m_buffer.putInt32(RecordDescriptor::msgTypeOffset(recordOffset), msgTypeId);
+        m_buffer.putInt32(RecordDescriptor::lengthOffset(recordOffset), recordLength);
+        m_buffer.putInt32(RecordDescriptor::typeOffset(recordOffset), msgTypeId);
 
         m_buffer.putBytes(RecordDescriptor::msgOffset(recordOffset), srcBuffer, srcIndex, length);
 
         m_buffer.putInt64(m_latestCounterIndex, currentTail);
-        m_buffer.putInt64Ordered(m_tailCounterIndex, currentTail + recordLength);
+        m_buffer.putInt64Ordered(m_tailCounterIndex, currentTail + alignedRecordLength);
     }
 
 private:
@@ -104,14 +105,14 @@ private:
     inline void signalTailIntent(AtomicBuffer& buffer, std::int64_t newTail)
     {
         buffer.putInt64Ordered(m_tailIntentCountIndex, newTail);
-        // TODO: store fence = release()
+        // store fence = release()
         atomic::release();
     }
 
     inline static void insertPaddingRecord(AtomicBuffer& buffer, std::int32_t recordOffset, std::int32_t length)
     {
-        buffer.putInt32(RecordDescriptor::msgLengthOffset(recordOffset), length);
-        buffer.putInt32(RecordDescriptor::msgTypeOffset(recordOffset), RecordDescriptor::PADDING_MSG_TYPE_ID);
+        buffer.putInt32(RecordDescriptor::lengthOffset(recordOffset), length);
+        buffer.putInt32(RecordDescriptor::typeOffset(recordOffset), RecordDescriptor::PADDING_MSG_TYPE_ID);
     }
 };
 

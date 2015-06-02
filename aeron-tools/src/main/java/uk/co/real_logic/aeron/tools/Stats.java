@@ -55,17 +55,24 @@ import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 public class Stats
 {
-    private final AtomicBuffer labelsBuffer;
-    private final AtomicBuffer valuesBuffer;
-    private final StatsOutput output;
+    private CommonContext context = null;
+    private File cncFile = null;
+    private MappedByteBuffer cncByteBuffer = null;
+    private DirectBuffer metaDataBuffer = null;
+    private AtomicBuffer labelsBuffer = null;
+    private AtomicBuffer valuesBuffer = null;
+    private CountersManager countersManager = null;
+    private StatsOutput output = null;
 
+    private static final int LABEL_SIZE = CountersManager.LABEL_LENGTH;
     private static final int NUM_BASE_STATS = 22;
+    private static final int UNREGISTERED_LABEL_SIZE = CountersManager.UNREGISTERED_LABEL_LENGTH;
 
     public Stats(final StatsOutput output) throws Exception
     {
         this.output = output == null ? new StatsConsoleOutput() : output;
 
-        final File cncFile = CommonContext.newDefaultCncFile();
+        cncFile = CommonContext.newDefaultCncFile();
 
         final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
         final DirectBuffer metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
@@ -94,7 +101,7 @@ public class Stats
 
             while ((length = getLength(idx)) != 0)
             {
-                if (length != CountersManager.UNREGISTERED_LABEL_LENGTH)
+                if (length != LABEL_SIZE)
                 {
                     tmpKeys.add(getLabel(idx));
                     tmpVals.add(getValue(idx));
@@ -119,7 +126,7 @@ public class Stats
             while ((length = getLength(idx)) != 0)
             {
                 System.out.println(idx);
-                if (length != CountersManager.UNREGISTERED_LABEL_LENGTH)
+                if (length != UNREGISTERED_LABEL_SIZE)
                 {
                     tmpKeys.add(getLabel(idx));
                     tmpVals.add(getValue(idx));

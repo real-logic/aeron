@@ -286,7 +286,9 @@ private:
     inline void boundsCheck(util::index_t index, util::index_t length) const
     {
         if (index + length > m_length)
-            throw aeron::common::util::OutOfBoundsException(std::string("Index Out of Bounds. Index: ") + util::toString(index + length) + " Capacity: " + util::toString(m_length), SOURCEINFO);
+            throw aeron::common::util::OutOfBoundsException(
+                std::string("Index Out of Bounds. Index: ") +
+                    util::toString(index + length) + " Capacity: " + util::toString(m_length), SOURCEINFO);
     }
 };
 

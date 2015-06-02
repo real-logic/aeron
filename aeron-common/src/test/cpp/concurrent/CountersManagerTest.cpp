@@ -30,8 +30,8 @@ using namespace aeron::common::concurrent;
 using namespace aeron::common::util;
 
 static const std::int32_t NUMCOUNTERS = 4;
-static std::array<std::uint8_t, NUMCOUNTERS * CountersManager::LABEL_SIZE> labelsBuffer;
-static std::array<std::uint8_t, NUMCOUNTERS * CountersManager::COUNTER_SIZE> countersBuffer;
+static std::array<std::uint8_t, NUMCOUNTERS * CountersManager::LABEL_LENGTH> labelsBuffer;
+static std::array<std::uint8_t, NUMCOUNTERS * CountersManager::COUNTER_LENGTH> countersBuffer;
 
 static void clearBuffers()
 {

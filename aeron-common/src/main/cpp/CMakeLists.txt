@@ -19,8 +19,7 @@ SET(SOURCE
     util/CommandOption.cpp
     util/CommandOptionParser.cpp
     util/StringUtil.cpp
-    concurrent/AtomicCounter.cpp
-    concurrent/CountersManager.cpp)
+    concurrent/AtomicCounter.cpp)
 
 SET(HEADERS
     CncFileDescriptor.h

@@ -19,8 +19,12 @@
 #include <functional>
 #include <cstdint>
 #include <deque>
+#include <memory>
 
+#include <util/Exceptions.h>
+#include <util/StringUtil.h>
 #include <util/Index.h>
+#include <util/BitUtil.h>
 
 #include "AtomicBuffer.h"
 #include "AtomicCounter.h"
@@ -30,22 +34,91 @@ namespace aeron { namespace common { namespace concurrent {
 class CountersManager
 {
 public:
-    CountersManager(const AtomicBuffer& labelsBuffer, const AtomicBuffer& countersBuffer);
+    inline CountersManager(const AtomicBuffer& labelsBuffer, const AtomicBuffer& countersBuffer) :
+        m_countersBuffer(countersBuffer), m_labelsBuffer(labelsBuffer)
+    {
+    }
 
-    void forEach (const std::function<void(int, const std::string&)>& f);
+    void forEach (const std::function<void(int, const std::string&)>& f)
+    {
+        util::index_t labelsOffset = 0;
+        util::index_t size;
+        std::int32_t id = 0;
 
-    std::int32_t allocate(const std::string& label);
-    AtomicCounter::ptr_t newCounter(const std::string& label);
-    void free(std::int32_t counterId);
+        while (
+            (labelsOffset < (m_labelsBuffer.getCapacity() - (util::index_t)sizeof(std::int32_t))) &&
+                (size = m_labelsBuffer.getInt32(labelsOffset)) != 0)
+        {
+            if (size != UNREGISTERED_LABEL_LENGTH)
+            {
+                std::string label = m_labelsBuffer.getStringUtf8(labelsOffset);
+                f(id, label);
+            }
 
-    util::index_t counterOffset(std::int32_t counterId);
-    util::index_t labelOffset(std::int32_t counterId);
+            labelsOffset += LABEL_LENGTH;
+            id++;
+        }
+    }
 
-    static const util::index_t LABEL_SIZE = 1024;
-    static const util::index_t COUNTER_SIZE = 64;  // cache line size
+    std::int32_t allocate(const std::string& label)
+    {
+        std::int32_t id = counterId();
+        util::index_t labelsOffset = labelOffset(id);
+
+        if (label.length() > (LABEL_LENGTH - sizeof(std::int32_t)))
+        {
+            throw util::IllegalArgumentException("Label too long", SOURCEINFO);
+        }
+
+        if ((counterOffset(id) + COUNTER_LENGTH) > m_countersBuffer.getCapacity())
+        {
+            throw util::IllegalArgumentException("Unable to allocated counter, counter buffer is full", SOURCEINFO);
+        }
+
+        if ((labelsOffset + LABEL_LENGTH) > m_labelsBuffer.getCapacity())
+        {
+            throw util::IllegalArgumentException("Unable to allocate counter, labels buffer is full", SOURCEINFO);
+        }
+
+        m_labelsBuffer.putStringUtf8(labelsOffset, label);
+
+        return id;
+    }
+
+    inline AtomicCounter::ptr_t newCounter(const std::string& label)
+    {
+        return std::make_shared<AtomicCounter>(m_countersBuffer, allocate(label), *this);
+    }
+
+    void free(std::int32_t counterId)
+    {
+        util::index_t lsize = m_labelsBuffer.getInt32(labelOffset(counterId));
+        if (lsize == 0 || lsize == UNREGISTERED_LABEL_LENGTH)
+        {
+            throw util::IllegalArgumentException(
+                util::strPrintf("Attempt to free unallocated ID: %d", counterId), SOURCEINFO);
+        }
+
+        m_labelsBuffer.putInt32(labelOffset(counterId), UNREGISTERED_LABEL_LENGTH);
+        m_countersBuffer.putInt64Ordered(counterOffset(counterId), 0L);
+        m_freeList.push_back(counterId);
+    }
+
+    inline util::index_t counterOffset(std::int32_t counterId)
+    {
+        return counterId * COUNTER_LENGTH;
+    }
+
+    inline util::index_t labelOffset(std::int32_t counterId)
+    {
+        return counterId * LABEL_LENGTH;
+    }
+
+    static const util::index_t LABEL_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
+    static const util::index_t COUNTER_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
 
 private:
-    static const util::index_t UNREGISTERED_LABEL_SIZE = -1;
+    static const util::index_t UNREGISTERED_LABEL_LENGTH = -1;
 
     util::index_t m_highwaterMark = 0;
 
@@ -54,7 +127,19 @@ private:
     AtomicBuffer m_countersBuffer;
     AtomicBuffer m_labelsBuffer;
 
-    std::int32_t counterId ();
+    std::int32_t counterId()
+    {
+        if (m_freeList.empty())
+        {
+            return m_highwaterMark++;
+        }
+
+        std::int32_t id = m_freeList.front();
+        m_freeList.pop_front();
+        m_countersBuffer.putInt64Ordered(counterOffset(id), 0L);
+
+        return id;
+    }
 };
 
 }}}

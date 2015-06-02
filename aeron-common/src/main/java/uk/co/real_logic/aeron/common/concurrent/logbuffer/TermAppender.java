@@ -259,10 +259,7 @@ public class TermAppender extends LogBufferPartition
     }
 
     private int computeResultingOffset(
-        final UnsafeBuffer termBuffer,
-        final int frameOffset,
-        final int length,
-        final int capacity)
+        final UnsafeBuffer termBuffer, final int frameOffset, final int length, final int capacity)
     {
         int resultingOffset = frameOffset + length;
         if (resultingOffset > (capacity - HEADER_LENGTH))

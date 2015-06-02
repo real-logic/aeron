@@ -22,6 +22,7 @@
 #include <algorithm>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
+#include <concurrent/Atomic64.h>
 #include "RingBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
@@ -69,7 +70,9 @@ public:
 
         if (INSUFFICIENT_CAPACITY != recordIndex)
         {
-            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), -recordLength);
+            m_buffer.putInt32(RecordDescriptor::lengthOffset(recordIndex), -recordLength);
+            atomic::fence();
+
             m_buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
 
             m_buffer.putInt32(RecordDescriptor::typeOffset(recordIndex), msgTypeId);
@@ -200,7 +203,9 @@ private:
 
         if (0 != padding)
         {
-            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(tailIndex), -padding);
+            m_buffer.putInt32(RecordDescriptor::lengthOffset(tailIndex), -padding);
+            atomic::fence();
+
             m_buffer.putInt32(RecordDescriptor::typeOffset(tailIndex), RecordDescriptor::PADDING_MSG_TYPE_ID);
             m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(tailIndex), padding);
 

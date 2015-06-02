@@ -17,7 +17,10 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.UnsafeAccess;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteOrder;
 
 import static uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
@@ -285,7 +288,8 @@ public class TermAppender extends LogBufferPartition
     private static void applyDefaultHeader(
         final UnsafeBuffer buffer, final int frameOffset, final int frameLength, final MutableDirectBuffer defaultHeaderBuffer)
     {
-        frameLengthOrdered(buffer, frameOffset, -frameLength);
+        buffer.putInt(frameOffset, -frameLength, ByteOrder.LITTLE_ENDIAN);
+        UnsafeAccess.UNSAFE.storeFence();
 
         int headerOffset = SIZE_OF_INT;
         buffer.putInt(frameOffset + headerOffset, defaultHeaderBuffer.getInt(headerOffset));

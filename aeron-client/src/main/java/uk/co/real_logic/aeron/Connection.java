@@ -36,7 +36,6 @@ class Connection implements ManagedResource
 
     private final LogBuffers logBuffers;
     private final TermReader[] termReaders;
-    private final DataHandler dataHandler;
     private final Position subscriberPosition;
 
     public Connection(
@@ -44,14 +43,12 @@ class Connection implements ManagedResource
         final int sessionId,
         final long initialPosition,
         final long correlationId,
-        final DataHandler dataHandler,
         final Position subscriberPosition,
         final LogBuffers logBuffers)
     {
         this.termReaders = readers;
         this.correlationId = correlationId;
         this.sessionId = sessionId;
-        this.dataHandler = dataHandler;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
         final int capacity = termReaders[0].termBuffer().capacity();
@@ -71,7 +68,7 @@ class Connection implements ManagedResource
         return correlationId;
     }
 
-    public int poll(final int fragmentCountLimit)
+    public int poll(final DataHandler dataHandler, final int fragmentCountLimit)
     {
         final long position = subscriberPosition.get();
         final int activeIndex = indexByPosition(position, positionBitsToShift);

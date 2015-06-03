@@ -90,7 +90,7 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(0));
 
-        final int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(mockDataHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
@@ -116,7 +116,7 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(mockDataHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
@@ -143,7 +143,7 @@ public class ConnectionTest
 
         insertDataFrame(activeTermId, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(mockDataHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockDataHandler).onData(
@@ -159,8 +159,7 @@ public class ConnectionTest
 
     public Connection createConnection(final long initialPosition)
     {
-        return new Connection(
-            readers, SESSION_ID, initialPosition, CORRELATION_ID, mockDataHandler, position, logBuffers);
+        return new Connection(readers, SESSION_ID, initialPosition, CORRELATION_ID, position, logBuffers);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

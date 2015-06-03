@@ -117,9 +117,10 @@ public class Subscription implements AutoCloseable
 
             int i = startingIndex;
 
+            final DataHandler dataHandler = this.dataHandler;
             do
             {
-                fragmentRead += connections[i].poll(fragmentCountLimit);
+                fragmentRead += connections[i].poll(dataHandler, fragmentCountLimit);
 
                 if (++i == length)
                 {
@@ -170,8 +171,7 @@ public class Subscription implements AutoCloseable
         final Connection[] newArray = new Connection[oldLength + 1];
 
         System.arraycopy(oldArray, 0, newArray, 0, oldLength);
-        newArray[oldLength] = new Connection(
-            termReaders, sessionId, initialPosition, correlationId, dataHandler, position, logBuffers);
+        newArray[oldLength] = new Connection(termReaders, sessionId, initialPosition, correlationId, position, logBuffers);
 
         connections = newArray;
     }

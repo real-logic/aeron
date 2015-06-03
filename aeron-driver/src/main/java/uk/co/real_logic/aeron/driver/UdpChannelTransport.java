@@ -36,12 +36,12 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
-    private final DatagramChannel datagramChannel;
     private final UdpChannel udpChannel;
+    private final LossGenerator lossGenerator;
+    private final EventLogger logger;
+    private final DatagramChannel datagramChannel;
     private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
-    private final EventLogger logger;
-    private final LossGenerator lossGenerator;
     private SelectionKey selectionKey;
     private TransportPoller transportPoller;
 

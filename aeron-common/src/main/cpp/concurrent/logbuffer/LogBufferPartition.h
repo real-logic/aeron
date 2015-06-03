@@ -55,11 +55,6 @@ public:
         return m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_STATUS_OFFSET);
     }
 
-    inline bool compareAndSetStatus(std::int32_t expectedStatus, std::int32_t updateStatus)
-    {
-        return m_metaDataBuffer.compareAndSetInt32(LogBufferDescriptor::TERM_STATUS_OFFSET, expectedStatus, updateStatus);
-    }
-
     inline void statusOrdered(std::int32_t status)
     {
         m_metaDataBuffer.putInt32Ordered(LogBufferDescriptor::TERM_STATUS_OFFSET, status);
@@ -70,19 +65,14 @@ public:
         return std::min(m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET), m_capacity);
     }
 
-    inline std::int32_t highWaterMarkVolatile()
+    inline std::int32_t rawTailVolatile()
     {
-        return m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_HIGH_WATER_MARK_OFFSET);
+        return m_metaDataBuffer.getInt32Volatile(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET);
     }
 
     inline std::int32_t tail()
     {
         return std::min(m_metaDataBuffer.getInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET), m_capacity);
-    }
-
-    inline std::int32_t highWaterMark()
-    {
-        return m_metaDataBuffer.getInt32(LogBufferDescriptor::TERM_HIGH_WATER_MARK_OFFSET);
     }
 
 protected:

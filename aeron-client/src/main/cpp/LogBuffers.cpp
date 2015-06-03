@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <concurrent/logbuffer/LogBufferDescriptor.h>
-
 #include "LogBuffers.h"
 
 namespace aeron {
@@ -69,7 +67,7 @@ LogBuffers::LogBuffers(const char *filename)
 
             std::uint8_t *basePtr = m_memoryMappedFiles[i + 1]->getMemoryPtr();
 
-            m_buffers[i].wrap(basePtr + (i * termLength), termLength);
+            m_buffers[i].wrap(basePtr, termLength);
             m_buffers[i + LogBufferDescriptor::PARTITION_COUNT]
                 .wrap(metaDataBasePtr + (i * LogBufferDescriptor::TERM_META_DATA_LENGTH),
                     LogBufferDescriptor::TERM_META_DATA_LENGTH);

@@ -30,11 +30,6 @@ namespace LogBufferDescriptor {
 static const std::int32_t CLEAN = 0;
 static const std::int32_t NEEDS_CLEANING = 1;
 
-//static const util::index_t HIGH_WATER_MARK_OFFSET = 0;
-//static const util::index_t TAIL_COUNTER_OFFSET = sizeof(std::int32_t);
-//static const util::index_t STATUS_OFFSET = sizeof(std::int32_t) + util::BitUtil::CACHE_LINE_LENGTH;
-//static const util::index_t STATE_BUFFER_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
-
 static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
 
 static const int PARTITION_COUNT = 3;
@@ -62,21 +57,25 @@ static const int PARTITION_COUNT = 3;
  * </pre>
  */
 
-static const util::index_t TERM_HIGH_WATER_MARK_OFFSET = 0;
-static const util::index_t TERM_TAIL_COUNTER_OFFSET = sizeof(std::int32_t);
-static const util::index_t TERM_STATUS_OFFSET = sizeof(std::int32_t) + util::BitUtil::CACHE_LINE_LENGTH;
-static const util::index_t TERM_META_DATA_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
+static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::BitUtil::CACHE_LINE_LENGTH * 2);
+static const util::index_t TERM_STATUS_OFFSET = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 2;
+static const util::index_t TERM_META_DATA_LENGTH = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 4;
 
 /**
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                        Initial Term Id                        |
- *  +---------------------------------------------------------------+
  *  |                        Active Term Id                         |
  *  +---------------------------------------------------------------+
+ *  |                      Cache Line Padding                      ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
+ *  |                        Initial Term Id                        |
+ *  +---------------------------------------------------------------+
  *  |                  Default Frame Header Length                  |
+ *  +---------------------------------------------------------------+
+ *  |                          MTU Length                           |
  *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
@@ -93,7 +92,22 @@ static const util::index_t TERM_META_DATA_LENGTH = util::BitUtil::CACHE_LINE_LEN
  * </pre>
  */
 
-static const util::index_t LOG_META_DATA_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 4;
+static const util::index_t LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = util::BitUtil::CACHE_LINE_LENGTH * 2;
+
+#pragma pack(push)
+#pragma pack(4)
+struct LogMetaDataDefn
+{
+    std::int32_t activeTermId;
+    std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(activeTermId)];
+    std::int32_t initialTermId;
+    std::int32_t defaultFrameHeaderLength;
+    std::int32_t mtuLength;
+    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (3 * sizeof(initialTermId))];
+};
+#pragma pack(pop)
+
+static const util::index_t LOG_META_DATA_LENGTH = sizeof(LogMetaDataDefn) + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
 
 inline static void checkTermBuffer(AtomicBuffer &buffer)
 {

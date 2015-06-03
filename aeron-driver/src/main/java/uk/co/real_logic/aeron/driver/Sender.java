@@ -119,7 +119,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
         if (length > 0)
         {
-            int startingIndex = ++roundRobinIndex;
+            int startingIndex = roundRobinIndex++;
             if (startingIndex >= length)
             {
                 roundRobinIndex = startingIndex = 0;

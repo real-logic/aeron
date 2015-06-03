@@ -36,8 +36,13 @@ namespace aeron { namespace common { namespace command {
 * +---------------------------------------------------------------+
 * |                          Stream ID                            |
 * +---------------------------------------------------------------+
-* |      Channel   Length       |   Channel                     ...
-* |                                                             ...
+* |                          Position                             |
+* |                                                               |
+* +---------------------------------------------------------------+
+* |                        Channel Length                         |
+* +---------------------------------------------------------------+
+* |                           Channel                           ...
+* ...                                                             |
 * +---------------------------------------------------------------+
 */
 
@@ -48,6 +53,7 @@ struct ConnectionMessageDefn
     std::int64_t correlationId;
     std::int32_t sessionId;
     std::int32_t streamId;
+    std::int64_t position;
     struct
     {
         std::int32_t channelLength;
@@ -97,6 +103,17 @@ public:
     inline this_t& streamId(std::int32_t value)
     {
         m_struct.streamId = value;
+        return *this;
+    }
+
+    inline std::int64_t position() const
+    {
+        return m_struct.position;
+    }
+
+    inline this_t& position(std::int64_t value)
+    {
+        m_struct.position = value;
         return *this;
     }
 

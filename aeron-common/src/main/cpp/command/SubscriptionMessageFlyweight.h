@@ -24,7 +24,7 @@
 namespace aeron { namespace common { namespace command {
 
 /**
-* Control message for adding or removing a subscription.
+* Control message for adding a subscription.
 *
 * <p>
 * 0                   1                   2                   3

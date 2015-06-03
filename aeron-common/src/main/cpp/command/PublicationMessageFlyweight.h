@@ -25,7 +25,7 @@
 namespace aeron { namespace common { namespace command {
 
 /**
-* Control message for adding or removing a publication
+* Control message for adding a publication
 *
 * <p>
 * 0                   1                   2                   3

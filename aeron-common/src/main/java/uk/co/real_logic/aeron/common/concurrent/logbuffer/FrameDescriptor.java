@@ -73,6 +73,11 @@ public class FrameDescriptor
     public static final byte UNFRAGMENTED = (byte)(BEGIN_FRAG | END_FRAG);
 
     /**
+     * Offset within a frame at which the verion field begins
+     */
+    public static final int VERSION_OFFSET = DataHeaderFlyweight.VERSION_FIELD_OFFSET;
+
+    /**
      * Offset within a frame at which the flags field begins
      */
     public static final int FLAGS_OFFSET = DataHeaderFlyweight.FLAGS_FIELD_OFFSET;
@@ -139,6 +144,17 @@ public class FrameDescriptor
     }
 
     /**
+     * The buffer offset at which the version field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the version field begins.
+     */
+    public static int versionOffset(final int frameOffset)
+    {
+        return frameOffset + VERSION_OFFSET;
+    }
+
+    /**
      * The buffer offset at which the flags field begins.
      *
      * @param frameOffset at which the frame begins.
@@ -174,37 +190,61 @@ public class FrameDescriptor
     /**
      * Read the type of of the frame from header.
      *
-     * @param termBuffer  containing the frame.
+     * @param buffer      containing the frame.
      * @param frameOffset at which a frame begins.
      * @return the value of the frame type header.
      */
-    public static int frameType(final UnsafeBuffer termBuffer, final int frameOffset)
+    public static int frameVersion(final UnsafeBuffer buffer, final int frameOffset)
     {
-        return termBuffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN) & 0xFFFF;
+        return buffer.getByte(versionOffset(frameOffset));
+    }
+
+    /**
+     * Read the type of of the frame from header.
+     *
+     * @param buffer      containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @return the value of the frame type header.
+     */
+    public static int frameType(final UnsafeBuffer buffer, final int frameOffset)
+    {
+        return buffer.getShort(typeOffset(frameOffset), LITTLE_ENDIAN) & 0xFFFF;
     }
 
     /**
      * Is the frame starting at the frameOffset a padding frame at the end of a buffer?
      *
-     * @param termBuffer  containing the frame.
+     * @param buffer      containing the frame.
      * @param frameOffset at which a frame begins.
      * @return true if the frame is a padding frame otherwise false.
      */
-    public static boolean isPaddingFrame(final UnsafeBuffer termBuffer, final int frameOffset)
+    public static boolean isPaddingFrame(final UnsafeBuffer buffer, final int frameOffset)
     {
-        return termBuffer.getShort(typeOffset(frameOffset)) == PADDING_FRAME_TYPE;
+        return buffer.getShort(typeOffset(frameOffset)) == PADDING_FRAME_TYPE;
+    }
+
+    /**
+     * Get the length of a frame from the header.
+     *
+     * @param buffer      containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @return the value for the frame length.
+     */
+    public static int frameLength(final UnsafeBuffer buffer, final int frameOffset)
+    {
+        return buffer.getInt(frameOffset, LITTLE_ENDIAN);
     }
 
     /**
      * Get the length of a frame from the header as a volatile read.
      *
-     * @param termBuffer  containing the frame.
+     * @param buffer      containing the frame.
      * @param frameOffset at which a frame begins.
      * @return the value for the frame length.
      */
-    public static int frameLengthVolatile(final UnsafeBuffer termBuffer, final int frameOffset)
+    public static int frameLengthVolatile(final UnsafeBuffer buffer, final int frameOffset)
     {
-        int frameLength = termBuffer.getIntVolatile(frameOffset);
+        int frameLength = buffer.getIntVolatile(frameOffset);
 
         if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
         {
@@ -217,53 +257,53 @@ public class FrameDescriptor
     /**
      * Write the length header for a frame in a memory ordered fashion.
      *
-     * @param termBuffer  containing the frame.
+     * @param buffer      containing the frame.
      * @param frameOffset at which a frame begins.
      * @param frameLength field to be set for the frame.
      */
-    public static void frameLengthOrdered(final UnsafeBuffer termBuffer, final int frameOffset, int frameLength)
+    public static void frameLengthOrdered(final UnsafeBuffer buffer, final int frameOffset, int frameLength)
     {
         if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
         {
             frameLength = Integer.reverseBytes(frameLength);
         }
 
-        termBuffer.putIntOrdered(frameOffset, frameLength);
+        buffer.putIntOrdered(frameOffset, frameLength);
     }
 
     /**
      * Write the type field for a frame.
      *
-     * @param termBuffer  containing the frame.
+     * @param buffer      containing the frame.
      * @param frameOffset at which a frame begins.
      * @param type        type value for the frame.
      */
-    public static void frameType(final UnsafeBuffer termBuffer, final int frameOffset, final int type)
+    public static void frameType(final UnsafeBuffer buffer, final int frameOffset, final int type)
     {
-        termBuffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
+        buffer.putShort(typeOffset(frameOffset), (short)type, LITTLE_ENDIAN);
     }
 
     /**
      * Write the flags field for a frame.
      *
-     * @param termBuffer  containing the frame.
+     * @param buffer      containing the frame.
      * @param frameOffset at which a frame begins.
      * @param flags       value for the frame.
      */
-    public static void frameFlags(final UnsafeBuffer termBuffer, final int frameOffset, final byte flags)
+    public static void frameFlags(final UnsafeBuffer buffer, final int frameOffset, final byte flags)
     {
-        termBuffer.putByte(flagsOffset(frameOffset), flags);
+        buffer.putByte(flagsOffset(frameOffset), flags);
     }
 
     /**
      * Write the term offset field for a frame.
      *
-     * @param termBuffer  containing the frame.
+     * @param buffer      containing the frame.
      * @param frameOffset at which a frame begins.
      * @param termOffset  value for the frame.
      */
-    public static void frameTermOffset(final UnsafeBuffer termBuffer, final int frameOffset, final int termOffset)
+    public static void frameTermOffset(final UnsafeBuffer buffer, final int frameOffset, final int termOffset)
     {
-        termBuffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
+        buffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
     }
 }

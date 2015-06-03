@@ -31,13 +31,15 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameLength;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameVersion;
+
 public abstract class UdpChannelTransport implements AutoCloseable
 {
     private final DatagramChannel datagramChannel;
     private final UdpChannel udpChannel;
     private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
-    private final HeaderFlyweight header = new HeaderFlyweight();
     private final EventLogger logger;
     private final LossGenerator lossGenerator;
     private SelectionKey selectionKey;
@@ -53,8 +55,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
         this.udpChannel = udpChannel;
         this.lossGenerator = lossGenerator;
         this.logger = logger;
-
-        header.wrap(receiveBuffer, 0);
 
         try
         {
@@ -228,7 +228,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveByteBuffer.capacity();
     }
 
-    protected abstract int dispatch(int headerType, UnsafeBuffer receiveBuffer, int length, InetSocketAddress srcAddress);
+    protected abstract int dispatch(final UnsafeBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress);
 
     /**
      * Attempt to receive waiting data.
@@ -253,7 +253,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
                 if (isValidFrame(receiveBuffer, length))
                 {
-                    bytesReceived = dispatch(header.headerType(), receiveBuffer, length, srcAddress);
+                    bytesReceived = dispatch(receiveBuffer, length, srcAddress);
                 }
             }
         }
@@ -270,9 +270,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
     {
         boolean isFrameValid = true;
 
-        if (header.version() != HeaderFlyweight.CURRENT_VERSION)
+        if (frameVersion(receiveBuffer, 0) != HeaderFlyweight.CURRENT_VERSION)
         {
-            logger.log(EventCode.INVALID_VERSION, receiveBuffer, 0, header.frameLength());
+            logger.log(EventCode.INVALID_VERSION, receiveBuffer, 0, frameLength(receiveBuffer, 0));
             isFrameValid = false;
         }
         else if (length < HeaderFlyweight.HEADER_LENGTH)

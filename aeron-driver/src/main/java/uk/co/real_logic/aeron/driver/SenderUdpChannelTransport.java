@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_NAK;
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM;
 
@@ -67,11 +68,10 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
         statusMessage.wrap(receiveBuffer(), 0);
     }
 
-    protected int dispatch(
-        final int messageType, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
-        switch (messageType)
+        switch (frameType(buffer, 0))
         {
             case HDR_TYPE_NAK:
                 nakMessageHandler.onMessage(nakMessage);

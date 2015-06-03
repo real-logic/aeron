@@ -22,6 +22,7 @@ import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
 
 import java.net.InetSocketAddress;
 
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.*;
 
 /**
@@ -63,19 +64,18 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
         setupHeader.wrap(receiveBuffer(), 0);
     }
 
-    protected int dispatch(
-        final int headerType, final UnsafeBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress)
+    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int bytesReceived = 0;
-        switch (headerType)
+        switch (frameType(buffer, 0))
         {
             case HDR_TYPE_PAD:
             case HDR_TYPE_DATA:
-                bytesReceived = dataPacketHandler.onDataPacket(dataHeader, receiveBuffer, length, srcAddress);
+                bytesReceived = dataPacketHandler.onDataPacket(dataHeader, buffer, length, srcAddress);
                 break;
 
             case HDR_TYPE_SETUP:
-                setupMessageHandler.onSetupMessage(setupHeader, receiveBuffer, length, srcAddress);
+                setupMessageHandler.onSetupMessage(setupHeader, buffer, length, srcAddress);
                 break;
         }
 

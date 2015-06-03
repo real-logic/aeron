@@ -105,7 +105,7 @@ public class Subscription implements AutoCloseable
 
         final Connection[] connections = this.connections;
         final int length = connections.length;
-        int fragmentRead = 0;
+        int fragmentsRead = 0;
 
         if (length > 0)
         {
@@ -120,7 +120,7 @@ public class Subscription implements AutoCloseable
             final DataHandler dataHandler = this.dataHandler;
             do
             {
-                fragmentRead += connections[i].poll(dataHandler, fragmentCountLimit);
+                fragmentsRead += connections[i].poll(dataHandler, fragmentCountLimit);
 
                 if (++i == length)
                 {
@@ -130,7 +130,7 @@ public class Subscription implements AutoCloseable
             while (i != startingIndex);
         }
 
-        return fragmentRead;
+        return fragmentsRead;
     }
 
     /**

@@ -39,9 +39,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
     private final HeaderFlyweight header = new HeaderFlyweight();
     private final EventLogger logger;
-    private final boolean multicast;
     private final LossGenerator lossGenerator;
-
     private SelectionKey selectionKey;
     private TransportPoller transportPoller;
 
@@ -69,12 +67,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 datagramChannel.bind(new InetSocketAddress(endPointSocketAddress.getPort()));
                 datagramChannel.join(endPointSocketAddress.getAddress(), localInterface);
                 datagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
-                multicast = true;
             }
             else
             {
                 datagramChannel.bind(bindAddress);
-                multicast = false;
             }
 
             if (0 != Configuration.SOCKET_SNDBUF_LENGTH)
@@ -197,7 +193,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public boolean isMulticast()
     {
-        return multicast;
+        return udpChannel.isMulticast();
     }
 
     /**

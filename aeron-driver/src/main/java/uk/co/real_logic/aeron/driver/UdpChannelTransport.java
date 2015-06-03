@@ -42,7 +42,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final boolean multicast;
     private final LossGenerator lossGenerator;
 
-    private SelectionKey registeredKey;
+    private SelectionKey selectionKey;
     private TransportPoller registeredTransportPoller;
 
     public UdpChannelTransport(
@@ -118,7 +118,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     public void registerForRead(final TransportPoller transportPoller)
     {
         registeredTransportPoller = transportPoller;
-        registeredKey = transportPoller.registerForRead(this);
+        selectionKey = transportPoller.registerForRead(this);
     }
 
     /**
@@ -172,9 +172,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
     {
         try
         {
-            if (null != registeredKey)
+            if (null != selectionKey)
             {
-                registeredKey.cancel();
+                selectionKey.cancel();
             }
 
             if (null != registeredTransportPoller)

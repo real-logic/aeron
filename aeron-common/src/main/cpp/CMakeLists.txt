@@ -39,7 +39,6 @@ SET(HEADERS
     command/CorrelatedMessageFlyweight.h
     command/PublicationMessageFlyweight.h
     command/PublicationBuffersReadyFlyweight.h
-    command/ReadyFlyweight.h
     command/RemoveMessageFlyweight.h
     command/SubscriptionMessageFlyweight.h
     common/AgentRunner.h

@@ -38,14 +38,7 @@ namespace aeron { namespace common { namespace command {
 * +---------------------------------------------------------------+
 * |                           Stream ID                           |
 * +---------------------------------------------------------------+
-* |                   Position Indicator Offset                   |
-* +---------------------------------------------------------------+
-* |                           MTU Length                          |
-* +---------------------------------------------------------------+
-* |                         Channel Length                        |
-* +---------------------------------------------------------------+
-* |                            Channel                          ...
-* ...                                                             |
+* |                   Position Limit Counter Id                   |
 * +---------------------------------------------------------------+
 * |                         Log File Length                       |
 * +---------------------------------------------------------------+
@@ -61,12 +54,12 @@ struct PublicationBuffersReadyDefn
     std::int64_t correlationId;
     std::int32_t sessionId;
     std::int32_t streamId;
-    std::int32_t positionIndicatorOffset;
-    std::int32_t mtuLength;
-    struct {
-        std::int32_t channelLength;
-        std::int8_t  channelData[1];
-    } channel;
+    std::int32_t positionLimitCounterId;
+    struct
+    {
+        std::int32_t logFileLength;
+        std::int8_t  logFileData[1];
+    } logFile;
 };
 #pragma pack(pop)
 
@@ -113,60 +106,31 @@ public:
         return *this;
     }
 
-    inline std::int32_t positionIndicatorOffset() const
+    inline std::int32_t positionLimitCounterId() const
     {
-        return m_struct.positionIndicatorOffset;
+        return m_struct.positionLimitCounterId;
     }
 
-    inline this_t& positionIndicatorOffset(std::int32_t value)
+    inline this_t& positionLimitCounterId(std::int32_t value)
     {
-        m_struct.positionIndicatorOffset = value;
-        return *this;
-    }
-
-    inline std::int32_t mtuLength() const
-    {
-        return m_struct.mtuLength;
-    }
-
-    inline this_t& mtuLength(std::int32_t value)
-    {
-        m_struct.mtuLength = value;
-        return *this;
-    }
-
-    inline std::string channel() const
-    {
-        return stringGet(offsetof(PublicationBuffersReadyDefn, channel));
-    }
-
-    inline this_t& channel(const std::string &value)
-    {
-        stringPut(offsetof(PublicationBuffersReadyDefn, channel), value);
+        m_struct.positionLimitCounterId = value;
         return *this;
     }
 
     inline std::string logFileName() const
     {
-        return stringGet(logFileNameOffset());
+        return stringGet(offsetof(PublicationBuffersReadyDefn, logFile));
     }
 
     inline this_t& logFileName(const std::string& value)
     {
-        stringPut(logFileNameOffset(), value);
+        stringPut(offsetof(PublicationBuffersReadyDefn, logFile), value);
         return *this;
     }
 
     std::int32_t length() const
     {
-        const util::index_t offset = logFileNameOffset();
-        return offset + stringGetLength(offset) + sizeof(std::int32_t);
-    }
-
-private:
-    inline util::index_t logFileNameOffset() const
-    {
-        return offsetof(PublicationBuffersReadyDefn, channel.channelData) + m_struct.channel.channelLength;
+        return offsetof(PublicationBuffersReadyDefn, logFile.logFileData) + m_struct.logFile.logFileLength;
     }
 };
 

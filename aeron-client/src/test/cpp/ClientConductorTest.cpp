@@ -42,7 +42,6 @@ static const std::string CHANNEL = "udp://localhost:40123";
 static const std::int32_t STREAM_ID = 10;
 static const std::int32_t SESSION_ID = 200;
 static const std::int32_t POSITION_COUNTER_OFFSET = 0;
-static const std::int32_t MTU_LENGTH = 16 * 1024;
 static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
 static const std::int64_t LOG_FILE_LENGTH = LogBufferDescriptor::computeLogLength(TERM_LENGTH);
 
@@ -150,7 +149,7 @@ TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
 
-    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, m_logFileName, id);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -172,7 +171,7 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
         {
         });
 
-    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, m_logFileName, id);
 
     {
         std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
@@ -208,7 +207,7 @@ TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
     const PublicationBuffersReadyFlyweight message(m_toClientsBuffer, 0);
 
-    m_conductor.onNewPublication(CHANNEL, STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, MTU_LENGTH, m_logFileName, id);
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, POSITION_COUNTER_OFFSET, m_logFileName, id);
 
     std::shared_ptr<Publication> pub1 = m_conductor.findPublication(id);
     std::shared_ptr<Publication> pub2 = m_conductor.findPublication(id);

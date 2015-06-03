@@ -22,8 +22,6 @@
 #include <util/StringUtil.h>
 #include <common/Flyweight.h>
 #include <common/TermHelper.h>
-#include "ReadyFlyweight.h"
-
 
 namespace aeron { namespace common { namespace command {
 
@@ -45,97 +43,37 @@ namespace aeron { namespace common { namespace command {
 * +---------------------------------------------------------------+
 * |                           Stream ID                           |
 * +---------------------------------------------------------------+
-* |                           Term ID                             |
+* |                   Subscriber Position Count                   |
 * +---------------------------------------------------------------+
-* |                   Position Indicators Count                   |
+* |                         Log File Length                       |
 * +---------------------------------------------------------------+
-* |                          File Offset 0                        |
+* |                          Log File Name                      ...
+* ...                                                             |
 * +---------------------------------------------------------------+
-* |                          File Offset 1                        |
+* |                         source info Length                    |
 * +---------------------------------------------------------------+
-* |                          File Offset 2                        |
+* |                         source info Name                    ...
+* ...                                                             |
 * +---------------------------------------------------------------+
-* |                          File Offset 3                        |
+* |                      Subscriber Position Id 0                 |
 * +---------------------------------------------------------------+
-* |                          File Offset 4                        |
+* |                         Registration Id 0                     |
+* |                                                               |
 * +---------------------------------------------------------------+
-* |                          File Offset 5                        |
+* |                     Subscriber Position Id 1                  |
 * +---------------------------------------------------------------+
-* |                             Length 0                          |
-* +---------------------------------------------------------------+
-* |                             Length 1                          |
-* +---------------------------------------------------------------+
-* |                             Length 2                          |
-* +---------------------------------------------------------------+
-* |                             Length 3                          |
-* +---------------------------------------------------------------+
-* |                             Length 4                          |
-* +---------------------------------------------------------------+
-* |                             Length 5                          |
-* +---------------------------------------------------------------+
-* |                          Location 1 Start                     |
-* +---------------------------------------------------------------+
-* |                          Location 2 Start                     |
-* +---------------------------------------------------------------+
-* |                          Location 3 Start                     |
-* +---------------------------------------------------------------+
-* |                          Location 4 Start                     |
-* +---------------------------------------------------------------+
-* |                          Location 5 Start                     |
-* +---------------------------------------------------------------+
-* |                     Source Information Start                  |
-* +---------------------------------------------------------------+
-* |                           Channel Start                       |
-* +---------------------------------------------------------------+
-* |                           Channel End                         |
-* +---------------------------------------------------------------+
-* |                            Location 0                       ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                            Location 1                       ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                            Location 2                       ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                            Location 3                       ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                            Location 4                       ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                            Location 5                       ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                            Channel                          ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                     Position Indicator Id 0                 ...
-* +---------------------------------------------------------------+
-* |                         Registration Id 0                   ...
-* |                                                             ...
-* +---------------------------------------------------------------+
-* |                     Position Indicator Id 1                 ...
-* +---------------------------------------------------------------+
-* |                         Registration Id 1                   ...
-* |                                                             ...
+* |                         Registration Id 1                     |
+* |                                                               |
 * +---------------------------------------------------------------+
 * |                                                             ...
 * Up to "Position Indicators Count" entries of this form
 */
 
-
 #pragma pack(push)
 #pragma pack(4)
 struct ConnectionReadyDefn
 {
-    static const std::int32_t NUM_FILES = 6;
-
-    static const std::int32_t PAYLOAD_BUFFER_COUNT = common::TermHelper::BUFFER_COUNT * 2;
-    static const std::int32_t SOURCE_INFORMATION_INDEX = PAYLOAD_BUFFER_COUNT;
-    static const std::int32_t CHANNEL_INDEX = SOURCE_INFORMATION_INDEX + 1;
-
-    struct PositionIndicator
+    struct SubscriberPosition
     {
         std::int32_t indicatorId;
         std::int64_t registrationId;
@@ -145,16 +83,16 @@ struct ConnectionReadyDefn
     std::int64_t joiningPosition;
     std::int32_t sessionId;
     std::int32_t streamId;
-    std::int32_t termId;
-    std::int32_t positionIndicatorsCount;
-    std::int32_t fileOffset[NUM_FILES];
-    std::int32_t length[NUM_FILES];
-    std::int32_t locationStart[NUM_FILES + 3];
+    std::int32_t subscriberPositionCount;
+    struct
+    {
+        std::int32_t logFileLength;
+        std::int8_t logFileData[1];
+    } logFile;
 };
 #pragma pack(pop)
 
-class ConnectionReadyFlyweight : public common::Flyweight<ConnectionReadyDefn>,
-                                 public ReadyFlyweight<ConnectionReadyFlyweight>
+class ConnectionReadyFlyweight : public common::Flyweight<ConnectionReadyDefn>
 {
 public:
     typedef ConnectionReadyFlyweight this_t;
@@ -162,80 +100,6 @@ public:
     inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
         : common::Flyweight<ConnectionReadyDefn>(buffer, offset)
     {
-    }
-
-    inline std::int32_t bufferOffset(std::int32_t index) const
-    {
-        return m_struct.fileOffset[index];
-    }
-
-    inline this_t& bufferOffset(std::int32_t index, std::int32_t value)
-    {
-        m_struct.fileOffset[index] = value;
-        return *this;
-    }
-
-    inline std::int32_t bufferLength(std::int32_t index) const
-    {
-        return m_struct.length[index];
-    }
-
-    inline this_t& bufferLength(std::int32_t index, std::int32_t value)
-    {
-        m_struct.length[index] = value;
-        return *this;
-    }
-
-    inline std::string location(std::int32_t index) const
-    {
-        std::int32_t offset;
-        if (index == 0)
-            offset = (std::int32_t)sizeof(ConnectionReadyDefn);
-        else
-            offset = locationOffset(index);
-
-        std::int32_t length = locationOffset(index+1);
-
-        return stringGetWithoutLength(offset, length);
-    }
-
-    inline this_t& location(std::int32_t index, const std::string &value)
-    {
-        std::int32_t offset;
-        if (index == 0)
-            offset = (std::int32_t)sizeof(ConnectionReadyDefn);
-        else
-            offset = locationOffset(index);
-
-        if (offset == 0)
-            throw util::IllegalStateException(util::strPrintf("Previous location been hasn't been set yet at index %d", index), SOURCEINFO);
-
-        offset += stringPutWithoutLength(offset, value);
-        locationOffset(index + 1, offset);
-
-        return *this;
-    }
-
-    inline std::string sourceInfo() const
-    {
-        return location(ConnectionReadyDefn::SOURCE_INFORMATION_INDEX);
-    }
-
-    inline this_t& sourceInfo(const std::string &value)
-    {
-        location(ConnectionReadyDefn::SOURCE_INFORMATION_INDEX, value);
-        return *this;
-    }
-
-    inline std::string channel() const
-    {
-        return location(ConnectionReadyDefn::CHANNEL_INDEX);
-    }
-
-    inline this_t& channel(const std::string &value)
-    {
-        location(ConnectionReadyDefn::CHANNEL_INDEX, value);
-        return *this;
     }
 
     inline std::int64_t correlationId() const
@@ -282,68 +146,68 @@ public:
         return *this;
     }
 
-    inline std::int32_t termId() const
+    inline std::int32_t subscriberPositionCount() const
     {
-        return m_struct.termId;
+        return m_struct.subscriberPositionCount;
     }
 
-    inline this_t& termId(std::int32_t value)
+    inline this_t& subscriberPositionCount(std::int32_t value)
     {
-        m_struct.termId = value;
+        m_struct.subscriberPositionCount = value;
         return *this;
     }
 
-    inline std::int32_t positionIndicatorsCount() const
+    inline std::string logFileName() const
     {
-        return m_struct.positionIndicatorsCount;
+        return stringGet(offsetof(ConnectionReadyDefn, logFile));
     }
 
-    inline this_t& positionIndicatorsCount(std::int32_t value)
+    inline this_t& logFileName(const std::string& value)
     {
-        m_struct.positionIndicatorsCount = value;
+        stringPut(offsetof(ConnectionReadyDefn, logFile), value);
         return *this;
     }
 
-    inline this_t& positionIndicator(std::int32_t index, const ConnectionReadyDefn::PositionIndicator& value)
+    inline std::string sourceInfo() const
     {
-        overlayStruct<ConnectionReadyDefn::PositionIndicator>(positionIndicatorOffset(index)) = value;
+        return stringGet(sourceInfoOffset());
+    }
+
+    inline this_t& sourceInfo(const std::string& value)
+    {
+        stringPut(sourceInfoOffset(), value);
         return *this;
     }
 
-    inline ConnectionReadyDefn::PositionIndicator positionIndicator(std::int32_t index)
+    inline this_t& subscriberPosition(std::int32_t index, const ConnectionReadyDefn::SubscriberPosition& value)
     {
-        return overlayStruct<ConnectionReadyDefn::PositionIndicator>(positionIndicatorOffset(index));
+        overlayStruct<ConnectionReadyDefn::SubscriberPosition>(subscriberPositionOffset(index)) = value;
+        return *this;
+    }
+
+    inline const ConnectionReadyDefn::SubscriberPosition subscriberPosition(std::int32_t index)
+    {
+        return overlayStruct<ConnectionReadyDefn::SubscriberPosition>(subscriberPositionOffset(index));
     }
 
     inline std::int32_t length()
     {
-        return locationOffset(ConnectionReadyDefn::CHANNEL_INDEX + 1) + positionIndicatorsCount() * sizeof(ConnectionReadyDefn::PositionIndicator);
+        return subscriberPositionOffset(subscriberPositionCount());
     }
 
 private:
-    inline std::int32_t channelEnd()
+
+    inline util::index_t sourceInfoOffset() const
     {
-        return locationOffset(ConnectionReadyDefn::CHANNEL_INDEX + 1);
+        return offsetof(ConnectionReadyDefn, logFile.logFileData) + m_struct.logFile.logFileLength;
     }
 
-    inline std::int32_t positionIndicatorOffset(std::int32_t index)
+    inline util::index_t subscriberPositionOffset(int index) const
     {
-        std::int32_t chanEnd = channelEnd();
+        const util::index_t offset = sourceInfoOffset();
+        const util::index_t startOfPositions = offset + stringGetLength(offset) + (util::index_t)sizeof(std::int32_t);
 
-        if (chanEnd == 0)
-            throw util::IllegalStateException(util::strPrintf("Channel must be written before PositionIndicator: %d", index), SOURCEINFO);
-
-        return chanEnd + index * sizeof(ConnectionReadyDefn::PositionIndicator);
-    }
-
-    inline std::int32_t locationOffset(std::int32_t index) const
-    {
-        return m_struct.locationStart[index];
-    }
-
-    inline void locationOffset(std::int32_t index, std::int32_t value)
-    {
-        m_struct.locationStart[index] = value;
+        return startOfPositions + (index * (util::index_t)sizeof(ConnectionReadyDefn::SubscriberPosition));
     }
 };
 

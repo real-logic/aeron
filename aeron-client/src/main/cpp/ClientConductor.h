@@ -89,11 +89,9 @@ public:
     void releaseSubscription(std::int64_t correlationId);
 
     void onNewPublication(
-        const std::string& channel,
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int32_t limitPositionIndicatorOffset,
-        std::int32_t mtuLength,
+        std::int32_t positionLimitCounterId,
         const std::string& logFileName,
         std::int64_t correlationId);
 

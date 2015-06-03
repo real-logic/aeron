@@ -50,11 +50,9 @@ public:
                         const PublicationBuffersReadyFlyweight publicationReady(buffer, offset);
 
                         m_driverListener.onNewPublication(
-                            publicationReady.channel(),
                             publicationReady.streamId(),
                             publicationReady.sessionId(),
-                            publicationReady.positionIndicatorOffset(),
-                            publicationReady.mtuLength(),
+                            publicationReady.positionLimitCounterId(),
                             publicationReady.logFileName(),
                             publicationReady.correlationId());
                     };

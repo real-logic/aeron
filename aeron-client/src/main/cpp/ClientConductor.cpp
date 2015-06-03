@@ -157,11 +157,9 @@ void ClientConductor::releaseSubscription(std::int64_t correlationId)
 }
 
 void ClientConductor::onNewPublication(
-    const std::string &channel,
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int32_t limitPositionIndicatorOffset,
-    std::int32_t mtuLength,
+    std::int32_t positionLimitCounterId,
     const std::string &logFileName,
     std::int64_t correlationId)
 {
@@ -177,9 +175,9 @@ void ClientConductor::onNewPublication(
     {
         // TODO: create log buffers, etc. and set (*it).m_buffers to hold them
         (*it).m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
-    }
 
-    m_onNewPublicationHandler(channel, streamId, sessionId, correlationId);
+        m_onNewPublicationHandler((*it).m_channel, streamId, sessionId, correlationId);
+    }
 }
 
 }

@@ -107,15 +107,15 @@ public class Subscription implements AutoCloseable
         final int length = connections.length;
         int fragmentRead = 0;
 
-        int startingIndex = ++roundRobinIndex;
-        if (startingIndex >= length)
-        {
-            roundRobinIndex = startingIndex = 0;
-        }
-
         if (length > 0)
         {
-           int i = startingIndex;
+            int startingIndex = ++roundRobinIndex;
+            if (startingIndex >= length)
+            {
+                roundRobinIndex = startingIndex = 0;
+            }
+
+            int i = startingIndex;
 
             do
             {
@@ -201,11 +201,10 @@ public class Subscription implements AutoCloseable
 
         for (int i = 0; i < oldLength; i++)
         {
-            final Connection connection = oldArray[i];
-            if (connection.correlationId() == correlationId)
+            if (oldArray[i].correlationId() == correlationId)
             {
                 index = i;
-                removedConnection = connection;
+                removedConnection = oldArray[i];
             }
         }
 

@@ -43,7 +43,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final LossGenerator lossGenerator;
 
     private SelectionKey selectionKey;
-    private TransportPoller registeredTransportPoller;
+    private TransportPoller transportPoller;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -117,7 +117,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public void registerForRead(final TransportPoller transportPoller)
     {
-        registeredTransportPoller = transportPoller;
+        this.transportPoller = transportPoller;
         selectionKey = transportPoller.registerForRead(this);
     }
 
@@ -177,9 +177,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 selectionKey.cancel();
             }
 
-            if (null != registeredTransportPoller)
+            if (null != transportPoller)
             {
-                registeredTransportPoller.cancelRead(this);
+                transportPoller.cancelRead(this);
             }
 
             datagramChannel.close();

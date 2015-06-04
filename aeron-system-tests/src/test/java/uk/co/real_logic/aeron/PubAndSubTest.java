@@ -74,7 +74,7 @@ public class PubAndSubTest
         publishingClient = Aeron.connect(publishingAeronContext);
         subscribingClient = Aeron.connect(subscribingAeronContext);
         publication = publishingClient.addPublication(channel, STREAM_ID, SESSION_ID);
-        subscription = subscribingClient.addSubscription(channel, STREAM_ID, dataHandler);
+        subscription = subscribingClient.addSubscription(channel, STREAM_ID);
     }
 
     @After
@@ -120,7 +120,7 @@ public class PubAndSubTest
             () -> fragmentsRead[0] > 0,
             (i) ->
             {
-                fragmentsRead[0] += subscription.poll(10);
+                fragmentsRead[0] += subscription.poll(dataHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -158,7 +158,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -200,7 +200,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -232,7 +232,7 @@ public class PubAndSubTest
             () -> fragmentsRead[0] == 9,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(10);
+                fragmentsRead[0] += subscription.poll(dataHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -284,7 +284,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -330,7 +330,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -374,7 +374,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -391,7 +391,7 @@ public class PubAndSubTest
             () -> fragmentsRead[0] > 0,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(10);
+                fragmentsRead[0] += subscription.poll(dataHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -434,7 +434,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -483,7 +483,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] >= numMessagesPerBatch,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -542,7 +542,7 @@ public class PubAndSubTest
             () -> fragmentsRead[0] >= messagesToReceive,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(10);
+                fragmentsRead[0] += subscription.poll(dataHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -591,7 +591,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -600,7 +600,7 @@ public class PubAndSubTest
 
         subscription.close();
         stage[0] = 2;
-        subscription = subscribingClient.addSubscription(channel, STREAM_ID, dataHandler);
+        subscription = subscribingClient.addSubscription(channel, STREAM_ID);
 
         newConnectionLatch.await();
 
@@ -616,7 +616,7 @@ public class PubAndSubTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscription.poll(10);
+                    fragmentsRead[0] += subscription.poll(dataHandler, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -660,7 +660,7 @@ public class PubAndSubTest
             () -> fragmentsRead[0] > numFramesToExpect,
             (j) ->
             {
-                fragmentsRead[0] += subscription.poll(10);
+                fragmentsRead[0] += subscription.poll(dataHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,

@@ -129,8 +129,8 @@ public class MultiDriverTest
         launch();
 
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID, SESSION_ID);
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerA);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerB);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
         Thread.sleep(20); // allow for connections to be established
     }
@@ -147,7 +147,7 @@ public class MultiDriverTest
         launch();
 
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID, SESSION_ID);
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerA);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
 
         for (int i = 0; i < numMessagesToSendPreJoin; i++)
         {
@@ -161,14 +161,14 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(10);
+                    fragmentsRead[0] += subscriptionA.poll(dataHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerB);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
         // wait until new subscriber gets new connection indication
         newConnectionLatch.await();
@@ -185,7 +185,7 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(10);
+                    fragmentsRead[0] += subscriptionA.poll(dataHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -196,7 +196,7 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionB.poll(10);
+                    fragmentsRead[0] += subscriptionB.poll(dataHandlerB, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,

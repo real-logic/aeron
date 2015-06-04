@@ -73,20 +73,20 @@ public class SubscriptionTest
             when(readers[i].termBuffer()).thenReturn(termBuffer);
         }
 
-        subscription = new Subscription(conductor, dataHandler, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
+        subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
     }
 
     @Test(expected = IllegalStateException.class)
     public void shouldEnsureTheSubscriptionIsOpenWhenPolling()
     {
         subscription.close();
-        subscription.poll(FRAGMENT_COUNT_LIMIT);
+        subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT);
     }
 
     @Test
     public void shouldReadNothingWithNoConnections()
     {
-        assertThat(subscription.poll(1), is(0));
+        assertThat(subscription.poll(dataHandler, 1), is(0));
     }
 
     @Test
@@ -94,7 +94,7 @@ public class SubscriptionTest
     {
         onTermBuffersMapped(SESSION_ID_1);
 
-        assertThat(subscription.poll(1), is(0));
+        assertThat(subscription.poll(dataHandler, 1), is(0));
     }
 
     @Test
@@ -111,7 +111,7 @@ public class SubscriptionTest
                 return 1;
             });
 
-        assertThat(subscription.poll(FRAGMENT_COUNT_LIMIT), is(1));
+        assertThat(subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT), is(1));
         verify(dataHandler).onData(
             eq(atomicReadBuffer),
             eq(HEADER_LENGTH),
@@ -134,7 +134,7 @@ public class SubscriptionTest
                 return 1;
             });
 
-        assertThat(subscription.poll(FRAGMENT_COUNT_LIMIT), is(2));
+        assertThat(subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT), is(2));
     }
 
     private void onTermBuffersMapped(final int sessionId)

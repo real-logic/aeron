@@ -51,26 +51,26 @@ public class MultiSubscriberTest
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());
              final Publication publication = client.addPublication(CHANNEL_1, STREAM_ID);
-             final Subscription subscriptionOne = client.addSubscription(CHANNEL_1, STREAM_ID, adapterOne);
-             final Subscription subscriptionTwo = client.addSubscription(CHANNEL_2, STREAM_ID, adapterTwo))
+             final Subscription subscriptionOne = client.addSubscription(CHANNEL_1, STREAM_ID);
+             final Subscription subscriptionTwo = client.addSubscription(CHANNEL_2, STREAM_ID))
         {
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
 
-            assertThat(subscriptionOne.poll(FRAGMENT_COUNT_LIMIT), is(0));
-            assertThat(subscriptionTwo.poll(FRAGMENT_COUNT_LIMIT), is(0));
+            assertThat(subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT), is(0));
+            assertThat(subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT), is(0));
 
             while (publication.offer(srcBuffer) < 0L)
             {
                 Thread.yield();
             }
 
-            while (subscriptionOne.poll(FRAGMENT_COUNT_LIMIT) == 0)
+            while (subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT) == 0)
             {
                 Thread.yield();
             }
 
-            while (subscriptionTwo.poll(FRAGMENT_COUNT_LIMIT) == 0)
+            while (subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT) == 0)
             {
                 Thread.yield();
             }

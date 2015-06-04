@@ -78,11 +78,11 @@ public class RateSubscriber
         // The Aeron and Subscription classes implement "AutoCloseable", so their
         // resources will be automatically cleaned up at the end of this try block.
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             // Receive data on subscription in a separate thread
             final Future future = executor.submit(
-                () -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+                () -> SamplesUtil.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             reporter.run();
 

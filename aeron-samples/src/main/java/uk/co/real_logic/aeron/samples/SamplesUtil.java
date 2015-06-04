@@ -33,27 +33,30 @@ public class SamplesUtil
     /**
      * Return a reusable, parameterised event loop that calls a default idler when no messages are received
      *
-     * @param limit   passed to {@link Subscription#poll(int)}
-     * @param running indication for loop
+     * @param dataHandler to be called back for each message.
+     * @param limit       passed to {@link Subscription#poll(DataHandler, int)}
+     * @param running     indication for loop
      * @return loop function
      */
-    public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
+    public static Consumer<Subscription> subscriberLoop(
+        final DataHandler dataHandler, final int limit, final AtomicBoolean running)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        return subscriberLoop(limit, running, idleStrategy);
+        return subscriberLoop(dataHandler, limit, running, idleStrategy);
     }
 
     /**
      * Return a reusable, parameterized event loop that calls and idler when no messages are received
      *
-     * @param limit        passed to {@link Subscription#poll(int)}
+     * @param dataHandler  to be called back for each message.
+     * @param limit        passed to {@link Subscription#poll(DataHandler, int)}
      * @param running      indication for loop
      * @param idleStrategy to use for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
-        final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
+        final DataHandler dataHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
     {
         return
             (subscription) ->
@@ -62,7 +65,7 @@ public class SamplesUtil
                 {
                     while (running.get())
                     {
-                        final int fragmentsRead = subscription.poll(limit);
+                        final int fragmentsRead = subscription.poll(dataHandler, limit);
                         idleStrategy.idle(fragmentsRead);
                     }
                 }

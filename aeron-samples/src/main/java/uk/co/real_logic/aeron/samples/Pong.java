@@ -57,15 +57,17 @@ public class Pong
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
+
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
-             final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID,
-                 new FragmentAssemblyAdapter(
-                     (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length))))
+             final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
         {
+            final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(
+                (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
+
             while (running.get())
             {
-                final int fragmentsRead = pingSubscription.poll(FRAME_COUNT_LIMIT);
+                final int fragmentsRead = pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT);
                 idleStrategy.idle(fragmentsRead);
             }
 

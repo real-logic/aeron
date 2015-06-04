@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.CncFileDescriptor;
 import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.agrona.*;
 import uk.co.real_logic.agrona.concurrent.*;
@@ -155,12 +154,11 @@ public final class Aeron implements AutoCloseable
      *
      * @param channel  for receiving the messages known to the media layer.
      * @param streamId within the channel scope.
-     * @param handler  to be called back for each message received.
      * @return the {@link Subscription} for the channel and streamId pair.
      */
-    public Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
+    public Subscription addSubscription(final String channel, final int streamId)
     {
-        return conductor.addSubscription(channel, streamId, handler);
+        return conductor.addSubscription(channel, streamId);
     }
 
     private Aeron start()

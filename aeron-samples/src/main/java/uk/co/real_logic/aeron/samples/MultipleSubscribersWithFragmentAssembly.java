@@ -68,8 +68,8 @@ public class MultipleSubscribersWithFragmentAssembly
         // The Aeron and Subscription classes both implement "AutoCloseable" and will
         // automatically clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
-             final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
+             final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1);
+             final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2))
         {
             // Initialize a backoff strategy to avoid excessive spinning
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
@@ -78,8 +78,8 @@ public class MultipleSubscribersWithFragmentAssembly
             // Try to read the data for both the subscribers
             while (running.get())
             {
-                final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
-                final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead1 = subscription1.poll(dataHandler1, FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead2 = subscription2.poll(dataHandler2, FRAGMENT_COUNT_LIMIT);
                 // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
                 // use if no messages were received.
                 idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
@@ -143,8 +143,9 @@ public class MultipleSubscribersWithFragmentAssembly
 
                 if (length != 10000)
                 {
-                    System.out.format("Received message was not assembled properly; received length was %d," +
-                        " but was expecting 10000%n", length);
+                    System.out.format(
+                        "Received message was not assembled properly; received length was %d, but was expecting 10000%n",
+                        length);
                 }
             };
     }
@@ -169,8 +170,9 @@ public class MultipleSubscribersWithFragmentAssembly
 
                 if (length != 9000)
                 {
-                    System.out.format("Received message was not assembled properly; received length was %d," +
-                        " but was expecting 9000%n", length);
+                    System.out.format(
+                        "Received message was not assembled properly; received length was %d, but was expecting 9000%n",
+                        length);
                 }
             };
     }

@@ -71,7 +71,7 @@ public class FragmentedMessageTest
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());
              final Publication publication = client.addPublication(channel, STREAM_ID);
-             final Subscription subscription = client.addSubscription(channel, STREAM_ID, adapter))
+             final Subscription subscription = client.addSubscription(channel, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength() * 4]);
             final int offset = 0;
@@ -91,7 +91,7 @@ public class FragmentedMessageTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.poll(FRAGMENT_COUNT_LIMIT);
+                numFragments += subscription.poll(adapter, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 

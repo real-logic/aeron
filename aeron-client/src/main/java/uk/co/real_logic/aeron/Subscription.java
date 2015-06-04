@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
- * to the {@link DataHandler} provided at creation time.
+ * to the {@link DataHandler}.
  * <p>
  * By default fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * It is an applications responsibility to {@link #poll} the Subscriber for new messages.
  * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
- * @see Aeron#addSubscription(String, int, DataHandler)
+ *
  * @see FragmentAssemblyAdapter
  */
 public class Subscription implements AutoCloseable
@@ -53,17 +53,10 @@ public class Subscription implements AutoCloseable
     private final String channel;
     private final ClientConductor clientConductor;
     private volatile Connection[] connections = EMPTY_ARRAY;
-    private final DataHandler dataHandler;
 
-    Subscription(
-        final ClientConductor conductor,
-        final DataHandler dataHandler,
-        final String channel,
-        final int streamId,
-        final long registrationId)
+    Subscription(final ClientConductor conductor, final String channel, final int streamId, final long registrationId)
     {
         this.clientConductor = conductor;
-        this.dataHandler = dataHandler;
         this.channel = channel;
         this.streamId = streamId;
         this.registrationId = registrationId;
@@ -90,16 +83,15 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Read waiting data and deliver to {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler}s.
-     *
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU side then it will come
      * as a series of fragments ordered withing a session.
      *
+     * @param dataHandler        callback for handling each message as it is read.
      * @param fragmentCountLimit number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
      * @throws IllegalStateException if the subscription is closed.
      */
-    public int poll(final int fragmentCountLimit)
+    public int poll(final DataHandler dataHandler, final int fragmentCountLimit)
     {
         ensureOpen();
 
@@ -117,7 +109,6 @@ public class Subscription implements AutoCloseable
 
             int i = startingIndex;
 
-            final DataHandler dataHandler = this.dataHandler;
             do
             {
                 fragmentsRead += connections[i].poll(dataHandler, fragmentCountLimit);

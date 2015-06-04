@@ -36,9 +36,6 @@ public class AeronLatencyUnderLoadSubscriber
     private final BufferClaim bufferClaim;
     private String pubChannel = "udp://localhost:44444";
     private String reflectChannel = "udp://localhost:55555";
-    private Aeron.Context ctx = null;
-    private FragmentAssemblyAdapter dataHandler = null;
-    private Aeron aeron = null;
     private final int pubStreamId = 11;
     private final int subStreamId = 10;
     private volatile boolean running = true;
@@ -51,31 +48,34 @@ public class AeronLatencyUnderLoadSubscriber
         }
         catch (final ParseException ex)
         {
-           throw new RuntimeException(ex);
+            throw new RuntimeException(ex);
         }
-        ctx = new Aeron.Context();
-        dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
-        aeron = Aeron.connect(ctx);
-        System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
-        pub = aeron.addPublication(reflectChannel, pubStreamId);
+        final Aeron.Context ctx = new Aeron.Context();
+        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
 
-        final Subscription sub = aeron.addSubscription(pubChannel, subStreamId, dataHandler);
-        bufferClaim = new BufferClaim();
+        try (final Aeron aeron = Aeron.connect(ctx);
+             final Publication publication = aeron.addPublication(reflectChannel, pubStreamId);
+             final Subscription sub = aeron.addSubscription(pubChannel, subStreamId))
+        {
+            System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
+            pub = publication;
 
-        while (running)
-        {
-            sub.poll(1);
-        }
+            bufferClaim = new BufferClaim();
 
-        try
-        {
-            Thread.sleep(500);
+            while (running)
+            {
+                sub.poll(dataHandler, 1);
+            }
+
+            try
+            {
+                Thread.sleep(500);
+            }
+            catch (final InterruptedException e)
+            {
+                e.printStackTrace();
+            }
         }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-        aeron.close();
     }
 
     public void msgHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)

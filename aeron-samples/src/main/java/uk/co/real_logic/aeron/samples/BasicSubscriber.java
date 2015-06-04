@@ -70,9 +70,9 @@ public class BasicSubscriber
         // The Aeron and Subscription classes implement "AutoCloseable" and will automatically
         // clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+            SamplesUtil.subscriberLoop(dataHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
             System.out.println("Shutting down...");
         }

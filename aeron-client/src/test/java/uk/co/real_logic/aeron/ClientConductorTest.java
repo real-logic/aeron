@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.common.command.*;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
@@ -86,7 +85,6 @@ public class ClientConductorTest
 
     private DriverProxy driverProxy;
     private ClientConductor conductor;
-    private DataHandler dataHandler = mock(DataHandler.class);
     private NewConnectionHandler mockNewConnectionHandler = mock(NewConnectionHandler.class);
     private InactiveConnectionHandler mockInactiveConnectionHandler = mock(InactiveConnectionHandler.class);
     private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
@@ -221,16 +219,12 @@ public class ClientConductorTest
     public void closingPublicationShouldNotifyMediaDriver() throws Exception
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY,
-            publicationReadyBuffer,
-            (buffer) -> publicationReady.length());
+            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -241,23 +235,17 @@ public class ClientConductorTest
     public void closingPublicationShouldPurgeCache() throws Exception
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY,
-            publicationReadyBuffer,
-            (buffer) -> publicationReady.length());
+            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
         final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         firstPublication.close();
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY,
-            publicationReadyBuffer,
-            (buffer) -> publicationReady.length());
+            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
         final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
@@ -268,9 +256,7 @@ public class ClientConductorTest
     public void shouldFailToClosePublicationOnMediaDriverError()
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY,
-            publicationReadyBuffer,
-            (buffer) -> publicationReady.length());
+            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
@@ -321,9 +307,7 @@ public class ClientConductorTest
     public void publicationOnlyRemovedOnLastClose() throws Exception
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY,
-            publicationReadyBuffer,
-            (buffer) -> publicationReady.length());
+            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
         conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
@@ -333,9 +317,7 @@ public class ClientConductorTest
         verify(driverProxy, never()).removePublication(CORRELATION_ID);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -346,9 +328,7 @@ public class ClientConductorTest
     public void closingPublicationDoesNotRemoveOtherPublications() throws Exception
     {
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_PUBLICATION_READY,
-            publicationReadyBuffer,
-            (buffer) -> publicationReady.length());
+            ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
         final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
 
@@ -367,9 +347,7 @@ public class ClientConductorTest
         conductor.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
 
         whenReceiveBroadcastOnMessage(
-            ControlProtocolEvents.ON_OPERATION_SUCCESS,
-            correlatedMessageBuffer,
-            (buffer) -> CorrelatedMessageFlyweight.LENGTH);
+            ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
 
         publication.close();
 
@@ -421,7 +399,7 @@ public class ClientConductorTest
                 return CorrelatedMessageFlyweight.LENGTH;
             });
 
-        conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
+        conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         verify(driverProxy).addSubscription(CHANNEL, STREAM_ID_1);
     }
@@ -438,7 +416,7 @@ public class ClientConductorTest
                 return CorrelatedMessageFlyweight.LENGTH;
             });
 
-        final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
+        final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS,
@@ -457,7 +435,7 @@ public class ClientConductorTest
     @Test(expected = DriverTimeoutException.class)
     public void addSubscriptionShouldTimeoutWithoutOperationSuccessful()
     {
-        conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
+        conductor.addSubscription(CHANNEL, STREAM_ID_1);
     }
 
     @Test(expected = RegistrationException.class)
@@ -480,7 +458,7 @@ public class ClientConductorTest
                 return errorMessage.frameLength();
             });
 
-        conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
+        conductor.addSubscription(CHANNEL, STREAM_ID_1);
     }
 
     @Test
@@ -495,7 +473,7 @@ public class ClientConductorTest
                 return CorrelatedMessageFlyweight.LENGTH;
             });
 
-        conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
+        conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onNewConnection(STREAM_ID_1, SESSION_ID_1, 0L, SESSION_ID_1 + "-log", connectionReady, CORRELATION_ID);
 
@@ -514,7 +492,7 @@ public class ClientConductorTest
                 return CorrelatedMessageFlyweight.LENGTH;
             });
 
-        final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1, dataHandler);
+        final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onNewConnection(STREAM_ID_1, SESSION_ID_1, 0L, SESSION_ID_1 + "-log", connectionReady, CORRELATION_ID);
 

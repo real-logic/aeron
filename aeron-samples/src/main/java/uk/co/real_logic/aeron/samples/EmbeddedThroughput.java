@@ -66,10 +66,11 @@ public class EmbeddedThroughput
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron aeron = Aeron.connect(context);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
-            executor.execute(() -> SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            executor.execute(
+                () -> SamplesUtil.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 

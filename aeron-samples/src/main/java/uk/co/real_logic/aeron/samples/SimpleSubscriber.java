@@ -76,7 +76,7 @@ public class SimpleSubscriber
         // The Aeron and Subscription classes implement AutoCloseable, and will automatically
         // clean up resources when this try block is finished.
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(channel, streamId, dataHandler))
+             final Subscription subscription = aeron.addSubscription(channel, streamId))
         {
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                 100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
@@ -87,17 +87,13 @@ public class SimpleSubscriber
                 // poll delivers messages to the dataHandler as they arrive
                 // and returns number of fragments read, or 0
                 // if no data is available.
-                final int fragmentsRead = subscription.poll(fragmentLimitCount);
+                final int fragmentsRead = subscription.poll(dataHandler, fragmentLimitCount);
                 // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
                 // use if no messages were received.
                 idleStrategy.idle(fragmentsRead);
             }
 
             System.out.println("Shutting down...");
-        }
-        finally
-        {
-            ctx.close();
         }
     }
 }

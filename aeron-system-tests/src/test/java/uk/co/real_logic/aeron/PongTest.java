@@ -69,10 +69,10 @@ public class PongTest
         pongClient = Aeron.connect(pongAeronContext);
 
         pingPublication = pingClient.addPublication(PING_URI, PING_STREAM_ID);
-        pingSubscription = pongClient.addSubscription(PING_URI, PING_STREAM_ID, this::pingHandler);
+        pingSubscription = pongClient.addSubscription(PING_URI, PING_STREAM_ID);
 
         pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
-        pongSubscription = pingClient.addSubscription(PONG_URI, PONG_STREAM_ID, pongHandler);
+        pongSubscription = pingClient.addSubscription(PONG_URI, PONG_STREAM_ID);
     }
 
     @After
@@ -119,7 +119,7 @@ public class PongTest
             () -> fragmentsRead[0] > 0,
             (i) ->
             {
-                fragmentsRead[0] += pingSubscription.poll(10);
+                fragmentsRead[0] += pingSubscription.poll(this::pingHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -131,7 +131,7 @@ public class PongTest
             () -> fragmentsRead[0] > 0,
             (i) ->
             {
-                fragmentsRead[0] += pongSubscription.poll(10);
+                fragmentsRead[0] += pongSubscription.poll(pongHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,

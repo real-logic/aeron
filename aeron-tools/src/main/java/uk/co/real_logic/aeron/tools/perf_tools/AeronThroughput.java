@@ -49,10 +49,7 @@ public class AeronThroughput
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     public static void printRate(
-        final double messagesPerSec,
-        final double bytesPerSec,
-        final long totalMessages,
-        final long totalBytes)
+        final double messagesPerSec, final double bytesPerSec, final long totalMessages, final long totalBytes)
     {
     }
 
@@ -61,17 +58,16 @@ public class AeronThroughput
         return (buffer, offset, length, header) -> reporter.onMessage(1, length);
     }
 
-    public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
+    public static Consumer<Subscription> subscriberLoop(
+        final DataHandler dataHandler, final int limit, final AtomicBoolean running)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        return subscriberLoop(limit, running, idleStrategy);
+        return subscriberLoop(dataHandler, limit, running, idleStrategy);
     }
 
     public static Consumer<Subscription> subscriberLoop(
-        final int limit,
-        final AtomicBoolean running,
-        final IdleStrategy idleStrategy)
+        final DataHandler dataHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
     {
         return
             (subscription) ->
@@ -80,7 +76,7 @@ public class AeronThroughput
                 {
                     while (running.get())
                     {
-                        final int fragmentsRead = subscription.poll(limit);
+                        final int fragmentsRead = subscription.poll(dataHandler, limit);
                         idleStrategy.idle(fragmentsRead);
                     }
                 }
@@ -127,10 +123,11 @@ public class AeronThroughput
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron aeron = Aeron.connect(context);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
-            executor.execute(() -> AeronThroughput.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            executor.execute(
+                () -> AeronThroughput.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final long start = System.currentTimeMillis();
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)

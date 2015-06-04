@@ -78,13 +78,13 @@ public class Ping
             pongConnectionLatch = new CountDownLatch(1);
 
             try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
             {
                 pongConnectionLatch.await();
 
                 for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
                 {
-                    sendPingAndReceivePong(publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(dataHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
                 }
             }
 
@@ -92,7 +92,7 @@ public class Ping
             pongConnectionLatch = new CountDownLatch(1);
 
             try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
             {
                 pongConnectionLatch.await();
                 Thread.sleep(1000);
@@ -103,7 +103,7 @@ public class Ping
                     HISTOGRAM.reset();
                     System.gc();
 
-                    sendPingAndReceivePong(publication, subscription, NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(dataHandler, publication, subscription, NUMBER_OF_MESSAGES);
                     System.out.println("Histogram of RTT latencies in microseconds.");
 
                     HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -116,7 +116,7 @@ public class Ping
     }
 
     private static void sendPingAndReceivePong(
-        final Publication publication, final Subscription subscription, final int numMessages)
+        final DataHandler dataHandler, final Publication publication, final Subscription subscription, final int numMessages)
     {
         final IdleStrategy idleStrategy = new NoOpIdleStrategy();
 
@@ -128,7 +128,7 @@ public class Ping
             }
             while (publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-            while (subscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+            while (subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 idleStrategy.idle(0);
             }

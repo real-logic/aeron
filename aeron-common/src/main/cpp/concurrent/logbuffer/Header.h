@@ -25,16 +25,9 @@ namespace aeron { namespace common { namespace concurrent { namespace logbuffer 
 
 namespace DataHeader {
 
-/*
- * Aeron Data Frame Header
- *
- * https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-frame
- */
-
-static const util::index_t VERSION_FIELD_OFFSET = 0;
-static const util::index_t FLAGS_FIELD_OFFSET = 1;
-static const util::index_t TYPE_FIELD_OFFSET = 2;
-static const util::index_t FRAME_LENGTH_FIELD_OFFSET = 4;
+static const util::index_t VERSION_FIELD_OFFSET = 4;
+static const util::index_t FLAGS_FIELD_OFFSET = 5;
+static const util::index_t TYPE_FIELD_OFFSET = 6;
 static const util::index_t TERM_OFFSET_FIELD_OFFSET = 8;
 static const util::index_t SESSION_ID_FIELD_OFFSET = 12;
 static const util::index_t STREAM_ID_FIELD_OFFSET = 16;
@@ -48,12 +41,23 @@ static const util::index_t LENGTH = DATA_OFFSET;
 class Header
 {
 public:
-    Header(AtomicBuffer& termBuffer) :
-        m_buffer(termBuffer), m_offset(0)
+    Header(std::int32_t initialTermId, AtomicBuffer& termBuffer) :
+        m_buffer(termBuffer), m_offset(0), m_initialTermId(initialTermId)
     {
+        m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(termBuffer.getCapacity());
     }
 
-    inline util::index_t offset()
+    inline std::int32_t initialTermId() const
+    {
+        return m_initialTermId;
+    }
+
+    inline void initialTermId(std::int32_t initialTermId)
+    {
+        m_initialTermId = initialTermId;
+    }
+
+    inline util::index_t offset() const
     {
         return m_offset;
     }
@@ -63,7 +67,7 @@ public:
         m_offset = offset;
     }
 
-    inline AtomicBuffer& buffer()
+    inline AtomicBuffer& buffer() const
     {
         return m_buffer;
     }
@@ -76,7 +80,7 @@ public:
     inline std::int32_t frameLength()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + DataHeader::FRAME_LENGTH_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset);
     }
 
     inline std::int32_t sessionId()
@@ -114,8 +118,10 @@ public:
     }
 
 private:
-    AtomicBuffer&m_buffer;
+    AtomicBuffer& m_buffer;
     util::index_t m_offset;
+    std::int32_t m_initialTermId;
+    std::int32_t m_positionBitsToShift;
 };
 
 }}}}

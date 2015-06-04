@@ -33,10 +33,10 @@ namespace aeron { namespace common { namespace concurrent { namespace logbuffer 
 *   0                   1                   2                   3
 *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
 *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+*  |R|                       Frame Length                          |
+*  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
 *  |  Version      |B|E| Flags     |             Type              |
 *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-------------------------------+
-*  |R|                       Frame Length                          |
-*  +-+-------------------------------------------------------------+
 *  |R|                       Term Offset                           |
 *  +-+-------------------------------------------------------------+
 *  |                      Additional Fields                       ...
@@ -60,28 +60,22 @@ static const std::uint8_t BEGIN_FRAG = 0x80;
 static const std::uint8_t END_FRAG = 0x40;
 static const std::uint8_t UNFRAGMENTED = BEGIN_FRAG | END_FRAG;
 
-static const util::index_t BASE_HEADER_LENGTH = 12;
+static const util::index_t HEADER_LENGTH = 24;
 
-static const util::index_t VERSION_OFFSET = 0;
-static const util::index_t FLAGS_OFFSET = 1;
-static const util::index_t TYPE_OFFSET = 2;
-static const util::index_t LENGTH_OFFSET = 4;
+static const util::index_t VERSION_OFFSET = 4;
+static const util::index_t FLAGS_OFFSET = 5;
+static const util::index_t TYPE_OFFSET = 6;
+static const util::index_t LENGTH_OFFSET = 0;
 static const util::index_t TERM_OFFSET = 8;
 
 static const std::uint16_t PADDING_FRAME_TYPE = 0;
 
 inline static void checkHeaderLength(util::index_t length)
 {
-    if (length < BASE_HEADER_LENGTH)
+    if (length != HEADER_LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Frame header length must not be less than %d, length=%d", BASE_HEADER_LENGTH, length), SOURCEINFO);
-    }
-
-    if (length % WORD_ALIGNMENT != 0)
-    {
-        throw util::IllegalStateException(
-            util::strPrintf("Frame header length must be a multiple of %d, length=%d", WORD_ALIGNMENT, length), SOURCEINFO);
+            util::strPrintf("Frame header length %d must be equal to %d", length, HEADER_LENGTH), SOURCEINFO);
     }
 }
 
@@ -103,7 +97,7 @@ inline static void checkMaxFrameLength(util::index_t length)
     }
 }
 
-inline static util::index_t calculateMaxMessageLength(util::index_t capacity)
+inline static util::index_t computeMaxMessageLength(util::index_t capacity)
 {
     return capacity / 8;
 }

@@ -20,7 +20,7 @@
 #include <util/Exceptions.h>
 #include <iostream>
 #include <thread>
-#include <concurrent/logbuffer/LogReader.h>
+#include <concurrent/logbuffer/TermReader.h>
 #include <util/MemoryMappedFile.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include "ClientConductor.h"
@@ -62,7 +62,7 @@ public:
         return m_conductor.findPublication(id);
     }
 
-    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
+    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::data_handler_t& handler)
     {
         return m_conductor.addSubscription(channel, streamId, handler);
     }

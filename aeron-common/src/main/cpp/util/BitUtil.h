@@ -66,6 +66,26 @@ namespace BitUtil
 
         return current - 1;
     }
+
+    /* Taken from Hacker's Delight as ntz10 at http://www.hackersdelight.org/hdcodetxt/ntz.c.txt */
+    template<typename value_t>
+    inline static int numberOfTrailingZeroes(value_t value)
+    {
+        static char table[32] = {
+            0, 1, 2, 24, 3, 19, 6, 25,
+            22, 4, 20, 10, 16, 7, 12, 26,
+            31, 23, 18, 5, 21, 9, 15, 11,
+            30, 17, 8, 14, 29, 13, 28, 27};
+
+        if (value == 0)
+        {
+            return 32;
+        }
+
+        value = (value & -value) * 0x04D7651F;
+
+        return table[value >> 27];
+    }
 }
 
 }}};

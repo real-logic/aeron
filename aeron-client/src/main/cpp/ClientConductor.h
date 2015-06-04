@@ -17,9 +17,9 @@
 #ifndef INCLUDED_AERON_CLIENT_CONDUCTOR__
 #define INCLUDED_AERON_CLIENT_CONDUCTOR__
 
-#include <concurrent/logbuffer/LogReader.h>
 #include <vector>
 #include <mutex>
+#include <concurrent/logbuffer/TermReader.h>
 #include "Publication.h"
 #include "Subscription.h"
 #include "DriverProxy.h"
@@ -84,7 +84,7 @@ public:
     std::shared_ptr<Publication> findPublication(std::int64_t correlationId);
     void releasePublication(std::int64_t correlationId);
 
-    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler);
+    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::data_handler_t& handler);
     std::shared_ptr<Subscription> findSubscription(std::int64_t correlationId);
     void releaseSubscription(std::int64_t correlationId);
 
@@ -116,10 +116,10 @@ private:
         std::string m_channel;
         std::int64_t m_correlationId;
         std::int32_t m_streamId;
-        logbuffer::handler_t m_handler;
+        logbuffer::data_handler_t m_handler;
         std::weak_ptr<Subscription> m_subscription;
 
-        SubscriptionStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, logbuffer::handler_t& handler) :
+        SubscriptionStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, logbuffer::data_handler_t& handler) :
             m_channel(channel), m_correlationId(correlationId), m_streamId(streamId), m_handler(handler)
         {
         }

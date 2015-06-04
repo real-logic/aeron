@@ -86,8 +86,8 @@ protected:
     }
 
 private:
-    AtomicBuffer&m_termBuffer;
-    AtomicBuffer&m_metaDataBuffer;
+    AtomicBuffer& m_termBuffer;
+    AtomicBuffer& m_metaDataBuffer;
     util::index_t m_capacity;
 };
 

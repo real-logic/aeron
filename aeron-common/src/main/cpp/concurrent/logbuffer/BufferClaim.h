@@ -19,6 +19,7 @@
 
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
+#include <concurrent/logbuffer/Header.h>
 
 namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
 
@@ -28,71 +29,37 @@ public:
     typedef BufferClaim this_t;
 
     inline BufferClaim() :
-        m_buffer(nullptr), m_offset(0), m_length(0), m_frameLengthOffset(0), m_frameLength(0)
+        m_buffer(nullptr, 0)
     {
     }
 
-    inline AtomicBuffer* buffer() const
+    inline void wrap(AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        m_buffer.wrap(buffer.getBuffer() + offset, length);
+    }
+
+    inline AtomicBuffer& buffer()
     {
         return m_buffer;
     }
 
-    inline this_t& buffer(AtomicBuffer* buffer)
-    {
-        m_buffer = buffer;
-        return *this;
-    }
-
     inline util::index_t offset() const
     {
-        return m_offset;
-    }
-
-    inline this_t& offset(util::index_t offset)
-    {
-        m_offset = offset;
-        return *this;
+        return DataHeader::LENGTH;
     }
 
     inline util::index_t length() const
     {
-        return m_length;
-    }
-
-    inline this_t& length(util::index_t length)
-    {
-        m_length = length;
-        return *this;
-    }
-
-    inline this_t& frameLengthOffset(util::index_t frameLengthOffset)
-    {
-        m_frameLengthOffset = frameLengthOffset;
-        return *this;
-    }
-
-    inline this_t& frameLength(util::index_t frameLength)
-    {
-        m_frameLength = frameLength;
-        return *this;
+        return m_buffer.getCapacity() - DataHeader::LENGTH;
     }
 
     inline void commit()
     {
-        if (nullptr == m_buffer)
-        {
-            throw util::IllegalStateException("buffer has not been set", SOURCEINFO);
-        }
-
-        m_buffer->putInt32Ordered(m_frameLengthOffset, m_frameLength);
+        m_buffer.putInt32Ordered(0, m_buffer.getCapacity());
     }
 
 private:
-    AtomicBuffer *m_buffer;
-    util::index_t m_offset;
-    util::index_t m_length;
-    util::index_t m_frameLengthOffset;
-    util::index_t m_frameLength;
+    AtomicBuffer m_buffer;
 };
 
 }}}}

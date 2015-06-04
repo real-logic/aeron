@@ -77,20 +77,6 @@ public class TermReaderTest
     }
 
     @Test
-    public void shouldNotReadWhenLimitIsZero()
-    {
-        final int msgLength = 1;
-        final int frameLength = HEADER_LENGTH + msgLength;
-        final int termOffset = 0;
-
-        when(termBuffer.getIntVolatile(0)).thenReturn(frameLength);
-
-        assertThat(termReader.read(termOffset, handler, 0), is(0));
-
-        verifyZeroInteractions(handler);
-    }
-
-    @Test
     public void shouldNotReadPastTail()
     {
         final int termOffset = 0;

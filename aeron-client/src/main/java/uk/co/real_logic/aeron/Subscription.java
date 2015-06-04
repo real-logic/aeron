@@ -125,7 +125,9 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Release the Subscription so that associated buffers can be released.
+     * Close the Subscription so that associated buffers can be released.
+     *
+     * This method is idempotent.
      */
     public void close()
     {

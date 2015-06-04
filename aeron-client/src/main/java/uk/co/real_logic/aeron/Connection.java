@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.agrona.ManagedResource;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -35,22 +36,30 @@ class Connection implements ManagedResource
     private final int sessionId;
 
     private final LogBuffers logBuffers;
-    private final TermReader[] termReaders;
+    private final TermReader[] termReaders = new TermReader[PARTITION_COUNT];
+
     private final Position subscriberPosition;
 
     public Connection(
-        final TermReader[] readers,
         final int sessionId,
         final long initialPosition,
         final long correlationId,
         final Position subscriberPosition,
         final LogBuffers logBuffers)
     {
-        this.termReaders = readers;
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
+
+        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+        final int initialTermId = initialTermId(buffers[buffers.length - 1]);
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            termReaders[i] = new TermReader(initialTermId, buffers[i]);
+        }
+
         final int capacity = termReaders[0].termBuffer().capacity();
         this.termLengthMask = capacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);

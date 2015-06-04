@@ -20,8 +20,6 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
-import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.ByteBuffer;
 
@@ -29,49 +27,30 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 
 public class SubscriptionTest
 {
     private static final String CHANNEL = "udp://localhost:40124";
     private static final int STREAM_ID_1 = 2;
-    private static final int SESSION_ID_1 = 13;
-    private static final int SESSION_ID_2 = 14;
-    private static final int TERM_ID_1 = 1;
-    private static final int ACTIVE_INDEX = LogBufferDescriptor.indexByTerm(TERM_ID_1, TERM_ID_1);
     private static final long SUBSCRIPTION_CORRELATION_ID = 100;
-    private static final long CONNECTION_CORRELATION_ID = 101;
     private static final int READ_BUFFER_CAPACITY = 1024;
     private static final byte FLAGS = (byte)FrameDescriptor.UNFRAGMENTED;
     private static final int FRAGMENT_COUNT_LIMIT = Integer.MAX_VALUE;
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
-    private final ByteBuffer readBuffer = ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY);
-    private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(readBuffer);
+    private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY));
     private final ClientConductor conductor = mock(ClientConductor.class);
-    private final Position position = mock(AtomicLongPosition.class);
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
-    private Subscription subscription;
+    private final Connection connectionOneMock = mock(Connection.class);
+    private final Header header = mock(Header.class);
+    private final Connection connectionTwoMock = mock(Connection.class);
 
-    private TermReader[] readers;
-    private LogBuffers logBuffers = mock(LogBuffers.class);
-    private UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
-    private final Header header = spy(new Header(termBuffer));
+    private Subscription subscription;
 
     @Before
     public void setUp()
     {
         when(header.flags()).thenReturn(FLAGS);
-        when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
-
-        readers = new TermReader[PARTITION_COUNT];
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            readers[i] = mock(TermReader.class);
-            when(readers[i].read(anyInt(), any(), anyInt())).thenReturn(0);
-            when(readers[i].termBuffer()).thenReturn(termBuffer);
-        }
 
         subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
     }
@@ -92,7 +71,7 @@ public class SubscriptionTest
     @Test
     public void shouldReadNothingWhenThereIsNoData()
     {
-        onTermBuffersMapped(SESSION_ID_1);
+        subscription.addConnection(connectionOneMock);
 
         assertThat(subscription.poll(fragmentHandler, 1), is(0));
     }
@@ -100,12 +79,12 @@ public class SubscriptionTest
     @Test
     public void shouldReadData()
     {
-        onTermBuffersMapped(SESSION_ID_1);
+        subscription.addConnection(connectionOneMock);
 
-        when(readers[ACTIVE_INDEX].read(anyInt(), any(), anyInt())).then(
+        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
             (invocation) ->
             {
-                final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[1];
+                final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];
                 handler.onFragment(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
@@ -122,23 +101,28 @@ public class SubscriptionTest
     @Test
     public void shouldReadDataFromMultipleSources()
     {
-        onTermBuffersMapped(SESSION_ID_1);
-        onTermBuffersMapped(SESSION_ID_2);
+        subscription.addConnection(connectionOneMock);
+        subscription.addConnection(connectionTwoMock);
 
-        when(readers[ACTIVE_INDEX].read(anyInt(), any(), anyInt())).then(
+        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
             (invocation) ->
             {
-                final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[1];
+                final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];
                 handler.onFragment(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
             });
 
-        assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(2));
-    }
+        when(connectionTwoMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
+            (invocation) ->
+            {
+                final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];
+                handler.onFragment(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
-    private void onTermBuffersMapped(final int sessionId)
-    {
-        subscription.onConnectionReady(sessionId, 0, CONNECTION_CORRELATION_ID, readers, position, logBuffers);
+                return 1;
+            });
+
+
+        assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(2));
     }
 }

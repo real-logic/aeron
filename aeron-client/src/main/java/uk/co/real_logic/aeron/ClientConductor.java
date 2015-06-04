@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.ManagedResource;
@@ -221,27 +220,18 @@ class ClientConductor implements Agent, DriverListener
                     {
                         if (subscription.registrationId() == msg.positionIndicatorRegistrationId(i))
                         {
-                            final UnsafeBufferPosition position = new UnsafeBufferPosition(
-                                counterValuesBuffer, msg.subscriberPositionId(i));
-
-                            final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
-                            final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-                            final TermReader[] readers = new TermReader[PARTITION_COUNT];
-                            final int initialTermId = initialTermId(buffers[buffers.length - 1]);
-
-                            for (int p = 0; p < PARTITION_COUNT; p++)
-                            {
-                                readers[p] = new TermReader(initialTermId, buffers[p]);
-                            }
-
-                            subscription.onConnectionReady(
-                                sessionId, joiningPosition, correlationId, readers, position, logBuffers);
+                            subscription.addConnection(
+                                new Connection(
+                                    sessionId,
+                                    joiningPosition,
+                                    correlationId,
+                                    new UnsafeBufferPosition(counterValuesBuffer, msg.subscriberPositionId(i)),
+                                    logBuffersFactory.map(logFileName)));
 
                             if (null != newConnectionHandler)
                             {
-                                final String info = msg.sourceInfo();
                                 newConnectionHandler.onNewConnection(
-                                    subscription.channel(), streamId, sessionId, joiningPosition, info);
+                                    subscription.channel(), streamId, sessionId, joiningPosition, msg.sourceInfo());
                             }
 
                             break;

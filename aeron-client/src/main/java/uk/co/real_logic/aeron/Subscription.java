@@ -16,8 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
-import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -151,38 +149,16 @@ public class Subscription implements AutoCloseable
         return registrationId;
     }
 
-    void onConnectionReady(
-        final int sessionId,
-        final long initialPosition,
-        final long correlationId,
-        final TermReader[] termReaders,
-        final Position position,
-        final LogBuffers logBuffers)
+    void addConnection(final Connection connection)
     {
         final Connection[] oldArray = connections;
         final int oldLength = oldArray.length;
         final Connection[] newArray = new Connection[oldLength + 1];
 
         System.arraycopy(oldArray, 0, newArray, 0, oldLength);
-        newArray[oldLength] = new Connection(termReaders, sessionId, initialPosition, correlationId, position, logBuffers);
+        newArray[oldLength] = connection;
 
         connections = newArray;
-    }
-
-    boolean isConnected(final int sessionId)
-    {
-        boolean isConnected = false;
-
-        for (final Connection connection : connections)
-        {
-            if (sessionId == connection.sessionId())
-            {
-                isConnected = true;
-                break;
-            }
-        }
-
-        return isConnected;
     }
 
     boolean removeConnection(final long correlationId)
@@ -215,6 +191,22 @@ public class Subscription implements AutoCloseable
         }
 
         return false;
+    }
+
+    boolean isConnected(final int sessionId)
+    {
+        boolean isConnected = false;
+
+        for (final Connection connection : connections)
+        {
+            if (sessionId == connection.sessionId())
+            {
+                isConnected = true;
+                break;
+            }
+        }
+
+        return isConnected;
     }
 
     boolean hasNoConnections()

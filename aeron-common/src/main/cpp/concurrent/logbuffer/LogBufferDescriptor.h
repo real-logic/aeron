@@ -99,11 +99,11 @@ static const util::index_t LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = util::BitUtil::
 struct LogMetaDataDefn
 {
     std::int32_t activeTermId;
-    std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(activeTermId)];
+    std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
     std::int32_t initialTermId;
     std::int32_t defaultFrameHeaderLength;
     std::int32_t mtuLength;
-    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (3 * sizeof(initialTermId))];
+    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (3 * sizeof(std::int32_t))];
 };
 #pragma pack(pop)
 

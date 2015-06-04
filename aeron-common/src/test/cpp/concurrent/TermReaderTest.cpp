@@ -110,29 +110,6 @@ TEST_F(TermReaderTest, shouldReadFirstMessage)
     EXPECT_EQ(framesRead, 1);
 }
 
-TEST_F(TermReaderTest, shouldNotReadWhenLimitIsZero)
-{
-    MockDataHandler handler;
-    const util::index_t msgLength = 1;
-    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
-    const std::int32_t termOffset = 0;
-    testing::Sequence sequence;
-
-    EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(0)))
-        .Times(1)
-        .WillOnce(testing::Return(frameLength));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
-        .Times(0);
-
-    const int framesRead = m_logReader.read(
-        termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
-        {
-            handler.onData(buffer, offset, length, header);
-        }, 0);
-
-    EXPECT_EQ(framesRead, 0);
-}
-
 TEST_F(TermReaderTest, shouldNotReadPastTail)
 {
     MockDataHandler handler;

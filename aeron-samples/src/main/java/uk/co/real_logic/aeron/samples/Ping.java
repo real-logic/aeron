@@ -22,7 +22,7 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
@@ -33,7 +33,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Ping component of Ping-Pong.
+ * Ping component of Ping-Pong latency test.
  *
  * Initiates and records times.
  */
@@ -59,7 +59,7 @@ public class Ping
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(Ping::newPongConnectionHandler);
-        final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
+        final FragmentHandler fragmentHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
 
         if (EMBEDDED_MEDIA_DRIVER)
         {
@@ -84,7 +84,7 @@ public class Ping
 
                 for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
                 {
-                    sendPingAndReceivePong(dataHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
                 }
             }
 
@@ -103,7 +103,7 @@ public class Ping
                     HISTOGRAM.reset();
                     System.gc();
 
-                    sendPingAndReceivePong(dataHandler, publication, subscription, NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
                     System.out.println("Histogram of RTT latencies in microseconds.");
 
                     HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -116,7 +116,10 @@ public class Ping
     }
 
     private static void sendPingAndReceivePong(
-        final DataHandler dataHandler, final Publication publication, final Subscription subscription, final int numMessages)
+        final FragmentHandler fragmentHandler,
+        final Publication publication,
+        final Subscription subscription,
+        final int numMessages)
     {
         final IdleStrategy idleStrategy = new NoOpIdleStrategy();
 
@@ -128,7 +131,7 @@ public class Ping
             }
             while (publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-            while (subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT) <= 0)
+            while (subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 idleStrategy.idle(0);
             }

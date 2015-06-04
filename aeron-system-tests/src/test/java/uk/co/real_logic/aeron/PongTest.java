@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -56,7 +56,7 @@ public class PongTest
     private Publication pongPublication;
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private DataHandler pongHandler = mock(DataHandler.class);
+    private FragmentHandler pongHandler = mock(FragmentHandler.class);
 
     @Before
     public void setUp() throws Exception
@@ -137,7 +137,7 @@ public class PongTest
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(5900));
 
-        verify(pongHandler).onData(
+        verify(pongHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),

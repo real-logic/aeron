@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.console.ContinueBarrier;
@@ -51,7 +51,7 @@ public class EmbeddedThroughput
             .dirsDeleteOnExit(true);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
-        final DataHandler rateReporterHandler = rateReporterHandler(reporter);
+        final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context context = new Aeron.Context();

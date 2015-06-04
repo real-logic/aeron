@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;
@@ -52,7 +52,7 @@ public class SimpleSubscriber
         SigInt.register(() -> running.set(false));
 
         // dataHandler method is called for every new datagram received
-        final DataHandler dataHandler =
+        final FragmentHandler fragmentHandler =
             (buffer, offset, length, header) ->
             {
                 final byte[] data = new byte[length];
@@ -87,7 +87,7 @@ public class SimpleSubscriber
                 // poll delivers messages to the dataHandler as they arrive
                 // and returns number of fragments read, or 0
                 // if no data is available.
-                final int fragmentsRead = subscription.poll(dataHandler, fragmentLimitCount);
+                final int fragmentsRead = subscription.poll(fragmentHandler, fragmentLimitCount);
                 // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
                 // use if no messages were received.
                 idleStrategy.idle(fragmentsRead);

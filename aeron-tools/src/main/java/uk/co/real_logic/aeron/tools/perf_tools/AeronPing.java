@@ -34,7 +34,7 @@ import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -47,7 +47,7 @@ public class AeronPing implements NewConnectionHandler
     private final int msgLen = 32;
     private long[][] timestamps = null;
     private boolean warmedUp = false;
-    private final DataHandler dataHandler = new FragmentAssemblyAdapter(this::pongHandler);
+    private final FragmentHandler fragmentHandler = new FragmentAssemblyAdapter(this::pongHandler);
     private final Aeron aeron;
     private final Publication pub;
     private final Subscription sub;
@@ -298,7 +298,7 @@ public class AeronPing implements NewConnectionHandler
         {
         }
 
-        while (sub.poll(dataHandler, 1) <= 0)
+        while (sub.poll(fragmentHandler, 1) <= 0)
         {
         }
     }
@@ -321,7 +321,7 @@ public class AeronPing implements NewConnectionHandler
             }
 
             bufferClaim.commit();
-            while (sub.poll(dataHandler, 1) <= 0)
+            while (sub.poll(fragmentHandler, 1) <= 0)
             {
             }
         }

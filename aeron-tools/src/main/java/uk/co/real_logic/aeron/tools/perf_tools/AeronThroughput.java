@@ -27,7 +27,7 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.LangUtil;
@@ -53,21 +53,21 @@ public class AeronThroughput
     {
     }
 
-    public static DataHandler rateReporterHandler(final RateReporter reporter)
+    public static FragmentHandler rateReporterHandler(final RateReporter reporter)
     {
         return (buffer, offset, length, header) -> reporter.onMessage(1, length);
     }
 
     public static Consumer<Subscription> subscriberLoop(
-        final DataHandler dataHandler, final int limit, final AtomicBoolean running)
+        final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        return subscriberLoop(dataHandler, limit, running, idleStrategy);
+        return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
     }
 
     public static Consumer<Subscription> subscriberLoop(
-        final DataHandler dataHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
+        final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
     {
         return
             (subscription) ->
@@ -76,7 +76,7 @@ public class AeronThroughput
                 {
                     while (running.get())
                     {
-                        final int fragmentsRead = subscription.poll(dataHandler, limit);
+                        final int fragmentsRead = subscription.poll(fragmentHandler, limit);
                         idleStrategy.idle(fragmentsRead);
                     }
                 }
@@ -110,7 +110,7 @@ public class AeronThroughput
             .dirsDeleteOnExit(true);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), AeronThroughput::printRate);
-        final DataHandler rateReporterHandler = rateReporterHandler(reporter);
+        final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final String embeddedDirName = CommonContext.generateEmbeddedDirName();

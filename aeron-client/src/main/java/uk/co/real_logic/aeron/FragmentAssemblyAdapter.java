@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.BufferBuilder;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -27,7 +27,7 @@ import java.util.function.IntFunction;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
 
 /**
- * A {@link DataHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
+ * A {@link FragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
  * so that the next handler in the chain only sees whole messages.
  * <p>
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
@@ -37,9 +37,9 @@ import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor
  * When sessions go inactive see {@link InactiveConnectionHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
-public class FragmentAssemblyAdapter implements DataHandler
+public class FragmentAssemblyAdapter implements FragmentHandler
 {
-    private final DataHandler delegate;
+    private final FragmentHandler delegate;
     private final AssemblyHeader assemblyHeader = new AssemblyHeader();
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
     private final IntFunction<BufferBuilder> builderFunc;
@@ -49,7 +49,7 @@ public class FragmentAssemblyAdapter implements DataHandler
      *
      * @param delegate onto which whole messages are forwarded.
      */
-    public FragmentAssemblyAdapter(final DataHandler delegate)
+    public FragmentAssemblyAdapter(final FragmentHandler delegate)
     {
         this(delegate, BufferBuilder.INITIAL_CAPACITY);
     }
@@ -60,26 +60,27 @@ public class FragmentAssemblyAdapter implements DataHandler
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.
      */
-    public FragmentAssemblyAdapter(final DataHandler delegate, final int initialBufferLength)
+    public FragmentAssemblyAdapter(final FragmentHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
         builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
     }
 
     /**
-     * The implementation of {@link DataHandler} that reassembles and forwards whole messages.
+     * The implementation of {@link FragmentHandler} that reassembles and forwards whole messages.
+     *
      * @param buffer containing the data.
      * @param offset at which the data begins.
      * @param length of the data in bytes.
      * @param header representing the meta data for the data.
      */
-    public void onData(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
 
         if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
         {
-            delegate.onData(buffer, offset, length, header);
+            delegate.onFragment(buffer, offset, length, header);
         }
         else
         {
@@ -98,7 +99,7 @@ public class FragmentAssemblyAdapter implements DataHandler
                     if ((flags & END_FRAG) == END_FRAG)
                     {
                         final int msgLength = builder.limit();
-                        delegate.onData(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
+                        delegate.onFragment(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
                         builder.reset();
                     }
                 }

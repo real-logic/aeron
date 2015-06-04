@@ -42,11 +42,11 @@ public class MultiSubscriberTest
         final MediaDriver.Context ctx = new MediaDriver.Context();
         ctx.dirsDeleteOnExit(true);
 
-        final DataHandler mockDataHandlerOne = mock(DataHandler.class);
-        final DataHandler mockDataHandlerTwo = mock(DataHandler.class);
+        final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
+        final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);
 
-        final FragmentAssemblyAdapter adapterOne = new FragmentAssemblyAdapter(mockDataHandlerOne);
-        final FragmentAssemblyAdapter adapterTwo = new FragmentAssemblyAdapter(mockDataHandlerTwo);
+        final FragmentAssemblyAdapter adapterOne = new FragmentAssemblyAdapter(mockFragmentHandlerOne);
+        final FragmentAssemblyAdapter adapterTwo = new FragmentAssemblyAdapter(mockFragmentHandlerTwo);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());
@@ -75,17 +75,17 @@ public class MultiSubscriberTest
                 Thread.yield();
             }
 
-            verifyData(srcBuffer, mockDataHandlerOne);
-            verifyData(srcBuffer, mockDataHandlerTwo);
+            verifyData(srcBuffer, mockFragmentHandlerOne);
+            verifyData(srcBuffer, mockFragmentHandlerTwo);
         }
     }
 
-    private void verifyData(final UnsafeBuffer srcBuffer, final DataHandler mockDataHandler)
+    private void verifyData(final UnsafeBuffer srcBuffer, final FragmentHandler mockFragmentHandler)
     {
         final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
         final ArgumentCaptor<Integer> offsetArg = ArgumentCaptor.forClass(Integer.class);
 
-        verify(mockDataHandler, times(1)).onData(
+        verify(mockFragmentHandler, times(1)).onFragment(
             bufferArg.capture(), offsetArg.capture(), eq(srcBuffer.capacity()), any(Header.class));
 
         final UnsafeBuffer capturedBuffer = bufferArg.getValue();

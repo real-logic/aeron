@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 
@@ -36,10 +36,10 @@ public class FragmentAssemblyAdapterTest
 {
     private static final int SESSION_ID = 777;
 
-    private final DataHandler delegateDataHandler = mock(DataHandler.class);
+    private final FragmentHandler delegateFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final Header header = spy(new Header(termBuffer));
-    private final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(delegateDataHandler);
+    private final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(delegateFragmentHandler);
 
     @Before
     public void setUp()
@@ -55,9 +55,9 @@ public class FragmentAssemblyAdapterTest
         final int offset = 8;
         final int length = 32;
 
-        adapter.onData(srcBuffer, offset, length, header);
+        adapter.onFragment(srcBuffer, offset, length, header);
 
-        verify(delegateDataHandler, times(1)).onData(srcBuffer, offset, length, header);
+        verify(delegateFragmentHandler, times(1)).onFragment(srcBuffer, offset, length, header);
     }
 
     @Test
@@ -74,13 +74,13 @@ public class FragmentAssemblyAdapterTest
         srcBuffer.setMemory(0, length, (byte)65);
         srcBuffer.setMemory(length, length, (byte)66);
 
-        adapter.onData(srcBuffer, offset, length, header);
-        adapter.onData(srcBuffer, length, length, header);
+        adapter.onFragment(srcBuffer, offset, length, header);
+        adapter.onFragment(srcBuffer, length, length, header);
 
         final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
         final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
-        verify(delegateDataHandler, times(1)).onData(
+        verify(delegateFragmentHandler, times(1)).onFragment(
             bufferArg.capture(), eq(offset), eq(length * 2), headerArg.capture());
 
         final UnsafeBuffer capturedBuffer = bufferArg.getValue();
@@ -112,15 +112,15 @@ public class FragmentAssemblyAdapterTest
             srcBuffer.setMemory(i * length, length, (byte)(65 + i));
         }
 
-        adapter.onData(srcBuffer, offset, length, header);
-        adapter.onData(srcBuffer, offset + length, length, header);
-        adapter.onData(srcBuffer, offset + (length * 2), length, header);
-        adapter.onData(srcBuffer, offset + (length * 3), length, header);
+        adapter.onFragment(srcBuffer, offset, length, header);
+        adapter.onFragment(srcBuffer, offset + length, length, header);
+        adapter.onFragment(srcBuffer, offset + (length * 2), length, header);
+        adapter.onFragment(srcBuffer, offset + (length * 3), length, header);
 
         final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
         final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
-        verify(delegateDataHandler, times(1)).onData(
+        verify(delegateFragmentHandler, times(1)).onFragment(
             bufferArg.capture(), eq(offset), eq(length * 4), headerArg.capture());
 
         final UnsafeBuffer capturedBuffer = bufferArg.getValue();
@@ -150,8 +150,8 @@ public class FragmentAssemblyAdapterTest
 
         assertFalse(adapter.freeSessionBuffer(SESSION_ID));
 
-        adapter.onData(srcBuffer, offset, length, header);
-        adapter.onData(srcBuffer, length, length, header);
+        adapter.onFragment(srcBuffer, offset, length, header);
+        adapter.onFragment(srcBuffer, length, length, header);
 
         assertTrue(adapter.freeSessionBuffer(SESSION_ID));
         assertFalse(adapter.freeSessionBuffer(SESSION_ID));
@@ -165,9 +165,9 @@ public class FragmentAssemblyAdapterTest
         final int offset = 0;
         final int length = srcBuffer.capacity() / 2;
 
-        adapter.onData(srcBuffer, offset, length, header);
+        adapter.onFragment(srcBuffer, offset, length, header);
 
-        verify(delegateDataHandler, never()).onData(anyObject(), anyInt(), anyInt(), anyObject());
+        verify(delegateFragmentHandler, never()).onFragment(anyObject(), anyInt(), anyInt(), anyObject());
     }
 
     @Test
@@ -181,9 +181,9 @@ public class FragmentAssemblyAdapterTest
         final int offset = 0;
         final int length = srcBuffer.capacity() / 2;
 
-        adapter.onData(srcBuffer, offset, length, header);
-        adapter.onData(srcBuffer, offset, length, header);
+        adapter.onFragment(srcBuffer, offset, length, header);
+        adapter.onFragment(srcBuffer, offset, length, header);
 
-        verify(delegateDataHandler, never()).onData(anyObject(), anyInt(), anyInt(), anyObject());
+        verify(delegateFragmentHandler, never()).onFragment(anyObject(), anyInt(), anyInt(), anyObject());
     }
 }

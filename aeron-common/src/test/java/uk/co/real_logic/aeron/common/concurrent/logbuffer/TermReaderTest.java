@@ -38,7 +38,7 @@ public class TermReaderTest
     private static final int INITIAL_TERM_ID = 7;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
-    private final DataHandler handler = Mockito.mock(DataHandler.class);
+    private final FragmentHandler handler = Mockito.mock(FragmentHandler.class);
 
     private TermReader termReader;
 
@@ -73,7 +73,7 @@ public class TermReaderTest
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(0);
-        verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -84,7 +84,7 @@ public class TermReaderTest
         assertThat(termReader.read(termOffset, handler, Integer.MAX_VALUE), is(0));
 
         verify(termBuffer).getIntVolatile(0);
-        verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
+        verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
     }
 
     @Test
@@ -101,7 +101,7 @@ public class TermReaderTest
 
         final InOrder inOrder = inOrder(termBuffer, handler);
         inOrder.verify(termBuffer).getIntVolatile(0);
-        inOrder.verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -121,10 +121,11 @@ public class TermReaderTest
 
         final InOrder inOrder = inOrder(termBuffer, handler);
         inOrder.verify(termBuffer).getIntVolatile(0);
-        inOrder.verify(handler).onData(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
 
         inOrder.verify(termBuffer).getIntVolatile(alignedFrameLength);
-        inOrder.verify(handler).onData(eq(termBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(handler)
+            .onFragment(eq(termBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -142,7 +143,7 @@ public class TermReaderTest
 
         final InOrder inOrder = inOrder(termBuffer, handler);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
-        inOrder.verify(handler).onData(eq(termBuffer), eq(frameOffset + HEADER_LENGTH), eq(msgLength), any(Header.class));
+        inOrder.verify(handler).onFragment(eq(termBuffer), eq(frameOffset + HEADER_LENGTH), eq(msgLength), any(Header.class));
     }
 
     @Test
@@ -160,6 +161,6 @@ public class TermReaderTest
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
-        verify(handler, never()).onData(any(), anyInt(), anyInt(), any());
+        verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
     }
 }

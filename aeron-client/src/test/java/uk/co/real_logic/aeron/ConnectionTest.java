@@ -61,7 +61,7 @@ public class ConnectionTest
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(ALIGNED_FRAME_LENGTH));
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final DataHandler mockDataHandler = mock(DataHandler.class);
+    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final Position position = spy(new AtomicLongPosition());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
 
@@ -90,10 +90,10 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(0));
 
-        final int messages = connection.poll(mockDataHandler, Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
-        verify(mockDataHandler).onData(
+        verify(mockFragmentHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
@@ -116,10 +116,10 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockDataHandler, Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
-        verify(mockDataHandler).onData(
+        verify(mockFragmentHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
@@ -143,10 +143,10 @@ public class ConnectionTest
 
         insertDataFrame(activeTermId, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockDataHandler, Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
-        verify(mockDataHandler).onData(
+        verify(mockFragmentHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),

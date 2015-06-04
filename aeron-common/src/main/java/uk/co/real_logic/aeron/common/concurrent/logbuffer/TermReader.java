@@ -78,7 +78,7 @@ public class TermReader
      * @param framesCountLimit limit the number of frames read.
      * @return the number of frames read
      */
-    public int read(int termOffset, final DataHandler handler, final int framesCountLimit)
+    public int read(int termOffset, final FragmentHandler handler, final int framesCountLimit)
     {
         int framesCounter = 0;
         final Header header = this.header;
@@ -101,7 +101,7 @@ public class TermReader
             if (!isPaddingFrame(termBuffer, currentTermOffset))
             {
                 header.offset(currentTermOffset);
-                handler.onData(termBuffer, currentTermOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
+                handler.onFragment(termBuffer, currentTermOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
                 ++framesCounter;
             }

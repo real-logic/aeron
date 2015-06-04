@@ -18,18 +18,19 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import uk.co.real_logic.agrona.DirectBuffer;
 
 /**
- * Handler for reading data that is coming from a log buffer.
+ * Handler for reading data that is coming from a log buffer. The frame will either contain a whole message
+ * or a fragment of a message to be reassembled. Messages are fragmented if greater than the frame for MTU in length.
  */
 @FunctionalInterface
-public interface DataHandler
+public interface FragmentHandler
 {
     /**
-     * Callback for handling data being read from a log.
+     * Callback for handling fragments of data being read from a log.
      *
      * @param buffer containing the data.
      * @param offset at which the data begins.
      * @param length of the data in bytes.
      * @param header representing the meta data for the data.
      */
-    void onData(DirectBuffer buffer, int offset, int length, Header header);
+    void onFragment(DirectBuffer buffer, int offset, int length, Header header);
 }

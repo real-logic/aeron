@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.SigInt;
@@ -58,7 +58,7 @@ public class BasicSubscriber
             ctx.dirName(driver.contextDirName());
         }
 
-        final DataHandler dataHandler = printStringMessage(STREAM_ID);
+        final FragmentHandler fragmentHandler = printStringMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
 
         // Register a SIGINT handler for graceful shutdown.
@@ -72,7 +72,7 @@ public class BasicSubscriber
         try (final Aeron aeron = Aeron.connect(ctx);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            SamplesUtil.subscriberLoop(dataHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+            SamplesUtil.subscriberLoop(fragmentHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
             System.out.println("Shutting down...");
         }

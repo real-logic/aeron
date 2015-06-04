@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.*;
@@ -33,30 +33,30 @@ public class SamplesUtil
     /**
      * Return a reusable, parameterised event loop that calls a default idler when no messages are received
      *
-     * @param dataHandler to be called back for each message.
-     * @param limit       passed to {@link Subscription#poll(DataHandler, int)}
+     * @param fragmentHandler to be called back for each message.
+     * @param limit       passed to {@link Subscription#poll(FragmentHandler, int)}
      * @param running     indication for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
-        final DataHandler dataHandler, final int limit, final AtomicBoolean running)
+        final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        return subscriberLoop(dataHandler, limit, running, idleStrategy);
+        return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
     }
 
     /**
      * Return a reusable, parameterized event loop that calls and idler when no messages are received
      *
-     * @param dataHandler  to be called back for each message.
-     * @param limit        passed to {@link Subscription#poll(DataHandler, int)}
+     * @param fragmentHandler  to be called back for each message.
+     * @param limit        passed to {@link Subscription#poll(FragmentHandler, int)}
      * @param running      indication for loop
      * @param idleStrategy to use for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
-        final DataHandler dataHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
+        final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
     {
         return
             (subscription) ->
@@ -65,7 +65,7 @@ public class SamplesUtil
                 {
                     while (running.get())
                     {
-                        final int fragmentsRead = subscription.poll(dataHandler, limit);
+                        final int fragmentsRead = subscription.poll(fragmentHandler, limit);
                         idleStrategy.idle(fragmentsRead);
                     }
                 }
@@ -77,12 +77,12 @@ public class SamplesUtil
     }
 
     /**
-     * Return a reusable, parameterized {@link DataHandler} that prints to stdout
+     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static DataHandler printStringMessage(final int streamId)
+    public static FragmentHandler printStringMessage(final int streamId)
     {
         return (buffer, offset, length, header) ->
         {
@@ -96,13 +96,13 @@ public class SamplesUtil
     }
 
     /**
-     * Return a reusable, parameteried {@link DataHandler} that calls into a
+     * Return a reusable, parameteried {@link FragmentHandler} that calls into a
      * {@link RateReporter}.
      *
      * @param reporter for the rate
-     * @return {@link DataHandler} that records the rate information
+     * @return {@link FragmentHandler} that records the rate information
      */
-    public static DataHandler rateReporterHandler(final RateReporter reporter)
+    public static FragmentHandler rateReporterHandler(final RateReporter reporter)
     {
         return (buffer, offset, length, header) -> reporter.onMessage(1, length);
     }

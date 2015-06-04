@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.console.ContinueBarrier;
@@ -150,7 +150,7 @@ public class EmbeddedPingPong
     }
 
     private static void sendPingAndReceivePong(
-        final DataHandler dataHandler,
+        final FragmentHandler fragmentHandler,
         final Publication pingPublication,
         final Subscription pongSubscription,
         final int numMessages)
@@ -165,7 +165,7 @@ public class EmbeddedPingPong
             }
             while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-            while (pongSubscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT) <= 0)
+            while (pongSubscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 idleStrategy.idle(0);
             }

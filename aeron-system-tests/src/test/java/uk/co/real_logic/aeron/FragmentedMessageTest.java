@@ -22,7 +22,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -56,7 +56,7 @@ public class FragmentedMessageTest
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
-    private final DataHandler mockDataHandler = mock(DataHandler.class);
+    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
 
     @Theory
     @Test(timeout = 10000)
@@ -66,7 +66,7 @@ public class FragmentedMessageTest
         ctx.dirsDeleteOnExit(true);
         ctx.threadingMode(threadingMode);
 
-        final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockDataHandler);
+        final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockFragmentHandler);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());
@@ -98,7 +98,7 @@ public class FragmentedMessageTest
             final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
             final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
-            verify(mockDataHandler, times(1)).onData(
+            verify(mockFragmentHandler, times(1)).onFragment(
                 bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());
 
             final UnsafeBuffer capturedBuffer = bufferArg.getValue();

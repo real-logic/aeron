@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;
@@ -123,13 +123,13 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Return a reusable, parameterized {@link DataHandler} that prints to stdout for the first stream(STREAM)
+     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout for the first stream(STREAM)
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      * @throws Exception
      */
-    public static DataHandler reassembledStringMessage1(final int streamId) throws Exception
+    public static FragmentHandler reassembledStringMessage1(final int streamId) throws Exception
     {
         return
             (buffer, offset, length, header) ->
@@ -151,12 +151,12 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Return a reusable, parameterized {@link DataHandler} that prints to stdout for the second stream (STREAM + 1)
+     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout for the second stream (STREAM + 1)
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static DataHandler reassembledStringMessage2(final int streamId) throws Exception
+    public static FragmentHandler reassembledStringMessage2(final int streamId) throws Exception
     {
         return
             (buffer, offset, length, header) ->

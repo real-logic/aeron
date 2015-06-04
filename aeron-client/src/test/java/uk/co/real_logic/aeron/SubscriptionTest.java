@@ -51,7 +51,7 @@ public class SubscriptionTest
     private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(readBuffer);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final Position position = mock(AtomicLongPosition.class);
-    private final DataHandler dataHandler = mock(DataHandler.class);
+    private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
     private Subscription subscription;
 
     private TermReader[] readers;
@@ -80,13 +80,13 @@ public class SubscriptionTest
     public void shouldEnsureTheSubscriptionIsOpenWhenPolling()
     {
         subscription.close();
-        subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT);
+        subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
     }
 
     @Test
     public void shouldReadNothingWithNoConnections()
     {
-        assertThat(subscription.poll(dataHandler, 1), is(0));
+        assertThat(subscription.poll(fragmentHandler, 1), is(0));
     }
 
     @Test
@@ -94,7 +94,7 @@ public class SubscriptionTest
     {
         onTermBuffersMapped(SESSION_ID_1);
 
-        assertThat(subscription.poll(dataHandler, 1), is(0));
+        assertThat(subscription.poll(fragmentHandler, 1), is(0));
     }
 
     @Test
@@ -105,14 +105,14 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(anyInt(), any(), anyInt())).then(
             (invocation) ->
             {
-                final DataHandler handler = (DataHandler)invocation.getArguments()[1];
-                handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
+                final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[1];
+                handler.onFragment(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
             });
 
-        assertThat(subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT), is(1));
-        verify(dataHandler).onData(
+        assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(1));
+        verify(fragmentHandler).onFragment(
             eq(atomicReadBuffer),
             eq(HEADER_LENGTH),
             eq(READ_BUFFER_CAPACITY - HEADER_LENGTH),
@@ -128,13 +128,13 @@ public class SubscriptionTest
         when(readers[ACTIVE_INDEX].read(anyInt(), any(), anyInt())).then(
             (invocation) ->
             {
-                final DataHandler handler = (DataHandler)invocation.getArguments()[1];
-                handler.onData(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
+                final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[1];
+                handler.onFragment(atomicReadBuffer, HEADER_LENGTH, READ_BUFFER_CAPACITY - HEADER_LENGTH, header);
 
                 return 1;
             });
 
-        assertThat(subscription.poll(dataHandler, FRAGMENT_COUNT_LIMIT), is(2));
+        assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(2));
     }
 
     private void onTermBuffersMapped(final int sessionId)

@@ -28,14 +28,14 @@ import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 public class AeronPong
 {
-    private final DataHandler dataHandler;
+    private final FragmentHandler fragmentHandler;
     private final Aeron aeron;
     private final Publication pongPublication;
     private final Subscription pingSubscription;
@@ -61,11 +61,11 @@ public class AeronPong
         final Aeron.Context ctx = new Aeron.Context();
         if (claim)
         {
-            dataHandler = new FragmentAssemblyAdapter(this::pingHandlerClaim);
+            fragmentHandler = new FragmentAssemblyAdapter(this::pingHandlerClaim);
         }
         else
         {
-            dataHandler = new FragmentAssemblyAdapter(this::pingHandler);
+            fragmentHandler = new FragmentAssemblyAdapter(this::pingHandler);
         }
         aeron = Aeron.connect(ctx);
         pongPublication = aeron.addPublication(pongChannel, pongStreamId);
@@ -81,7 +81,7 @@ public class AeronPong
     {
         while (running.get())
         {
-            pingSubscription.poll(dataHandler, 1);
+            pingSubscription.poll(fragmentHandler, 1);
         }
     }
 

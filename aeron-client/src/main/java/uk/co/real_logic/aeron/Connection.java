@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -68,14 +68,14 @@ class Connection implements ManagedResource
         return correlationId;
     }
 
-    public int poll(final DataHandler dataHandler, final int fragmentCountLimit)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentCountLimit)
     {
         final long position = subscriberPosition.get();
         final int activeIndex = indexByPosition(position, positionBitsToShift);
         final int termOffset = (int)position & termLengthMask;
 
         final TermReader termReader = termReaders[activeIndex];
-        final int messagesRead = termReader.read(termOffset, dataHandler, fragmentCountLimit);
+        final int messagesRead = termReader.read(termOffset, fragmentHandler, fragmentCountLimit);
 
         final long newPosition = position + (termReader.offset() - termOffset);
         if (newPosition > position)

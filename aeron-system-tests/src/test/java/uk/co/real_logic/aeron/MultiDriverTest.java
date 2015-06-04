@@ -20,7 +20,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -67,8 +67,8 @@ public class MultiDriverTest
     private Subscription subscriptionB;
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private DataHandler dataHandlerA = mock(DataHandler.class);
-    private DataHandler dataHandlerB = mock(DataHandler.class);
+    private FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
+    private FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
     private void launch()
     {
@@ -161,7 +161,7 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(dataHandlerA, 10);
+                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -185,7 +185,7 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(dataHandlerA, 10);
+                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -196,20 +196,20 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionB.poll(dataHandlerB, 10);
+                    fragmentsRead[0] += subscriptionB.poll(fragmentHandlerB, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(dataHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onData(
+        verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
             any(UnsafeBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));
 
-        verify(dataHandlerB, times(numMessagesToSendPostJoin)).onData(
+        verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
             any(UnsafeBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),

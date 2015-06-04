@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
- * to the {@link DataHandler}.
+ * to the {@link FragmentHandler}.
  * <p>
  * By default fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
@@ -86,12 +86,12 @@ public class Subscription implements AutoCloseable
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU side then it will come
      * as a series of fragments ordered withing a session.
      *
-     * @param dataHandler        callback for handling each message as it is read.
+     * @param fragmentHandler        callback for handling each message fragment as it is read.
      * @param fragmentCountLimit number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
      * @throws IllegalStateException if the subscription is closed.
      */
-    public int poll(final DataHandler dataHandler, final int fragmentCountLimit)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentCountLimit)
     {
         ensureOpen();
 
@@ -111,7 +111,7 @@ public class Subscription implements AutoCloseable
 
             do
             {
-                fragmentsRead += connections[i].poll(dataHandler, fragmentCountLimit);
+                fragmentsRead += connections[i].poll(fragmentHandler, fragmentCountLimit);
 
                 if (++i == length)
                 {

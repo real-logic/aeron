@@ -32,7 +32,7 @@ import uk.co.real_logic.aeron.InactiveConnectionHandler;
 import uk.co.real_logic.aeron.NewConnectionHandler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
@@ -642,7 +642,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
          * The send method is thread safe so they use the read lock to allow many threads to offer()
          * on the same pub */
         private final ReentrantReadWriteLock lock;
-        private DataHandler msgHandler = null;
+        private FragmentHandler msgHandler = null;
         private ThreadLocal<Boolean> previousSendFailed = null;
         private ThreadLocal<Integer> bytesSent = null;
         /* Message stream per threadId per sessionId map for message verification with multiple

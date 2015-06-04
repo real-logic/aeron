@@ -40,7 +40,7 @@ import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
 import uk.co.real_logic.aeron.tools.MessagesAtMessagesPerSecondInterval;
 import uk.co.real_logic.aeron.tools.RateController;
@@ -56,7 +56,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
     private Publication pub = null;
     private Subscription sub = null;
     private CountDownLatch connectionLatch = null;
-    private DataHandler dataHandler = null;
+    private FragmentHandler fragmentHandler = null;
     private Aeron aeron = null;
     private final int pubStreamId = 10;
     private final int subStreamId = 11;
@@ -84,7 +84,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         }
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(this::connectionHandler);
-        dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
+        fragmentHandler = new FragmentAssemblyAdapter(this::msgHandler);
         aeron = Aeron.connect(ctx);
         System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
         pub = aeron.addPublication(pubChannel, pubStreamId);
@@ -117,7 +117,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         final Runnable task = () -> {
             while (running)
             {
-                while (sub.poll(dataHandler, 1) <= 0 && running)
+                while (sub.poll(fragmentHandler, 1) <= 0 && running)
                 {
                 }
             }

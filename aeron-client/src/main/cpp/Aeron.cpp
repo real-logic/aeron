@@ -23,6 +23,7 @@ Aeron::Aeron(Context &context) :
     m_conductor(
         createDriverProxy(m_context),
         createDriverReceiver(m_context),
+        m_countersValueBuffer,
         context.m_onNewPublicationHandler,
         context.m_onNewSubscriptionHandler),
     m_idleStrategy(),
@@ -40,7 +41,6 @@ Aeron::~Aeron()
     // TODO: do cleanup of anything created
 }
 
-
 inline void Aeron::mapCncFile(Context &context)
 {
     if (!m_cncBuffer)
@@ -54,6 +54,8 @@ inline void Aeron::mapCncFile(Context &context)
             throw util::IllegalStateException(
                 util::strPrintf("aeron cnc file version not understood: version=%d", cncVersion), SOURCEINFO);
         }
+
+        m_countersValueBuffer = CncFileDescriptor::createCounterValuesBuffer(m_cncBuffer);
     }
 }
 

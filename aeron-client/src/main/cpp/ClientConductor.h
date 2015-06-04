@@ -38,10 +38,12 @@ public:
     ClientConductor(
         DriverProxy& driverProxy,
         CopyBroadcastReceiver& broadcastReceiver,
+        AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
         const on_new_subscription_t& newSubscriptionHandler) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
+        m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
         m_onNewSubscpriptionHandler(newSubscriptionHandler)
     {
@@ -131,6 +133,7 @@ private:
     std::vector<SubscriptionStateDefn> m_subscriptions;
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
+    AtomicBuffer& m_counterValuesBuffer;
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscpriptionHandler;
 };

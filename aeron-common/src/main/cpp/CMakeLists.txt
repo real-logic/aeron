@@ -18,8 +18,7 @@ SET(SOURCE
     util/MemoryMappedFile.cpp
     util/CommandOption.cpp
     util/CommandOptionParser.cpp
-    util/StringUtil.cpp
-    concurrent/AtomicCounter.cpp)
+    util/StringUtil.cpp)
 
 SET(HEADERS
     CncFileDescriptor.h

@@ -28,6 +28,9 @@ using namespace aeron::common;
 
 class ClientConductor;
 
+static const std::int64_t PUBLICATION_NOT_CONNECTED = -1;
+static const std::int64_t PUBLICATION_BACK_PRESSURE = -2;
+
 class Publication
 {
 friend class ClientConductor;
@@ -64,23 +67,23 @@ public:
         return m_correlationId;
     }
 
-    inline bool offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
-        bool succeeded = false;
+        std::int64_t newPosition = PUBLICATION_NOT_CONNECTED;
 
-        return succeeded;
+        return newPosition;
     }
 
-    inline bool offer(concurrent::AtomicBuffer& buffer)
+    inline std::int64_t offer(concurrent::AtomicBuffer& buffer)
     {
         return offer(buffer, 0, buffer.getCapacity());
     }
 
-    inline bool tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
+    inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {
-        bool succeeded = false;
+        std::int64_t newPosition = PUBLICATION_NOT_CONNECTED;
 
-        return succeeded;
+        return newPosition;
     }
 
 private:

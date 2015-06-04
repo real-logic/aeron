@@ -21,44 +21,58 @@
 
 #include <util/Index.h>
 #include "AtomicBuffer.h"
-
+#include "CountersManager.h"
 
 namespace aeron { namespace common { namespace concurrent {
-
-class CountersManager;
 
 class AtomicCounter
 {
 public:
-    AtomicCounter(const AtomicBuffer buffer, std::int32_t counterId, CountersManager& countersManager);
-    ~AtomicCounter();
+    AtomicCounter::AtomicCounter(const AtomicBuffer buffer, std::int32_t counterId, CountersManager& countersManager) :
+        m_buffer(buffer),
+        m_counterId(counterId),
+        m_countersManager(countersManager),
+        m_offset(CountersManager::counterOffset(counterId))
+    {
+        m_buffer.putInt64(m_offset, 0);
+    }
 
-    void increment()
+    AtomicCounter::~AtomicCounter()
+    {
+        m_countersManager.free(m_counterId);
+    }
+
+    inline static AtomicCounter::ptr_t makeCounter(CountersManager& countersManager, std::string& label)
+    {
+        return std::make_shared<AtomicCounter>(countersManager.valuesBuffer(), countersManager.allocate(label), countersManager);
+    }
+
+    inline void increment()
     {
         m_buffer.getAndAddInt64(m_offset, 1);
     }
 
-    void orderedIncrement()
+    inline void orderedIncrement()
     {
         m_buffer.addInt64Ordered(m_offset, 1);
     }
 
-    void set(std::int64_t value)
+    inline void set(std::int64_t value)
     {
         m_buffer.putInt64Atomic(m_offset, value);
     }
 
-    void setOrdered(long value)
+    inline void setOrdered(long value)
     {
         m_buffer.putInt64Ordered(m_offset, value);
     }
 
-    void addOrdered(long increment)
+    inline void addOrdered(long increment)
     {
         m_buffer.addInt64Ordered(m_offset, increment);
     }
 
-    std::int64_t get()
+    inline std::int64_t get()
     {
         return m_buffer.getInt64Volatile(m_offset);
     }

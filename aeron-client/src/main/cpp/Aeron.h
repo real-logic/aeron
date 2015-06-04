@@ -88,6 +88,8 @@ private:
     std::unique_ptr<BroadcastReceiver> m_toClientsBroadcastReceiver;
     std::unique_ptr<CopyBroadcastReceiver> m_toClientsCopyReceiver;
 
+    AtomicBuffer m_countersValueBuffer;
+
     void mapCncFile(Context& context);
     DriverProxy& createDriverProxy(Context& context);
     CopyBroadcastReceiver& createDriverReceiver(Context& context);

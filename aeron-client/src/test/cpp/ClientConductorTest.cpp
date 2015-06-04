@@ -32,11 +32,13 @@ using namespace aeron::common::command;
 using namespace aeron;
 
 #define CAPACITY (1024)
-#define MANY_TO_ONE_RING_BUFFER_SZ (CAPACITY + RingBufferDescriptor::TRAILER_LENGTH)
-#define BROADCAST_BUFFER_SZ (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
+#define MANY_TO_ONE_RING_BUFFER_LENGTH (CAPACITY + RingBufferDescriptor::TRAILER_LENGTH)
+#define BROADCAST_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
+#define COUNTER_VALUES_BUFFER_LENGTH (1024 * 1024)
 
-typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_SZ> many_to_one_ring_buffer_t;
-typedef std::array<std::uint8_t, BROADCAST_BUFFER_SZ> broadcast_buffer_t;
+typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_LENGTH> many_to_one_ring_buffer_t;
+typedef std::array<std::uint8_t, BROADCAST_BUFFER_LENGTH> broadcast_buffer_t;
+typedef std::array<std::uint8_t, COUNTER_VALUES_BUFFER_LENGTH> counter_values_buffer_t;
 
 static const std::string CHANNEL = "udp://localhost:40123";
 static const std::int32_t STREAM_ID = 10;
@@ -68,11 +70,12 @@ public:
     ClientConductorTest() :
         m_toDriverBuffer(&m_toDriver[0], m_toDriver.size()),
         m_toClientsBuffer(&m_toClients[0], m_toClients.size()),
+        m_counterValuesBuffer(&m_counterValues[0], m_counterValues.size()),
         m_manyToOneRingBuffer(m_toDriverBuffer),
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
-        m_conductor(m_driverProxy, m_copyBroadcastReceiver, onNewPub, onNewSub),
+        m_conductor(m_driverProxy, m_copyBroadcastReceiver, m_counterValuesBuffer, onNewPub, onNewSub),
         m_logFileName(makeTempFileName())
     {
         m_toDriver.fill(0);
@@ -94,9 +97,11 @@ public:
 protected:
     AERON_DECL_ALIGNED(many_to_one_ring_buffer_t m_toDriver, 16);
     AERON_DECL_ALIGNED(broadcast_buffer_t m_toClients, 16);
+    AERON_DECL_ALIGNED(counter_values_buffer_t m_counterValues, 16);
 
     AtomicBuffer m_toDriverBuffer;
     AtomicBuffer m_toClientsBuffer;
+    AtomicBuffer m_counterValuesBuffer;
 
     ManyToOneRingBuffer m_manyToOneRingBuffer;
     BroadcastReceiver m_broadcastReceiver;

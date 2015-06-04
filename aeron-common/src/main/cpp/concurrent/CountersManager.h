@@ -27,7 +27,6 @@
 #include <util/BitUtil.h>
 
 #include "AtomicBuffer.h"
-#include "AtomicCounter.h"
 
 namespace aeron { namespace common { namespace concurrent {
 
@@ -85,9 +84,14 @@ public:
         return id;
     }
 
-    inline AtomicCounter::ptr_t newCounter(const std::string& label)
+    inline AtomicBuffer& labelsBuffer()
     {
-        return std::make_shared<AtomicCounter>(m_countersBuffer, allocate(label), *this);
+        return m_labelsBuffer;
+    }
+
+    inline AtomicBuffer& valuesBuffer()
+    {
+        return m_countersBuffer;
     }
 
     void free(std::int32_t counterId)
@@ -104,12 +108,12 @@ public:
         m_freeList.push_back(counterId);
     }
 
-    inline util::index_t counterOffset(std::int32_t counterId)
+    inline static util::index_t counterOffset(std::int32_t counterId)
     {
         return counterId * COUNTER_LENGTH;
     }
 
-    inline util::index_t labelOffset(std::int32_t counterId)
+    inline static util::index_t labelOffset(std::int32_t counterId)
     {
         return counterId * LABEL_LENGTH;
     }

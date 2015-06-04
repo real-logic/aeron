@@ -92,7 +92,7 @@ void ClientConductor::releasePublication(std::int64_t correlationId)
 }
 
 std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId,
-    logbuffer::data_handler_t &handler)
+    logbuffer::fragment_handler_t &handler)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
     std::int64_t id;

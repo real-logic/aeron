@@ -27,7 +27,7 @@
 namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
 
 /** The data handler function signature */
-typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index_t, Header&)> data_handler_t;
+typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index_t, Header&)> fragment_handler_t;
 
 class TermReader
 {
@@ -48,7 +48,7 @@ public:
         return m_offset;
     }
 
-    inline int read(std::int32_t termOffset, const data_handler_t & handler, int framesCountLimit)
+    inline int read(std::int32_t termOffset, const fragment_handler_t & handler, int framesCountLimit)
     {
         int framesCounter = 0;
         const util::index_t capacity = m_termBuffer.getCapacity();

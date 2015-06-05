@@ -84,12 +84,18 @@ class Connection implements ManagedResource
         final int termOffset = (int)position & termLengthMask;
 
         final TermReader termReader = termReaders[activeIndex];
-        final int messagesRead = termReader.read(termOffset, fragmentHandler, fragmentCountLimit);
-
-        final long newPosition = position + (termReader.offset() - termOffset);
-        if (newPosition > position)
+        int messagesRead = 0;
+        try
         {
-            subscriberPosition.setOrdered(newPosition);
+            messagesRead = termReader.read(termOffset, fragmentHandler, fragmentCountLimit);
+        }
+        finally
+        {
+            final long newPosition = position + (termReader.offset() - termOffset);
+            if (newPosition > position)
+            {
+                subscriberPosition.setOrdered(newPosition);
+            }
         }
 
         return messagesRead;

@@ -61,6 +61,8 @@ static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::BitUtil::CACHE_LINE
 static const util::index_t TERM_STATUS_OFFSET = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 2;
 static const util::index_t TERM_META_DATA_LENGTH = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 4;
 
+static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
+
 /**
  * <pre>
  *   0                   1                   2                   3
@@ -107,6 +109,10 @@ struct LogMetaDataDefn
 };
 #pragma pack(pop)
 
+static const util::index_t LOG_ACTIVE_TERM_ID_OFFSET = offsetof(LogMetaDataDefn, activeTermId);
+static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = offsetof(LogMetaDataDefn, initialTermId);
+static const util::index_t LOG_MTU_LENGTH_OFFSET = offsetof(LogMetaDataDefn, mtuLength);
+static const util::index_t LOG_DEFAULT_FRAME_HEADERS_OFFSET = sizeof(LogMetaDataDefn);
 static const util::index_t LOG_META_DATA_LENGTH = sizeof(LogMetaDataDefn) + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
 
 inline static void checkTermBuffer(AtomicBuffer &buffer)
@@ -138,13 +144,19 @@ inline static void checkMetaDataBuffer(AtomicBuffer &buffer)
     }
 }
 
-inline static void checkMsgTypeId(std::int32_t msgTypeId)
+inline static std::int32_t initialTermId(AtomicBuffer& logMetaDataBuffer)
 {
-    if (msgTypeId < 1)
-    {
-        throw util::IllegalArgumentException(
-            util::strPrintf("Message type id must be greater than zero, msgTypeId=%d", msgTypeId), SOURCEINFO);
-    }
+    return logMetaDataBuffer.getInt32(LOG_INITIAL_TERM_ID_OFFSET);
+}
+
+inline static void activeTermId(AtomicBuffer& logMetaDataBuffer, std::int32_t activeTermId)
+{
+    logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_TERM_ID_OFFSET, activeTermId);
+}
+
+inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
+{
+    return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
 }
 
 inline static std::int64_t computeLogLength(std::int64_t termLength)
@@ -156,6 +168,11 @@ inline static std::int64_t computeTermLength(std::int64_t logLength)
 {
     const std::int64_t metaDataSectionLength = (TERM_META_DATA_LENGTH * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
     return (logLength - metaDataSectionLength) / 3;
+}
+
+inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int index)
+{
+    return logMetaDataBuffer.getBuffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (index * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
 }
 
 };

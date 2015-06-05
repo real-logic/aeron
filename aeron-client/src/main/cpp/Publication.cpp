@@ -25,6 +25,7 @@ Publication::Publication(
     std::int64_t correlationId,
     std::int32_t streamId,
     std::int32_t sessionId,
+    ReadOnlyPosition<UnsafeBufferPosition>& publicationLimit,
     LogBuffers &buffers)
     :
     m_conductor(conductor),
@@ -32,9 +33,25 @@ Publication::Publication(
     m_correlationId(correlationId),
     m_streamId(streamId),
     m_sessionId(sessionId),
-    m_buffers(buffers)
+    m_publicationLimit(publicationLimit),
+    m_buffers(buffers),
+    m_logMetaDataBuffer(buffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX))
 {
+    const std::int32_t mtuLength = LogBufferDescriptor::mtuLength(m_logMetaDataBuffer);
 
+    for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
+    {
+        std::uint8_t* defaultFrameHeader = LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, i);
+
+        m_appenders[i] = std::unique_ptr<TermAppender>(new TermAppender(
+            buffers.atomicBuffer(i),
+            buffers.atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT),
+            defaultFrameHeader,
+            DataHeader::LENGTH,
+            mtuLength));
+    }
+
+    LogBufferDescriptor::activeTermId(m_logMetaDataBuffer, LogBufferDescriptor::initialTermId(m_logMetaDataBuffer));
 }
 
 Publication::~Publication()

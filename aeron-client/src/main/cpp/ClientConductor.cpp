@@ -65,7 +65,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t corre
     if (!pub && ((*it).m_buffers))
     {
         pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_correlationId, (*it).m_streamId,
-            (*it).m_sessionId, *((*it).m_buffers));
+            (*it).m_sessionId, *((*it).m_publicationLimit), *((*it).m_buffers));
 
         (*it).m_publication = std::weak_ptr<Publication>(pub);
         return pub;
@@ -173,7 +173,7 @@ void ClientConductor::onNewPublication(
 
     if (it != m_publications.end())
     {
-        // TODO: create log buffers, etc. and set (*it).m_buffers to hold them
+        (*it).m_publicationLimit = std::make_shared<UnsafeBufferPosition>(m_counterValuesBuffer, positionLimitCounterId);
         (*it).m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
 
         m_onNewPublicationHandler((*it).m_channel, streamId, sessionId, correlationId);

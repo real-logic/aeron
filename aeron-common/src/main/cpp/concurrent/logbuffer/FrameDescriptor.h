@@ -79,15 +79,6 @@ inline static void checkHeaderLength(util::index_t length)
     }
 }
 
-inline static void checkOffsetAlignment(util::index_t offset)
-{
-    if ((offset & (FRAME_ALIGNMENT - 1)) != 0)
-    {
-        throw util::IllegalArgumentException(
-            util::strPrintf("Cannot seek to an offset that isn't a multiple of %d", FRAME_ALIGNMENT), SOURCEINFO);
-    }
-}
-
 inline static void checkMaxFrameLength(util::index_t length)
 {
     if ((length & (FRAME_ALIGNMENT - 1)) != 0)

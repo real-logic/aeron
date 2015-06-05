@@ -64,7 +64,10 @@ SET(HEADERS
     concurrent/logbuffer/TermReader.h
     concurrent/ringbuffer/ManyToOneRingBuffer.h
     concurrent/ringbuffer/RecordDescriptor.h
-    concurrent/ringbuffer/RingBufferDescriptor.h)
+    concurrent/ringbuffer/RingBufferDescriptor.h
+    concurrent/status/ReadOnlyPosition.h
+    concurrent/status/Position.h
+    concurrent/status/UnsafeBufferPosition.h)
 
 # static library
 add_library(aeron_common STATIC ${SOURCE} ${HEADERS})

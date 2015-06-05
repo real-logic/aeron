@@ -20,6 +20,7 @@
 #include <vector>
 #include <mutex>
 #include <concurrent/logbuffer/TermReader.h>
+#include <concurrent/status/UnsafeBufferPosition.h>
 #include "Publication.h"
 #include "Subscription.h"
 #include "DriverProxy.h"
@@ -29,6 +30,7 @@
 
 namespace aeron {
 
+using namespace aeron::common::concurrent::status;
 using namespace aeron::common::concurrent;
 
 class ClientConductor
@@ -104,6 +106,7 @@ private:
         std::int64_t m_correlationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId;
+        std::shared_ptr<UnsafeBufferPosition> m_publicationLimit;
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<Publication> m_publication;
 

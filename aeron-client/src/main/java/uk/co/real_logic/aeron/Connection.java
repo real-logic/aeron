@@ -53,7 +53,7 @@ class Connection implements ManagedResource
         this.logBuffers = logBuffers;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final int initialTermId = initialTermId(buffers[buffers.length - 1]);
+        final int initialTermId = initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {

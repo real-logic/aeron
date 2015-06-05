@@ -47,7 +47,7 @@ public class Publication implements AutoCloseable
     /**
      * The offer failed due to back pressure preventing further transmission.
      */
-    public static final long BACK_PRESSURE = -2;
+    public static final long BACK_PRESSURED = -2;
 
     private final long registrationId;
     private final int streamId;
@@ -55,7 +55,7 @@ public class Publication implements AutoCloseable
     private final String channel;
     private final ClientConductor clientConductor;
     private final LogBuffers logBuffers;
-    private final TermAppender[] termAppenders;
+    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final ReadablePosition publicationLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
@@ -68,12 +68,21 @@ public class Publication implements AutoCloseable
         final String channel,
         final int streamId,
         final int sessionId,
-        final TermAppender[] termAppenders,
         final ReadablePosition publicationLimit,
         final LogBuffers logBuffers,
-        final UnsafeBuffer logMetaDataBuffer,
         final long registrationId)
     {
+        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+        final UnsafeBuffer logMetaDataBuffer = buffers[LOG_META_DATA_SECTION_INDEX];
+        final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
+        final int mtuLength = mtuLength(logMetaDataBuffer);
+        activeTermId(logMetaDataBuffer, initialTermId(logMetaDataBuffer));
+
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
+        }
+
         this.clientConductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
@@ -81,10 +90,7 @@ public class Publication implements AutoCloseable
         this.logBuffers = logBuffers;
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
-        this.termAppenders = termAppenders;
         this.publicationLimit = publicationLimit;
-
-        activeTermId(logMetaDataBuffer, initialTermId(logMetaDataBuffer));
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termAppenders[0].termBuffer().capacity());
     }
 
@@ -167,7 +173,7 @@ public class Publication implements AutoCloseable
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
-     * @return The new stream position on success, otherwise {@link #BACK_PRESSURE} or {@link #NOT_CONNECTED}.
+     * @return The new stream position on success, otherwise {@link #BACK_PRESSURED} or {@link #NOT_CONNECTED}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -180,7 +186,7 @@ public class Publication implements AutoCloseable
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return The new stream position on success, otherwise {@link #BACK_PRESSURE} or {@link #NOT_CONNECTED}.
+     * @return The new stream position on success, otherwise {@link #BACK_PRESSURED} or {@link #NOT_CONNECTED}.
      * @throws IllegalStateException if the publication is closed.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
@@ -196,7 +202,7 @@ public class Publication implements AutoCloseable
         final int capacity = termAppender.termBuffer().capacity();
 
         final long limit = publicationLimit.getVolatile();
-        long newPosition = limit > 0 ? BACK_PRESSURE : NOT_CONNECTED;
+        long newPosition = limit > 0 ? BACK_PRESSURED : NOT_CONNECTED;
 
         if (currentTail < capacity && position < limit)
         {
@@ -234,7 +240,7 @@ public class Publication implements AutoCloseable
      *
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populate if the claim succeeds.
-     * @return The new stream position on success, otherwise {@link #BACK_PRESSURE} or {@link #NOT_CONNECTED}.
+     * @return The new stream position on success, otherwise {@link #BACK_PRESSURED} or {@link #NOT_CONNECTED}.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
      * @throws IllegalStateException if the publication is closed.
      * @see uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim#commit()
@@ -252,7 +258,7 @@ public class Publication implements AutoCloseable
         final int capacity = termAppender.termBuffer().capacity();
 
         final long limit = publicationLimit.getVolatile();
-        long newPosition = limit > 0 ? BACK_PRESSURE : NOT_CONNECTED;
+        long newPosition = limit > 0 ? BACK_PRESSURED : NOT_CONNECTED;
 
         if (currentTail < capacity && position < limit)
         {
@@ -300,7 +306,7 @@ public class Publication implements AutoCloseable
 
                 // fall through
             case TermAppender.FAILED:
-                newPosition = BACK_PRESSURE;
+                newPosition = BACK_PRESSURED;
                 break;
 
             default:

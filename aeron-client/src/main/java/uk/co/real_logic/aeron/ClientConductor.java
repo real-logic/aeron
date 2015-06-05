@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.common.ErrorCode;
 import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.ManagedResource;
@@ -33,7 +32,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them.
@@ -176,29 +174,13 @@ class ClientConductor implements Agent, DriverListener
         final String logFileName,
         final long correlationId)
     {
-        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
-        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
-        final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LOG_META_DATA_SECTION_INDEX];
-        final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
-        final int mtuLength = mtuLength(logMetaDataBuffer);
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
-        }
-
-        final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
-
         final Publication publication = new Publication(
             this,
             channel,
             streamId,
             sessionId,
-            appenders,
-            publicationLimit,
-            logBuffers,
-            logMetaDataBuffer,
+            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+            logBuffersFactory.map(logFileName),
             correlationId);
 
         activePublications.put(channel, sessionId, streamId, publication);

@@ -76,7 +76,7 @@ public class MultiplePublishersWithFragmentation
                         if (result1 < 0L)
                         {
                             // Message offer failed
-                            if (result1 == Publication.BACK_PRESSURE)
+                            if (result1 == Publication.BACK_PRESSURED)
                             {
                                 System.out.println(" Offer failed due to back pressure for stream Id " + STREAM_ID_1);
                             }
@@ -108,7 +108,7 @@ public class MultiplePublishersWithFragmentation
                         if (result2 < 0L)
                         {
                             // Message offer failed
-                            if (result2 == Publication.BACK_PRESSURE)
+                            if (result2 == Publication.BACK_PRESSURED)
                             {
                                 System.out.println(" Offer failed because publisher is not yet " +
                                     "connected to subscriber for stream Id " + STREAM_ID_2);

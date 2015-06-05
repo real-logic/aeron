@@ -76,7 +76,7 @@ public class BasicPublisher
 
                 if (result < 0L)
                 {
-                    if (result == Publication.BACK_PRESSURE)
+                    if (result == Publication.BACK_PRESSURED)
                     {
                         System.out.println("Offer failed due to back pressure");
                     }

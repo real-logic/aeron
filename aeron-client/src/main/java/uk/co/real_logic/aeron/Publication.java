@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
+import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
@@ -56,7 +56,7 @@ public class Publication implements AutoCloseable
     private final ClientConductor clientConductor;
     private final LogBuffers logBuffers;
     private final TermAppender[] termAppenders;
-    private final ReadOnlyPosition publicationLimit;
+    private final ReadablePosition publicationLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final int positionBitsToShift;
 
@@ -69,7 +69,7 @@ public class Publication implements AutoCloseable
         final int streamId,
         final int sessionId,
         final TermAppender[] termAppenders,
-        final ReadOnlyPosition publicationLimit,
+        final ReadablePosition publicationLimit,
         final LogBuffers logBuffers,
         final UnsafeBuffer logMetaDataBuffer,
         final long registrationId)

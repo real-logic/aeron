@@ -25,7 +25,7 @@ import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
+import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -110,7 +110,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     private final NanoClock clock;
     private final UnsafeBuffer[] termBuffers;
     private final Position hwmPosition;
-    private final List<ReadOnlyPosition> subscriberPositions;
+    private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
 
     public NetworkConnection(
@@ -126,7 +126,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         final RawLog rawLog,
         final TimerWheel timerwheel,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
-        final List<ReadOnlyPosition> subscriberPositions,
+        final List<ReadablePosition> subscriberPositions,
         final Position hwmPosition,
         final NanoClock clock,
         final SystemCounters systemCounters,
@@ -174,7 +174,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     {
         hwmPosition.close();
         rawLog.close();
-        subscriberPositions.forEach(ReadOnlyPosition::close);
+        subscriberPositions.forEach(ReadablePosition::close);
     }
 
     public long correlationId()
@@ -306,7 +306,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     public boolean isDrained()
     {
         long subscriberPosition = Long.MAX_VALUE;
-        final List<ReadOnlyPosition> subscriberPositions = this.subscriberPositions;
+        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
             subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).getVolatile());
@@ -343,7 +343,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
-        final List<ReadOnlyPosition> subscriberPositions = this.subscriberPositions;
+        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
             final long position = subscriberPositions.get(i).getVolatile();
@@ -496,11 +496,11 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Remove a {@link ReadOnlyPosition} for a subscriber that has been removed so it is not tracked for flow control.
+     * Remove a {@link ReadablePosition} for a subscriber that has been removed so it is not tracked for flow control.
      *
      * @param subscriberPosition for the subscriber that has been removed.
      */
-    public void removeSubscriber(final ReadOnlyPosition subscriberPosition)
+    public void removeSubscriber(final ReadablePosition subscriberPosition)
     {
         subscriberPositions.remove(subscriberPosition);
         subscriberPosition.close();
@@ -511,7 +511,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
      *
      * @param subscriberPosition for the subscriber to be added.
      */
-    public void addSubscriber(final ReadOnlyPosition subscriberPosition)
+    public void addSubscriber(final ReadablePosition subscriberPosition)
     {
         subscriberPositions.add(subscriberPosition);
     }

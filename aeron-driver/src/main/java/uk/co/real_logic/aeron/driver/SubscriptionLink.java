@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
+import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
@@ -30,7 +30,7 @@ public class SubscriptionLink
     private final int streamId;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
-    private final Map<NetworkConnection, ReadOnlyPosition> positionByConnectionMap = new IdentityHashMap<>();
+    private final Map<NetworkConnection, ReadablePosition> positionByConnectionMap = new IdentityHashMap<>();
 
     public SubscriptionLink(
         final long registrationId,
@@ -69,7 +69,7 @@ public class SubscriptionLink
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
 
-    public void addConnection(final NetworkConnection connection, final ReadOnlyPosition position)
+    public void addConnection(final NetworkConnection connection, final ReadablePosition position)
     {
         positionByConnectionMap.put(connection, position);
     }

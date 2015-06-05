@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
+import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
 import java.nio.ByteBuffer;
 
@@ -51,7 +51,7 @@ public class PublicationTest
     private final UnsafeBuffer logMetaDataBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH)));
 
     private Publication publication;
-    private ReadOnlyPosition limit;
+    private ReadablePosition limit;
     private TermAppender[] appenders;
     private MutableDirectBuffer[] headers;
     private ClientConductor conductor = mock(ClientConductor.class);
@@ -61,7 +61,7 @@ public class PublicationTest
     @Before
     public void setUp()
     {
-        limit = mock(ReadOnlyPosition.class);
+        limit = mock(ReadablePosition.class);
         when(limit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
         when(termBuffer.capacity()).thenReturn(TERM_MIN_LENGTH);
 

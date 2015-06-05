@@ -40,7 +40,7 @@ import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
+import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -75,8 +75,8 @@ public class ReceiverTest
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
-    private static final ReadOnlyPosition POSITION = mock(ReadOnlyPosition.class);
-    private static final List<ReadOnlyPosition> POSITIONS = Collections.singletonList(POSITION);
+    private static final ReadablePosition POSITION = mock(ReadablePosition.class);
+    private static final List<ReadablePosition> POSITIONS = Collections.singletonList(POSITION);
 
     private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);

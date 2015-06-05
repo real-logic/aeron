@@ -76,7 +76,6 @@ public class LogBufferDescriptor
      */
     public static final int TERM_TAIL_COUNTER_OFFSET;
 
-
     /**
      * Offset within the term meta data where current status is stored
      */
@@ -201,8 +200,7 @@ public class LogBufferDescriptor
         {
             final String s = String.format(
                 "Term buffer capacity less than min length of %d, capacity=%d",
-                TERM_MIN_LENGTH,
-                capacity);
+                TERM_MIN_LENGTH, capacity);
             throw new IllegalStateException(s);
         }
 
@@ -210,8 +208,7 @@ public class LogBufferDescriptor
         {
             final String s = String.format(
                 "Term buffer capacity not a multiple of %d, capacity=%d",
-                FRAME_ALIGNMENT,
-                capacity);
+                FRAME_ALIGNMENT, capacity);
             throw new IllegalStateException(s);
         }
     }
@@ -229,8 +226,7 @@ public class LogBufferDescriptor
         {
             final String s = String.format(
                 "Meta data buffer capacity less than min length of %d, capacity=%d",
-                TERM_META_DATA_LENGTH,
-                capacity);
+                TERM_META_DATA_LENGTH, capacity);
             throw new IllegalStateException(s);
         }
     }
@@ -422,6 +418,7 @@ public class LogBufferDescriptor
     public static int computeTermLength(final long logLength)
     {
         final long metaDataSectionLength = (TERM_META_DATA_LENGTH * (long)PARTITION_COUNT) + LOG_META_DATA_LENGTH;
+
         return (int)((logLength - metaDataSectionLength) / 3);
     }
 

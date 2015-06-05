@@ -131,7 +131,7 @@ public class LogBufferDescriptor
     /**
      * Offset at which the default frame headers begin.
      */
-    public static final int LOG_DEFAULT_FRAME_HEADERS_OFFSET = CACHE_LINE_LENGTH;
+    public static final int LOG_DEFAULT_FRAME_HEADERS_OFFSET;
 
     /**
      * Offset at which the default frame headers begin.
@@ -149,6 +149,7 @@ public class LogBufferDescriptor
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
 
         offset += (CACHE_LINE_LENGTH * 2);
+        LOG_DEFAULT_FRAME_HEADERS_OFFSET = offset;
 
         LOG_META_DATA_LENGTH = offset + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
     }

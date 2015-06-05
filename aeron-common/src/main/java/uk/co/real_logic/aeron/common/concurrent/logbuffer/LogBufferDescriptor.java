@@ -148,7 +148,7 @@ public class LogBufferDescriptor
         LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
 
-        offset += ((CACHE_LINE_LENGTH * 2) - (SIZE_OF_INT * 3));
+        offset += (CACHE_LINE_LENGTH * 2);
 
         LOG_META_DATA_LENGTH = offset + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
     }
@@ -397,20 +397,6 @@ public class LogBufferDescriptor
     public static int computeTermIdFromPosition(final long position, final int positionBitsToShift, final int initialTermId)
     {
         return ((int)(position >>> positionBitsToShift) + initialTermId);
-    }
-
-    /**
-     * Compute the term offset from a given position.
-     *
-     * @param position            to calculate from
-     * @param positionBitsToShift number of times to right shift the position
-     * @return the offset within the term that represents the position
-     */
-    public static int computeTermOffsetFromPosition(final long position, final int positionBitsToShift)
-    {
-        final long mask = (1L << positionBitsToShift) - 1L;
-
-        return (int)(position & mask);
     }
 
     /**

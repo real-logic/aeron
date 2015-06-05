@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventCode;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.driver.Configuration;
+import uk.co.real_logic.aeron.driver.LossGenerator;
+import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -118,7 +120,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Return underlying {@link uk.co.real_logic.aeron.driver.UdpChannel}
+     * Return underlying {@link UdpChannel}
      *
      * @return underlying channel
      */

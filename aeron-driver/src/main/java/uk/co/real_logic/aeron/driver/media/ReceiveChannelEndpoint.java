@@ -13,14 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.media;
 
+import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.aeron.driver.*;
+import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.collections.MutableInteger;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.*;
-import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;

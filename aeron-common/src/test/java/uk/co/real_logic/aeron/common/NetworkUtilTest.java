@@ -15,32 +15,20 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import org.junit.Test;
+import uk.co.real_logic.agrona.LangUtil;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.net.*;
+import java.util.*;
+
 import static java.lang.Short.parseShort;
 import static java.net.InetAddress.getByName;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static uk.co.real_logic.aeron.common.NetworkUtil.filterBySubnet;
-
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.net.InetAddress;
-import java.net.InterfaceAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.IdentityHashMap;
-import java.util.Iterator;
-import java.util.List;
-
-import org.junit.Test;
-import uk.co.real_logic.agrona.LangUtil;
 
 public class NetworkUtilTest
 {

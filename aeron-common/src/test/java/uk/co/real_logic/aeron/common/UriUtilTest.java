@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import static java.lang.String.format;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.common.UriUtil.parseQueryString;
+import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,7 +23,10 @@ import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.junit.Test;
+import static java.lang.String.format;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static uk.co.real_logic.aeron.common.UriUtil.parseQueryString;
 
 public class UriUtilTest
 {

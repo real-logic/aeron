@@ -13,12 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
+import uk.co.real_logic.aeron.driver.DataPacketHandler;
+import uk.co.real_logic.aeron.driver.LossGenerator;
+import uk.co.real_logic.aeron.driver.SetupMessageHandler;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 
@@ -43,10 +46,10 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
     /**
      * Construct a transport for use with receiving and processing data frames
      *
-     * @param udpChannel       of the transport
+     * @param udpChannel        of the transport
      * @param dataPacketHandler to call when data frames are received
-     * @param logger           for logging
-     * @param lossGenerator    for loss generation
+     * @param logger            for logging
+     * @param lossGenerator     for loss generation
      */
     public ReceiverUdpChannelTransport(
         final UdpChannel udpChannel,

@@ -15,18 +15,18 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import static java.nio.ByteOrder.nativeOrder;
-
-import java.io.File;
-import java.nio.MappedByteBuffer;
-import java.util.ArrayList;
-
 import uk.co.real_logic.aeron.common.CncFileDescriptor;
 import uk.co.real_logic.aeron.common.CommonContext;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
+
+import java.io.File;
+import java.nio.MappedByteBuffer;
+import java.util.ArrayList;
+
+import static java.nio.ByteOrder.nativeOrder;
 
 /**
  * Layout of the counter stats:

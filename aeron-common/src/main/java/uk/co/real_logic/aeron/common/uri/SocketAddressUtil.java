@@ -15,13 +15,13 @@
  */
 package uk.co.real_logic.aeron.common.uri;
 
-import static java.lang.Integer.parseInt;
-import static uk.co.real_logic.aeron.common.Strings.parseIntOrDefault;
-
 import java.net.InetSocketAddress;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import static java.lang.Integer.parseInt;
+import static uk.co.real_logic.aeron.common.Strings.parseIntOrDefault;
 
 public class SocketAddressUtil
 {

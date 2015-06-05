@@ -15,21 +15,21 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-
-import java.net.*;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Assume;
 import org.junit.Test;
-
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
+import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.BitUtil;
+
+import java.net.*;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 public class UdpChannelTest
 {

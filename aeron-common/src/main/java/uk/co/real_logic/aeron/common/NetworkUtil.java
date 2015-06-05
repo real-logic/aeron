@@ -15,17 +15,17 @@
  */
 package uk.co.real_logic.aeron.common;
 
-import static java.lang.Boolean.compare;
-import static java.lang.Integer.compare;
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-import static java.util.Collections.sort;
-
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.List;
+
+import static java.lang.Boolean.compare;
+import static java.lang.Integer.compare;
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+import static java.util.Collections.sort;
 
 /**
  * Collection of network specific utility functions

@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.SigInt;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
 
 /**
  * This is a Basic Aeron subscriber application

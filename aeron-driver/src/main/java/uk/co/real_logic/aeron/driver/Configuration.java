@@ -15,13 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import static java.lang.Integer.getInteger;
-import static java.lang.Long.getLong;
-import static java.lang.System.getProperty;
-import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
-
-import java.util.concurrent.TimeUnit;
-
 import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.aeron.common.OptimalMulticastDelayGenerator;
 import uk.co.real_logic.aeron.common.StaticDelayGenerator;
@@ -32,6 +25,13 @@ import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+
+import java.util.concurrent.TimeUnit;
+
+import static java.lang.Integer.getInteger;
+import static java.lang.Long.getLong;
+import static java.lang.System.getProperty;
+import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
 /**
  * Configuration options for the media driver.

@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.samples.raw;
 
+import uk.co.real_logic.aeron.driver.media.NioSelectedKeySet;
 import uk.co.real_logic.agrona.concurrent.SigInt;
-import uk.co.real_logic.aeron.driver.NioSelectedKeySet;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.ToIntFunction;
 
 import static java.nio.channels.SelectionKey.OP_READ;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Benchmark used to calculate latency of underlying system.

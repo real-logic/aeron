@@ -15,23 +15,17 @@
  */
 package uk.co.real_logic.aeron.tools;
 
+import org.apache.commons.cli.*;
+import uk.co.real_logic.aeron.driver.Configuration;
+import uk.co.real_logic.aeron.driver.LossGenerator;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
-import uk.co.real_logic.aeron.driver.Configuration;
-import uk.co.real_logic.aeron.driver.LossGenerator;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 
 public class MediaDriverOptions
 {

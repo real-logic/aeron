@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.common;
 
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.BitUtil;
 
 import java.util.Arrays;
 

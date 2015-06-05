@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.common.concurrent.logbuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameLengthOrdered;
 
 /**
  * Rebuild a term buffer based on incoming frames that can be out-of-order.

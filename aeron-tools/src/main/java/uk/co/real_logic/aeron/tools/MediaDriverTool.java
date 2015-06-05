@@ -15,10 +15,11 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import java.util.logging.Logger;
 import org.apache.commons.cli.ParseException;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
+
+import java.util.logging.Logger;
 
 public class MediaDriverTool
 {

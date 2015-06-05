@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import org.junit.Test;
-import uk.co.real_logic.aeron.driver.UdpChannel;
+import uk.co.real_logic.aeron.driver.media.UdpChannel;
 
 import java.io.File;
 import java.io.IOException;

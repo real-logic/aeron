@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.tools;
 
+import uk.co.real_logic.agrona.concurrent.SystemNanoClock;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.LockSupport;
-
-import uk.co.real_logic.agrona.concurrent.SystemNanoClock;
 
 public class RateController
 {

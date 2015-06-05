@@ -22,8 +22,8 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.common.event.EventCode.FRAME_IN;
 import static uk.co.real_logic.aeron.common.event.EventCode.EXCEPTION;
+import static uk.co.real_logic.aeron.common.event.EventCode.FRAME_IN;
 import static uk.co.real_logic.aeron.common.event.EventConfiguration.*;
 
 public class EventConfigurationTest

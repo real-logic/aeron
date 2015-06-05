@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import java.nio.ByteBuffer;
-
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteBuffer;
 
 /**
  * A publisher application with multiple publications which send

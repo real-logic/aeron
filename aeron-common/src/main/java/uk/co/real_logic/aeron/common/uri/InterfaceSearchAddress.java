@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.common.uri;
 
-import static uk.co.real_logic.aeron.common.Strings.parseIntOrDefault;
+import uk.co.real_logic.aeron.common.Strings;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -23,7 +23,7 @@ import java.net.UnknownHostException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import uk.co.real_logic.aeron.common.Strings;
+import static uk.co.real_logic.aeron.common.Strings.parseIntOrDefault;
 
 public class InterfaceSearchAddress
 {

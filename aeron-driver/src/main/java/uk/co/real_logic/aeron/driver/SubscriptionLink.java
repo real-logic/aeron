@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
 
 import java.util.IdentityHashMap;

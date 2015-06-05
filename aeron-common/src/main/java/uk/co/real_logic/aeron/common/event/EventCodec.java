@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.common.event;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.aeron.common.command.*;
 import uk.co.real_logic.aeron.common.protocol.*;
+import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;

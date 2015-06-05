@@ -71,7 +71,22 @@ public:
 
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
-        std::int64_t newPosition = PUBLICATION_NOT_CONNECTED;
+        const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
+        const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
+        const int activeIndex = LogBufferDescriptor::indexByTerm(initialTermId, activeTermId);
+        TermAppender* appender = m_appenders[activeIndex].get();
+        const std::int32_t currentTail = appender->rawTailVolatile();
+        const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
+        const std::int32_t capacity = appender->termBuffer().getCapacity();
+
+        const std::int64_t limit = m_publicationLimit.getVolatile();
+        std::int64_t newPosition = limit > 0 ? PUBLICATION_BACK_PRESSURE : PUBLICATION_NOT_CONNECTED;
+
+        if (currentTail < capacity && position < limit)
+        {
+            const std::int32_t nextOffset = appender->append(buffer, offset, length);
+            newPosition = Publication::newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+        }
 
         return newPosition;
     }
@@ -83,7 +98,22 @@ public:
 
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {
-        std::int64_t newPosition = PUBLICATION_NOT_CONNECTED;
+        const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
+        const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
+        const int activeIndex = LogBufferDescriptor::indexByTerm(initialTermId, activeTermId);
+        TermAppender* appender = m_appenders[activeIndex].get();
+        const std::int32_t currentTail = appender->rawTailVolatile();
+        const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
+        const std::int32_t capacity = appender->termBuffer().getCapacity();
+
+        const std::int64_t limit = m_publicationLimit.getVolatile();
+        std::int64_t newPosition = limit > 0 ? PUBLICATION_BACK_PRESSURE : PUBLICATION_NOT_CONNECTED;
+
+        if (currentTail < capacity && position < limit)
+        {
+            const std::int32_t nextOffset = appender->claim(length, bufferClaim);
+            newPosition = Publication::newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+        }
 
         return newPosition;
     }
@@ -95,10 +125,44 @@ private:
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
     ReadOnlyPosition<UnsafeBufferPosition>& m_publicationLimit;
-    LogBuffers& m_buffers;
 
     AtomicBuffer& m_logMetaDataBuffer;
     std::unique_ptr<TermAppender> m_appenders[3];
+    std::int32_t m_positionBitsToShift;
+
+    std::int64_t newPosition(
+        std::int32_t activeTermId, int activeIndex, std::int32_t currentTail, std::int64_t position, std::int32_t nextOffset)
+    {
+        std::int64_t newPosition;
+
+        switch (nextOffset)
+        {
+            case TERM_APPENDER_TRIPPED:
+            {
+                const std::int32_t newTermId = activeTermId + 1;
+                const int nextIndex = LogBufferDescriptor::nextPartitionIndex(activeIndex);
+
+                m_appenders[nextIndex]->defaultHeader().putInt32(DataHeader::TERM_ID_FIELD_OFFSET, newTermId);
+                const int previousIndex = LogBufferDescriptor::previousPartitionIndex(activeIndex);
+                TermAppender* previousAppender = m_appenders[previousIndex].get();
+
+                previousAppender->defaultHeader().putInt32(DataHeader::TERM_ID_FIELD_OFFSET, newTermId + 1);
+                previousAppender->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
+                LogBufferDescriptor::activeTermId(m_logMetaDataBuffer, newTermId);
+            }
+            // fall through
+
+            case TERM_APPENDER_FAILED:
+                newPosition = PUBLICATION_BACK_PRESSURE;
+                break;
+
+            default:
+                newPosition = (position - currentTail) + nextOffset;
+                break;
+        }
+
+        return newPosition;
+    }
 };
 
 }

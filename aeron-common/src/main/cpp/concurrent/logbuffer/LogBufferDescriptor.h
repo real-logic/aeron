@@ -149,6 +149,11 @@ inline static std::int32_t initialTermId(AtomicBuffer& logMetaDataBuffer)
     return logMetaDataBuffer.getInt32(LOG_INITIAL_TERM_ID_OFFSET);
 }
 
+inline static std::int32_t activeTermId(AtomicBuffer& logMetaDataBuffer)
+{
+    return logMetaDataBuffer.getInt32(LOG_ACTIVE_TERM_ID_OFFSET);
+}
+
 inline static void activeTermId(AtomicBuffer& logMetaDataBuffer, std::int32_t activeTermId)
 {
     logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_TERM_ID_OFFSET, activeTermId);
@@ -157,6 +162,42 @@ inline static void activeTermId(AtomicBuffer& logMetaDataBuffer, std::int32_t ac
 inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
+}
+
+inline static int nextPartitionIndex(int currentIndex)
+{
+    int nextIndex = currentIndex + 1;
+    if (nextIndex == PARTITION_COUNT)
+    {
+        nextIndex = 0;
+    }
+
+    return nextIndex;
+}
+
+inline static int previousPartitionIndex(int currentIndex)
+{
+    if (0 == currentIndex)
+    {
+        return PARTITION_COUNT - 1;
+    }
+
+    return currentIndex - 1;
+}
+
+inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId)
+{
+    // compiler should optimize for mod 3. But if not, then do it by hand.
+    // return util::BitUtil::fastMod3(activeTermId - initialTermId)
+    return (activeTermId - initialTermId) % PARTITION_COUNT;
+}
+
+inline static std::int64_t computePosition(
+    std::int32_t activeTermId, std::int32_t termOffset, std::int32_t positionBitsToShift, std::int32_t initialTermId)
+{
+    const std::int64_t termCount = activeTermId - initialTermId;
+
+    return (termCount << positionBitsToShift) + termOffset;
 }
 
 inline static std::int64_t computeLogLength(std::int64_t termLength)

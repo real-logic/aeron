@@ -86,6 +86,24 @@ namespace BitUtil
 
         return table[value >> 27];
     }
+
+    /*
+     * Hacker's Delight Section 10-3 and http://www.hackersdelight.org/divcMore.pdf
+     * Solution is Figure 10-24.
+     */
+    template <typename value_t>
+    inline static int fastMod3(value_t value)
+    {
+        static char table[62] = {0,1,2, 0,1,2, 0,1,2, 0,1,2,
+            0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2,
+            0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2,
+            0,1,2, 0,1,2, 0,1};
+
+        value = (value >> 16) + (value & 0xFFFF); // Max 0x1FFFE.
+        value = (value >> 8) + (value & 0x00FF); // Max 0x2FD.
+        value = (value >> 4) + (value & 0x000F); // Max 0x3D.
+        return table[value];
+    }
 }
 
 }}};

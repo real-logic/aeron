@@ -35,6 +35,7 @@ public:
     TermAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer,
         std::uint8_t *defaultHdr, util::index_t defaultHdrLength, util::index_t maxFrameLength)
     : LogBufferPartition(termBuffer, metaDataBuffer),
+        m_defaultHdrBuffer(defaultHdr, defaultHdrLength),
         m_defaultHdr(defaultHdr),
         m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(capacity())),
         m_maxFrameLength(maxFrameLength),
@@ -57,6 +58,11 @@ public:
     inline util::index_t maxFrameLength()
     {
         return m_maxFrameLength;
+    }
+
+    inline AtomicBuffer& defaultHeader()
+    {
+        return m_defaultHdrBuffer;
     }
 
     inline std::int32_t append(AtomicBuffer& srcBuffer, util::index_t offset, util::index_t length)
@@ -109,6 +115,7 @@ public:
     }
 
 private:
+    AtomicBuffer m_defaultHdrBuffer;
     std::uint8_t *m_defaultHdr;
     const util::index_t m_maxMessageLength;
     const util::index_t m_maxFrameLength;

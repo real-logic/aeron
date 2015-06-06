@@ -19,19 +19,68 @@ SET(SOURCE
     Subscription.cpp
     ClientConductor.cpp
     Aeron.cpp
-    LogBuffers.cpp)
+    LogBuffers.cpp
+    util/MemoryMappedFile.cpp
+    util/CommandOption.cpp
+    util/CommandOptionParser.cpp
+    util/StringUtil.cpp)
 
 SET(HEADERS
     ClientConductor.h
+    CncFileDescriptor.h
     Context.h
     Aeron.h
     Publication.h
     Subscription.h
     DriverProxy.h
     DriverListenerAdapter.h
-    LogBuffers.h)
+    LogBuffers.h
+    command/ConnectionMessageFlyweight.h
+    command/ConnectionReadyFlyweight.h
+    command/ControlProtocolEvents.h
+    command/CorrelatedMessageFlyweight.h
+    command/PublicationMessageFlyweight.h
+    command/PublicationBuffersReadyFlyweight.h
+    command/RemoveMessageFlyweight.h
+    command/SubscriptionMessageFlyweight.h
+    common/AgentRunner.h
+    common/BusySpinIdleStrategy.h
+    common/Flyweight.h
+    common/TermHelper.h
+    concurrent/Atomic64.h
+    concurrent/AtomicBuffer.h
+    concurrent/AtomicCounter.h
+    concurrent/CountersManager.h
+    concurrent/atomic/Atomic64_gcc_x86_64.h
+    concurrent/atomic/Atomic64_msvc.h
+    concurrent/broadcast/BroadcastBufferDescriptor.h
+    concurrent/broadcast/BroadcastReceiver.h
+    concurrent/broadcast/BroadcastTransmitter.h
+    concurrent/broadcast/CopyBroadcastReceiver.h
+    concurrent/broadcast/RecordDescriptor.h
+    concurrent/logbuffer/BufferClaim.h
+    concurrent/logbuffer/FrameDescriptor.h
+    concurrent/logbuffer/Header.h
+    concurrent/logbuffer/TermAppender.h
+    concurrent/logbuffer/LogBufferPartition.h
+    concurrent/logbuffer/LogBufferDescriptor.h
+    concurrent/logbuffer/TermReader.h
+    concurrent/ringbuffer/ManyToOneRingBuffer.h
+    concurrent/ringbuffer/RecordDescriptor.h
+    concurrent/ringbuffer/RingBufferDescriptor.h
+    concurrent/status/ReadOnlyPosition.h
+    concurrent/status/Position.h
+    concurrent/status/UnsafeBufferPosition.h
+    util/MemoryMappedFile.h
+    util/CommandOption.h
+    util/CommandOptionParser.h
+    util/StringUtil.h
+    util/Exceptions.h
+    util/MacroUtil.h
+    util/ScopeUtils.h
+    util/BitUtil.h
+    util/Index.h
+    util/Platform.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
-
-target_link_libraries(aeron_client aeron_common)

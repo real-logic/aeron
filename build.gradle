@@ -45,7 +45,7 @@ buildscript {
     }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:0.8'
-        classpath 'com.puppycrawl.tools:checkstyle:6.5'
+        classpath 'com.puppycrawl.tools:checkstyle:6.7'
     }
 }
 
@@ -88,7 +88,7 @@ subprojects {
 
     checkstyle {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
-        toolVersion = 6.5
+        toolVersion = 6.7
     }
 
     test {

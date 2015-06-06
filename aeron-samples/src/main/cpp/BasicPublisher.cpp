@@ -131,9 +131,9 @@ int main(int argc, char** argv)
             std::cout << "offering " << i << "/" << settings.numberOfMessages;
             std::cout.flush();
 
-            const bool result = publication->offer(srcBuffer, 0, messageLen);
+            const std::int64_t result = publication->offer(srcBuffer, 0, messageLen);
 
-            if (!result)
+            if (result < 0)
             {
                 std::cout << " ah?!" << std::endl;
             }

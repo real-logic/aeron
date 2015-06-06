@@ -322,7 +322,6 @@ public class DriverConductor implements Agent
             receiverProxy.newConnection(channelEndpoint, connection);
 
             clientProxy.onConnectionReady(
-                channel,
                 streamId,
                 sessionId,
                 joiningPosition,
@@ -645,7 +644,6 @@ public class DriverConductor implements Agent
                     subscription.addConnection(connection, position);
 
                     clientProxy.onConnectionReady(
-                        channel,
                         streamId,
                         connection.sessionId(),
                         connection.rebuildPosition(),

@@ -138,10 +138,7 @@ class DriverListenerAdapter implements MessageHandler
 
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.onError(
-                        errorHeader.errorCode(),
-                        errorHeader.errorMessage(),
-                        correlatedMessage.correlationId());
+                    listener.onError(errorHeader.errorCode(), errorHeader.errorMessage(), correlatedMessage.correlationId());
 
                     lastReceivedCorrelationId = correlationId;
                 }

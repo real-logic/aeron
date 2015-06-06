@@ -59,10 +59,7 @@ public class ClientProxy
     }
 
     public void onError(
-        final ErrorCode errorCode,
-        String errorMessage,
-        final Flyweight offendingFlyweight,
-        final int offendingFlyweightLength)
+        final ErrorCode errorCode, String errorMessage, final Flyweight offendingFlyweight, final int offendingFlyweightLength)
     {
         if (null == errorMessage)
         {
@@ -83,7 +80,6 @@ public class ClientProxy
     }
 
     public void onConnectionReady(
-        final String channel,
         final int streamId,
         final int sessionId,
         final long joiningPosition,

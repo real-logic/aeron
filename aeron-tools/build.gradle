@@ -18,7 +18,6 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 apply plugin: 'eclipse'
 
-
 defaultTasks 'clean', 'build', 'install'
 
 buildscript {
@@ -47,7 +46,6 @@ project(':aeron-tools') {
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-samples')
         compile 'commons-cli:commons-cli:1.2'
-        testCompile project(path: ':aeron-common', configuration: 'tests')
     }
 
     shadow {

@@ -35,8 +35,8 @@ public class SamplesUtil
      * Return a reusable, parameterised event loop that calls a default idler when no messages are received
      *
      * @param fragmentHandler to be called back for each message.
-     * @param limit       passed to {@link Subscription#poll(FragmentHandler, int)}
-     * @param running     indication for loop
+     * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
+     * @param running         indication for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
@@ -50,10 +50,10 @@ public class SamplesUtil
     /**
      * Return a reusable, parameterized event loop that calls and idler when no messages are received
      *
-     * @param fragmentHandler  to be called back for each message.
-     * @param limit        passed to {@link Subscription#poll(FragmentHandler, int)}
-     * @param running      indication for loop
-     * @param idleStrategy to use for loop
+     * @param fragmentHandler to be called back for each message.
+     * @param limit           passed to {@link Subscription#poll(FragmentHandler, int)}
+     * @param running         indication for loop
+     * @param idleStrategy    to use for loop
      * @return loop function
      */
     public static Consumer<Subscription> subscriberLoop(
@@ -149,18 +149,18 @@ public class SamplesUtil
     /**
      * Print the information for a new connection to stdout.
      *
-     * @param channel           for the connection
-     * @param streamId          for the stream
-     * @param sessionId         for the connection publication
-     * @param joiningPosition   for the subscriber in the stream
-     * @param sourceInformation that is transport specific
+     * @param channel         for the connection
+     * @param streamId        for the stream
+     * @param sessionId       for the connection publication
+     * @param joiningPosition for the subscriber in the stream
+     * @param sourceIdentity  that is transport specific
      */
     public static void printNewConnection(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInformation)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
     {
         System.out.println(String.format(
             "New connection on %s streamId=%d sessionId=%d at position=%d from %s",
-            channel, streamId, sessionId, joiningPosition, sourceInformation));
+            channel, streamId, sessionId, joiningPosition, sourceIdentity));
     }
 
     /**

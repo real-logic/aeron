@@ -253,7 +253,7 @@ public class AeronPing implements NewConnectionHandler
         final int streamId,
         final int sessionId,
         final long position,
-        final String sourceInfo)
+        final String sourceIdentity)
     {
         if (channel.equals(pongChannel) && pongStreamId == streamId)
         {

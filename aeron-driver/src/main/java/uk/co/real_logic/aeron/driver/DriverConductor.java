@@ -177,7 +177,7 @@ public class DriverConductor implements Agent
         return publicationLink;
     }
 
-    private static String generateSourceInfo(final InetSocketAddress address)
+    private static String generateSourceIdentity(final InetSocketAddress address)
     {
         return String.format("%s:%d", address.getHostString(), address.getPort());
     }
@@ -329,7 +329,7 @@ public class DriverConductor implements Agent
                 rawLog,
                 correlationId,
                 subscriberPositions,
-                generateSourceInfo(sourceAddress));
+                generateSourceIdentity(sourceAddress));
         }
     }
 
@@ -652,7 +652,7 @@ public class DriverConductor implements Agent
                         connection.rawLog(),
                         correlationId,
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
-                        generateSourceInfo(connection.sourceAddress()));
+                        generateSourceIdentity(connection.sourceAddress()));
                 });
     }
 

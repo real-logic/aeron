@@ -92,18 +92,18 @@ public class MultipleSubscribersWithFragmentAssembly
     /**
      * Print the information for a new connection to stdout.
      *
-     * @param channel           for the connection
-     * @param streamId          for the stream
-     * @param sessionId         for the connection publication
-     * @param position          in the stream
-     * @param sourceInformation that is transport specific
+     * @param channel        for the connection
+     * @param streamId       for the stream
+     * @param sessionId      for the connection publication
+     * @param position       in the stream
+     * @param sourceIdentity that is transport specific
      */
     public static void eventNewConnection(
-        final String channel, final int streamId, final int sessionId, final long position, final String sourceInformation)
+        final String channel, final int streamId, final int sessionId, final long position, final String sourceIdentity)
     {
         System.out.format(
             "new connection on %s streamId %x sessionId %x from %s%n",
-            channel, streamId, sessionId, sourceInformation);
+            channel, streamId, sessionId, sourceIdentity);
 
     }
 
@@ -115,7 +115,8 @@ public class MultipleSubscribersWithFragmentAssembly
      * @param sessionId for the connection publication
      * @param position  within the stream
      */
-    public static void eventInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
+    public static void eventInactiveConnection(
+        final String channel, final int streamId, final int sessionId, final long position)
     {
         System.out.format(
             "inactive connection on %s streamId %d sessionId %x%n",

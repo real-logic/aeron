@@ -526,9 +526,9 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         final int streamId,
         final int sessionId,
         final long position,
-        final String sourceInformation)
+        final String sourceIdentity)
     {
-        LOG.fine("ON NEW CONNECTION ::: " + channel + streamId + sessionId + position + sourceInformation);
+        LOG.fine("ON NEW CONNECTION ::: " + channel + streamId + sessionId + position + sourceIdentity);
     }
 
     /**

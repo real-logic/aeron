@@ -48,7 +48,6 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
     private Subscription sub = null;
     private CountDownLatch connectionLatch = null;
     private FragmentHandler fragmentHandler = null;
-    private Aeron aeron = null;
     private final int pubStreamId = 10;
     private final int subStreamId = 11;
     private String pubChannel = "udp://localhost:44444";
@@ -61,7 +60,6 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
     private final BufferClaim bufferClaim;
     private int warmups = 0;
     private final double means[] = new double[7];
-    private Options options;
 
     public AeronLatencyUnderLoadPublisher(final String[] args)
     {
@@ -76,7 +74,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(this::connectionHandler);
         fragmentHandler = new FragmentAssemblyAdapter(this::msgHandler);
-        aeron = Aeron.connect(ctx);
+        final Aeron aeron = Aeron.connect(ctx);
         System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
         pub = aeron.addPublication(pubChannel, pubStreamId);
         sub = aeron.addSubscription(reflectChannel, subStreamId);
@@ -213,7 +211,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         final int streamId,
         final int sessionId,
         final long position,
-        final String sourceInfo)
+        final String sourceIdentity)
     {
         System.out.println(channel + " " + streamId);
         if (channel.equals(reflectChannel) && subStreamId == streamId)

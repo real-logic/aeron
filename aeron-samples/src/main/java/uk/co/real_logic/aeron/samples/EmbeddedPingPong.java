@@ -184,7 +184,7 @@ public class EmbeddedPingPong
     }
 
     private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
     {
         if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
         {

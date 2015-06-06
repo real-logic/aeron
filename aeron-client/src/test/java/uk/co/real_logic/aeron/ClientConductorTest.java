@@ -125,7 +125,7 @@ public class ClientConductorTest
         publicationReady.streamId(STREAM_ID_1);
         publicationReady.logFileName(SESSION_ID_1 + "-log");
 
-        connectionReady.sourceInfo(SOURCE_INFO);
+        connectionReady.sourceIdentity(SOURCE_INFO);
         connectionReady.subscriberPositionCount(1);
         connectionReady.subscriberPositionId(0, 0);
         connectionReady.positionIndicatorRegistrationId(0, CORRELATION_ID);

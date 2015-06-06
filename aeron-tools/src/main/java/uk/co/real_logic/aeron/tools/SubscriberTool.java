@@ -731,7 +731,7 @@ public class SubscriberTool
             final int streamId,
             final int sessionId,
             final long position,
-            final String sourceInformation)
+            final String sourceIdentity)
         {
             /* Handle processing the new connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);

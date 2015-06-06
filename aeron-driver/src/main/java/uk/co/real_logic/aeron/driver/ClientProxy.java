@@ -90,7 +90,7 @@ public class ClientProxy
         final RawLog rawLog,
         final long correlationId,
         final List<SubscriberPosition> subscriberPositions,
-        final String sourceInfo)
+        final String sourceIdentity)
     {
         connectionReady.wrap(tmpBuffer, 0);
         connectionReady
@@ -99,7 +99,7 @@ public class ClientProxy
             .joiningPosition(joiningPosition)
             .correlationId(correlationId)
             .logFileName(rawLog.logFileName())
-            .sourceInfo(sourceInfo);
+            .sourceIdentity(sourceIdentity);
 
         final int size = subscriberPositions.size();
         connectionReady.subscriberPositionCount(size);

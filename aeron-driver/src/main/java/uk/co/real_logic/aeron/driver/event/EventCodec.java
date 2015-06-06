@@ -538,7 +538,7 @@ public class EventCodec
             command.sessionId(),
             command.streamId(),
             positions.toString(),
-            command.sourceInfo(),
+            command.sourceIdentity(),
             command.correlationId(),
             command.logFileName());
     }

@@ -417,18 +417,17 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             ctx.close();
         }
 
-        public void onInactiveConnection(final String channel, final int streamId,
-            final int sessionId, final long position)
+        public void onInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
         {
             LOG.info(String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x",
                 channel, streamId, sessionId, position));
         }
 
-        public void onNewConnection(final String channel, final int streamId,
-            final int sessionId, final long position, final String sourceInformation)
+        public void onNewConnection(
+            final String channel, final int streamId, final int sessionId, final long position, final String sourceIdentity)
         {
             LOG.info(String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
-                channel, streamId, sessionId, position, sourceInformation));
+                channel, streamId, sessionId, position, sourceIdentity));
         }
 
         /**

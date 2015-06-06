@@ -45,13 +45,13 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * +---------------------------------------------------------------+
  * |                         Log File Length                       |
  * +---------------------------------------------------------------+
- * |                          Log File Name                      ...
- * ...                                                             |
+ * |                          Log File Name                       ...
+ *...                                                              |
  * +---------------------------------------------------------------+
- * |                         source info Length                    |
+ * |                     Source identity Length                    |
  * +---------------------------------------------------------------+
- * |                         source info Name                    ...
- * ...                                                             |
+ * |                     Source identity Name                     ...
+ *...                                                              |
  * +---------------------------------------------------------------+
  * |                      Subscriber Position Id 0                 |
  * +---------------------------------------------------------------+
@@ -63,7 +63,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                         Registration Id 1                     |
  * |                                                               |
  * +---------------------------------------------------------------+
- * |                                                             ...
+ * |                                                              ...
  * Up to "Position Indicators Count" entries of this form
  */
 public class ConnectionBuffersReadyFlyweight extends Flyweight
@@ -202,18 +202,18 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
         return this;
     }
 
-    public String sourceInfo()
+    public String sourceIdentity()
     {
-        return buffer().getStringUtf8(sourceInfoOffset(), LITTLE_ENDIAN);
+        return buffer().getStringUtf8(sourceIdentityOffset(), LITTLE_ENDIAN);
     }
 
-    public ConnectionBuffersReadyFlyweight sourceInfo(final String value)
+    public ConnectionBuffersReadyFlyweight sourceIdentity(final String value)
     {
-        buffer().putStringUtf8(sourceInfoOffset(), value, ByteOrder.LITTLE_ENDIAN);
+        buffer().putStringUtf8(sourceIdentityOffset(), value, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
-    private int sourceInfoOffset()
+    private int sourceIdentityOffset()
     {
         final int logFileNameOffset = offset() + LOGFILE_FIELD_OFFSET;
         return buffer().getInt(logFileNameOffset) + logFileNameOffset + SIZE_OF_INT;
@@ -245,9 +245,10 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
 
     private int subscriberPositionOffset(final int index)
     {
-        final int sourceInfoOffset = sourceInfoOffset();
-        final int endOfSourceInfo = buffer().getInt(sourceInfoOffset) + sourceInfoOffset + SIZE_OF_INT;
-        return endOfSourceInfo + index * SUBSCRIBER_POSITION_FIELD_SIZE;
+        final int sourceIdentityOffset = sourceIdentityOffset();
+        final int endOfSourceIdentity = buffer().getInt(sourceIdentityOffset) + sourceIdentityOffset + SIZE_OF_INT;
+
+        return endOfSourceIdentity + index * SUBSCRIBER_POSITION_FIELD_SIZE;
     }
 
     /**

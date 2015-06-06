@@ -149,7 +149,7 @@ public class Ping
     }
 
     private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
     {
         System.out.format("New connection: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
 

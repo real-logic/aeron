@@ -46,7 +46,7 @@ limitations under the License.
 Directory Structure
 -------------------
 
-Client API
+Client API and common classes
 
     aeron-client
 
@@ -58,9 +58,6 @@ Media Driver
 
     aeron-driver
 
-Common Classes/Methods
-
-    aeron-common
 
 Build
 -----

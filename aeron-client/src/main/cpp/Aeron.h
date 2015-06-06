@@ -73,25 +73,24 @@ public:
 
 private:
     Context& m_context;
-    ClientConductor m_conductor;
-    BusySpinIdleStrategy m_idleStrategy;
-    AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
 
     MemoryMappedFile::ptr_t m_cncBuffer;
 
     AtomicBuffer m_toDriverAtomicBuffer;
-    std::unique_ptr<ManyToOneRingBuffer> m_toDriverRingBuffer;
-    std::unique_ptr<DriverProxy> m_driverProxy;
-
     AtomicBuffer m_toClientsAtomicBuffer;
-    std::unique_ptr<BroadcastReceiver> m_toClientsBroadcastReceiver;
-    std::unique_ptr<CopyBroadcastReceiver> m_toClientsCopyReceiver;
-
     AtomicBuffer m_countersValueBuffer;
 
-    void mapCncFile(Context& context);
-    DriverProxy& createDriverProxy(Context& context);
-    CopyBroadcastReceiver& createDriverReceiver(Context& context);
+    ManyToOneRingBuffer m_toDriverRingBuffer;
+    DriverProxy m_driverProxy;
+
+    BroadcastReceiver m_toClientsBroadcastReceiver;
+    CopyBroadcastReceiver m_toClientsCopyReceiver;
+
+    ClientConductor m_conductor;
+    BusySpinIdleStrategy m_idleStrategy;
+    AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
+
+    MemoryMappedFile::ptr_t mapCncFile(Context& context);
 };
 
 }

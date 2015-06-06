@@ -222,7 +222,10 @@ private:
         // store fence
         atomic::thread_fence();
 
-        memcpy(buffer.getBuffer() + sizeof(std::int32_t), defaultHeaderBuffer, DataHeader::LENGTH - sizeof(std::int32_t));
+        memcpy(
+            buffer.getBuffer() + sizeof(std::int32_t) + frameOffset,
+            defaultHeaderBuffer + sizeof(std::int32_t),
+            DataHeader::LENGTH - sizeof(std::int32_t));
     }
 };
 

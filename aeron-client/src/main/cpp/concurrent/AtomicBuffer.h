@@ -292,9 +292,11 @@ private:
     inline void boundsCheck(util::index_t index, util::index_t length) const
     {
         if (index + length > m_length)
+        {
             throw util::OutOfBoundsException(
-                std::string("Index Out of Bounds. Index: ") +
-                    util::toString(index + length) + " Capacity: " + util::toString(m_length), SOURCEINFO);
+                util::strPrintf("Index Out of Bounds[%p]. Index: %d + %d Capacity: %d", this, index, length, m_length),
+                SOURCEINFO);
+        }
     }
 };
 

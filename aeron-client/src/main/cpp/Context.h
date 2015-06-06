@@ -65,56 +65,13 @@ public:
 
     inline this_t& aeronDir(const std::string &base)
     {
-        m_dataDirName = base + "/data";
-        m_adminDirName = base + "/conductor";
+        m_dirName = base;
         return *this;
-    }
-
-    inline this_t& toDriverBuffer(std::unique_ptr<ManyToOneRingBuffer> toDriverBuffer)
-    {
-        m_toDriverBuffer = std::move(toDriverBuffer);
-        return *this;
-    }
-
-    inline std::unique_ptr<ManyToOneRingBuffer> toDriverBuffer()
-    {
-        return std::move(m_toDriverBuffer);
-    }
-
-    inline this_t& toClientsBuffer(std::unique_ptr<CopyBroadcastReceiver> toClientsBuffer)
-    {
-        m_toClientsBuffer = std::move(toClientsBuffer);
-        return *this;
-    }
-
-    inline std::unique_ptr<CopyBroadcastReceiver> toClientsBuffer()
-    {
-        return std::move(m_toClientsBuffer);
-    }
-
-    inline void dataDirName(const std::string& name)
-    {
-        m_dataDirName = name;
-    }
-
-    inline const std::string& dataDirName() const
-    {
-        return m_dataDirName;
-    }
-
-    inline void adminDirName(const std::string& name)
-    {
-        m_adminDirName = name;
-    }
-
-    inline const std::string& adminDirName() const
-    {
-        return m_adminDirName;
     }
 
     inline const std::string cncFileName()
     {
-        return m_adminDirName + "/" + CncFileDescriptor::CNC_FILE;
+        return m_dirName + "/" + CncFileDescriptor::CNC_FILE;
     }
 
     inline this_t& newPublicationHandler(const on_new_publication_t& handler)
@@ -169,10 +126,7 @@ public:
     }
 
 private:
-    std::unique_ptr<ManyToOneRingBuffer> m_toDriverBuffer;
-    std::unique_ptr<CopyBroadcastReceiver> m_toClientsBuffer;
-    std::string m_dataDirName = defaultAeronPath() + "/data";
-    std::string m_adminDirName = defaultAeronPath() + "/conductor";
+    std::string m_dirName = defaultAeronPath();
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;

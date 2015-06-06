@@ -41,8 +41,6 @@ public:
 
         RingBufferDescriptor::checkCapacity(m_capacity);
 
-        buffer.setMemory(0, buffer.getCapacity(), 0);
-
         m_mask = m_capacity - 1;
         m_maxMsgLength = m_capacity / 8;
 
@@ -51,6 +49,9 @@ public:
         m_correlationIdCounterIndex = m_capacity + RingBufferDescriptor::CORRELATION_COUNTER_OFFSET;
         m_consumerHeartbeatIndex = m_capacity + RingBufferDescriptor::CONSUMER_HEARTBEAT_OFFSET;
     }
+
+    ManyToOneRingBuffer(const ManyToOneRingBuffer&) = delete;
+    ManyToOneRingBuffer& operator=(const ManyToOneRingBuffer&) = delete;
 
     inline util::index_t capacity() const
     {

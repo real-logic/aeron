@@ -81,7 +81,7 @@ int main (int argc, char** argv)
         Settings settings = parseCmdLine(cp, argc, argv);
 
         MemoryMappedFile::ptr_t cncFile =
-            MemoryMappedFile::mapExisting((settings.basePath + "/conductor/" + CncFileDescriptor::CNC_FILE).c_str());
+            MemoryMappedFile::mapExisting((settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
 
         AtomicBuffer labelsBuffer = CncFileDescriptor::createCounterLabelsBuffer(cncFile);
         AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);

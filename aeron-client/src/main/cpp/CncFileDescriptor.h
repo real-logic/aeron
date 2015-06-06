@@ -77,6 +77,8 @@ struct MetaDataDefn
 };
 #pragma pack(pop)
 
+static const size_t VERSION_AND_META_DATA_LENGTH = BitUtil::align(sizeof(MetaDataDefn), BitUtil::CACHE_LINE_LENGTH);
+
 inline static std::int32_t cncVersion(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), cncFile->getMemorySize());
@@ -92,7 +94,7 @@ inline static AtomicBuffer createToDriverBuffer(MemoryMappedFile::ptr_t cncFile)
 
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
 
-    return AtomicBuffer(cncFile->getMemoryPtr() + sizeof(MetaDataDefn), metaData.toDriverBufferLength);
+    return AtomicBuffer(cncFile->getMemoryPtr() + VERSION_AND_META_DATA_LENGTH, metaData.toDriverBufferLength);
 }
 
 inline static AtomicBuffer createToClientsBuffer(MemoryMappedFile::ptr_t cncFile)
@@ -100,7 +102,7 @@ inline static AtomicBuffer createToClientsBuffer(MemoryMappedFile::ptr_t cncFile
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), cncFile->getMemorySize());
 
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
-    std::uint8_t* basePtr = cncFile->getMemoryPtr() + sizeof(MetaDataDefn) + metaData.toDriverBufferLength;
+    std::uint8_t* basePtr = cncFile->getMemoryPtr() + VERSION_AND_META_DATA_LENGTH + metaData.toDriverBufferLength;
 
     return AtomicBuffer(basePtr, metaData.toClientsBufferLength);
 }
@@ -112,7 +114,7 @@ inline static AtomicBuffer createCounterLabelsBuffer(MemoryMappedFile::ptr_t cnc
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
     std::uint8_t* basePtr =
         cncFile->getMemoryPtr() +
-        sizeof(MetaDataDefn) +
+        VERSION_AND_META_DATA_LENGTH +
         metaData.toDriverBufferLength +
         metaData.toClientsBufferLength;
 
@@ -126,7 +128,7 @@ inline static AtomicBuffer createCounterValuesBuffer(MemoryMappedFile::ptr_t cnc
     const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
     std::uint8_t* basePtr =
         cncFile->getMemoryPtr() +
-        sizeof(MetaDataDefn) +
+        VERSION_AND_META_DATA_LENGTH +
         metaData.toDriverBufferLength +
         metaData.toClientsBufferLength +
         metaData.counterLabelsBufferLength;

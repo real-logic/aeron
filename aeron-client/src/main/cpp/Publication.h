@@ -41,7 +41,7 @@ public:
     Publication(
         ClientConductor& conductor,
         const std::string& channel,
-        std::int64_t correlationId,
+        std::int64_t registrationId,
         std::int32_t streamId,
         std::int32_t sessionId,
         ReadOnlyPosition<UnsafeBufferPosition>& publicationLimit,
@@ -64,9 +64,24 @@ public:
         return m_sessionId;
     }
 
-    inline std::int64_t correlationId() const
+    inline std::int64_t registrationId() const
     {
-        return m_correlationId;
+        return m_registrationId;
+    }
+
+    inline util::index_t maxMessageLength() const
+    {
+        return m_appenders[0]->maxMessageLength();
+    }
+
+    inline std::int64_t position()
+    {
+        const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
+        const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
+        const std::int32_t currentTail =
+            m_appenders[LogBufferDescriptor::indexByTerm(initialTermId, activeTermId)]->rawTailVolatile();
+
+        return LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
     }
 
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
@@ -121,7 +136,7 @@ public:
 private:
     ClientConductor& m_conductor;
     const std::string m_channel;
-    std::int64_t m_correlationId;
+    std::int64_t m_registrationId;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
     ReadOnlyPosition<UnsafeBufferPosition>& m_publicationLimit;

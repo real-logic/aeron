@@ -22,7 +22,7 @@ namespace aeron {
 Publication::Publication(
     ClientConductor &conductor,
     const std::string &channel,
-    std::int64_t correlationId,
+    std::int64_t registrationId,
     std::int32_t streamId,
     std::int32_t sessionId,
     ReadOnlyPosition<UnsafeBufferPosition>& publicationLimit,
@@ -30,7 +30,7 @@ Publication::Publication(
     :
     m_conductor(conductor),
     m_channel(channel),
-    m_correlationId(correlationId),
+    m_registrationId(registrationId),
     m_streamId(streamId),
     m_sessionId(sessionId),
     m_publicationLimit(publicationLimit),
@@ -62,7 +62,7 @@ Publication::Publication(
 
 Publication::~Publication()
 {
-    m_conductor.releasePublication(m_correlationId);
+    m_conductor.releasePublication(m_registrationId);
 }
 
 }

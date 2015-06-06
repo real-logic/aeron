@@ -79,6 +79,26 @@ LogBuffers::LogBuffers(const char *filename)
     }
 }
 
+LogBuffers::LogBuffers(std::uint8_t *address, index_t length)
+{
+    const index_t termLength = (index_t)LogBufferDescriptor::computeTermLength(length);
+    const index_t metaDataSectionOffset = (index_t) (termLength * LogBufferDescriptor::PARTITION_COUNT);
+
+    for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
+    {
+        const index_t metaDataOffset = metaDataSectionOffset + (i * LogBufferDescriptor::TERM_META_DATA_LENGTH);
+
+        m_buffers[i].wrap(address + (i * termLength), termLength);
+        m_buffers[i + LogBufferDescriptor::PARTITION_COUNT]
+            .wrap(address + metaDataOffset, LogBufferDescriptor::TERM_META_DATA_LENGTH);
+    }
+
+    m_buffers[2 * LogBufferDescriptor::PARTITION_COUNT]
+        .wrap(address + (length - LogBufferDescriptor::LOG_META_DATA_LENGTH),
+            LogBufferDescriptor::LOG_META_DATA_LENGTH);
+}
+
+
 LogBuffers::~LogBuffers()
 {
 }

@@ -33,6 +33,7 @@ class LogBuffers
 {
 public:
     LogBuffers(const char *filename);
+    LogBuffers(std::uint8_t *address, index_t length);
 
     virtual ~LogBuffers();
 

@@ -56,6 +56,12 @@ public:
         m_length = length;
     }
 
+    inline void wrap(AtomicBuffer& buffer)
+    {
+        m_buffer = buffer.m_buffer;
+        m_length = buffer.m_length;
+    }
+
     template <typename struct_t>
     struct_t& overlayStruct (util::index_t offset)
     {

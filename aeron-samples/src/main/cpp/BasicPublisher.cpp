@@ -22,7 +22,7 @@
 #include <Aeron.h>
 #include <array>
 
-using namespace aeron::common::util;
+using namespace aeron::util;
 using namespace aeron;
 
 std::atomic<bool> running (true);

@@ -25,9 +25,9 @@
 
 namespace aeron {
 
-using namespace aeron::common::util;
-using namespace aeron::common::concurrent;
-using namespace aeron::common::concurrent::logbuffer;
+using namespace aeron::util;
+using namespace aeron::concurrent;
+using namespace aeron::concurrent::logbuffer;
 
 class LogBuffers
 {

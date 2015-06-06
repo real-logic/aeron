@@ -25,7 +25,7 @@
 #include "RecordDescriptor.h"
 #include "BroadcastReceiver.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace broadcast {
+namespace aeron { namespace concurrent { namespace broadcast {
 
 typedef std::array<std::uint8_t, 4096> scratch_buffer_t;
 
@@ -85,6 +85,6 @@ private:
     AtomicBuffer m_scratchBuffer;
 };
 
-}}}}
+}}}
 
 #endif

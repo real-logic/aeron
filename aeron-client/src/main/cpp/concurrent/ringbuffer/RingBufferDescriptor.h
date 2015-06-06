@@ -22,7 +22,7 @@
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
 
-namespace aeron { namespace common { namespace concurrent { namespace ringbuffer {
+namespace aeron { namespace concurrent { namespace ringbuffer {
 
 namespace RingBufferDescriptor {
 
@@ -44,6 +44,6 @@ namespace RingBufferDescriptor {
     }
 }
 
-}}}}
+}}}
 
 #endif

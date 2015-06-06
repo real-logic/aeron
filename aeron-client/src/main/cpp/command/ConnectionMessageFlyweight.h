@@ -18,9 +18,9 @@
 
 #include <cstdint>
 #include <stddef.h>
-#include <common/Flyweight.h>
+#include "Flyweight.h"
 
-namespace aeron { namespace common { namespace command {
+namespace aeron { namespace command {
 
 /**
 * Control message flyweight for any message that needs to represent a connection
@@ -63,13 +63,13 @@ struct ConnectionMessageDefn
 #pragma pack(pop)
 
 
-class ConnectionMessageFlyweight : public common::Flyweight<ConnectionMessageDefn>
+class ConnectionMessageFlyweight : public Flyweight<ConnectionMessageDefn>
 {
 public:
     typedef ConnectionMessageFlyweight this_t;
 
-    inline ConnectionMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
-            : common::Flyweight<ConnectionMessageDefn>(buffer, offset)
+    inline ConnectionMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        Flyweight<ConnectionMessageDefn>(buffer, offset)
     {
     }
 
@@ -134,5 +134,5 @@ public:
     }
 };
 
-}}};
+}}
 #endif

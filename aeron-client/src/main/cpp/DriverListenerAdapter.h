@@ -23,10 +23,9 @@
 
 namespace aeron {
 
-using namespace aeron::common;
-using namespace aeron::common::command;
-using namespace aeron::common::concurrent;
-using namespace aeron::common::concurrent::broadcast;
+using namespace aeron::command;
+using namespace aeron::concurrent;
+using namespace aeron::concurrent::broadcast;
 
 template <class DriverListener>
 class DriverListenerAdapter

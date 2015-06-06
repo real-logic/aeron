@@ -26,10 +26,10 @@
 #include "DriverProxy.h"
 #include "ClientConductor.h"
 
-using namespace aeron::common::concurrent::ringbuffer;
-using namespace aeron::common::concurrent::broadcast;
-using namespace aeron::common::concurrent;
-using namespace aeron::common::command;
+using namespace aeron::concurrent::ringbuffer;
+using namespace aeron::concurrent::broadcast;
+using namespace aeron::concurrent;
+using namespace aeron::command;
 using namespace aeron;
 
 #define CAPACITY (1024)

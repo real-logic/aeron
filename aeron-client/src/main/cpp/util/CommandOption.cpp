@@ -17,7 +17,7 @@
 #include "CommandOptionParser.h"
 #include "StringUtil.h"
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 CommandOption::CommandOption()
         : m_optionChar('-'),
@@ -101,4 +101,4 @@ void CommandOption::validate() const
         throw CommandOptionException(std::string("option -") + m_optionChar + " has too few parameters specified.", SOURCEINFO);
 }
 
-}}}
+}}

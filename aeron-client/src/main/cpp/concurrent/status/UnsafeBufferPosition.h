@@ -21,7 +21,7 @@
 #include <concurrent/CountersManager.h>
 #include "Position.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace status {
+namespace aeron { namespace concurrent { namespace status {
 
 class UnsafeBufferPosition : public Position<UnsafeBufferPosition>
 {
@@ -59,6 +59,6 @@ private:
     std::int32_t m_offset;
 };
 
-}}}}
+}}}
 
 #endif //AERON_UNSAFEBUFFERPOSITION_H

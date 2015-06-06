@@ -26,8 +26,8 @@
 #include <concurrent/CountersManager.h>
 #include <util/Exceptions.h>
 
-using namespace aeron::common::concurrent;
-using namespace aeron::common::util;
+using namespace aeron::concurrent;
+using namespace aeron::util;
 
 static const std::int32_t NUMCOUNTERS = 4;
 static std::array<std::uint8_t, NUMCOUNTERS * CountersManager::LABEL_LENGTH> labelsBuffer;

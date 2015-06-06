@@ -22,10 +22,10 @@
 #include "MockAtomicBuffer.h"
 #include <concurrent/logbuffer/TermAppender.h>
 
-using namespace aeron::common::concurrent::logbuffer;
-using namespace aeron::common::concurrent::mock;
-using namespace aeron::common::concurrent;
-using namespace aeron::common;
+using namespace aeron::concurrent::logbuffer;
+using namespace aeron::concurrent::mock;
+using namespace aeron::concurrent;
+using namespace aeron;
 
 #define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
 #define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::TERM_META_DATA_LENGTH)

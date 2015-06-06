@@ -28,9 +28,8 @@
 #include <inttypes.h>
 
 using namespace aeron;
-using namespace aeron::common;
-using namespace aeron::common::util;
-using namespace aeron::common::concurrent;
+using namespace aeron::util;
+using namespace aeron::concurrent;
 using namespace std::chrono;
 
 

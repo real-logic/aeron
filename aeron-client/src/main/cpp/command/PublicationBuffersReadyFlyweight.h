@@ -18,10 +18,9 @@
 
 #include <cstdint>
 #include <stddef.h>
-#include <common/Flyweight.h>
-#include <common/TermHelper.h>
+#include "Flyweight.h"
 
-namespace aeron { namespace common { namespace command {
+namespace aeron { namespace command {
 
 /**
 * Message to denote that new buffers have been added for a publication.
@@ -63,13 +62,13 @@ struct PublicationBuffersReadyDefn
 };
 #pragma pack(pop)
 
-class PublicationBuffersReadyFlyweight : public common::Flyweight<PublicationBuffersReadyDefn>
+class PublicationBuffersReadyFlyweight : public Flyweight<PublicationBuffersReadyDefn>
 {
 public:
     typedef PublicationBuffersReadyFlyweight this_t;
 
     inline PublicationBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
-        common::Flyweight<PublicationBuffersReadyDefn>(buffer, offset)
+        Flyweight<PublicationBuffersReadyDefn>(buffer, offset)
     {
     }
 
@@ -134,6 +133,6 @@ public:
     }
 };
 
-}}};
+}};
 
 #endif

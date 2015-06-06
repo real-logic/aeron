@@ -19,7 +19,7 @@
 
 #include <memory>
 #include <util/Exceptions.h>
-#include <common/AgentRunner.h>
+#include <concurrent/AgentRunner.h>
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <CncFileDescriptor.h>
@@ -27,10 +27,8 @@
 
 namespace aeron {
 
-using namespace aeron::common;
-using namespace aeron::common::common;
-using namespace aeron::common::concurrent::ringbuffer;
-using namespace aeron::common::concurrent::broadcast;
+using namespace aeron::concurrent::ringbuffer;
+using namespace aeron::concurrent::broadcast;
 
 typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, const std::string& sourceInformation)> on_new_connection_t;
 typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)> on_new_publication_t;

@@ -25,15 +25,15 @@
 //    [Class::Method : d:\projects\file.cpp : 127]
 // ==========================================================================================================================
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 
 #ifdef _WIN32
-	#define SOURCEINFO __FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
-	#define AERON_NOEXCEPT
+    #define SOURCEINFO __FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
+    #define AERON_NOEXCEPT
 #else
-	#define SOURCEINFO  __PRETTY_FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
-	#define AERON_NOEXCEPT noexcept
+    #define SOURCEINFO  __PRETTY_FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
+    #define AERON_NOEXCEPT noexcept
 #endif
 
 class SourcedException : public std::exception
@@ -48,12 +48,12 @@ public:
     {
     }
 
-	virtual const char *what() const AERON_NOEXCEPT
+    virtual const char *what() const AERON_NOEXCEPT
     {
         return m_what.c_str();
     }
 
-		const char *where() const AERON_NOEXCEPT
+        const char *where() const AERON_NOEXCEPT
     {
         return m_where.c_str();
     }
@@ -76,5 +76,5 @@ DECLARE_SOURCED_EXCEPTION (ElementNotFound);
 DECLARE_SOURCED_EXCEPTION (IllegalArgumentException);
 DECLARE_SOURCED_EXCEPTION (IllegalStateException);
 
-}}}
+}}
 #endif

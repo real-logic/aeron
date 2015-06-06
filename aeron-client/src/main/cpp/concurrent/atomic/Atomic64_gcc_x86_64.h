@@ -16,7 +16,7 @@
 #ifndef INCLUDED_ATOMIC64_GCC_X86_64_
 #define INCLUDED_ATOMIC64_GCC_X86_64_
 
-namespace aeron { namespace common { namespace concurrent { namespace atomic {
+namespace aeron { namespace concurrent { namespace atomic {
 
 /**
  * A compiler directive not reorder instructions.
@@ -186,6 +186,6 @@ inline std::int64_t cmpxchg(volatile std::int64_t* destination,  std::int64_t ex
 // http://gcc.gnu.org/bugzilla/show_bug.cgi?id=24691
 #define AERON_DECL_ALIGNED(declaration, amt) declaration __attribute__((aligned(amt)))
 
-}}}}
+}}}
 
 #endif

@@ -20,7 +20,7 @@
 #include <type_traits>
 
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 namespace BitUtil
 {
@@ -106,7 +106,7 @@ namespace BitUtil
     }
 }
 
-}}};
+}};
 
 
 #endif

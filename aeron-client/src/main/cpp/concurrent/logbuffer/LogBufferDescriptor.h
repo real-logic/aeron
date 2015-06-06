@@ -23,7 +23,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include "FrameDescriptor.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace LogBufferDescriptor {
 
@@ -218,6 +218,6 @@ inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, 
 
 };
 
-}}}}
+}}}
 
 #endif

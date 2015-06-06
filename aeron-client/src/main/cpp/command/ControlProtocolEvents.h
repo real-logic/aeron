@@ -19,7 +19,7 @@
 #include <cstdint>
 #include <string>
 
-namespace aeron { namespace common { namespace command {
+namespace aeron { namespace command {
 
 /**
 * List of event types used in the control protocol between the
@@ -54,5 +54,5 @@ struct ControlProtocolEvents
     static const std::int32_t ON_INACTIVE_CONNECTION = 0x0F05;
 };
 
-}}};
+}};
 #endif

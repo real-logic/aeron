@@ -26,9 +26,9 @@
 #include <command/PublicationMessageFlyweight.h>
 #include <command/PublicationBuffersReadyFlyweight.h>
 
-using namespace aeron::common::util;
-using namespace aeron::common::command;
-using namespace aeron::common::concurrent;
+using namespace aeron::util;
+using namespace aeron::command;
+using namespace aeron::concurrent;
 
 static std::array<std::uint8_t, 1024> testBuffer;
 

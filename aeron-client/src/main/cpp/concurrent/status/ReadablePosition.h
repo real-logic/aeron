@@ -17,10 +17,10 @@
 #ifndef AERON_READONLYPOSITION_H
 #define AERON_READONLYPOSITION_H
 
-namespace aeron { namespace common { namespace concurrent { namespace status {
+namespace aeron { namespace concurrent { namespace status {
 
 template <class X>
-class ReadOnlyPosition
+class ReadablePosition
 {
 public:
     inline std::int32_t id()
@@ -41,11 +41,11 @@ public:
 protected:
     X& m_impl;
 
-    ReadOnlyPosition(X& impl) : m_impl(impl)
+    ReadablePosition(X& impl) : m_impl(impl)
     {
     }
 };
 
-}}}}
+}}}
 
 #endif //AERON_READONLYPOSITION_H

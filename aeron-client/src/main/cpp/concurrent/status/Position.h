@@ -17,25 +17,25 @@
 #ifndef AERON_POSITION_H
 #define AERON_POSITION_H
 
-#include "ReadOnlyPosition.h"
+#include "ReadablePosition.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace status {
+namespace aeron { namespace concurrent { namespace status {
 
 template <class X>
-class Position : public ReadOnlyPosition<X>
+class Position : public ReadablePosition<X>
 {
 public:
     inline void set(std::int64_t value)
     {
-        ReadOnlyPosition<X>::m_impl.implSet(value);
+        ReadablePosition<X>::m_impl.implSet(value);
     }
 
 protected:
-    Position(X& impl) : ReadOnlyPosition<X>(impl)
+    Position(X& impl) : ReadablePosition<X>(impl)
     {
     }
 };
 
-}}}}
+}}}
 
 #endif //AERON_POSITION_H

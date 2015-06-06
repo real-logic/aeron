@@ -21,7 +21,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include <util/BitUtil.h>
 
-namespace aeron { namespace common { namespace concurrent { namespace broadcast {
+namespace aeron { namespace concurrent { namespace broadcast {
 
 /*
  *   0                   1                   2                   3
@@ -75,6 +75,6 @@ inline static void checkMsgTypeId(std::int32_t msgTypeId)
     }
 }
 
-}}}}}
+}}}}
 
 #endif

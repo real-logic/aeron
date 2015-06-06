@@ -21,7 +21,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include <util/BitUtil.h>
 
-namespace aeron { namespace common { namespace concurrent { namespace broadcast {
+namespace aeron { namespace concurrent { namespace broadcast {
 
 namespace BroadcastBufferDescriptor {
 
@@ -39,6 +39,6 @@ inline static void checkCapacity(util::index_t capacity)
     }
 }
 
-}}}}}
+}}}}
 
 #endif

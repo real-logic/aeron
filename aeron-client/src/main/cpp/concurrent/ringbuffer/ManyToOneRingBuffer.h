@@ -26,7 +26,7 @@
 #include "RingBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace ringbuffer {
+namespace aeron { namespace concurrent { namespace ringbuffer {
 
 /** The read handler function signature */
 typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> handler_t;
@@ -225,6 +225,6 @@ private:
     }
 };
 
-}}}}
+}}}
 
 #endif

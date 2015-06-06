@@ -26,10 +26,9 @@
 
 namespace aeron {
 
-using namespace aeron::common::command;
-using namespace aeron::common::concurrent;
-using namespace aeron::common::concurrent::ringbuffer;
-using namespace aeron::common;
+using namespace aeron::command;
+using namespace aeron::concurrent;
+using namespace aeron::concurrent::ringbuffer;
 
 class DriverProxy
 {

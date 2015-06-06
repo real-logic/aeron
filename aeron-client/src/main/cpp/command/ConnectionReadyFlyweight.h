@@ -20,10 +20,9 @@
 #include <stddef.h>
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
-#include <common/Flyweight.h>
-#include <common/TermHelper.h>
+#include "Flyweight.h"
 
-namespace aeron { namespace common { namespace command {
+namespace aeron { namespace command {
 
 /**
 * Message to denote that new buffers have been added for a subscription.
@@ -92,13 +91,13 @@ struct ConnectionReadyDefn
 };
 #pragma pack(pop)
 
-class ConnectionReadyFlyweight : public common::Flyweight<ConnectionReadyDefn>
+class ConnectionReadyFlyweight : public Flyweight<ConnectionReadyDefn>
 {
 public:
     typedef ConnectionReadyFlyweight this_t;
 
     inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : common::Flyweight<ConnectionReadyDefn>(buffer, offset)
+        : Flyweight<ConnectionReadyDefn>(buffer, offset)
     {
     }
 
@@ -211,6 +210,6 @@ private:
     }
 };
 
-}}};
+}};
 
 #endif

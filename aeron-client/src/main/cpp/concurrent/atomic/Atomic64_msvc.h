@@ -19,7 +19,7 @@
 #include <atomic>
 #include "Intrin.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace atomic {
+namespace aeron { namespace concurrent { namespace atomic {
 
 /**
 * A compiler directive not reorder instructions.
@@ -137,6 +137,6 @@ inline std::int64_t cmpxchg(volatile std::int64_t* destination,  std::int64_t ex
 // Note: May not work on local variables.
 #define AERON_DECL_ALIGNED(declaration, amt) __declspec(align(amt)) declaration
 
-}}}}
+}}}
 
 #endif

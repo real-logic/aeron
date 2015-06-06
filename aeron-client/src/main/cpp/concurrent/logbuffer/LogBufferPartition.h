@@ -22,7 +22,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include "LogBufferDescriptor.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 class LogBufferPartition
 {
@@ -91,6 +91,6 @@ private:
     util::index_t m_capacity;
 };
 
-}}}}
+}}}
 
 #endif

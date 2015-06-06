@@ -21,7 +21,7 @@
 #include <stddef.h>
 #include "CorrelatedMessageFlyweight.h"
 
-namespace aeron { namespace common { namespace command {
+namespace aeron { namespace command {
 
 /**
 * Control message for adding a subscription.
@@ -113,5 +113,5 @@ private:
     SubscriptionMessageDefn& m_struct;
 };
 
-}}};
+}};
 #endif

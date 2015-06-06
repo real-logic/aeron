@@ -24,8 +24,8 @@
 #include <concurrent/AtomicBuffer.h>
 #include <util/Exceptions.h>
 
-using namespace aeron::common::concurrent;
-using namespace aeron::common::util;
+using namespace aeron::concurrent;
+using namespace aeron::util;
 
 
 typedef std::array<std::uint8_t, 1024> buffer_t;

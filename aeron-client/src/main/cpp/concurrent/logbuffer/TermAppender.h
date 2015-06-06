@@ -24,7 +24,7 @@
 #include "BufferClaim.h"
 #include "Header.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 #define TERM_APPENDER_TRIPPED ((std::int32_t)-1)
 #define TERM_APPENDER_FAILED ((std::int32_t)-2)
@@ -226,6 +226,6 @@ private:
     }
 };
 
-}}}}
+}}}
 
 #endif

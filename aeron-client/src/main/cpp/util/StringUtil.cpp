@@ -17,7 +17,7 @@
 #include <stdarg.h>
 #include "StringUtil.h"
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 std::string strPrintf (const char* format, ...)
 {
@@ -47,4 +47,4 @@ std::string strPrintf (const char* format, ...)
     }
 }
 
-}}}
+}}

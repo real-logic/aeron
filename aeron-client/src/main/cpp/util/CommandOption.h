@@ -24,7 +24,7 @@
 
 #include "Exceptions.h"
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 DECLARE_SOURCED_EXCEPTION (CommandOptionException);
 
@@ -87,4 +87,4 @@ public:
     int getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue);
 };
 
-}}}
+}}

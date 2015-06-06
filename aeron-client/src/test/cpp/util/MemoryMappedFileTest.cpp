@@ -19,7 +19,7 @@
 
 #include <util/MemoryMappedFile.h>
 
-using namespace aeron::common::util;
+using namespace aeron::util;
 
 std::string makeTempFileName ()
 {

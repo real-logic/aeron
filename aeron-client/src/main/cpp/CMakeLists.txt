@@ -39,17 +39,16 @@ SET(HEADERS
     command/ConnectionReadyFlyweight.h
     command/ControlProtocolEvents.h
     command/CorrelatedMessageFlyweight.h
+    command/Flyweight.h
     command/PublicationMessageFlyweight.h
     command/PublicationBuffersReadyFlyweight.h
     command/RemoveMessageFlyweight.h
     command/SubscriptionMessageFlyweight.h
-    common/AgentRunner.h
-    common/BusySpinIdleStrategy.h
-    common/Flyweight.h
-    common/TermHelper.h
+    concurrent/AgentRunner.h
     concurrent/Atomic64.h
     concurrent/AtomicBuffer.h
     concurrent/AtomicCounter.h
+    concurrent/BusySpinIdleStrategy.h
     concurrent/CountersManager.h
     concurrent/atomic/Atomic64_gcc_x86_64.h
     concurrent/atomic/Atomic64_msvc.h
@@ -68,7 +67,7 @@ SET(HEADERS
     concurrent/ringbuffer/ManyToOneRingBuffer.h
     concurrent/ringbuffer/RecordDescriptor.h
     concurrent/ringbuffer/RingBufferDescriptor.h
-    concurrent/status/ReadOnlyPosition.h
+    concurrent/status/ReadablePosition.h
     concurrent/status/Position.h
     concurrent/status/UnsafeBufferPosition.h
     util/MemoryMappedFile.h

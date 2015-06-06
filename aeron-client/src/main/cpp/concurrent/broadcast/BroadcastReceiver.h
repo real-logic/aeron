@@ -23,7 +23,7 @@
 #include "BroadcastBufferDescriptor.h"
 #include "RecordDescriptor.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace broadcast {
+namespace aeron { namespace concurrent { namespace broadcast {
 
 class BroadcastReceiver
 {
@@ -140,6 +140,6 @@ private:
     }
 };
 
-}}}}
+}}}
 
 #endif

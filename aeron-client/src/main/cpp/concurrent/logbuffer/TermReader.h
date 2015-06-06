@@ -24,7 +24,7 @@
 #include "LogBufferPartition.h"
 #include "Header.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 /** The data handler function signature */
 typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index_t, Header&)> fragment_handler_t;
@@ -85,6 +85,6 @@ private:
     util::index_t m_offset;
 };
 
-}}}}
+}}}
 
 #endif

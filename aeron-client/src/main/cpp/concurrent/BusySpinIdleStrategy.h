@@ -20,9 +20,9 @@
 #include <util/Exceptions.h>
 #include <iostream>
 #include <thread>
-#include <concurrent/Atomic64.h>
+#include "Atomic64.h"
 
-namespace aeron { namespace common { namespace common {
+namespace aeron { namespace concurrent {
 
 class BusySpinIdleStrategy
 {
@@ -43,12 +43,12 @@ public:
 
     inline static void pause()
     {
-        concurrent::atomic::cpu_pause();
+        atomic::cpu_pause();
     }
 
 private:
 };
 
-}}}
+}}
 
 #endif

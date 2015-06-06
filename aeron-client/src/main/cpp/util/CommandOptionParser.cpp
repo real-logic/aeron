@@ -16,7 +16,7 @@
 
 #include "CommandOptionParser.h"
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 CommandOptionParser::CommandOptionParser ()
 {
@@ -89,4 +89,4 @@ void CommandOptionParser::displayOptionsHelp (std::ostream& out)
     }
 }
 
-}}}
+}}

@@ -23,10 +23,10 @@
 #include <concurrent/broadcast/BroadcastBufferDescriptor.h>
 #include <concurrent/broadcast/BroadcastTransmitter.h>
 
-using namespace aeron::common::concurrent::broadcast;
-using namespace aeron::common::concurrent::mock;
-using namespace aeron::common::concurrent;
-using namespace aeron::common;
+using namespace aeron::concurrent::broadcast;
+using namespace aeron::concurrent::mock;
+using namespace aeron::concurrent;
+using namespace aeron;
 
 #define CAPACITY (1024)
 #define TOTAL_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)

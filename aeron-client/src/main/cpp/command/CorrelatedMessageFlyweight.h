@@ -18,9 +18,9 @@
 
 #include <cstdint>
 #include <stddef.h>
-#include <common/Flyweight.h>
+#include "Flyweight.h"
 
-namespace aeron { namespace common { namespace command {
+namespace aeron { namespace command {
 
 /**
 * 0                   1                   2                   3
@@ -45,13 +45,13 @@ struct CorrelatedMessageDefn
 
 static const util::index_t CORRELATED_MESSAGE_LENGTH = sizeof(struct CorrelatedMessageDefn);
 
-class CorrelatedMessageFlyweight : public common::Flyweight<CorrelatedMessageDefn>
+class CorrelatedMessageFlyweight : public Flyweight<CorrelatedMessageDefn>
 {
 public:
     typedef CorrelatedMessageFlyweight this_t;
 
     inline CorrelatedMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
-            : common::Flyweight<CorrelatedMessageDefn>(buffer, offset)
+            : Flyweight<CorrelatedMessageDefn>(buffer, offset)
     {
     }
 
@@ -78,5 +78,5 @@ public:
     }
 };
 
-}}};
+}};
 #endif

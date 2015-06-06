@@ -22,7 +22,7 @@
 
 #include "CommandOption.h"
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 class CommandOptionParser
 {
@@ -39,4 +39,4 @@ class CommandOptionParser
         void displayOptionsHelp (std::ostream& out);
 };
 
-}}}
+}}

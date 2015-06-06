@@ -30,8 +30,8 @@
 
 namespace aeron {
 
-using namespace aeron::common::concurrent::status;
-using namespace aeron::common::concurrent;
+using namespace aeron::concurrent::status;
+using namespace aeron::concurrent;
 
 class ClientConductor
 {

@@ -21,7 +21,7 @@
 
 #include <gtest/gtest.h>
 
-using namespace aeron::common::util;
+using namespace aeron::util;
 
 TEST(utilTests, scopeTest)
 {

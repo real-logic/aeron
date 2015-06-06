@@ -28,7 +28,7 @@
 
 #include "AtomicBuffer.h"
 
-namespace aeron { namespace common { namespace concurrent {
+namespace aeron { namespace concurrent {
 
 class CountersManager
 {
@@ -146,6 +146,6 @@ private:
     }
 };
 
-}}}
+}}
 
 #endif

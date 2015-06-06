@@ -18,8 +18,8 @@
 
 namespace aeron {
 
-using namespace aeron::common::util;
-using namespace aeron::common::concurrent::logbuffer;
+using namespace aeron::util;
+using namespace aeron::concurrent::logbuffer;
 
 #define MAX_SINGLE_MAPPING_SIZE (0x7FFFFFFF)
 

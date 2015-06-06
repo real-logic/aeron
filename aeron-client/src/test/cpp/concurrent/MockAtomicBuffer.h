@@ -23,7 +23,7 @@
 
 #include <concurrent/AtomicBuffer.h>
 
-namespace aeron { namespace common { namespace concurrent { namespace mock {
+namespace aeron { namespace concurrent { namespace mock {
 
 class MockAtomicBuffer : public AtomicBuffer
 {
@@ -49,6 +49,6 @@ public:
     MOCK_CONST_METHOD1(getInt64Volatile, std::int64_t(util::index_t));
 };
 
-}}}}
+}}}
 
 #endif

@@ -19,7 +19,7 @@
 #include <string>
 #include <concurrent/AtomicBuffer.h>
 
-namespace aeron { namespace common { namespace common {
+namespace aeron { namespace command {
 
 template<typename struct_t>
 class Flyweight
@@ -70,6 +70,6 @@ private:
     util::index_t m_baseOffset;
 };
 
-}}}
+}}
 
 #endif

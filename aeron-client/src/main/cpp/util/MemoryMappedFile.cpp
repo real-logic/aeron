@@ -30,7 +30,7 @@
 #include "ScopeUtils.h"
 #include "StringUtil.h"
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t size)
 {
@@ -316,4 +316,4 @@ std::int64_t MemoryMappedFile::getFileSize(const char *filename)
 
 #endif
 
-}}}
+}}

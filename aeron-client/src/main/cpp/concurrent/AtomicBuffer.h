@@ -28,7 +28,7 @@
 
 #include "Atomic64.h"
 
-namespace aeron { namespace common { namespace concurrent {
+namespace aeron { namespace concurrent {
 
 
 // note: Atomic Buffer does not own the memory it wraps.
@@ -292,12 +292,12 @@ private:
     inline void boundsCheck(util::index_t index, util::index_t length) const
     {
         if (index + length > m_length)
-            throw aeron::common::util::OutOfBoundsException(
+            throw util::OutOfBoundsException(
                 std::string("Index Out of Bounds. Index: ") +
                     util::toString(index + length) + " Capacity: " + util::toString(m_length), SOURCEINFO);
     }
 };
 
-}}}
+}}
 
 #endif

@@ -21,7 +21,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/Header.h>
 
-namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 class BufferClaim
 {
@@ -62,6 +62,6 @@ private:
     AtomicBuffer m_buffer;
 };
 
-}}}}
+}}}
 
 #endif

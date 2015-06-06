@@ -22,7 +22,7 @@
 #include "Exceptions.h"
 
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 inline std::string trimWSLeft (std::string str, const char* wschars = " \t")
 {
@@ -97,6 +97,6 @@ std::string strconcat (Ts... vs)
     return s.str();
 }
 
-}}}
+}}
 
 #endif

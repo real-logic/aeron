@@ -20,7 +20,7 @@
 #include <util/Index.h>
 #include <util/StringUtil.h>
 
-namespace aeron { namespace common { namespace concurrent { namespace ringbuffer {
+namespace aeron { namespace concurrent { namespace ringbuffer {
 
 /**
 * Header length made up of fields for message length, message type, and then the encoded message.
@@ -71,6 +71,6 @@ namespace RecordDescriptor {
     }
 };
 
-}}}}
+}}}
 
 #endif

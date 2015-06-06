@@ -21,10 +21,10 @@
 #include <concurrent/AtomicBuffer.h>
 #include <util/MemoryMappedFile.h>
 
-namespace aeron { namespace common {
+namespace aeron {
 
-using namespace aeron::common::util;
-using namespace aeron::common::concurrent;
+using namespace aeron::util;
+using namespace aeron::concurrent;
 
 /**
 * Description of the command and control file used between driver and clients
@@ -135,6 +135,6 @@ inline static AtomicBuffer createCounterValuesBuffer(MemoryMappedFile::ptr_t cnc
 }
 }
 
-}};
+};
 
 #endif

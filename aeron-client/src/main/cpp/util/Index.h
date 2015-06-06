@@ -19,12 +19,12 @@
 
 #include <cstdint>
 
-namespace aeron { namespace common { namespace util {
+namespace aeron { namespace util {
 
 // a 32bit signed int that is to be used for sizes and offsets to be compatible with
 // java's signed 32 bit int.
 typedef std::int32_t index_t;
 
-}}}
+}}
 
 #endif

@@ -21,7 +21,7 @@
 #include <util/StringUtil.h>
 #include <concurrent/AtomicBuffer.h>
 
-namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 /**
 * Description of the structure for message framing in a log buffer.
@@ -147,6 +147,6 @@ inline static void frameLengthOrdered(AtomicBuffer& logBuffer, util::index_t fra
 
 };
 
-}}}}
+}}}
 
 #endif

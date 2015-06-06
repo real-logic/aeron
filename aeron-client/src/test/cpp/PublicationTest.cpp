@@ -18,7 +18,7 @@
 
 #include "ClientConductorFixture.h"
 
-using namespace aeron::common::concurrent;
+using namespace aeron::concurrent;
 using namespace aeron;
 
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)

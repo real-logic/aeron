@@ -18,11 +18,11 @@
 
 #include <cstdint>
 #include <stddef.h>
-#include <common/Flyweight.h>
+#include "Flyweight.h"
 
 #include "CorrelatedMessageFlyweight.h"
 
-namespace aeron { namespace common { namespace command {
+namespace aeron { namespace command {
 
 /**
 * Control message for adding a publication
@@ -117,6 +117,6 @@ private:
     PublicationMessageDefn& m_struct;
 };
 
-}}};
+}};
 
 #endif

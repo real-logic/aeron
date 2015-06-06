@@ -26,9 +26,9 @@
 #include <thread>
 #include <vector>
 
-using namespace aeron::common::concurrent::ringbuffer;
-using namespace aeron::common::concurrent;
-using namespace aeron::common;
+using namespace aeron;
+using namespace aeron::concurrent::ringbuffer;
+using namespace aeron::concurrent;
 
 #define CAPACITY (1024)
 #define BUFFER_SZ (CAPACITY + RingBufferDescriptor::TRAILER_LENGTH)

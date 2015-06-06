@@ -24,18 +24,17 @@
 #include <util/MemoryMappedFile.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include "ClientConductor.h"
-#include "common/BusySpinIdleStrategy.h"
-#include "common/AgentRunner.h"
+#include "concurrent/BusySpinIdleStrategy.h"
+#include "concurrent/AgentRunner.h"
 #include "Publication.h"
 #include "Subscription.h"
 #include "Context.h"
 
 namespace aeron {
 
-using namespace aeron::common::util;
-using namespace aeron::common::common;
-using namespace aeron::common::concurrent;
-using namespace aeron::common::concurrent::broadcast;
+using namespace aeron::util;
+using namespace aeron::concurrent;
+using namespace aeron::concurrent::broadcast;
 
 class Aeron
 {

@@ -23,7 +23,7 @@
 #include "AtomicBuffer.h"
 #include "CountersManager.h"
 
-namespace aeron { namespace common { namespace concurrent {
+namespace aeron { concurrent {
 
 class AtomicCounter
 {
@@ -86,7 +86,7 @@ private:
     util::index_t m_offset;
 };
 
-}}}
+}}
 
 #endif
 

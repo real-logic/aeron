@@ -21,7 +21,7 @@
 #include <concurrent/AtomicBuffer.h>
 #include "LogBufferDescriptor.h"
 
-namespace aeron { namespace common { namespace concurrent { namespace logbuffer {
+namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace DataHeader {
 
@@ -124,6 +124,6 @@ private:
     std::int32_t m_positionBitsToShift;
 };
 
-}}}}
+}}}
 
 #endif

@@ -22,7 +22,7 @@
 #include <thread>
 #include <atomic>
 
-namespace aeron { namespace common { namespace common {
+namespace aeron { namespace concurrent {
 
 typedef std::function<void(util::SourcedException& exception)> exception_handler_t;
 
@@ -80,6 +80,6 @@ private:
     std::thread* m_thread;
 };
 
-}}}
+}}
 
 #endif

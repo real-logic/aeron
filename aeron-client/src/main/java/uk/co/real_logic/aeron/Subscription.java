@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 

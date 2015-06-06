@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.LossGenerator;
 import uk.co.real_logic.aeron.driver.NakMessageHandler;
 import uk.co.real_logic.aeron.driver.StatusMessageHandler;
@@ -25,9 +25,9 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameType;
-import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_NAK;
-import static uk.co.real_logic.aeron.common.protocol.HeaderFlyweight.HDR_TYPE_SM;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
 
 /**
  * Transport abstraction for UDP send and receive from the media

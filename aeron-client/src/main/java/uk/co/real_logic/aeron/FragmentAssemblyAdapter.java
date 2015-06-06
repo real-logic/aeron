@@ -15,16 +15,15 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.BufferBuilder;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FragmentHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 import java.util.function.IntFunction;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
 
 /**
  * A {@link FragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages

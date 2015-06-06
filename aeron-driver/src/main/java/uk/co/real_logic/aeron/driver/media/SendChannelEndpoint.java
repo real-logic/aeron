@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
@@ -27,7 +27,7 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
+import static uk.co.real_logic.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
  * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for processing of control frames.

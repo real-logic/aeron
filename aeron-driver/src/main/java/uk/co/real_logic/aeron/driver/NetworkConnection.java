@@ -15,9 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermRebuilder;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
@@ -30,7 +29,7 @@ import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.NetworkConnection.Status.ACTIVE;
 
 class NetworkConnectionPadding1

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.protocol.NakFlyweight;
+import uk.co.real_logic.aeron.protocol.NakFlyweight;
 
 @FunctionalInterface
 public interface NakMessageHandler

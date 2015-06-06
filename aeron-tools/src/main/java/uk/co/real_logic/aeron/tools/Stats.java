@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import uk.co.real_logic.aeron.common.CncFileDescriptor;
-import uk.co.real_logic.aeron.common.CommonContext;
+import uk.co.real_logic.aeron.CncFileDescriptor;
+import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;

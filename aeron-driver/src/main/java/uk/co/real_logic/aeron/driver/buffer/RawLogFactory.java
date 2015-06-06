@@ -15,14 +15,14 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 
 import java.io.File;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.computeLogLength;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computeLogLength;
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**

@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.UriUtil;
-import uk.co.real_logic.aeron.common.uri.AeronUri;
-import uk.co.real_logic.aeron.common.uri.InterfaceSearchAddress;
+import uk.co.real_logic.aeron.ErrorCode;
+import uk.co.real_logic.aeron.driver.UriUtil;
+import uk.co.real_logic.aeron.driver.uri.AeronUri;
+import uk.co.real_logic.aeron.driver.uri.InterfaceSearchAddress;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
 
@@ -31,8 +31,8 @@ import java.util.Map;
 import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
-import static uk.co.real_logic.aeron.common.NetworkUtil.*;
-import static uk.co.real_logic.aeron.common.Strings.isEmpty;
+import static uk.co.real_logic.aeron.driver.NetworkUtil.*;
+import static uk.co.real_logic.aeron.driver.Strings.isEmpty;
 
 /**
  * Encapsulation of UDP Channels

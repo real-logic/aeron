@@ -148,20 +148,14 @@ subprojects {
     }
 }
 
-project(':aeron-common') {
-    dependencies {
-        compile 'uk.co.real-logic:Agrona:0.3.2-SNAPSHOT'
-    }
-}
-
 project(':aeron-driver') {
     apply plugin: 'application'
 
     mainClassName = 'uk.co.real_logic.aeron.driver.MediaDriver'
 
     dependencies {
-        compile project(':aeron-common')
-        testCompile project(path: ':aeron-common', configuration: 'tests')
+        compile project(':aeron-client')
+        testCompile project(':aeron-client')
     }
 
     test {
@@ -179,8 +173,9 @@ project(':aeron-driver') {
 
 project(':aeron-client') {
     dependencies {
-        compile project(':aeron-common')
-        testCompile project(path: ':aeron-common', configuration: 'tests')
+        dependencies {
+            compile 'uk.co.real-logic:Agrona:0.3.2-SNAPSHOT'
+        }
     }
 }
 
@@ -203,7 +198,7 @@ project(':aeron-samples') {
 project(':aeron-system-tests') {
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
-        testCompile project(path: ':aeron-common', configuration: 'tests')
+        testCompile project(path: ':aeron-client', configuration: 'tests')
     }
 
     test {

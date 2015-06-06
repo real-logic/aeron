@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.exceptions;
 
-import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.ErrorCode;
 
 public class InvalidChannelException extends ControlProtocolException
 {

@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.aeron.common.event.EventCode;
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.driver.event.EventCode;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.driver.Configuration;
 import uk.co.real_logic.aeron.driver.LossGenerator;
 import uk.co.real_logic.agrona.LangUtil;
@@ -33,8 +33,8 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameLength;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor.frameVersion;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLength;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameVersion;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {

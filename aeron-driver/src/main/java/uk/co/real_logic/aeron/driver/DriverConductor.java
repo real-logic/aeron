@@ -15,15 +15,15 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.Flyweight;
-import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.common.event.EventCode;
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.Flyweight;
+import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.command.RemoveMessageFlyweight;
+import uk.co.real_logic.aeron.command.SubscriptionMessageFlyweight;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.driver.event.EventCode;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver.Context;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
@@ -50,9 +50,9 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
-import static uk.co.real_logic.aeron.common.ErrorCode.*;
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.common.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static uk.co.real_logic.aeron.ErrorCode.*;
+import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 
 /**

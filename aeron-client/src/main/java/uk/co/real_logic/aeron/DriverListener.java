@@ -15,8 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
 
 /**
  * Callback interface for receiving messages from the driver.

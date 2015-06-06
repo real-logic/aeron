@@ -22,8 +22,8 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 public class LogBufferHelper
 {

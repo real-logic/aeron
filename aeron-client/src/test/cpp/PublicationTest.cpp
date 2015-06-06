@@ -24,9 +24,10 @@ using namespace aeron;
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)
 #define TERM_META_DATA_LENGTH (LogBufferDescriptor::TERM_META_DATA_LENGTH)
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
+#define SRC_BUFFER_LENGTH 1024
 
 typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH)> log_buffer_t;
-typedef std::array<std::uint8_t, 1024> src_buffer_t;
+typedef std::array<std::uint8_t, SRC_BUFFER_LENGTH> src_buffer_t;
 
 static const std::string CHANNEL = "udp://localhost:40123";
 static const std::int32_t STREAM_ID = 10;
@@ -148,7 +149,30 @@ TEST_F(PublicationTest, shouldRotateWhenAppendTrips)
     EXPECT_EQ(defaultHdr.getInt32(DataHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 1);
 }
 
-TEST_F(PublicationTest, DISABLED_shouldRotateWhenClaimTrips)
+TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
 {
-    // TODO: finish
+    const int activeIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1);
+    const std::int64_t initialPosition = TERM_LENGTH - DataHeader::LENGTH;
+    m_metaDataBuffers[activeIndex].putInt32(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, initialPosition);
+    m_publicationLimit.set(LONG_MAX);
+
+    BufferClaim bufferClaim;
+    EXPECT_EQ(m_publication->position(), initialPosition);
+    EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), PUBLICATION_BACK_PRESSURE);
+    EXPECT_GT(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), initialPosition + DataHeader::LENGTH + m_srcBuffer.getCapacity());
+    EXPECT_GT(m_publication->position(), initialPosition + DataHeader::LENGTH + m_srcBuffer.getCapacity());
+
+    const int cleaningIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 2);
+    EXPECT_EQ(m_metaDataBuffers[cleaningIndex].getInt32(LogBufferDescriptor::TERM_STATUS_OFFSET), LogBufferDescriptor::NEEDS_CLEANING);
+
+    EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_ID_OFFSET), TERM_ID_1 + 1);
+
+    AtomicBuffer defaultHdr;
+
+    defaultHdr.wrap(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, cleaningIndex), DataHeader::LENGTH);
+    EXPECT_EQ(defaultHdr.getInt32(DataHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 2);
+
+    const int newTermIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
+    defaultHdr.wrap(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, newTermIndex), DataHeader::LENGTH);
+    EXPECT_EQ(defaultHdr.getInt32(DataHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 1);
 }

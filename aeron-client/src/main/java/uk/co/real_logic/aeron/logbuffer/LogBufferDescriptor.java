@@ -397,6 +397,20 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Compute the term offset from a given position.
+     *
+     * @param position            to calculate from
+     * @param positionBitsToShift number of times to right shift the position
+     * @return the offset within the term that represents the position
+     */
+    public static int computeTermOffsetFromPosition(final long position, final int positionBitsToShift)
+    {
+        final long mask = (1L << positionBitsToShift) - 1L;
+
+        return (int)(position & mask);
+    }
+
+    /**
      * Compute the total length of a log file given the term length.
      *
      * @param termLength on which to base the calculation.

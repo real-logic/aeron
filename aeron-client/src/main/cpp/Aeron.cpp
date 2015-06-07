@@ -18,6 +18,8 @@
 
 namespace aeron {
 
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(4);
+
 static long currentTimeMillis()
 {
     using namespace std::chrono;
@@ -46,7 +48,7 @@ Aeron::Aeron(Context &context) :
         context.m_onNewPublicationHandler,
         context.m_onNewSubscriptionHandler,
         context.m_mediaDriverTimeout),
-    m_idleStrategy(),
+    m_idleStrategy(IDLE_SLEEP_MS),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
 {
     m_conductorRunner.start();

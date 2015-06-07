@@ -18,6 +18,16 @@
 
 namespace aeron {
 
+static long currentTimeMillis()
+{
+    using namespace std::chrono;
+
+    system_clock::time_point now = system_clock::now();
+    milliseconds ms = duration_cast<milliseconds>(now.time_since_epoch());
+
+    return ms.count();
+}
+
 Aeron::Aeron(Context &context) :
     m_context(context.conclude()),
     m_cncBuffer(mapCncFile(context)),
@@ -29,11 +39,13 @@ Aeron::Aeron(Context &context) :
     m_toClientsBroadcastReceiver(m_toClientsAtomicBuffer),
     m_toClientsCopyReceiver(m_toClientsBroadcastReceiver),
     m_conductor(
+        currentTimeMillis,
         m_driverProxy,
         m_toClientsCopyReceiver,
         m_countersValueBuffer,
         context.m_onNewPublicationHandler,
-        context.m_onNewSubscriptionHandler),
+        context.m_onNewSubscriptionHandler,
+        context.m_mediaDriverTimeout),
     m_idleStrategy(),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
 {

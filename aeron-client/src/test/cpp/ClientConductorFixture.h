@@ -37,6 +37,8 @@ using namespace aeron;
 #define BROADCAST_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
 #define COUNTER_VALUES_BUFFER_LENGTH (1024 * 1024)
 
+static const long DRIVER_TIMEOUT_MS = 10 * 1000;
+
 typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_LENGTH> many_to_one_ring_buffer_t;
 typedef std::array<std::uint8_t, BROADCAST_BUFFER_LENGTH> broadcast_buffer_t;
 typedef std::array<std::uint8_t, COUNTER_VALUES_BUFFER_LENGTH> counter_values_buffer_t;
@@ -47,6 +49,11 @@ void onNewPub(const std::string&, std::int32_t, std::int32_t, std::int64_t)
 
 void onNewSub(const std::string&, std::int32_t, std::int64_t)
 {
+}
+
+long onTime()
+{
+    return 0;
 }
 
 class ClientConductorFixture
@@ -60,7 +67,14 @@ public:
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
-        m_conductor(m_driverProxy, m_copyBroadcastReceiver, m_counterValuesBuffer, onNewPub, onNewSub)
+        m_conductor(
+            onTime,
+            m_driverProxy,
+            m_copyBroadcastReceiver,
+            m_counterValuesBuffer,
+            onNewPub,
+            onNewSub,
+            DRIVER_TIMEOUT_MS)
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);

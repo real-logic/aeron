@@ -37,8 +37,6 @@ ext {
 allprojects {
     apply plugin: 'eclipse'
     apply plugin: 'idea'
-    apply plugin: 'findbugs'
-    apply plugin: 'jacoco'
 }
 
 buildscript {
@@ -147,15 +145,6 @@ subprojects {
     artifacts {
         archives sourcesJar, javadocJar
         tests testJar
-    }
-
-    findbugsTest.enabled = false
-    findbugsMain {
-        ignoreFailures = true
-        reports {
-            html { enabled = false }
-            xml.enabled = !html.enabled
-        }
     }
 }
 

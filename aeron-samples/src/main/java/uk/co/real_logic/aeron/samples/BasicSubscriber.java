@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
-
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.SigInt;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static uk.co.real_logic.aeron.samples.SamplesUtil.printStringMessage;
 
 /**
  * This is a Basic Aeron subscriber application
@@ -58,7 +58,7 @@ public class BasicSubscriber
             ctx.dirName(driver.contextDirName());
         }
 
-        final DataHandler dataHandler = printStringMessage(STREAM_ID);
+        final FragmentHandler fragmentHandler = printStringMessage(STREAM_ID);
         final AtomicBoolean running = new AtomicBoolean(true);
 
         // Register a SIGINT handler for graceful shutdown.
@@ -70,9 +70,9 @@ public class BasicSubscriber
         // The Aeron and Subscription classes implement "AutoCloseable" and will automatically
         // clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, dataHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            SamplesUtil.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription);
+            SamplesUtil.subscriberLoop(fragmentHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription);
 
             System.out.println("Shutting down...");
         }

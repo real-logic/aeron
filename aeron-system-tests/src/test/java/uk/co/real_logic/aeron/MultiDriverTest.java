@@ -17,23 +17,23 @@ package uk.co.real_logic.aeron;
 
 import org.junit.After;
 import org.junit.Test;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.driver.MediaDriver;
 
 import java.io.File;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.UUID;
 
-import static org.mockito.Matchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * Tests requiring multiple embedded drivers
@@ -67,8 +67,8 @@ public class MultiDriverTest
     private Subscription subscriptionB;
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
-    private DataHandler dataHandlerA = mock(DataHandler.class);
-    private DataHandler dataHandlerB = mock(DataHandler.class);
+    private FragmentHandler fragmentHandlerA = mock(FragmentHandler.class);
+    private FragmentHandler fragmentHandlerB = mock(FragmentHandler.class);
 
     private void launch()
     {
@@ -129,8 +129,8 @@ public class MultiDriverTest
         launch();
 
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID, SESSION_ID);
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerA);
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerB);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
         Thread.sleep(20); // allow for connections to be established
     }
@@ -147,7 +147,7 @@ public class MultiDriverTest
         launch();
 
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID, SESSION_ID);
-        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerA);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
 
         for (int i = 0; i < numMessagesToSendPreJoin; i++)
         {
@@ -161,14 +161,14 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(10);
+                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID, dataHandlerB);
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
         // wait until new subscriber gets new connection indication
         newConnectionLatch.await();
@@ -185,7 +185,7 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionA.poll(10);
+                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
@@ -196,20 +196,20 @@ public class MultiDriverTest
                 () -> fragmentsRead[0] > 0,
                 (j) ->
                 {
-                    fragmentsRead[0] += subscriptionB.poll(10);
+                    fragmentsRead[0] += subscriptionB.poll(fragmentHandlerB, 10);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(500));
         }
 
-        verify(dataHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onData(
+        verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
             any(UnsafeBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));
 
-        verify(dataHandlerB, times(numMessagesToSendPostJoin)).onData(
+        verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
             any(UnsafeBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),

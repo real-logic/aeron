@@ -15,18 +15,18 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import java.io.File;
-import java.nio.MappedByteBuffer;
-import java.util.Date;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import uk.co.real_logic.aeron.common.CncFileDescriptor;
-import uk.co.real_logic.aeron.common.CommonContext;
+import uk.co.real_logic.aeron.CncFileDescriptor;
+import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.SigInt;
+
+import java.io.File;
+import java.nio.MappedByteBuffer;
+import java.util.Date;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Application to print out counters and their labels

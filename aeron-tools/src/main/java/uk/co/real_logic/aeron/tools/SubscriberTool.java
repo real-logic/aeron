@@ -15,24 +15,10 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-
 import org.apache.commons.cli.ParseException;
-
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
-import uk.co.real_logic.aeron.InactiveConnectionHandler;
-import uk.co.real_logic.aeron.NewConnectionHandler;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
@@ -43,6 +29,14 @@ import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.io.IOException;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
@@ -236,6 +230,22 @@ public class SubscriberTool
         return seed;
     }
 
+    /**
+     * We need to provide a FragmentHandler for every call to Subscription.pull(), so hold the subscription and it's handler
+     * in one class.
+     */
+    class SubscriptionWithHandler
+    {
+        final Subscription subscription;
+        final FragmentHandler handler;
+
+        SubscriptionWithHandler(Subscription subscription, FragmentHandler handler)
+        {
+            this.subscription = subscription;
+            this.handler = handler;
+        }
+    }
+
     class SubscriberThread implements Runnable, InactiveConnectionHandler, NewConnectionHandler, RateController.Callback
     {
         final int threadId;
@@ -247,11 +257,12 @@ public class SubscriberTool
         private final Aeron aeron;
         private final UnsafeBuffer controlBuffer = new UnsafeBuffer(allocateDirect(4 + 4 + CHANNEL_NAME_MAX_LEN + 4 + 4));
         private final RateController rateController;
+        private final MessageStreamHandler controlHandler;
 
         /* All subscriptions we're interested in. */
-        final Subscription subscriptions[];
+        final SubscriptionWithHandler subscriptions[];
         /* Just the subscriptions we have reason to believe might have data available - these we actually poll on. */
-        final Subscription activeSubscriptions[];
+        final SubscriptionWithHandler activeSubscriptions[];
         int activeSubscriptionsLength = 0;
 
         private final Publication controlPublication;
@@ -297,7 +308,7 @@ public class SubscriberTool
             aeron = Aeron.connect(ctx);
 
             /* Create the control publication and subscription. */
-            final MessageStreamHandler controlHandler = new MessageStreamHandler("control_channel", CONTROL_STREAMID, null);
+            controlHandler = new MessageStreamHandler("control_channel", CONTROL_STREAMID, null);
             for (int i = 0; i < 1000; i++)
             {
                 /* Try 1000 ports and if we don't get one, just exit */
@@ -305,7 +316,7 @@ public class SubscriberTool
                 controlHandler.channel(controlChannel);
                 try
                 {
-                    controlSubscription = aeron.addSubscription(controlChannel, CONTROL_STREAMID, controlHandler::onControl);
+                    controlSubscription = aeron.addSubscription(controlChannel, CONTROL_STREAMID);
                     break;
                 }
                 catch (RegistrationException ignore)
@@ -321,7 +332,7 @@ public class SubscriberTool
 
             /* Create the subscriptionsList and populate it with just the channels this thread is supposed
              * to subscribe to. */
-            final ArrayList<Subscription> subscriptionsList = new ArrayList<>();
+            final ArrayList<SubscriptionWithHandler> subscriptionsList = new ArrayList<>();
             int streamIdx = 0;
             for (int i = 0; i < options.channels().size(); i++)
             {
@@ -350,19 +361,21 @@ public class SubscriberTool
                             streamIdMap.put(channel.streamIdentifiers()[j], sessionIdMap);
                         }
 
-                        final DataHandler dataHandler = new FragmentAssemblyAdapter(new MessageStreamHandler(
-                            channel.channel(), channel.streamIdentifiers()[j], sessionIdMap)::onMessage);
+                        final FragmentHandler dataHandler = new FragmentAssemblyAdapter(new MessageStreamHandler(
+                                channel.channel(), channel.streamIdentifiers()[j], sessionIdMap)::onMessage);
+                        final Subscription subscription = aeron.addSubscription(
+                                channel.channel(), channel.streamIdentifiers()[j]);
+                        final SubscriptionWithHandler subAndHandler = new SubscriptionWithHandler(subscription, dataHandler);
 
-                        subscriptionsList.add(aeron.addSubscription(
-                            channel.channel(), channel.streamIdentifiers()[j], dataHandler));
+                        subscriptionsList.add(subAndHandler);
                     }
                     streamIdx++;
                 }
             }
 
-            subscriptions = new Subscription[subscriptionsList.size()];
+            subscriptions = new SubscriptionWithHandler[subscriptionsList.size()];
             subscriptionsList.toArray(subscriptions);
-            activeSubscriptions = new Subscription[subscriptions.length];
+            activeSubscriptions = new SubscriptionWithHandler[subscriptions.length];
             activeSubscriptionsLength = 0; /* No subscriptions are in the active list to start. */
         }
 
@@ -398,8 +411,8 @@ public class SubscriberTool
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
-                if ((activeSubscriptions[i].streamId() == streamId)
-                    && (activeSubscriptions[i].channel().equals(channel)))
+                if ((activeSubscriptions[i].subscription.streamId() == streamId)
+                    && (activeSubscriptions[i].subscription.channel().equals(channel)))
                 {
                     /* Already in there, nothing to do. */
                     return;
@@ -407,13 +420,13 @@ public class SubscriberTool
             }
             /* Didn't find it, add it at the end.  Need to find it in the overall
              * list of subscriptions first. */
-            Subscription sub = null;
-            for (final Subscription subscription : subscriptions)
+            SubscriptionWithHandler sub = null;
+            for (final SubscriptionWithHandler subWithHandler : subscriptions)
             {
-                if ((subscription.streamId() == streamId)
-                    && (subscription.channel().equals(channel)))
+                if ((subWithHandler.subscription.streamId() == streamId)
+                    && (subWithHandler.subscription.channel().equals(channel)))
                 {
-                    sub = subscription;
+                    sub = subWithHandler;
                 }
             }
 
@@ -430,8 +443,8 @@ public class SubscriberTool
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
             {
-                if ((activeSubscriptions[i].streamId() == streamId)
-                    && (activeSubscriptions[i].channel().equals(channel)))
+                if ((activeSubscriptions[i].subscription.streamId() == streamId)
+                    && (activeSubscriptions[i].subscription.channel().equals(channel)))
                 {
                     /* Found it; "remove" it by overwriting it with the last subscription in the array
                      * and decrementing activeSubscriptionsLength. */
@@ -660,22 +673,22 @@ public class SubscriberTool
                 int fragmentsReceived = 0;
                 /* Always poll the control channel and fully drain it if
                  * there's anything there. */
-                while (0 != controlSubscription.poll(1))
+                while (0 != controlSubscription.poll(controlHandler::onControl, 1))
                 {
                     Thread.yield();
                 }
 
                 for (int i = 0; i < activeSubscriptionsLength; i++)
                 {
-                    fragmentsReceived += activeSubscriptions[i].poll(1);
+                    fragmentsReceived += activeSubscriptions[i].subscription.poll(activeSubscriptions[i].handler, 1);
                 }
                 idleStrategy.idle(fragmentsReceived);
             }
 
             /* Shut down... */
-            for (final Subscription subscription : subscriptions)
+            for (final SubscriptionWithHandler subWithHandler : subscriptions)
             {
-                subscription.close();
+                subWithHandler.subscription.close();
             }
             controlSubscription.close();
             controlPublication.close();
@@ -718,7 +731,7 @@ public class SubscriberTool
             final int streamId,
             final int sessionId,
             final long position,
-            final String sourceInformation)
+            final String sourceIdentity)
         {
             /* Handle processing the new connection notice on the subscriber thread. */
             enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);
@@ -736,4 +749,5 @@ public class SubscriberTool
     {
         LOG.info(reportString.toString());
     }
+
 }

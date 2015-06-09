@@ -26,10 +26,9 @@
 
 namespace aeron {
 
-using namespace aeron::common::command;
-using namespace aeron::common::concurrent;
-using namespace aeron::common::concurrent::ringbuffer;
-using namespace aeron::common;
+using namespace aeron::command;
+using namespace aeron::concurrent;
+using namespace aeron::concurrent::ringbuffer;
 
 class DriverProxy
 {
@@ -43,9 +42,9 @@ public:
     DriverProxy(const DriverProxy& proxy) = delete;
     DriverProxy& operator=(const DriverProxy& proxy) = delete;
 
-    inline std::int64_t timeOfLastDriverKeepaliveNs()
+    inline std::int64_t timeOfLastDriverKeepalive()
     {
-        return m_toDriverCommandBuffer.consumerHeartbeatTimeNs();
+        return m_toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)

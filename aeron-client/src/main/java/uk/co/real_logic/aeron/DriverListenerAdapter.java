@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.command.ConnectionMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.protocol.ErrorFlyweight;
+import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.command.ConnectionMessageFlyweight;
+import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.command.PublicationBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.protocol.ErrorFlyweight;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 
 /**
  * Analogue of {@link DriverProxy} on the client side
@@ -138,10 +138,7 @@ class DriverListenerAdapter implements MessageHandler
 
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.onError(
-                        errorHeader.errorCode(),
-                        errorHeader.errorMessage(),
-                        correlatedMessage.correlationId());
+                    listener.onError(errorHeader.errorCode(), errorHeader.errorMessage(), correlatedMessage.correlationId());
 
                     lastReceivedCorrelationId = correlationId;
                 }

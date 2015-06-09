@@ -15,17 +15,14 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.concurrent.AtomicArray;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
-import uk.co.real_logic.agrona.concurrent.status.Position;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
- * to the {@link DataHandler} provided at creation time.
+ * to the {@link FragmentHandler}.
  * <p>
  * By default fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
@@ -34,33 +31,30 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * It is an applications responsibility to {@link #poll} the Subscriber for new messages.
  * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
- * @see Aeron#addSubscription(String, int, DataHandler)
+ *
  * @see FragmentAssemblyAdapter
  */
 public class Subscription implements AutoCloseable
 {
+    private static final int TRUE = 1;
+    private static final int FALSE = 0;
+
+    private static final Connection[] EMPTY_ARRAY = new Connection[0];
     private static final AtomicIntegerFieldUpdater<Subscription> IS_CLOSED_UPDATER =
         AtomicIntegerFieldUpdater.newUpdater(Subscription.class, "isClosed");
 
     private final long registrationId;
     private final int streamId;
     private int roundRobinIndex = 0;
-    private volatile int isClosed = 0;
+    private volatile int isClosed = FALSE;
 
     private final String channel;
     private final ClientConductor clientConductor;
-    private final AtomicArray<Connection> connections = new AtomicArray<>();
-    private final DataHandler dataHandler;
+    private volatile Connection[] connections = EMPTY_ARRAY;
 
-    Subscription(
-        final ClientConductor conductor,
-        final DataHandler dataHandler,
-        final String channel,
-        final int streamId,
-        final long registrationId)
+    Subscription(final ClientConductor conductor, final String channel, final int streamId, final long registrationId)
     {
         this.clientConductor = conductor;
-        this.dataHandler = dataHandler;
         this.channel = channel;
         this.streamId = streamId;
         this.registrationId = registrationId;
@@ -87,39 +81,64 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Read waiting data and deliver to {@link uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler}s.
-     *
-     * Each fragment read will be a whole message if it is under MTU length. If larger than MTU side then it will come
+     * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered withing a session.
      *
-     * @param fragmentCountLimit number of message fragments to limit for a single poll operation.
+     * @param fragmentHandler callback for handling each message fragment as it is read.
+     * @param fragmentLimit   number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
      * @throws IllegalStateException if the subscription is closed.
      */
-    public int poll(final int fragmentCountLimit)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
         ensureOpen();
 
-        int index = ++roundRobinIndex;
-        if (index >= connections.size())
+        final Connection[] connections = this.connections;
+        final int length = connections.length;
+        int fragmentsRead = 0;
+
+        if (length > 0)
         {
-            roundRobinIndex = index = 0;
+            int startingIndex = roundRobinIndex++;
+            if (startingIndex >= length)
+            {
+                roundRobinIndex = startingIndex = 0;
+            }
+
+            int i = startingIndex;
+
+            do
+            {
+                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit);
+
+                if (++i == length)
+                {
+                    i = 0;
+                }
+            }
+            while (i != startingIndex);
         }
 
-        return connections.doLimitedAction(index, fragmentCountLimit, Connection::poll);
+        return fragmentsRead;
     }
 
     /**
-     * Release the Subscription so that associated buffers can be released.
+     * Close the Subscription so that associated buffers can be released.
+     *
+     * This method is idempotent.
      */
     public void close()
     {
-        if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
+        if (IS_CLOSED_UPDATER.compareAndSet(this, FALSE, TRUE))
         {
             synchronized (clientConductor)
             {
-                connections.forEach(clientConductor::lingerResource);
-                connections.clear();
+                for (final Connection connection : connections)
+                {
+                    clientConductor.lingerResource(connection);
+                }
+                connections = EMPTY_ARRAY;
+
                 clientConductor.releaseSubscription(this);
             }
         }
@@ -130,43 +149,74 @@ public class Subscription implements AutoCloseable
         return registrationId;
     }
 
-    void onConnectionReady(
-        final int sessionId,
-        final long initialPosition,
-        final long correlationId,
-        final TermReader[] termReaders,
-        final Position position,
-        final LogBuffers logBuffers)
+    void addConnection(final Connection connection)
     {
-        connections.add(
-            new Connection(termReaders, sessionId, initialPosition, correlationId, dataHandler, position, logBuffers));
-    }
+        final Connection[] oldArray = connections;
+        final int oldLength = oldArray.length;
+        final Connection[] newArray = new Connection[oldLength + 1];
 
-    boolean isConnected(final int sessionId)
-    {
-        return null != connections.findFirst((e) -> e.sessionId() == sessionId);
+        System.arraycopy(oldArray, 0, newArray, 0, oldLength);
+        newArray[oldLength] = connection;
+
+        connections = newArray;
     }
 
     boolean removeConnection(final long correlationId)
     {
-        final Connection connection = connections.remove((conn) -> conn.correlationId() == correlationId);
+        final Connection[] oldArray = connections;
+        final int oldLength = oldArray.length;
+        Connection removedConnection = null;
+        int index = -1;
 
-        if (connection != null)
+        for (int i = 0; i < oldLength; i++)
         {
-            clientConductor.lingerResource(connection);
+            if (oldArray[i].correlationId() == correlationId)
+            {
+                index = i;
+                removedConnection = oldArray[i];
+            }
         }
 
-        return connection != null;
+        if (null != removedConnection)
+        {
+            final int newSize = oldLength - 1;
+            final Connection[] newArray = new Connection[newSize];
+            System.arraycopy(oldArray, 0, newArray, 0, index);
+            System.arraycopy(oldArray, index + 1, newArray, index, newSize - index);
+            connections = newArray;
+
+            clientConductor.lingerResource(removedConnection);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    boolean isConnected(final int sessionId)
+    {
+        boolean isConnected = false;
+
+        for (final Connection connection : connections)
+        {
+            if (sessionId == connection.sessionId())
+            {
+                isConnected = true;
+                break;
+            }
+        }
+
+        return isConnected;
     }
 
     boolean hasNoConnections()
     {
-        return connections.isEmpty();
+        return connections.length == 0;
     }
 
     private void ensureOpen()
     {
-        if (1 == isClosed)
+        if (TRUE == isClosed)
         {
             throw new IllegalStateException(String.format(
                 "Subscription is closed: channel=%s streamId=%d registrationId=%d", channel, streamId, registrationId));

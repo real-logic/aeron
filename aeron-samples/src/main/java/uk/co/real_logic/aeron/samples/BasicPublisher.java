@@ -15,14 +15,14 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
-
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Basic Aeron publisher application
@@ -76,7 +76,7 @@ public class BasicPublisher
 
                 if (result < 0L)
                 {
-                    if (result == Publication.BACK_PRESSURE)
+                    if (result == Publication.BACK_PRESSURED)
                     {
                         System.out.println("Offer failed due to back pressure");
                     }

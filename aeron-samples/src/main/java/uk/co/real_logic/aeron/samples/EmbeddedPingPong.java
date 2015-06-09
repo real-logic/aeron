@@ -20,12 +20,16 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.*;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
@@ -87,7 +91,7 @@ public class EmbeddedPingPong
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-             final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+             final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
         {
             System.out.println("Waiting for new connection from Pong...");
 
@@ -98,7 +102,7 @@ public class EmbeddedPingPong
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
-                sendPingAndReceivePong(pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
+                sendPingAndReceivePong(dataHandler, pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
             }
 
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
@@ -108,7 +112,7 @@ public class EmbeddedPingPong
                 HISTOGRAM.reset();
                 System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-                sendPingAndReceivePong(pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
+                sendPingAndReceivePong(dataHandler, pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
 
                 System.out.println("Histogram of RTT latencies in microseconds.");
                 HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -128,15 +132,17 @@ public class EmbeddedPingPong
 
                 final Aeron.Context ctx = new Aeron.Context();
                 ctx.dirName(embeddedDirName);
+
                 try (final Aeron aeron = Aeron.connect(ctx);
                      final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
-                     final Subscription pingSubscription = aeron.addSubscription(
-                         PING_CHANNEL, PING_STREAM_ID, new FragmentAssemblyAdapter(
-                             (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length))))
+                     final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
                 {
+                    final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(
+                        (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
+
                     while (RUNNING.get())
                     {
-                        final int fragmentsRead = pingSubscription.poll(FRAME_COUNT_LIMIT);
+                        final int fragmentsRead = pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT);
                         PING_HANDLER_IDLE_STRATEGY.idle(fragmentsRead);
                     }
 
@@ -147,7 +153,10 @@ public class EmbeddedPingPong
     }
 
     private static void sendPingAndReceivePong(
-        final Publication pingPublication, final Subscription pongSubscription, final int numMessages)
+        final FragmentHandler fragmentHandler,
+        final Publication pingPublication,
+        final Subscription pongSubscription,
+        final int numMessages)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
@@ -159,7 +168,7 @@ public class EmbeddedPingPong
             }
             while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-            while (pongSubscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+            while (pongSubscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 idleStrategy.idle(0);
             }
@@ -175,7 +184,7 @@ public class EmbeddedPingPong
     }
 
     private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
     {
         if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
         {

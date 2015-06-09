@@ -15,15 +15,14 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
+import org.junit.Test;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
-import org.junit.Test;
-
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
 
 public class MessageStreamTest
 {

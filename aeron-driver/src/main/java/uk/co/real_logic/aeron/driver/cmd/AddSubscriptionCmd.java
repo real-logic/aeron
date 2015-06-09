@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.Receiver;
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 
 public class AddSubscriptionCmd implements ReceiverCmd
 {

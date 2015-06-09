@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverConductor;
-import uk.co.real_logic.aeron.driver.ReceiveChannelEndpoint;
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 
 import java.net.InetSocketAddress;
 

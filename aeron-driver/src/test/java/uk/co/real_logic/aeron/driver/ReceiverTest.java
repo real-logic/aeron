@@ -18,26 +18,30 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
-import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.NanoClock;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.SetupFlyweight;
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
+import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.TermReader;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.SetupFlyweight;
+import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
+import uk.co.real_logic.aeron.driver.media.TransportPoller;
+import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.NanoClock;
+import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.ReadOnlyPosition;
+import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -51,9 +55,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.LogBufferHelper.newTestLogBuffers;
+import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class ReceiverTest
 {
@@ -72,8 +76,8 @@ public class ReceiverTest
     private static final long STATUS_MESSAGE_TIMEOUT = Configuration.STATUS_MESSAGE_TIMEOUT_DEFAULT_NS;
     private static final InetSocketAddress SOURCE_ADDRESS = new InetSocketAddress("localhost", 45679);
 
-    private static final ReadOnlyPosition POSITION = mock(ReadOnlyPosition.class);
-    private static final List<ReadOnlyPosition> POSITIONS = Collections.singletonList(POSITION);
+    private static final ReadablePosition POSITION = mock(ReadablePosition.class);
+    private static final List<ReadablePosition> POSITIONS = Collections.singletonList(POSITION);
 
     private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
     private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
@@ -97,7 +101,9 @@ public class ReceiverTest
     private final TimerWheel timerWheel = new TimerWheel(
         clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
-    private TermReader[] termReaders;
+    private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_LENGTH);
+    private final TermReader termReader = new TermReader();
+    private UnsafeBuffer[] termBuffers;
     private DatagramChannel senderChannel;
 
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
@@ -141,10 +147,10 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        termReaders = rawLog
+        termBuffers = rawLog
             .stream()
-            .map((partition) -> new TermReader(INITIAL_TERM_ID, partition.termBuffer()))
-            .toArray(TermReader[]::new);
+            .map(RawLogPartition::termBuffer)
+            .toArray(UnsafeBuffer[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI),
@@ -271,8 +277,9 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
-            termReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
+            termReader.offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -282,7 +289,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(0));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }
@@ -334,8 +342,9 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
-            termReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
+            termReader.offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -345,7 +354,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(0));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }
@@ -397,8 +407,9 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
-            termReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
+            termReader.offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -408,7 +419,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(0));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }
@@ -465,7 +477,8 @@ public class ReceiverTest
 
         verify(mockHighestReceivedPosition).setOrdered(initialTermOffset + alignedDataFrameLength);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
             initialTermOffset,
             (buffer, offset, length, header) ->
             {
@@ -476,7 +489,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(initialTermOffset));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.exceptions;
 
-import uk.co.real_logic.aeron.common.ErrorCode;
+import uk.co.real_logic.aeron.ErrorCode;
 
 /**
  * Caused when a error occurs during addition or release of {@link uk.co.real_logic.aeron.Publication}s

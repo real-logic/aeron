@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * A subscriber application with two subscriptions which can receive fragmented messages
@@ -68,8 +68,8 @@ public class MultipleSubscribersWithFragmentAssembly
         // The Aeron and Subscription classes both implement "AutoCloseable" and will
         // automatically clean up resources when this try block is finished
         try (final Aeron aeron = Aeron.connect(ctx);
-             final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1, dataHandler1);
-             final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2, dataHandler2))
+             final Subscription subscription1 = aeron.addSubscription(CHANNEL, STREAM_ID_1);
+             final Subscription subscription2 = aeron.addSubscription(CHANNEL, STREAM_ID_2))
         {
             // Initialize a backoff strategy to avoid excessive spinning
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
@@ -78,8 +78,8 @@ public class MultipleSubscribersWithFragmentAssembly
             // Try to read the data for both the subscribers
             while (running.get())
             {
-                final int fragmentsRead1 = subscription1.poll(FRAGMENT_COUNT_LIMIT);
-                final int fragmentsRead2 = subscription2.poll(FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead1 = subscription1.poll(dataHandler1, FRAGMENT_COUNT_LIMIT);
+                final int fragmentsRead2 = subscription2.poll(dataHandler2, FRAGMENT_COUNT_LIMIT);
                 // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
                 // use if no messages were received.
                 idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
@@ -92,18 +92,18 @@ public class MultipleSubscribersWithFragmentAssembly
     /**
      * Print the information for a new connection to stdout.
      *
-     * @param channel           for the connection
-     * @param streamId          for the stream
-     * @param sessionId         for the connection publication
-     * @param position          in the stream
-     * @param sourceInformation that is transport specific
+     * @param channel        for the connection
+     * @param streamId       for the stream
+     * @param sessionId      for the connection publication
+     * @param position       in the stream
+     * @param sourceIdentity that is transport specific
      */
     public static void eventNewConnection(
-        final String channel, final int streamId, final int sessionId, final long position, final String sourceInformation)
+        final String channel, final int streamId, final int sessionId, final long position, final String sourceIdentity)
     {
         System.out.format(
             "new connection on %s streamId %x sessionId %x from %s%n",
-            channel, streamId, sessionId, sourceInformation);
+            channel, streamId, sessionId, sourceIdentity);
 
     }
 
@@ -115,7 +115,8 @@ public class MultipleSubscribersWithFragmentAssembly
      * @param sessionId for the connection publication
      * @param position  within the stream
      */
-    public static void eventInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
+    public static void eventInactiveConnection(
+        final String channel, final int streamId, final int sessionId, final long position)
     {
         System.out.format(
             "inactive connection on %s streamId %d sessionId %x%n",
@@ -123,13 +124,13 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Return a reusable, parameterized {@link DataHandler} that prints to stdout for the first stream(STREAM)
+     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout for the first stream(STREAM)
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      * @throws Exception
      */
-    public static DataHandler reassembledStringMessage1(final int streamId) throws Exception
+    public static FragmentHandler reassembledStringMessage1(final int streamId) throws Exception
     {
         return
             (buffer, offset, length, header) ->
@@ -143,19 +144,20 @@ public class MultipleSubscribersWithFragmentAssembly
 
                 if (length != 10000)
                 {
-                    System.out.format("Received message was not assembled properly; received length was %d," +
-                        " but was expecting 10000%n", length);
+                    System.out.format(
+                        "Received message was not assembled properly; received length was %d, but was expecting 10000%n",
+                        length);
                 }
             };
     }
 
     /**
-     * Return a reusable, parameterized {@link DataHandler} that prints to stdout for the second stream (STREAM + 1)
+     * Return a reusable, parameterized {@link FragmentHandler} that prints to stdout for the second stream (STREAM + 1)
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
      */
-    public static DataHandler reassembledStringMessage2(final int streamId) throws Exception
+    public static FragmentHandler reassembledStringMessage2(final int streamId) throws Exception
     {
         return
             (buffer, offset, length, header) ->
@@ -169,8 +171,9 @@ public class MultipleSubscribersWithFragmentAssembly
 
                 if (length != 9000)
                 {
-                    System.out.format("Received message was not assembled properly; received length was %d," +
-                        " but was expecting 9000%n", length);
+                    System.out.format(
+                        "Received message was not assembled properly; received length was %d, but was expecting 9000%n",
+                        length);
                 }
             };
     }

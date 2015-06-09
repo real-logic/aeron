@@ -15,19 +15,12 @@
  */
 package uk.co.real_logic.aeron.tools.perf_tools;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
-
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.CommonContext;
-import uk.co.real_logic.aeron.common.RateReporter;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
+import uk.co.real_logic.aeron.CommonContext;
+import uk.co.real_logic.aeron.driver.RateReporter;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.LangUtil;
@@ -35,6 +28,13 @@ import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteBuffer;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 public class AeronThroughput
 {
@@ -49,29 +49,25 @@ public class AeronThroughput
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     public static void printRate(
-        final double messagesPerSec,
-        final double bytesPerSec,
-        final long totalMessages,
-        final long totalBytes)
+        final double messagesPerSec, final double bytesPerSec, final long totalMessages, final long totalBytes)
     {
     }
 
-    public static DataHandler rateReporterHandler(final RateReporter reporter)
+    public static FragmentHandler rateReporterHandler(final RateReporter reporter)
     {
         return (buffer, offset, length, header) -> reporter.onMessage(1, length);
     }
 
-    public static Consumer<Subscription> subscriberLoop(final int limit, final AtomicBoolean running)
+    public static Consumer<Subscription> subscriberLoop(
+        final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running)
     {
         final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
-        return subscriberLoop(limit, running, idleStrategy);
+        return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
     }
 
     public static Consumer<Subscription> subscriberLoop(
-        final int limit,
-        final AtomicBoolean running,
-        final IdleStrategy idleStrategy)
+        final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
     {
         return
             (subscription) ->
@@ -80,7 +76,7 @@ public class AeronThroughput
                 {
                     while (running.get())
                     {
-                        final int fragmentsRead = subscription.poll(limit);
+                        final int fragmentsRead = subscription.poll(fragmentHandler, limit);
                         idleStrategy.idle(fragmentsRead);
                     }
                 }
@@ -114,7 +110,7 @@ public class AeronThroughput
             .dirsDeleteOnExit(true);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), AeronThroughput::printRate);
-        final DataHandler rateReporterHandler = rateReporterHandler(reporter);
+        final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final String embeddedDirName = CommonContext.generateEmbeddedDirName();
@@ -127,10 +123,11 @@ public class AeronThroughput
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron aeron = Aeron.connect(context);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
-             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID, rateReporterHandler))
+             final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
             executor.execute(reporter);
-            executor.execute(() -> AeronThroughput.subscriberLoop(FRAGMENT_COUNT_LIMIT, running).accept(subscription));
+            executor.execute(
+                () -> AeronThroughput.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 
             final long start = System.currentTimeMillis();
             for (long i = 0; i < NUMBER_OF_MESSAGES; i++)

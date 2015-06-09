@@ -15,6 +15,11 @@
 #
 cmake_minimum_required(VERSION 2.8 FATAL_ERROR)
 
+if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
+    message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory)"
+        "and run CMake from there. You may need to remove CMakeCache.txt.")
+endif()
+
 include(ExternalProject)
 
 project("aeron")
@@ -31,7 +36,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 ExternalProject_Add(
     gmock
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/aeron-common/src/main/cpp/3rdparty/gmock-1.7.0.zip
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/gmock-1.7.0.zip
     URL_MD5 073b984d8798ea1594f5e44d85b20d66
     INSTALL_COMMAND ""
 )
@@ -76,11 +81,9 @@ endif()
 ##########################################################
 # Project variables, etc.
 
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/binaries")
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/cppbuild/lib")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/binaries")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 
-set(AERON_COMMON_PATH "${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp")
-set(AERON_3RDPARTY_PATH "${AERON_COMMON_PATH}/3rdparty")
 set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
@@ -94,10 +97,8 @@ include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
 
 ##########################################################
 
-include_directories(${AERON_COMMON_PATH} ${AERON_CLIENT_SOURCE_PATH})
+include_directories(${AERON_CLIENT_SOURCE_PATH})
 
-add_subdirectory(${CMAKE_SOURCE_DIR}/aeron-common/src/main/cpp)
-add_subdirectory(${CMAKE_SOURCE_DIR}/aeron-common/src/test/cpp)
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_TEST_PATH})
 add_subdirectory(${AERON_SAMPLES_PATH})

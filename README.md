@@ -46,7 +46,7 @@ limitations under the License.
 Directory Structure
 -------------------
 
-Client API
+Client API and common classes
 
     aeron-client
 
@@ -58,9 +58,6 @@ Media Driver
 
     aeron-driver
 
-Common Classes/Methods
-
-    aeron-common
 
 Build
 -----
@@ -83,15 +80,27 @@ Full clean and build of all modules
     
 ### C++ Build
 
-You require the following to build Aeron with C++:
+__C++ API is a work in progress and may not build or be stable for usage at this time.__
+
+You require the following to build the C++ API for Aeron:
 
 * 2.8 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
 
-Full clean and build of all modules
+__NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
+with Visual Studio Express 12 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
 
-    $ cd cppbuild
-    $ ./cppbuild
+For convenience, a script is provided that does a full clean, build, and test of all targets.
+
+    $ ./cppbuild/cppbuild
+
+If you are comfortable with using CMake, then a full clean, build, and test looks like:
+
+    $ mkdir -p cppbuild/Debug
+    $ cd cppbuild/Debug
+    $ cmake ../..
+    $ cmake --build . --clean-first
+    $ ctest
 
 Running Samples
 ---------------

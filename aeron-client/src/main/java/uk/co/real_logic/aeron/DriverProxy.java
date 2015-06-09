@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.PublicationMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.RemoveMessageFlyweight;
-import uk.co.real_logic.aeron.common.command.SubscriptionMessageFlyweight;
+import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.command.PublicationMessageFlyweight;
+import uk.co.real_logic.aeron.command.RemoveMessageFlyweight;
+import uk.co.real_logic.aeron.command.SubscriptionMessageFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.common.command.ControlProtocolEvents.*;
+import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 
 /**
  * Separates the concern of communicating with the client conductor away from the rest of the client.

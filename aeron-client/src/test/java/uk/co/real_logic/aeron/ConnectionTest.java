@@ -19,10 +19,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.logbuffer.*;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
@@ -32,10 +32,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class ConnectionTest
@@ -61,25 +59,32 @@ public class ConnectionTest
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(ALIGNED_FRAME_LENGTH));
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final DataHandler mockDataHandler = mock(DataHandler.class);
+    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final Position position = spy(new AtomicLongPosition());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
 
+    private UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
-    private TermReader[] readers = new TermReader[PARTITION_COUNT];
 
     @Before
     public void setUp()
     {
+        dataHeader.wrap(rcvBuffer, 0);
+
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
-
-            termBuffers[i] = termBuffer;
-            readers[i] = new TermReader(INITIAL_TERM_ID, termBuffer);
+            atomicBuffers[i] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
+            termBuffers[i] = atomicBuffers[i];
         }
 
-        dataHeader.wrap(rcvBuffer, 0);
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            atomicBuffers[i + PARTITION_COUNT] = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_META_DATA_LENGTH));
+        }
+
+        atomicBuffers[atomicBuffers.length - 1] = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
+
+        when(logBuffers.atomicBuffers()).thenReturn(atomicBuffers);
     }
 
     @Test
@@ -90,10 +95,10 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(0));
 
-        final int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
-        verify(mockDataHandler).onData(
+        verify(mockFragmentHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
@@ -116,10 +121,10 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
-        verify(mockDataHandler).onData(
+        verify(mockFragmentHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
@@ -143,10 +148,10 @@ public class ConnectionTest
 
         insertDataFrame(activeTermId, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
-        verify(mockDataHandler).onData(
+        verify(mockFragmentHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(initialTermOffset + DataHeaderFlyweight.HEADER_LENGTH),
             eq(DATA.length),
@@ -159,8 +164,7 @@ public class ConnectionTest
 
     public Connection createConnection(final long initialPosition)
     {
-        return new Connection(
-            readers, SESSION_ID, initialPosition, CORRELATION_ID, mockDataHandler, position, logBuffers);
+        return new Connection(SESSION_ID, initialPosition, CORRELATION_ID, position, logBuffers);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

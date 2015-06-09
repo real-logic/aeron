@@ -20,22 +20,21 @@
 #include <util/Exceptions.h>
 #include <iostream>
 #include <thread>
-#include <concurrent/logbuffer/LogReader.h>
+#include <concurrent/logbuffer/TermReader.h>
 #include <util/MemoryMappedFile.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include "ClientConductor.h"
-#include "common/BusySpinIdleStrategy.h"
-#include "common/AgentRunner.h"
+#include "concurrent/SleepingIdleStrategy.h"
+#include "concurrent/AgentRunner.h"
 #include "Publication.h"
 #include "Subscription.h"
 #include "Context.h"
 
 namespace aeron {
 
-using namespace aeron::common::util;
-using namespace aeron::common::common;
-using namespace aeron::common::concurrent;
-using namespace aeron::common::concurrent::broadcast;
+using namespace aeron::util;
+using namespace aeron::concurrent;
+using namespace aeron::concurrent::broadcast;
 
 class Aeron
 {
@@ -62,7 +61,7 @@ public:
         return m_conductor.findPublication(id);
     }
 
-    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler)
+    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::fragment_handler_t & handler)
     {
         return m_conductor.addSubscription(channel, streamId, handler);
     }
@@ -74,23 +73,24 @@ public:
 
 private:
     Context& m_context;
-    ClientConductor m_conductor;
-    BusySpinIdleStrategy m_idleStrategy;
-    AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
 
     MemoryMappedFile::ptr_t m_cncBuffer;
 
     AtomicBuffer m_toDriverAtomicBuffer;
-    std::unique_ptr<ManyToOneRingBuffer> m_toDriverRingBuffer;
-    std::unique_ptr<DriverProxy> m_driverProxy;
-
     AtomicBuffer m_toClientsAtomicBuffer;
-    std::unique_ptr<BroadcastReceiver> m_toClientsBroadcastReceiver;
-    std::unique_ptr<CopyBroadcastReceiver> m_toClientsCopyReceiver;
+    AtomicBuffer m_countersValueBuffer;
 
-    void mapCncFile(Context& context);
-    DriverProxy& createDriverProxy(Context& context);
-    CopyBroadcastReceiver& createDriverReceiver(Context& context);
+    ManyToOneRingBuffer m_toDriverRingBuffer;
+    DriverProxy m_driverProxy;
+
+    BroadcastReceiver m_toClientsBroadcastReceiver;
+    CopyBroadcastReceiver m_toClientsCopyReceiver;
+
+    ClientConductor m_conductor;
+    SleepingIdleStrategy m_idleStrategy;
+    AgentRunner<ClientConductor, SleepingIdleStrategy> m_conductorRunner;
+
+    MemoryMappedFile::ptr_t mapCncFile(Context& context);
 };
 
 }

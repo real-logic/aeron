@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import java.io.InputStream;
-import java.util.zip.CRC32;
-
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.io.InputStream;
+import java.util.zip.CRC32;
 
 public class MessageStream
 {

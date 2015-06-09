@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.common.event.EventCode;
+import uk.co.real_logic.aeron.driver.event.EventCode;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.aeron.common.event.EventLogger;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
@@ -29,7 +29,7 @@ import java.nio.channels.FileChannel;
 import java.util.stream.Stream;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Encapsulates responsibility for mapping the files into memory used by the log partitions.

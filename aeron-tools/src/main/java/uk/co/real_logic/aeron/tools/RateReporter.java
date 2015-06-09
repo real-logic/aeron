@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import java.util.ArrayList;
-
 import uk.co.real_logic.agrona.concurrent.SystemNanoClock;
+
+import java.util.ArrayList;
 
 
 public class RateReporter implements RateController.Callback, Runnable

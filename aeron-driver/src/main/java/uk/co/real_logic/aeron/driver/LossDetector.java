@@ -15,14 +15,13 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.FeedbackDelayGenerator;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.TimeUnit;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.GapHandler;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.TermGapScanner.scanForGap;
+import static uk.co.real_logic.aeron.logbuffer.TermGapScanner.GapHandler;
+import static uk.co.real_logic.aeron.logbuffer.TermGapScanner.scanForGap;
 
 /**
  * Detecting and handling of gaps in a stream

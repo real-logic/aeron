@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.samples.raw;
 import org.HdrHistogram.Histogram;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;

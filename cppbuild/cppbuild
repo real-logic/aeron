@@ -1,3 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-cmake -G "Unix Makefiles" .. && make && make test ARGS=-V
+SOURCE_DIR="`pwd`"
+BUILD_DIR="`pwd`/cppbuild/Release"
+
+if [ -d "$BUILD_DIR" ] ; then
+    echo "Build directory ($BUILD_DIR) exists, removing."
+    rm -rf $BUILD_DIR
+fi
+
+mkdir -p $BUILD_DIR
+
+(cd $BUILD_DIR && cmake -G "Unix Makefiles" $SOURCE_DIR && make clean && make all && ctest -C Release)

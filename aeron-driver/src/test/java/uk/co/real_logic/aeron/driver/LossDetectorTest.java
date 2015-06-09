@@ -17,11 +17,10 @@ package uk.co.real_logic.aeron.driver;
 
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.common.StaticDelayGenerator;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermRebuilder;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.common.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -30,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.computePosition;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class LossDetectorTest

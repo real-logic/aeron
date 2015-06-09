@@ -15,17 +15,14 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.common.ErrorCode;
-import uk.co.real_logic.aeron.common.command.ConnectionBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermAppender;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.TermReader;
+import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.TimerWheel;
-import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.Agent;
+import uk.co.real_logic.agrona.concurrent.EpochClock;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
@@ -34,7 +31,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them.
@@ -142,14 +138,14 @@ class ClientConductor implements Agent, DriverListener
         doWorkUntil(correlationId, timeout, publication.channel());
     }
 
-    public synchronized Subscription addSubscription(final String channel, final int streamId, final DataHandler handler)
+    public synchronized Subscription addSubscription(final String channel, final int streamId)
     {
         verifyDriverIsActive();
 
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final long timeout = timerWheel.clock().nanoTime() + driverTimeoutNs;
 
-        final Subscription subscription = new Subscription(this, handler, channel, streamId, correlationId);
+        final Subscription subscription = new Subscription(this, channel, streamId, correlationId);
         activeSubscriptions.add(subscription);
 
         doWorkUntil(correlationId, timeout, channel);
@@ -177,29 +173,13 @@ class ClientConductor implements Agent, DriverListener
         final String logFileName,
         final long correlationId)
     {
-        final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
-        final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final TermAppender[] appenders = new TermAppender[PARTITION_COUNT];
-        final UnsafeBuffer logMetaDataBuffer = logBuffers.atomicBuffers()[LogBufferDescriptor.LOG_META_DATA_SECTION_INDEX];
-        final UnsafeBuffer[] defaultFrameHeaders = LogBufferDescriptor.defaultFrameHeaders(logMetaDataBuffer);
-        final int mtuLength = LogBufferDescriptor.mtuLength(logMetaDataBuffer);
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            appenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
-        }
-
-        final UnsafeBufferPosition publicationLimit = new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId);
-
         final Publication publication = new Publication(
             this,
             channel,
             streamId,
             sessionId,
-            appenders,
-            publicationLimit,
-            logBuffers,
-            logMetaDataBuffer,
+            new UnsafeBufferPosition(counterValuesBuffer, publicationLimitId),
+            logBuffersFactory.map(logFileName),
             correlationId);
 
         activePublications.put(channel, sessionId, streamId, publication);
@@ -223,27 +203,18 @@ class ClientConductor implements Agent, DriverListener
                     {
                         if (subscription.registrationId() == msg.positionIndicatorRegistrationId(i))
                         {
-                            final UnsafeBufferPosition position = new UnsafeBufferPosition(
-                                counterValuesBuffer, msg.subscriberPositionId(i));
-
-                            final LogBuffers logBuffers = logBuffersFactory.map(logFileName);
-                            final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-                            final TermReader[] readers = new TermReader[PARTITION_COUNT];
-                            final int initialTermId = LogBufferDescriptor.initialTermId(buffers[buffers.length - 1]);
-
-                            for (int p = 0; p < PARTITION_COUNT; p++)
-                            {
-                                readers[p] = new TermReader(initialTermId, buffers[p]);
-                            }
-
-                            subscription.onConnectionReady(
-                                sessionId, joiningPosition, correlationId, readers, position, logBuffers);
+                            subscription.addConnection(
+                                new Connection(
+                                    sessionId,
+                                    joiningPosition,
+                                    correlationId,
+                                    new UnsafeBufferPosition(counterValuesBuffer, msg.subscriberPositionId(i)),
+                                    logBuffersFactory.map(logFileName)));
 
                             if (null != newConnectionHandler)
                             {
-                                final String info = msg.sourceInfo();
                                 newConnectionHandler.onNewConnection(
-                                    subscription.channel(), streamId, sessionId, joiningPosition, info);
+                                    subscription.channel(), streamId, sessionId, joiningPosition, msg.sourceIdentity());
                             }
 
                             break;
@@ -258,11 +229,7 @@ class ClientConductor implements Agent, DriverListener
         driverException = new RegistrationException(errorCode, message);
     }
 
-    public void onInactiveConnection(
-        final int streamId,
-        final int sessionId,
-        final long position,
-        final long correlationId)
+    public void onInactiveConnection(final int streamId, final int sessionId, final long position, final long correlationId)
     {
         activeSubscriptions.forEach(
             streamId,

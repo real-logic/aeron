@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 package uk.co.real_logic.aeron.tools;
+
+import org.junit.Before;
+import org.junit.Test;
+
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-
-import org.junit.Before;
-import org.junit.Test;
 /**
  * Not really a lot to test here. The random number generator can't be mocked in it's current state,
  * so these tests are pretty unreliable. When our random number generator can be mocked, update these tests.

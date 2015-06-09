@@ -24,12 +24,12 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
  * Takes a log file name and maps the file into memory and wraps it with {@link UnsafeBuffer}s as appropriate.
  *
- * @see uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor
+ * @see uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor
  */
 public class LogBuffers implements AutoCloseable
 {
@@ -46,7 +46,7 @@ public class LogBuffers implements AutoCloseable
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
-                mappedByteBuffers = new MappedByteBuffer[]{ mappedBuffer };
+                mappedByteBuffers = new MappedByteBuffer[]{mappedBuffer};
 
                 final int metaDataSectionOffset = termLength * PARTITION_COUNT;
 
@@ -87,6 +87,11 @@ public class LogBuffers implements AutoCloseable
         catch (final IOException ex)
         {
             throw new RuntimeException(ex);
+        }
+
+        for (final UnsafeBuffer buffer : atomicBuffers)
+        {
+            buffer.verifyAlignment();
         }
     }
 

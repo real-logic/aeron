@@ -17,9 +17,10 @@
 #ifndef INCLUDED_AERON_CLIENT_CONDUCTOR__
 #define INCLUDED_AERON_CLIENT_CONDUCTOR__
 
-#include <concurrent/logbuffer/LogReader.h>
 #include <vector>
 #include <mutex>
+#include <concurrent/logbuffer/TermReader.h>
+#include <concurrent/status/UnsafeBufferPosition.h>
 #include "Publication.h"
 #include "Subscription.h"
 #include "DriverProxy.h"
@@ -29,23 +30,34 @@
 
 namespace aeron {
 
-using namespace aeron::common::concurrent;
+using namespace aeron::concurrent::status;
+using namespace aeron::concurrent;
+
+typedef std::function<long()> epoch_clock_t;
+
+static const long KEEPALIVE_TIMEOUT_MS = 500;
 
 class ClientConductor
 {
 public:
 
     ClientConductor(
+        epoch_clock_t epochClock,
         DriverProxy& driverProxy,
         CopyBroadcastReceiver& broadcastReceiver,
+        AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
-        const on_new_subscription_t& newSubscriptionHandler) :
+        const on_new_subscription_t& newSubscriptionHandler,
+        long driverTimeoutMs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
+        m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
-        m_onNewSubscpriptionHandler(newSubscriptionHandler)
+        m_onNewSubscpriptionHandler(newSubscriptionHandler),
+        m_epochClock(epochClock),
+        m_timeOfLastKeepalive(epochClock()),
+        m_driverTimeoutMs(driverTimeoutMs)
     {
-
     }
 
     int doWork()
@@ -53,6 +65,7 @@ public:
         int workCount = 0;
 
         workCount += m_driverListenerAdapter.receiveMessages();
+        workCount += onHeartbeatCheckTimeouts();
 
         return workCount;
     }
@@ -84,16 +97,14 @@ public:
     std::shared_ptr<Publication> findPublication(std::int64_t correlationId);
     void releasePublication(std::int64_t correlationId);
 
-    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::handler_t& handler);
+    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::fragment_handler_t & handler);
     std::shared_ptr<Subscription> findSubscription(std::int64_t correlationId);
     void releaseSubscription(std::int64_t correlationId);
 
     void onNewPublication(
-        const std::string& channel,
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int32_t limitPositionIndicatorOffset,
-        std::int32_t mtuLength,
+        std::int32_t positionLimitCounterId,
         const std::string& logFileName,
         std::int64_t correlationId);
 
@@ -104,6 +115,7 @@ private:
         std::int64_t m_correlationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId;
+        std::shared_ptr<UnsafeBufferPosition> m_publicationLimit;
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<Publication> m_publication;
 
@@ -118,10 +130,10 @@ private:
         std::string m_channel;
         std::int64_t m_correlationId;
         std::int32_t m_streamId;
-        logbuffer::handler_t m_handler;
+        logbuffer::fragment_handler_t m_handler;
         std::weak_ptr<Subscription> m_subscription;
 
-        SubscriptionStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, logbuffer::handler_t& handler) :
+        SubscriptionStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, logbuffer::fragment_handler_t & handler) :
             m_channel(channel), m_correlationId(correlationId), m_streamId(streamId), m_handler(handler)
         {
         }
@@ -129,12 +141,42 @@ private:
 
     std::mutex m_publicationsLock;
     std::mutex m_subscriptionsLock;
+
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
+
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
+
+    AtomicBuffer& m_counterValuesBuffer;
+
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscpriptionHandler;
+
+    epoch_clock_t m_epochClock;
+    long m_timeOfLastKeepalive;
+    long m_driverTimeoutMs;
+
+    inline int onHeartbeatCheckTimeouts()
+    {
+        const long now = m_epochClock();
+        int result = 0;
+
+        if (now > (m_timeOfLastKeepalive + KEEPALIVE_TIMEOUT_MS))
+        {
+            m_driverProxy.sendClientKeepalive();
+
+            if (now > (m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs))
+            {
+                // TODO: set driverActive to false and call error handler
+            }
+
+            m_timeOfLastKeepalive = now;
+            result = 1;
+        }
+
+        return result;
+    }
 };
 
 }

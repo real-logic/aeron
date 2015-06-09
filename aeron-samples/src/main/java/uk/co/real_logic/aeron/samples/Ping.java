@@ -20,12 +20,14 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 import java.nio.ByteBuffer;
@@ -33,7 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Ping component of Ping-Pong.
+ * Ping component of Ping-Pong latency test.
  *
  * Initiates and records times.
  */
@@ -59,7 +61,7 @@ public class Ping
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(Ping::newPongConnectionHandler);
-        final DataHandler dataHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
+        final FragmentHandler fragmentHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
 
         if (EMBEDDED_MEDIA_DRIVER)
         {
@@ -78,13 +80,13 @@ public class Ping
             pongConnectionLatch = new CountDownLatch(1);
 
             try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
             {
                 pongConnectionLatch.await();
 
                 for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
                 {
-                    sendPingAndReceivePong(publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
                 }
             }
 
@@ -92,7 +94,7 @@ public class Ping
             pongConnectionLatch = new CountDownLatch(1);
 
             try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID, dataHandler))
+                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
             {
                 pongConnectionLatch.await();
                 Thread.sleep(1000);
@@ -103,7 +105,7 @@ public class Ping
                     HISTOGRAM.reset();
                     System.gc();
 
-                    sendPingAndReceivePong(publication, subscription, NUMBER_OF_MESSAGES);
+                    sendPingAndReceivePong(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
                     System.out.println("Histogram of RTT latencies in microseconds.");
 
                     HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -116,7 +118,10 @@ public class Ping
     }
 
     private static void sendPingAndReceivePong(
-        final Publication publication, final Subscription subscription, final int numMessages)
+        final FragmentHandler fragmentHandler,
+        final Publication publication,
+        final Subscription subscription,
+        final int numMessages)
     {
         final IdleStrategy idleStrategy = new NoOpIdleStrategy();
 
@@ -128,7 +133,7 @@ public class Ping
             }
             while (publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-            while (subscription.poll(FRAGMENT_COUNT_LIMIT) <= 0)
+            while (subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
                 idleStrategy.idle(0);
             }
@@ -144,7 +149,7 @@ public class Ping
     }
 
     private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceInfo)
+        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
     {
         System.out.format("New connection: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
 

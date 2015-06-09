@@ -18,14 +18,37 @@
 
 namespace aeron {
 
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS(4);
+
+static long currentTimeMillis()
+{
+    using namespace std::chrono;
+
+    system_clock::time_point now = system_clock::now();
+    milliseconds ms = duration_cast<milliseconds>(now.time_since_epoch());
+
+    return ms.count();
+}
+
 Aeron::Aeron(Context &context) :
     m_context(context.conclude()),
+    m_cncBuffer(mapCncFile(context)),
+    m_toDriverAtomicBuffer(CncFileDescriptor::createToDriverBuffer(m_cncBuffer)),
+    m_toClientsAtomicBuffer(CncFileDescriptor::createToClientsBuffer(m_cncBuffer)),
+    m_countersValueBuffer(CncFileDescriptor::createCounterValuesBuffer(m_cncBuffer)),
+    m_toDriverRingBuffer(m_toDriverAtomicBuffer),
+    m_driverProxy(m_toDriverRingBuffer),
+    m_toClientsBroadcastReceiver(m_toClientsAtomicBuffer),
+    m_toClientsCopyReceiver(m_toClientsBroadcastReceiver),
     m_conductor(
-        createDriverProxy(m_context),
-        createDriverReceiver(m_context),
+        currentTimeMillis,
+        m_driverProxy,
+        m_toClientsCopyReceiver,
+        m_countersValueBuffer,
         context.m_onNewPublicationHandler,
-        context.m_onNewSubscriptionHandler),
-    m_idleStrategy(),
+        context.m_onNewSubscriptionHandler,
+        context.m_mediaDriverTimeout),
+    m_idleStrategy(IDLE_SLEEP_MS),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
 {
     m_conductorRunner.start();
@@ -40,54 +63,19 @@ Aeron::~Aeron()
     // TODO: do cleanup of anything created
 }
 
-
-inline void Aeron::mapCncFile(Context &context)
+inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)
 {
-    if (!m_cncBuffer)
+    MemoryMappedFile::ptr_t cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
+
+    std::int32_t cncVersion = CncFileDescriptor::cncVersion(cncBuffer);
+
+    if (CncFileDescriptor::CNC_VERSION != cncVersion)
     {
-        m_cncBuffer = MemoryMappedFile::mapExisting(context.cncFileName().c_str());
-
-        std::int32_t cncVersion = CncFileDescriptor::cncVersion(m_cncBuffer);
-
-        if (CncFileDescriptor::CNC_VERSION != cncVersion)
-        {
-            throw util::IllegalStateException(
-                util::strPrintf("aeron cnc file version not understood: version=%d", cncVersion), SOURCEINFO);
-        }
-    }
-}
-
-DriverProxy &Aeron::createDriverProxy(Context &context)
-{
-    m_toDriverRingBuffer = context.toDriverBuffer();
-
-    if (nullptr == m_toDriverRingBuffer)
-    {
-        mapCncFile(context);
-        m_toDriverAtomicBuffer = CncFileDescriptor::createToDriverBuffer(m_cncBuffer);
-        m_toDriverRingBuffer = std::unique_ptr<ManyToOneRingBuffer>(new ManyToOneRingBuffer(m_toDriverAtomicBuffer));
+        throw util::IllegalStateException(
+            util::strPrintf("aeron cnc file version not understood: version=%d", cncVersion), SOURCEINFO);
     }
 
-    m_driverProxy = std::unique_ptr<DriverProxy>(new DriverProxy(*m_toDriverRingBuffer));
-
-    return *m_driverProxy;
-}
-
-CopyBroadcastReceiver &Aeron::createDriverReceiver(Context &context)
-{
-    m_toClientsCopyReceiver = context.toClientsBuffer();
-
-    if (nullptr == m_toClientsCopyReceiver)
-    {
-        mapCncFile(context);
-        m_toClientsAtomicBuffer = CncFileDescriptor::createToClientsBuffer(m_cncBuffer);
-        m_toClientsBroadcastReceiver = std::unique_ptr<BroadcastReceiver>(
-            new BroadcastReceiver(m_toClientsAtomicBuffer));
-        m_toClientsCopyReceiver = std::unique_ptr<CopyBroadcastReceiver>(
-            new CopyBroadcastReceiver(*m_toClientsBroadcastReceiver));
-    }
-
-    return *m_toClientsCopyReceiver;
+    return cncBuffer;
 }
 
 }

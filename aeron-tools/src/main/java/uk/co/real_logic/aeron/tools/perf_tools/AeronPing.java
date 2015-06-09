@@ -15,29 +15,21 @@
  */
 package uk.co.real_logic.aeron.tools.perf_tools;
 
+import org.apache.commons.cli.*;
+import uk.co.real_logic.aeron.*;
+import uk.co.real_logic.aeron.logbuffer.BufferClaim;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
-import uk.co.real_logic.aeron.NewConnectionHandler;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 public class AeronPing implements NewConnectionHandler
 {
@@ -46,12 +38,11 @@ public class AeronPing implements NewConnectionHandler
     private final int msgLen = 32;
     private long[][] timestamps = null;
     private boolean warmedUp = false;
-    private Aeron.Context ctx = null;
-    private FragmentAssemblyAdapter dataHandler = null;
-    private Aeron aeron = null;
-    private Publication pub = null;
-    private Subscription sub = null;
-    private CountDownLatch connectionLatch = null;
+    private final FragmentHandler fragmentHandler = new FragmentAssemblyAdapter(this::pongHandler);
+    private final Aeron aeron;
+    private final Publication pub;
+    private final Subscription sub;
+    private final CountDownLatch connectionLatch;
     private final int pingStreamId = 10;
     private final int pongStreamId = 11;
     private String pingChannel = "udp://localhost:44444";
@@ -62,25 +53,17 @@ public class AeronPing implements NewConnectionHandler
     private BufferClaim bufferClaim = null;
     private double sorted[] = null;
     private double tmp[] = null;
-    private Options options;
 
-    public AeronPing(final String[] args)
+    public AeronPing(final String[] args) throws Exception
     {
-        try
-        {
-            parseArgs(args);
-        }
-        catch (final ParseException e)
-        {
-            e.printStackTrace();
-        }
+        parseArgs(args);
 
-        ctx = new Aeron.Context()
+        final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(this);
-        dataHandler = new FragmentAssemblyAdapter(this::pongHandler);
+
         aeron = Aeron.connect(ctx);
         pub = aeron.addPublication(pingChannel, pingStreamId);
-        sub = aeron.addSubscription(pongChannel, pongStreamId, dataHandler);
+        sub = aeron.addSubscription(pongChannel, pongStreamId);
         connectionLatch = new CountDownLatch(1);
         buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msgLen));
         timestamps = new long[2][numMsgs];
@@ -96,6 +79,7 @@ public class AeronPing implements NewConnectionHandler
         try
         {
             connectionLatch.await();
+            System.out.println("Connected");
         }
         catch (final InterruptedException e)
         {
@@ -116,6 +100,7 @@ public class AeronPing implements NewConnectionHandler
                 sendPingAndReceivePongClaim();
             }
         }
+        System.out.println("Warmed up");
         warmedUp = true;
 
         for (int i = 0; i < numMsgs; i++)
@@ -133,7 +118,6 @@ public class AeronPing implements NewConnectionHandler
         buffer.putByte(0, (byte) 'q');
         while (pub.offer(buffer, 0, msgLen) <= 0)
         {
-
         }
     }
 
@@ -201,22 +185,15 @@ public class AeronPing implements NewConnectionHandler
 
     private void parseArgs(final String[] args) throws ParseException
     {
-        options = new Options();
+        final Options options = new Options();
         options.addOption("c", "claim", false, "Use Try/Claim");
-        options.addOption("", "pongChannel", false, "Pong channel");
-        options.addOption("", "pingChannel", false, "Ping channel");
+        options.addOption("", "pongChannel", true, "Pong channel");
+        options.addOption("", "pingChannel", true, "Ping channel");
 
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);
 
-        if (command.hasOption("claim"))
-        {
-            claim = true;
-        }
-        else
-        {
-            claim = false;
-        }
+        claim = command.hasOption("claim");
 
         if (command.hasOption("pingChannel"))
         {
@@ -276,7 +253,7 @@ public class AeronPing implements NewConnectionHandler
         final int streamId,
         final int sessionId,
         final long position,
-        final String sourceInfo)
+        final String sourceIdentity)
     {
         if (channel.equals(pongChannel) && pongStreamId == streamId)
         {
@@ -310,12 +287,10 @@ public class AeronPing implements NewConnectionHandler
         }
         while (pub.offer(buffer, 0, msgLen) <= 0)
         {
-
         }
 
-        while (sub.poll(1) <= 0)
+        while (sub.poll(fragmentHandler, 1) <= 0)
         {
-
         }
     }
 
@@ -337,9 +312,8 @@ public class AeronPing implements NewConnectionHandler
             }
 
             bufferClaim.commit();
-            while (sub.poll(1) <= 0)
+            while (sub.poll(fragmentHandler, 1) <= 0)
             {
-
             }
         }
         else
@@ -348,7 +322,7 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    public static void main(final String[] args)
+    public static void main(final String[] args) throws Exception
     {
         final AeronPing ping = new AeronPing(args);
 

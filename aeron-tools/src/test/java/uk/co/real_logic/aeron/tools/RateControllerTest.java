@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.tools;
 
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.hamcrest.CoreMatchers.both;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.junit.Test;
 
 public class RateControllerTest
 {

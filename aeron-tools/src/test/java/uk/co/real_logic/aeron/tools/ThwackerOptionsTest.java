@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-
 import org.apache.commons.cli.ParseException;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
 
 public class ThwackerOptionsTest
 {

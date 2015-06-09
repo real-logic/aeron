@@ -18,12 +18,12 @@ package uk.co.real_logic.aeron.driver.buffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.driver.Configuration;
+import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.common.event.EventLogger;
-import uk.co.real_logic.aeron.driver.Configuration;
-import uk.co.real_logic.aeron.driver.UdpChannel;
 
 import java.io.File;
 import java.io.IOException;

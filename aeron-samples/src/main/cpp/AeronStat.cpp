@@ -28,9 +28,8 @@
 #include <inttypes.h>
 
 using namespace aeron;
-using namespace aeron::common;
-using namespace aeron::common::util;
-using namespace aeron::common::concurrent;
+using namespace aeron::util;
+using namespace aeron::concurrent;
 using namespace std::chrono;
 
 
@@ -82,7 +81,7 @@ int main (int argc, char** argv)
         Settings settings = parseCmdLine(cp, argc, argv);
 
         MemoryMappedFile::ptr_t cncFile =
-            MemoryMappedFile::mapExisting((settings.basePath + "/conductor/" + CncFileDescriptor::CNC_FILE).c_str());
+            MemoryMappedFile::mapExisting((settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
 
         AtomicBuffer labelsBuffer = CncFileDescriptor::createCounterLabelsBuffer(cncFile);
         AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);

@@ -15,14 +15,15 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.*;
-import uk.co.real_logic.aeron.common.event.EventConfiguration;
-import uk.co.real_logic.aeron.common.event.EventLogger;
+import uk.co.real_logic.aeron.CncFileDescriptor;
+import uk.co.real_logic.aeron.CommonContext;
+import uk.co.real_logic.aeron.driver.event.EventConfiguration;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
-import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
+import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -34,7 +35,9 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;

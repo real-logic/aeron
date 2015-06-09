@@ -8,10 +8,6 @@ out
 # OS X
 .DS_Store
 
-# intellij
-.idea
-*.iml
-
 # eclipse
 .project
 .classpath

@@ -18,9 +18,9 @@ package uk.co.real_logic.aeron;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
-import uk.co.real_logic.aeron.common.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.BitUtil;
@@ -56,7 +56,7 @@ public class PongTest
     private Publication pongPublication;
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[4096]);
-    private DataHandler pongHandler = mock(DataHandler.class);
+    private FragmentHandler pongHandler = mock(FragmentHandler.class);
 
     @Before
     public void setUp() throws Exception
@@ -69,10 +69,10 @@ public class PongTest
         pongClient = Aeron.connect(pongAeronContext);
 
         pingPublication = pingClient.addPublication(PING_URI, PING_STREAM_ID);
-        pingSubscription = pongClient.addSubscription(PING_URI, PING_STREAM_ID, this::pingHandler);
+        pingSubscription = pongClient.addSubscription(PING_URI, PING_STREAM_ID);
 
         pongPublication = pongClient.addPublication(PONG_URI, PONG_STREAM_ID);
-        pongSubscription = pingClient.addSubscription(PONG_URI, PONG_STREAM_ID, pongHandler);
+        pongSubscription = pingClient.addSubscription(PONG_URI, PONG_STREAM_ID);
     }
 
     @After
@@ -119,7 +119,7 @@ public class PongTest
             () -> fragmentsRead[0] > 0,
             (i) ->
             {
-                fragmentsRead[0] += pingSubscription.poll(10);
+                fragmentsRead[0] += pingSubscription.poll(this::pingHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -131,13 +131,13 @@ public class PongTest
             () -> fragmentsRead[0] > 0,
             (i) ->
             {
-                fragmentsRead[0] += pongSubscription.poll(10);
+                fragmentsRead[0] += pongSubscription.poll(pongHandler, 10);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(5900));
 
-        verify(pongHandler).onData(
+        verify(pongHandler).onFragment(
             any(UnsafeBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),

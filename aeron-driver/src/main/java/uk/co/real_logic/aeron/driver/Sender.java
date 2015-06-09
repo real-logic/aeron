@@ -16,6 +16,8 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
+import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
+import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -117,15 +119,16 @@ public class Sender implements Agent, Consumer<SenderCmd>
         final NetworkPublication[] publications = this.publications;
         final int length = publications.length;
 
-        int roundRobinIndex = ++this.roundRobinIndex;
-        if (roundRobinIndex >= length)
-        {
-            this.roundRobinIndex = roundRobinIndex = 0;
-        }
-
         if (length > 0)
         {
-            int i = roundRobinIndex;
+            int startingIndex = roundRobinIndex++;
+            if (startingIndex >= length)
+            {
+                roundRobinIndex = startingIndex = 0;
+            }
+
+            int i = startingIndex;
+
             do
             {
                 bytesSent += publications[i].send();
@@ -135,7 +138,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
                     i = 0;
                 }
             }
-            while (i != roundRobinIndex);
+            while (i != startingIndex);
         }
 
         totalBytesSent.addOrdered(bytesSent);

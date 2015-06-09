@@ -19,13 +19,15 @@ set(HEADERS
 
 add_executable(AeronStat AeronStat.cpp ${HEADERS})
 add_executable(BasicPublisher BasicPublisher.cpp ${HEADERS})
+add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
-    aeron_common
+    aeron_client
     ${CMAKE_THREAD_LIBS_INIT})
 
 target_link_libraries(BasicPublisher
-    aeron_common
     aeron_client
     ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(TimeTests ${CMAKE_THREAD_LIBS_INIT})
 

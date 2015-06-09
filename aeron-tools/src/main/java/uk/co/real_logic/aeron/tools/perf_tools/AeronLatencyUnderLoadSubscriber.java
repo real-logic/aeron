@@ -15,18 +15,13 @@
  */
 package uk.co.real_logic.aeron.tools.perf_tools;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
+import org.apache.commons.cli.*;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.BufferClaim;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
@@ -36,6 +31,8 @@ public class AeronLatencyUnderLoadSubscriber
     private final BufferClaim bufferClaim;
     private String pubChannel = "udp://localhost:44444";
     private String reflectChannel = "udp://localhost:55555";
+    private final int pubStreamId = 11;
+    private final int subStreamId = 10;
     private volatile boolean running = true;
 
     public AeronLatencyUnderLoadSubscriber(final String[] args)
@@ -46,32 +43,34 @@ public class AeronLatencyUnderLoadSubscriber
         }
         catch (final ParseException ex)
         {
-           throw new RuntimeException(ex);
+            throw new RuntimeException(ex);
         }
-
         final Aeron.Context ctx = new Aeron.Context();
         final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
-        final Aeron aeron = Aeron.connect(ctx);
-        final int pubStreamId = 11;
-        pub = aeron.addPublication(reflectChannel, pubStreamId);
-        final int subStreamId = 10;
-        final Subscription sub = aeron.addSubscription(pubChannel, subStreamId, dataHandler);
-        bufferClaim = new BufferClaim();
 
-        while (running)
+        try (final Aeron aeron = Aeron.connect(ctx);
+             final Publication publication = aeron.addPublication(reflectChannel, pubStreamId);
+             final Subscription sub = aeron.addSubscription(pubChannel, subStreamId))
         {
-            sub.poll(1);
-        }
+            System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
+            pub = publication;
 
-        try
-        {
-            Thread.sleep(500);
+            bufferClaim = new BufferClaim();
+
+            while (running)
+            {
+                sub.poll(dataHandler, 1);
+            }
+
+            try
+            {
+                Thread.sleep(500);
+            }
+            catch (final InterruptedException e)
+            {
+                e.printStackTrace();
+            }
         }
-        catch (InterruptedException e)
-        {
-            e.printStackTrace();
-        }
-        aeron.close();
     }
 
     public void msgHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
@@ -96,8 +95,8 @@ public class AeronLatencyUnderLoadSubscriber
     {
         final Options options = new Options();
         options.addOption("c", "claim", false, "Use Try/Claim");
-        options.addOption("", "pubChannel", false, "Primary publishing channel");
-        options.addOption("", "reflectChannel", false, "Reflection channel");
+        options.addOption("", "pubChannel", true, "Primary publishing channel");
+        options.addOption("", "reflectChannel", true, "Reflection channel");
 
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);
@@ -109,7 +108,7 @@ public class AeronLatencyUnderLoadSubscriber
 
         if (command.hasOption("reflectChannel"))
         {
-            reflectChannel = command.getOptionValue("reflecthannel", "udp://localhost:55555");
+            reflectChannel = command.getOptionValue("reflectChannel", "udp://localhost:55555");
         }
     }
 

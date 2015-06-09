@@ -14,14 +14,12 @@
  * limitations under the License.
  */
 
-#include <concurrent/logbuffer/LogBufferDescriptor.h>
-
 #include "LogBuffers.h"
 
 namespace aeron {
 
-using namespace aeron::common::util;
-using namespace aeron::common::concurrent::logbuffer;
+using namespace aeron::util;
+using namespace aeron::concurrent::logbuffer;
 
 #define MAX_SINGLE_MAPPING_SIZE (0x7FFFFFFF)
 
@@ -69,7 +67,7 @@ LogBuffers::LogBuffers(const char *filename)
 
             std::uint8_t *basePtr = m_memoryMappedFiles[i + 1]->getMemoryPtr();
 
-            m_buffers[i].wrap(basePtr + (i * termLength), termLength);
+            m_buffers[i].wrap(basePtr, termLength);
             m_buffers[i + LogBufferDescriptor::PARTITION_COUNT]
                 .wrap(metaDataBasePtr + (i * LogBufferDescriptor::TERM_META_DATA_LENGTH),
                     LogBufferDescriptor::TERM_META_DATA_LENGTH);
@@ -80,6 +78,26 @@ LogBuffers::LogBuffers(const char *filename)
                 LogBufferDescriptor::LOG_META_DATA_LENGTH);
     }
 }
+
+LogBuffers::LogBuffers(std::uint8_t *address, index_t length)
+{
+    const index_t termLength = (index_t)LogBufferDescriptor::computeTermLength(length);
+    const index_t metaDataSectionOffset = (index_t) (termLength * LogBufferDescriptor::PARTITION_COUNT);
+
+    for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
+    {
+        const index_t metaDataOffset = metaDataSectionOffset + (i * LogBufferDescriptor::TERM_META_DATA_LENGTH);
+
+        m_buffers[i].wrap(address + (i * termLength), termLength);
+        m_buffers[i + LogBufferDescriptor::PARTITION_COUNT]
+            .wrap(address + metaDataOffset, LogBufferDescriptor::TERM_META_DATA_LENGTH);
+    }
+
+    m_buffers[2 * LogBufferDescriptor::PARTITION_COUNT]
+        .wrap(address + (length - LogBufferDescriptor::LOG_META_DATA_LENGTH),
+            LogBufferDescriptor::LOG_META_DATA_LENGTH);
+}
+
 
 LogBuffers::~LogBuffers()
 {

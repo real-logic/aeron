@@ -15,30 +15,25 @@
  */
 package uk.co.real_logic.aeron.tools.perf_tools;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.Options;
-import org.apache.commons.cli.ParseException;
-
+import org.apache.commons.cli.*;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.BufferClaim;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.BufferClaim;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public class AeronPong
 {
-    private Aeron.Context ctx = null;
-    private FragmentAssemblyAdapter dataHandler = null;
-    private Aeron aeron = null;
-    private Publication pongPub = null;
-    private Subscription pingSub = null;
+    private final FragmentHandler fragmentHandler;
+    private final Aeron aeron;
+    private final Publication pongPublication;
+    private final Subscription pingSubscription;
     private final int pingStreamId = 10;
     private final int pongStreamId = 11;
     private String pingChannel = "udp://localhost:44444";
@@ -46,7 +41,6 @@ public class AeronPong
     private final AtomicBoolean running = new AtomicBoolean(true);
     private boolean claim = false;
     private BufferClaim bufferClaim = null;
-    private Options options;
 
     public AeronPong(final String[] args)
     {
@@ -59,18 +53,18 @@ public class AeronPong
             e.printStackTrace();
         }
 
-        ctx = new Aeron.Context();
+        final Aeron.Context ctx = new Aeron.Context();
         if (claim)
         {
-            dataHandler = new FragmentAssemblyAdapter(this::pingHandlerClaim);
+            fragmentHandler = new FragmentAssemblyAdapter(this::pingHandlerClaim);
         }
         else
         {
-            dataHandler = new FragmentAssemblyAdapter(this::pingHandler);
+            fragmentHandler = new FragmentAssemblyAdapter(this::pingHandler);
         }
         aeron = Aeron.connect(ctx);
-        pongPub = aeron.addPublication(pongChannel, pongStreamId);
-        pingSub = aeron.addSubscription(pingChannel, pingStreamId, dataHandler);
+        pongPublication = aeron.addPublication(pongChannel, pongStreamId);
+        pingSubscription = aeron.addSubscription(pingChannel, pingStreamId);
 
         if (claim)
         {
@@ -82,7 +76,7 @@ public class AeronPong
     {
         while (running.get())
         {
-            pingSub.poll(1);
+            pingSubscription.poll(fragmentHandler, 1);
         }
     }
 
@@ -93,22 +87,15 @@ public class AeronPong
 
     private void parseArgs(final String[] args) throws ParseException
     {
-        options = new Options();
+        final Options options = new Options();
         options.addOption("c", "claim", false, "Use Try/Claim");
-        options.addOption("", "pongChannel", false, "Pong channel");
-        options.addOption("", "pingChannel", false, "Ping channel");
+        options.addOption("", "pongChannel", true, "Pong channel");
+        options.addOption("", "pingChannel", true, "Ping channel");
 
         final CommandLineParser parser = new GnuParser();
         final CommandLine command = parser.parse(options, args);
 
-        if (command.hasOption("claim"))
-        {
-            claim = true;
-        }
-        else
-        {
-            claim = false;
-        }
+        claim = command.hasOption("claim");
 
         if (command.hasOption("pingChannel"))
         {
@@ -128,7 +115,7 @@ public class AeronPong
             running.set(false);
             return;
         }
-        while (pongPub.offer(buffer, offset, length) < 0L)
+        while (pongPublication.offer(buffer, offset, length) < 0L)
         {
         }
     }
@@ -140,7 +127,7 @@ public class AeronPong
             running.set(false);
             return;
         }
-        if (pongPub.tryClaim(length, bufferClaim) >= 0)
+        if (pongPublication.tryClaim(length, bufferClaim) >= 0)
         {
             final MutableDirectBuffer newBuffer = bufferClaim.buffer();
             newBuffer.putBytes(bufferClaim.offset(), buffer, offset, length);

@@ -15,13 +15,7 @@
  */
 package uk.co.real_logic.aeron.tools;
 
-import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.logging.Logger;
-
 import org.apache.commons.cli.ParseException;
-
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.InactiveConnectionHandler;
 import uk.co.real_logic.aeron.NewConnectionHandler;
@@ -31,6 +25,11 @@ import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.logging.Logger;
 
 public class PublisherTool implements SeedCallback, RateReporter.Stats, RateReporter.Callback
 {
@@ -418,18 +417,17 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             ctx.close();
         }
 
-        public void onInactiveConnection(final String channel, final int streamId,
-            final int sessionId, final long position)
+        public void onInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
         {
             LOG.info(String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x",
                 channel, streamId, sessionId, position));
         }
 
-        public void onNewConnection(final String channel, final int streamId,
-            final int sessionId, final long position, final String sourceInformation)
+        public void onNewConnection(
+            final String channel, final int streamId, final int sessionId, final long position, final String sourceIdentity)
         {
             LOG.info(String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
-                channel, streamId, sessionId, position, sourceInformation));
+                channel, streamId, sessionId, position, sourceIdentity));
         }
 
         /**

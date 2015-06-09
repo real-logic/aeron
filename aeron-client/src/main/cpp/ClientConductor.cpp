@@ -65,7 +65,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t corre
     if (!pub && ((*it).m_buffers))
     {
         pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_correlationId, (*it).m_streamId,
-            (*it).m_sessionId, *((*it).m_buffers));
+            (*it).m_sessionId, *((*it).m_publicationLimit), *((*it).m_buffers));
 
         (*it).m_publication = std::weak_ptr<Publication>(pub);
         return pub;
@@ -92,7 +92,7 @@ void ClientConductor::releasePublication(std::int64_t correlationId)
 }
 
 std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId,
-    logbuffer::handler_t &handler)
+    logbuffer::fragment_handler_t &handler)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
     std::int64_t id;
@@ -157,11 +157,9 @@ void ClientConductor::releaseSubscription(std::int64_t correlationId)
 }
 
 void ClientConductor::onNewPublication(
-    const std::string &channel,
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int32_t limitPositionIndicatorOffset,
-    std::int32_t mtuLength,
+    std::int32_t positionLimitCounterId,
     const std::string &logFileName,
     std::int64_t correlationId)
 {
@@ -175,11 +173,11 @@ void ClientConductor::onNewPublication(
 
     if (it != m_publications.end())
     {
-        // TODO: create log buffers, etc. and set (*it).m_buffers to hold them
+        (*it).m_publicationLimit = std::make_shared<UnsafeBufferPosition>(m_counterValuesBuffer, positionLimitCounterId);
         (*it).m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
-    }
 
-    m_onNewPublicationHandler(channel, streamId, sessionId, correlationId);
+        m_onNewPublicationHandler((*it).m_channel, streamId, sessionId, correlationId);
+    }
 }
 
 }

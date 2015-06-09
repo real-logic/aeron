@@ -17,7 +17,8 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.*;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -25,9 +26,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 public class MultiSubscriberTest
 {
@@ -42,50 +41,50 @@ public class MultiSubscriberTest
         final MediaDriver.Context ctx = new MediaDriver.Context();
         ctx.dirsDeleteOnExit(true);
 
-        final DataHandler mockDataHandlerOne = mock(DataHandler.class);
-        final DataHandler mockDataHandlerTwo = mock(DataHandler.class);
+        final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
+        final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);
 
-        final FragmentAssemblyAdapter adapterOne = new FragmentAssemblyAdapter(mockDataHandlerOne);
-        final FragmentAssemblyAdapter adapterTwo = new FragmentAssemblyAdapter(mockDataHandlerTwo);
+        final FragmentAssemblyAdapter adapterOne = new FragmentAssemblyAdapter(mockFragmentHandlerOne);
+        final FragmentAssemblyAdapter adapterTwo = new FragmentAssemblyAdapter(mockFragmentHandlerTwo);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());
              final Publication publication = client.addPublication(CHANNEL_1, STREAM_ID);
-             final Subscription subscriptionOne = client.addSubscription(CHANNEL_1, STREAM_ID, adapterOne);
-             final Subscription subscriptionTwo = client.addSubscription(CHANNEL_2, STREAM_ID, adapterTwo))
+             final Subscription subscriptionOne = client.addSubscription(CHANNEL_1, STREAM_ID);
+             final Subscription subscriptionTwo = client.addSubscription(CHANNEL_2, STREAM_ID))
         {
             final byte[] expectedBytes = "Hello, World! here is a small message".getBytes();
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(expectedBytes);
 
-            assertThat(subscriptionOne.poll(FRAGMENT_COUNT_LIMIT), is(0));
-            assertThat(subscriptionTwo.poll(FRAGMENT_COUNT_LIMIT), is(0));
+            assertThat(subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT), is(0));
+            assertThat(subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT), is(0));
 
             while (publication.offer(srcBuffer) < 0L)
             {
                 Thread.yield();
             }
 
-            while (subscriptionOne.poll(FRAGMENT_COUNT_LIMIT) == 0)
+            while (subscriptionOne.poll(adapterOne, FRAGMENT_COUNT_LIMIT) == 0)
             {
                 Thread.yield();
             }
 
-            while (subscriptionTwo.poll(FRAGMENT_COUNT_LIMIT) == 0)
+            while (subscriptionTwo.poll(adapterTwo, FRAGMENT_COUNT_LIMIT) == 0)
             {
                 Thread.yield();
             }
 
-            verifyData(srcBuffer, mockDataHandlerOne);
-            verifyData(srcBuffer, mockDataHandlerTwo);
+            verifyData(srcBuffer, mockFragmentHandlerOne);
+            verifyData(srcBuffer, mockFragmentHandlerTwo);
         }
     }
 
-    private void verifyData(final UnsafeBuffer srcBuffer, final DataHandler mockDataHandler)
+    private void verifyData(final UnsafeBuffer srcBuffer, final FragmentHandler mockFragmentHandler)
     {
         final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
         final ArgumentCaptor<Integer> offsetArg = ArgumentCaptor.forClass(Integer.class);
 
-        verify(mockDataHandler, times(1)).onData(
+        verify(mockFragmentHandler, times(1)).onFragment(
             bufferArg.capture(), offsetArg.capture(), eq(srcBuffer.capacity()), any(Header.class));
 
         final UnsafeBuffer capturedBuffer = bufferArg.getValue();

@@ -16,8 +16,8 @@
 
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.Sender;
+import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 
 public class CloseSendChannelEndpointCmd implements SenderCmd
 {

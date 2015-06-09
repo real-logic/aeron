@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
+import uk.co.real_logic.aeron.driver.FlowControl;
 import uk.co.real_logic.aeron.driver.NetworkPublication;
 import uk.co.real_logic.aeron.driver.RetransmitHandler;
 import uk.co.real_logic.aeron.driver.Sender;
-import uk.co.real_logic.aeron.driver.FlowControl;
 
 public class NewPublicationCmd implements SenderCmd
 {

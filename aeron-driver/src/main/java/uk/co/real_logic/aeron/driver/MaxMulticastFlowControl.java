@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import java.net.InetSocketAddress;
 
-import static uk.co.real_logic.aeron.common.concurrent.logbuffer.LogBufferDescriptor.computePosition;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Default multicast sender flow control strategy.

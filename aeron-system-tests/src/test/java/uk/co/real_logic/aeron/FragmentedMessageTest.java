@@ -21,19 +21,17 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
 public class FragmentedMessageTest
@@ -56,7 +54,7 @@ public class FragmentedMessageTest
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
-    private final DataHandler mockDataHandler = mock(DataHandler.class);
+    private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
 
     @Theory
     @Test(timeout = 10000)
@@ -66,12 +64,12 @@ public class FragmentedMessageTest
         ctx.dirsDeleteOnExit(true);
         ctx.threadingMode(threadingMode);
 
-        final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockDataHandler);
+        final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockFragmentHandler);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());
              final Publication publication = client.addPublication(channel, STREAM_ID);
-             final Subscription subscription = client.addSubscription(channel, STREAM_ID, adapter))
+             final Subscription subscription = client.addSubscription(channel, STREAM_ID))
         {
             final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[ctx.mtuLength() * 4]);
             final int offset = 0;
@@ -91,14 +89,14 @@ public class FragmentedMessageTest
             int numFragments = 0;
             do
             {
-                numFragments += subscription.poll(FRAGMENT_COUNT_LIMIT);
+                numFragments += subscription.poll(adapter, FRAGMENT_COUNT_LIMIT);
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 
             final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
             final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
-            verify(mockDataHandler, times(1)).onData(
+            verify(mockFragmentHandler, times(1)).onFragment(
                 bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());
 
             final UnsafeBuffer capturedBuffer = bufferArg.getValue();

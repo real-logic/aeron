@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.common.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 
 import java.net.InetSocketAddress;
 

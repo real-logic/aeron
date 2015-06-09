@@ -81,7 +81,7 @@ public class StopStartSecondSubscriberTest
         mediaDriverContext2.dirsDeleteOnExit(true);
 
         driver1 = MediaDriver.launchEmbedded(mediaDriverContext1);
-        driver2 = MediaDriver.launch(mediaDriverContext2);
+        driver2 = MediaDriver.launchEmbedded(mediaDriverContext2);
 
         publishingAeronContext1.dirName(driver1.contextDirName());
         publishingAeronContext2.dirName(driver1.contextDirName());
@@ -126,7 +126,10 @@ public class StopStartSecondSubscriberTest
         publishingClient1.close();
         subscribingClient2.close();
         publishingClient2.close();
+
         driver1.close();
+        //FileSystemException deleting logbuffer with message The process cannot access the file ... unless we do a gc
+        System.gc();
         driver2.close();
     }
 
@@ -247,7 +250,9 @@ public class StopStartSecondSubscriberTest
                 subscriber2AfterRestartCount.value >= numMessages);
 
         executor.shutdown();
+        executor.awaitTermination(100, TimeUnit.MILLISECONDS);
     }
+
 
     @Test(timeout = 10000)
     public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream() throws Exception

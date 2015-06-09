@@ -633,7 +633,8 @@ public class DriverConductor implements Agent
 
         connections
             .stream()
-            .filter((connection) -> connection.matches(channelEndpoint, streamId) && connection.status() == NetworkConnection.Status.ACTIVE)
+            .filter((connection) -> connection.matches(channelEndpoint, streamId) &&
+                    connection.status() == NetworkConnection.Status.ACTIVE)
             .forEach(
                 (connection) ->
                 {

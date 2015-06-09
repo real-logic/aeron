@@ -115,16 +115,6 @@ public class TermAppender extends LogBufferPartition
     }
 
     /**
-     * The default header applied to each record.
-     *
-     * @return the default header applied to each record.
-     */
-    public MutableDirectBuffer defaultHeader()
-    {
-        return defaultHeader;
-    }
-
-    /**
      * Append a message to the term if sufficient capacity exists.
      *
      * @param srcBuffer containing the encoded message.

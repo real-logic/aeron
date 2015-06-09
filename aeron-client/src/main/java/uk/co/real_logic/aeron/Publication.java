@@ -22,9 +22,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 
 /**
  * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
@@ -289,20 +287,19 @@ public class Publication implements AutoCloseable
         switch (nextOffset)
         {
             case TermAppender.TRIPPED:
+            {
                 final int newTermId = activeTermId + 1;
                 final int nextIndex = nextPartitionIndex(activeIndex);
-
-                final TermAppender[] termAppenders = this.termAppenders;
-                termAppenders[nextIndex].defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId, LITTLE_ENDIAN);
-
+                LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
                 final int previousIndex = previousPartitionIndex(activeIndex);
-                final TermAppender previousAppender = termAppenders[previousIndex];
 
                 // Need to advance the term id in case a publication takes an interrupt between reading the active term
                 // and incrementing the tail. This covers the case of interrupt talking over one term in duration.
-                previousAppender.defaultHeader().putInt(TERM_ID_FIELD_OFFSET, newTermId + 1, LITTLE_ENDIAN);
-                previousAppender.statusOrdered(NEEDS_CLEANING);
+                LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, previousIndex, newTermId + 1);
+
+                termAppenders[previousIndex].statusOrdered(NEEDS_CLEANING);
                 LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
+            }
 
                 // fall through
             case TermAppender.FAILED:

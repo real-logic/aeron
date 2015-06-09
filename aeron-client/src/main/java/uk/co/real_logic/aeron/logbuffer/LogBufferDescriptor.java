@@ -18,8 +18,10 @@ package uk.co.real_logic.aeron.logbuffer;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 
@@ -471,5 +473,18 @@ public class LogBufferDescriptor
         }
 
         return defaultFrameHeaders;
+    }
+
+    /**
+     * Set the termId within a default header.
+     *
+     * @param logMetaDataBuffer containing the default headers.
+     * @param partitionIndex    of the default header.
+     * @param termId            to be set.
+     */
+    public static void defaultHeaderTermId(final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final int termId)
+    {
+        final int headerOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+        logMetaDataBuffer.putInt(headerOffset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
     }
 }

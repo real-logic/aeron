@@ -22,6 +22,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
 import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.command.*;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
@@ -34,6 +35,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -423,6 +425,62 @@ public class DriverConductorTest
 
         verifyReceiverRemovesSubscription(never());
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
+    }
+
+    // Test for fix to issue #127
+    @Test
+    public void shouldAlwaysGiveNetworkConnectionCorrelationIdToClientCallbacks() throws Exception
+    {
+        final int sessionId = 1;
+        final int streamId = 2;
+        final int port = 4000;
+        final InetSocketAddress inetAddress = new InetSocketAddress("localhost", 4000);
+        final NetworkConnection mockNetworkConnection = mock(NetworkConnection.class);
+        final DriverConductor spyConductor = spy(driverConductor);
+        final RawLog mockRawLog = mock(RawLog.class);
+        final ArgumentCaptor<Long> captor = ArgumentCaptor.forClass(Long.class);
+
+        doReturn(mockNetworkConnection).when(spyConductor).newNetworkConnection(
+            anyLong(), any(), any(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(),
+            any(), any(), any(), any(), any(), any(), any(), any());
+        when(mockRawLogFactory.newConnection(anyString(), anyInt(), anyInt(), anyLong(), anyInt()))
+            .thenReturn(mockRawLog);
+        when(mockRawLog.logMetaData()).thenReturn(new UnsafeBuffer(ByteBuffer.allocateDirect(4096)));
+        when(mockNetworkConnection.timeOfLastStatusChange()).thenReturn(wheel.clock().nanoTime());
+        when(mockNetworkConnection.sourceAddress()).thenReturn(inetAddress);
+        when(mockNetworkConnection.sessionId()).thenReturn(sessionId);
+        when(mockNetworkConnection.streamId()).thenReturn(streamId);
+
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + port, streamId, CORRELATION_ID_1);
+        spyConductor.doWork();
+        writePublicationMessage(ADD_PUBLICATION, sessionId, streamId, port, CORRELATION_ID_2);
+        spyConductor.doWork();
+
+        final ReceiveChannelEndpoint endpoint = spyConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + port));
+        assertThat(endpoint, is(notNullValue()));
+        spyConductor.onCreateConnection(sessionId, streamId, 0, 0, 0, 1024, 1024, inetAddress, inetAddress, endpoint);
+        verify(mockClientProxy).onConnectionReady(
+            eq(streamId), eq(sessionId), anyInt(), any(), captor.capture(), any(), anyString());
+        final long networkSessionId1 = captor.getValue();
+
+        when(mockNetworkConnection.matches(eq(endpoint), eq(streamId))).thenReturn(true);
+        when(mockNetworkConnection.correlationId()).thenReturn(networkSessionId1);
+
+        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + "4000", 2, CORRELATION_ID_3);
+        spyConductor.doWork();
+
+        verify(mockClientProxy, times(2)).onConnectionReady(
+            eq(streamId), eq(sessionId), anyInt(), any(), captor.capture(), any(), anyString());
+
+        final long networkSessionId2 = captor.getValue();
+        assertThat(networkSessionId1, is(networkSessionId2));
+
+        // Everything was set up correctly, now get inactive timeout
+        when(mockNetworkConnection.status()).thenReturn(NetworkConnection.Status.INACTIVE);
+        when(mockNetworkConnection.isDrained()).thenReturn(true);
+        processTimersUntil(() -> wheel.clock().nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
+        verify(mockClientProxy, atLeast(1)).onInactiveConnection(
+            eq(networkSessionId1), eq(sessionId), eq(streamId), anyLong(), anyString());
     }
 
     private void verifyReceiverRemovesSubscription(final VerificationMode times)

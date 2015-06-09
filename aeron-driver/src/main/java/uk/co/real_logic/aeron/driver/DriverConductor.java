@@ -38,6 +38,7 @@ import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
+import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
@@ -294,7 +295,7 @@ public class DriverConductor implements Agent
             final RawLog rawLog = newConnectionLog(
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, correlationId);
 
-            final NetworkConnection connection = new NetworkConnection(
+            final NetworkConnection connection = newNetworkConnection(
                 correlationId,
                 channelEndpoint,
                 controlAddress,
@@ -365,6 +366,45 @@ public class DriverConductor implements Agent
                     return new SubscriberPosition(subscription, position);
                 })
             .collect(toList());
+    }
+
+    NetworkConnection newNetworkConnection(
+        final long correlationId,
+        final ReceiveChannelEndpoint channelEndpoint,
+        final InetSocketAddress controlAddress,
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final int activeTermId,
+        final int initialTermOffset,
+        final int initialWindowLength,
+        final RawLog rawLog,
+        final TimerWheel timerwheel,
+        final FeedbackDelayGenerator lossFeedbackDelayGenerator,
+        final List<ReadablePosition> subscriberPositions,
+        final Position hwmPosition,
+        final NanoClock clock,
+        final SystemCounters systemCounters,
+        final InetSocketAddress sourceAddress)
+    {
+        return new NetworkConnection(
+            correlationId,
+            channelEndpoint,
+            controlAddress,
+            sessionId,
+            streamId,
+            initialTermId,
+            activeTermId,
+            initialTermOffset,
+            initialWindowLength,
+            rawLog,
+            timerwheel,
+            lossFeedbackDelayGenerator,
+            subscriberPositions,
+            hwmPosition,
+            clock,
+            systemCounters,
+            sourceAddress);
     }
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
@@ -648,7 +688,7 @@ public class DriverConductor implements Agent
                         connection.sessionId(),
                         connection.rebuildPosition(),
                         connection.rawLog(),
-                        correlationId,
+                        connection.correlationId(),
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
                         generateSourceIdentity(connection.sourceAddress()));
                 });

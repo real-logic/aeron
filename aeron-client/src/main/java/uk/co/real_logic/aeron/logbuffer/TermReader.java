@@ -29,22 +29,19 @@ import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 public class TermReader
 {
     private final UnsafeBuffer termBuffer;
-    private final Header header;
     private int offset = 0;
 
     /**
      * Construct a reader for a log and associated meta data buffer.
      *
-     * @param initialTermId at which this stream started.
      * @param termBuffer    containing the data frames.
      */
-    public TermReader(final int initialTermId, final UnsafeBuffer termBuffer)
+    public TermReader(final UnsafeBuffer termBuffer)
     {
         LogBufferDescriptor.checkTermBuffer(termBuffer);
         termBuffer.verifyAlignment();
 
         this.termBuffer = termBuffer;
-        header = new Header(initialTermId, termBuffer);
     }
 
     /**
@@ -77,10 +74,9 @@ public class TermReader
      * @param framesCountLimit limit the number of frames read.
      * @return the number of frames read
      */
-    public int read(int termOffset, final FragmentHandler handler, final int framesCountLimit)
+    public int read(int termOffset, final FragmentHandler handler, final int framesCountLimit, final Header header)
     {
         int framesCounter = 0;
-        final Header header = this.header;
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
         offset = termOffset;
@@ -99,7 +95,9 @@ public class TermReader
 
             if (!isPaddingFrame(termBuffer, currentTermOffset))
             {
+                header.buffer(termBuffer);
                 header.offset(currentTermOffset);
+
                 handler.onFragment(termBuffer, currentTermOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
                 ++framesCounter;

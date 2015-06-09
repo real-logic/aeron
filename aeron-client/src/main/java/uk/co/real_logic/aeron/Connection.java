@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.logbuffer.TermReader;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -35,6 +36,7 @@ class Connection implements ManagedResource
     private final int termLengthMask;
     private final int sessionId;
 
+    private final Header header;
     private final LogBuffers logBuffers;
     private final TermReader[] termReaders = new TermReader[PARTITION_COUNT];
 
@@ -53,16 +55,18 @@ class Connection implements ManagedResource
         this.logBuffers = logBuffers;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        final int initialTermId = initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termReaders[i] = new TermReader(initialTermId, buffers[i]);
+            termReaders[i] = new TermReader(buffers[i]);
         }
+
 
         final int capacity = termReaders[0].termBuffer().capacity();
         this.termLengthMask = capacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
+        final int initialTermId = initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]);
+        header = new Header(initialTermId, capacity);
 
         subscriberPosition.setOrdered(initialPosition);
     }
@@ -87,7 +91,7 @@ class Connection implements ManagedResource
         int messagesRead = 0;
         try
         {
-            messagesRead = termReader.read(termOffset, fragmentHandler, fragmentCountLimit);
+            messagesRead = termReader.read(termOffset, fragmentHandler, fragmentCountLimit, header);
         }
         finally
         {

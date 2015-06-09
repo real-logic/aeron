@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.logbuffer.TermReader;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
@@ -99,6 +100,7 @@ public class ReceiverTest
     private final TimerWheel timerWheel = new TimerWheel(
         clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
+    private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_LENGTH);
     private TermReader[] termReaders;
     private DatagramChannel senderChannel;
 
@@ -145,7 +147,7 @@ public class ReceiverTest
 
         termReaders = rawLog
             .stream()
-            .map((partition) -> new TermReader(INITIAL_TERM_ID, partition.termBuffer()))
+            .map((partition) -> new TermReader(partition.termBuffer()))
             .toArray(TermReader[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
@@ -284,7 +286,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(0));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }
@@ -347,7 +350,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(0));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }
@@ -410,7 +414,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(0));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }
@@ -478,7 +483,8 @@ public class ReceiverTest
                 assertThat(header.termOffset(), is(initialTermOffset));
                 assertThat(header.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH + FAKE_PAYLOAD.length));
             },
-            Integer.MAX_VALUE);
+            Integer.MAX_VALUE,
+            header);
 
         assertThat(messagesRead, is(1));
     }

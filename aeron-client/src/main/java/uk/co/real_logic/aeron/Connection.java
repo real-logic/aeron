@@ -22,6 +22,8 @@ import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
+import java.util.Arrays;
+
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -36,9 +38,10 @@ class Connection implements ManagedResource
     private final int termLengthMask;
     private final int sessionId;
 
-    private final Header header;
     private final LogBuffers logBuffers;
-    private final TermReader[] termReaders = new TermReader[PARTITION_COUNT];
+    private final UnsafeBuffer[] termBuffers;
+    private final Header header;
+    private final TermReader termReader = new TermReader();
 
     private final Position subscriberPosition;
 
@@ -55,14 +58,9 @@ class Connection implements ManagedResource
         this.logBuffers = logBuffers;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
+        termBuffers = Arrays.copyOf(buffers, PARTITION_COUNT);
 
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            termReaders[i] = new TermReader(buffers[i]);
-        }
-
-
-        final int capacity = termReaders[0].termBuffer().capacity();
+        final int capacity = termBuffers[0].capacity();
         this.termLengthMask = capacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
         final int initialTermId = initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]);
@@ -84,14 +82,13 @@ class Connection implements ManagedResource
     public int poll(final FragmentHandler fragmentHandler, final int fragmentCountLimit)
     {
         final long position = subscriberPosition.get();
-        final int activeIndex = indexByPosition(position, positionBitsToShift);
         final int termOffset = (int)position & termLengthMask;
+        final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
 
-        final TermReader termReader = termReaders[activeIndex];
         int messagesRead = 0;
         try
         {
-            messagesRead = termReader.read(termOffset, fragmentHandler, fragmentCountLimit, header);
+            messagesRead = termReader.read(termBuffer, termOffset, fragmentHandler, fragmentCountLimit, header);
         }
         finally
         {

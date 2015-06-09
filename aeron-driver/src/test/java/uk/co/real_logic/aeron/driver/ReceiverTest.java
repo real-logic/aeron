@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.logbuffer.TermReader;
@@ -101,7 +102,8 @@ public class ReceiverTest
         clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_LENGTH);
-    private TermReader[] termReaders;
+    private final TermReader termReader = new TermReader();
+    private UnsafeBuffer[] termBuffers;
     private DatagramChannel senderChannel;
 
     private InetSocketAddress senderAddress = new InetSocketAddress("localhost", 40123);
@@ -145,10 +147,10 @@ public class ReceiverTest
         senderChannel.bind(senderAddress);
         senderChannel.configureBlocking(false);
 
-        termReaders = rawLog
+        termBuffers = rawLog
             .stream()
-            .map((partition) -> new TermReader(partition.termBuffer()))
-            .toArray(TermReader[]::new);
+            .map(RawLogPartition::termBuffer)
+            .toArray(UnsafeBuffer[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI),
@@ -275,8 +277,9 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
-            termReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
+            termReader.offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -339,8 +342,9 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // heartbeat with same term offset
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
-            termReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
+            termReader.offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -403,8 +407,9 @@ public class ReceiverTest
         fillDataFrame(dataHeader, 0, FAKE_PAYLOAD);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, dataHeader.frameLength(), senderAddress);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
-            termReaders[ACTIVE_INDEX].offset(),
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
+            termReader.offset(),
             (buffer, offset, length, header) ->
             {
                 assertThat(header.type(), is(HeaderFlyweight.HDR_TYPE_DATA));
@@ -472,7 +477,8 @@ public class ReceiverTest
 
         verify(mockHighestReceivedPosition).setOrdered(initialTermOffset + alignedDataFrameLength);
 
-        messagesRead = termReaders[ACTIVE_INDEX].read(
+        messagesRead = termReader.read(
+            termBuffers[ACTIVE_INDEX],
             initialTermOffset,
             (buffer, offset, length, header) ->
             {

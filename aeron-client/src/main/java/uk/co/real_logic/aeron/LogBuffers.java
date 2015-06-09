@@ -46,7 +46,7 @@ public class LogBuffers implements AutoCloseable
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
-                mappedByteBuffers = new MappedByteBuffer[]{ mappedBuffer };
+                mappedByteBuffers = new MappedByteBuffer[]{mappedBuffer};
 
                 final int metaDataSectionOffset = termLength * PARTITION_COUNT;
 
@@ -87,6 +87,11 @@ public class LogBuffers implements AutoCloseable
         catch (final IOException ex)
         {
             throw new RuntimeException(ex);
+        }
+
+        for (final UnsafeBuffer buffer : atomicBuffers)
+        {
+            buffer.verifyAlignment();
         }
     }
 

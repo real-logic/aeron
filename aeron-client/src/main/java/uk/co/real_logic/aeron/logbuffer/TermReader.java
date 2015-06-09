@@ -28,30 +28,10 @@ import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  */
 public class TermReader
 {
-    private final UnsafeBuffer termBuffer;
     private int offset = 0;
 
-    /**
-     * Construct a reader for a log and associated meta data buffer.
-     *
-     * @param termBuffer    containing the data frames.
-     */
-    public TermReader(final UnsafeBuffer termBuffer)
+    public TermReader()
     {
-        LogBufferDescriptor.checkTermBuffer(termBuffer);
-        termBuffer.verifyAlignment();
-
-        this.termBuffer = termBuffer;
-    }
-
-    /**
-     * Get the term buffer that the reader reads.
-     *
-     * @return the term buffer that the reader reads.
-     */
-    public UnsafeBuffer termBuffer()
-    {
-        return termBuffer;
     }
 
     /**
@@ -69,15 +49,21 @@ public class TermReader
      *
      * If a framesCountLimit of 0 or less is passed then at least one read will be attempted.
      *
+     * @param termBuffer       to be read for fragments.
      * @param termOffset       offset within the buffer that the read should begin.
      * @param handler          the handler for data that has been read
      * @param framesCountLimit limit the number of frames read.
+     * @param header           to be used for mapping over the header for a given fragment.
      * @return the number of frames read
      */
-    public int read(int termOffset, final FragmentHandler handler, final int framesCountLimit, final Header header)
+    public int read(
+        final UnsafeBuffer termBuffer,
+        int termOffset,
+        final FragmentHandler handler,
+        final int framesCountLimit,
+        final Header header)
     {
         int framesCounter = 0;
-        final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
         offset = termOffset;
 

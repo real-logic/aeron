@@ -17,6 +17,10 @@ package uk.co.real_logic.aeron.logbuffer;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
+
+
 /**
  * Base log buffer implementation containing common functionality for dealing with fragment terms.
  */
@@ -27,8 +31,8 @@ public class LogBufferPartition
 
     public LogBufferPartition(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
-        LogBufferDescriptor.checkTermBuffer(termBuffer);
-        LogBufferDescriptor.checkMetaDataBuffer(metaDataBuffer);
+        checkTermBuffer(termBuffer);
+        checkMetaDataBuffer(metaDataBuffer);
         termBuffer.verifyAlignment();
         metaDataBuffer.verifyAlignment();
 
@@ -63,8 +67,9 @@ public class LogBufferPartition
     public void clean()
     {
         termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
-        metaDataBuffer.setMemory(0, metaDataBuffer.capacity(), (byte)0);
-        statusOrdered(LogBufferDescriptor.CLEAN);
+
+        metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, 0);
+        statusOrdered(CLEAN);
     }
 
     /**
@@ -74,7 +79,7 @@ public class LogBufferPartition
      */
     public int status()
     {
-        return metaDataBuffer.getIntVolatile(LogBufferDescriptor.TERM_STATUS_OFFSET);
+        return metaDataBuffer.getIntVolatile(TERM_STATUS_OFFSET);
     }
 
     /**
@@ -84,7 +89,7 @@ public class LogBufferPartition
      */
     public void statusOrdered(final int status)
     {
-        metaDataBuffer.putIntOrdered(LogBufferDescriptor.TERM_STATUS_OFFSET, status);
+        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
     }
 
     /**
@@ -95,7 +100,7 @@ public class LogBufferPartition
      */
     public int tailVolatile()
     {
-        return Math.min(metaDataBuffer.getIntVolatile(LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
+        return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
     }
 
     /**
@@ -105,7 +110,7 @@ public class LogBufferPartition
      */
     public int rawTailVolatile()
     {
-        return metaDataBuffer.getIntVolatile(LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET);
+        return metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
     }
 
     /**
@@ -115,6 +120,6 @@ public class LogBufferPartition
      */
     public int tail()
     {
-        return Math.min(metaDataBuffer.getInt(LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
+        return Math.min(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
     }
 }

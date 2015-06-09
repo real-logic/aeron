@@ -19,8 +19,8 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.experimental.theories.Theories;
 import org.junit.runner.RunWith;
-import uk.co.real_logic.aeron.common.concurrent.logbuffer.DataHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.collections.MutableInteger;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -70,9 +70,9 @@ public class StopStartSecondSubscriberTest
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
     private int subscriber1Count = 0;
-    private DataHandler dataHandler1 = (buffer, offset, length, header) -> subscriber1Count++;
+    private FragmentHandler dataHandler1 = (buffer, offset, length, header) -> subscriber1Count++;
     private int subscriber2Count = 0;
-    private DataHandler dataHandler2 = (buffer, offset, length, header) -> subscriber2Count++;
+    private FragmentHandler dataHandler2 = (buffer, offset, length, header) -> subscriber2Count++;
 
 
     private void launch(final String channel1, final int stream1, final String channel2, final int stream2) throws Exception
@@ -81,7 +81,7 @@ public class StopStartSecondSubscriberTest
         mediaDriverContext2.dirsDeleteOnExit(true);
 
         driver1 = MediaDriver.launchEmbedded(mediaDriverContext1);
-        driver2 = MediaDriver.launchEmbedded(mediaDriverContext2);
+        driver2 = MediaDriver.launch(mediaDriverContext2);
 
         publishingAeronContext1.dirName(driver1.contextDirName());
         publishingAeronContext2.dirName(driver1.contextDirName());
@@ -94,9 +94,9 @@ public class StopStartSecondSubscriberTest
         publishingClient2 = Aeron.connect(publishingAeronContext2);
         subscribingClient2 = Aeron.connect(subscribingAeronContext2);
         publication1 = publishingClient1.addPublication(channel1, stream1);
-        subscription1 = subscribingClient1.addSubscription(channel1, stream1, dataHandler1);
+        subscription1 = subscribingClient1.addSubscription(channel1, stream1);
         publication2 = publishingClient2.addPublication(channel2, stream2);
-        subscription2 = subscribingClient2.addSubscription(channel2, stream2, dataHandler2);
+        subscription2 = subscribingClient2.addSubscription(channel2, stream2);
     }
 
     @After
@@ -157,15 +157,15 @@ public class StopStartSecondSubscriberTest
 
         final int fragmentsRead[] = new int[2];
         SystemTestHelper.executeUntil(
-            () -> fragmentsRead[0] >= numMessagesPerPublication && fragmentsRead[1] >= numMessagesPerPublication,
-            (i) ->
-            {
-                fragmentsRead[0] += subscription1.poll(10);
-                fragmentsRead[1] += subscription2.poll(10);
-                Thread.yield();
-            },
-            Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(9900));
+                () -> fragmentsRead[0] >= numMessagesPerPublication && fragmentsRead[1] >= numMessagesPerPublication,
+                (i) ->
+                {
+                    fragmentsRead[0] += subscription1.poll(dataHandler1, 10);
+                    fragmentsRead[1] += subscription2.poll(dataHandler2, 10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(9900));
 
         assertEquals(numMessagesPerPublication, subscriber1Count);
         assertEquals(numMessagesPerPublication, subscriber2Count);
@@ -188,11 +188,11 @@ public class StopStartSecondSubscriberTest
                                                     final int stream2) throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
-        final int numMessages = 10000;
+        final int numMessages = 1;
         final MutableInteger subscriber2AfterRestartCount = new MutableInteger();
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        final DataHandler dataHandler2b = (buffer, offset, length, header) -> subscriber2AfterRestartCount.value++;
+        final FragmentHandler dataHandler2b = (buffer, offset, length, header) -> subscriber2AfterRestartCount.value++;
 
         launch(channel1, stream1, channel2, stream2);
 
@@ -207,16 +207,13 @@ public class StopStartSecondSubscriberTest
                 () -> fragmentsRead[0] >= numMessages && fragmentsRead[1] >= numMessages,
                 (i) ->
                 {
-                    fragmentsRead[0] += subscription1.poll(10);
-                    fragmentsRead[1] += subscription2.poll(10);
+                    fragmentsRead[0] += subscription1.poll(dataHandler1, 1);
+                    fragmentsRead[1] += subscription2.poll(dataHandler2, 1);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(4900));
 
-        System.out.println("Values before stop/start: numMessages=" + numMessages +
-                " subscriber1Count=" + subscriber1Count + " subscriber2Count=" + subscriber2Count +
-                " fragmentsRead[0]=" + fragmentsRead[0] + " fragmentsRead[1]=" + fragmentsRead[1]);
 
         assertTrue(subscriber1Count >= numMessages);
         assertTrue(subscriber2Count >= numMessages);
@@ -229,24 +226,20 @@ public class StopStartSecondSubscriberTest
         fragmentsRead[1] = 0;
 
         //Start the second subscriber again
-        subscription2 = subscribingClient2.addSubscription(channel2, stream2, dataHandler2b);
+        subscription2 = subscribingClient2.addSubscription(channel2, stream2);
 
         SystemTestHelper.executeUntil(
                 () -> fragmentsRead[0] >= numMessages && fragmentsRead[1] >= numMessages,
                 (i) ->
                 {
-                    fragmentsRead[0] += subscription1.poll(10);
-                    fragmentsRead[1] += subscription2.poll(10);
+                    fragmentsRead[0] += subscription1.poll(dataHandler1, 1);
+                    fragmentsRead[1] += subscription2.poll(dataHandler2b, 1);
                     Thread.yield();
                 },
                 Integer.MAX_VALUE,
                 TimeUnit.MILLISECONDS.toNanos(4900));
 
         running.set(false);
-
-        System.out.println("Values after stop/start: numMessages=" + numMessages +
-                " subscriber1Count=" + subscriber1Count + " subscriber2bCount=" + subscriber2AfterRestartCount.value +
-                " fragmentsRead[0]=" + fragmentsRead[0] + " fragmentsRead[1]=" + fragmentsRead[1]);
 
         assertTrue("Expecting subscriber1 to receive messages the entire time", subscriber1Count >= numMessages * 2);
         assertTrue("Expecting subscriber2 to receive messages before being stopped and started", subscriber2Count >= numMessages);

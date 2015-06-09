@@ -308,7 +308,6 @@ public class Publication implements AutoCloseable
 
             default:
                 newPosition = (position - currentTail) + nextOffset;
-                break;
         }
 
         return newPosition;

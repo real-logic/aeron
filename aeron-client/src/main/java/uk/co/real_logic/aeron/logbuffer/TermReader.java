@@ -47,23 +47,23 @@ public class TermReader
     /**
      * Reads data from the log buffer.
      *
-     * If a framesCountLimit of 0 or less is passed then at least one read will be attempted.
+     * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
      *
-     * @param termBuffer       to be read for fragments.
-     * @param termOffset       offset within the buffer that the read should begin.
-     * @param handler          the handler for data that has been read
-     * @param framesCountLimit limit the number of frames read.
-     * @param header           to be used for mapping over the header for a given fragment.
+     * @param termBuffer     to be read for fragments.
+     * @param termOffset     offset within the buffer that the read should begin.
+     * @param handler        the handler for data that has been read
+     * @param fragmentsLimit limit the number of frames read.
+     * @param header         to be used for mapping over the header for a given fragment.
      * @return the number of frames read
      */
     public int read(
         final UnsafeBuffer termBuffer,
         int termOffset,
         final FragmentHandler handler,
-        final int framesCountLimit,
+        final int fragmentsLimit,
         final Header header)
     {
-        int framesCounter = 0;
+        int fragmentsRead = 0;
         final int capacity = termBuffer.capacity();
         offset = termOffset;
 
@@ -86,11 +86,11 @@ public class TermReader
 
                 handler.onFragment(termBuffer, currentTermOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
-                ++framesCounter;
+                ++fragmentsRead;
             }
         }
-        while (framesCounter < framesCountLimit && termOffset < capacity);
+        while (fragmentsRead < fragmentsLimit && termOffset < capacity);
 
-        return framesCounter;
+        return fragmentsRead;
     }
 }

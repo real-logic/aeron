@@ -84,12 +84,12 @@ public class Subscription implements AutoCloseable
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered withing a session.
      *
-     * @param fragmentHandler    callback for handling each message fragment as it is read.
-     * @param fragmentCountLimit number of message fragments to limit for a single poll operation.
+     * @param fragmentHandler callback for handling each message fragment as it is read.
+     * @param fragmentLimit   number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
      * @throws IllegalStateException if the subscription is closed.
      */
-    public int poll(final FragmentHandler fragmentHandler, final int fragmentCountLimit)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
         ensureOpen();
 
@@ -109,7 +109,7 @@ public class Subscription implements AutoCloseable
 
             do
             {
-                fragmentsRead += connections[i].poll(fragmentHandler, fragmentCountLimit);
+                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit);
 
                 if (++i == length)
                 {

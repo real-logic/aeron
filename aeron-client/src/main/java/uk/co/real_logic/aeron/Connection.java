@@ -79,16 +79,16 @@ class Connection implements ManagedResource
         return correlationId;
     }
 
-    public int poll(final FragmentHandler fragmentHandler, final int fragmentCountLimit)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
         final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
 
-        int messagesRead = 0;
+        int fragmentsRead = 0;
         try
         {
-            messagesRead = termReader.read(termBuffer, termOffset, fragmentHandler, fragmentCountLimit, header);
+            fragmentsRead = termReader.read(termBuffer, termOffset, fragmentHandler, fragmentLimit, header);
         }
         finally
         {
@@ -99,7 +99,7 @@ class Connection implements ManagedResource
             }
         }
 
-        return messagesRead;
+        return fragmentsRead;
     }
 
     public void timeOfLastStateChange(final long time)

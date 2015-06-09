@@ -21,15 +21,15 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-    cout << "system_clock resolution          ";
+    cout << "system_clock resolution              ";
     cout << chrono::system_clock::period::num << "/";
     cout << chrono::system_clock::period::den << "\n";
 
-    cout << "steady_clock resolution          ";
+    cout << "steady_clock resolution              ";
     cout << chrono::steady_clock::period::num << "/";
     cout << chrono::steady_clock::period::den << "\n";
 
-    cout << "high_resolution_clock resolution ";
+    cout << "high_resolution_clock resolution     ";
     cout << chrono::high_resolution_clock::period::num << "/";
     cout << chrono::high_resolution_clock::period::den << "\n";
 
@@ -39,7 +39,7 @@ int main(int argc, char** argv)
 
     auto diff = end - start;
 
-    cout << "sleep_for min duration:          ";
+    cout << "sleep_for min duration:              ";
     cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
 
     start = chrono::steady_clock::now();
@@ -47,7 +47,38 @@ int main(int argc, char** argv)
     end = chrono::steady_clock::now();
     diff = end - start;
 
-    cout << "yield min duration:              ";
+    cout << "sample yield duration:               ";
+    cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
+
+    start = chrono::steady_clock::now();
+    chrono::high_resolution_clock::now();
+    end = chrono::steady_clock::now();
+    diff = end - start;
+
+    cout << "high_resolution_clock::now duration: ";
+    cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
+
+    start = chrono::steady_clock::now();
+    chrono::steady_clock::now();
+    end = chrono::steady_clock::now();
+    diff = end - start;
+
+    cout << "steady_clock::now duration:          ";
+    cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
+
+    start = chrono::steady_clock::now();
+    chrono::system_clock::now();
+    end = chrono::steady_clock::now();
+    diff = end - start;
+
+    cout << "system_clock::now duration:          ";
+    cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
+
+    start = chrono::steady_clock::now();
+    end = chrono::steady_clock::now();
+    diff = end - start;
+
+    cout << "no op duration:                      ";
     cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
 
     return 0;

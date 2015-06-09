@@ -24,7 +24,7 @@
 #include <util/MemoryMappedFile.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include "ClientConductor.h"
-#include "concurrent/BusySpinIdleStrategy.h"
+#include "concurrent/SleepingIdleStrategy.h"
 #include "concurrent/AgentRunner.h"
 #include "Publication.h"
 #include "Subscription.h"
@@ -87,8 +87,8 @@ private:
     CopyBroadcastReceiver m_toClientsCopyReceiver;
 
     ClientConductor m_conductor;
-    BusySpinIdleStrategy m_idleStrategy;
-    AgentRunner<ClientConductor, BusySpinIdleStrategy> m_conductorRunner;
+    SleepingIdleStrategy m_idleStrategy;
+    AgentRunner<ClientConductor, SleepingIdleStrategy> m_conductorRunner;
 
     MemoryMappedFile::ptr_t mapCncFile(Context& context);
 };

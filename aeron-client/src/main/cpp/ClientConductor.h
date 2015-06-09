@@ -33,23 +33,31 @@ namespace aeron {
 using namespace aeron::concurrent::status;
 using namespace aeron::concurrent;
 
+typedef std::function<long()> epoch_clock_t;
+
+static const long KEEPALIVE_TIMEOUT_MS = 500;
+
 class ClientConductor
 {
 public:
 
     ClientConductor(
+        epoch_clock_t epochClock,
         DriverProxy& driverProxy,
         CopyBroadcastReceiver& broadcastReceiver,
         AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
-        const on_new_subscription_t& newSubscriptionHandler) :
+        const on_new_subscription_t& newSubscriptionHandler,
+        long driverTimeoutMs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
-        m_onNewSubscpriptionHandler(newSubscriptionHandler)
+        m_onNewSubscpriptionHandler(newSubscriptionHandler),
+        m_epochClock(epochClock),
+        m_timeOfLastKeepalive(epochClock()),
+        m_driverTimeoutMs(driverTimeoutMs)
     {
-
     }
 
     int doWork()
@@ -57,6 +65,7 @@ public:
         int workCount = 0;
 
         workCount += m_driverListenerAdapter.receiveMessages();
+        workCount += onHeartbeatCheckTimeouts();
 
         return workCount;
     }
@@ -132,13 +141,42 @@ private:
 
     std::mutex m_publicationsLock;
     std::mutex m_subscriptionsLock;
+
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
+
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
+
     AtomicBuffer& m_counterValuesBuffer;
+
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscpriptionHandler;
+
+    epoch_clock_t m_epochClock;
+    long m_timeOfLastKeepalive;
+    long m_driverTimeoutMs;
+
+    inline int onHeartbeatCheckTimeouts()
+    {
+        const long now = m_epochClock();
+        int result = 0;
+
+        if (now > (m_timeOfLastKeepalive + KEEPALIVE_TIMEOUT_MS))
+        {
+            m_driverProxy.sendClientKeepalive();
+
+            if (now > (m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs))
+            {
+                // TODO: set driverActive to false and call error handler
+            }
+
+            m_timeOfLastKeepalive = now;
+            result = 1;
+        }
+
+        return result;
+    }
 };
 
 }

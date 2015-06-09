@@ -34,6 +34,9 @@ typedef std::function<void(const std::string& channel, std::int32_t streamId, st
 typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)> on_new_publication_t;
 typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int64_t correlationId)> on_new_subscription_t;
 
+const static long NULL_TIMEOUT = -1;
+const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
+
 inline static void defaultErrorHandler(util::SourcedException& exception)
 {
     std::cerr << "ERROR: " << exception.what() << " : " << exception.where() << std::endl;
@@ -60,6 +63,11 @@ public:
 
     this_t& conclude()
     {
+        if (NULL_TIMEOUT == m_mediaDriverTimeout)
+        {
+            m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
+        }
+
         return *this;
     }
 
@@ -89,6 +97,12 @@ public:
     inline this_t& newConnectionHandler(const on_new_connection_t& handler)
     {
         m_onNewConnectionHandler = handler;
+        return *this;
+    }
+
+    inline this_t& mediaDriverTimeout(long value)
+    {
+
         return *this;
     }
 
@@ -131,6 +145,7 @@ private:
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;
     on_new_connection_t m_onNewConnectionHandler = defaultOnNewConnectionHandler;
+    long m_mediaDriverTimeout = NULL_TIMEOUT;
 };
 
 }

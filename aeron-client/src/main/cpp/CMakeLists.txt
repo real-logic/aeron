@@ -50,6 +50,7 @@ SET(HEADERS
     concurrent/AtomicCounter.h
     concurrent/BusySpinIdleStrategy.h
     concurrent/CountersManager.h
+    concurrent/SleepingIdleStrategy.h
     concurrent/atomic/Atomic64_gcc_x86_64.h
     concurrent/atomic/Atomic64_msvc.h
     concurrent/broadcast/BroadcastBufferDescriptor.h

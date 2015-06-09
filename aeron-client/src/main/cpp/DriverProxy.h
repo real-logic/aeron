@@ -42,7 +42,7 @@ public:
     DriverProxy(const DriverProxy& proxy) = delete;
     DriverProxy& operator=(const DriverProxy& proxy) = delete;
 
-    inline std::int64_t timeOfLastDriverKeepaliveNs()
+    inline std::int64_t timeOfLastDriverKeepalive()
     {
         return m_toDriverCommandBuffer.consumerHeartbeatTime();
     }

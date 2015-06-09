@@ -69,7 +69,7 @@ public class LogBufferPartition
         termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
 
         metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, 0);
-        statusOrdered(CLEAN);
+        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, CLEAN);
     }
 
     /**

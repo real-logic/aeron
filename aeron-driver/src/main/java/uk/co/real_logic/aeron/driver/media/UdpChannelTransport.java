@@ -78,25 +78,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
             if (0 != Configuration.SOCKET_SNDBUF_LENGTH)
             {
                 datagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
-                final int soSndbuf = datagramChannel.getOption(StandardSocketOptions.SO_SNDBUF);
-
-                if (soSndbuf != Configuration.SOCKET_SNDBUF_LENGTH)
-                {
-                    throw new IllegalStateException(String.format(
-                        "Failed to set SO_SNDBUF: attempted=%d, actual=%d", Configuration.SOCKET_SNDBUF_LENGTH, soSndbuf));
-                }
             }
 
             if (0 != Configuration.SOCKET_RCVBUF_LENGTH)
             {
                 datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_LENGTH);
-                final int soRcvbuf = datagramChannel.getOption(StandardSocketOptions.SO_RCVBUF);
-
-                if (soRcvbuf != Configuration.SOCKET_RCVBUF_LENGTH)
-                {
-                    throw new IllegalStateException(String.format(
-                        "Failed to set SO_RCVBUF: attempted=%d, actual=%d", Configuration.SOCKET_RCVBUF_LENGTH, soRcvbuf));
-                }
             }
 
             datagramChannel.configureBlocking(false);

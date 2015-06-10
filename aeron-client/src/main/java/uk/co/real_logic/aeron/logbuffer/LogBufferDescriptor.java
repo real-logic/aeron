@@ -320,12 +320,7 @@ public class LogBufferDescriptor
      */
     public static int previousPartitionIndex(final int currentIndex)
     {
-        if (0 == currentIndex)
-        {
-            return PARTITION_COUNT - 1;
-        }
-
-        return currentIndex - 1;
+        return (currentIndex + (PARTITION_COUNT - 1)) % PARTITION_COUNT;
     }
 
     /**

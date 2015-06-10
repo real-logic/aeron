@@ -55,7 +55,7 @@ import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based media driver
- *
+ * <p>
  * Usage:
  * <code>
  * $ java -jar aeron-driver.jar
@@ -73,7 +73,9 @@ import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 public final class MediaDriver implements AutoCloseable
 {
 
-    /** Attempt to delete directories on exit */
+    /**
+     * Attempt to delete directories on exit
+     */
     public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
 
     private final File parentDirectory;
@@ -108,7 +110,7 @@ public final class MediaDriver implements AutoCloseable
 
         ensureDirectoriesAreRecreated();
 
-        warnOnInsufficentSocketBuffers();
+        warnOnInsufficientSocketBuffers();
 
         ctx.unicastSenderFlowControl(Configuration::unicastFlowControlStrategy)
             .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
@@ -144,7 +146,7 @@ public final class MediaDriver implements AutoCloseable
             case SHARED_NETWORK:
                 runners = Arrays.asList(
                     new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
-                                    new CompositeAgent(sender, receiver)),
+                        new CompositeAgent(sender, receiver)),
                     new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
                 );
                 break;
@@ -164,6 +166,7 @@ public final class MediaDriver implements AutoCloseable
     /**
      * Launch an isolated MediaDriver embedded in the current process with a generated dirName that can be retrieved
      * by calling contextDirName.
+     *
      * @return the newly started MediaDriver.
      */
     public static MediaDriver launchEmbedded()
@@ -228,6 +231,7 @@ public final class MediaDriver implements AutoCloseable
 
     /**
      * Used to access the configured dirName for this MediaDriver Context typically after the launchIsolated method
+     *
      * @return the context dirName
      */
     public String contextDirName()
@@ -254,19 +258,18 @@ public final class MediaDriver implements AutoCloseable
         return this;
     }
 
-    private void warnOnInsufficentSocketBuffers()
+    private void warnOnInsufficientSocketBuffers()
     {
-        try (DatagramChannel probe = DatagramChannel.open())
+        try (final DatagramChannel probe = DatagramChannel.open())
         {
-
             probe.setOption(StandardSocketOptions.SO_SNDBUF, Integer.MAX_VALUE);
             final int maxSoSndbuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
 
             if (maxSoSndbuf < Configuration.SOCKET_SNDBUF_LENGTH)
             {
-                System.err.println(
-                        String.format("WARNING: Could not get desired SO_SNDBUF: attempted=%d, actual=%d",
-                            Configuration.SOCKET_SNDBUF_LENGTH, maxSoSndbuf));
+                System.err.println(String.format(
+                    "WARNING: Could not get desired SO_SNDBUF: attempted=%d, actual=%d",
+                    Configuration.SOCKET_SNDBUF_LENGTH, maxSoSndbuf));
             }
 
             probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
@@ -274,9 +277,9 @@ public final class MediaDriver implements AutoCloseable
 
             if (maxSoRcvbuf < Configuration.SOCKET_RCVBUF_LENGTH)
             {
-                System.err.println(
-                        String.format("WARNING: Could not get desired SO_RCVBUF: attempted=%d, actual=%d",
-                            Configuration.SOCKET_RCVBUF_LENGTH, maxSoRcvbuf));
+                System.err.println(String.format(
+                    "WARNING: Could not get desired SO_RCVBUF: attempted=%d, actual=%d",
+                    Configuration.SOCKET_RCVBUF_LENGTH, maxSoRcvbuf));
             }
         }
         catch (final IOException ex)
@@ -709,6 +712,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Set whether or not this application will attempt to delete the Aeron directories when exiting.
+         *
          * @param dirsDeleteOnExit Attempt deletion.
          * @return this Object for method chaining.
          */
@@ -916,6 +920,7 @@ public final class MediaDriver implements AutoCloseable
 
         /**
          * Get whether or not this application will attempt to delete the Aeron directories when exiting.
+         *
          * @return true when directories will be deleted, otherwise false.
          */
         public boolean dirsDeleteOnExit()
@@ -1007,6 +1012,7 @@ public final class MediaDriver implements AutoCloseable
             {
                 dataLossGenerator(Configuration.createLossGenerator(dataLossRate, dataLossSeed));
             }
+
             if (null == controlLossGenerator)
             {
                 controlLossGenerator(Configuration.createLossGenerator(controlLossRate, controlLossSeed));

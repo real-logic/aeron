@@ -35,6 +35,11 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
+
+import java.nio.channels.DatagramChannel;
+import java.net.StandardSocketOptions;
+import java.io.IOException;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -102,6 +107,8 @@ public final class MediaDriver implements AutoCloseable
         parentDirectory = new File(ctx.dirName());
 
         ensureDirectoriesAreRecreated();
+
+        warnOnInsufficentSocketBuffers();
 
         ctx.unicastSenderFlowControl(Configuration::unicastFlowControlStrategy)
             .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
@@ -245,6 +252,38 @@ public final class MediaDriver implements AutoCloseable
             });
 
         return this;
+    }
+
+    private void warnOnInsufficentSocketBuffers()
+    {
+        try (DatagramChannel probe = DatagramChannel.open())
+        {
+
+            probe.setOption(StandardSocketOptions.SO_SNDBUF, Integer.MAX_VALUE);
+            final int maxSoSndbuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
+
+            if (maxSoSndbuf < Configuration.SOCKET_SNDBUF_LENGTH)
+            {
+                System.err.println(
+                        String.format("WARNING: Could not get desired SO_SNDBUF: attempted=%d, actual=%d",
+                            Configuration.SOCKET_SNDBUF_LENGTH, maxSoSndbuf));
+            }
+
+            probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
+            final int maxSoRcvbuf = probe.getOption(StandardSocketOptions.SO_RCVBUF);
+
+            if (maxSoRcvbuf < Configuration.SOCKET_RCVBUF_LENGTH)
+            {
+                System.err.println(
+                        String.format("WARNING: Could not get desired SO_RCVBUF: attempted=%d, actual=%d",
+                            Configuration.SOCKET_RCVBUF_LENGTH, maxSoRcvbuf));
+            }
+        }
+        catch (final IOException ex)
+        {
+            throw new RuntimeException(
+                String.format("probe socket: %s", ex.toString()), ex);
+        }
     }
 
     private void ensureDirectoriesAreRecreated()

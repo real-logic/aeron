@@ -15,9 +15,12 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthVolatile;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.isPaddingFrame;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
@@ -44,17 +47,17 @@ public final class TermScanner
         do
         {
             final int frameOffset = offset + available;
-            final int frameLength = FrameDescriptor.frameLengthVolatile(termBuffer, frameOffset);
+            final int frameLength = frameLengthVolatile(termBuffer, frameOffset);
             if (frameLength <= 0)
             {
                 break;
             }
 
-            int alignedFrameLength = align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
-            if (FrameDescriptor.isPaddingFrame(termBuffer, frameOffset))
+            int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
+            if (isPaddingFrame(termBuffer, frameOffset))
             {
-                padding = alignedFrameLength - DataHeaderFlyweight.HEADER_LENGTH;
-                alignedFrameLength = DataHeaderFlyweight.HEADER_LENGTH;
+                padding = alignedFrameLength - HEADER_LENGTH;
+                alignedFrameLength = HEADER_LENGTH;
             }
 
             available += alignedFrameLength;
@@ -68,7 +71,7 @@ public final class TermScanner
         }
         while ((available + padding) < maxLength);
 
-        return resultingStatus(padding, available);
+        return scanResult(padding, available);
     }
 
     /**
@@ -78,7 +81,7 @@ public final class TermScanner
      * @param available value to be packed.
      * @return a long with both ints packed into it.
      */
-    public static long resultingStatus(final int padding, final int available)
+    public static long scanResult(final int padding, final int available)
     {
         return ((long)padding << 32) | available;
     }
@@ -86,22 +89,22 @@ public final class TermScanner
     /**
      * The number of bytes that are available to be read after a scan.
      *
-     * @param resultingStatus into which the padding value has been packed.
+     * @param scanResult into which the padding value has been packed.
      * @return the count of bytes that are available to be read.
      */
-    public static int available(final long resultingStatus)
+    public static int available(final long scanResult)
     {
-        return (int)resultingStatus;
+        return (int)scanResult;
     }
 
     /**
      * The count of bytes that should be added for padding to the position on top of what is available
      *
-     * @param resultingStatus into which the padding value has been packed.
+     * @param scanResult into which the padding value has been packed.
      * @return the count of bytes that should be added for padding to the position on top of what is available.
      */
-    public static int padding(final long resultingStatus)
+    public static int padding(final long scanResult)
     {
-        return (int)(resultingStatus >>> 32);
+        return (int)(scanResult >>> 32);
     }
 }

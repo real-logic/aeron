@@ -27,17 +27,15 @@ import static uk.co.real_logic.agrona.BitUtil.align;
  */
 public final class TermScanner
 {
-    private int padding;
-
     /**
      * Scan the term buffer for availability of new messages from a given offset up to a maxLength of bytes.
      *
      * @param termBuffer to be scanned for new messages
      * @param offset     at which the scan should begin.
      * @param maxLength  in bytes of how much should be scanned.
-     * @return number of bytes available
+     * @return resulting status of the scan which packs the available bytes and padding into a long.
      */
-    public int scanForAvailability(final UnsafeBuffer termBuffer, final int offset, int maxLength)
+    public static long scanForAvailability(final UnsafeBuffer termBuffer, final int offset, int maxLength)
     {
         maxLength = Math.min(maxLength, termBuffer.capacity() - offset);
         int available = 0;
@@ -70,18 +68,40 @@ public final class TermScanner
         }
         while ((available + padding) < maxLength);
 
-        this.padding = padding;
+        return resultingStatus(padding, available);
+    }
 
-        return available;
+    /**
+     * Pack the values for available and padding into a long for returning on the stack.
+     *
+     * @param padding   value to be packed.
+     * @param available value to be packed.
+     * @return a long with both ints packed into it.
+     */
+    public static long resultingStatus(final int padding, final int available)
+    {
+        return ((long)padding << 32) | available;
+    }
+
+    /**
+     * The number of bytes that are available to be read after a scan.
+     *
+     * @param resultingStatus into which the padding value has been packed.
+     * @return the count of bytes that are available to be read.
+     */
+    public static int available(final long resultingStatus)
+    {
+        return (int)resultingStatus;
     }
 
     /**
      * The count of bytes that should be added for padding to the position on top of what is available
      *
+     * @param resultingStatus into which the padding value has been packed.
      * @return the count of bytes that should be added for padding to the position on top of what is available.
      */
-    public int padding()
+    public static int padding(final long resultingStatus)
     {
-        return padding;
+        return (int)(resultingStatus >>> 32);
     }
 }

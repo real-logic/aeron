@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
-import uk.co.real_logic.aeron.logbuffer.TermScanner;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
@@ -32,6 +31,9 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.logbuffer.TermScanner.available;
+import static uk.co.real_logic.aeron.logbuffer.TermScanner.padding;
+import static uk.co.real_logic.aeron.logbuffer.TermScanner.scanForAvailability;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -44,7 +46,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final TermScanner scanner = new TermScanner();
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
     private final Position publisherLimit;
@@ -212,7 +213,8 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             {
                 termOffset += bytesSent;
 
-                final int available = scanner.scanForAvailability(termBuffer, termOffset, mtuLength);
+                final long resultingStatus = scanForAvailability(termBuffer, termOffset, mtuLength);
+                final int available = available(resultingStatus);
                 if (available <= 0)
                 {
                     break;
@@ -226,7 +228,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
                     break;
                 }
 
-                bytesSent = available + scanner.padding();
+                bytesSent = available + padding(resultingStatus);
                 remainingBytes -= bytesSent;
             }
             while (remainingBytes > 0);
@@ -313,7 +315,8 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             final int scanLimit = Math.min(availableWindow, mtuLength);
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-            final int available = scanner.scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+            final long resultingStatus = scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+            final int available = available(resultingStatus);
             if (available > 0)
             {
                 final ByteBuffer sendBuffer = sendBuffers[activeIndex];
@@ -325,7 +328,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
                     trackSenderLimits = true;
 
                     bytesSent = available;
-                    this.senderPosition.setOrdered(senderPosition + bytesSent + scanner.padding());
+                    this.senderPosition.setOrdered(senderPosition + bytesSent + padding(resultingStatus));
                 }
                 else
                 {

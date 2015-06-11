@@ -21,7 +21,6 @@ public class TermScannerTest
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
-    private final TermScanner scanner = new TermScanner();
 
     @Before
     public void setUp()
@@ -30,9 +29,23 @@ public class TermScannerTest
     }
 
     @Test
+    public void shouldPackPaddingAndOffsetIntoResultingStatus()
+    {
+        final int padding = 77;
+        final int available = 65000;
+
+        final long resultingStatus = TermScanner.resultingStatus(padding, available);
+
+        assertThat(TermScanner.padding(resultingStatus), is(padding));
+        assertThat(TermScanner.available(resultingStatus), is(available));
+    }
+
+    @Test
     public void shouldReturnZeroOnEmptyLog()
     {
-        assertThat(scanner.scanForAvailability(termBuffer, 0, MTU_LENGTH), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, 0, MTU_LENGTH);
+        assertThat(TermScanner.available(resultingStatus), is(0));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
     }
 
     @Test
@@ -46,8 +59,9 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength));
-        assertThat(scanner.padding(), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH);
+        assertThat(TermScanner.available(resultingStatus), is(alignedFrameLength));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
@@ -66,8 +80,9 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, maxLength), is(0));
-        assertThat(scanner.padding(), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, maxLength);
+        assertThat(TermScanner.available(resultingStatus), is(0));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
@@ -87,8 +102,9 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength * 2));
-        assertThat(scanner.padding(), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH);
+        assertThat(TermScanner.available(resultingStatus), is(alignedFrameLength * 2));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
@@ -112,8 +128,9 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset + frameOneLength)).thenReturn(frameTwoLength);
         when(termBuffer.getShort(typeOffset(frameOffset + frameOneLength))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(frameOneLength + frameTwoLength));
-        assertThat(scanner.padding(), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH);
+        assertThat(TermScanner.available(resultingStatus), is(frameOneLength + frameTwoLength));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
@@ -136,8 +153,9 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset + frameOneLength)).thenReturn(frameTwoLength);
         when(termBuffer.getShort(typeOffset(frameOffset + frameOneLength))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(frameOneLength));
-        assertThat(scanner.padding(), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH);
+        assertThat(TermScanner.available(resultingStatus), is(frameOneLength));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
@@ -157,8 +175,9 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(alignedFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength));
-        assertThat(scanner.padding(), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH);
+        assertThat(TermScanner.available(resultingStatus), is(alignedFrameLength));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
     }
 
     @Test
@@ -173,8 +192,9 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(paddingFrameLength);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)PADDING_FRAME_TYPE);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH), is(alignedFrameLength + HEADER_LENGTH));
-        assertThat(scanner.padding(), is(paddingFrameLength - HEADER_LENGTH));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, MTU_LENGTH);
+        assertThat(TermScanner.available(resultingStatus), is(alignedFrameLength + HEADER_LENGTH));
+        assertThat(TermScanner.padding(resultingStatus), is(paddingFrameLength - HEADER_LENGTH));
     }
 
     @Test
@@ -189,7 +209,8 @@ public class TermScannerTest
         when(termBuffer.getIntVolatile(frameOffset + alignedFrameLength)).thenReturn(alignedFrameLength * 2);
         when(termBuffer.getShort(typeOffset(frameOffset + alignedFrameLength))).thenReturn((short)PADDING_FRAME_TYPE);
 
-        assertThat(scanner.scanForAvailability(termBuffer, frameOffset, mtu), is(alignedFrameLength));
-        assertThat(scanner.padding(), is(0));
+        final long resultingStatus = TermScanner.scanForAvailability(termBuffer, frameOffset, mtu);
+        assertThat(TermScanner.available(resultingStatus), is(alignedFrameLength));
+        assertThat(TermScanner.padding(resultingStatus), is(0));
     }
 }

@@ -28,8 +28,7 @@ class BufferClaim
 public:
     typedef BufferClaim this_t;
 
-    inline BufferClaim() :
-        m_buffer(nullptr, 0)
+    inline BufferClaim()
     {
     }
 

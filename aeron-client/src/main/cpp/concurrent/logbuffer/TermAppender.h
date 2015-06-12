@@ -32,9 +32,10 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class TermAppender : public LogBufferPartition
 {
 public:
-    TermAppender(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer,
-        std::uint8_t *defaultHdr, util::index_t defaultHdrLength, util::index_t maxFrameLength)
-    : LogBufferPartition(termBuffer, metaDataBuffer),
+    TermAppender(
+        AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer,
+        std::uint8_t *defaultHdr, util::index_t defaultHdrLength, util::index_t maxFrameLength) :
+        LogBufferPartition(termBuffer, metaDataBuffer),
         m_defaultHdrBuffer(defaultHdr, defaultHdrLength),
         m_defaultHdr(defaultHdr),
         m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(termBuffer.getCapacity())),

@@ -71,8 +71,8 @@ public:
     }
 
 protected:
-    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer)
-        : m_termBuffer(termBuffer), m_metaDataBuffer(metaDataBuffer)
+    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer) :
+        m_termBuffer(termBuffer), m_metaDataBuffer(metaDataBuffer)
     {
         LogBufferDescriptor::checkTermBuffer(termBuffer);
         LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);

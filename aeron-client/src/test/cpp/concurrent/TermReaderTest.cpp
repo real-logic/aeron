@@ -29,7 +29,7 @@ using namespace aeron;
 
 #define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
 #define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::TERM_META_DATA_LENGTH)
-#define HDR_LENGTH (DataHeader::LENGTH)
+#define HDR_LENGTH (DataFrameHeader::LENGTH)
 #define TERM_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH + FrameDescriptor::FRAME_ALIGNMENT - 1)
 #define INITIAL_TERM_ID 7
 
@@ -69,7 +69,7 @@ TEST_F(TermReaderTest, shouldReadFirstMessage)
     MockDataHandler handler;
     Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
-    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t termOffset = 0;
     testing::Sequence sequence;
@@ -82,7 +82,7 @@ TEST_F(TermReaderTest, shouldReadFirstMessage)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength)))
@@ -113,7 +113,7 @@ TEST_F(TermReaderTest, shouldNotReadPastTail)
         .WillOnce(testing::Return(0));
     EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(0)))
         .Times(0);
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(0);
 
     const int framesRead = m_logReader.read(
@@ -130,7 +130,7 @@ TEST_F(TermReaderTest, shouldReadOneLimitedMessage)
     MockDataHandler handler;
     Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
-    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const std::int32_t termOffset = 0;
     testing::Sequence sequence;
 
@@ -142,7 +142,7 @@ TEST_F(TermReaderTest, shouldReadOneLimitedMessage)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
 
@@ -160,7 +160,7 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
     MockDataHandler handler;
     Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
-    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t termOffset = 0;
     testing::Sequence sequence;
@@ -173,7 +173,7 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength)))
@@ -184,7 +184,7 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), alignedFrameLength + DataHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), alignedFrameLength + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength * 2)))
@@ -206,7 +206,7 @@ TEST_F(TermReaderTest, shouldReadLastMessage)
     MockDataHandler handler;
     Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
-    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t startOfMessage = TERM_BUFFER_CAPACITY - alignedFrameLength;
     testing::Sequence sequence;
@@ -219,7 +219,7 @@ TEST_F(TermReaderTest, shouldReadLastMessage)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
 
@@ -237,7 +237,7 @@ TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
     MockDataHandler handler;
     Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
-    const util::index_t frameLength = DataHeader::LENGTH + msgLength;
+    const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     const util::index_t startOfMessage = TERM_BUFFER_CAPACITY - alignedFrameLength;
     testing::Sequence sequence;
@@ -250,7 +250,7 @@ TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(FrameDescriptor::PADDING_FRAME_TYPE));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(0);
 
     const int framesRead = m_logReader.read(

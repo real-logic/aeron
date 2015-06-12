@@ -52,7 +52,7 @@ Publication::Publication(
             buffers.atomicBuffer(i),
             buffers.atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT),
             defaultFrameHeader,
-            DataHeader::LENGTH,
+            DataFrameHeader::LENGTH,
             mtuLength));
     }
 

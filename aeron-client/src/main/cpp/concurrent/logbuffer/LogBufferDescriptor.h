@@ -22,7 +22,7 @@
 #include <util/BitUtil.h>
 #include <concurrent/AtomicBuffer.h>
 #include "FrameDescriptor.h"
-#include "Header.h"
+#include "DataFrameHeader.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -210,7 +210,7 @@ inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, 
 inline static void defaultHeaderTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)
 {
     const util::index_t headerOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-    logMetaDataBuffer.putInt32(headerOffset + DataHeader::TERM_ID_FIELD_OFFSET, termId);
+    logMetaDataBuffer.putInt32(headerOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET, termId);
 }
 
 };

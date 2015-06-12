@@ -68,7 +68,7 @@ public:
             {
                 header.buffer(termBuffer);
                 header.offset(currentTermOffset);
-                handler(termBuffer, currentTermOffset + DataHeader::LENGTH, frameLength - DataHeader::LENGTH, header);
+                handler(termBuffer, currentTermOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH, header);
 
                 ++fragmentsRead;
             }

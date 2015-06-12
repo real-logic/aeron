@@ -22,7 +22,7 @@
 #include "LogBufferDescriptor.h"
 #include "LogBufferPartition.h"
 #include "BufferClaim.h"
-#include "Header.h"
+#include "DataFrameHeader.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -91,7 +91,7 @@ public:
                 util::strPrintf("claim exceeds maxPayloadLength of %d, length=%d", m_maxPayloadLength, length), SOURCEINFO);
         }
 
-        const util::index_t frameLength = length + DataHeader::LENGTH;
+        const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
         const util::index_t frameOffset = metaDataBuffer().getAndAddInt32(
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedLength);
@@ -118,7 +118,7 @@ private:
 
     std::int32_t appendUnfragmentedMessage(AtomicBuffer& srcBuffer, util::index_t srcOffset, util::index_t length)
     {
-        const util::index_t frameLength = length + DataHeader::LENGTH;
+        const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
         const util::index_t frameOffset = metaDataBuffer().getAndAddInt32(
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedLength);
@@ -128,7 +128,7 @@ private:
         if (resultingOffset > 0)
         {
             applyDefaultHeader(buffer, frameOffset, frameLength, m_defaultHdr);
-            buffer.putBytes(frameOffset + DataHeader::LENGTH, srcBuffer, srcOffset, length);
+            buffer.putBytes(frameOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
 
             FrameDescriptor::frameTermOffset(buffer, frameOffset, frameOffset);
             FrameDescriptor::frameLengthOrdered(buffer, frameOffset, frameLength);
@@ -142,7 +142,7 @@ private:
         const int numMaxPayloads = length / m_maxPayloadLength;
         const util::index_t remainingPayload = length % m_maxPayloadLength;
         const util::index_t lastFrameLength = (remainingPayload > 0) ?
-            util::BitUtil::align(remainingPayload + DataHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
+            util::BitUtil::align(remainingPayload + DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT) : 0;
         const util::index_t requiredLength = (numMaxPayloads * m_maxFrameLength) + lastFrameLength;
         util::index_t frameOffset = metaDataBuffer().getAndAddInt32(
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredLength);
@@ -158,12 +158,12 @@ private:
             do
             {
                 const util::index_t bytesToWrite = std::min(remaining, m_maxPayloadLength);
-                const util::index_t frameLength = bytesToWrite + DataHeader::LENGTH;
+                const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
                 const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
                 applyDefaultHeader(buffer, frameOffset, frameLength, m_defaultHdr);
                 buffer.putBytes(
-                    frameOffset + DataHeader::LENGTH,
+                    frameOffset + DataFrameHeader::LENGTH,
                     srcBuffer,
                     srcOffset + (length - remaining),
                     bytesToWrite);
@@ -190,11 +190,11 @@ private:
     std::int32_t computeResultingOffset(AtomicBuffer& termBuffer, util::index_t frameOffset, util::index_t length, util::index_t capacity)
     {
         std::int32_t resultingOffset = frameOffset + length;
-        if (resultingOffset > (capacity - DataHeader::LENGTH))
+        if (resultingOffset > (capacity - DataFrameHeader::LENGTH))
         {
             resultingOffset = TERM_APPENDER_FAILED;
 
-            if (frameOffset <= (capacity - DataHeader::LENGTH))
+            if (frameOffset <= (capacity - DataFrameHeader::LENGTH))
             {
                 util::index_t frameLength = capacity - frameOffset;
                 applyDefaultHeader(termBuffer, frameOffset, frameLength, m_defaultHdr);
@@ -220,7 +220,7 @@ private:
         memcpy(
             buffer.getBuffer() + sizeof(std::int32_t) + frameOffset,
             defaultHeaderBuffer + sizeof(std::int32_t),
-            DataHeader::LENGTH - sizeof(std::int32_t));
+            DataFrameHeader::LENGTH - sizeof(std::int32_t));
     }
 };
 

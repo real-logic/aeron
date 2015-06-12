@@ -20,23 +20,9 @@
 #include <util/Index.h>
 #include <util/BitUtil.h>
 #include <concurrent/AtomicBuffer.h>
+#include "DataFrameHeader.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
-
-namespace DataHeader {
-
-static const util::index_t VERSION_FIELD_OFFSET = 4;
-static const util::index_t FLAGS_FIELD_OFFSET = 5;
-static const util::index_t TYPE_FIELD_OFFSET = 6;
-static const util::index_t TERM_OFFSET_FIELD_OFFSET = 8;
-static const util::index_t SESSION_ID_FIELD_OFFSET = 12;
-static const util::index_t STREAM_ID_FIELD_OFFSET = 16;
-static const util::index_t TERM_ID_FIELD_OFFSET = 20;
-static const util::index_t DATA_OFFSET = 24;
-
-static const util::index_t LENGTH = DATA_OFFSET;
-
-}
 
 class Header
 {
@@ -86,19 +72,19 @@ public:
     inline std::int32_t sessionId()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + DataHeader::SESSION_ID_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset + DataFrameHeader::SESSION_ID_FIELD_OFFSET);
     }
 
     inline std::int32_t streamId()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + DataHeader::STREAM_ID_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset + DataFrameHeader::STREAM_ID_FIELD_OFFSET);
     }
 
     inline std::int32_t termId()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getInt32(m_offset + DataHeader::TERM_ID_FIELD_OFFSET);
+        return m_buffer.getInt32(m_offset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
     }
 
     inline std::int32_t termOffset()
@@ -109,12 +95,12 @@ public:
     inline std::uint16_t type()
     {
         // TODO: add LITTLE_ENDIAN check
-        return m_buffer.getUInt16(m_offset + DataHeader::TYPE_FIELD_OFFSET);
+        return m_buffer.getUInt16(m_offset + DataFrameHeader::TYPE_FIELD_OFFSET);
     }
 
     inline std::uint8_t flags()
     {
-        return m_buffer.getUInt8(m_offset + DataHeader::FLAGS_FIELD_OFFSET);
+        return m_buffer.getUInt8(m_offset + DataFrameHeader::FLAGS_FIELD_OFFSET);
     }
 
 private:

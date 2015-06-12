@@ -19,7 +19,7 @@
 
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
-#include <concurrent/logbuffer/Header.h>
+#include <concurrent/logbuffer/DataFrameHeader.h>
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -45,12 +45,12 @@ public:
 
     inline util::index_t offset() const
     {
-        return DataHeader::LENGTH;
+        return DataFrameHeader::LENGTH;
     }
 
     inline util::index_t length() const
     {
-        return m_buffer.getCapacity() - DataHeader::LENGTH;
+        return m_buffer.getCapacity() - DataFrameHeader::LENGTH;
     }
 
     inline void commit()

@@ -60,11 +60,6 @@ public:
         return m_maxFrameLength;
     }
 
-    inline AtomicBuffer& defaultHeader()
-    {
-        return m_defaultHdrBuffer;
-    }
-
     inline std::int32_t append(AtomicBuffer& srcBuffer, util::index_t offset, util::index_t length)
     {
         std::int32_t resultingOffset;

@@ -155,13 +155,12 @@ private:
             {
                 const std::int32_t newTermId = activeTermId + 1;
                 const int nextIndex = LogBufferDescriptor::nextPartitionIndex(activeIndex);
+                const int nextNextIndex = LogBufferDescriptor::nextPartitionIndex(nextIndex);
 
-                m_appenders[nextIndex]->defaultHeader().putInt32(DataHeader::TERM_ID_FIELD_OFFSET, newTermId);
-                const int previousIndex = LogBufferDescriptor::previousPartitionIndex(activeIndex);
-                TermAppender* previousAppender = m_appenders[previousIndex].get();
+                LogBufferDescriptor::defaultHeaderTermId(m_logMetaDataBuffer, nextIndex, newTermId);
 
-                previousAppender->defaultHeader().putInt32(DataHeader::TERM_ID_FIELD_OFFSET, newTermId + 1);
-                previousAppender->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
+                LogBufferDescriptor::defaultHeaderTermId(m_logMetaDataBuffer, nextNextIndex, newTermId + 1);
+                m_appenders[nextNextIndex]->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
                 LogBufferDescriptor::activeTermId(m_logMetaDataBuffer, newTermId);
             }
             // fall through
@@ -172,7 +171,6 @@ private:
 
             default:
                 newPosition = (position - currentTail) + nextOffset;
-                break;
         }
 
         return newPosition;

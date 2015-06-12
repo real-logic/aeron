@@ -22,6 +22,7 @@
 #include <util/BitUtil.h>
 #include <concurrent/AtomicBuffer.h>
 #include "FrameDescriptor.h"
+#include "Header.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -201,9 +202,15 @@ inline static std::int64_t computeTermLength(std::int64_t logLength)
     return (logLength - metaDataSectionLength) / 3;
 }
 
-inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int index)
+inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int partitionIndex)
 {
-    return logMetaDataBuffer.getBuffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (index * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+    return logMetaDataBuffer.getBuffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+}
+
+inline static void defaultHeaderTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)
+{
+    const util::index_t headerOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+    logMetaDataBuffer.putInt32(headerOffset + DataHeader::TERM_ID_FIELD_OFFSET, termId);
 }
 
 };

@@ -32,15 +32,8 @@ typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index
 class TermReader
 {
 public:
-    TermReader(std::int32_t initialTermId, AtomicBuffer& termBuffer) :
-        m_termBuffer(termBuffer), m_header(initialTermId, termBuffer), m_offset(0)
+    TermReader()
     {
-        LogBufferDescriptor::checkTermBuffer(termBuffer);
-    }
-
-    inline AtomicBuffer& termBuffer() const
-    {
-        return m_termBuffer;
     }
 
     inline util::index_t offset() const
@@ -48,15 +41,20 @@ public:
         return m_offset;
     }
 
-    inline int read(std::int32_t termOffset, const fragment_handler_t & handler, int framesCountLimit)
+    inline int read(
+        AtomicBuffer& termBuffer,
+        std::int32_t termOffset,
+        const fragment_handler_t & handler,
+        int framesCountLimit,
+        Header& header)
     {
         int framesCounter = 0;
-        const util::index_t capacity = m_termBuffer.getCapacity();
+        const util::index_t capacity = termBuffer.getCapacity();
         m_offset = termOffset;
 
         do
         {
-            const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(m_termBuffer, termOffset);
+            const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, termOffset);
             if (frameLength <= 0)
             {
                 break;
@@ -66,10 +64,11 @@ public:
             termOffset += util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
             m_offset = termOffset;
 
-            if (!FrameDescriptor::isPaddingFrame(m_termBuffer, currentTermOffset))
+            if (!FrameDescriptor::isPaddingFrame(termBuffer, currentTermOffset))
             {
-                m_header.offset(currentTermOffset);
-                handler(m_termBuffer, currentTermOffset + DataHeader::LENGTH, frameLength - DataHeader::LENGTH, m_header);
+                header.buffer(termBuffer);
+                header.offset(currentTermOffset);
+                handler(termBuffer, currentTermOffset + DataHeader::LENGTH, frameLength - DataHeader::LENGTH, header);
 
                 ++framesCounter;
             }
@@ -80,9 +79,7 @@ public:
     }
 
 private:
-    AtomicBuffer& m_termBuffer;
-    Header m_header;
-    util::index_t m_offset;
+    util::index_t m_offset = 0;
 };
 
 }}}

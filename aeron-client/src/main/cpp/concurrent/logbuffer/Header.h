@@ -41,10 +41,10 @@ static const util::index_t LENGTH = DATA_OFFSET;
 class Header
 {
 public:
-    Header(std::int32_t initialTermId, AtomicBuffer& termBuffer) :
-        m_buffer(termBuffer), m_offset(0), m_initialTermId(initialTermId)
+    Header(std::int32_t initialTermId, util::index_t capacity) :
+        m_offset(0), m_initialTermId(initialTermId)
     {
-        m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(termBuffer.getCapacity());
+        m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(capacity);
     }
 
     inline std::int32_t initialTermId() const
@@ -67,14 +67,14 @@ public:
         m_offset = offset;
     }
 
-    inline AtomicBuffer& buffer() const
+    inline AtomicBuffer& buffer()
     {
         return m_buffer;
     }
 
     inline void buffer(AtomicBuffer& buffer)
     {
-        m_buffer = buffer;
+        m_buffer.wrap(buffer);
     }
 
     inline std::int32_t frameLength()
@@ -118,7 +118,7 @@ public:
     }
 
 private:
-    AtomicBuffer& m_buffer;
+    AtomicBuffer m_buffer;
     util::index_t m_offset;
     std::int32_t m_initialTermId;
     std::int32_t m_positionBitsToShift;

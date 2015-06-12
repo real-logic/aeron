@@ -164,30 +164,20 @@ inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
 }
 
+// compiler should optimize for mod 3. But if not, then do it by hand for these via BitUtil::fastMod3().
+
 inline static int nextPartitionIndex(int currentIndex)
 {
-    int nextIndex = currentIndex + 1;
-    if (nextIndex == PARTITION_COUNT)
-    {
-        nextIndex = 0;
-    }
-
-    return nextIndex;
+    return (currentIndex + 1) % PARTITION_COUNT;
 }
 
 inline static int previousPartitionIndex(int currentIndex)
 {
-    if (0 == currentIndex)
-    {
-        return PARTITION_COUNT - 1;
-    }
-
-    return currentIndex - 1;
+    return (currentIndex + (PARTITION_COUNT - 1)) % PARTITION_COUNT;
 }
 
 inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId)
 {
-    // compiler should optimize for mod 3. But if not, then do it by hand.
     // return util::BitUtil::fastMod3(activeTermId - initialTermId)
     return (activeTermId - initialTermId) % PARTITION_COUNT;
 }

@@ -37,7 +37,7 @@ public:
     : LogBufferPartition(termBuffer, metaDataBuffer),
         m_defaultHdrBuffer(defaultHdr, defaultHdrLength),
         m_defaultHdr(defaultHdr),
-        m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(capacity())),
+        m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(termBuffer.getCapacity())),
         m_maxFrameLength(maxFrameLength),
         m_maxPayloadLength(m_maxFrameLength - defaultHdrLength)
     {

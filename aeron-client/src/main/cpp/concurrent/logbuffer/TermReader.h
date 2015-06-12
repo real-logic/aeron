@@ -45,10 +45,10 @@ public:
         AtomicBuffer& termBuffer,
         std::int32_t termOffset,
         const fragment_handler_t & handler,
-        int framesCountLimit,
+        int fragmentsLimit,
         Header& header)
     {
-        int framesCounter = 0;
+        int fragmentsRead = 0;
         const util::index_t capacity = termBuffer.getCapacity();
         m_offset = termOffset;
 
@@ -70,12 +70,12 @@ public:
                 header.offset(currentTermOffset);
                 handler(termBuffer, currentTermOffset + DataHeader::LENGTH, frameLength - DataHeader::LENGTH, header);
 
-                ++framesCounter;
+                ++fragmentsRead;
             }
         }
-        while (framesCounter < framesCountLimit && termOffset < capacity);
+        while (fragmentsRead < fragmentsLimit && termOffset < capacity);
 
-        return framesCounter;
+        return fragmentsRead;
     }
 
 private:

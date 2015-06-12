@@ -70,7 +70,7 @@ protected:
 
 TEST_F(TermAppenderTest, shouldReportCapacity)
 {
-    EXPECT_EQ(m_logAppender.capacity(), TERM_BUFFER_CAPACITY);
+    EXPECT_EQ(m_logAppender.termBuffer().getCapacity(), TERM_BUFFER_CAPACITY);
 }
 
 TEST_F(TermAppenderTest, shouldReportMaxFrameLength)
@@ -258,7 +258,7 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 120;
     const util::index_t requiredFrameSize = util::BitUtil::align(msgLength + (util::index_t)m_hdr.size(), FrameDescriptor::FRAME_ALIGNMENT);
-    const util::index_t tailValue = m_logAppender.capacity() - util::BitUtil::align(msgLength, FrameDescriptor::FRAME_ALIGNMENT);
+    const util::index_t tailValue = TERM_BUFFER_CAPACITY - util::BitUtil::align(msgLength, FrameDescriptor::FRAME_ALIGNMENT);
     const util::index_t frameLength = TERM_BUFFER_CAPACITY - tailValue;
     testing::Sequence sequence;
 
@@ -288,7 +288,7 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 120;
     const util::index_t requiredFrameSize = util::BitUtil::align((util::index_t)m_hdr.size() + msgLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const util::index_t tailValue = m_logAppender.capacity() - (requiredFrameSize + (m_hdr.size() - FrameDescriptor::FRAME_ALIGNMENT));
+    const util::index_t tailValue = TERM_BUFFER_CAPACITY - (requiredFrameSize + (m_hdr.size() - FrameDescriptor::FRAME_ALIGNMENT));
     const util::index_t frameLength = TERM_BUFFER_CAPACITY - tailValue;
     testing::Sequence sequence;
 

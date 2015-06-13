@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -41,6 +42,7 @@ public class SubscriptionTest
     private static final int HEADER_LENGTH = DataHeaderFlyweight.HEADER_LENGTH;
 
     private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY));
+    private final Consumer<Throwable> errorHandler = mock(Consumer.class);
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
     private final Connection connectionOneMock = mock(Connection.class);
@@ -54,7 +56,7 @@ public class SubscriptionTest
     {
         when(header.flags()).thenReturn(FLAGS);
 
-        subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
+        subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID, errorHandler);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -83,7 +85,7 @@ public class SubscriptionTest
     {
         subscription.addConnection(connectionOneMock);
 
-        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
+        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT, errorHandler)).then(
             (invocation) ->
             {
                 final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];
@@ -106,7 +108,7 @@ public class SubscriptionTest
         subscription.addConnection(connectionOneMock);
         subscription.addConnection(connectionTwoMock);
 
-        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
+        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT, errorHandler)).then(
             (invocation) ->
             {
                 final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];
@@ -115,7 +117,7 @@ public class SubscriptionTest
                 return 1;
             });
 
-        when(connectionTwoMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
+        when(connectionTwoMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT, errorHandler)).then(
             (invocation) ->
             {
                 final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];

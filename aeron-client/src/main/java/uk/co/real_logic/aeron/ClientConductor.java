@@ -145,7 +145,7 @@ class ClientConductor implements Agent, DriverListener
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final long timeout = timerWheel.clock().nanoTime() + driverTimeoutNs;
 
-        final Subscription subscription = new Subscription(this, channel, streamId, correlationId);
+        final Subscription subscription = new Subscription(this, channel, streamId, correlationId, errorHandler);
         activeSubscriptions.add(subscription);
 
         doWorkUntil(correlationId, timeout, channel);

@@ -27,6 +27,7 @@ import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.ByteBuffer;
+import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -62,6 +63,7 @@ public class ConnectionTest
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final Position position = spy(new AtomicLongPosition());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
+    private final Consumer<Throwable> errorHandler = mock(Consumer.class);
 
     private UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
@@ -95,7 +97,7 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(0));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE, errorHandler);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -121,7 +123,7 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE, errorHandler);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -148,7 +150,7 @@ public class ConnectionTest
 
         insertDataFrame(activeTermId, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE, errorHandler);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(

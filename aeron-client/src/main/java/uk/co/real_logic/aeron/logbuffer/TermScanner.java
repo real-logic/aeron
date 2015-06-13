@@ -71,7 +71,7 @@ public final class TermScanner
         }
         while ((available + padding) < maxLength);
 
-        return scanResult(padding, available);
+        return scanOutcome(padding, available);
     }
 
     /**
@@ -81,7 +81,7 @@ public final class TermScanner
      * @param available value to be packed.
      * @return a long with both ints packed into it.
      */
-    public static long scanResult(final int padding, final int available)
+    public static long scanOutcome(final int padding, final int available)
     {
         return ((long)padding << 32) | available;
     }
@@ -89,22 +89,22 @@ public final class TermScanner
     /**
      * The number of bytes that are available to be read after a scan.
      *
-     * @param scanResult into which the padding value has been packed.
+     * @param scanOutcome into which the padding value has been packed.
      * @return the count of bytes that are available to be read.
      */
-    public static int available(final long scanResult)
+    public static int available(final long scanOutcome)
     {
-        return (int)scanResult;
+        return (int)scanOutcome;
     }
 
     /**
      * The count of bytes that should be added for padding to the position on top of what is available
      *
-     * @param scanResult into which the padding value has been packed.
+     * @param scanOutcome into which the padding value has been packed.
      * @return the count of bytes that should be added for padding to the position on top of what is available.
      */
-    public static int padding(final long scanResult)
+    public static int padding(final long scanOutcome)
     {
-        return (int)(scanResult >>> 32);
+        return (int)(scanOutcome >>> 32);
     }
 }

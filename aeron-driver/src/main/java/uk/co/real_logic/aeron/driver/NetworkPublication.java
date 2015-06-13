@@ -213,8 +213,8 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             {
                 termOffset += bytesSent;
 
-                final long scanResult = scanForAvailability(termBuffer, termOffset, mtuLength);
-                final int available = available(scanResult);
+                final long scanOutcome = scanForAvailability(termBuffer, termOffset, mtuLength);
+                final int available = available(scanOutcome);
                 if (available <= 0)
                 {
                     break;
@@ -228,7 +228,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
                     break;
                 }
 
-                bytesSent = available + padding(scanResult);
+                bytesSent = available + padding(scanOutcome);
                 remainingBytes -= bytesSent;
             }
             while (remainingBytes > 0);
@@ -315,8 +315,8 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             final int scanLimit = Math.min(availableWindow, mtuLength);
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-            final long scanResult = scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
-            final int available = available(scanResult);
+            final long scanOutcome = scanForAvailability(logPartitions[activeIndex].termBuffer(), termOffset, scanLimit);
+            final int available = available(scanOutcome);
             if (available > 0)
             {
                 final ByteBuffer sendBuffer = sendBuffers[activeIndex];
@@ -328,7 +328,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
                     trackSenderLimits = true;
 
                     bytesSent = available;
-                    this.senderPosition.setOrdered(senderPosition + bytesSent + padding(scanResult));
+                    this.senderPosition.setOrdered(senderPosition + bytesSent + padding(scanOutcome));
                 }
                 else
                 {

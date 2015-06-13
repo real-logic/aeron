@@ -22,6 +22,8 @@ import org.mockito.Mockito;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.util.function.Consumer;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -37,14 +39,25 @@ public class TermReaderTest
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
+    private final Consumer<Throwable> errorHandler = mock(Consumer.class);
     private final FragmentHandler handler = Mockito.mock(FragmentHandler.class);
-
-    private TermReader termReader = new TermReader();
 
     @Before
     public void setUp()
     {
         when(termBuffer.capacity()).thenReturn(TERM_BUFFER_CAPACITY);
+    }
+
+    @Test
+    public void shouldPackPaddingAndOffsetIntoResultingStatus()
+    {
+        final int offset = 77;
+        final int fragmentsRead = 999;
+
+        final long scanOutcome = TermReader.readOutcome(offset, fragmentsRead);
+
+        assertThat(TermReader.offset(scanOutcome), is(offset));
+        assertThat(TermReader.fragmentsRead(scanOutcome), is(fragmentsRead));
     }
 
     @Test
@@ -57,7 +70,8 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(0)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(0))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(termReader.read(termBuffer, termOffset, handler, Integer.MAX_VALUE, header), is(1));
+        final long readOutcome = TermReader.read(termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler);
+        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(0);
@@ -69,7 +83,9 @@ public class TermReaderTest
     {
         final int termOffset = 0;
 
-        assertThat(termReader.read(termBuffer, termOffset, handler, Integer.MAX_VALUE, header), is(0));
+        final long readOutcome = TermReader.read(termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler);
+        assertThat(TermReader.fragmentsRead(readOutcome), is(0));
+        assertThat(TermReader.offset(readOutcome), is(termOffset));
 
         verify(termBuffer).getIntVolatile(0);
         verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
@@ -85,7 +101,8 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(anyInt())).thenReturn(frameLength);
         when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(termReader.read(termBuffer, termOffset, handler, 1, header), is(1));
+        final long readOutcome = TermReader.read(termBuffer, termOffset, handler, 1, header, errorHandler);
+        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
 
         final InOrder inOrder = inOrder(termBuffer, handler);
         inOrder.verify(termBuffer).getIntVolatile(0);
@@ -105,7 +122,9 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(alignedFrameLength)).thenReturn(frameLength);
         when(termBuffer.getShort(anyInt())).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(termReader.read(termBuffer, termOffset, handler, Integer.MAX_VALUE, header), is(2));
+        final long readOutcome = TermReader.read(termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler);
+        assertThat(TermReader.fragmentsRead(readOutcome), is(2));
+        assertThat(TermReader.offset(readOutcome), is(alignedFrameLength * 2));
 
         final InOrder inOrder = inOrder(termBuffer, handler);
         inOrder.verify(termBuffer).getIntVolatile(0);
@@ -128,7 +147,9 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)HDR_TYPE_DATA);
 
-        assertThat(termReader.read(termBuffer, frameOffset, handler, Integer.MAX_VALUE, header), is(1));
+        final long readOutcome = TermReader.read(termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler);
+        assertThat(TermReader.fragmentsRead(readOutcome), is(1));
+        assertThat(TermReader.offset(readOutcome), is(TERM_BUFFER_CAPACITY));
 
         final InOrder inOrder = inOrder(termBuffer, handler);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
@@ -146,7 +167,9 @@ public class TermReaderTest
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(frameLength);
         when(termBuffer.getShort(typeOffset(frameOffset))).thenReturn((short)PADDING_FRAME_TYPE);
 
-        assertThat(termReader.read(termBuffer, frameOffset, handler, Integer.MAX_VALUE, header), is(0));
+        final long readOutcome = TermReader.read(termBuffer, frameOffset, handler, Integer.MAX_VALUE, header, errorHandler);
+        assertThat(TermReader.fragmentsRead(readOutcome), is(0));
+        assertThat(TermReader.offset(readOutcome), is(TERM_BUFFER_CAPACITY));
 
         final InOrder inOrder = inOrder(termBuffer);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);

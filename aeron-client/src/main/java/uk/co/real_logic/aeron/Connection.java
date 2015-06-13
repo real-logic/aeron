@@ -17,14 +17,15 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.aeron.logbuffer.TermReader;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.util.Arrays;
+import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
 
 /**
  * Represents an incoming Connection from a publisher to a {@link Subscription}. Each connection identifies source publisher
@@ -41,8 +42,6 @@ class Connection implements ManagedResource
     private final LogBuffers logBuffers;
     private final UnsafeBuffer[] termBuffers;
     private final Header header;
-    private final TermReader termReader = new TermReader();
-
     private final Position subscriberPosition;
 
     public Connection(
@@ -79,27 +78,21 @@ class Connection implements ManagedResource
         return correlationId;
     }
 
-    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit, final Consumer<Throwable> errorHandler)
     {
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
         final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
 
-        int fragmentsRead = 0;
-        try
+        final long readOutcome = read(termBuffer, termOffset, fragmentHandler, fragmentLimit, header, errorHandler);
+
+        final long newPosition = position + (offset(readOutcome) - termOffset);
+        if (newPosition > position)
         {
-            fragmentsRead = termReader.read(termBuffer, termOffset, fragmentHandler, fragmentLimit, header);
-        }
-        finally
-        {
-            final long newPosition = position + (termReader.offset() - termOffset);
-            if (newPosition > position)
-            {
-                subscriberPosition.setOrdered(newPosition);
-            }
+            subscriberPosition.setOrdered(newPosition);
         }
 
-        return fragmentsRead;
+        return fragmentsRead(readOutcome);
     }
 
     public void timeOfLastStateChange(final long time)

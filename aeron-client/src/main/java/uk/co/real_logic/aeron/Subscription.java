@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+import java.util.function.Consumer;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
@@ -50,14 +51,21 @@ public class Subscription implements AutoCloseable
 
     private final String channel;
     private final ClientConductor clientConductor;
+    private final Consumer<Throwable> errorHandler;
     private volatile Connection[] connections = EMPTY_ARRAY;
 
-    Subscription(final ClientConductor conductor, final String channel, final int streamId, final long registrationId)
+    Subscription(
+        final ClientConductor conductor,
+        final String channel,
+        final int streamId,
+        final long registrationId,
+        final Consumer<Throwable> errorHandler)
     {
         this.clientConductor = conductor;
         this.channel = channel;
         this.streamId = streamId;
         this.registrationId = registrationId;
+        this.errorHandler = errorHandler;
     }
 
     /**
@@ -106,17 +114,18 @@ public class Subscription implements AutoCloseable
             }
 
             int i = startingIndex;
+            final Consumer<Throwable> errorHandler = this.errorHandler;
 
             do
             {
-                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit);
+                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit, errorHandler);
 
                 if (++i == length)
                 {
                     i = 0;
                 }
             }
-            while (i != startingIndex);
+            while (fragmentsRead < fragmentLimit && i != startingIndex);
         }
 
         return fragmentsRead;

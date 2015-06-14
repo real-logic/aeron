@@ -37,7 +37,7 @@ public:
     ManyToOneRingBuffer(concurrent::AtomicBuffer& buffer)
         : m_buffer(buffer)
     {
-        m_capacity = buffer.getCapacity() - RingBufferDescriptor::TRAILER_LENGTH;
+        m_capacity = buffer.capacity() - RingBufferDescriptor::TRAILER_LENGTH;
 
         RingBufferDescriptor::checkCapacity(m_capacity);
 

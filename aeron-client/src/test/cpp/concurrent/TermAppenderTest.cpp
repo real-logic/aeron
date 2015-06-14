@@ -70,7 +70,7 @@ protected:
 
 TEST_F(TermAppenderTest, shouldReportCapacity)
 {
-    EXPECT_EQ(m_logAppender.termBuffer().getCapacity(), TERM_BUFFER_CAPACITY);
+    EXPECT_EQ(m_logAppender.termBuffer().capacity(), TERM_BUFFER_CAPACITY);
 }
 
 TEST_F(TermAppenderTest, shouldReportMaxFrameLength)

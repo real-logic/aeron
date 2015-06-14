@@ -69,7 +69,7 @@ protected:
 
 TEST_F(ManyToOneRingBufferTest, shouldCalculateCapacityForBuffer)
 {
-    EXPECT_EQ(m_ab.getCapacity(), BUFFER_SZ);
+    EXPECT_EQ(m_ab.capacity(), BUFFER_SZ);
     EXPECT_EQ(m_ringBuffer.capacity(), BUFFER_SZ - RingBufferDescriptor::TRAILER_LENGTH);
 }
 

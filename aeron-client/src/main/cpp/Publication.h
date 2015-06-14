@@ -91,7 +91,7 @@ public:
         TermAppender* appender = m_appenders[activeIndex].get();
         const std::int32_t currentTail = appender->rawTailVolatile();
         const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
-        const std::int32_t capacity = appender->termBuffer().getCapacity();
+        const std::int32_t capacity = appender->termBuffer().capacity();
 
         const std::int64_t limit = m_publicationLimit.getVolatile();
         std::int64_t newPosition = limit > 0 ? PUBLICATION_BACK_PRESSURE : PUBLICATION_NOT_CONNECTED;
@@ -107,7 +107,7 @@ public:
 
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer)
     {
-        return offer(buffer, 0, buffer.getCapacity());
+        return offer(buffer, 0, buffer.capacity());
     }
 
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
@@ -118,7 +118,7 @@ public:
         TermAppender* appender = m_appenders[activeIndex].get();
         const std::int32_t currentTail = appender->rawTailVolatile();
         const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
-        const std::int32_t capacity = appender->termBuffer().getCapacity();
+        const std::int32_t capacity = appender->termBuffer().capacity();
 
         const std::int64_t limit = m_publicationLimit.getVolatile();
         std::int64_t newPosition = limit > 0 ? PUBLICATION_BACK_PRESSURE : PUBLICATION_NOT_CONNECTED;

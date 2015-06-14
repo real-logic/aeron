@@ -57,10 +57,10 @@ public:
             }
 
             const std::int32_t length = m_receiver.length();
-            if (length > m_scratchBuffer.getCapacity())
+            if (length > m_scratchBuffer.capacity())
             {
                 throw util::IllegalStateException(
-                    util::strPrintf("Buffer required size %d but only has %d", length, m_scratchBuffer.getCapacity()), SOURCEINFO);
+                    util::strPrintf("Buffer required size %d but only has %d", length, m_scratchBuffer.capacity()), SOURCEINFO);
             }
 
             const std::int32_t msgTypeId = m_receiver.typeId();

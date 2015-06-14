@@ -45,7 +45,7 @@ public:
         std::int32_t id = 0;
 
         while (
-            (labelsOffset < (m_labelsBuffer.getCapacity() - (util::index_t)sizeof(std::int32_t))) &&
+            (labelsOffset < (m_labelsBuffer.capacity() - (util::index_t)sizeof(std::int32_t))) &&
                 (size = m_labelsBuffer.getInt32(labelsOffset)) != 0)
         {
             if (size != UNREGISTERED_LABEL_LENGTH)
@@ -69,12 +69,12 @@ public:
             throw util::IllegalArgumentException("Label too long", SOURCEINFO);
         }
 
-        if ((counterOffset(id) + COUNTER_LENGTH) > m_countersBuffer.getCapacity())
+        if ((counterOffset(id) + COUNTER_LENGTH) > m_countersBuffer.capacity())
         {
             throw util::IllegalArgumentException("Unable to allocated counter, counter buffer is full", SOURCEINFO);
         }
 
-        if ((labelsOffset + LABEL_LENGTH) > m_labelsBuffer.getCapacity())
+        if ((labelsOffset + LABEL_LENGTH) > m_labelsBuffer.capacity())
         {
             throw util::IllegalArgumentException("Unable to allocate counter, labels buffer is full", SOURCEINFO);
         }

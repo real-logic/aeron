@@ -149,11 +149,11 @@ TEST (atomicBufferTests, checkStructOveray)
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
 
     ASSERT_NO_THROW({
-        ab.overlayStruct<testStruct>(ab.getCapacity() - sizeof(testStruct));
+        ab.overlayStruct<testStruct>(ab.capacity() - sizeof(testStruct));
     });
 
     ASSERT_THROW({
-        ab.overlayStruct<testStruct>(ab.getCapacity() - sizeof(testStruct) + 1);
+        ab.overlayStruct<testStruct>(ab.capacity() - sizeof(testStruct) + 1);
     }, OutOfBoundsException);
 
     testStruct ts { 1, 2, 3 };

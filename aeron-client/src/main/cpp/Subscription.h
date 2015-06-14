@@ -26,9 +26,8 @@ class ClientConductor;
 
 class Subscription
 {
-friend class ClientConductor;
 public:
-
+    Subscription(ClientConductor& conductor, std::int64_t registrationId, const std::string& channel, std::int32_t streamId);
     virtual ~Subscription();
 
     inline const std::string& channel() const
@@ -41,18 +40,16 @@ public:
         return m_streamId;
     }
 
-    inline std::int64_t correlationId() const
+    inline std::int64_t registrationId() const
     {
-        return m_correlationId;
+        return m_registrationId;
     }
 
 private:
     ClientConductor& m_conductor;
-    const std::string& m_channel;
-    std::int64_t m_correlationId;
+    const std::string m_channel;
+    std::int64_t m_registrationId;
     std::int32_t m_streamId;
-
-    Subscription(ClientConductor& conductor, std::int64_t correlationId, const std::string& channel, std::int32_t streamId);
 };
 
 }

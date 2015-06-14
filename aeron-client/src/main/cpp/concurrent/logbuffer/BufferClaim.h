@@ -32,9 +32,14 @@ public:
     {
     }
 
+    inline void wrap(std::uint8_t *buffer, util::index_t length)
+    {
+        m_buffer.wrap(buffer, length);
+    }
+
     inline void wrap(AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
-        m_buffer.wrap(buffer.getBuffer() + offset, length);
+        m_buffer.wrap(buffer.buffer() + offset, length);
     }
 
     inline AtomicBuffer& buffer()
@@ -49,12 +54,12 @@ public:
 
     inline util::index_t length() const
     {
-        return m_buffer.getCapacity() - DataFrameHeader::LENGTH;
+        return m_buffer.capacity() - DataFrameHeader::LENGTH;
     }
 
     inline void commit()
     {
-        m_buffer.putInt32Ordered(0, m_buffer.getCapacity());
+        m_buffer.putInt32Ordered(0, m_buffer.capacity());
     }
 
 private:

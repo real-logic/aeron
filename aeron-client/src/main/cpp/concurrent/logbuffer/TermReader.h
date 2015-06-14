@@ -49,7 +49,7 @@ public:
         Header& header)
     {
         int fragmentsRead = 0;
-        const util::index_t capacity = termBuffer.getCapacity();
+        const util::index_t capacity = termBuffer.capacity();
         m_offset = termOffset;
 
         do

@@ -54,7 +54,7 @@ public:
 
         m_logMetaDataBuffer.wrap(&m_log[m_log.size() - LOG_META_DATA_LENGTH], LOG_META_DATA_LENGTH);
 
-        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.getCapacity()));
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
 
         m_logBuffers = std::unique_ptr<LogBuffers>(new LogBuffers(&m_log[0], (index_t)m_log.size()));
 
@@ -68,7 +68,7 @@ public:
 
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1);
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_INITIAL_TERM_ID_OFFSET, TERM_ID_1);
-        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.getCapacity()));
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
     }
 
 protected:
@@ -97,8 +97,8 @@ TEST_F(PublicationTest, shouldReportMaxMessageLength)
 
 TEST_F(PublicationTest, shouldOfferAMessageUponConstruction)
 {
-    const std::int64_t expectedPosition = m_srcBuffer.getCapacity() + DataFrameHeader::LENGTH;
-    m_publicationLimit.set(2 * m_srcBuffer.getCapacity());
+    const std::int64_t expectedPosition = m_srcBuffer.capacity() + DataFrameHeader::LENGTH;
+    m_publicationLimit.set(2 * m_srcBuffer.capacity());
 
     EXPECT_EQ(m_publication->offer(m_srcBuffer), expectedPosition);
     EXPECT_EQ(m_publication->position(), expectedPosition);
@@ -131,8 +131,8 @@ TEST_F(PublicationTest, shouldRotateWhenAppendTrips)
 
     EXPECT_EQ(m_publication->position(), initialPosition);
     EXPECT_EQ(m_publication->offer(m_srcBuffer), PUBLICATION_BACK_PRESSURE);
-    EXPECT_GT(m_publication->offer(m_srcBuffer), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.getCapacity());
-    EXPECT_GT(m_publication->position(), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.getCapacity());
+    EXPECT_GT(m_publication->offer(m_srcBuffer), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
+    EXPECT_GT(m_publication->position(), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
 
     const int cleaningIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 2);
     EXPECT_EQ(m_metaDataBuffers[cleaningIndex].getInt32(LogBufferDescriptor::TERM_STATUS_OFFSET), LogBufferDescriptor::NEEDS_CLEANING);
@@ -159,8 +159,8 @@ TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
     BufferClaim bufferClaim;
     EXPECT_EQ(m_publication->position(), initialPosition);
     EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), PUBLICATION_BACK_PRESSURE);
-    EXPECT_GT(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.getCapacity());
-    EXPECT_GT(m_publication->position(), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.getCapacity());
+    EXPECT_GT(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
+    EXPECT_GT(m_publication->position(), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
 
     const int cleaningIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 2);
     EXPECT_EQ(m_metaDataBuffers[cleaningIndex].getInt32(LogBufferDescriptor::TERM_STATUS_OFFSET), LogBufferDescriptor::NEEDS_CLEANING);

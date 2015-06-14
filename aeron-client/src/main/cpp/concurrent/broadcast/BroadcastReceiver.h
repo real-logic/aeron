@@ -30,7 +30,7 @@ class BroadcastReceiver
 public:
     BroadcastReceiver(AtomicBuffer& buffer) :
         m_buffer(buffer),
-        m_capacity(buffer.getCapacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
+        m_capacity(buffer.capacity() - BroadcastBufferDescriptor::TRAILER_LENGTH),
         m_mask(m_capacity - 1),
         m_tailIntentCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_INTENT_COUNTER_OFFSET),
         m_tailCounterIndex(m_capacity + BroadcastBufferDescriptor::TAIL_COUNTER_OFFSET),

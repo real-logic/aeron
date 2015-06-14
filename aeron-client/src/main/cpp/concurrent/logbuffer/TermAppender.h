@@ -38,7 +38,7 @@ public:
         LogBufferPartition(termBuffer, metaDataBuffer),
         m_defaultHdrBuffer(defaultHdr, defaultHdrLength),
         m_defaultHdr(defaultHdr),
-        m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(termBuffer.getCapacity())),
+        m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(termBuffer.capacity())),
         m_maxFrameLength(maxFrameLength),
         m_maxPayloadLength(m_maxFrameLength - defaultHdrLength)
     {
@@ -98,7 +98,8 @@ public:
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedLength);
         AtomicBuffer&buffer = termBuffer();
 
-        const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, alignedLength, buffer.getCapacity());
+        const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, alignedLength,
+            buffer.capacity());
         if (resultingOffset > 0)
         {
             applyDefaultHeader(buffer, frameOffset, frameLength, m_defaultHdr);
@@ -125,7 +126,8 @@ private:
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedLength);
         AtomicBuffer&buffer = termBuffer();
 
-        const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, alignedLength, buffer.getCapacity());
+        const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, alignedLength,
+            buffer.capacity());
         if (resultingOffset > 0)
         {
             applyDefaultHeader(buffer, frameOffset, frameLength, m_defaultHdr);
@@ -150,7 +152,7 @@ private:
         AtomicBuffer& buffer = termBuffer();
 
         const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, requiredLength,
-            buffer.getCapacity());
+            buffer.capacity());
         if (resultingOffset > 0)
         {
             std::uint8_t flags = FrameDescriptor::BEGIN_FRAG;
@@ -219,7 +221,7 @@ private:
         atomic::thread_fence();
 
         memcpy(
-            buffer.getBuffer() + sizeof(std::int32_t) + frameOffset,
+            buffer.buffer() + sizeof(std::int32_t) + frameOffset,
             defaultHeaderBuffer + sizeof(std::int32_t),
             DataFrameHeader::LENGTH - sizeof(std::int32_t));
     }

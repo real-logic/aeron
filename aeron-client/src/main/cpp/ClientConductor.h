@@ -76,7 +76,7 @@ public:
 
     /*
      * non-blocking API semantics
-     * - addPublication, addSubscription do NOT return objects, but instead return a correlationId
+     * - addPublication, addSubscription do NOT return objects, but instead return a registrationId
      * - addPublication/addSubscription should NOT take futures for completion
      * - onNewPublication -> deliver notification via Aeron to inform app (but not hand back Publication, just id)
      * - onNewSubscription -> deliver notification via Aeron to inform app (but not hand back Subscription, just id)

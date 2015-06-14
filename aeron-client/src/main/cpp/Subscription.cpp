@@ -20,10 +20,10 @@
 namespace aeron {
 
 Subscription::Subscription(
-    ClientConductor &conductor, std::int64_t correlationId, const std::string &channel, std::int32_t streamId) :
+    ClientConductor &conductor, std::int64_t registrationId, const std::string &channel, std::int32_t streamId) :
     m_conductor(conductor),
     m_channel(channel),
-    m_correlationId(correlationId),
+    m_registrationId(registrationId),
     m_streamId(streamId)
 {
 
@@ -31,7 +31,7 @@ Subscription::Subscription(
 
 Subscription::~Subscription()
 {
-    m_conductor.releaseSubscription(m_correlationId);
+    m_conductor.releaseSubscription(m_registrationId);
 }
 
 }

@@ -37,7 +37,7 @@ Publication::Publication(
     m_logMetaDataBuffer(buffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX))
 {
     const std::int32_t mtuLength = LogBufferDescriptor::mtuLength(m_logMetaDataBuffer);
-    std::int32_t capacity = buffers.atomicBuffer(0).getCapacity();
+    std::int32_t capacity = buffers.atomicBuffer(0).capacity();
 
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {

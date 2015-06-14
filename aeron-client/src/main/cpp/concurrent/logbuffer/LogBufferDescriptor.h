@@ -118,7 +118,7 @@ static const util::index_t LOG_META_DATA_LENGTH = sizeof(LogMetaDataDefn) + (LOG
 
 inline static void checkTermBuffer(AtomicBuffer &buffer)
 {
-    const util::index_t capacity = buffer.getCapacity();
+    const util::index_t capacity = buffer.capacity();
     if (capacity < TERM_MIN_LENGTH)
     {
         throw util::IllegalStateException(
@@ -136,7 +136,7 @@ inline static void checkTermBuffer(AtomicBuffer &buffer)
 
 inline static void checkMetaDataBuffer(AtomicBuffer &buffer)
 {
-    const util::index_t capacity = buffer.getCapacity();
+    const util::index_t capacity = buffer.capacity();
     if (capacity < TERM_META_DATA_LENGTH)
     {
         throw util::IllegalStateException(
@@ -204,7 +204,7 @@ inline static std::int64_t computeTermLength(std::int64_t logLength)
 
 inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int partitionIndex)
 {
-    return logMetaDataBuffer.getBuffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+    return logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
 }
 
 inline static void defaultHeaderTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)

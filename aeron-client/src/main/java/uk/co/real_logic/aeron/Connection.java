@@ -35,14 +35,14 @@ class Connection implements ManagedResource
 {
     private long timeOfLastStateChange = 0;
     private final long correlationId;
-    private final int positionBitsToShift;
-    private final int termLengthMask;
     private final int sessionId;
+    private final int termLengthMask;
+    private final int positionBitsToShift;
 
-    private final LogBuffers logBuffers;
+    private final Position subscriberPosition;
     private final UnsafeBuffer[] termBuffers;
     private final Header header;
-    private final Position subscriberPosition;
+    private final LogBuffers logBuffers;
 
     public Connection(
         final int sessionId,

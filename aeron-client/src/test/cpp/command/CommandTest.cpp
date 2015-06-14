@@ -143,7 +143,7 @@ TEST (commandTests, testConnectionReadyFlyweight)
         ConnectionReadyFlyweight cmd(ab, BASEOFFSET);
 
         cmd.correlationId(-1).joiningPosition(64).streamId(0x01010101).sessionId(0x02020202).subscriberPositionCount(4);
-        cmd.logFileName(logFileNameData).sourceInfo(sourceInfoData);
+        cmd.logFileName(logFileNameData).sourceIdentity(sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
             cmd.subscriberPosition(n, ConnectionReadyDefn::SubscriberPosition {n, n});
@@ -175,7 +175,7 @@ TEST (commandTests, testConnectionReadyFlyweight)
         ASSERT_EQ(cmd.sessionId(), 0x02020202);
         ASSERT_EQ(cmd.subscriberPositionCount(), 4);
         ASSERT_EQ(cmd.logFileName(), logFileNameData);
-        ASSERT_EQ(cmd.sourceInfo(), sourceInfoData);
+        ASSERT_EQ(cmd.sourceIdentity(), sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
             const ConnectionReadyDefn::SubscriberPosition subscriberPosition = cmd.subscriberPosition(n);

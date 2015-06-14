@@ -49,9 +49,9 @@ namespace aeron { namespace command {
 * |                          Log File Name                      ...
 * ...                                                             |
 * +---------------------------------------------------------------+
-* |                         source info Length                    |
+* |                     Source Identity Length                    |
 * +---------------------------------------------------------------+
-* |                         source info Name                    ...
+* |                      Source Identity Name                    ...
 * ...                                                             |
 * +---------------------------------------------------------------+
 * |                      Subscriber Position Id 0                 |
@@ -167,14 +167,14 @@ public:
         return *this;
     }
 
-    inline std::string sourceInfo() const
+    inline std::string sourceIdentity() const
     {
-        return stringGet(sourceInfoOffset());
+        return stringGet(sourceIdentityOffset());
     }
 
-    inline this_t& sourceInfo(const std::string& value)
+    inline this_t& sourceIdentity(const std::string &value)
     {
-        stringPut(sourceInfoOffset(), value);
+        stringPut(sourceIdentityOffset(), value);
         return *this;
     }
 
@@ -196,14 +196,14 @@ public:
 
 private:
 
-    inline util::index_t sourceInfoOffset() const
+    inline util::index_t sourceIdentityOffset() const
     {
         return offsetof(ConnectionReadyDefn, logFile.logFileData) + m_struct.logFile.logFileLength;
     }
 
     inline util::index_t subscriberPositionOffset(int index) const
     {
-        const util::index_t offset = sourceInfoOffset();
+        const util::index_t offset = sourceIdentityOffset();
         const util::index_t startOfPositions = offset + stringGetLength(offset) + (util::index_t)sizeof(std::int32_t);
 
         return startOfPositions + (index * (util::index_t)sizeof(ConnectionReadyDefn::SubscriberPosition));

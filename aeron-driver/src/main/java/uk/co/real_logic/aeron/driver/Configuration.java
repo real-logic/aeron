@@ -331,6 +331,7 @@ public class Configuration
     /** Length of the maximum transport unit of the media driver's protocol */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
     public static final int MTU_LENGTH_DEFAULT = 4096;
+    public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();

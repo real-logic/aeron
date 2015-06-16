@@ -53,7 +53,15 @@ public class SendChannelEndpoint implements AutoCloseable
     }
 
     /**
-     * Called from the {@link Sender} to register the transport.
+     * Called from the {@link Sender} to create the channel for the transport.
+     */
+    public void openChannel()
+    {
+        transport.openDatagramChannel();
+    }
+
+    /**
+     * Called from the {@link Sender} to register the transport for reading.
      *
      * @param transportPoller to register with
      */

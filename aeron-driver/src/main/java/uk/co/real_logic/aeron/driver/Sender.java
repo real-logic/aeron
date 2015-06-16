@@ -63,6 +63,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     public void onRegisterSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
+        channelEndpoint.openChannel();
         channelEndpoint.registerForRead(transportPoller);
         transportPoller.selectNowWithoutProcessing();
     }

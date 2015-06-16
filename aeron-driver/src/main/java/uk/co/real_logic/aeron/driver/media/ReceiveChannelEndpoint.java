@@ -98,6 +98,11 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         return isClosed;
     }
 
+    public void openChannel()
+    {
+        transport.openDatagramChannel();
+    }
+
     public void registerForRead(final TransportPoller transportPoller)
     {
         transport.registerForRead(transportPoller);

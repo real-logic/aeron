@@ -647,7 +647,7 @@ public class DriverConductor implements Agent
                         connection.sessionId(),
                         connection.rebuildPosition(),
                         connection.rawLog(),
-                        correlationId,
+                        connection.correlationId(),
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
                         generateSourceIdentity(connection.sourceAddress()));
                 });

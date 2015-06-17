@@ -23,6 +23,7 @@
 #include <thread>
 #include <signal.h>
 #include <Context.h>
+#include <cstdio>
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>

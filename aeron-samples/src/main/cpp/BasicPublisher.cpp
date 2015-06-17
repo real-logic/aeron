@@ -15,6 +15,7 @@
  */
 
 #include <cstdint>
+#include <cstdio>
 #include <signal.h>
 #include <util/CommandOptionParser.h>
 #include <thread>

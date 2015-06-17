@@ -583,7 +583,6 @@ public class DriverConductor implements Agent
                 controlLossGenerator,
                 systemCounters);
 
-            channelEndpoint.validateMtuLength(mtuLength);
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             senderProxy.registerSendChannelEndpoint(channelEndpoint);
         }

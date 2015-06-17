@@ -108,7 +108,9 @@ public class SelectorAndTransportTest
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
+        receiverTransport.openDatagramChannel();
         receiverTransport.registerForRead(transportPoller);
+        senderTransport.openDatagramChannel();
         senderTransport.registerForRead(transportPoller);
 
         processLoop(transportPoller, 5);
@@ -140,7 +142,9 @@ public class SelectorAndTransportTest
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
+        receiverTransport.openDatagramChannel();
         receiverTransport.registerForRead(transportPoller);
+        senderTransport.openDatagramChannel();
         senderTransport.registerForRead(transportPoller);
 
         encodeDataHeader.wrap(buffer, 0);
@@ -190,7 +194,9 @@ public class SelectorAndTransportTest
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, mockStatusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
+        receiverTransport.openDatagramChannel();
         receiverTransport.registerForRead(transportPoller);
+        senderTransport.openDatagramChannel();
         senderTransport.registerForRead(transportPoller);
 
         encodeDataHeader.wrap(buffer, 0);
@@ -241,7 +247,9 @@ public class SelectorAndTransportTest
         senderTransport = new SenderUdpChannelTransport(
             SRC_DST, statusMessageHandler, mockNakMessageHandler, mockTransportLogger, NO_LOSS);
 
+        receiverTransport.openDatagramChannel();
         receiverTransport.registerForRead(transportPoller);
+        senderTransport.openDatagramChannel();
         senderTransport.registerForRead(transportPoller);
 
         statusMessage.wrap(buffer, 0);

@@ -41,23 +41,33 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final UdpChannel udpChannel;
     private final LossGenerator lossGenerator;
     private final EventLogger logger;
-    private final DatagramChannel datagramChannel;
     private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
+    private DatagramChannel datagramChannel;
     private SelectionKey selectionKey;
     private TransportPoller transportPoller;
+    private InetSocketAddress bindSocketAddress;
+    private InetSocketAddress endPointSocketAddress;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
         final InetSocketAddress endPointSocketAddress,
-        final InetSocketAddress bindAddress,
+        final InetSocketAddress bindSocketAddress,
         final LossGenerator lossGenerator,
         final EventLogger logger)
     {
         this.udpChannel = udpChannel;
         this.lossGenerator = lossGenerator;
         this.logger = logger;
+        this.endPointSocketAddress = endPointSocketAddress;
+        this.bindSocketAddress = bindSocketAddress;
+    }
 
+    /**
+     * Create the underlying channel for reading and writing.
+     */
+    public void openDatagramChannel()
+    {
         try
         {
             datagramChannel = DatagramChannel.open(udpChannel.protocolFamily());
@@ -72,7 +82,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             }
             else
             {
-                datagramChannel.bind(bindAddress);
+                datagramChannel.bind(bindSocketAddress);
             }
 
             if (0 != Configuration.SOCKET_SNDBUF_LENGTH)

@@ -20,11 +20,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
-import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.command.*;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
@@ -34,6 +33,7 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -44,19 +44,20 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.ErrorCode.UNKNOWN_PUBLICATION;
-import static uk.co.real_logic.aeron.command.ControlProtocolEvents.ADD_PUBLICATION;
-import static uk.co.real_logic.aeron.command.ControlProtocolEvents.REMOVE_PUBLICATION;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 public class DriverConductorTest
 {
     private static final String CHANNEL_URI = "udp://localhost:";
     private static final String INVALID_URI = "udp://";
+    private static final int SESSION_ID = 100;
     private static final int STREAM_ID_1 = 10;
     private static final int STREAM_ID_2 = 20;
     private static final int STREAM_ID_3 = 30;
-    private static final int TERM_BUFFER_SZ = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
+    private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final long CORRELATION_ID_1 = 1429;
     private static final long CORRELATION_ID_2 = 1430;
     private static final long CORRELATION_ID_3 = 1431;
@@ -108,7 +109,9 @@ public class DriverConductorTest
     public void setUp() throws Exception
     {
         when(mockRawLogFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
-            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_SZ, TERM_META_DATA_LENGTH));
+            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
+        when(mockRawLogFactory.newConnection(anyObject(), anyInt(), anyInt(), anyInt(), eq(TERM_BUFFER_LENGTH)))
+            .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
 
         currentTime = 0;
 
@@ -163,19 +166,26 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
+        verify(senderProxy).registerSendChannelEndpoint(any());
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
-        verify(mockClientProxy).onPublicationReady(
-            eq(2), anyInt(), any(), anyLong(), anyInt());
+        final NetworkPublication publication = captor.getValue();
+        assertThat(publication.sessionId(), is(1));
+        assertThat(publication.streamId(), is(2));
+
+        verify(mockClientProxy).onPublicationReady(eq(2), anyInt(), any(), anyLong(), anyInt());
     }
 
     @Test
     public void shouldBeAbleToAddSingleSubscription() throws Exception
     {
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
+        verify(receiverProxy).registerReceiveChannelEndpoint(any());
+        verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
         verify(mockClientProxy).operationSucceeded(CORRELATION_ID_1);
 
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -184,8 +194,8 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddAndRemoveSingleSubscription() throws Exception
     {
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
-        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -213,7 +223,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
         verify(senderProxy).removePublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
@@ -234,7 +244,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(senderProxy, times(4)).removePublication(any());
     }
@@ -253,9 +263,9 @@ public class DriverConductorTest
     {
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_URI + 4000);
 
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
 
         driverConductor.doWork();
 
@@ -264,8 +274,8 @@ public class DriverConductorTest
         assertNotNull(channelEndpoint);
         assertThat(channelEndpoint.streamCount(), is(3));
 
-        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
-        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
+        writeSubscriptionMessage(REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
 
         driverConductor.doWork();
 
@@ -278,9 +288,9 @@ public class DriverConductorTest
     {
         final UdpChannel udpChannel = UdpChannel.parse(CHANNEL_URI + 4000);
 
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
 
         driverConductor.doWork();
 
@@ -289,15 +299,15 @@ public class DriverConductorTest
         assertNotNull(channelEndpoint);
         assertThat(channelEndpoint.streamCount(), is(3));
 
-        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
-        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
+        writeSubscriptionMessage(REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_2, CORRELATION_ID_2);
+        writeSubscriptionMessage(REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_3, CORRELATION_ID_3);
 
         driverConductor.doWork();
 
         assertNotNull(driverConductor.receiverChannelEndpoint(udpChannel));
         assertThat(channelEndpoint.streamCount(), is(1));
 
-        writeSubscriptionMessage(ControlProtocolEvents.REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(REMOVE_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -312,11 +322,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
-
+        verify(senderProxy).newPublication(any(), any(), any());
         verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
+        verify(mockClientProxy, never()).operationSucceeded(anyLong());
+        verify(mockConductorLogger).logException(any());
     }
 
     @Test
@@ -327,16 +336,17 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifyPublicationClosed(never());
+        verify(senderProxy).newPublication(any(), any(), any());
+        verify(senderProxy, never()).removePublication(any());
         verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
+        verify(mockClientProxy, never()).operationSucceeded(anyLong());
+        verify(mockConductorLogger).logException(any());
     }
 
     @Test
     public void shouldErrorOnAddSubscriptionWithInvalidUri() throws Exception
     {
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, INVALID_URI, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
         driverConductor.doWork();
@@ -344,8 +354,8 @@ public class DriverConductorTest
         verify(senderProxy, never()).newPublication(any(), any(), any());
 
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
+        verify(mockClientProxy, never()).operationSucceeded(anyLong());
+        verify(mockConductorLogger).logException(any());
     }
 
     @Test
@@ -355,11 +365,14 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        final NetworkPublication publication = captor.getValue();
 
-        verifyPublicationClosed(times(1));
+        doWorkUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(senderProxy).removePublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -370,84 +383,159 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
+        final NetworkPublication publication = captor.getValue();
+
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verifyPublicationClosed(never());
+        verify(senderProxy, never()).removePublication(eq(publication));
     }
 
     @Test
     public void shouldTimeoutSubscription() throws Exception
     {
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
-        verifyReceiverSubscribes();
-        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
-        verifyReceiverRemovesSubscription(times(1));
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(receiverProxy, times(1)).removeSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
+
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
     @Test
     public void shouldNotTimeoutSubscriptionOnKeepAlive() throws Exception
     {
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
-        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
-        verifyReceiverSubscribes();
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
+
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verifyReceiverRemovesSubscription(never());
+        verify(receiverProxy, never()).removeSubscription(any(), anyInt());
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
-    private void verifyReceiverRemovesSubscription(final VerificationMode times)
+    @Test
+    public void shouldCreateConnectionOnSubscription() throws Exception
     {
-        verify(receiverProxy, times).removeSubscription(any(), anyInt());
+        final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
+        final int initialTermId = 1;
+        final int activeTermId = 2;
+        final int termOffset = 100;
+
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+
+        driverConductor.doWork();
+
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
+
+        receiveChannelEndpoint.openChannel();
+
+        driverConductor.onCreateConnection(
+            SESSION_ID, STREAM_ID_1, initialTermId, activeTermId, termOffset, TERM_BUFFER_LENGTH, MTU_LENGTH,
+            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+
+        final ArgumentCaptor<NetworkConnection> captor = ArgumentCaptor.forClass(NetworkConnection.class);
+        verify(receiverProxy).newConnection(eq(receiveChannelEndpoint), captor.capture());
+
+        final NetworkConnection networkConnection = captor.getValue();
+        assertThat(networkConnection.sessionId(), is(SESSION_ID));
+        assertThat(networkConnection.streamId(), is(STREAM_ID_1));
+
+        final long position =
+            computePosition(activeTermId, termOffset, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), initialTermId);
+        verify(mockClientProxy).onConnectionReady(
+            eq(STREAM_ID_1), eq(SESSION_ID), eq(position), anyObject(), anyLong(), anyObject(), anyString());
     }
 
-    private void verifyReceiverSubscribes()
+    @Test
+    public void shouldNotCreateConnectionOnUnknownSubscription() throws Exception
     {
-        verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
+        final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
+
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
+
+        driverConductor.doWork();
+
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
+
+        receiveChannelEndpoint.openChannel();
+
+        driverConductor.onCreateConnection(
+            SESSION_ID, STREAM_ID_2, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
+            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+
+        verify(receiverProxy, never()).newConnection(any(), any());
+        verify(mockClientProxy, never()).onConnectionReady(
+            anyInt(), anyInt(), anyLong(), anyObject(), anyLong(), anyObject(), anyString());
     }
 
-    private void verifyPublicationClosed(final VerificationMode times)
+    @Test
+    public void shouldSignalInactiveConnectionWhenConnectionTimesout() throws Exception
     {
-        verify(senderProxy, times).removePublication(any());
-    }
+        final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
-    private void verifyExceptionLogged()
-    {
-        verify(mockConductorLogger).logException(any());
-    }
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, CORRELATION_ID_1);
 
-    private void verifyNeverSucceeds()
-    {
-        verify(mockClientProxy, never()).operationSucceeded(anyLong());
+        driverConductor.doWork();
+
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
+
+        receiveChannelEndpoint.openChannel();
+
+        driverConductor.onCreateConnection(
+            SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
+            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+
+        final ArgumentCaptor<NetworkConnection> captor = ArgumentCaptor.forClass(NetworkConnection.class);
+        verify(receiverProxy).newConnection(eq(receiveChannelEndpoint), captor.capture());
+
+        final NetworkConnection networkConnection = captor.getValue();
+
+        networkConnection.status(NetworkConnection.Status.INACTIVE);
+
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
+
+        verify(mockClientProxy).onInactiveConnection(anyLong(), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
     }
 
     private void writePublicationMessage(
@@ -461,16 +549,6 @@ public class DriverConductorTest
         publicationMessage.correlationId(correlationId);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
-    }
-
-    private void verifySenderNotifiedOfNewPublication()
-    {
-        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
-
-        final NetworkPublication publication = captor.getValue();
-        assertThat(publication.sessionId(), is(1));
-        assertThat(publication.streamId(), is(2));
     }
 
     private void writeSubscriptionMessage(
@@ -495,7 +573,7 @@ public class DriverConductorTest
         fromClientCommands.write(ControlProtocolEvents.CLIENT_KEEPALIVE, writeBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    private long processTimersUntil(final BooleanSupplier condition) throws Exception
+    private long doWorkUntil(final BooleanSupplier condition) throws Exception
     {
         final long startTime = wheel.clock().nanoTime();
 

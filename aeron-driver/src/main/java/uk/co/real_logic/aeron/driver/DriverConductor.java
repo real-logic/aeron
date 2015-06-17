@@ -632,7 +632,8 @@ public class DriverConductor implements Agent
 
         connections
             .stream()
-            .filter((connection) -> connection.matches(channelEndpoint, streamId))
+            .filter((connection) -> connection.matches(channelEndpoint, streamId) &&
+                    connection.status() == NetworkConnection.Status.ACTIVE)
             .forEach(
                 (connection) ->
                 {
@@ -682,6 +683,11 @@ public class DriverConductor implements Agent
         final int refCount = channelEndpoint.decRefToStream(subscription.streamId());
         if (0 == refCount)
         {
+            connections
+                    .stream()
+                    .filter((connection) -> connection.matches(channelEndpoint, subscription.streamId()))
+                    .forEach((connection) -> connection.ifActiveGoInactive());
+
             receiverProxy.removeSubscription(channelEndpoint, subscription.streamId());
         }
 

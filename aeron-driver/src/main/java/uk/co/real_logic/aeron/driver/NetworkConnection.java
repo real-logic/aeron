@@ -516,6 +516,16 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
+     * Return number of subscribers to this connection.
+     *
+     * @return number of subscribers
+     */
+    public int subscriberCount()
+    {
+        return subscriberPositions.size();
+    }
+
+    /**
      * The position up to which the current stream rebuild is complete for reception.
      *
      * @return the position up to which the current stream rebuild is complete for reception.

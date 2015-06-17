@@ -20,11 +20,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.stubbing.Answer;
-import org.mockito.verification.VerificationMode;
 import uk.co.real_logic.aeron.command.*;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
@@ -44,10 +43,9 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.ErrorCode.INVALID_CHANNEL;
 import static uk.co.real_logic.aeron.ErrorCode.UNKNOWN_PUBLICATION;
-import static uk.co.real_logic.aeron.command.ControlProtocolEvents.ADD_PUBLICATION;
-import static uk.co.real_logic.aeron.command.ControlProtocolEvents.REMOVE_PUBLICATION;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
+import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
 public class DriverConductorTest
 {
@@ -163,10 +161,14 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
-        verify(mockClientProxy).onPublicationReady(
-            eq(2), anyInt(), any(), anyLong(), anyInt());
+        final NetworkPublication publication = captor.getValue();
+        assertThat(publication.sessionId(), is(1));
+        assertThat(publication.streamId(), is(2));
+
+        verify(mockClientProxy).onPublicationReady(eq(2), anyInt(), any(), anyLong(), anyInt());
     }
 
     @Test
@@ -213,7 +215,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
         verify(senderProxy).removePublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
@@ -234,7 +236,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(senderProxy, times(4)).removePublication(any());
     }
@@ -312,11 +314,10 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
-
+        verify(senderProxy).newPublication(any(), any(), any());
         verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
+        verify(mockClientProxy, never()).operationSucceeded(anyLong());
+        verify(mockConductorLogger).logException(any());
     }
 
     @Test
@@ -327,16 +328,17 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifyPublicationClosed(never());
+        verify(senderProxy).newPublication(any(), any(), any());
+        verify(senderProxy, never()).removePublication(any());
         verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
+        verify(mockClientProxy, never()).operationSucceeded(anyLong());
+        verify(mockConductorLogger).logException(any());
     }
 
     @Test
     public void shouldErrorOnAddSubscriptionWithInvalidUri() throws Exception
     {
-        writeSubscriptionMessage(ControlProtocolEvents.ADD_SUBSCRIPTION, INVALID_URI, STREAM_ID_1, CORRELATION_ID_1);
+        writeSubscriptionMessage(ADD_SUBSCRIPTION, INVALID_URI, STREAM_ID_1, CORRELATION_ID_1);
 
         driverConductor.doWork();
         driverConductor.doWork();
@@ -344,8 +346,8 @@ public class DriverConductorTest
         verify(senderProxy, never()).newPublication(any(), any(), any());
 
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
-        verifyNeverSucceeds();
-        verifyExceptionLogged();
+        verify(mockClientProxy, never()).operationSucceeded(anyLong());
+        verify(mockConductorLogger).logException(any());
     }
 
     @Test
@@ -355,11 +357,14 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        final NetworkPublication publication = captor.getValue();
 
-        verifyPublicationClosed(times(1));
+        doWorkUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(senderProxy).removePublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -370,19 +375,22 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifySenderNotifiedOfNewPublication();
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
+        final NetworkPublication publication = captor.getValue();
+
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verifyPublicationClosed(never());
+        verify(senderProxy, never()).removePublication(eq(publication));
     }
 
     @Test
@@ -392,12 +400,16 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verifyReceiverSubscribes();
-        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
-        verifyReceiverRemovesSubscription(times(1));
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(receiverProxy, times(1)).removeSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
+
         assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
     }
 
@@ -408,46 +420,24 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
-        verifyReceiverSubscribes();
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
+
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        processTimersUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verifyReceiverRemovesSubscription(never());
+        verify(receiverProxy, never()).removeSubscription(any(), anyInt());
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
-    }
-
-    private void verifyReceiverRemovesSubscription(final VerificationMode times)
-    {
-        verify(receiverProxy, times).removeSubscription(any(), anyInt());
-    }
-
-    private void verifyReceiverSubscribes()
-    {
-        verify(receiverProxy).addSubscription(any(), eq(STREAM_ID_1));
-    }
-
-    private void verifyPublicationClosed(final VerificationMode times)
-    {
-        verify(senderProxy, times).removePublication(any());
-    }
-
-    private void verifyExceptionLogged()
-    {
-        verify(mockConductorLogger).logException(any());
-    }
-
-    private void verifyNeverSucceeds()
-    {
-        verify(mockClientProxy, never()).operationSucceeded(anyLong());
     }
 
     private void writePublicationMessage(
@@ -461,16 +451,6 @@ public class DriverConductorTest
         publicationMessage.correlationId(correlationId);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, publicationMessage.length());
-    }
-
-    private void verifySenderNotifiedOfNewPublication()
-    {
-        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture(), any(), any());
-
-        final NetworkPublication publication = captor.getValue();
-        assertThat(publication.sessionId(), is(1));
-        assertThat(publication.streamId(), is(2));
     }
 
     private void writeSubscriptionMessage(
@@ -495,7 +475,7 @@ public class DriverConductorTest
         fromClientCommands.write(ControlProtocolEvents.CLIENT_KEEPALIVE, writeBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    private long processTimersUntil(final BooleanSupplier condition) throws Exception
+    private long doWorkUntil(final BooleanSupplier condition) throws Exception
     {
         final long startTime = wheel.clock().nanoTime();
 

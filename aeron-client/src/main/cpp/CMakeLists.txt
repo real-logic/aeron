@@ -15,6 +15,7 @@
 #
 
 SET(SOURCE
+    Connection.cpp
     Publication.cpp
     Subscription.cpp
     ClientConductor.cpp
@@ -28,6 +29,7 @@ SET(SOURCE
 SET(HEADERS
     ClientConductor.h
     CncFileDescriptor.h
+    Connection.h
     Context.h
     Aeron.h
     Publication.h

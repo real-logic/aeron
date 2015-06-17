@@ -48,6 +48,9 @@ static const util::index_t DATA_OFFSET = sizeof(DataFrameHeaderDefn);
 
 static const util::index_t LENGTH = DATA_OFFSET;
 
+static const std::int16_t HDR_TYPE_PAD = 0x00;
+static const std::int16_t HDR_TYPE_DATA = 0x01;
+
 }
 
 }}}

@@ -29,58 +29,59 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 /** The data handler function signature */
 typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index_t, Header&)> fragment_handler_t;
 
-class TermReader
+namespace TermReader {
+
+inline std::uint64_t readOutcome(std::int32_t offset, int fragmentsRead)
 {
-public:
-    TermReader()
-    {
-    }
+    return (((std::uint64_t)offset << 32) | (std::uint64_t)fragmentsRead);
+}
 
-    inline util::index_t offset() const
-    {
-        return m_offset;
-    }
+inline std::uint64_t read(
+    AtomicBuffer& termBuffer,
+    std::int32_t termOffset,
+    const fragment_handler_t & handler,
+    int fragmentsLimit,
+    Header& header)
+{
+    int fragmentsRead = 0;
+    const util::index_t capacity = termBuffer.capacity();
 
-    inline int read(
-        AtomicBuffer& termBuffer,
-        std::int32_t termOffset,
-        const fragment_handler_t & handler,
-        int fragmentsLimit,
-        Header& header)
+    do
     {
-        int fragmentsRead = 0;
-        const util::index_t capacity = termBuffer.capacity();
-        m_offset = termOffset;
-
-        do
+        const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, termOffset);
+        if (frameLength <= 0)
         {
-            const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, termOffset);
-            if (frameLength <= 0)
-            {
-                break;
-            }
-
-            const std::int32_t currentTermOffset = termOffset;
-            termOffset += util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
-            m_offset = termOffset;
-
-            if (!FrameDescriptor::isPaddingFrame(termBuffer, currentTermOffset))
-            {
-                header.buffer(termBuffer);
-                header.offset(currentTermOffset);
-                handler(termBuffer, currentTermOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH, header);
-
-                ++fragmentsRead;
-            }
+            break;
         }
-        while (fragmentsRead < fragmentsLimit && termOffset < capacity);
 
-        return fragmentsRead;
+        const std::int32_t fragmentOffset = termOffset;
+        termOffset += util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+        if (!FrameDescriptor::isPaddingFrame(termBuffer, fragmentOffset))
+        {
+            header.buffer(termBuffer);
+            header.offset(fragmentOffset);
+            handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH, header);
+
+            ++fragmentsRead;
+        }
     }
+    while (fragmentsRead < fragmentsLimit && termOffset < capacity);
 
-private:
-    util::index_t m_offset = 0;
-};
+    return readOutcome(termOffset, fragmentsRead);
+}
+
+inline int fragmentsRead(std::uint64_t readOutcome)
+{
+    return (int)(readOutcome & 0xFFFFFFFF);
+}
+
+inline std::int32_t offset(std::uint64_t readOutcome)
+{
+    return (std::int32_t)((std::uint64_t)readOutcome >> 32);
+}
+
+}
 
 }}}
 

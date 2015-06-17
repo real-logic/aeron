@@ -38,11 +38,18 @@ typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> state_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
 typedef std::array<std::uint8_t, TERM_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
 
+class MockDataHandler
+{
+public:
+    MOCK_CONST_METHOD4(onData, void(AtomicBuffer&, util::index_t, util::index_t, Header&));
+};
+
 class TermReaderTest : public testing::Test
 {
 public:
     TermReaderTest() :
-        m_log(&m_logBuffer[0], m_logBuffer.size())
+        m_log(&m_logBuffer[0], m_logBuffer.size()),
+        m_fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY)
     {
         m_logBuffer.fill(0);
     }
@@ -55,19 +62,23 @@ public:
 protected:
     AERON_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
     MockAtomicBuffer m_log;
-    TermReader m_logReader;
+    Header m_fragmentHeader;
+    MockDataHandler m_handler;
 };
 
-class MockDataHandler
+TEST_F(TermReaderTest, shouldPackPaddingAndOffsetIntoResultingStatus)
 {
-public:
-    MOCK_CONST_METHOD4(onData, void(AtomicBuffer&, util::index_t, util::index_t, Header&));
-};
+    const std::int32_t offset = 77;
+    const int fragmentsRead = 999;
+
+    const std::uint64_t readOutcome = TermReader::readOutcome(offset, fragmentsRead);
+
+    EXPECT_EQ(TermReader::offset(readOutcome), offset);
+    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), fragmentsRead);
+}
 
 TEST_F(TermReaderTest, shouldReadFirstMessage)
 {
-    MockDataHandler handler;
-    Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
     const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -81,8 +92,8 @@ TEST_F(TermReaderTest, shouldReadFirstMessage)
     EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(0)))
         .Times(1)
         .InSequence(sequence)
-        .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength)))
@@ -90,20 +101,18 @@ TEST_F(TermReaderTest, shouldReadFirstMessage)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-    const int framesRead = m_logReader.read(
+    const std::uint64_t readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            handler.onData(buffer, offset, length, header);
-        }, INT_MAX, fragmentHeader);
+            m_handler.onData(buffer, offset, length, header);
+        }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(framesRead, 1);
+    EXPECT_EQ(TermReader::offset(readOutcome), alignedFrameLength);
+    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 1);
 }
 
 TEST_F(TermReaderTest, shouldNotReadPastTail)
 {
-    MockDataHandler handler;
-    Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
-    const util::index_t msgLength = 1;
     const std::int32_t termOffset = 0;
     testing::Sequence sequence;
 
@@ -113,24 +122,24 @@ TEST_F(TermReaderTest, shouldNotReadPastTail)
         .WillOnce(testing::Return(0));
     EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(0)))
         .Times(0);
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, testing::_, testing::_))
         .Times(0);
 
-    const int framesRead = m_logReader.read(
+    const std::uint64_t readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            handler.onData(buffer, offset, length, header);
-        }, INT_MAX, fragmentHeader);
+            m_handler.onData(buffer, offset, length, header);
+        }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(framesRead, 0);
+    EXPECT_EQ(TermReader::offset(readOutcome), termOffset);
+    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 0);
 }
 
 TEST_F(TermReaderTest, shouldReadOneLimitedMessage)
 {
-    MockDataHandler handler;
-    Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
     const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
+    const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t termOffset = 0;
     testing::Sequence sequence;
 
@@ -141,24 +150,23 @@ TEST_F(TermReaderTest, shouldReadOneLimitedMessage)
     EXPECT_CALL(m_log, getUInt16(testing::_))
         .Times(1)
         .InSequence(sequence)
-        .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
 
-    const int framesRead = m_logReader.read(
+    const std::uint64_t readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            handler.onData(buffer, offset, length, header);
-        }, 1, fragmentHeader);
+            m_handler.onData(buffer, offset, length, header);
+        }, 1, m_fragmentHeader);
 
-    EXPECT_EQ(framesRead, 1);
+    EXPECT_EQ(TermReader::offset(readOutcome), alignedFrameLength);
+    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 1);
 }
 
 TEST_F(TermReaderTest, shouldReadMultipleMessages)
 {
-    MockDataHandler handler;
-    Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
     const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -172,8 +180,8 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
     EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(0)))
         .Times(1)
         .InSequence(sequence)
-        .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength)))
@@ -183,8 +191,8 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
     EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(alignedFrameLength)))
         .Times(1)
         .InSequence(sequence)
-        .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), alignedFrameLength + DataFrameHeader::LENGTH, msgLength, testing::_))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), alignedFrameLength + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, getInt32Volatile(FrameDescriptor::lengthOffset(alignedFrameLength * 2)))
@@ -192,19 +200,18 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-    const int framesRead = m_logReader.read(
+    const std::uint64_t readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            handler.onData(buffer, offset, length, header);
-        }, INT_MAX, fragmentHeader);
+            m_handler.onData(buffer, offset, length, header);
+        }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(framesRead, 2);
+    EXPECT_EQ(TermReader::offset(readOutcome), alignedFrameLength * 2);
+    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 2);
 }
 
 TEST_F(TermReaderTest, shouldReadLastMessage)
 {
-    MockDataHandler handler;
-    Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
     const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -218,24 +225,23 @@ TEST_F(TermReaderTest, shouldReadLastMessage)
     EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(startOfMessage)))
         .Times(1)
         .InSequence(sequence)
-        .WillOnce(testing::Return(0x01));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
+    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(1)
         .InSequence(sequence);
 
-    const int framesRead = m_logReader.read(
+    const std::uint64_t readOutcome = TermReader::read(
         m_log, startOfMessage, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            handler.onData(buffer, offset, length, header);
-        }, INT_MAX, fragmentHeader);
+            m_handler.onData(buffer, offset, length, header);
+        }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(framesRead, 1);
+    EXPECT_EQ(TermReader::offset(readOutcome), TERM_BUFFER_CAPACITY);
+    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 1);
 }
 
 TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
 {
-    MockDataHandler handler;
-    Header fragmentHeader(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     const util::index_t msgLength = 1;
     const util::index_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -250,14 +256,15 @@ TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
         .Times(1)
         .InSequence(sequence)
         .WillOnce(testing::Return(FrameDescriptor::PADDING_FRAME_TYPE));
-    EXPECT_CALL(handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
+    EXPECT_CALL(m_handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(0);
 
-    const int framesRead = m_logReader.read(
+    const std::uint64_t readOutcome = TermReader::read(
         m_log, startOfMessage, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            handler.onData(buffer, offset, length, header);
-        }, INT_MAX, fragmentHeader);
+            m_handler.onData(buffer, offset, length, header);
+        }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(framesRead, 0);
+    EXPECT_EQ(TermReader::offset(readOutcome), TERM_BUFFER_CAPACITY);
+    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 0);
 }

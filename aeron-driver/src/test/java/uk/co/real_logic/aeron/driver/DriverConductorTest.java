@@ -565,6 +565,8 @@ public class DriverConductorTest
 
         final NetworkConnection networkConnection = captor.getValue();
 
+        networkConnection.status(NetworkConnection.Status.ACTIVE);
+
         writeSubscriptionMessage(
             ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, fromClientCommands.nextCorrelationId());
 

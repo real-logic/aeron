@@ -632,7 +632,7 @@ public class DriverConductor implements Agent
 
         connections
             .stream()
-            .filter((connection) -> connection.matches(channelEndpoint, streamId))
+            .filter((connection) -> connection.matches(channelEndpoint, streamId) && (connection.subscriberCount() > 0))
             .forEach(
                 (connection) ->
                 {

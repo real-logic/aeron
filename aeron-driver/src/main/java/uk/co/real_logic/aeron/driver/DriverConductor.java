@@ -632,7 +632,7 @@ public class DriverConductor implements Agent
 
         connections
             .stream()
-            .filter((connection) -> connection.matches(channelEndpoint, streamId))
+            .filter((connection) -> connection.matches(channelEndpoint, streamId) && (connection.subscriberCount() > 0))
             .forEach(
                 (connection) ->
                 {
@@ -647,7 +647,7 @@ public class DriverConductor implements Agent
                         connection.sessionId(),
                         connection.rebuildPosition(),
                         connection.rawLog(),
-                        correlationId,
+                        connection.correlationId(),
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
                         generateSourceIdentity(connection.sourceAddress()));
                 });

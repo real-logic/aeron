@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.command.*;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
@@ -535,7 +536,52 @@ public class DriverConductorTest
 
         doWorkUntil(() -> wheel.clock().nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
 
-        verify(mockClientProxy).onInactiveConnection(anyLong(), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
+        verify(mockClientProxy).onInactiveConnection(
+            eq(networkConnection.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
+    }
+
+    @Test
+    public void shouldAlwaysGiveNetworkConnectionCorrelationIdToClientCallbacks() throws Exception
+    {
+        final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
+
+        writeSubscriptionMessage(
+            ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, fromClientCommands.nextCorrelationId());
+
+        driverConductor.doWork();
+
+        final ReceiveChannelEndpoint receiveChannelEndpoint =
+            driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000));
+        assertNotNull(receiveChannelEndpoint);
+
+        receiveChannelEndpoint.openChannel();
+
+        driverConductor.onCreateConnection(
+            SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
+            mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
+
+        final ArgumentCaptor<NetworkConnection> captor = ArgumentCaptor.forClass(NetworkConnection.class);
+        verify(receiverProxy).newConnection(eq(receiveChannelEndpoint), captor.capture());
+
+        final NetworkConnection networkConnection = captor.getValue();
+
+        networkConnection.status(NetworkConnection.Status.ACTIVE);
+
+        writeSubscriptionMessage(
+            ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, fromClientCommands.nextCorrelationId());
+
+        driverConductor.doWork();
+
+        networkConnection.status(NetworkConnection.Status.INACTIVE);
+
+        doWorkUntil(() -> wheel.clock().nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy, times(2)).onConnectionReady(
+            eq(STREAM_ID_1), eq(SESSION_ID), eq(0L), anyObject(),
+            eq(networkConnection.correlationId()), anyObject(), anyString());
+        inOrder.verify(mockClientProxy, times(1)).onInactiveConnection(
+            eq(networkConnection.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
     }
 
     private void writePublicationMessage(

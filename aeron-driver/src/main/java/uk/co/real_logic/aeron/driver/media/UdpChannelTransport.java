@@ -43,11 +43,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final EventLogger logger;
     private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
-    private InetSocketAddress endPointSocketAddress;
-    private InetSocketAddress bindSocketAddress;
     private DatagramChannel datagramChannel;
     private SelectionKey selectionKey;
     private TransportPoller transportPoller;
+    private InetSocketAddress bindSocketAddress;
+    private InetSocketAddress endPointSocketAddress;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,

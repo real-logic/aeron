@@ -71,6 +71,12 @@ public:
         return m_conductor.findSubscription(id);
     }
 
+    inline bool isPublicationClosed(std::int64_t id)
+    {
+        // TODO:
+        return true;
+    }
+
 private:
     Context& m_context;
 

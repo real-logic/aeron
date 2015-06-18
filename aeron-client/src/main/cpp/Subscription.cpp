@@ -24,7 +24,9 @@ Subscription::Subscription(
     m_conductor(conductor),
     m_channel(channel),
     m_registrationId(registrationId),
-    m_streamId(streamId)
+    m_streamId(streamId),
+    m_connections(nullptr),
+    m_connectionsLength(0)
 {
 
 }
@@ -32,6 +34,8 @@ Subscription::Subscription(
 Subscription::~Subscription()
 {
     m_conductor.releaseSubscription(m_registrationId);
+
+    // TODO: clean out connections and have client conductor linger them if necessary (could be in use by others)
 }
 
 }

@@ -95,19 +95,21 @@ public:
      */
 
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
-    std::shared_ptr<Publication> findPublication(std::int64_t correlationId);
-    void releasePublication(std::int64_t correlationId);
+    std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
+    void releasePublication(std::int64_t registrationId);
 
     std::int64_t addSubscription(const std::string& channel, std::int32_t streamId);
-    std::shared_ptr<Subscription> findSubscription(std::int64_t correlationId);
-    void releaseSubscription(std::int64_t correlationId);
+    std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
+    void releaseSubscription(std::int64_t registrationId);
 
     void onNewPublication(
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int32_t positionLimitCounterId,
         const std::string& logFileName,
-        std::int64_t correlationId);
+        std::int64_t registrationId);
+
+    void onOperationSuccess(std::int64_t correlationId);
 
     void onNewConnection(
         std::int32_t streamId,
@@ -118,11 +120,17 @@ public:
         const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
         std::int64_t correlationId);
 
+    void onInactiveConnection(
+        std::int32_t streamId,
+        std::int32_t sessionId,
+        std::int64_t position,
+        std::int64_t correlationId);
+
 private:
     struct PublicationStateDefn
     {
         std::string m_channel;
-        std::int64_t m_correlationId;
+        std::int64_t m_registrationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId;
         std::shared_ptr<UnsafeBufferPosition> m_publicationLimit;
@@ -130,8 +138,8 @@ private:
         std::weak_ptr<Publication> m_publication;
 
         PublicationStateDefn(
-            const std::string& channel, std::int64_t correlationId, std::int32_t streamId, std::int32_t sessionId) :
-            m_channel(channel), m_correlationId(correlationId), m_streamId(streamId), m_sessionId(sessionId)
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, std::int32_t sessionId) :
+            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_sessionId(sessionId)
         {
         }
     };
@@ -139,13 +147,26 @@ private:
     struct SubscriptionStateDefn
     {
         std::string m_channel;
-        std::int64_t m_correlationId;
+        std::int64_t m_registrationId;
+        std::int64_t m_removeCorrelationId = -1;
         std::int32_t m_streamId;
-        std::weak_ptr<Subscription> m_subscription;
+        bool m_registered = false;
+        std::shared_ptr<Subscription> m_subscription;
 
         SubscriptionStateDefn(
-            const std::string& channel, std::int64_t correlationId, std::int32_t streamId) :
-            m_channel(channel), m_correlationId(correlationId), m_streamId(streamId)
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId) :
+            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId)
+        {
+        }
+    };
+
+    struct LogBuffersStateDefn
+    {
+        std::int64_t m_correlationId;
+        std::shared_ptr<LogBuffers> m_logBuffers;
+
+        LogBuffersStateDefn(std::int64_t correlationId, std::shared_ptr<LogBuffers> buffers) :
+            m_correlationId(correlationId), m_logBuffers(buffers)
         {
         }
     };
@@ -155,6 +176,8 @@ private:
 
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
+
+    std::vector<LogBuffersStateDefn> m_logBuffers;
 
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;

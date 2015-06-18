@@ -31,27 +31,27 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
 
     if (it == m_publications.end())
     {
-        std::int64_t correlationId = m_driverProxy.addPublication(channel, streamId, sessionId);
+        std::int64_t registrationId = m_driverProxy.addPublication(channel, streamId, sessionId);
 
-        m_publications.push_back(PublicationStateDefn(channel, correlationId, streamId, sessionId));
-        id = correlationId;
+        m_publications.push_back(PublicationStateDefn(channel, registrationId, streamId, sessionId));
+        id = registrationId;
     }
     else
     {
-        id = (*it).m_correlationId;
+        id = (*it).m_registrationId;
     }
 
     return id;
 }
 
-std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t correlationId)
+std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t registrationId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn &entry)
         {
-            return (correlationId == entry.m_correlationId);
+            return (registrationId == entry.m_registrationId);
         });
 
     if (it == m_publications.end())
@@ -64,7 +64,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t corre
     // construct Publication if we've heard from the driver and have the log buffers around
     if (!pub && ((*it).m_buffers))
     {
-        pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_correlationId, (*it).m_streamId,
+        pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_registrationId, (*it).m_streamId,
             (*it).m_sessionId, *((*it).m_publicationLimit), *((*it).m_buffers));
 
         (*it).m_publication = std::weak_ptr<Publication>(pub);
@@ -74,19 +74,19 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t corre
     return pub;
 }
 
-void ClientConductor::releasePublication(std::int64_t correlationId)
+void ClientConductor::releasePublication(std::int64_t registrationId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn &entry)
         {
-            return (correlationId == entry.m_correlationId);
+            return (registrationId == entry.m_registrationId);
         });
 
     if (it != m_publications.end())
     {
-        m_driverProxy.removePublication(correlationId);
+        m_driverProxy.removePublication(registrationId);
         m_publications.erase(it);
     }
 }
@@ -94,64 +94,52 @@ void ClientConductor::releasePublication(std::int64_t correlationId)
 std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
-    std::int64_t id;
+    std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
-    std::vector<SubscriptionStateDefn>::const_iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
-        [&](SubscriptionStateDefn &entry)
-        {
-            return (streamId == entry.m_streamId && channel == entry.m_channel);
-        });
+    m_subscriptions.push_back(SubscriptionStateDefn(channel, registrationId, streamId));
 
-
-    if (it == m_subscriptions.end())
-    {
-        std::int64_t correlationId = m_driverProxy.addSubscription(channel, streamId);
-
-        m_subscriptions.push_back(SubscriptionStateDefn(channel, correlationId, streamId));
-        id = correlationId;
-    }
-    else
-    {
-        id = (*it).m_correlationId;
-    }
-
-    return id;
+    return registrationId;
 }
 
-std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t correlationId)
+std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t registrationId)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
         {
-            return (correlationId == entry.m_correlationId);
+            return (registrationId == entry.m_registrationId);
         });
 
-    if (it == m_subscriptions.end())
+    if (it != m_subscriptions.end() && (*it).m_registered)
     {
-        return std::shared_ptr<Subscription>();
+        std::shared_ptr<Subscription> sub = (*it).m_subscription;
+
+        if (sub == nullptr)
+        {
+            sub = std::make_shared<Subscription>(*this, (*it).m_registrationId, (*it).m_channel, (*it).m_streamId);
+
+            (*it).m_subscription = sub;
+        }
+        return sub;
     }
 
-    // TODO: construct initial Subscription if it has been acked by driver
-
-    return (*it).m_subscription.lock();
+    return std::shared_ptr<Subscription>();
 }
 
-void ClientConductor::releaseSubscription(std::int64_t correlationId)
+void ClientConductor::releaseSubscription(std::int64_t registrationId)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
         {
-            return (correlationId == entry.m_correlationId);
+            return (registrationId == entry.m_registrationId);
         });
 
     if (it != m_subscriptions.end())
     {
-        // TODO: send command to driver?
-        m_subscriptions.erase(it);
+        (*it).m_removeCorrelationId = m_driverProxy.removePublication((*it).m_registrationId);
     }
 }
 
@@ -160,14 +148,14 @@ void ClientConductor::onNewPublication(
     std::int32_t sessionId,
     std::int32_t positionLimitCounterId,
     const std::string &logFileName,
-    std::int64_t correlationId)
+    std::int64_t registrationId)
 {
     std::lock_guard<std::mutex> lock(m_publicationsLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn &entry)
         {
-            return (correlationId == entry.m_correlationId);
+            return (registrationId == entry.m_registrationId);
         });
 
     if (it != m_publications.end())
@@ -175,8 +163,36 @@ void ClientConductor::onNewPublication(
         (*it).m_publicationLimit = std::make_shared<UnsafeBufferPosition>(m_counterValuesBuffer, positionLimitCounterId);
         (*it).m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
 
-        m_onNewPublicationHandler((*it).m_channel, streamId, sessionId, correlationId);
+        m_onNewPublicationHandler((*it).m_channel, streamId, sessionId, registrationId);
     }
+}
+
+void ClientConductor::onOperationSuccess(std::int64_t correlationId)
+{
+    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+
+    std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn &entry)
+        {
+            return (correlationId == entry.m_registrationId || correlationId == entry.m_removeCorrelationId);
+        });
+
+    if (it != m_subscriptions.end())
+    {
+        if (correlationId == (*it).m_registrationId)
+        {
+            (*it).m_registered = true;
+            m_onNewSubscpriptionHandler((*it).m_channel, (*it).m_streamId, correlationId);
+        }
+        else if (correlationId == (*it).m_removeCorrelationId)
+        {
+            // TODO: inform API of close
+            m_subscriptions.erase(it);
+        }
+        return;
+    }
+
+    // TODO: do same for publications for close
 }
 
 void ClientConductor::onNewConnection(
@@ -195,7 +211,7 @@ void ClientConductor::onNewConnection(
         {
             if (streamId == entry.m_streamId)
             {
-                std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
+                std::shared_ptr<Subscription> subscription = entry.m_subscription;
 
                 if (subscription != nullptr &&
                     !(subscription->isConnected(sessionId)))
@@ -204,13 +220,37 @@ void ClientConductor::onNewConnection(
                     {
                         if (subscription->registrationId() == subscriberPositions[i].registrationId)
                         {
-                            // TODO: construct connection and logbuffers. Keep logbuffer separately for deletion
+                            std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(logFilename.c_str());
+
+                            UnsafeBufferPosition subscriberPosition(
+                                m_counterValuesBuffer, subscriberPositions[i].indicatorId);
+
+                            Connection connection(
+                                sessionId, joiningPosition, correlationId, subscriberPosition, *logBuffers);
+
+                            Connection* oldArray = subscription->addConnection(connection);
+
+                            if (nullptr != oldArray)
+                            {
+                                // TODO: linger oldArray
+                            }
+
+                            m_logBuffers.push_back(LogBuffersStateDefn(correlationId, logBuffers));
                             break;
                         }
                     }
                 }
             }
         });
+}
+
+void ClientConductor::onInactiveConnection(
+    std::int32_t streamId,
+    std::int32_t sessionId,
+    std::int64_t position,
+    std::int64_t correlationId)
+{
+    // TODO:
 }
 
 }

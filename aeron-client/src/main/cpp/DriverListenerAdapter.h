@@ -76,12 +76,18 @@ public:
                     {
                         const CorrelatedMessageFlyweight correlatedMessage(buffer, offset);
 
+                        m_driverListener.onOperationSuccess(correlatedMessage.correlationId());
                     };
 
                     case ControlProtocolEvents::ON_INACTIVE_CONNECTION:
                     {
                         const ConnectionMessageFlyweight connectionMessage(buffer, offset);
 
+                        m_driverListener.onInactiveConnection(
+                            connectionMessage.streamId(),
+                            connectionMessage.sessionId(),
+                            connectionMessage.position(),
+                            connectionMessage.correlationId());
                     };
 
                     case ControlProtocolEvents::ON_ERROR:

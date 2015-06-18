@@ -34,9 +34,23 @@ public:
     {
     }
 
+    UnsafeBufferPosition() :
+        Position(*this),
+        m_id(-1),
+        m_offset(0)
+    {
+    }
+
+    UnsafeBufferPosition& operator=(UnsafeBufferPosition& position) = default;
+
     inline std::int32_t implId()
     {
         return m_id;
+    }
+
+    inline std::int64_t implGet()
+    {
+        return m_buffer.getInt64(m_offset);
     }
 
     inline std::int64_t implGetVolatile()
@@ -49,12 +63,17 @@ public:
         m_buffer.putInt64(m_offset, value);
     }
 
+    inline void implSetOrdered(std::int64_t value)
+    {
+        m_buffer.putInt64Ordered(m_offset, value);
+    }
+
     inline void implClose()
     {
     }
 
 private:
-    AtomicBuffer& m_buffer;
+    AtomicBuffer m_buffer;
     std::int32_t m_id;
     std::int32_t m_offset;
 };

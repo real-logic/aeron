@@ -15,7 +15,6 @@
 #
 
 SET(SOURCE
-    Connection.cpp
     Publication.cpp
     Subscription.cpp
     ClientConductor.cpp

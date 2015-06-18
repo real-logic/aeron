@@ -66,17 +66,6 @@ protected:
     MockDataHandler m_handler;
 };
 
-TEST_F(TermReaderTest, shouldPackPaddingAndOffsetIntoResultingStatus)
-{
-    const std::int32_t offset = 77;
-    const int fragmentsRead = 999;
-
-    const std::uint64_t readOutcome = TermReader::readOutcome(offset, fragmentsRead);
-
-    EXPECT_EQ(TermReader::offset(readOutcome), offset);
-    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), fragmentsRead);
-}
-
 TEST_F(TermReaderTest, shouldReadFirstMessage)
 {
     const util::index_t msgLength = 1;
@@ -101,14 +90,14 @@ TEST_F(TermReaderTest, shouldReadFirstMessage)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-    const std::uint64_t readOutcome = TermReader::read(
+    const TermReader::ReadOutcome readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
             m_handler.onData(buffer, offset, length, header);
         }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(TermReader::offset(readOutcome), alignedFrameLength);
-    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 1);
+    EXPECT_EQ(readOutcome.offset, alignedFrameLength);
+    EXPECT_EQ(readOutcome.fragmentsRead, 1);
 }
 
 TEST_F(TermReaderTest, shouldNotReadPastTail)
@@ -125,14 +114,14 @@ TEST_F(TermReaderTest, shouldNotReadPastTail)
     EXPECT_CALL(m_handler, onData(testing::Ref(m_log), DataFrameHeader::LENGTH, testing::_, testing::_))
         .Times(0);
 
-    const std::uint64_t readOutcome = TermReader::read(
+    const TermReader::ReadOutcome readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
             m_handler.onData(buffer, offset, length, header);
         }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(TermReader::offset(readOutcome), termOffset);
-    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 0);
+    EXPECT_EQ(readOutcome.offset, termOffset);
+    EXPECT_EQ(readOutcome.fragmentsRead, 0);
 }
 
 TEST_F(TermReaderTest, shouldReadOneLimitedMessage)
@@ -155,14 +144,14 @@ TEST_F(TermReaderTest, shouldReadOneLimitedMessage)
         .Times(1)
         .InSequence(sequence);
 
-    const std::uint64_t readOutcome = TermReader::read(
+    const TermReader::ReadOutcome readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
             m_handler.onData(buffer, offset, length, header);
         }, 1, m_fragmentHeader);
 
-    EXPECT_EQ(TermReader::offset(readOutcome), alignedFrameLength);
-    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 1);
+    EXPECT_EQ(readOutcome.offset, alignedFrameLength);
+    EXPECT_EQ(readOutcome.fragmentsRead, 1);
 }
 
 TEST_F(TermReaderTest, shouldReadMultipleMessages)
@@ -200,14 +189,14 @@ TEST_F(TermReaderTest, shouldReadMultipleMessages)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-    const std::uint64_t readOutcome = TermReader::read(
+    const TermReader::ReadOutcome readOutcome = TermReader::read(
         m_log, termOffset, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
             m_handler.onData(buffer, offset, length, header);
         }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(TermReader::offset(readOutcome), alignedFrameLength * 2);
-    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 2);
+    EXPECT_EQ(readOutcome.offset, alignedFrameLength * 2);
+    EXPECT_EQ(readOutcome.fragmentsRead, 2);
 }
 
 TEST_F(TermReaderTest, shouldReadLastMessage)
@@ -230,14 +219,14 @@ TEST_F(TermReaderTest, shouldReadLastMessage)
         .Times(1)
         .InSequence(sequence);
 
-    const std::uint64_t readOutcome = TermReader::read(
+    const TermReader::ReadOutcome readOutcome = TermReader::read(
         m_log, startOfMessage, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
             m_handler.onData(buffer, offset, length, header);
         }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(TermReader::offset(readOutcome), TERM_BUFFER_CAPACITY);
-    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 1);
+    EXPECT_EQ(readOutcome.offset, TERM_BUFFER_CAPACITY);
+    EXPECT_EQ(readOutcome.fragmentsRead, 1);
 }
 
 TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
@@ -259,12 +248,12 @@ TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
     EXPECT_CALL(m_handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(0);
 
-    const std::uint64_t readOutcome = TermReader::read(
+    const TermReader::ReadOutcome readOutcome = TermReader::read(
         m_log, startOfMessage, [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
             m_handler.onData(buffer, offset, length, header);
         }, INT_MAX, m_fragmentHeader);
 
-    EXPECT_EQ(TermReader::offset(readOutcome), TERM_BUFFER_CAPACITY);
-    EXPECT_EQ(TermReader::fragmentsRead(readOutcome), 0);
+    EXPECT_EQ(readOutcome.offset, TERM_BUFFER_CAPACITY);
+    EXPECT_EQ(readOutcome.fragmentsRead, 0);
 }

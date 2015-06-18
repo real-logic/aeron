@@ -45,6 +45,10 @@ public:
     {
     }
 
+    AtomicBuffer(const AtomicBuffer&) = default;
+    AtomicBuffer(AtomicBuffer&&) = default;
+    AtomicBuffer& operator=(AtomicBuffer&) = default;
+
     virtual ~AtomicBuffer()
     {
         // this class does not own the memory. It simply overlays it.

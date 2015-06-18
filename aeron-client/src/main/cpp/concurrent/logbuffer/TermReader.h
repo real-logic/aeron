@@ -31,12 +31,17 @@ typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index
 
 namespace TermReader {
 
-inline std::uint64_t readOutcome(std::int32_t offset, int fragmentsRead)
+struct ReadOutcome
 {
-    return (((std::uint64_t)offset << 32) | (std::uint64_t)fragmentsRead);
-}
+    std::int32_t offset;
+    int fragmentsRead;
 
-inline std::uint64_t read(
+    ReadOutcome(std::int32_t offset, int fragmentsRead) : offset(offset), fragmentsRead(fragmentsRead)
+    {
+    }
+};
+
+inline ReadOutcome read(
     AtomicBuffer& termBuffer,
     std::int32_t termOffset,
     const fragment_handler_t & handler,
@@ -68,17 +73,7 @@ inline std::uint64_t read(
     }
     while (fragmentsRead < fragmentsLimit && termOffset < capacity);
 
-    return readOutcome(termOffset, fragmentsRead);
-}
-
-inline int fragmentsRead(std::uint64_t readOutcome)
-{
-    return (int)(readOutcome & 0xFFFFFFFF);
-}
-
-inline std::int32_t offset(std::uint64_t readOutcome)
-{
-    return (std::int32_t)((std::uint64_t)readOutcome >> 32);
+    return ReadOutcome(termOffset, fragmentsRead);
 }
 
 }

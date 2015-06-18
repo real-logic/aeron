@@ -23,7 +23,13 @@ template <class X>
 class ReadablePosition
 {
 public:
-    inline std::int32_t id()
+    ReadablePosition<X>& operator=(ReadablePosition<X>& position)
+    {
+        m_impl = position.m_impl;
+        return *this;
+    }
+
+    inline std::int32_t id() const
     {
         return m_impl.implId();
     }

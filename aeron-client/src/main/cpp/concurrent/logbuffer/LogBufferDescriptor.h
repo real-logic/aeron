@@ -183,6 +183,11 @@ inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTer
     return (activeTermId - initialTermId) % PARTITION_COUNT;
 }
 
+inline static int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift)
+{
+    return (int)(((std::uint64_t)position >> positionBitsToShift) % PARTITION_COUNT);
+}
+
 inline static std::int64_t computePosition(
     std::int32_t activeTermId, std::int32_t termOffset, std::int32_t positionBitsToShift, std::int32_t initialTermId)
 {

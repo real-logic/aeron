@@ -33,6 +33,8 @@ public:
         m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(capacity);
     }
 
+    Header(const Header& header) = default;
+
     inline std::int32_t initialTermId() const
     {
         return m_initialTermId;

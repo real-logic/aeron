@@ -17,6 +17,8 @@
 #ifndef AERON_DATAFRAMEHEADER_H
 #define AERON_DATAFRAMEHEADER_H
 
+#include <stddef.h>
+
 namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace DataFrameHeader {

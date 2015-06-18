@@ -20,6 +20,8 @@
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <command/ControlProtocolEvents.h>
 #include <command/PublicationBuffersReadyFlyweight.h>
+#include <command/ConnectionBuffersReadyFlyweight.h>
+#include <command/ConnectionMessageFlyweight.h>
 
 namespace aeron {
 
@@ -58,11 +60,27 @@ public:
 
                     case ControlProtocolEvents::ON_CONNECTION_READY:
                     {
+                        const ConnectionBuffersReadyFlyweight connectionReady(buffer, offset);
 
+                        m_driverListener.onNewConnection(
+                            connectionReady.streamId(),
+                            connectionReady.sessionId(),
+                            connectionReady.joiningPosition(),
+                            connectionReady.logFileName(),
+                            connectionReady.subscriberPositionCount(),
+                            connectionReady.subscriberPositions(),
+                            connectionReady.correlationId());
                     };
 
                     case ControlProtocolEvents::ON_OPERATION_SUCCESS:
                     {
+                        const CorrelatedMessageFlyweight correlatedMessage(buffer, offset);
+
+                    };
+
+                    case ControlProtocolEvents::ON_INACTIVE_CONNECTION:
+                    {
+                        const ConnectionMessageFlyweight connectionMessage(buffer, offset);
 
                     };
 

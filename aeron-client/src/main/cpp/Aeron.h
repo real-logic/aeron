@@ -61,9 +61,9 @@ public:
         return m_conductor.findPublication(id);
     }
 
-    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::fragment_handler_t & handler)
+    inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId)
     {
-        return m_conductor.addSubscription(channel, streamId, handler);
+        return m_conductor.addSubscription(channel, streamId);
     }
 
     inline std::shared_ptr<Subscription> findSubscription(std::int64_t id)

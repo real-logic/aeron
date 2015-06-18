@@ -37,7 +37,7 @@ SET(HEADERS
     DriverListenerAdapter.h
     LogBuffers.h
     command/ConnectionMessageFlyweight.h
-    command/ConnectionReadyFlyweight.h
+    command/ConnectionBuffersReadyFlyweight.h
     command/ControlProtocolEvents.h
     command/CorrelatedMessageFlyweight.h
     command/Flyweight.h

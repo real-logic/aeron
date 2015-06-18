@@ -30,6 +30,7 @@
 
 namespace aeron {
 
+using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
 using namespace aeron::concurrent;
 
@@ -97,7 +98,7 @@ public:
     std::shared_ptr<Publication> findPublication(std::int64_t correlationId);
     void releasePublication(std::int64_t correlationId);
 
-    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId, logbuffer::fragment_handler_t & handler);
+    std::int64_t addSubscription(const std::string& channel, std::int32_t streamId);
     std::shared_ptr<Subscription> findSubscription(std::int64_t correlationId);
     void releaseSubscription(std::int64_t correlationId);
 
@@ -106,6 +107,15 @@ public:
         std::int32_t sessionId,
         std::int32_t positionLimitCounterId,
         const std::string& logFileName,
+        std::int64_t correlationId);
+
+    void onNewConnection(
+        std::int32_t streamId,
+        std::int32_t sessionId,
+        std::int64_t joiningPosition,
+        const std::string& logFilename,
+        std::int32_t subscriberPositionCount,
+        const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
         std::int64_t correlationId);
 
 private:
@@ -119,7 +129,8 @@ private:
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<Publication> m_publication;
 
-        PublicationStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, std::int32_t sessionId) :
+        PublicationStateDefn(
+            const std::string& channel, std::int64_t correlationId, std::int32_t streamId, std::int32_t sessionId) :
             m_channel(channel), m_correlationId(correlationId), m_streamId(streamId), m_sessionId(sessionId)
         {
         }
@@ -130,11 +141,11 @@ private:
         std::string m_channel;
         std::int64_t m_correlationId;
         std::int32_t m_streamId;
-        logbuffer::fragment_handler_t m_handler;
         std::weak_ptr<Subscription> m_subscription;
 
-        SubscriptionStateDefn(const std::string& channel, std::int64_t correlationId, std::int32_t streamId, logbuffer::fragment_handler_t & handler) :
-            m_channel(channel), m_correlationId(correlationId), m_streamId(streamId), m_handler(handler)
+        SubscriptionStateDefn(
+            const std::string& channel, std::int64_t correlationId, std::int32_t streamId) :
+            m_channel(channel), m_correlationId(correlationId), m_streamId(streamId)
         {
         }
     };

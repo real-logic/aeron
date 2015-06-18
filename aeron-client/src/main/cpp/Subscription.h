@@ -81,6 +81,23 @@ public:
         return fragmentsRead;
     }
 
+    bool isConnected(std::int32_t sessionId)
+    {
+        Connection* connections = m_connections.load();
+        bool isConnected = false;
+
+        for (int i = 0; i < m_connectionsLength; i++)
+        {
+            if (connections[i].sessionId() == sessionId)
+            {
+                isConnected = true;
+                break;
+            }
+        }
+
+        return isConnected;
+    }
+
     Connection* addConnection(Connection& connection)
     {
         Connection* oldArray = m_connections.load();

@@ -70,7 +70,7 @@ namespace aeron { namespace command {
 
 #pragma pack(push)
 #pragma pack(4)
-struct ConnectionReadyDefn
+struct ConnectionBuffersReadyDefn
 {
     struct SubscriberPosition
     {
@@ -91,13 +91,13 @@ struct ConnectionReadyDefn
 };
 #pragma pack(pop)
 
-class ConnectionReadyFlyweight : public Flyweight<ConnectionReadyDefn>
+class ConnectionBuffersReadyFlyweight : public Flyweight<ConnectionBuffersReadyDefn>
 {
 public:
-    typedef ConnectionReadyFlyweight this_t;
+    typedef ConnectionBuffersReadyFlyweight this_t;
 
-    inline ConnectionReadyFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : Flyweight<ConnectionReadyDefn>(buffer, offset)
+    inline ConnectionBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
+        : Flyweight<ConnectionBuffersReadyDefn>(buffer, offset)
     {
     }
 
@@ -158,12 +158,12 @@ public:
 
     inline std::string logFileName() const
     {
-        return stringGet(offsetof(ConnectionReadyDefn, logFile));
+        return stringGet(offsetof(ConnectionBuffersReadyDefn, logFile));
     }
 
     inline this_t& logFileName(const std::string& value)
     {
-        stringPut(offsetof(ConnectionReadyDefn, logFile), value);
+        stringPut(offsetof(ConnectionBuffersReadyDefn, logFile), value);
         return *this;
     }
 
@@ -178,15 +178,20 @@ public:
         return *this;
     }
 
-    inline this_t& subscriberPosition(std::int32_t index, const ConnectionReadyDefn::SubscriberPosition& value)
+    inline this_t& subscriberPosition(std::int32_t index, const ConnectionBuffersReadyDefn::SubscriberPosition& value)
     {
-        overlayStruct<ConnectionReadyDefn::SubscriberPosition>(subscriberPositionOffset(index)) = value;
+        overlayStruct<ConnectionBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index)) = value;
         return *this;
     }
 
-    inline const ConnectionReadyDefn::SubscriberPosition subscriberPosition(std::int32_t index)
+    inline const ConnectionBuffersReadyDefn::SubscriberPosition subscriberPosition(std::int32_t index) const
     {
-        return overlayStruct<ConnectionReadyDefn::SubscriberPosition>(subscriberPositionOffset(index));
+        return overlayStruct<ConnectionBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index));
+    }
+
+    inline const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions() const
+    {
+        return &overlayStruct<ConnectionBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(0));
     }
 
     inline std::int32_t length()
@@ -198,7 +203,7 @@ private:
 
     inline util::index_t sourceIdentityOffset() const
     {
-        return offsetof(ConnectionReadyDefn, logFile.logFileData) + m_struct.logFile.logFileLength;
+        return offsetof(ConnectionBuffersReadyDefn, logFile.logFileData) + m_struct.logFile.logFileLength;
     }
 
     inline util::index_t subscriberPositionOffset(int index) const
@@ -206,7 +211,7 @@ private:
         const util::index_t offset = sourceIdentityOffset();
         const util::index_t startOfPositions = offset + stringGetLength(offset) + (util::index_t)sizeof(std::int32_t);
 
-        return startOfPositions + (index * (util::index_t)sizeof(ConnectionReadyDefn::SubscriberPosition));
+        return startOfPositions + (index * (util::index_t)sizeof(ConnectionBuffersReadyDefn::SubscriberPosition));
     }
 };
 

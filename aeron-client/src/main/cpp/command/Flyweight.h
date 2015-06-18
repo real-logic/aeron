@@ -65,6 +65,12 @@ protected:
         return m_buffer.overlayStruct<struct_t2>(m_baseOffset + offset);
     }
 
+    template <typename struct_t2>
+    inline const struct_t2& overlayStruct (util::index_t offset) const
+    {
+        return m_buffer.overlayStruct<struct_t2>(m_baseOffset + offset);
+    }
+
 private:
     concurrent::AtomicBuffer m_buffer;
     util::index_t m_baseOffset;

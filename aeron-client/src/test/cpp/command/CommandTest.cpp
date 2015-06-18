@@ -20,7 +20,7 @@
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
 #include <command/ConnectionMessageFlyweight.h>
-#include <command/ConnectionReadyFlyweight.h>
+#include <command/ConnectionBuffersReadyFlyweight.h>
 #include <command/RemoveMessageFlyweight.h>
 #include <command/SubscriptionMessageFlyweight.h>
 #include <command/PublicationMessageFlyweight.h>
@@ -50,7 +50,7 @@ TEST (commandTests, testInstantiateFlyweights)
     });
 
     ASSERT_NO_THROW({
-        ConnectionReadyFlyweight cmd(ab, BASEOFFSET);
+        ConnectionBuffersReadyFlyweight cmd(ab, BASEOFFSET);
     });
 
     ASSERT_NO_THROW({
@@ -140,13 +140,13 @@ TEST (commandTests, testConnectionReadyFlyweight)
     std::string sourceInfoData = "sourceinfodata";
 
     ASSERT_NO_THROW({
-        ConnectionReadyFlyweight cmd(ab, BASEOFFSET);
+        ConnectionBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
         cmd.correlationId(-1).joiningPosition(64).streamId(0x01010101).sessionId(0x02020202).subscriberPositionCount(4);
         cmd.logFileName(logFileNameData).sourceIdentity(sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
-            cmd.subscriberPosition(n, ConnectionReadyDefn::SubscriberPosition {n, n});
+            cmd.subscriberPosition(n, ConnectionBuffersReadyDefn::SubscriberPosition {n, n});
         }
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
@@ -164,9 +164,9 @@ TEST (commandTests, testConnectionReadyFlyweight)
         for (int n = 0; n < 4; n++)
         {
             ASSERT_EQ(
-                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ConnectionReadyDefn::SubscriberPosition))), n);
+                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition))), n);
             ASSERT_EQ(
-                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ConnectionReadyDefn::SubscriberPosition)) + 4), n);
+                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition)) + 4), n);
         }
 
         ASSERT_EQ(cmd.correlationId(), -1);
@@ -178,16 +178,23 @@ TEST (commandTests, testConnectionReadyFlyweight)
         ASSERT_EQ(cmd.sourceIdentity(), sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
-            const ConnectionReadyDefn::SubscriberPosition subscriberPosition = cmd.subscriberPosition(n);
+            const ConnectionBuffersReadyDefn::SubscriberPosition subscriberPosition = cmd.subscriberPosition(n);
 
             ASSERT_EQ(subscriberPosition.indicatorId, n);
             ASSERT_EQ(subscriberPosition.registrationId, n);
         }
 
+        const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions = cmd.subscriberPositions();
+        for (int n = 0; n < 4; n++)
+        {
+            ASSERT_EQ(subscriberPositions[n].indicatorId, n);
+            ASSERT_EQ(subscriberPositions[n].registrationId, n);
+        }
+
         ASSERT_EQ(
             cmd.length(),
-            offsetof(ConnectionReadyDefn, logFile.logFileData) + logFileNameData.length() +
+            offsetof(ConnectionBuffersReadyDefn, logFile.logFileData) + logFileNameData.length() +
                 sizeof(std::int32_t) + sourceInfoData.length() +
-                (4 * sizeof(ConnectionReadyDefn::SubscriberPosition)));
+                (4 * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition)));
     });
 }

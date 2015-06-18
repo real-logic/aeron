@@ -91,8 +91,7 @@ void ClientConductor::releasePublication(std::int64_t correlationId)
     }
 }
 
-std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId,
-    logbuffer::fragment_handler_t &handler)
+std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId)
 {
     std::lock_guard<std::mutex> lock(m_subscriptionsLock);
     std::int64_t id;
@@ -108,7 +107,7 @@ std::int64_t ClientConductor::addSubscription(const std::string &channel, std::i
     {
         std::int64_t correlationId = m_driverProxy.addSubscription(channel, streamId);
 
-        m_subscriptions.push_back(SubscriptionStateDefn(channel, correlationId, streamId, handler));
+        m_subscriptions.push_back(SubscriptionStateDefn(channel, correlationId, streamId));
         id = correlationId;
     }
     else
@@ -178,6 +177,40 @@ void ClientConductor::onNewPublication(
 
         m_onNewPublicationHandler((*it).m_channel, streamId, sessionId, correlationId);
     }
+}
+
+void ClientConductor::onNewConnection(
+    std::int32_t streamId,
+    std::int32_t sessionId,
+    std::int64_t joiningPosition,
+    const std::string& logFilename,
+    std::int32_t subscriberPositionCount,
+    const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
+    std::int64_t correlationId)
+{
+    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+
+    std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn &entry)
+        {
+            if (streamId == entry.m_streamId)
+            {
+                std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
+
+                if (subscription != nullptr &&
+                    !(subscription->isConnected(sessionId)))
+                {
+                    for (int i = 0; i < subscriberPositionCount; i++)
+                    {
+                        if (subscription->registrationId() == subscriberPositions[i].registrationId)
+                        {
+                            // TODO: construct connection and logbuffers. Keep logbuffer separately for deletion
+                            break;
+                        }
+                    }
+                }
+            }
+        });
 }
 
 }

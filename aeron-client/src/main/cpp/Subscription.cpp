@@ -35,7 +35,7 @@ Subscription::~Subscription()
 {
     m_conductor.releaseSubscription(m_registrationId);
 
-    // TODO: clean out connections and have client conductor linger them if necessary (could be in use by others)
+    // TODO: clean out connections and have client conductor linger them
 }
 
 }

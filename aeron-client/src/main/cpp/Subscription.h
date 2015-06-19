@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <iostream>
+#include <atomic>
 #include <concurrent/logbuffer/TermReader.h>
 #include "Connection.h"
 
@@ -160,7 +161,7 @@ private:
     std::int32_t m_streamId;
 
     std::atomic<Connection*> m_connections;
-    std::atomic<std::uint32_t> m_connectionsLength;
+    std::atomic<int> m_connectionsLength;
 };
 
 }

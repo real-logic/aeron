@@ -54,8 +54,8 @@ public:
     inline int poll(const fragment_handler_t fragmentHandler, int fragmentLimit)
     {
         int fragmentsRead = 0;
-        std::uint32_t length = m_connectionsLength.load();
-        Connection* connections = m_connections.load();
+        int length = std::atomic_load(&m_connectionsLength);
+        Connection* connections = std::atomic_load(&m_connections);
 
         if (length > 0)
         {
@@ -84,10 +84,10 @@ public:
 
     bool isConnected(std::int32_t sessionId)
     {
-        Connection* connections = m_connections.load();
+        Connection* connections = std::atomic_load(&m_connections);
         bool isConnected = false;
 
-        for (int i = 0; i < m_connectionsLength; i++)
+        for (int i = 0, length = std::atomic_load(&m_connectionsLength); i < length; i++)
         {
             if (connections[i].sessionId() == sessionId)
             {
@@ -101,30 +101,31 @@ public:
 
     Connection* addConnection(Connection& connection)
     {
-        Connection* oldArray = m_connections.load();
-        Connection* newArray = new Connection[m_connectionsLength+1];
+        Connection* oldArray = std::atomic_load(&m_connections);
+        int length = std::atomic_load(&m_connectionsLength);
+        Connection* newArray = new Connection[length + 1];
 
-        for (int i = 0; i < m_connectionsLength; i++)
+        for (int i = 0; i < length; i++)
         {
             newArray[i] = std::move(oldArray[i]);
         }
 
-        newArray[m_connectionsLength] = std::move(connection);
+        newArray[length] = std::move(connection);
 
-        m_connections.store(newArray);
-        m_connectionsLength++;
+        std::atomic_store(&m_connections, newArray);
+        std::atomic_store(&m_connectionsLength, length + 1);
 
-        // TODO: oldArray to linger and be deleted by caller (aka client conductor)
+        // oldArray to linger and be deleted by caller (aka client conductor)
         return oldArray;
     }
 
     Connection* removeConnection(std::int64_t correlationId)
     {
-        Connection* oldArray = m_connections.load();
+        Connection* oldArray = std::atomic_load(&m_connections);
+        int length = std::atomic_load(&m_connectionsLength);
         int index = -1;
-        Connection* newArray = nullptr;
 
-        for (int i = 0; i < m_connectionsLength; i++)
+        for (int i = 0; i < length; i++)
         {
             if (oldArray[i].correlationId() == correlationId)
             {
@@ -135,9 +136,9 @@ public:
 
         if (-1 != index)
         {
-            newArray = new Connection[m_connectionsLength - 1];
+            Connection* newArray = new Connection[length - 1];
 
-            for (int i = 0, j = 0; i < m_connectionsLength; i++)
+            for (int i = 0, j = 0; i < length; i++)
             {
                 if (i != index)
                 {
@@ -145,11 +146,11 @@ public:
                 }
             }
 
-            m_connections.store(newArray);
-            m_connectionsLength--;
+            std::atomic_store(&m_connections, newArray);
+            std::atomic_store(&m_connectionsLength, length - 1);
         }
 
-        // TODO: oldArray to linger and be deleted by caller (aka client conductor)
+        // oldArray to linger and be deleted by caller (aka client conductor)
         return (-1 != index) ? oldArray : nullptr;
     }
 

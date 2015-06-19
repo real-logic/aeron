@@ -20,7 +20,7 @@ namespace aeron {
 
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId, std::int32_t sessionId)
 {
-    std::lock_guard<std::mutex> lock(m_publicationsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
     std::int64_t id;
 
     std::vector<PublicationStateDefn>::const_iterator it = std::find_if(m_publications.begin(), m_publications.end(),
@@ -46,7 +46,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
 
 std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_publicationsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn &entry)
@@ -76,7 +76,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
 
 void ClientConductor::releasePublication(std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_publicationsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn &entry)
@@ -93,7 +93,7 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
 
 std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId)
 {
-    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
     m_subscriptions.push_back(SubscriptionStateDefn(channel, registrationId, streamId));
@@ -103,7 +103,7 @@ std::int64_t ClientConductor::addSubscription(const std::string &channel, std::i
 
 std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
@@ -129,7 +129,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
 
 void ClientConductor::releaseSubscription(std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
@@ -150,7 +150,7 @@ void ClientConductor::onNewPublication(
     const std::string &logFileName,
     std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_publicationsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn &entry)
@@ -169,7 +169,7 @@ void ClientConductor::onNewPublication(
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
-    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
@@ -204,7 +204,7 @@ void ClientConductor::onNewConnection(
     const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
     std::int64_t correlationId)
 {
-    std::lock_guard<std::mutex> lock(m_subscriptionsLock);
+    std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
@@ -250,7 +250,40 @@ void ClientConductor::onInactiveConnection(
     std::int64_t position,
     std::int64_t correlationId)
 {
-    // TODO:
+    std::lock_guard<std::mutex> lock(m_adminLock);
+
+    std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn &entry)
+        {
+            if (streamId == entry.m_streamId)
+            {
+                std::shared_ptr<Subscription> subscription = entry.m_subscription;
+
+                Connection* oldArray = subscription->removeConnection(correlationId);
+
+                if (nullptr != oldArray)
+                {
+                    // TODO: linger oldArray
+
+                    // TODO: inform of onInactiveConnection
+                }
+            }
+        });
+
+    // erase-remove idiom with modification to grab out LogBuffers before removal
+    std::vector<LogBuffersStateDefn>::iterator it = std::remove_if(m_logBuffers.begin(), m_logBuffers.end(),
+        [&](LogBuffersStateDefn& entry)
+        {
+            if (correlationId == entry.m_correlationId)
+            {
+                // TODO: linger entry.m_logBuffers
+                return true;
+            }
+
+            return false;
+        });
+
+    m_logBuffers.erase(it, m_logBuffers.end());
 }
 
 }

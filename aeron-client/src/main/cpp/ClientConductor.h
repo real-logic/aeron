@@ -171,8 +171,7 @@ private:
         }
     };
 
-    std::mutex m_publicationsLock;
-    std::mutex m_subscriptionsLock;
+    std::mutex m_adminLock;
 
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;

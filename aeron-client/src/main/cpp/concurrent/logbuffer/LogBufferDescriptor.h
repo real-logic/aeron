@@ -60,7 +60,7 @@ static const int PARTITION_COUNT = 3;
 
 static const util::index_t TERM_TAIL_COUNTER_OFFSET = (util::BitUtil::CACHE_LINE_LENGTH * 2);
 static const util::index_t TERM_STATUS_OFFSET = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 2;
-static const util::index_t TERM_META_DATA_LENGTH = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 4;
+static const util::index_t TERM_META_DATA_LENGTH = (util::BitUtil::CACHE_LINE_LENGTH * 2) * 3;
 
 static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
 

@@ -239,7 +239,7 @@ void ClientConductor::onNewConnection(
 
                             m_logBuffers.push_back(LogBuffersStateDefn(correlationId, logBuffers));
 
-                            // TODO: inform API of newConnection
+                            // TODO: inform API of onNewConnection
                             break;
                         }
                     }

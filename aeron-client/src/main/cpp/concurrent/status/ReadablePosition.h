@@ -23,33 +23,37 @@ template <class X>
 class ReadablePosition
 {
 public:
-    ReadablePosition<X>& operator=(ReadablePosition<X>& position)
+    ReadablePosition(X& impl) : m_impl(impl)
     {
-        m_impl = position.m_impl;
-        return *this;
+    }
+
+    inline void wrap(ReadablePosition<X>& position)
+    {
+        m_impl.wrap(position.m_impl);
     }
 
     inline std::int32_t id() const
     {
-        return m_impl.implId();
+        return m_impl.id();
+    }
+
+    inline std::int64_t get()
+    {
+        return m_impl.get();
     }
 
     inline std::int64_t getVolatile()
     {
-        return m_impl.implGetVolatile();
+        return m_impl.getVolatile();
     }
 
     inline void close()
     {
-        m_impl.implClose();
+        m_impl.close();
     }
 
 protected:
-    X& m_impl;
-
-    ReadablePosition(X& impl) : m_impl(impl)
-    {
-    }
+    X m_impl;
 };
 
 }}}

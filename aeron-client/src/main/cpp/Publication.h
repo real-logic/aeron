@@ -43,7 +43,7 @@ public:
         std::int64_t registrationId,
         std::int32_t streamId,
         std::int32_t sessionId,
-        ReadablePosition<UnsafeBufferPosition>& publicationLimit,
+        UnsafeBufferPosition& publicationLimit,
         LogBuffers& buffers);
 
     virtual ~Publication();
@@ -138,7 +138,7 @@ private:
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
-    ReadablePosition<UnsafeBufferPosition>& m_publicationLimit;
+    ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
 
     AtomicBuffer& m_logMetaDataBuffer;
     std::unique_ptr<TermAppender> m_appenders[3];

@@ -23,52 +23,62 @@
 
 namespace aeron { namespace concurrent { namespace status {
 
-class UnsafeBufferPosition : public Position<UnsafeBufferPosition>
+class UnsafeBufferPosition
 {
 public:
     UnsafeBufferPosition(AtomicBuffer& buffer, std::int32_t id) :
-        Position(*this),
         m_buffer(buffer),
         m_id(id),
         m_offset(CountersManager::counterOffset(id))
     {
     }
 
+    UnsafeBufferPosition(UnsafeBufferPosition& position)
+    {
+        m_buffer.wrap(position.m_buffer);
+        m_id = position.m_id;
+        m_offset = position.m_offset;
+    }
+
     UnsafeBufferPosition() :
-        Position(*this),
         m_id(-1),
         m_offset(0)
     {
     }
 
-    UnsafeBufferPosition& operator=(UnsafeBufferPosition& position) = default;
+    inline void wrap(UnsafeBufferPosition& position)
+    {
+        m_buffer.wrap(position.m_buffer);
+        m_id = position.m_id;
+        m_offset = position.m_offset;
+    }
 
-    inline std::int32_t implId()
+    inline std::int32_t id()
     {
         return m_id;
     }
 
-    inline std::int64_t implGet()
+    inline std::int64_t get()
     {
         return m_buffer.getInt64(m_offset);
     }
 
-    inline std::int64_t implGetVolatile()
+    inline std::int64_t getVolatile()
     {
         return m_buffer.getInt64Volatile(m_offset);
     }
 
-    inline void implSet(std::int64_t value)
+    inline void set(std::int64_t value)
     {
         m_buffer.putInt64(m_offset, value);
     }
 
-    inline void implSetOrdered(std::int64_t value)
+    inline void setOrdered(std::int64_t value)
     {
         m_buffer.putInt64Ordered(m_offset, value);
     }
 
-    inline void implClose()
+    inline void close()
     {
     }
 

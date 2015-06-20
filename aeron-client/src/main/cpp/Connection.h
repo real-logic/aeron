@@ -30,12 +30,14 @@ using namespace aeron::concurrent;
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
 
+static UnsafeBufferPosition NULL_POSITION;
+
 class Connection
 {
 public:
     Connection() :
         m_header(0, 0),
-        m_subscriberPosition(UnsafeBufferPosition())
+        m_subscriberPosition(NULL_POSITION)
     {
     }
 
@@ -43,7 +45,7 @@ public:
         std::int32_t sessionId,
         std::int64_t initialPosition,
         std::int64_t correlationId,
-        Position<UnsafeBufferPosition>& subscriberPosition,
+        UnsafeBufferPosition& subscriberPosition,
         LogBuffers& logBuffers) :
         m_header(
             LogBufferDescriptor::initialTermId(logBuffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
@@ -63,6 +65,9 @@ public:
         m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(capacity);
     }
 
+    Connection(Connection&) = delete;
+    Connection& operator=(Connection&) = delete;
+
     Connection& operator=(Connection&& connection)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
@@ -71,7 +76,7 @@ public:
         }
 
         m_header = connection.m_header;
-        m_subscriberPosition = connection.m_subscriberPosition;
+        m_subscriberPosition.wrap(connection.m_subscriberPosition);
         m_correlationId = connection.m_correlationId;
         m_sessionId = connection.m_sessionId;
         m_termLengthMask = connection.m_termLengthMask;
@@ -93,7 +98,7 @@ public:
         return m_correlationId;
     }
 
-    int poll(const fragment_handler_t fragmentHandler, int fragmentLimit)
+    int poll(const fragment_handler_t& fragmentHandler, int fragmentLimit)
     {
         const std::int64_t position = m_subscriberPosition.get();
         const std::int32_t termOffset = (std::int32_t)position & m_termLengthMask;

@@ -25,25 +25,18 @@ template <class X>
 class Position : public ReadablePosition<X>
 {
 public:
-
-    inline std::int64_t get()
+    Position(X& impl) : ReadablePosition<X>(impl)
     {
-        return ReadablePosition<X>::m_impl.implGet();
     }
 
     inline void set(std::int64_t value)
     {
-        ReadablePosition<X>::m_impl.implSet(value);
+        ReadablePosition<X>::m_impl.set(value);
     }
 
     inline void setOrdered(std::int64_t value)
     {
-        ReadablePosition<X>::m_impl.implSetOrdered(value);
-    }
-
-protected:
-    Position(X& impl) : ReadablePosition<X>(impl)
-    {
+        ReadablePosition<X>::m_impl.setOrdered(value);
     }
 };
 

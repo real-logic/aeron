@@ -133,7 +133,7 @@ private:
         std::int64_t m_registrationId;
         std::int32_t m_streamId;
         std::int32_t m_sessionId;
-        std::shared_ptr<UnsafeBufferPosition> m_publicationLimit;
+        std::int32_t m_positionLimitCounterId = -1;
         std::shared_ptr<LogBuffers> m_buffers;
         std::weak_ptr<Publication> m_publication;
 

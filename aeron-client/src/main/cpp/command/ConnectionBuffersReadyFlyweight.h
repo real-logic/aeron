@@ -72,12 +72,6 @@ namespace aeron { namespace command {
 #pragma pack(4)
 struct ConnectionBuffersReadyDefn
 {
-    struct SubscriberPosition
-    {
-        std::int32_t indicatorId;
-        std::int64_t registrationId;
-    };
-
     std::int64_t correlationId;
     std::int64_t joiningPosition;
     std::int32_t sessionId;
@@ -88,6 +82,12 @@ struct ConnectionBuffersReadyDefn
         std::int32_t logFileLength;
         std::int8_t logFileData[1];
     } logFile;
+
+    struct SubscriberPosition
+    {
+        std::int32_t indicatorId;
+        std::int64_t registrationId;
+    };
 };
 #pragma pack(pop)
 

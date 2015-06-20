@@ -25,7 +25,7 @@ Publication::Publication(
     std::int64_t registrationId,
     std::int32_t streamId,
     std::int32_t sessionId,
-    ReadablePosition<UnsafeBufferPosition>& publicationLimit,
+    UnsafeBufferPosition& publicationLimit,
     LogBuffers &buffers)
     :
     m_conductor(conductor),

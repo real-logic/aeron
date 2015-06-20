@@ -64,8 +64,10 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
     // construct Publication if we've heard from the driver and have the log buffers around
     if (!pub && ((*it).m_buffers))
     {
+        UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, (*it).m_positionLimitCounterId);
+
         pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_registrationId, (*it).m_streamId,
-            (*it).m_sessionId, *((*it).m_publicationLimit), *((*it).m_buffers));
+            (*it).m_sessionId, publicationLimit, *((*it).m_buffers));
 
         (*it).m_publication = std::weak_ptr<Publication>(pub);
         return pub;
@@ -94,6 +96,7 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
 std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId)
 {
     std::lock_guard<std::mutex> lock(m_adminLock);
+
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
     m_subscriptions.push_back(SubscriptionStateDefn(channel, registrationId, streamId));
@@ -160,7 +163,7 @@ void ClientConductor::onNewPublication(
 
     if (it != m_publications.end())
     {
-        (*it).m_publicationLimit = std::make_shared<UnsafeBufferPosition>(m_counterValuesBuffer, positionLimitCounterId);
+        (*it).m_positionLimitCounterId = positionLimitCounterId;
         (*it).m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
 
         m_onNewPublicationHandler((*it).m_channel, streamId, sessionId, registrationId);
@@ -222,8 +225,7 @@ void ClientConductor::onNewConnection(
                         {
                             std::shared_ptr<LogBuffers> logBuffers = std::make_shared<LogBuffers>(logFilename.c_str());
 
-                            UnsafeBufferPosition subscriberPosition(
-                                m_counterValuesBuffer, subscriberPositions[i].indicatorId);
+                            UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositions[i].indicatorId);
 
                             Connection connection(
                                 sessionId, joiningPosition, correlationId, subscriberPosition, *logBuffers);
@@ -236,6 +238,8 @@ void ClientConductor::onNewConnection(
                             }
 
                             m_logBuffers.push_back(LogBuffersStateDefn(correlationId, logBuffers));
+
+                            // TODO: inform API of newConnection
                             break;
                         }
                     }
@@ -270,6 +274,8 @@ void ClientConductor::onInactiveConnection(
             }
         });
 
+    // TODO: use this in the cleanup. Move out of the vector once lingered, keep in there until then.
+    // TODO: need to do a for_each here to set the state for cleanup, though.
     // erase-remove idiom with modification to grab out LogBuffers before removal
     std::vector<LogBuffersStateDefn>::iterator it = std::remove_if(m_logBuffers.begin(), m_logBuffers.end(),
         [&](LogBuffersStateDefn& entry)

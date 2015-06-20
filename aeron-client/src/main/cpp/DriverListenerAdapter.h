@@ -56,7 +56,8 @@ public:
                             publicationReady.positionLimitCounterId(),
                             publicationReady.logFileName(),
                             publicationReady.correlationId());
-                    };
+                    }
+                    break;
 
                     case ControlProtocolEvents::ON_CONNECTION_READY:
                     {
@@ -70,14 +71,16 @@ public:
                             connectionReady.subscriberPositionCount(),
                             connectionReady.subscriberPositions(),
                             connectionReady.correlationId());
-                    };
+                    }
+                    break;
 
                     case ControlProtocolEvents::ON_OPERATION_SUCCESS:
                     {
                         const CorrelatedMessageFlyweight correlatedMessage(buffer, offset);
 
                         m_driverListener.onOperationSuccess(correlatedMessage.correlationId());
-                    };
+                    }
+                    break;
 
                     case ControlProtocolEvents::ON_INACTIVE_CONNECTION:
                     {
@@ -88,12 +91,14 @@ public:
                             connectionMessage.sessionId(),
                             connectionMessage.position(),
                             connectionMessage.correlationId());
-                    };
+                    }
+                    break;
 
                     case ControlProtocolEvents::ON_ERROR:
                     {
 
-                    };
+                    }
+                    break;
 
                     default:
                         break;

@@ -119,7 +119,7 @@ public:
 
     inline static std::string tmpDir()
     {
-#if defined(_MSC_VER
+#if defined(_MSC_VER)
         static char buff[MAX_PATH+1];
         std::string dir = "";
 

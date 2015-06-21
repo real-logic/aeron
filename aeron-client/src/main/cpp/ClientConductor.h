@@ -37,6 +37,8 @@ using namespace aeron::concurrent;
 typedef std::function<long()> epoch_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
+static const long RESOURCE_TIMEOUT_MS = 1000;
+static const long RESOURCE_LINGER_MS = 5000;
 
 class ClientConductor
 {
@@ -61,6 +63,7 @@ public:
         m_onInactiveConnectionHandler(inactiveConnectionHandler),
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
+        m_timeOfLastCheckManagedResources(epochClock()),
         m_driverTimeoutMs(driverTimeoutMs)
     {
     }
@@ -131,6 +134,8 @@ public:
         std::int64_t position,
         std::int64_t correlationId);
 
+    void onCheckManagedResources(long now);
+
 private:
     struct PublicationStateDefn
     {
@@ -176,12 +181,37 @@ private:
         }
     };
 
+    struct ConnectionArrayLingerDefn
+    {
+        long m_timeOfLastStatusChange;
+        Connection* m_array;
+
+        ConnectionArrayLingerDefn(long now, Connection *array) :
+            m_timeOfLastStatusChange(now), m_array(array)
+        {
+        }
+    };
+
+    struct LogBuffersLingerDefn
+    {
+        long m_timeOfLastStatusChange;
+        std::shared_ptr<LogBuffers> m_logBuffers;
+
+        LogBuffersLingerDefn(long now, std::shared_ptr<LogBuffers> buffers) :
+            m_timeOfLastStatusChange(now), m_logBuffers(buffers)
+        {
+        }
+    };
+
     std::mutex m_adminLock;
 
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
 
     std::vector<LogBuffersStateDefn> m_logBuffers;
+
+    std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
+    std::vector<ConnectionArrayLingerDefn> m_lingeringConnectionArrays;
 
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
@@ -195,6 +225,7 @@ private:
 
     epoch_clock_t m_epochClock;
     long m_timeOfLastKeepalive;
+    long m_timeOfLastCheckManagedResources;
     long m_driverTimeoutMs;
 
     inline int onHeartbeatCheckTimeouts()
@@ -212,6 +243,13 @@ private:
             }
 
             m_timeOfLastKeepalive = now;
+            result = 1;
+        }
+
+        if (now > (m_timeOfLastCheckManagedResources + RESOURCE_TIMEOUT_MS))
+        {
+            onCheckManagedResources(now);
+            m_timeOfLastCheckManagedResources = now;
             result = 1;
         }
 

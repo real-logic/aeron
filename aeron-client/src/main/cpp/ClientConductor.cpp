@@ -235,7 +235,7 @@ void ClientConductor::onNewConnection(
 
                             if (nullptr != oldArray)
                             {
-                                // TODO: linger oldArray
+                                m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(m_epochClock(), oldArray));
                             }
 
                             m_logBuffers.push_back(LogBuffersStateDefn(correlationId, logBuffers));
@@ -256,6 +256,7 @@ void ClientConductor::onInactiveConnection(
     std::int64_t position,
     std::int64_t correlationId)
 {
+    const long now = m_epochClock();
     std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
@@ -265,26 +266,23 @@ void ClientConductor::onInactiveConnection(
             {
                 std::shared_ptr<Subscription> subscription = entry.m_subscription;
 
-                Connection* oldArray = subscription->removeConnection(correlationId);
+                Connection *oldArray = subscription->removeConnection(correlationId);
 
                 if (nullptr != oldArray)
                 {
-                    // TODO: linger oldArray
-
+                    m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(now, oldArray));
                     m_onInactiveConnectionHandler(subscription->channel(), streamId, sessionId, position);
                 }
             }
         });
 
-    // TODO: use this in the cleanup. Move out of the vector once lingered, keep in there until then.
-    // TODO: need to do a for_each here to set the state for cleanup, though.
-    // erase-remove idiom with modification to grab out LogBuffers before removal
+    // erase-remove idiom
     std::vector<LogBuffersStateDefn>::iterator it = std::remove_if(m_logBuffers.begin(), m_logBuffers.end(),
         [&](LogBuffersStateDefn& entry)
         {
             if (correlationId == entry.m_correlationId)
             {
-                // TODO: linger entry.m_logBuffers
+                m_lingeringLogBuffers.push_back(LogBuffersLingerDefn(now, entry.m_logBuffers));
                 return true;
             }
 
@@ -292,6 +290,37 @@ void ClientConductor::onInactiveConnection(
         });
 
     m_logBuffers.erase(it, m_logBuffers.end());
+}
+
+void ClientConductor::onCheckManagedResources(long now)
+{
+
+    // erase-remove idiom
+
+    // check LogBuffers
+    std::vector<LogBuffersLingerDefn>::iterator logIt = std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
+        [&](LogBuffersLingerDefn& entry)
+        {
+            return (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS));
+        });
+
+    m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
+
+    // check old arrays
+    std::vector<ConnectionArrayLingerDefn>::iterator arrayIt = std::remove_if(m_lingeringConnectionArrays.begin(), m_lingeringConnectionArrays.end(),
+        [&](ConnectionArrayLingerDefn& entry)
+        {
+            if (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS))
+            {
+
+                entry.m_array = nullptr;
+                return true;
+            }
+
+            return false;
+        });
+
+    m_lingeringConnectionArrays.erase(arrayIt, m_lingeringConnectionArrays.end());
 }
 
 }

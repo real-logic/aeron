@@ -37,6 +37,7 @@ typedef std::function<void(const std::string& channel, std::int32_t streamId, st
 
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
+const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
 
 inline static void defaultErrorHandler(util::SourcedException& exception)
 {
@@ -113,7 +114,13 @@ public:
 
     inline this_t& mediaDriverTimeout(long value)
     {
+        m_mediaDriverTimeout = value;
+        return *this;
+    }
 
+    inline this_t& resourceLingerTimeout(long value)
+    {
+        m_resourceLingerTimeout = value;
         return *this;
     }
 
@@ -157,7 +164,8 @@ private:
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;
     on_new_connection_t m_onNewConnectionHandler = defaultOnNewConnectionHandler;
     on_inactive_connection_t m_onInactiveConnectionHandler = defaultOnInactiveConnectionHandler;
-    long m_mediaDriverTimeout = NULL_TIMEOUT;
+    long m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
+    long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
 };
 
 }

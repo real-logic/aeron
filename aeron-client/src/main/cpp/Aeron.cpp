@@ -51,7 +51,8 @@ Aeron::Aeron(Context &context) :
         context.m_onNewSubscriptionHandler,
         context.m_onNewConnectionHandler,
         context.m_onInactiveConnectionHandler,
-        context.m_mediaDriverTimeout),
+        context.m_mediaDriverTimeout,
+        context.m_resourceLingerTimeout),
     m_idleStrategy(IDLE_SLEEP_MS),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
 {

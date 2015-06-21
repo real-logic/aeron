@@ -301,7 +301,7 @@ void ClientConductor::onCheckManagedResources(long now)
         std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
             [&](LogBuffersLingerDefn& entry)
             {
-                return (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS));
+                return (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs));
             });
 
     m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
@@ -311,9 +311,9 @@ void ClientConductor::onCheckManagedResources(long now)
         std::remove_if(m_lingeringConnectionArrays.begin(), m_lingeringConnectionArrays.end(),
             [&](ConnectionArrayLingerDefn& entry)
             {
-                if (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS))
+                if (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs))
                 {
-
+                    delete[] entry.m_array;
                     entry.m_array = nullptr;
                     return true;
                 }

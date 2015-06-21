@@ -38,7 +38,6 @@ typedef std::function<long()> epoch_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;
-static const long RESOURCE_LINGER_MS = 5000;
 
 class ClientConductor
 {
@@ -53,7 +52,8 @@ public:
         const on_new_subscription_t& newSubscriptionHandler,
         const on_new_connection_t& newConnectionHandler,
         const on_inactive_connection_t& inactiveConnectionHandler,
-        long driverTimeoutMs) :
+        long driverTimeoutMs,
+        long resourceLingerTimeoutMs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_counterValuesBuffer(counterValuesBuffer),
@@ -64,7 +64,8 @@ public:
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
         m_timeOfLastCheckManagedResources(epochClock()),
-        m_driverTimeoutMs(driverTimeoutMs)
+        m_driverTimeoutMs(driverTimeoutMs),
+        m_resourceLingerTimeoutMs(resourceLingerTimeoutMs)
     {
     }
 
@@ -227,6 +228,7 @@ private:
     long m_timeOfLastKeepalive;
     long m_timeOfLastCheckManagedResources;
     long m_driverTimeoutMs;
+    long m_resourceLingerTimeoutMs;
 
     inline int onHeartbeatCheckTimeouts()
     {

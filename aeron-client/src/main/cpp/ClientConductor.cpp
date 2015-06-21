@@ -294,31 +294,32 @@ void ClientConductor::onInactiveConnection(
 
 void ClientConductor::onCheckManagedResources(long now)
 {
-
     // erase-remove idiom
 
     // check LogBuffers
-    std::vector<LogBuffersLingerDefn>::iterator logIt = std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
-        [&](LogBuffersLingerDefn& entry)
-        {
-            return (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS));
-        });
+    std::vector<LogBuffersLingerDefn>::iterator logIt =
+        std::remove_if(m_lingeringLogBuffers.begin(), m_lingeringLogBuffers.end(),
+            [&](LogBuffersLingerDefn& entry)
+            {
+                return (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS));
+            });
 
     m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
 
     // check old arrays
-    std::vector<ConnectionArrayLingerDefn>::iterator arrayIt = std::remove_if(m_lingeringConnectionArrays.begin(), m_lingeringConnectionArrays.end(),
-        [&](ConnectionArrayLingerDefn& entry)
-        {
-            if (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS))
+    std::vector<ConnectionArrayLingerDefn>::iterator arrayIt =
+        std::remove_if(m_lingeringConnectionArrays.begin(), m_lingeringConnectionArrays.end(),
+            [&](ConnectionArrayLingerDefn& entry)
             {
+                if (now > (entry.m_timeOfLastStatusChange + RESOURCE_LINGER_MS))
+                {
 
-                entry.m_array = nullptr;
-                return true;
-            }
+                    entry.m_array = nullptr;
+                    return true;
+                }
 
-            return false;
-        });
+                return false;
+            });
 
     m_lingeringConnectionArrays.erase(arrayIt, m_lingeringConnectionArrays.end());
 }

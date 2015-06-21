@@ -230,6 +230,8 @@ private:
 
     inline int onHeartbeatCheckTimeouts()
     {
+        // TODO: use system nano clock since it is quicker to poll, then use epochClock only for driver activity
+
         const long now = m_epochClock();
         int result = 0;
 

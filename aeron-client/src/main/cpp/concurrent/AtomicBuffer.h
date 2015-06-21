@@ -45,9 +45,22 @@ public:
     {
     }
 
-    AtomicBuffer(const AtomicBuffer&) = default;
-    AtomicBuffer(AtomicBuffer&&) = default;
-    AtomicBuffer& operator=(AtomicBuffer&) = default;
+    AtomicBuffer(const AtomicBuffer& buffer) :
+        m_buffer(buffer.m_buffer), m_length(buffer.m_length)
+    {
+    }
+
+    AtomicBuffer(AtomicBuffer&& buffer) :
+        m_buffer(buffer.m_buffer), m_length(buffer.m_length)
+    {
+    }
+
+    AtomicBuffer& operator=(AtomicBuffer& buffer)
+    {
+        m_buffer = buffer.m_buffer;
+        m_length = buffer.m_length;
+        return *this;
+    }
 
     virtual ~AtomicBuffer()
     {

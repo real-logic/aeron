@@ -21,7 +21,7 @@
  * Also, error out here if on a platform that is not supported.
  */
 
-#if defined(WIN32)
+#if defined(_MSC_VER)
     #define AERON_COMPILER_MSVC 1
 
     #if defined(_M_X64)

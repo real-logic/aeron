@@ -51,6 +51,14 @@ void onNewSub(const std::string&, std::int32_t, std::int64_t)
 {
 }
 
+void onNewConn(const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&)
+{
+}
+
+void onInactive(const std::string&, std::int32_t, std::int32_t, std::int64_t)
+{
+}
+
 long onTime()
 {
     return 0;
@@ -74,6 +82,8 @@ public:
             m_counterValuesBuffer,
             onNewPub,
             onNewSub,
+            onNewConn,
+            onInactive,
             DRIVER_TIMEOUT_MS)
     {
         m_toDriver.fill(0);

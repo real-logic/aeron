@@ -71,6 +71,9 @@ namespace BitUtil
     template<typename value_t>
     inline static int numberOfTrailingZeroes(value_t value)
     {
+#if defined(__GNUC__)
+        return __builtin_ctz(value);
+#else
         static char table[32] = {
             0, 1, 2, 24, 3, 19, 6, 25,
             22, 4, 20, 10, 16, 7, 12, 26,
@@ -85,6 +88,7 @@ namespace BitUtil
         value = (value & -value) * 0x04D7651F;
 
         return table[value >> 27];
+#endif
     }
 
     /*

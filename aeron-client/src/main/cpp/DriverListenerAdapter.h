@@ -68,6 +68,7 @@ public:
                             connectionReady.sessionId(),
                             connectionReady.joiningPosition(),
                             connectionReady.logFileName(),
+                            connectionReady.sourceIdentity(),
                             connectionReady.subscriberPositionCount(),
                             connectionReady.subscriberPositions(),
                             connectionReady.correlationId());

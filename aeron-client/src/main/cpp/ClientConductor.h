@@ -49,12 +49,16 @@ public:
         AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
         const on_new_subscription_t& newSubscriptionHandler,
+        const on_new_connection_t& newConnectionHandler,
+        const on_inactive_connection_t& inactiveConnectionHandler,
         long driverTimeoutMs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
         m_onNewSubscpriptionHandler(newSubscriptionHandler),
+        m_onNewConnectionHandler(newConnectionHandler),
+        m_onInactiveConnectionHandler(inactiveConnectionHandler),
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
         m_driverTimeoutMs(driverTimeoutMs)
@@ -116,6 +120,7 @@ public:
         std::int32_t sessionId,
         std::int64_t joiningPosition,
         const std::string& logFilename,
+        const std::string& sourceIdentity,
         std::int32_t subscriberPositionCount,
         const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
         std::int64_t correlationId);
@@ -185,6 +190,8 @@ private:
 
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscpriptionHandler;
+    on_new_connection_t m_onNewConnectionHandler;
+    on_inactive_connection_t m_onInactiveConnectionHandler;
 
     epoch_clock_t m_epochClock;
     long m_timeOfLastKeepalive;

@@ -31,6 +31,8 @@ static long currentTimeMillis()
 }
 
 Aeron::Aeron(Context &context) :
+    m_randomEngine(m_randomEngine()),
+    m_sessionIdDistribution(-INT_MAX, INT_MAX),
     m_context(context.conclude()),
     m_cncBuffer(mapCncFile(context)),
     m_toDriverAtomicBuffer(CncFileDescriptor::createToDriverBuffer(m_cncBuffer)),
@@ -47,6 +49,8 @@ Aeron::Aeron(Context &context) :
         m_countersValueBuffer,
         context.m_onNewPublicationHandler,
         context.m_onNewSubscriptionHandler,
+        context.m_onNewConnectionHandler,
+        context.m_onInactiveConnectionHandler,
         context.m_mediaDriverTimeout),
     m_idleStrategy(IDLE_SLEEP_MS),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)

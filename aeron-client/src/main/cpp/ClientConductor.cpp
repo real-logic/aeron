@@ -203,6 +203,7 @@ void ClientConductor::onNewConnection(
     std::int32_t sessionId,
     std::int64_t joiningPosition,
     const std::string& logFilename,
+    const std::string& sourceIdentity,
     std::int32_t subscriberPositionCount,
     const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
     std::int64_t correlationId)
@@ -239,7 +240,8 @@ void ClientConductor::onNewConnection(
 
                             m_logBuffers.push_back(LogBuffersStateDefn(correlationId, logBuffers));
 
-                            // TODO: inform API of onNewConnection
+                            m_onNewConnectionHandler(
+                                subscription->channel(), streamId, sessionId, joiningPosition, sourceIdentity);
                             break;
                         }
                     }
@@ -269,7 +271,7 @@ void ClientConductor::onInactiveConnection(
                 {
                     // TODO: linger oldArray
 
-                    // TODO: inform of onInactiveConnection
+                    m_onInactiveConnectionHandler(subscription->channel(), streamId, sessionId, position);
                 }
             }
         });

@@ -30,7 +30,8 @@ namespace aeron {
 using namespace aeron::concurrent::ringbuffer;
 using namespace aeron::concurrent::broadcast;
 
-typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, const std::string& sourceIdentity)> on_new_connection_t;
+typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t joiningPosition, const std::string& sourceIdentity)> on_new_connection_t;
+typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)> on_inactive_connection_t;
 typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)> on_new_publication_t;
 typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int64_t correlationId)> on_new_subscription_t;
 
@@ -47,11 +48,15 @@ inline static void defaultOnNewPublicationHandler(const std::string&, std::int32
 {
 }
 
-inline static void defaultOnNewConnectionHandler(const std::string&, std::int32_t, std::int32_t, const std::string&)
+inline static void defaultOnNewConnectionHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&)
 {
 }
 
 inline static void defaultOnNewSubscriptionHandler(const std::string&, std::int32_t, std::int64_t)
+{
+}
+
+inline static void defaultOnInactiveConnectionHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t)
 {
 }
 
@@ -100,6 +105,12 @@ public:
         return *this;
     }
 
+    inline this_t& inactiveConnectionHandler(const on_inactive_connection_t& handler)
+    {
+        m_onInactiveConnectionHandler = handler;
+        return *this;
+    }
+
     inline this_t& mediaDriverTimeout(long value)
     {
 
@@ -145,6 +156,7 @@ private:
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;
     on_new_connection_t m_onNewConnectionHandler = defaultOnNewConnectionHandler;
+    on_inactive_connection_t m_onInactiveConnectionHandler = defaultOnInactiveConnectionHandler;
     long m_mediaDriverTimeout = NULL_TIMEOUT;
 };
 

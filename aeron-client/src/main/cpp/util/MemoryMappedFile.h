@@ -66,7 +66,9 @@ private:
 
     std::uint8_t* m_memory = 0;
     size_t m_memorySize = 0;
+#if !defined(PAGE_SIZE)
     static size_t PAGE_SIZE;
+#endif
 
 #ifdef _WIN32
     HANDLE m_file = NULL;

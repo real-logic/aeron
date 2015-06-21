@@ -121,7 +121,7 @@ int main(int argc, char** argv)
 
         for (int i = 0; i < settings.numberOfMessages && running; i++)
         {
-#if WIN32
+#if _MSC_VER
             const int messageLen = ::sprintf_s(message, sizeof(message), "Hello World! %d", i);
 #else
             const int messageLen = ::snprintf(message, sizeof(message), "Hello World! %d", i);

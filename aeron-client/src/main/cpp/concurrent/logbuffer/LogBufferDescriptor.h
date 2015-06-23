@@ -116,21 +116,20 @@ static const util::index_t LOG_MTU_LENGTH_OFFSET = offsetof(LogMetaDataDefn, mtu
 static const util::index_t LOG_DEFAULT_FRAME_HEADERS_OFFSET = sizeof(LogMetaDataDefn);
 static const util::index_t LOG_META_DATA_LENGTH = sizeof(LogMetaDataDefn) + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
 
-inline static void checkTermBuffer(AtomicBuffer &buffer)
+inline static void checkTermLength(std::int64_t termLength)
 {
-    const util::index_t capacity = buffer.capacity();
-    if (capacity < TERM_MIN_LENGTH)
+    if (termLength < TERM_MIN_LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Term buffer capacity less than min size of %d, capacity=%d",
-                TERM_MIN_LENGTH, capacity), SOURCEINFO);
+            util::strPrintf("Term length less than min size of %d, length=%d",
+                TERM_MIN_LENGTH, termLength), SOURCEINFO);
     }
 
-    if ((capacity & (FrameDescriptor::FRAME_ALIGNMENT - 1)) != 0)
+    if ((termLength & (FrameDescriptor::FRAME_ALIGNMENT - 1)) != 0)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Term buffer capacity not a multiple of %d, capacity=%d",
-                FrameDescriptor::FRAME_ALIGNMENT, capacity), SOURCEINFO);
+            util::strPrintf("Term length not a multiple of %d, length=%d",
+                FrameDescriptor::FRAME_ALIGNMENT, termLength), SOURCEINFO);
     }
 }
 

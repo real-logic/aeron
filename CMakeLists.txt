@@ -90,9 +90,6 @@ set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
 
-##########################################################
-# 3rd party libs
-
 # gmock - includes gtest
 include_directories(${GMOCK_SOURCE_DIR}/include)
 include_directories(${GMOCK_SOURCE_DIR}/gtest/include)

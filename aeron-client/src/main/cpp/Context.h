@@ -67,6 +67,10 @@ class Context
 public:
     typedef Context this_t;
 
+    inline Context()
+    {
+    }
+
     this_t& conclude()
     {
         if (NULL_TIMEOUT == m_mediaDriverTimeout)

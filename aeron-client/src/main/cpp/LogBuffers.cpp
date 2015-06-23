@@ -28,6 +28,8 @@ LogBuffers::LogBuffers(const char *filename)
     const std::int64_t logLength = MemoryMappedFile::getFileSize(filename);
     const std::int64_t termLength = LogBufferDescriptor::computeTermLength(logLength);
 
+    LogBufferDescriptor::checkTermLength(termLength);
+
     if (logLength < MAX_SINGLE_MAPPING_SIZE)
     {
         m_memoryMappedFiles.push_back(MemoryMappedFile::mapExisting(filename));

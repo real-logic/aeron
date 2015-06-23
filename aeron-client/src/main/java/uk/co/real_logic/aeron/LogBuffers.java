@@ -43,6 +43,8 @@ public class LogBuffers implements AutoCloseable
             final long logLength = logChannel.size();
             final int termLength = computeTermLength(logLength);
 
+            checkTermLength(termLength);
+
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);

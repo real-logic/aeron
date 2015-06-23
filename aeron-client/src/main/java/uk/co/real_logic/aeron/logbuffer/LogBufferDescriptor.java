@@ -190,27 +190,26 @@ public class LogBufferDescriptor
     public static final int LOG_META_DATA_LENGTH;
 
     /**
-     * Check that term buffer is the correct length and alignment.
+     * Check that term length is valid and alignment is valid.
      *
-     * @param buffer to be checked.
-     * @throws IllegalStateException if the buffer is not as expected.
+     * @param termLength to be checked.
+     * @throws IllegalStateException if the length is not as expected.
      */
-    public static void checkTermBuffer(final UnsafeBuffer buffer)
+    public static void checkTermLength(final int termLength)
     {
-        final int capacity = buffer.capacity();
-        if (capacity < TERM_MIN_LENGTH)
+        if (termLength < TERM_MIN_LENGTH)
         {
             final String s = String.format(
-                "Term buffer capacity less than min length of %d, capacity=%d",
-                TERM_MIN_LENGTH, capacity);
+                "Term length less than min length of %d, length=%d",
+                TERM_MIN_LENGTH, termLength);
             throw new IllegalStateException(s);
         }
 
-        if ((capacity & (FRAME_ALIGNMENT - 1)) != 0)
+        if ((termLength & (FRAME_ALIGNMENT - 1)) != 0)
         {
             final String s = String.format(
-                "Term buffer capacity not a multiple of %d, capacity=%d",
-                FRAME_ALIGNMENT, capacity);
+                "Term length not a multiple of %d, length=%d",
+                FRAME_ALIGNMENT, termLength);
             throw new IllegalStateException(s);
         }
     }

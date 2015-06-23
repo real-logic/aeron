@@ -30,7 +30,7 @@ public class LogBufferPartition
 
     public LogBufferPartition(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
-        checkTermBuffer(termBuffer);
+        checkTermLength(termBuffer.capacity());
         checkMetaDataBuffer(metaDataBuffer);
         termBuffer.verifyAlignment();
         metaDataBuffer.verifyAlignment();

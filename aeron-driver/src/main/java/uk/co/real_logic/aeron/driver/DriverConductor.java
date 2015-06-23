@@ -281,7 +281,7 @@ public class DriverConductor implements Agent
 
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();
-        final long correlationId = generateCreationCorrelationId();
+        final long connectionCorrelationId = generateCreationCorrelationId();
 
         final long joiningPosition = LogBufferDescriptor.computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
@@ -292,10 +292,10 @@ public class DriverConductor implements Agent
         if (subscriberPositions.size() > 0)
         {
             final RawLog rawLog = newConnectionLog(
-                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, correlationId);
+                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, connectionCorrelationId);
 
             final NetworkConnection connection = new NetworkConnection(
-                correlationId,
+                connectionCorrelationId,
                 channelEndpoint,
                 controlAddress,
                 sessionId,
@@ -309,7 +309,7 @@ public class DriverConductor implements Agent
                 Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
                     udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                 subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
-                newPosition("receiver hwm", channel, sessionId, streamId, correlationId),
+                newPosition("receiver hwm", channel, sessionId, streamId, connectionCorrelationId),
                 nanoClock,
                 systemCounters,
                 sourceAddress);
@@ -326,7 +326,7 @@ public class DriverConductor implements Agent
                 sessionId,
                 joiningPosition,
                 rawLog,
-                correlationId,
+                connectionCorrelationId,
                 subscriberPositions,
                 generateSourceIdentity(sourceAddress));
         }
@@ -470,7 +470,7 @@ public class DriverConductor implements Agent
     }
 
     private void onAddPublication(
-        final String channel, final int sessionId, final int streamId, final long correlationId, final long clientId)
+        final String channel, final int sessionId, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
@@ -484,9 +484,9 @@ public class DriverConductor implements Agent
             publication = new NetworkPublication(
                 channelEndpoint,
                 nanoClock,
-                newPublicationLog(sessionId, streamId, initialTermId, udpChannel, correlationId),
-                newPosition("sender pos", channel, sessionId, streamId, correlationId),
-                newPosition("publisher limit", channel, sessionId, streamId, correlationId),
+                newPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId),
+                newPosition("sender pos", channel, sessionId, streamId, registrationId),
+                newPosition("publisher limit", channel, sessionId, streamId, registrationId),
                 sessionId,
                 streamId,
                 initialTermId,
@@ -500,7 +500,7 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        linkPublication(correlationId, publication, client);
+        linkPublication(registrationId, publication, client);
 
         publication.incRef();
 
@@ -508,18 +508,18 @@ public class DriverConductor implements Agent
             streamId,
             sessionId,
             publication.rawLog(),
-            correlationId,
+            registrationId,
             publication.publisherLimitId());
     }
 
-    private void linkPublication(final long correlationId, final NetworkPublication publication, final AeronClient client)
+    private void linkPublication(final long registrationId, final NetworkPublication publication, final AeronClient client)
     {
-        if (null != findPublicationLink(publicationLinks, correlationId))
+        if (null != findPublicationLink(publicationLinks, registrationId))
         {
             throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
         }
 
-        publicationLinks.add(new PublicationLink(correlationId, publication, client));
+        publicationLinks.add(new PublicationLink(registrationId, publication, client));
     }
 
     private RetransmitHandler newRetransmitHandler(final NetworkPublication publication, final int initialTermId)
@@ -535,10 +535,10 @@ public class DriverConductor implements Agent
     }
 
     private RawLog newPublicationLog(
-        final int sessionId, final int streamId, final int initialTermId, final UdpChannel udpChannel, final long correlationId)
+        final int sessionId, final int streamId, final int initialTermId, final UdpChannel udpChannel, final long registrationId)
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = rawLogFactory.newPublication(canonicalForm, sessionId, streamId, correlationId);
+        final RawLog rawLog = rawLogFactory.newPublication(canonicalForm, sessionId, streamId, registrationId);
 
         final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
@@ -614,7 +614,7 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onAddSubscription(final String channel, final int streamId, final long correlationId, final long clientId)
+    private void onAddSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(UdpChannel.parse(channel));
 
@@ -625,10 +625,10 @@ public class DriverConductor implements Agent
         }
 
         final AeronClient client = getOrAddClient(clientId);
-        final SubscriptionLink subscription = new SubscriptionLink(correlationId, channelEndpoint, streamId, client);
+        final SubscriptionLink subscription = new SubscriptionLink(registrationId, channelEndpoint, streamId, client);
 
         subscriptionLinks.add(subscription);
-        clientProxy.operationSucceeded(correlationId);
+        clientProxy.operationSucceeded(registrationId);
 
         connections
             .stream()
@@ -637,7 +637,7 @@ public class DriverConductor implements Agent
                 (connection) ->
                 {
                     final Position position = newPosition(
-                        "subscriber pos", channel, connection.sessionId(), streamId, correlationId);
+                        "subscriber pos", channel, connection.sessionId(), streamId, registrationId);
 
                     connection.addSubscriber(position);
                     subscription.addConnection(connection, position);

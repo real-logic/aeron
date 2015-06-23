@@ -114,14 +114,14 @@ public class ClientProxy
         final int streamId,
         final int sessionId,
         final RawLog rawLog,
-        final long correlationId,
+        final long registrationId,
         final int positionCounterId)
     {
         publicationReady.wrap(tmpBuffer, 0);
         publicationReady
             .sessionId(sessionId)
             .streamId(streamId)
-            .correlationId(correlationId)
+            .correlationId(registrationId)
             .publicationLimitCounterId(positionCounterId);
 
         publicationReady.logFileName(rawLog.logFileName());

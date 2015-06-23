@@ -20,7 +20,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
-
 /**
  * Base log buffer implementation containing common functionality for dealing with fragment terms.
  */

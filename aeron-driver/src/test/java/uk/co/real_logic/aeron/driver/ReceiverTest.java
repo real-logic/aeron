@@ -51,6 +51,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import static java.lang.Integer.numberOfTrailingZeros;
 import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
@@ -89,6 +90,8 @@ public class ReceiverTest
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(dataFrameBuffer);
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final UnsafeBuffer setupBuffer = new UnsafeBuffer(setupFrameBuffer);
+
+    @SuppressWarnings("unchecked")
     private final Consumer<Throwable> mockErrorHandler = mock(Consumer.class);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -120,7 +123,7 @@ public class ReceiverTest
     public void setUp() throws Exception
     {
         when(POSITION.getVolatile())
-            .thenReturn(computePosition(ACTIVE_TERM_ID, 0, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), ACTIVE_TERM_ID));
+            .thenReturn(computePosition(ACTIVE_TERM_ID, 0, numberOfTrailingZeros(TERM_BUFFER_LENGTH), ACTIVE_TERM_ID));
         when(mockSystemCounters.statusMessagesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.flowControlUnderRuns()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));

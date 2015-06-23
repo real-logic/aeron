@@ -34,6 +34,7 @@ import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
@@ -49,7 +50,6 @@ import java.nio.channels.DatagramChannel;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static java.lang.Integer.numberOfTrailingZeros;
 import static junit.framework.TestCase.assertTrue;
@@ -91,8 +91,7 @@ public class ReceiverTest
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final UnsafeBuffer setupBuffer = new UnsafeBuffer(setupFrameBuffer);
 
-    @SuppressWarnings("unchecked")
-    private final Consumer<Throwable> mockErrorHandler = mock(Consumer.class);
+    private final ErrorHandler mockErrorHandler = mock(ErrorHandler.class);
 
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final StatusMessageFlyweight statusHeader = new StatusMessageFlyweight();

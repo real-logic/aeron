@@ -22,12 +22,12 @@ import org.mockito.Mockito;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.logbuffer.*;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -63,7 +63,7 @@ public class ConnectionTest
     private final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
     private final Position position = spy(new AtomicLongPosition());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
-    private final Consumer<Throwable> errorHandler = mock(Consumer.class);
+    private final ErrorHandler errorHandler = mock(ErrorHandler.class);
 
     private UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];

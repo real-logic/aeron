@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.Agent;
@@ -28,7 +29,6 @@ import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Consumer;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -58,7 +58,7 @@ class ClientConductor implements Agent, DriverListener
     private final TimerWheel timerWheel;
     private final TimerWheel.Timer keepaliveTimer;
     private final TimerWheel.Timer managedResourceTimer;
-    private final Consumer<Throwable> errorHandler;
+    private final ErrorHandler errorHandler;
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
@@ -71,7 +71,7 @@ class ClientConductor implements Agent, DriverListener
         final UnsafeBuffer counterValuesBuffer,
         final DriverProxy driverProxy,
         final TimerWheel timerWheel,
-        final Consumer<Throwable> errorHandler,
+        final ErrorHandler errorHandler,
         final NewConnectionHandler newConnectionHandler,
         final InactiveConnectionHandler inactiveConnectionHandler,
         final long driverTimeoutMs)
@@ -303,7 +303,7 @@ class ClientConductor implements Agent, DriverListener
             driverActive = false;
 
             final String msg = String.format("Driver has been inactive for over %dms", driverTimeoutMs);
-            errorHandler.accept(new DriverTimeoutException(msg));
+            errorHandler.onError(new DriverTimeoutException(msg));
         }
     }
 
@@ -326,7 +326,7 @@ class ClientConductor implements Agent, DriverListener
         }
         catch (final Exception ex)
         {
-            errorHandler.accept(ex);
+            errorHandler.onError(ex);
         }
 
         return workCount;

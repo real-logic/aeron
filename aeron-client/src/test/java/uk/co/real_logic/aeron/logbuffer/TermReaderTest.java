@@ -20,9 +20,8 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.util.function.Consumer;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -39,7 +38,7 @@ public class TermReaderTest
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_CAPACITY);
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
-    private final Consumer<Throwable> errorHandler = mock(Consumer.class);
+    private final ErrorHandler errorHandler = mock(ErrorHandler.class);
     private final FragmentHandler handler = Mockito.mock(FragmentHandler.class);
 
     @Before

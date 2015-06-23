@@ -16,9 +16,9 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.agrona.ErrorHandler;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-import java.util.function.Consumer;
 
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
@@ -51,7 +51,7 @@ public class Subscription implements AutoCloseable
 
     private final String channel;
     private final ClientConductor clientConductor;
-    private final Consumer<Throwable> errorHandler;
+    private final ErrorHandler errorHandler;
     private volatile Connection[] connections = EMPTY_ARRAY;
 
     Subscription(
@@ -59,7 +59,7 @@ public class Subscription implements AutoCloseable
         final String channel,
         final int streamId,
         final long registrationId,
-        final Consumer<Throwable> errorHandler)
+        final ErrorHandler errorHandler)
     {
         this.clientConductor = conductor;
         this.channel = channel;
@@ -114,7 +114,7 @@ public class Subscription implements AutoCloseable
             }
 
             int i = startingIndex;
-            final Consumer<Throwable> errorHandler = this.errorHandler;
+            final ErrorHandler errorHandler = this.errorHandler;
 
             do
             {

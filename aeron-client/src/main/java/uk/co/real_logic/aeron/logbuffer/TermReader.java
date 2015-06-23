@@ -16,9 +16,8 @@
 package uk.co.real_logic.aeron.logbuffer;
 
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -49,7 +48,7 @@ public class TermReader
         final FragmentHandler handler,
         final int fragmentsLimit,
         final Header header,
-        final Consumer<Throwable> errorHandler)
+        final ErrorHandler errorHandler)
     {
         int fragmentsRead = 0;
         final int capacity = termBuffer.capacity();
@@ -81,7 +80,7 @@ public class TermReader
         }
         catch (final Exception ex)
         {
-            errorHandler.accept(ex);
+            errorHandler.onError(ex);
         }
 
         return readOutcome(termOffset, fragmentsRead);

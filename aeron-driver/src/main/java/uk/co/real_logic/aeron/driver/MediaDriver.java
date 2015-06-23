@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -70,7 +71,6 @@ import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
  */
 public final class MediaDriver implements AutoCloseable
 {
-
     /**
      * Attempt to delete directories on exit
      */
@@ -136,25 +136,25 @@ public final class MediaDriver implements AutoCloseable
         {
             case SHARED:
                 runners = Collections.singletonList(
-                    new AgentRunner(ctx.sharedIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                    new AgentRunner(ctx.sharedIdleStrategy, ctx.errorHandler(), driverExceptions,
                         new CompositeAgent(sender, new CompositeAgent(receiver, driverConductor)))
                 );
                 break;
 
             case SHARED_NETWORK:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.exceptionConsumer(), driverExceptions,
+                    new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.errorHandler(), driverExceptions,
                         new CompositeAgent(sender, receiver)),
-                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.errorHandler(), driverExceptions, driverConductor)
                 );
                 break;
 
             default:
             case DEDICATED:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.senderIdleStrategy, ctx.exceptionConsumer(), driverExceptions, sender),
-                    new AgentRunner(ctx.receiverIdleStrategy, ctx.exceptionConsumer(), driverExceptions, receiver),
-                    new AgentRunner(ctx.conductorIdleStrategy, ctx.exceptionConsumer(), driverExceptions, driverConductor)
+                    new AgentRunner(ctx.senderIdleStrategy, ctx.errorHandler(), driverExceptions, sender),
+                    new AgentRunner(ctx.receiverIdleStrategy, ctx.errorHandler(), driverExceptions, receiver),
+                    new AgentRunner(ctx.conductorIdleStrategy, ctx.errorHandler(), driverExceptions, driverConductor)
                 );
                 break;
         }
@@ -876,7 +876,7 @@ public final class MediaDriver implements AutoCloseable
             return eventLogger;
         }
 
-        public Consumer<Throwable> exceptionConsumer()
+        public ErrorHandler errorHandler()
         {
             return eventLogger::logException;
         }

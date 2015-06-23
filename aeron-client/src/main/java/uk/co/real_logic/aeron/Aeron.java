@@ -16,10 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.*;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -29,7 +26,6 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
 
@@ -48,9 +44,9 @@ public final class Aeron implements AutoCloseable
      * <p>
      * The error handler can be overridden by supplying an {@link Aeron.Context} with a custom handler.
      *
-     * @see Aeron.Context#errorHandler(Consumer)
+     * @see Aeron.Context#errorHandler(ErrorHandler)
      */
-    public static final Consumer<Throwable> DEFAULT_ERROR_HANDLER =
+    public static final ErrorHandler DEFAULT_ERROR_HANDLER =
         (throwable) ->
         {
             throwable.printStackTrace();
@@ -188,7 +184,7 @@ public final class Aeron implements AutoCloseable
         private MappedByteBuffer cncByteBuffer;
         private DirectBuffer cncMetaDataBuffer;
         private LogBuffersFactory logBuffersFactory;
-        private Consumer<Throwable> errorHandler;
+        private ErrorHandler errorHandler;
         private NewConnectionHandler newConnectionHandler;
         private InactiveConnectionHandler inactiveConnectionHandler;
 
@@ -196,6 +192,7 @@ public final class Aeron implements AutoCloseable
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
          * There is no need to call it from a client application. It is responsible for providing default
          * values for options that are not individually changed through field setters.
+         *
          * @return this Aeron.Context for method chaining.
          */
         public Context conclude()
@@ -289,6 +286,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * Provides an IdleStrategy for the thread responsible for communicating with the Aeron Media Driver.
+         *
          * @param idleStrategy Thread idle strategy for communication with the Media Driver.
          * @return this Aeron.Context for method chaining.
          */
@@ -300,6 +298,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * This method is used for testing and debugging.
+         *
          * @param toClientBuffer Injected CopyBroadcastReceiver
          * @return this Aeron.Context for method chaining.
          */
@@ -311,6 +310,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * This method is used for testing and debugging.
+         *
          * @param toDriverBuffer Injected RingBuffer.
          * @return this Aeron.Context for method chaining.
          */
@@ -322,6 +322,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * This method is used for testing and debugging.
+         *
          * @param logBuffersFactory Injected LogBuffersFactory
          * @return this Aeron.Context for method chaining.
          */
@@ -334,19 +335,21 @@ public final class Aeron implements AutoCloseable
         /**
          * Handle Aeron exceptions in a callback method. The default behavior is defined by
          * {@link Aeron#DEFAULT_ERROR_HANDLER}.
+         *
+         * @param errorHandler Method to handle objects of type Throwable.
+         * @return this Aeron.Context for method chaining.
          * @see uk.co.real_logic.aeron.exceptions.DriverTimeoutException
          * @see uk.co.real_logic.aeron.exceptions.RegistrationException
-         * @param handler Method to handle objects of type Throwable.
-         * @return this Aeron.Context for method chaining.
          */
-        public Context errorHandler(final Consumer<Throwable> handler)
+        public Context errorHandler(final ErrorHandler errorHandler)
         {
-            this.errorHandler = handler;
+            this.errorHandler = errorHandler;
             return this;
         }
 
         /**
          * Set up a callback for when a new connection is created.
+         *
          * @param handler Callback method for handling new connection notifications.
          * @return this Aeron.Context for method chaining.
          */
@@ -358,6 +361,7 @@ public final class Aeron implements AutoCloseable
 
         /**
          * Set up a callback for when a connection determined to be inactive.
+         *
          * @param handler Callback method for handling inactive connection notifications.
          * @return this Aeron.Context for method chaining.
          */
@@ -371,9 +375,10 @@ public final class Aeron implements AutoCloseable
          * Set the amount of time, in milliseconds, that this client will wait until it determines the
          * Media Driver is unavailable. When this happens a
          * {@link uk.co.real_logic.aeron.exceptions.DriverTimeoutException} will be generated for the error handler.
-         * @see #errorHandler(Consumer)
+         *
          * @param value Number of milliseconds.
          * @return this Aeron.Context for method chaining.
+         * @see #errorHandler(ErrorHandler)
          */
         public Context mediaDriverTimeout(final long value)
         {
@@ -384,6 +389,7 @@ public final class Aeron implements AutoCloseable
         /**
          * Get the amount of time, in milliseconds, that this client will wait until it determines the
          * Media Driver is unavailable.
+         *
          * @return Number of milliseconds.
          */
         public long mediaDriverTimeout()

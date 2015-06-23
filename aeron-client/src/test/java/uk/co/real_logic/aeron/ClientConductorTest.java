@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.EpochClock;
@@ -31,7 +32,6 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import java.nio.ByteBuffer;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,7 +83,7 @@ public class ClientConductorTest
 
     private final EpochClock epochClock = new SystemEpochClock();
     private final TimerWheel timerWheel = mock(TimerWheel.class);
-    private final Consumer<Throwable> mockClientErrorHandler = Throwable::printStackTrace;
+    private final ErrorHandler mockClientErrorHandler = Throwable::printStackTrace;
 
     private DriverProxy driverProxy;
     private ClientConductor conductor;

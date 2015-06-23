@@ -17,19 +17,19 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.util.Arrays;
-import java.util.function.Consumer;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
 
 /**
- * Represents an incoming Connection from a publisher to a {@link Subscription}. Each connection identifies source publisher
- * by session id.
+ * Represents an incoming Connection from a publisher to a {@link Subscription}.
+ * Each connection identifies source publisher by session id.
  */
 class Connection implements ManagedResource
 {
@@ -78,7 +78,7 @@ class Connection implements ManagedResource
         return correlationId;
     }
 
-    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit, final Consumer<Throwable> errorHandler)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit, final ErrorHandler errorHandler)
     {
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;

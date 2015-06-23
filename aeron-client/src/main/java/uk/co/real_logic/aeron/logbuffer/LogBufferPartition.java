@@ -60,7 +60,6 @@ public class LogBufferPartition
         return metaDataBuffer;
     }
 
-
     /**
      * Clean down the buffers for reuse by zeroing them out.
      */

@@ -188,10 +188,10 @@ public class Subscription implements AutoCloseable
 
         if (null != removedConnection)
         {
-            final int newSize = oldLength - 1;
-            final Connection[] newArray = new Connection[newSize];
+            final int newLength = oldLength - 1;
+            final Connection[] newArray = new Connection[newLength];
             System.arraycopy(oldArray, 0, newArray, 0, index);
-            System.arraycopy(oldArray, index + 1, newArray, index, newSize - index);
+            System.arraycopy(oldArray, index + 1, newArray, index, newLength - index);
             connections = newArray;
 
             clientConductor.lingerResource(removedConnection);

@@ -81,6 +81,19 @@ int main(int argc, char** argv)
     cout << "no op duration:                      ";
     cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
 
+    start = chrono::steady_clock::now();
+
+    chrono::steady_clock::time_point now = chrono::steady_clock::now();
+    long count = chrono::duration<long, std::nano>(now.time_since_epoch()).count();
+
+    end = chrono::steady_clock::now();
+    diff = end - start;
+
+    cout << "nano_clock duration:                 ";
+    cout << std::chrono::duration<long, std::nano>(diff).count() << " ns\n";
+
+    cout << "nano_clock sample:                   " << count << "\n";
+
     return 0;
 }
 

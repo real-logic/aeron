@@ -53,7 +53,7 @@ public:
         return m_what.c_str();
     }
 
-        const char *where() const AERON_NOEXCEPT
+    const char *where() const AERON_NOEXCEPT
     {
         return m_where.c_str();
     }
@@ -75,6 +75,7 @@ DECLARE_SOURCED_EXCEPTION (ParseException);
 DECLARE_SOURCED_EXCEPTION (ElementNotFound);
 DECLARE_SOURCED_EXCEPTION (IllegalArgumentException);
 DECLARE_SOURCED_EXCEPTION (IllegalStateException);
+DECLARE_SOURCED_EXCEPTION (DriverTimeoutException);
 
 }}
 #endif

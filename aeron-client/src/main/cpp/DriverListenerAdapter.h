@@ -22,6 +22,7 @@
 #include <command/PublicationBuffersReadyFlyweight.h>
 #include <command/ConnectionBuffersReadyFlyweight.h>
 #include <command/ConnectionMessageFlyweight.h>
+#include <command/ErrorResponseFlyweight.h>
 
 namespace aeron {
 
@@ -97,7 +98,12 @@ public:
 
                     case ControlProtocolEvents::ON_ERROR:
                     {
+                        const ErrorResponseFlyweight errorResponse(buffer, offset);
 
+                        m_driverListener.onErrorResponse(
+                            errorResponse.offendingCommandCorrelationId(),
+                            errorResponse.errorCode(),
+                            errorResponse.errorMessage());
                     }
                     break;
 

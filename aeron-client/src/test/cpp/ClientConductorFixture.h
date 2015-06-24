@@ -25,6 +25,7 @@
 #include <concurrent/logbuffer/LogBufferDescriptor.h>
 #include "DriverProxy.h"
 #include "ClientConductor.h"
+#include "Context.h"
 
 using namespace aeron::concurrent::ringbuffer;
 using namespace aeron::concurrent::broadcast;
@@ -85,6 +86,7 @@ public:
             onNewSub,
             onNewConn,
             onInactive,
+            defaultErrorHandler,
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS)
     {

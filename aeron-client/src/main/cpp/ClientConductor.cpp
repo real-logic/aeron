@@ -20,6 +20,8 @@ namespace aeron {
 
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId, std::int32_t sessionId)
 {
+    verifyDriverIsActive();
+
     std::lock_guard<std::mutex> lock(m_adminLock);
     std::int64_t id;
 
@@ -66,6 +68,9 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
     {
         UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, (*it).m_positionLimitCounterId);
 
+        // TODO: add in time of ADD_PUBLICATION being initially sent and waiting response.
+        // TODO: If findPublication called and timeout since original, then throw exception.
+
         pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_registrationId, (*it).m_streamId,
             (*it).m_sessionId, publicationLimit, *((*it).m_buffers));
 
@@ -78,6 +83,8 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
 
 void ClientConductor::releasePublication(std::int64_t registrationId)
 {
+    verifyDriverIsActive();
+
     std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<PublicationStateDefn>::iterator it = std::find_if(m_publications.begin(), m_publications.end(),
@@ -95,6 +102,8 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
 
 std::int64_t ClientConductor::addSubscription(const std::string &channel, std::int32_t streamId)
 {
+    verifyDriverIsActive();
+
     std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
@@ -132,6 +141,8 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
 
 void ClientConductor::releaseSubscription(std::int64_t registrationId)
 {
+    verifyDriverIsActive();
+
     std::lock_guard<std::mutex> lock(m_adminLock);
 
     std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
@@ -197,6 +208,38 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 
     // TODO: do same for publications for close
 }
+
+void ClientConductor::onErrorResponse(
+    std::int64_t offendingCommandCorrelationId,
+    std::int32_t errorCode,
+    const std::string& errorMessage)
+{
+    std::lock_guard<std::mutex> lock(m_adminLock);
+
+    std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn &entry)
+        {
+            return (
+                offendingCommandCorrelationId == entry.m_registrationId ||
+                offendingCommandCorrelationId == entry.m_removeCorrelationId);
+        });
+
+    if (it != m_subscriptions.end())
+    {
+        if (offendingCommandCorrelationId == (*it).m_registrationId)
+        {
+            // TODO: error on registration of subcription
+        }
+        else if (offendingCommandCorrelationId == (*it).m_removeCorrelationId)
+        {
+            // TODO: error on remove subscription
+        }
+        return;
+    }
+
+    // TODO: handle publication options.
+}
+
 
 void ClientConductor::onNewConnection(
     std::int32_t streamId,

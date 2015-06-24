@@ -40,6 +40,7 @@ SET(HEADERS
     command/ConnectionBuffersReadyFlyweight.h
     command/ControlProtocolEvents.h
     command/CorrelatedMessageFlyweight.h
+    command/ErrorResponseFlyweight.h
     command/Flyweight.h
     command/PublicationMessageFlyweight.h
     command/PublicationBuffersReadyFlyweight.h

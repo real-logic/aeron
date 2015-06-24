@@ -78,6 +78,11 @@ public:
             m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
         }
 
+        if (NULL_TIMEOUT == m_resourceLingerTimeout)
+        {
+            m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
+        }
+
         return *this;
     }
 
@@ -168,8 +173,8 @@ private:
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;
     on_new_connection_t m_onNewConnectionHandler = defaultOnNewConnectionHandler;
     on_inactive_connection_t m_onInactiveConnectionHandler = defaultOnInactiveConnectionHandler;
-    long m_mediaDriverTimeout = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
-    long m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
+    long m_mediaDriverTimeout = NULL_TIMEOUT;
+    long m_resourceLingerTimeout = NULL_TIMEOUT;
 };
 
 }

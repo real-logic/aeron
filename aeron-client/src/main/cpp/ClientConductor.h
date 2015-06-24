@@ -52,6 +52,7 @@ public:
         const on_new_subscription_t& newSubscriptionHandler,
         const on_new_connection_t& newConnectionHandler,
         const on_inactive_connection_t& inactiveConnectionHandler,
+        const exception_handler_t& errorHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs) :
         m_driverProxy(driverProxy),
@@ -61,11 +62,13 @@ public:
         m_onNewSubscpriptionHandler(newSubscriptionHandler),
         m_onNewConnectionHandler(newConnectionHandler),
         m_onInactiveConnectionHandler(inactiveConnectionHandler),
+        m_errorHandler(errorHandler),
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
         m_timeOfLastCheckManagedResources(epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
-        m_resourceLingerTimeoutMs(resourceLingerTimeoutMs)
+        m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
+        m_driverActive(true)
     {
     }
 
@@ -118,6 +121,11 @@ public:
         std::int64_t registrationId);
 
     void onOperationSuccess(std::int64_t correlationId);
+
+    void onErrorResponse(
+        std::int64_t offendingCommandCorrelationId,
+        std::int32_t errorCode,
+        const std::string& errorMessage);
 
     void onNewConnection(
         std::int32_t streamId,
@@ -223,12 +231,15 @@ private:
     on_new_subscription_t m_onNewSubscpriptionHandler;
     on_new_connection_t m_onNewConnectionHandler;
     on_inactive_connection_t m_onInactiveConnectionHandler;
+    exception_handler_t m_errorHandler;
 
     epoch_clock_t m_epochClock;
     long m_timeOfLastKeepalive;
     long m_timeOfLastCheckManagedResources;
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
+
+    std::atomic<bool> m_driverActive;
 
     inline int onHeartbeatCheckTimeouts()
     {
@@ -243,7 +254,11 @@ private:
 
             if (now > (m_driverProxy.timeOfLastDriverKeepalive() + m_driverTimeoutMs))
             {
-                // TODO: set driverActive to false and call error handler
+                m_driverActive = false;
+
+                DriverTimeoutException exception(
+                    strPrintf("Driver has been inactive for over %d ms", m_driverTimeoutMs), SOURCEINFO);
+                m_errorHandler(exception);
             }
 
             m_timeOfLastKeepalive = now;
@@ -258,6 +273,14 @@ private:
         }
 
         return result;
+    }
+
+    inline void verifyDriverIsActive()
+    {
+        if (!m_driverActive)
+        {
+            throw DriverTimeoutException("Driver is inactive", SOURCEINFO);
+        }
     }
 };
 

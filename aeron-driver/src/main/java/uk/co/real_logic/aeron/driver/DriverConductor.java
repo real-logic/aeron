@@ -15,23 +15,22 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.Flyweight;
 import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.command.RemoveMessageFlyweight;
 import uk.co.real_logic.aeron.command.SubscriptionMessageFlyweight;
-import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.driver.event.EventCode;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver.Context;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
+import uk.co.real_logic.aeron.driver.event.EventCode;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -52,8 +51,8 @@ import java.util.function.Supplier;
 import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.aeron.ErrorCode.*;
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
+import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
 
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as determining if loss has occurred.
@@ -369,7 +368,7 @@ public class DriverConductor implements Agent
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
-        Flyweight flyweight = null;
+        CorrelatedMessageFlyweight flyweight = null;
 
         try
         {
@@ -447,12 +446,12 @@ public class DriverConductor implements Agent
         }
         catch (final ControlProtocolException ex)
         {
-            clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight, length);
+            clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight);
             logger.logException(ex);
         }
         catch (final Exception ex)
         {
-            clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight, length);
+            clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight);
             logger.logException(ex);
         }
     }

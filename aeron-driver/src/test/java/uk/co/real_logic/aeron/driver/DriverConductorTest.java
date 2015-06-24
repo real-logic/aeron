@@ -324,7 +324,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         verify(senderProxy).newPublication(any(), any(), any());
-        verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
         verify(mockConductorLogger).logException(any());
     }
@@ -339,7 +339,7 @@ public class DriverConductorTest
 
         verify(senderProxy).newPublication(any(), any(), any());
         verify(senderProxy, never()).removePublication(any());
-        verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
         verify(mockConductorLogger).logException(any());
     }
@@ -354,7 +354,7 @@ public class DriverConductorTest
 
         verify(senderProxy, never()).newPublication(any(), any(), any());
 
-        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any(), anyInt());
+        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
         verify(mockConductorLogger).logException(any());
     }

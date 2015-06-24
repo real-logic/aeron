@@ -26,25 +26,21 @@ public enum ErrorCode
     INVALID_CHANNEL(1),
     /** Attempted to remove a subscription, but it was not found */
     UNKNOWN_SUBSCRIPTION(2),
-    /** Reserved for future use. */
-    GENERIC_ERROR_MESSAGE(3),
-    /** Reserved for future use. */
-    GENERIC_ERROR_SUBSCRIPTION_MESSAGE(4),
     /** Attempted to remove a publication, but it was not found. */
-    UNKNOWN_PUBLICATION(5);
+    UNKNOWN_PUBLICATION(3);
 
-    private final short value;
+    private final int value;
 
     ErrorCode(final int value)
     {
-        this.value = (short) value;
+        this.value = value;
     }
 
     /**
      * Get the value of this ErrorCode.
      * @return The value.
      */
-    public short value()
+    public int value()
     {
         return value;
     }
@@ -54,7 +50,7 @@ public enum ErrorCode
      * @param value Of the ErrorCode
      * @return ErrorCode
      */
-    public static ErrorCode get(final short value)
+    public static ErrorCode get(final int value)
     {
         if (value > Singleton.VALUES.length)
         {

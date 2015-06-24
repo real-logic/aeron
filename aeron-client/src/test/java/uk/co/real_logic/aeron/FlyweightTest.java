@@ -16,10 +16,8 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.Test;
-
 import uk.co.real_logic.aeron.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.NakFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -40,8 +38,6 @@ public class FlyweightTest
     private final DataHeaderFlyweight decodeDataHeader = new DataHeaderFlyweight();
     private final PublicationMessageFlyweight encodePublication = new PublicationMessageFlyweight();
     private final PublicationMessageFlyweight decodePublication = new PublicationMessageFlyweight();
-    private final ErrorFlyweight encodeError = new ErrorFlyweight();
-    private final ErrorFlyweight decodeError = new ErrorFlyweight();
     private final NakFlyweight encodeNakHeader = new NakFlyweight();
     private final NakFlyweight decodeNakHeader = new NakFlyweight();
 
@@ -172,89 +168,5 @@ public class FlyweightTest
         decodePublication.wrap(aBuff, 0);
 
         assertThat(decodePublication.channel(), is(example));
-    }
-
-    @Test
-    public void shouldReadAndWriteErrorHeaderWithoutErrorStringCorrectly()
-    {
-        final ByteBuffer originalBuffer = ByteBuffer.allocateDirect(256);
-        final UnsafeBuffer originalUnsafeBuffer = new UnsafeBuffer(originalBuffer);
-
-        encodeDataHeader.wrap(originalUnsafeBuffer, 0);
-        encodeDataHeader.version((short)1);
-        encodeDataHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
-        encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
-        encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
-        encodeDataHeader.sessionId(0xdeadbeef);
-        encodeDataHeader.streamId(0x44332211);
-        encodeDataHeader.termId(0x99887766);
-
-        encodeError.wrap(aBuff, 0);
-        encodeError.version((short)1);
-        encodeError.flags((short)0);
-        encodeError.headerType(HeaderFlyweight.HDR_TYPE_ERR);
-        encodeError.frameLength(encodeDataHeader.frameLength() + 12);
-        encodeError.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
-
-        decodeError.wrap(aBuff, 0);
-        assertThat(decodeError.version(), is((short)1));
-        assertThat(decodeError.flags(), is((short)0));
-        assertThat(decodeError.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
-        assertThat(decodeError.frameLength(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
-
-        decodeDataHeader.wrap(aBuff, decodeError.offendingHeaderOffset());
-        assertThat(decodeDataHeader.version(), is((short)1));
-        assertThat(decodeDataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-        assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(decodeDataHeader.frameLength(), is(DataHeaderFlyweight.HEADER_LENGTH));
-        assertThat(decodeDataHeader.sessionId(), is(0xdeadbeef));
-        assertThat(decodeDataHeader.streamId(), is(0x44332211));
-        assertThat(decodeDataHeader.termId(), is(0x99887766));
-        assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
-    }
-
-    @Test
-    public void shouldReadAndWriteErrorHeaderWithErrorStringCorrectly()
-    {
-        final String errorString = "this is an error";
-        final ByteBuffer originalBuffer = ByteBuffer.allocateDirect(256);
-        final UnsafeBuffer originalUnsafeBuffer = new UnsafeBuffer(originalBuffer);
-
-        encodeDataHeader.wrap(originalUnsafeBuffer, 0);
-        encodeDataHeader.version((short)1);
-        encodeDataHeader.flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS);
-        encodeDataHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
-        encodeDataHeader.frameLength(DataHeaderFlyweight.HEADER_LENGTH);
-        encodeDataHeader.sessionId(0xdeadbeef);
-        encodeDataHeader.streamId(0x44332211);
-        encodeDataHeader.termId(0x99887766);
-
-        encodeError.wrap(aBuff, 0);
-        encodeError.version((short)1);
-        encodeError.flags((short)0);
-        encodeError.headerType(HeaderFlyweight.HDR_TYPE_ERR);
-        encodeError.frameLength(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH + errorString.length());
-        encodeError.offendingHeader(encodeDataHeader, encodeDataHeader.frameLength());
-        encodeError.errorMessage(errorString.getBytes());
-
-        decodeError.wrap(aBuff, 0);
-        assertThat(decodeError.version(), is((short)1));
-        assertThat(decodeError.flags(), is((short)0));
-        assertThat(decodeError.headerType(), is(HeaderFlyweight.HDR_TYPE_ERR));
-        assertThat(decodeError.frameLength(),
-                   is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH + errorString.length()));
-
-        decodeDataHeader.wrap(aBuff, decodeError.offendingHeaderOffset());
-        assertThat(decodeDataHeader.version(), is((short)1));
-        assertThat(decodeDataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-        assertThat(decodeDataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(decodeDataHeader.frameLength(), is(encodeDataHeader.frameLength()));
-        assertThat(decodeDataHeader.sessionId(), is(0xdeadbeef));
-        assertThat(decodeDataHeader.streamId(), is(0x44332211));
-        assertThat(decodeDataHeader.termId(), is(0x99887766));
-        assertThat(decodeDataHeader.dataOffset(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
-        assertThat(decodeError.errorMessageOffset(), is(encodeDataHeader.frameLength() + ErrorFlyweight.HEADER_LENGTH));
-        assertThat(decodeError.errorStringLength(), is(errorString.length()));
-        assertThat(decodeError.errorMessageAsBytes(), is(errorString.getBytes()));
     }
 }

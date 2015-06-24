@@ -16,15 +16,10 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.ErrorCode;
-import uk.co.real_logic.aeron.Flyweight;
-import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.command.ConnectionMessageFlyweight;
-import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.command.PublicationBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.command.*;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.protocol.ErrorFlyweight;
-import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 
@@ -45,7 +40,7 @@ public class ClientProxy
     private final UnsafeBuffer tmpBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(WRITE_BUFFER_CAPACITY));
     private final BroadcastTransmitter transmitter;
 
-    private final ErrorFlyweight errorFlyweight = new ErrorFlyweight();
+    private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
@@ -59,24 +54,22 @@ public class ClientProxy
     }
 
     public void onError(
-        final ErrorCode errorCode, String errorMessage, final Flyweight offendingFlyweight, final int offendingFlyweightLength)
+        final ErrorCode errorCode,
+        String errorMessage,
+        final CorrelatedMessageFlyweight offendingFlyweight)
     {
         if (null == errorMessage)
         {
             errorMessage = "";
         }
 
-        final byte[] errorBytes = errorMessage.getBytes();
-        final int frameLength = ErrorFlyweight.HEADER_LENGTH + offendingFlyweightLength + errorBytes.length;
-
-        errorFlyweight.wrap(tmpBuffer, 0);
-        errorFlyweight
+        errorResponse.wrap(tmpBuffer, 0);
+        errorResponse
+            .offendingCommandCorrelationId(offendingFlyweight.correlationId())
             .errorCode(errorCode)
-            .offendingFlyweight(offendingFlyweight, offendingFlyweightLength)
-            .errorMessage(errorBytes)
-            .frameLength(frameLength);
+            .errorMessage(errorMessage);
 
-        transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorFlyweight.frameLength());
+        transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorResponse.length());
     }
 
     public void onConnectionReady(

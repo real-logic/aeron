@@ -18,11 +18,10 @@ package uk.co.real_logic.aeron;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.command.*;
-import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.protocol.ErrorFlyweight;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
@@ -70,7 +69,7 @@ public class ClientConductorTest
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
-    private final ErrorFlyweight errorMessage = new ErrorFlyweight();
+    private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
 
     private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer connectionReadyBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
@@ -118,7 +117,7 @@ public class ClientConductorTest
         publicationReady.wrap(publicationReadyBuffer, 0);
         connectionReady.wrap(connectionReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);
-        errorMessage.wrap(errorMessageBuffer, 0);
+        errorResponse.wrap(errorMessageBuffer, 0);
 
         publicationReady.correlationId(CORRELATION_ID);
         publicationReady.sessionId(SESSION_ID_1);
@@ -267,16 +266,10 @@ public class ClientConductorTest
             errorMessageBuffer,
             (buffer) ->
             {
-                final byte[] message = "channel unknown".getBytes();
-                final RemoveMessageFlyweight removeMessage = new RemoveMessageFlyweight();
-                removeMessage.wrap(new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY)), 0);
-                removeMessage.correlationId(CLOSE_CORRELATION_ID);
-
-                errorMessage.errorCode(INVALID_CHANNEL);
-                errorMessage.offendingFlyweight(removeMessage, RemoveMessageFlyweight.LENGTH);
-                errorMessage.errorMessage(message);
-                errorMessage.frameLength(ErrorFlyweight.HEADER_LENGTH + message.length + RemoveMessageFlyweight.LENGTH);
-                return errorMessage.frameLength();
+                errorResponse.errorCode(INVALID_CHANNEL);
+                errorResponse.errorMessage("channel unknown");
+                errorResponse.offendingCommandCorrelationId(CLOSE_CORRELATION_ID);
+                return errorResponse.length();
             });
 
         publication.close();
@@ -290,16 +283,10 @@ public class ClientConductorTest
             errorMessageBuffer,
             (buffer) ->
             {
-                final byte[] message = "invalid channel".getBytes();
-                final PublicationMessageFlyweight publicationMessage = new PublicationMessageFlyweight();
-                publicationMessage.wrap(new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY)), 0);
-                publicationMessage.correlationId(CORRELATION_ID);
-
-                errorMessage.errorCode(INVALID_CHANNEL);
-                errorMessage.offendingFlyweight(publicationMessage, publicationMessage.length());
-                errorMessage.errorMessage(message);
-                errorMessage.frameLength(ErrorFlyweight.HEADER_LENGTH + message.length + publicationMessage.length());
-                return errorMessage.frameLength();
+                errorResponse.errorCode(INVALID_CHANNEL);
+                errorResponse.errorMessage("invalid channel");
+                errorResponse.offendingCommandCorrelationId(CORRELATION_ID);
+                return errorResponse.length();
             });
 
         conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
@@ -448,16 +435,10 @@ public class ClientConductorTest
             errorMessageBuffer,
             (buffer) ->
             {
-                final byte[] message = "invalid channel".getBytes();
-                final SubscriptionMessageFlyweight subscriptionMessage = new SubscriptionMessageFlyweight();
-                subscriptionMessage.wrap(new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY)), 0);
-                subscriptionMessage.correlationId(CORRELATION_ID);
-
-                errorMessage.errorCode(INVALID_CHANNEL);
-                errorMessage.offendingFlyweight(subscriptionMessage, subscriptionMessage.length());
-                errorMessage.errorMessage(message);
-                errorMessage.frameLength(ErrorFlyweight.HEADER_LENGTH + message.length + subscriptionMessage.length());
-                return errorMessage.frameLength();
+                errorResponse.errorCode(INVALID_CHANNEL);
+                errorResponse.errorMessage("invalid channel");
+                errorResponse.offendingCommandCorrelationId(CORRELATION_ID);
+                return errorResponse.length();
             });
 
         conductor.addSubscription(CHANNEL, STREAM_ID_1);

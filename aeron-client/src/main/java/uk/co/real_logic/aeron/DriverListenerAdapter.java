@@ -15,11 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.command.ConnectionMessageFlyweight;
-import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
-import uk.co.real_logic.aeron.command.PublicationBuffersReadyFlyweight;
-import uk.co.real_logic.aeron.protocol.ErrorFlyweight;
+import uk.co.real_logic.aeron.command.*;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
@@ -33,7 +29,7 @@ class DriverListenerAdapter implements MessageHandler
 {
     private final CopyBroadcastReceiver broadcastReceiver;
 
-    private final ErrorFlyweight errorHeader = new ErrorFlyweight();
+    private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
@@ -130,15 +126,12 @@ class DriverListenerAdapter implements MessageHandler
 
             case ON_ERROR:
             {
-                errorHeader.wrap(buffer, index);
-
-                correlatedMessage.wrap(buffer, errorHeader.offendingHeaderOffset());
-
-                final long correlationId = correlatedMessage.correlationId();
+                errorResponse.wrap(buffer, index);
+                final long correlationId = errorResponse.offendingCommandCorrelationId();
 
                 if (correlationId == activeCorrelationId)
                 {
-                    listener.onError(errorHeader.errorCode(), errorHeader.errorMessage(), correlatedMessage.correlationId());
+                    listener.onError(errorResponse.errorCode(), errorResponse.errorMessage(), correlationId);
 
                     lastReceivedCorrelationId = correlationId;
                 }

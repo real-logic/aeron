@@ -26,7 +26,7 @@ public class ErrorCodeTest
     public void errorCodesShouldBeIndexes()
     {
         final ErrorCode[] values = ErrorCode.values();
-        for (short i = 0; i < values.length; i++)
+        for (int i = 0; i < values.length; i++)
         {
             assertThat(ErrorCode.get(i).value(), is(i));
         }

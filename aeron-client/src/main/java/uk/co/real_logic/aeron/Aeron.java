@@ -261,6 +261,16 @@ public final class Aeron implements AutoCloseable
                 {
                     errorHandler = DEFAULT_ERROR_HANDLER;
                 }
+
+                if (null == newConnectionHandler)
+                {
+                    newConnectionHandler = (channel, streamId, sessionId, joiningPosition, sourceIdentity) -> { };
+                }
+
+                if (null == inactiveConnectionHandler)
+                {
+                    inactiveConnectionHandler = (channel, streamId, sessionId, position) -> { };
+                }
             }
             catch (final Exception ex)
             {

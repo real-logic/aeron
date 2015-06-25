@@ -212,12 +212,8 @@ class ClientConductor implements Agent, DriverListener
                                     errorHandler,
                                     correlationId));
 
-                            if (null != newConnectionHandler)
-                            {
-                                newConnectionHandler.onNewConnection(
-                                    subscription.channel(), streamId, sessionId, joiningPosition, msg.sourceIdentity());
-                            }
-
+                            newConnectionHandler.onNewConnection(
+                                subscription.channel(), streamId, sessionId, joiningPosition, msg.sourceIdentity());
                             break;
                         }
                     }
@@ -238,10 +234,7 @@ class ClientConductor implements Agent, DriverListener
             {
                 if (subscription.removeConnection(correlationId))
                 {
-                    if (null != inactiveConnectionHandler)
-                    {
-                        inactiveConnectionHandler.onInactiveConnection(subscription.channel(), streamId, sessionId, position);
-                    }
+                    inactiveConnectionHandler.onInactiveConnection(subscription.channel(), streamId, sessionId, position);
                 }
             });
     }

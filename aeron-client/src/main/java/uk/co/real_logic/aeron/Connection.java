@@ -42,6 +42,7 @@ class Connection implements ManagedResource
     private final Position subscriberPosition;
     private final UnsafeBuffer[] termBuffers;
     private final Header header;
+    private final ErrorHandler errorHandler;
     private final LogBuffers logBuffers;
 
     public Connection(
@@ -49,12 +50,14 @@ class Connection implements ManagedResource
         final long initialPosition,
         final long correlationId,
         final Position subscriberPosition,
-        final LogBuffers logBuffers)
+        final LogBuffers logBuffers,
+        final ErrorHandler errorHandler)
     {
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
+        this.errorHandler = errorHandler;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         termBuffers = Arrays.copyOf(buffers, PARTITION_COUNT);
@@ -78,7 +81,7 @@ class Connection implements ManagedResource
         return correlationId;
     }
 
-    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit, final ErrorHandler errorHandler)
+    public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;

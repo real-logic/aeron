@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
-import uk.co.real_logic.agrona.ErrorHandler;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -51,21 +50,18 @@ public class Subscription implements AutoCloseable
 
     private final String channel;
     private final ClientConductor clientConductor;
-    private final ErrorHandler errorHandler;
     private volatile Connection[] connections = EMPTY_ARRAY;
 
     Subscription(
         final ClientConductor conductor,
         final String channel,
         final int streamId,
-        final long registrationId,
-        final ErrorHandler errorHandler)
+        final long registrationId)
     {
         this.clientConductor = conductor;
         this.channel = channel;
         this.streamId = streamId;
         this.registrationId = registrationId;
-        this.errorHandler = errorHandler;
     }
 
     /**
@@ -114,11 +110,10 @@ public class Subscription implements AutoCloseable
             }
 
             int i = startingIndex;
-            final ErrorHandler errorHandler = this.errorHandler;
 
             do
             {
-                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit, errorHandler);
+                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit);
 
                 if (++i == length)
                 {

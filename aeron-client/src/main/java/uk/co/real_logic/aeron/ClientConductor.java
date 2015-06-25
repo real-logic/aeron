@@ -145,7 +145,7 @@ class ClientConductor implements Agent, DriverListener
         final long correlationId = driverProxy.addSubscription(channel, streamId);
         final long timeout = timerWheel.clock().nanoTime() + driverTimeoutNs;
 
-        final Subscription subscription = new Subscription(this, channel, streamId, correlationId, errorHandler);
+        final Subscription subscription = new Subscription(this, channel, streamId, correlationId);
         activeSubscriptions.add(subscription);
 
         doWorkUntil(correlationId, timeout, channel);
@@ -209,7 +209,8 @@ class ClientConductor implements Agent, DriverListener
                                     joiningPosition,
                                     correlationId,
                                     new UnsafeBufferPosition(counterValuesBuffer, msg.subscriberPositionId(i)),
-                                    logBuffersFactory.map(logFileName)));
+                                    logBuffersFactory.map(logFileName),
+                                    errorHandler));
 
                             if (null != newConnectionHandler)
                             {

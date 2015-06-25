@@ -97,7 +97,7 @@ public class ConnectionTest
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(0));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE, errorHandler);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -116,14 +116,14 @@ public class ConnectionTest
     {
         final int initialMessageIndex = 5;
         final int initialTermOffset = offsetOfFrame(initialMessageIndex);
-        final long initialPosition =
-            computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final long initialPosition = computePosition(
+            INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
         final Connection connection = createConnection(initialPosition);
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE, errorHandler);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -150,7 +150,7 @@ public class ConnectionTest
 
         insertDataFrame(activeTermId, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE, errorHandler);
+        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -166,19 +166,20 @@ public class ConnectionTest
 
     public Connection createConnection(final long initialPosition)
     {
-        return new Connection(SESSION_ID, initialPosition, CORRELATION_ID, position, logBuffers);
+        return new Connection(SESSION_ID, initialPosition, CORRELATION_ID, position, logBuffers, errorHandler);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)
     {
-        dataHeader.termId(INITIAL_TERM_ID)
-                  .streamId(STREAM_ID)
-                  .sessionId(SESSION_ID)
-                  .termOffset(termOffset)
-                  .frameLength(DATA.length + DataHeaderFlyweight.HEADER_LENGTH)
-                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                  .version(HeaderFlyweight.CURRENT_VERSION);
+        dataHeader
+            .termId(INITIAL_TERM_ID)
+            .streamId(STREAM_ID)
+            .sessionId(SESSION_ID)
+            .termOffset(termOffset)
+            .frameLength(DATA.length + DataHeaderFlyweight.HEADER_LENGTH)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .version(HeaderFlyweight.CURRENT_VERSION);
 
         rcvBuffer.putBytes(dataHeader.dataOffset(), DATA);
 

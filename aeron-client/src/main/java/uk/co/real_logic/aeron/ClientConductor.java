@@ -207,10 +207,11 @@ class ClientConductor implements Agent, DriverListener
                                 new Connection(
                                     sessionId,
                                     joiningPosition,
-                                    correlationId,
                                     new UnsafeBufferPosition(counterValuesBuffer, msg.subscriberPositionId(i)),
                                     logBuffersFactory.map(logFileName),
-                                    errorHandler));
+                                    errorHandler,
+                                    correlationId
+                                ));
 
                             if (null != newConnectionHandler)
                             {

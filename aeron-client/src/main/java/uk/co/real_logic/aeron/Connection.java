@@ -29,9 +29,9 @@ import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
 
 /**
  * Represents an incoming {@link Connection} from a publisher to a {@link Subscription}.
- * Each {@link Connection} identifies source publisher by session id.
+ * Each {@link Connection} identifies a source publisher by session id.
  */
-class Connection
+public class Connection
 {
     private final long correlationId;
     private final int sessionId;
@@ -44,13 +44,23 @@ class Connection
     private final ErrorHandler errorHandler;
     private final LogBuffers logBuffers;
 
+    /**
+     * Construct a new connection over a log to represent a stream of messages from a {@link Publication}.
+     *
+     * @param sessionId          of the stream of messages.
+     * @param initialPosition    at which the subscriber is joining the stream.
+     * @param subscriberPosition for indicating the position of the subscriber in the stream.
+     * @param logBuffers         containing the stream of messages.
+     * @param errorHandler       to be called if an error occurs when polling for messages.
+     * @param correlationId      of the request to the media driver.
+     */
     public Connection(
         final int sessionId,
         final long initialPosition,
-        final long correlationId,
         final Position subscriberPosition,
         final LogBuffers logBuffers,
-        final ErrorHandler errorHandler)
+        final ErrorHandler errorHandler,
+        final long correlationId)
     {
         this.correlationId = correlationId;
         this.sessionId = sessionId;
@@ -70,16 +80,34 @@ class Connection
         subscriberPosition.setOrdered(initialPosition);
     }
 
+    /**
+     * The sessionId for the steam of messages.
+     *
+     * @return the sessionId for the steam of messages.
+     */
     public int sessionId()
     {
         return sessionId;
     }
 
+    /**
+     * The correlationId for identification of the connection with the media driver.
+     *
+     * @return the correlationId for identification of the connection with the media driver.
+     */
     public long correlationId()
     {
         return correlationId;
     }
 
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered via the {@link FragmentHandler} up to a limited number of fragments as specified.
+     *
+     * @param fragmentHandler to which messages are delivered.
+     * @param fragmentLimit for the number of fragments to be consumed during one polling operation.
+     * @return the number of fragments that have been consumed.
+     */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
         final long position = subscriberPosition.get();

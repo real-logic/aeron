@@ -72,13 +72,13 @@ class DriverListenerAdapter implements MessageHandler
 
                 if (correlationId == activeCorrelationId)
                 {
-                    final int sessionId = publicationReady.sessionId();
-                    final int streamId = publicationReady.streamId();
-                    final int publicationLimitCounterId = publicationReady.publicationLimitCounterId();
-                    final String logFileName = publicationReady.logFileName();
-
                     listener.onNewPublication(
-                        expectedChannel, streamId, sessionId, publicationLimitCounterId, logFileName, correlationId);
+                        expectedChannel,
+                        publicationReady.streamId(),
+                        publicationReady.sessionId(),
+                        publicationReady.publicationLimitCounterId(),
+                        publicationReady.logFileName(),
+                        correlationId);
 
                     lastReceivedCorrelationId = correlationId;
                 }
@@ -89,14 +89,13 @@ class DriverListenerAdapter implements MessageHandler
             {
                 connectionReady.wrap(buffer, index);
 
-                final int sessionId = connectionReady.sessionId();
-                final int streamId = connectionReady.streamId();
-                final long joiningPosition = connectionReady.joiningPosition();
-                final String logFileName = connectionReady.logFileName();
-                final long correlationId = connectionReady.correlationId();
-
                 listener.onNewConnection(
-                    streamId, sessionId, joiningPosition, logFileName, connectionReady, correlationId);
+                    connectionReady.streamId(),
+                    connectionReady.sessionId(),
+                    connectionReady.joiningPosition(),
+                    connectionReady.logFileName(),
+                    connectionReady,
+                    connectionReady.correlationId());
                 break;
             }
 
@@ -137,9 +136,6 @@ class DriverListenerAdapter implements MessageHandler
                 }
                 break;
             }
-
-            default:
-                break;
         }
     }
 }

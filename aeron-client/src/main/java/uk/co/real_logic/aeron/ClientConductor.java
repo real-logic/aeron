@@ -210,8 +210,7 @@ class ClientConductor implements Agent, DriverListener
                                     new UnsafeBufferPosition(counterValuesBuffer, msg.subscriberPositionId(i)),
                                     logBuffersFactory.map(logFileName),
                                     errorHandler,
-                                    correlationId
-                                ));
+                                    correlationId));
 
                             if (null != newConnectionHandler)
                             {

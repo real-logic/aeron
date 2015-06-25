@@ -15,8 +15,10 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.logbuffer.BlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.TermBlockScanner;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -105,7 +107,7 @@ public class Connection
      * will be delivered via the {@link FragmentHandler} up to a limited number of fragments as specified.
      *
      * @param fragmentHandler to which messages are delivered.
-     * @param fragmentLimit for the number of fragments to be consumed during one polling operation.
+     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
@@ -123,6 +125,41 @@ public class Connection
         }
 
         return fragmentsRead(readOutcome);
+    }
+
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered via the {@link BlockHandler} up to a limited number of bytes.
+     *
+     * @param blockHandler     to which block is.
+     * @param blockLengthLimit up to which a block may be in length.
+     * @return the number of bytes that have been consumed.
+     */
+    public int poll(final BlockHandler blockHandler, final int blockLengthLimit)
+    {
+        final long position = subscriberPosition.get();
+        final int termOffset = (int)position & termLengthMask;
+        final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
+        final int limit = Math.min(termOffset + blockLengthLimit, termBuffer.capacity());
+
+        final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limit);
+
+        final int bytesConsumed = resultingOffset - termOffset;
+        if (resultingOffset > termOffset)
+        {
+            try
+            {
+                blockHandler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId);
+            }
+            catch (final Throwable t)
+            {
+                errorHandler.onError(t);
+            }
+
+            subscriberPosition.setOrdered(position + bytesConsumed);
+        }
+
+        return bytesConsumed;
     }
 
     ManagedResource managedResource()

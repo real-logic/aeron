@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.logbuffer.BlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -81,6 +82,8 @@ public class Subscription implements AutoCloseable
     }
 
     /**
+     * Poll the {@link Connection}s under the subscription for available message fragments.
+     *
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered withing a session.
      *
@@ -120,6 +123,28 @@ public class Subscription implements AutoCloseable
         }
 
         return fragmentsRead;
+    }
+
+    /**
+     * Poll the {@link Connection}s under the subscription for available message fragments in blocks.
+     *
+     * @param blockHandler     to receive a block of fragments from each {@link Connection}.
+     * @param blockLengthLimit for each individual block.
+     * @return the number of bytes consumed.
+     * @throws IllegalStateException if the subscription is closed.
+     */
+    public long poll(final BlockHandler blockHandler, final int blockLengthLimit)
+    {
+        ensureOpen();
+
+        long bytesConsumed = 0;
+        final Connection[] connections = this.connections;
+        for (final Connection connection : connections)
+        {
+            bytesConsumed += connection.poll(blockHandler, blockLengthLimit);
+        }
+
+        return bytesConsumed;
     }
 
     /**

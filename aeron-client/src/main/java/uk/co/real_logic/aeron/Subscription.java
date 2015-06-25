@@ -135,7 +135,7 @@ public class Subscription implements AutoCloseable
             {
                 for (final Connection connection : connections)
                 {
-                    clientConductor.lingerResource(connection);
+                    clientConductor.lingerResource(connection.managedResource());
                 }
                 connections = EMPTY_ARRAY;
 
@@ -185,7 +185,7 @@ public class Subscription implements AutoCloseable
             System.arraycopy(oldArray, index + 1, newArray, index, newLength - index);
             connections = newArray;
 
-            clientConductor.lingerResource(removedConnection);
+            clientConductor.lingerResource(removedConnection.managedResource());
 
             return true;
         }

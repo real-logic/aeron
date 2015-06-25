@@ -28,12 +28,11 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
 
 /**
- * Represents an incoming Connection from a publisher to a {@link Subscription}.
- * Each connection identifies source publisher by session id.
+ * Represents an incoming {@link Connection} from a publisher to a {@link Subscription}.
+ * Each {@link Connection} identifies source publisher by session id.
  */
-class Connection implements ManagedResource
+class Connection
 {
-    private long timeOfLastStateChange = 0;
     private final long correlationId;
     private final int sessionId;
     private final int termLengthMask;
@@ -98,18 +97,28 @@ class Connection implements ManagedResource
         return fragmentsRead(readOutcome);
     }
 
-    public void timeOfLastStateChange(final long time)
+    ManagedResource managedResource()
     {
-        this.timeOfLastStateChange = time;
+        return new ConnectionManagedResource();
     }
 
-    public long timeOfLastStateChange()
+    private class ConnectionManagedResource implements ManagedResource
     {
-        return timeOfLastStateChange;
-    }
+        private long timeOfLastStateChange = 0;
 
-    public void delete()
-    {
-        logBuffers.close();
+        public void timeOfLastStateChange(final long time)
+        {
+            this.timeOfLastStateChange = time;
+        }
+
+        public long timeOfLastStateChange()
+        {
+            return timeOfLastStateChange;
+        }
+
+        public void delete()
+        {
+            logBuffers.close();
+        }
     }
 }

@@ -28,10 +28,8 @@ namespace aeron { namespace concurrent { namespace mock {
 class MockAtomicBuffer : public AtomicBuffer
 {
 public:
-    MockAtomicBuffer(std::uint8_t *buffer, util::index_t length) :
-        AtomicBuffer(buffer, length)
-    {
-    }
+    MockAtomicBuffer(std::uint8_t *buffer, util::index_t length);
+    virtual ~MockAtomicBuffer();
 
     MOCK_METHOD2(putUInt8, void(util::index_t offset, std::uint8_t v));
     MOCK_METHOD2(putUInt16, void(util::index_t offset, std::uint16_t v));

@@ -15,14 +15,14 @@
 #
 
 function(aeron_client_test name file)
-    add_executable(${name} ${file} ClientConductorFixture.h)
+    add_executable(${name} ${file} ClientConductorFixture.h ClientConductorFixture.cpp)
     target_link_libraries(${name} aeron_client ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
 function(aeron_common_test name file)
-    add_executable(${name} ${file} concurrent/MockAtomicBuffer.h)
+    add_executable(${name} ${file} concurrent/MockAtomicBuffer.h concurrent/MockAtomicBuffer.cpp)
     target_link_libraries(${name} aeron_client ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})

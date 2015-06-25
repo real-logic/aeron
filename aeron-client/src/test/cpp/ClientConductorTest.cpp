@@ -24,6 +24,8 @@ static const std::int32_t SESSION_ID = 200;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;
 static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
 static const std::int64_t LOG_FILE_LENGTH = LogBufferDescriptor::computeLogLength(TERM_LENGTH);
+static const std::string SOURCE_IDENTITY = "127.0.0.1:43567";
+static const std::int64_t POSITION = 438;
 
 std::string makeTempFileName ()
 {
@@ -198,4 +200,377 @@ TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAdd
     {
         std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
     }, util::RegistrationException);
+}
+
+TEST_F(ClientConductorTest, shouldReturnNullForUnknownSubscription)
+{
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(100);
+
+    EXPECT_TRUE(sub == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldReturnNullForSubscriptionWithoutOperationSuccess)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+
+    EXPECT_TRUE(sub == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldSendAddSubscriptionToDriver)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    static std::int32_t ADD_SUBSCRIPTION = ControlProtocolEvents::ADD_SUBSCRIPTION;
+
+    int count = m_manyToOneRingBuffer.read(
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            const SubscriptionMessageFlyweight message(buffer, offset);
+
+            EXPECT_EQ(msgTypeId, ADD_SUBSCRIPTION);
+            EXPECT_EQ(message.correlationId(), id);
+            EXPECT_EQ(message.streamId(), STREAM_ID);
+            EXPECT_EQ(message.channel(), CHANNEL);
+        });
+
+    EXPECT_EQ(count, 1);
+}
+
+TEST_F(ClientConductorTest, shouldReturnSubscriptionAfterOperationSuccess)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onOperationSuccess(id);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+
+    ASSERT_TRUE(sub != nullptr);
+    EXPECT_EQ(sub->registrationId(), id);
+    EXPECT_EQ(sub->channel(), CHANNEL);
+    EXPECT_EQ(sub->streamId(), STREAM_ID);
+}
+
+TEST_F(ClientConductorTest, shouldReleaseSubscriptionAfterGoingOutOfScope)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    static std::int32_t REMOVE_SUBSCRIPTION = ControlProtocolEvents::REMOVE_SUBSCRIPTION;
+
+    // drain ring buffer
+    m_manyToOneRingBuffer.read(
+        [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+        });
+
+    m_conductor.onOperationSuccess(id);
+
+    {
+        std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+
+        ASSERT_TRUE(sub != nullptr);
+    }
+
+    int count = m_manyToOneRingBuffer.read(
+        [&](std::int32_t msgTypeId, concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+        {
+            const RemoveMessageFlyweight message(buffer, offset);
+
+            EXPECT_EQ(msgTypeId, REMOVE_SUBSCRIPTION);
+            EXPECT_EQ(message.registrationId(), id);
+        });
+
+    EXPECT_EQ(count, 1);
+
+    std::shared_ptr<Subscription> subPost = m_conductor.findSubscription(id);
+    ASSERT_TRUE(subPost == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldReturnDifferentIdsForDuplicateAddSubscription)
+{
+    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    EXPECT_NE(id1, id2);
+}
+
+TEST_F(ClientConductorTest, shouldReturnSameFindSubscriptionAfterOperationSuccess)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onOperationSuccess(id);
+
+    std::shared_ptr<Subscription> sub1 = m_conductor.findSubscription(id);
+    std::shared_ptr<Subscription> sub2 = m_conductor.findSubscription(id);
+
+    ASSERT_TRUE(sub1 != nullptr);
+    ASSERT_TRUE(sub2 != nullptr);
+    ASSERT_TRUE(sub1 == sub2);
+}
+
+TEST_F(ClientConductorTest, shouldReturnDifferentSubscriptionAfterOperationSuccess)
+{
+    std::int64_t id1 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t id2 = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onOperationSuccess(id1);
+    m_conductor.onOperationSuccess(id2);
+
+    std::shared_ptr<Subscription> sub1 = m_conductor.findSubscription(id1);
+    std::shared_ptr<Subscription> sub2 = m_conductor.findSubscription(id2);
+
+    ASSERT_TRUE(sub1 != nullptr);
+    ASSERT_TRUE(sub2 != nullptr);
+    ASSERT_TRUE(sub1 != sub2);
+}
+
+TEST_F(ClientConductorTest, shouldIgnoreOperationSuccessForUnknownCorrelationId)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onOperationSuccess(id + 1);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+
+    ASSERT_TRUE(sub == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldTimeoutAddSubscriptionWithoutOperationSuccess)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+
+    ASSERT_THROW(
+    {
+        std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddSubscription)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onErrorResponse(id, ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+
+    ASSERT_THROW(
+    {
+        std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    }, util::RegistrationException);
+}
+
+TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenDriverInactiveOnIdle)
+{
+    bool called = false;
+
+    m_errorHandler =
+        [&](SourcedException& exception)
+        {
+            EXPECT_EQ(typeid(DriverTimeoutException), typeid(exception));
+            called = true;
+        };
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+    m_conductor.doWork();
+    EXPECT_TRUE(called);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive)
+{
+    bool called = false;
+    m_errorHandler = [&](SourcedException& exception) { called = true; };
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+    m_conductor.doWork();
+    EXPECT_TRUE(called);
+
+    ASSERT_THROW(
+    {
+        m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInactive)
+{
+    bool called = false;
+    m_errorHandler = [&](SourcedException& exception) { called = true; };
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+    m_conductor.doWork();
+    EXPECT_TRUE(called);
+
+    ASSERT_THROW(
+    {
+        m_conductor.releasePublication(100);
+    }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactive)
+{
+    bool called = false;
+    m_errorHandler = [&](SourcedException& exception) { called = true; };
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+    m_conductor.doWork();
+    EXPECT_TRUE(called);
+
+    ASSERT_THROW(
+    {
+        m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverInactive)
+{
+    bool called = false;
+    m_errorHandler = [&](SourcedException& exception) { called = true; };
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+    m_conductor.doWork();
+    EXPECT_TRUE(called);
+
+    ASSERT_THROW(
+    {
+        m_conductor.releaseSubscription(100);
+    }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
+{
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+
+    EXPECT_CALL(m_handlers, onNewPub(testing::StrEq(CHANNEL), STREAM_ID, SESSION_ID, id))
+        .Times(1);
+
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+}
+
+TEST_F(ClientConductorTest, shouldCallOnNewSubAfterOperationSuccess)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    EXPECT_CALL(m_handlers, onNewSub(testing::StrEq(CHANNEL), STREAM_ID, id))
+        .Times(1);
+
+    m_conductor.onOperationSuccess(id);
+}
+
+TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_handlers, onNewConn(CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+        .Times(1)
+        .InSequence(sequence);
+
+    ConnectionBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
+
+    m_conductor.onOperationSuccess(id);
+    // must be able to handle newConn even if findSubscription not called
+    m_conductor.onNewConnection(STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+}
+
+TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
+        .Times(0);
+    EXPECT_CALL(m_handlers, onNewConn(CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+        .Times(0);
+
+    ConnectionBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
+
+    // must be able to handle newConn even if findSubscription not called
+    m_conductor.onNewConnection(STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+}
+
+TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistrationId)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
+        .Times(1);
+    EXPECT_CALL(m_handlers, onNewConn(CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+        .Times(0);
+
+    ConnectionBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id + 1 } };
+
+    m_conductor.onOperationSuccess(id);
+    // must be able to handle newConn even if findSubscription not called
+    m_conductor.onNewConnection(STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+}
+
+TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t connectionId = id + 1;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_handlers, onNewConn(CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_handlers, onInactive(CHANNEL, STREAM_ID, SESSION_ID, POSITION))
+        .Times(1)
+        .InSequence(sequence);
+
+    ConnectionBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
+
+    m_conductor.onOperationSuccess(id);
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    m_conductor.onNewConnection(
+        STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
+    m_conductor.onInactiveConnection(STREAM_ID, SESSION_ID, POSITION, connectionId);
+    EXPECT_FALSE(sub->isConnected(SESSION_ID));
+}
+
+TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t connectionId = id + 1;
+
+    EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
+        .Times(0);
+    EXPECT_CALL(m_handlers, onNewConn(CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+        .Times(0);
+    EXPECT_CALL(m_handlers, onInactive(CHANNEL, STREAM_ID, SESSION_ID, POSITION))
+        .Times(0);
+
+    ConnectionBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
+
+    // must be able to handle newConn even if findSubscription not called
+    m_conductor.onNewConnection(
+        STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
+    m_conductor.onInactiveConnection(STREAM_ID, SESSION_ID, POSITION, connectionId);
+}
+
+TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnectionCorrelationId)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t connectionId = id + 1;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_handlers, onNewConn(CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_handlers, onInactive(CHANNEL, STREAM_ID, SESSION_ID, POSITION))
+        .Times(0);
+
+    ConnectionBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
+
+    m_conductor.onOperationSuccess(id);
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    m_conductor.onNewConnection(
+        STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
+    m_conductor.onInactiveConnection(STREAM_ID, SESSION_ID, POSITION, connectionId + 1);
+    EXPECT_TRUE(sub->isConnected(SESSION_ID));
 }

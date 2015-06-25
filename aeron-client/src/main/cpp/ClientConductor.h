@@ -151,21 +151,6 @@ private:
         AWAITING, REGISTERED, ERRORED
     };
 
-    inline bool isAwaiting(RegistrationStatus status)
-    {
-        return (status == RegistrationStatus::AWAITING);
-    }
-
-    inline bool isRegistered(RegistrationStatus status)
-    {
-        return (status == RegistrationStatus::REGISTERED);
-    }
-
-    inline bool isErrored(RegistrationStatus status)
-    {
-        return (status == RegistrationStatus::ERRORED);
-    }
-
     struct PublicationStateDefn
     {
         std::string m_channel;
@@ -192,12 +177,16 @@ private:
         std::string m_channel;
         std::int64_t m_registrationId;
         std::int32_t m_streamId;
-        bool m_registered = false;
-        std::shared_ptr<Subscription> m_subscription;
+        long m_timeOfRegistration;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING;
+        std::int32_t m_errorCode;
+        std::string m_errorMessage;
+        std::shared_ptr<Subscription> m_subscriptionCache;
+        std::weak_ptr<Subscription> m_subscription;
 
         SubscriptionStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId) :
-            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId)
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long now) :
+            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
         {
         }
     };

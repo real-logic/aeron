@@ -18,6 +18,7 @@
 #define AERON_CLIENTCONDUCTORFIXTURE_H
 
 #include <array>
+#include <gmock/gmock.h>
 
 #include <concurrent/ringbuffer/ManyToOneRingBuffer.h>
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
@@ -45,21 +46,49 @@ typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_LENGTH> many_to_one_rin
 typedef std::array<std::uint8_t, BROADCAST_BUFFER_LENGTH> broadcast_buffer_t;
 typedef std::array<std::uint8_t, COUNTER_VALUES_BUFFER_LENGTH> counter_values_buffer_t;
 
-void onNewPub(const std::string&, std::int32_t, std::int32_t, std::int64_t)
+class MockClientConductorHandlers
 {
-}
+public:
+    MockClientConductorHandlers();
+    virtual ~MockClientConductorHandlers();
 
-void onNewSub(const std::string&, std::int32_t, std::int64_t)
-{
-}
+    MOCK_METHOD4(onNewPub, void(const std::string&, std::int32_t, std::int32_t, std::int64_t));
+    MOCK_METHOD3(onNewSub, void(const std::string&, std::int32_t, std::int64_t));
+    MOCK_METHOD5(onNewConn, void(const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&));
+    MOCK_METHOD4(onInactive, void(const std::string&, std::int32_t, std::int32_t, std::int64_t));
 
-void onNewConn(const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&)
-{
-}
+    static on_new_publication_t newPub(MockClientConductorHandlers& handlers)
+    {
+        return [&](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t registrationId)
+        {
+            handlers.onNewPub(channel, streamId, sessionId, registrationId);
+        };
+    }
 
-void onInactive(const std::string&, std::int32_t, std::int32_t, std::int64_t)
-{
-}
+    static on_new_subscription_t newSub(MockClientConductorHandlers& handlers)
+    {
+        return [&](const std::string& channel, std::int32_t streamId, std::int64_t registrationId)
+        {
+            handlers.onNewSub(channel, streamId, registrationId);
+        };
+    }
+
+    static on_new_connection_t newConn(MockClientConductorHandlers& handlers)
+    {
+        return [&](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position, const std::string& sourceIdentity)
+        {
+            handlers.onNewConn(channel, streamId, sessionId, position, sourceIdentity);
+        };
+    }
+
+    static on_inactive_connection_t inactive(MockClientConductorHandlers& handlers)
+    {
+        return [&](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)
+        {
+            handlers.onInactive(channel, streamId, sessionId, position);
+        };
+    }
+};
 
 class ClientConductorFixture
 {
@@ -73,17 +102,18 @@ public:
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
         m_conductor(
-            [&](){ return m_currentTime; },
+            [&]() { return m_currentTime; },
             m_driverProxy,
             m_copyBroadcastReceiver,
             m_counterValuesBuffer,
-            onNewPub,
-            onNewSub,
-            onNewConn,
-            onInactive,
-            defaultErrorHandler,
+            MockClientConductorHandlers::newPub(m_handlers),
+            MockClientConductorHandlers::newSub(m_handlers),
+            MockClientConductorHandlers::newConn(m_handlers),
+            MockClientConductorHandlers::inactive(m_handlers),
+            [&](SourcedException& exception) { m_errorHandler(exception); },
             DRIVER_TIMEOUT_MS,
-            RESOURCE_LINGER_TIMEOUT_MS)
+            RESOURCE_LINGER_TIMEOUT_MS),
+        m_errorHandler(defaultErrorHandler)
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
@@ -107,6 +137,10 @@ protected:
     ClientConductor m_conductor;
 
     long m_currentTime;
+
+    exception_handler_t m_errorHandler;
+
+    testing::NiceMock<MockClientConductorHandlers> m_handlers;
 };
 
 #endif //AERON_CLIENTCONDUCTORFIXTURE_H

@@ -93,7 +93,7 @@ public:
         return *this;
     }
 
-    inline std::string channel()
+    inline std::string channel() const
     {
         return stringGet(offsetof(SubscriptionMessageDefn, channel));
     }

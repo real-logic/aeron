@@ -64,23 +64,32 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
     PublicationStateDefn& state = (*it);
     std::shared_ptr<Publication> pub(state.m_publication.lock());
 
-    // construct Publication if we've heard from the driver and have the log buffers around
-    if (!pub && isRegistered(state.m_status))
+    if (!pub)
     {
-        UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
+        switch (state.m_status)
+        {
+            case RegistrationStatus::AWAITING:
+                if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+                {
+                    throw DriverTimeoutException(
+                        strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
+                }
+                break;
 
-        pub = std::make_shared<Publication>(*this, state.m_channel, state.m_registrationId, state.m_streamId,
-            state.m_sessionId, publicationLimit, *(state.m_buffers));
+            case RegistrationStatus::REGISTERED:
+                {
+                    UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
 
-        state.m_publication = std::weak_ptr<Publication>(pub);
-    }
-    else if (!pub && isAwaiting(state.m_status) && m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
-    {
-        throw DriverTimeoutException(strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
-    }
-    else if (!pub && isErrored(state.m_status))
-    {
-        throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+                    pub = std::make_shared<Publication>(*this, state.m_channel, state.m_registrationId, state.m_streamId,
+                        state.m_sessionId, publicationLimit, *(state.m_buffers));
+
+                    state.m_publication = std::weak_ptr<Publication>(pub);
+                }
+                break;
+
+            case RegistrationStatus::ERRORED:
+                throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+        }
     }
 
     return pub;
@@ -113,7 +122,7 @@ std::int64_t ClientConductor::addSubscription(const std::string &channel, std::i
 
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
-    m_subscriptions.push_back(SubscriptionStateDefn(channel, registrationId, streamId));
+    m_subscriptions.push_back(SubscriptionStateDefn(channel, registrationId, streamId, m_epochClock()));
 
     return registrationId;
 }
@@ -128,20 +137,34 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
             return (registrationId == entry.m_registrationId);
         });
 
-    if (it != m_subscriptions.end() && (*it).m_registered)
+    if (it == m_subscriptions.end())
     {
-        std::shared_ptr<Subscription> sub = (*it).m_subscription;
-
-        if (sub == nullptr)
-        {
-            sub = std::make_shared<Subscription>(*this, (*it).m_registrationId, (*it).m_channel, (*it).m_streamId);
-
-            (*it).m_subscription = sub;
-        }
-        return sub;
+        return std::shared_ptr<Subscription>();
     }
 
-    return std::shared_ptr<Subscription>();
+    SubscriptionStateDefn& state = *it;
+    std::shared_ptr<Subscription> sub = state.m_subscription.lock();
+
+    // now remove the cached value
+    if (state.m_subscriptionCache)
+    {
+        state.m_subscriptionCache.reset();
+    }
+
+    if (!sub && RegistrationStatus::AWAITING == state.m_status)
+    {
+        if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+        {
+            throw DriverTimeoutException(
+                strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
+        }
+    }
+    else if (!sub && RegistrationStatus::ERRORED == state.m_status)
+    {
+        throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
+    }
+
+    return sub;
 }
 
 void ClientConductor::releaseSubscription(std::int64_t registrationId)
@@ -198,14 +221,15 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
             return (correlationId == entry.m_registrationId);
         });
 
-    if (subIt != m_subscriptions.end())
+    if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING)
     {
-        (*subIt).m_registered = true;
+        (*subIt).m_status = RegistrationStatus::REGISTERED;
+        (*subIt).m_subscriptionCache =
+            std::make_shared<Subscription>(*this, (*subIt).m_registrationId, (*subIt).m_channel, (*subIt).m_streamId);
+        (*subIt).m_subscription = std::weak_ptr<Subscription>((*subIt).m_subscriptionCache);
         m_onNewSubscpriptionHandler((*subIt).m_channel, (*subIt).m_streamId, correlationId);
         return;
     }
-
-    // TODO: do same for publications for close
 }
 
 void ClientConductor::onErrorResponse(
@@ -223,7 +247,9 @@ void ClientConductor::onErrorResponse(
 
     if (subIt != m_subscriptions.end())
     {
-        // TODO: error on registration of subcription
+        (*subIt).m_status = RegistrationStatus::ERRORED;
+        (*subIt).m_errorCode = errorCode;
+        (*subIt).m_errorMessage = errorMessage;
         return;
     }
 
@@ -260,7 +286,7 @@ void ClientConductor::onNewConnection(
         {
             if (streamId == entry.m_streamId)
             {
-                std::shared_ptr<Subscription> subscription = entry.m_subscription;
+                std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 
                 if (subscription != nullptr &&
                     !(subscription->isConnected(sessionId)))
@@ -309,14 +335,17 @@ void ClientConductor::onInactiveConnection(
         {
             if (streamId == entry.m_streamId)
             {
-                std::shared_ptr<Subscription> subscription = entry.m_subscription;
+                std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 
-                Connection *oldArray = subscription->removeConnection(correlationId);
-
-                if (nullptr != oldArray)
+                if (nullptr != subscription)
                 {
-                    m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(now, oldArray));
-                    m_onInactiveConnectionHandler(subscription->channel(), streamId, sessionId, position);
+                    Connection *oldArray = subscription->removeConnection(correlationId);
+
+                    if (nullptr != oldArray)
+                    {
+                        m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(now, oldArray));
+                        m_onInactiveConnectionHandler(subscription->channel(), streamId, sessionId, position);
+                    }
                 }
             }
         });

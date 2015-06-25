@@ -144,6 +144,17 @@ public class FrameDescriptor
     }
 
     /**
+     * The buffer offset at which the length field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the length field begins.
+     */
+    public static int lengthOffset(final int frameOffset)
+    {
+        return frameOffset;
+    }
+
+    /**
      * The buffer offset at which the version field begins.
      *
      * @param frameOffset at which the frame begins.

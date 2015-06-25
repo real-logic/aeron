@@ -154,7 +154,6 @@ TEST_F(ClientConductorTest, shouldReturnSameIdForDuplicateAddPublication)
 TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
 {
     std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
-    const PublicationBuffersReadyFlyweight message(m_toClientsBuffer, 0);
 
     m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
 
@@ -164,4 +163,39 @@ TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
     ASSERT_TRUE(pub1 != nullptr);
     ASSERT_TRUE(pub2 != nullptr);
     ASSERT_TRUE(pub1 == pub2);
+}
+
+TEST_F(ClientConductorTest, shouldIgnorePublicationReadyForUnknownCorrelationId)
+{
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id + 1);
+
+    std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
+
+    ASSERT_TRUE(pub == nullptr);
+}
+
+TEST_F(ClientConductorTest, shouldTimeoutAddPublicationWithoutPublicationReady)
+{
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+
+    m_currentTime += DRIVER_TIMEOUT_MS + 1;
+
+    ASSERT_THROW(
+    {
+        std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
+    }, util::DriverTimeoutException);
+}
+
+TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddPublication)
+{
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+
+    m_conductor.onErrorResponse(id, ERROR_CODE_INVALID_CHANNEL, "invalid channel");
+
+    ASSERT_THROW(
+    {
+        std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
+    }, util::RegistrationException);
 }

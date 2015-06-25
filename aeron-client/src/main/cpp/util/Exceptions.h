@@ -77,5 +77,23 @@ DECLARE_SOURCED_EXCEPTION (IllegalArgumentException);
 DECLARE_SOURCED_EXCEPTION (IllegalStateException);
 DECLARE_SOURCED_EXCEPTION (DriverTimeoutException);
 
+class RegistrationException : public SourcedException
+{
+private:
+    std::int32_t m_errorCode;
+
+public:
+    RegistrationException(
+        std::int32_t errorCode, const std::string &what, const std::string& function, const std::string& where) :
+        SourcedException(what, function, where), m_errorCode(errorCode)
+    {
+    }
+
+    std::int32_t errorCode() const
+    {
+        return m_errorCode;
+    }
+};
+
 }}
 #endif

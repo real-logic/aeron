@@ -61,11 +61,6 @@ void onInactive(const std::string&, std::int32_t, std::int32_t, std::int64_t)
 {
 }
 
-long onTime()
-{
-    return 0;
-}
-
 class ClientConductorFixture
 {
 public:
@@ -78,7 +73,7 @@ public:
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
         m_conductor(
-            onTime,
+            [&](){ return m_currentTime; },
             m_driverProxy,
             m_copyBroadcastReceiver,
             m_counterValuesBuffer,
@@ -110,6 +105,8 @@ protected:
     CopyBroadcastReceiver m_copyBroadcastReceiver;
 
     ClientConductor m_conductor;
+
+    long m_currentTime;
 };
 
 #endif //AERON_CLIENTCONDUCTORFIXTURE_H

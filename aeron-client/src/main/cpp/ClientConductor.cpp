@@ -35,7 +35,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
     {
         std::int64_t registrationId = m_driverProxy.addPublication(channel, streamId, sessionId);
 
-        m_publications.push_back(PublicationStateDefn(channel, registrationId, streamId, sessionId));
+        m_publications.push_back(PublicationStateDefn(channel, registrationId, streamId, sessionId, m_epochClock()));
         id = registrationId;
     }
     else
@@ -61,21 +61,26 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
         return std::shared_ptr<Publication>();
     }
 
-    std::shared_ptr<Publication> pub((*it).m_publication.lock());
+    PublicationStateDefn& state = (*it);
+    std::shared_ptr<Publication> pub(state.m_publication.lock());
 
     // construct Publication if we've heard from the driver and have the log buffers around
-    if (!pub && ((*it).m_buffers))
+    if (!pub && isRegistered(state.m_status))
     {
-        UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, (*it).m_positionLimitCounterId);
+        UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
 
-        // TODO: add in time of ADD_PUBLICATION being initially sent and waiting response.
-        // TODO: If findPublication called and timeout since original, then throw exception.
+        pub = std::make_shared<Publication>(*this, state.m_channel, state.m_registrationId, state.m_streamId,
+            state.m_sessionId, publicationLimit, *(state.m_buffers));
 
-        pub = std::make_shared<Publication>(*this, (*it).m_channel, (*it).m_registrationId, (*it).m_streamId,
-            (*it).m_sessionId, publicationLimit, *((*it).m_buffers));
-
-        (*it).m_publication = std::weak_ptr<Publication>(pub);
-        return pub;
+        state.m_publication = std::weak_ptr<Publication>(pub);
+    }
+    else if (!pub && isAwaiting(state.m_status) && m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
+    {
+        throw DriverTimeoutException(strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
+    }
+    else if (!pub && isErrored(state.m_status))
+    {
+        throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
     }
 
     return pub;
@@ -153,7 +158,8 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId)
 
     if (it != m_subscriptions.end())
     {
-        (*it).m_removeCorrelationId = m_driverProxy.removePublication((*it).m_registrationId);
+        m_driverProxy.removeSubscription((*it).m_registrationId);
+        m_subscriptions.erase(it);
     }
 }
 
@@ -174,6 +180,7 @@ void ClientConductor::onNewPublication(
 
     if (it != m_publications.end())
     {
+        (*it).m_status = RegistrationStatus::REGISTERED;
         (*it).m_positionLimitCounterId = positionLimitCounterId;
         (*it).m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
 
@@ -185,24 +192,16 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
     std::lock_guard<std::mutex> lock(m_adminLock);
 
-    std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+    std::vector<SubscriptionStateDefn>::iterator subIt = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
         {
-            return (correlationId == entry.m_registrationId || correlationId == entry.m_removeCorrelationId);
+            return (correlationId == entry.m_registrationId);
         });
 
-    if (it != m_subscriptions.end())
+    if (subIt != m_subscriptions.end())
     {
-        if (correlationId == (*it).m_registrationId)
-        {
-            (*it).m_registered = true;
-            m_onNewSubscpriptionHandler((*it).m_channel, (*it).m_streamId, correlationId);
-        }
-        else if (correlationId == (*it).m_removeCorrelationId)
-        {
-            // TODO: inform API of close
-            m_subscriptions.erase(it);
-        }
+        (*subIt).m_registered = true;
+        m_onNewSubscpriptionHandler((*subIt).m_channel, (*subIt).m_streamId, correlationId);
         return;
     }
 
@@ -216,28 +215,31 @@ void ClientConductor::onErrorResponse(
 {
     std::lock_guard<std::mutex> lock(m_adminLock);
 
-    std::vector<SubscriptionStateDefn>::iterator it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
+    std::vector<SubscriptionStateDefn>::iterator subIt = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [&](SubscriptionStateDefn &entry)
         {
-            return (
-                offendingCommandCorrelationId == entry.m_registrationId ||
-                offendingCommandCorrelationId == entry.m_removeCorrelationId);
+            return (offendingCommandCorrelationId == entry.m_registrationId);
         });
 
-    if (it != m_subscriptions.end())
+    if (subIt != m_subscriptions.end())
     {
-        if (offendingCommandCorrelationId == (*it).m_registrationId)
-        {
-            // TODO: error on registration of subcription
-        }
-        else if (offendingCommandCorrelationId == (*it).m_removeCorrelationId)
-        {
-            // TODO: error on remove subscription
-        }
+        // TODO: error on registration of subcription
         return;
     }
 
-    // TODO: handle publication options.
+    std::vector<PublicationStateDefn>::iterator pubIt = std::find_if(m_publications.begin(), m_publications.end(),
+        [&](PublicationStateDefn &entry)
+        {
+            return (offendingCommandCorrelationId == entry.m_registrationId);
+        });
+
+    if (pubIt != m_publications.end())
+    {
+        (*pubIt).m_status = RegistrationStatus::ERRORED;
+        (*pubIt).m_errorCode = errorCode;
+        (*pubIt).m_errorMessage = errorMessage;
+        return;
+    }
 }
 
 

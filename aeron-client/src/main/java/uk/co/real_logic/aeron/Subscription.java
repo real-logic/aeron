@@ -52,11 +52,7 @@ public class Subscription implements AutoCloseable
     private final ClientConductor clientConductor;
     private volatile Connection[] connections = EMPTY_ARRAY;
 
-    Subscription(
-        final ClientConductor conductor,
-        final String channel,
-        final int streamId,
-        final long registrationId)
+    Subscription(final ClientConductor conductor, final String channel, final int streamId, final long registrationId)
     {
         this.clientConductor = conductor;
         this.channel = channel;

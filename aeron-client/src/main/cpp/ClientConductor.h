@@ -72,6 +72,8 @@ public:
     {
     }
 
+    virtual ~ClientConductor();
+
     int doWork()
     {
         int workCount = 0;

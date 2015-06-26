@@ -101,6 +101,7 @@ public:
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
+        m_currentTime(0),
         m_conductor(
             [&]() { return m_currentTime; },
             m_driverProxy,
@@ -134,9 +135,8 @@ protected:
     DriverProxy m_driverProxy;
     CopyBroadcastReceiver m_copyBroadcastReceiver;
 
-    ClientConductor m_conductor;
-
     long m_currentTime;
+    ClientConductor m_conductor;
 
     exception_handler_t m_errorHandler;
 

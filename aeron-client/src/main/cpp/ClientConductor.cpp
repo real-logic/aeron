@@ -18,6 +18,18 @@
 
 namespace aeron {
 
+ClientConductor::~ClientConductor()
+{
+    std::vector<std::shared_ptr<Subscription>> subscriptions;
+
+    std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn& entry)
+        {
+            subscriptions.push_back(entry.m_subscriptionCache);
+            entry.m_subscriptionCache.reset();
+        });
+}
+
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId, std::int32_t sessionId)
 {
     verifyDriverIsActive();

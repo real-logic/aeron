@@ -369,7 +369,7 @@ TEST_F(TermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
     AERON_DECL_ALIGNED(src_buffer_t buffer, 16);
     AtomicBuffer srcBuffer(&buffer[0], buffer.size());
     const util::index_t msgLength = 20;
-    const util::index_t frameLength = m_hdr.size() + msgLength;
+    const util::index_t frameLength = (util::index_t)m_hdr.size() + msgLength;
     const util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     util::index_t tail = 0;
     BufferClaim bufferClaim;
@@ -389,7 +389,7 @@ TEST_F(TermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
 
     EXPECT_EQ(m_logAppender.claim(msgLength, bufferClaim), alignedFrameLength);
 
-    EXPECT_EQ(bufferClaim.offset(), (tail + m_hdr.size()));
+    EXPECT_EQ(bufferClaim.offset(), (tail + (util::index_t)m_hdr.size()));
     EXPECT_EQ(bufferClaim.length(), msgLength);
 
     bufferClaim.commit();

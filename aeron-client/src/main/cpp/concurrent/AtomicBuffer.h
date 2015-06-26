@@ -45,6 +45,12 @@ public:
     {
     }
 
+    AtomicBuffer(std::uint8_t *buffer, util::index_t length, std::uint8_t initialValue) :
+        m_buffer(buffer), m_length(length)
+    {
+        setMemory(0, (size_t)length, initialValue);
+    }
+
     AtomicBuffer(const AtomicBuffer& buffer) :
         m_buffer(buffer.m_buffer), m_length(buffer.m_length)
     {

@@ -55,7 +55,7 @@ public:
         m_correlationId(correlationId),
         m_sessionId(sessionId)
     {
-        for (int i = LogBufferDescriptor::PARTITION_COUNT; i >= 0; i--)
+        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
             m_termBuffers[i] = logBuffers->atomicBuffer(i);
         }

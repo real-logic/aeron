@@ -302,7 +302,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
     public int length()
     {
         final int sourceIdentityOffset = sourceIdentityOffset();
-        return sourceIdentityOffset + buffer().getInt(sourceIdentityOffset, LITTLE_ENDIAN);
+        return sourceIdentityOffset + buffer().getInt(sourceIdentityOffset, LITTLE_ENDIAN) + SIZE_OF_INT;
     }
 
     private int subscriberPositionOffset(final int index)

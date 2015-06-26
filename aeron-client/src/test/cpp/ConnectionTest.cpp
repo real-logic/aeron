@@ -64,7 +64,7 @@ public:
 
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
 
-        m_logBuffers = std::unique_ptr<LogBuffers>(new LogBuffers(&m_log[0], (index_t)m_log.size()));
+        m_logBuffers = std::make_shared<LogBuffers>(&m_log[0], (index_t)m_log.size());
     }
 
     virtual void SetUp()
@@ -107,7 +107,7 @@ protected:
     AtomicBuffer m_logMetaDataBuffer;
     AtomicBuffer m_srcBuffer;
 
-    std::unique_ptr<LogBuffers> m_logBuffers;
+    std::shared_ptr<LogBuffers> m_logBuffers;
     UnsafeBufferPosition m_subscriberPosition;
 };
 
@@ -131,7 +131,7 @@ TEST_F(ConnectionTest, shouldReportCorrectPositionOnReception)
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, *m_logBuffers);
+    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
     MockFragmentHandler fragmentHandler;
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
@@ -152,7 +152,7 @@ TEST_F(ConnectionTest, shouldReportCorrectPositionOnReceptionWithNonZeroPosition
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, *m_logBuffers);
+    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
     MockFragmentHandler fragmentHandler;
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
@@ -174,7 +174,7 @@ TEST_F(ConnectionTest, shouldReportCorrectPositionOnReceptionWithNonZeroPosition
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, *m_logBuffers);
+    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
     MockFragmentHandler fragmentHandler;
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);

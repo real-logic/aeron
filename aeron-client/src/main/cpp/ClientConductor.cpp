@@ -167,7 +167,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     return sub;
 }
 
-void ClientConductor::releaseSubscription(std::int64_t registrationId)
+void ClientConductor::releaseSubscription(std::int64_t registrationId, Connection* connections, int connectionsLength)
 {
     verifyDriverIsActive();
 
@@ -183,6 +183,8 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId)
     {
         m_driverProxy.removeSubscription((*it).m_registrationId);
         m_subscriptions.erase(it);
+
+        lingerResources(m_epochClock(), connections, connectionsLength);
     }
 }
 
@@ -300,16 +302,14 @@ void ClientConductor::onNewConnection(
                             UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositions[i].indicatorId);
 
                             Connection connection(
-                                sessionId, joiningPosition, correlationId, subscriberPosition, *logBuffers);
+                                sessionId, joiningPosition, correlationId, subscriberPosition, logBuffers);
 
                             Connection* oldArray = subscription->addConnection(connection);
 
                             if (nullptr != oldArray)
                             {
-                                m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(m_epochClock(), oldArray));
+                                lingerResource(m_epochClock(), oldArray);
                             }
-
-                            m_logBuffers.push_back(LogBuffersStateDefn(correlationId, logBuffers));
 
                             m_onNewConnectionHandler(
                                 subscription->channel(), streamId, sessionId, joiningPosition, sourceIdentity);
@@ -339,35 +339,25 @@ void ClientConductor::onInactiveConnection(
 
                 if (nullptr != subscription)
                 {
-                    Connection *oldArray = subscription->removeConnection(correlationId);
+                    std::pair<Connection*, int> result = subscription->removeConnection(correlationId);
+                    Connection* oldArray = result.first;
+                    const int index = result.second;
 
                     if (nullptr != oldArray)
                     {
-                        m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(now, oldArray));
+                        lingerResource(now, oldArray[index].logBuffers());
+                        lingerResource(now, oldArray);
                         m_onInactiveConnectionHandler(subscription->channel(), streamId, sessionId, position);
                     }
                 }
             }
         });
-
-    // erase-remove idiom
-    std::vector<LogBuffersStateDefn>::iterator it = std::remove_if(m_logBuffers.begin(), m_logBuffers.end(),
-        [&](LogBuffersStateDefn& entry)
-        {
-            if (correlationId == entry.m_correlationId)
-            {
-                m_lingeringLogBuffers.push_back(LogBuffersLingerDefn(now, entry.m_logBuffers));
-                return true;
-            }
-
-            return false;
-        });
-
-    m_logBuffers.erase(it, m_logBuffers.end());
 }
 
 void ClientConductor::onCheckManagedResources(long now)
 {
+    std::lock_guard<std::mutex> lock(m_adminLock);
+
     // erase-remove idiom
 
     // check LogBuffers
@@ -396,6 +386,29 @@ void ClientConductor::onCheckManagedResources(long now)
             });
 
     m_lingeringConnectionArrays.erase(arrayIt, m_lingeringConnectionArrays.end());
+}
+
+void ClientConductor::lingerResource(long now, Connection* array)
+{
+    m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(now, array));
+}
+
+void ClientConductor::lingerResource(long now, std::shared_ptr<LogBuffers> logBuffers)
+{
+    m_lingeringLogBuffers.push_back(LogBuffersLingerDefn(now, logBuffers));
+}
+
+void ClientConductor::lingerResources(long now, Connection* connections, int connectionsLength)
+{
+    for (int i = 0; i < connectionsLength; i++)
+    {
+        lingerResource(now, connections[i].logBuffers());
+    }
+
+    if (nullptr != connections)
+    {
+        lingerResource(now, connections);
+    }
 }
 
 }

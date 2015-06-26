@@ -46,17 +46,18 @@ public:
         std::int64_t initialPosition,
         std::int64_t correlationId,
         UnsafeBufferPosition& subscriberPosition,
-        LogBuffers& logBuffers) :
+        std::shared_ptr<LogBuffers> logBuffers) :
         m_header(
-            LogBufferDescriptor::initialTermId(logBuffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
-            logBuffers.atomicBuffer(0).capacity()),
+            LogBufferDescriptor::initialTermId(logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
+            logBuffers->atomicBuffer(0).capacity()),
         m_subscriberPosition(subscriberPosition),
+        m_logBuffers(logBuffers),
         m_correlationId(correlationId),
         m_sessionId(sessionId)
     {
         for (int i = LogBufferDescriptor::PARTITION_COUNT; i >= 0; i--)
         {
-            m_termBuffers[i] = logBuffers.atomicBuffer(i);
+            m_termBuffers[i] = logBuffers->atomicBuffer(i);
         }
 
         const util::index_t capacity = m_termBuffers[0].capacity();
@@ -78,6 +79,7 @@ public:
 
         m_header = connection.m_header;
         m_subscriberPosition.wrap(connection.m_subscriberPosition);
+        m_logBuffers = std::move(connection.m_logBuffers);
         m_correlationId = connection.m_correlationId;
         m_sessionId = connection.m_sessionId;
         m_termLengthMask = connection.m_termLengthMask;
@@ -117,10 +119,16 @@ public:
         return readOutcome.fragmentsRead;
     }
 
+    std::shared_ptr<LogBuffers> logBuffers()
+    {
+        return m_logBuffers;
+    }
+
 private:
     AtomicBuffer m_termBuffers[LogBufferDescriptor::PARTITION_COUNT];
     Header m_header;
     Position<UnsafeBufferPosition> m_subscriberPosition;
+    std::shared_ptr<LogBuffers> m_logBuffers;
 
     std::int64_t m_correlationId;
     std::int32_t m_sessionId;

@@ -111,7 +111,7 @@ public:
 
     std::int64_t addSubscription(const std::string& channel, std::int32_t streamId);
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
-    void releaseSubscription(std::int64_t registrationId);
+    void releaseSubscription(std::int64_t registrationId, Connection* connections, int connectionsLength);
 
     void onNewPublication(
         std::int32_t streamId,
@@ -143,7 +143,12 @@ public:
         std::int64_t position,
         std::int64_t correlationId);
 
+protected:
     void onCheckManagedResources(long now);
+
+    void lingerResource(long now, Connection* array);
+    void lingerResource(long now, std::shared_ptr<LogBuffers> logBuffers);
+    void lingerResources(long now, Connection* connections, int connectionsLength);
 
 private:
     enum RegistrationStatus
@@ -191,17 +196,6 @@ private:
         }
     };
 
-    struct LogBuffersStateDefn
-    {
-        std::int64_t m_correlationId;
-        std::shared_ptr<LogBuffers> m_logBuffers;
-
-        LogBuffersStateDefn(std::int64_t correlationId, std::shared_ptr<LogBuffers> buffers) :
-            m_correlationId(correlationId), m_logBuffers(buffers)
-        {
-        }
-    };
-
     struct ConnectionArrayLingerDefn
     {
         long m_timeOfLastStatusChange;
@@ -228,8 +222,6 @@ private:
 
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;
-
-    std::vector<LogBuffersStateDefn> m_logBuffers;
 
     std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
     std::vector<ConnectionArrayLingerDefn> m_lingeringConnectionArrays;

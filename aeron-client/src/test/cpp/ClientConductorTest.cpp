@@ -430,7 +430,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverIna
 
     ASSERT_THROW(
     {
-        m_conductor.releaseSubscription(100);
+        m_conductor.releaseSubscription(100, nullptr, 0);
     }, util::DriverTimeoutException);
 }
 

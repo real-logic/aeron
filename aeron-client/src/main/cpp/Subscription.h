@@ -119,7 +119,7 @@ public:
         return oldArray;
     }
 
-    Connection* removeConnection(std::int64_t correlationId)
+    std::pair<Connection*, int> removeConnection(std::int64_t correlationId)
     {
         Connection* oldArray = std::atomic_load(&m_connections);
         int length = std::atomic_load(&m_connectionsLength);
@@ -151,7 +151,20 @@ public:
         }
 
         // oldArray to linger and be deleted by caller (aka client conductor)
-        return (-1 != index) ? oldArray : nullptr;
+        return std::pair<Connection*, int>(
+            (-1 != index) ? oldArray : nullptr,
+            index);
+    }
+
+    std::pair<Connection*, int> removeAllConnections()
+    {
+        Connection *oldArray = std::atomic_load(&m_connections);
+        int length = std::atomic_load(&m_connectionsLength);
+
+        std::atomic_store(&m_connections, (Connection*)nullptr);
+        std::atomic_store(&m_connectionsLength, 0);
+
+        return std::pair<Connection*, int>(oldArray, length);
     }
 
 private:

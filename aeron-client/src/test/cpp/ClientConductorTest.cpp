@@ -471,6 +471,10 @@ TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
     m_conductor.onOperationSuccess(id);
     // must be able to handle newConn even if findSubscription not called
     m_conductor.onNewConnection(STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    ASSERT_TRUE(sub != nullptr);
+    ASSERT_TRUE(sub->isConnected(SESSION_ID));
 }
 
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
@@ -486,6 +490,9 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 
     // must be able to handle newConn even if findSubscription not called
     m_conductor.onNewConnection(STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    ASSERT_TRUE(sub == nullptr);
 }
 
 TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistrationId)
@@ -502,6 +509,10 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
     m_conductor.onOperationSuccess(id);
     // must be able to handle newConn even if findSubscription not called
     m_conductor.onNewConnection(STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    ASSERT_TRUE(sub != nullptr);
+    ASSERT_FALSE(sub->isConnected(SESSION_ID));
 }
 
 TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)

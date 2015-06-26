@@ -156,17 +156,6 @@ public:
             index);
     }
 
-    std::pair<Connection*, int> removeAllConnections()
-    {
-        Connection *oldArray = std::atomic_load(&m_connections);
-        int length = std::atomic_load(&m_connectionsLength);
-
-        std::atomic_store(&m_connections, (Connection*)nullptr);
-        std::atomic_store(&m_connectionsLength, 0);
-
-        return std::pair<Connection*, int>(oldArray, length);
-    }
-
 private:
     ClientConductor& m_conductor;
     const std::string m_channel;

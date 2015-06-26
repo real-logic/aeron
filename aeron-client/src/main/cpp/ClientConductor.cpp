@@ -28,6 +28,13 @@ ClientConductor::~ClientConductor()
             subscriptions.push_back(entry.m_subscriptionCache);
             entry.m_subscriptionCache.reset();
         });
+
+    std::for_each(m_lingeringConnectionArrays.begin(), m_lingeringConnectionArrays.end(),
+        [](ConnectionArrayLingerDefn& entry)
+        {
+            delete[] entry.m_array;
+            entry.m_array = nullptr;
+        });
 }
 
 std::int64_t ClientConductor::addPublication(const std::string &channel, std::int32_t streamId, std::int32_t sessionId)

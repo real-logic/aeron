@@ -139,7 +139,8 @@ TEST (commandTests, testConnectionReadyFlyweight)
     std::string logFileNameData = "logfilenamedata";
     std::string sourceInfoData = "sourceinfodata";
 
-    ASSERT_NO_THROW({
+    ASSERT_NO_THROW(
+    {
         ConnectionBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
         cmd.correlationId(-1).joiningPosition(64).streamId(0x01010101).sessionId(0x02020202).subscriberPositionCount(4);
@@ -153,14 +154,10 @@ TEST (commandTests, testConnectionReadyFlyweight)
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 8), 64);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 0x02020202);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 0x01010101);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 4);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 28), logFileNameData.length());
-        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 28), logFileNameData);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 32 + logFileNameData.length()), sourceInfoData.length());
-        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 32 + logFileNameData.length()), sourceInfoData);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), sizeof(ConnectionBuffersReadyDefn::SubscriberPosition));
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 28), 4);
 
-        const index_t startOfSubscriberPositions =
-            BASEOFFSET + 36 + (index_t)logFileNameData.length() + (index_t)sourceInfoData.length();
+        const index_t startOfSubscriberPositions = BASEOFFSET + 32;
         for (int n = 0; n < 4; n++)
         {
             ASSERT_EQ(
@@ -168,6 +165,14 @@ TEST (commandTests, testConnectionReadyFlyweight)
             ASSERT_EQ(
                 ab.getInt32(startOfSubscriberPositions + (n * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition)) + 4), n);
         }
+
+        const index_t startOfLogFileName = BASEOFFSET + 32 + (4 * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition));
+        ASSERT_EQ(ab.getInt32(startOfLogFileName), logFileNameData.length());
+        ASSERT_EQ(ab.getStringUtf8(startOfLogFileName), logFileNameData);
+
+        const index_t startOfSourceIdentity = startOfLogFileName + 4 + (index_t)logFileNameData.length();
+        ASSERT_EQ(ab.getInt32(startOfSourceIdentity), sourceInfoData.length());
+        ASSERT_EQ(ab.getStringUtf8(startOfSourceIdentity), sourceInfoData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
         ASSERT_EQ(cmd.joiningPosition(), 64);
@@ -193,8 +198,10 @@ TEST (commandTests, testConnectionReadyFlyweight)
 
         ASSERT_EQ(
             cmd.length(),
-            offsetof(ConnectionBuffersReadyDefn, logFile.logFileData) + logFileNameData.length() +
-                sizeof(std::int32_t) + sourceInfoData.length() +
-                (4 * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition)));
-    });
+            sizeof(ConnectionBuffersReadyDefn) +
+                (4 * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition)) +
+                sizeof(std::int32_t) + logFileNameData.length() +
+                sizeof(std::int32_t) + sourceInfoData.length());
+    }
+    );
 }

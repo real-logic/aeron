@@ -27,6 +27,8 @@ namespace aeron { namespace command {
 /**
 * Message to denote that new buffers have been added for a subscription.
 *
+* NOTE: Layout should be SBE compliant
+*
 * @see ControlProtocolEvents
 *
 * 0                   1                   2                   3
@@ -42,17 +44,9 @@ namespace aeron { namespace command {
 * +---------------------------------------------------------------+
 * |                           Stream ID                           |
 * +---------------------------------------------------------------+
+* |                Subscriber Position Block Length               |
+* +---------------------------------------------------------------+
 * |                   Subscriber Position Count                   |
-* +---------------------------------------------------------------+
-* |                         Log File Length                       |
-* +---------------------------------------------------------------+
-* |                          Log File Name                      ...
-* ...                                                             |
-* +---------------------------------------------------------------+
-* |                     Source Identity Length                    |
-* +---------------------------------------------------------------+
-* |                      Source Identity Name                    ...
-* ...                                                             |
 * +---------------------------------------------------------------+
 * |                      Subscriber Position Id 0                 |
 * +---------------------------------------------------------------+
@@ -64,8 +58,19 @@ namespace aeron { namespace command {
 * |                         Registration Id 1                     |
 * |                                                               |
 * +---------------------------------------------------------------+
-* |                                                             ...
-* Up to "Position Indicators Count" entries of this form
+* |                                                              ...
+*...     Up to "Position Indicators Count" entries of this form
+* +---------------------------------------------------------------+
+* |                         Log File Length                       |
+* +---------------------------------------------------------------+
+* |                          Log File Name                       ...
+*...                                                              |
+* +---------------------------------------------------------------+
+* |                     Source identity Length                    |
+* +---------------------------------------------------------------+
+* |                     Source identity Name                     ...
+*...                                                              |
+* +---------------------------------------------------------------+
 */
 
 #pragma pack(push)
@@ -76,12 +81,8 @@ struct ConnectionBuffersReadyDefn
     std::int64_t joiningPosition;
     std::int32_t sessionId;
     std::int32_t streamId;
+    std::int32_t subscriberPositionBlockLength;
     std::int32_t subscriberPositionCount;
-    struct
-    {
-        std::int32_t logFileLength;
-        std::int8_t logFileData[1];
-    } logFile;
 
     struct SubscriberPosition
     {
@@ -152,29 +153,8 @@ public:
 
     inline this_t& subscriberPositionCount(std::int32_t value)
     {
+        m_struct.subscriberPositionBlockLength = sizeof(ConnectionBuffersReadyDefn::SubscriberPosition);
         m_struct.subscriberPositionCount = value;
-        return *this;
-    }
-
-    inline std::string logFileName() const
-    {
-        return stringGet(offsetof(ConnectionBuffersReadyDefn, logFile));
-    }
-
-    inline this_t& logFileName(const std::string& value)
-    {
-        stringPut(offsetof(ConnectionBuffersReadyDefn, logFile), value);
-        return *this;
-    }
-
-    inline std::string sourceIdentity() const
-    {
-        return stringGet(sourceIdentityOffset());
-    }
-
-    inline this_t& sourceIdentity(const std::string &value)
-    {
-        stringPut(sourceIdentityOffset(), value);
         return *this;
     }
 
@@ -194,24 +174,53 @@ public:
         return &overlayStruct<ConnectionBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(0));
     }
 
+    inline std::string logFileName() const
+    {
+        return stringGet(logFileNameOffset());
+    }
+
+    inline this_t& logFileName(const std::string& value)
+    {
+        stringPut(logFileNameOffset(), value);
+        return *this;
+    }
+
+    inline std::string sourceIdentity() const
+    {
+        return stringGet(sourceIdentityOffset());
+    }
+
+    inline this_t& sourceIdentity(const std::string &value)
+    {
+        stringPut(sourceIdentityOffset(), value);
+        return *this;
+    }
+
     inline std::int32_t length()
     {
-        return subscriberPositionOffset(subscriberPositionCount());
+        const util::index_t startOfSourceIdentity = sourceIdentityOffset();
+
+        return startOfSourceIdentity + stringGetLength(startOfSourceIdentity) + (util::index_t)sizeof(std::int32_t);
     }
 
 private:
 
-    inline util::index_t sourceIdentityOffset() const
-    {
-        return offsetof(ConnectionBuffersReadyDefn, logFile.logFileData) + m_struct.logFile.logFileLength;
-    }
-
     inline util::index_t subscriberPositionOffset(int index) const
     {
-        const util::index_t offset = sourceIdentityOffset();
-        const util::index_t startOfPositions = offset + stringGetLength(offset) + (util::index_t)sizeof(std::int32_t);
+        const util::index_t startOfPositions = sizeof(ConnectionBuffersReadyDefn);
 
         return startOfPositions + (index * (util::index_t)sizeof(ConnectionBuffersReadyDefn::SubscriberPosition));
+    }
+
+    inline util::index_t logFileNameOffset() const
+    {
+        return subscriberPositionOffset(subscriberPositionCount());
+    }
+
+    inline util::index_t sourceIdentityOffset() const
+    {
+        const util::index_t startOfLogFileName = logFileNameOffset();
+        return startOfLogFileName + stringGetLength(startOfLogFileName) + (util::index_t)sizeof(std::int32_t);
     }
 };
 

@@ -124,12 +124,13 @@ public class ClientConductorTest
         publicationReady.streamId(STREAM_ID_1);
         publicationReady.logFileName(SESSION_ID_1 + "-log");
 
-        connectionReady.sourceIdentity(SOURCE_INFO);
         connectionReady.subscriberPositionCount(1);
         connectionReady.subscriberPositionId(0, 0);
         connectionReady.positionIndicatorRegistrationId(0, CORRELATION_ID);
 
         correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
+        connectionReady.logFileName(SESSION_ID_1 + "-log");
+        connectionReady.sourceIdentity(SOURCE_INFO);
 
         final UnsafeBuffer[] atomicBuffersSession1 = new UnsafeBuffer[NUM_BUFFERS];
         final UnsafeBuffer[] atomicBuffersSession2 = new UnsafeBuffer[NUM_BUFFERS];

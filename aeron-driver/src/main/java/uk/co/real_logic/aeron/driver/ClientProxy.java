@@ -86,9 +86,7 @@ public class ClientProxy
             .sessionId(sessionId)
             .streamId(streamId)
             .joiningPosition(joiningPosition)
-            .correlationId(correlationId)
-            .logFileName(rawLog.logFileName())
-            .sourceIdentity(sourceIdentity);
+            .correlationId(correlationId);
 
         final int size = subscriberPositions.size();
         connectionReady.subscriberPositionCount(size);
@@ -98,6 +96,10 @@ public class ClientProxy
             connectionReady.subscriberPositionId(i, position.positionCounterId());
             connectionReady.positionIndicatorRegistrationId(i, position.subscription().registrationId());
         }
+
+        connectionReady
+            .logFileName(rawLog.logFileName())
+            .sourceIdentity(sourceIdentity);
 
         logger.log(CMD_OUT_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());
         transmitter.transmit(ON_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());

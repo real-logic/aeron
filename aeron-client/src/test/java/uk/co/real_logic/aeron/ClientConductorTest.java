@@ -25,6 +25,7 @@ import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.collections.Long2LongHashMap;
 import uk.co.real_logic.agrona.concurrent.EpochClock;
 import uk.co.real_logic.agrona.concurrent.SystemEpochClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -67,12 +68,10 @@ public class ClientConductorTest
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
-    private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
 
     private final UnsafeBuffer publicationReadyBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
-    private final UnsafeBuffer connectionReadyBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer correlatedMessageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
     private final UnsafeBuffer errorMessageBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(SEND_BUFFER_CAPACITY));
 
@@ -89,6 +88,7 @@ public class ClientConductorTest
     private NewConnectionHandler mockNewConnectionHandler = mock(NewConnectionHandler.class);
     private InactiveConnectionHandler mockInactiveConnectionHandler = mock(InactiveConnectionHandler.class);
     private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
+    private Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(-1L);
 
     @Before
     public void setUp() throws Exception
@@ -115,7 +115,6 @@ public class ClientConductorTest
             AWAIT_TIMEOUT);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
-        connectionReady.wrap(connectionReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);
         errorResponse.wrap(errorMessageBuffer, 0);
 
@@ -124,13 +123,9 @@ public class ClientConductorTest
         publicationReady.streamId(STREAM_ID_1);
         publicationReady.logFileName(SESSION_ID_1 + "-log");
 
-        connectionReady.subscriberPositionCount(1);
-        connectionReady.subscriberPositionId(0, 0);
-        connectionReady.positionIndicatorRegistrationId(0, CORRELATION_ID);
+        subscriberPositionMap.put(CORRELATION_ID, 0);
 
         correlatedMessage.correlationId(CLOSE_CORRELATION_ID);
-        connectionReady.logFileName(SESSION_ID_1 + "-log");
-        connectionReady.sourceIdentity(SOURCE_INFO);
 
         final UnsafeBuffer[] atomicBuffersSession1 = new UnsafeBuffer[NUM_BUFFERS];
         final UnsafeBuffer[] atomicBuffersSession2 = new UnsafeBuffer[NUM_BUFFERS];
@@ -459,7 +454,8 @@ public class ClientConductorTest
 
         conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
-        conductor.onNewConnection(STREAM_ID_1, SESSION_ID_1, 0L, SESSION_ID_1 + "-log", connectionReady, CORRELATION_ID);
+        conductor.onNewConnection(
+            STREAM_ID_1, SESSION_ID_1, 0L, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
 
         verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
     }
@@ -478,7 +474,8 @@ public class ClientConductorTest
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
-        conductor.onNewConnection(STREAM_ID_1, SESSION_ID_1, 0L, SESSION_ID_1 + "-log", connectionReady, CORRELATION_ID);
+        conductor.onNewConnection(
+            STREAM_ID_1, SESSION_ID_1, 0L, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
 
         assertFalse(subscription.hasNoConnections());
         verify(mockNewConnectionHandler).onNewConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, 0L, SOURCE_INFO);
@@ -494,7 +491,8 @@ public class ClientConductorTest
     @Test
     public void shouldIgnoreUnknownNewConnection()
     {
-        conductor.onNewConnection(STREAM_ID_2, SESSION_ID_2, 0L, SESSION_ID_2 + "-log", connectionReady, CORRELATION_ID_2);
+        conductor.onNewConnection(
+            STREAM_ID_2, SESSION_ID_2, 0L, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO, CORRELATION_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
         verify(mockNewConnectionHandler, never()).onNewConnection(anyString(), anyInt(), anyInt(), anyLong(), anyString());

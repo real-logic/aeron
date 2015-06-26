@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.agrona.collections.Long2LongHashMap;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.EpochClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -189,8 +189,9 @@ class ClientConductor implements Agent, DriverListener
         final int streamId,
         final int sessionId,
         final long joiningPosition,
+        final Long2LongHashMap subscriberPositionMap,
         final String logFileName,
-        final ConnectionBuffersReadyFlyweight msg,
+        final String sourceIdentity,
         final long correlationId)
     {
         activeSubscriptions.forEach(
@@ -199,23 +200,21 @@ class ClientConductor implements Agent, DriverListener
             {
                 if (!subscription.isConnected(sessionId))
                 {
-                    for (int i = 0, size = msg.subscriberPositionCount(); i < size; i++)
-                    {
-                        if (subscription.registrationId() == msg.positionIndicatorRegistrationId(i))
-                        {
-                            subscription.addConnection(
-                                new Connection(
-                                    sessionId,
-                                    joiningPosition,
-                                    new UnsafeBufferPosition(counterValuesBuffer, msg.subscriberPositionId(i)),
-                                    logBuffersFactory.map(logFileName),
-                                    errorHandler,
-                                    correlationId));
+                    final long positionId = subscriberPositionMap.get(subscription.registrationId());
 
-                            newConnectionHandler.onNewConnection(
-                                subscription.channel(), streamId, sessionId, joiningPosition, msg.sourceIdentity());
-                            break;
-                        }
+                    if (DriverListenerAdapter.MISSING_REGISTRATION_ID != positionId)
+                    {
+                        subscription.addConnection(
+                            new Connection(
+                                sessionId,
+                                joiningPosition,
+                                new UnsafeBufferPosition(counterValuesBuffer, (int)positionId),
+                                logBuffersFactory.map(logFileName),
+                                errorHandler,
+                                correlationId));
+
+                        newConnectionHandler.onNewConnection(
+                            subscription.channel(), streamId, sessionId, joiningPosition, sourceIdentity);
                     }
                 }
             });

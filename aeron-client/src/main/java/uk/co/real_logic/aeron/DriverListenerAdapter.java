@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.command.*;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.collections.Long2LongHashMap;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
@@ -27,6 +28,8 @@ import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
  */
 class DriverListenerAdapter implements MessageHandler
 {
+    public static final long MISSING_REGISTRATION_ID = -1L;
+
     private final CopyBroadcastReceiver broadcastReceiver;
 
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
@@ -35,6 +38,7 @@ class DriverListenerAdapter implements MessageHandler
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
     private final DriverListener listener;
+    private final Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(MISSING_REGISTRATION_ID);
 
     private long activeCorrelationId;
     private long lastReceivedCorrelationId;
@@ -89,13 +93,24 @@ class DriverListenerAdapter implements MessageHandler
             {
                 connectionReady.wrap(buffer, index);
 
+                for (int i = 0, max = connectionReady.subscriberPositionCount(); i < max; i++)
+                {
+                    final long registrationId = connectionReady.positionIndicatorRegistrationId(i);
+                    final int positionId = connectionReady.subscriberPositionId(i);
+
+                    subscriberPositionMap.put(registrationId, positionId);
+                }
+
                 listener.onNewConnection(
                     connectionReady.streamId(),
                     connectionReady.sessionId(),
                     connectionReady.joiningPosition(),
+                    subscriberPositionMap,
                     connectionReady.logFileName(),
-                    connectionReady,
+                    connectionReady.sourceIdentity(),
                     connectionReady.correlationId());
+
+                subscriberPositionMap.clear();
                 break;
             }
 

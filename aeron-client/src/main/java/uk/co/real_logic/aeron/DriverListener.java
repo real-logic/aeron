@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.command.ConnectionBuffersReadyFlyweight;
+import uk.co.real_logic.agrona.collections.Long2LongHashMap;
 
 /**
  * Callback interface for receiving messages from the driver.
@@ -34,8 +34,9 @@ interface DriverListener
         int streamId,
         int sessionId,
         long initialPosition,
+        Long2LongHashMap subscriberPositionMap,
         String logFileName,
-        ConnectionBuffersReadyFlyweight message,
+        String sourceIdentity,
         long correlationId);
 
     void onInactiveConnection(

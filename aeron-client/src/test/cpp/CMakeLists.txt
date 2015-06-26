@@ -30,6 +30,7 @@ endfunction()
 
 aeron_client_test(clientConductorTest ClientConductorTest.cpp)
 aeron_client_test(publicationTest PublicationTest.cpp)
+aeron_client_test(connectionTest ConnectionTest.cpp)
 aeron_common_test(commandTest command/CommandTest.cpp)
 aeron_common_test(utilTest util/UtilTest.cpp)
 aeron_common_test(memoryMappedFileTest util/MemoryMappedFileTest.cpp)

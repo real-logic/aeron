@@ -63,6 +63,7 @@ public:
 
         m_termLengthMask = capacity - 1;
         m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(capacity);
+        m_subscriberPosition.setOrdered(initialPosition);
     }
 
     Connection(Connection&) = delete;

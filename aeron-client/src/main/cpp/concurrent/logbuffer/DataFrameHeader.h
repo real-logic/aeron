@@ -18,6 +18,7 @@
 #define AERON_DATAFRAMEHEADER_H
 
 #include <stddef.h>
+#include <util/Index.h>
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -52,6 +53,8 @@ static const util::index_t LENGTH = DATA_OFFSET;
 
 static const std::int16_t HDR_TYPE_PAD = 0x00;
 static const std::int16_t HDR_TYPE_DATA = 0x01;
+
+static const std::int8_t CURRENT_VERSION = 0x0;
 
 }
 

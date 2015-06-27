@@ -18,8 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.logbuffer.BlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
-
 /**
  * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
@@ -37,21 +35,16 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  */
 public class Subscription implements AutoCloseable
 {
-    private static final int TRUE = 1;
-    private static final int FALSE = 0;
-
     private static final Connection[] EMPTY_ARRAY = new Connection[0];
-    private static final AtomicIntegerFieldUpdater<Subscription> IS_CLOSED_UPDATER =
-        AtomicIntegerFieldUpdater.newUpdater(Subscription.class, "isClosed");
 
     private final long registrationId;
     private final int streamId;
     private int roundRobinIndex = 0;
-    private volatile int isClosed = FALSE;
+    private volatile boolean isClosed = false;
 
-    private final String channel;
-    private final ClientConductor clientConductor;
     private volatile Connection[] connections = EMPTY_ARRAY;
+    private final ClientConductor clientConductor;
+    private final String channel;
 
     Subscription(final ClientConductor conductor, final String channel, final int streamId, final long registrationId)
     {
@@ -83,7 +76,7 @@ public class Subscription implements AutoCloseable
 
     /**
      * Poll the {@link Connection}s under the subscription for available message fragments.
-     *
+     * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered withing a session.
      *
@@ -91,6 +84,7 @@ public class Subscription implements AutoCloseable
      * @param fragmentLimit   number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
      * @throws IllegalStateException if the subscription is closed.
+     * @see FragmentAssemblyAdapter
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
@@ -154,17 +148,20 @@ public class Subscription implements AutoCloseable
      */
     public void close()
     {
-        if (IS_CLOSED_UPDATER.compareAndSet(this, FALSE, TRUE))
+        synchronized (clientConductor)
         {
-            synchronized (clientConductor)
+            if (!isClosed)
             {
+                isClosed = true;
+
+                clientConductor.releaseSubscription(this);
+
+                final Connection[] connections = this.connections;
                 for (final Connection connection : connections)
                 {
                     clientConductor.lingerResource(connection.managedResource());
                 }
-                connections = EMPTY_ARRAY;
-
-                clientConductor.releaseSubscription(this);
+                this.connections = EMPTY_ARRAY;
             }
         }
     }
@@ -222,6 +219,7 @@ public class Subscription implements AutoCloseable
     {
         boolean isConnected = false;
 
+        final Connection[] connections = this.connections;
         for (final Connection connection : connections)
         {
             if (sessionId == connection.sessionId())
@@ -241,7 +239,7 @@ public class Subscription implements AutoCloseable
 
     private void ensureOpen()
     {
-        if (TRUE == isClosed)
+        if (isClosed)
         {
             throw new IllegalStateException(String.format(
                 "Subscription is closed: channel=%s streamId=%d registrationId=%d", channel, streamId, registrationId));

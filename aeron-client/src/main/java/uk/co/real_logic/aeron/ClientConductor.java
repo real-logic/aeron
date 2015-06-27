@@ -62,7 +62,7 @@ class ClientConductor implements Agent, DriverListener
     private final NewConnectionHandler newConnectionHandler;
     private final InactiveConnectionHandler inactiveConnectionHandler;
 
-    private RegistrationException driverException; // Guarded by this
+    private RegistrationException driverException;
 
     public ClientConductor(
         final EpochClock epochClock,
@@ -94,6 +94,8 @@ class ClientConductor implements Agent, DriverListener
 
     public void onClose()
     {
+        activePublications.close();
+        activeSubscriptions.close();
         managedResources.forEach(ManagedResource::delete);
     }
 

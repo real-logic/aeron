@@ -17,7 +17,9 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
@@ -32,7 +34,6 @@ public class ActivePublications
     public Publication get(final String channel, final int sessionId, final int streamId)
     {
         final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap = publicationsByChannelMap.get(channel);
-
         if (null == publicationBySessionAndStreamMap)
         {
             return null;
@@ -52,19 +53,28 @@ public class ActivePublications
     public Publication remove(final String channel, final int sessionId, final int streamId)
     {
         final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap = publicationsByChannelMap.get(channel);
-
         if (null == publicationBySessionAndStreamMap)
         {
             return null;
         }
 
         final Publication publication = publicationBySessionAndStreamMap.remove(sessionId, streamId);
-
         if (publicationBySessionAndStreamMap.isEmpty())
         {
             publicationsByChannelMap.remove(channel);
         }
 
         return publication;
+    }
+
+    public void close()
+    {
+        final List<Publication> publications = new ArrayList<>();
+        publicationsByChannelMap
+            .values()
+            .stream()
+            .forEach((publicationMap) -> publicationMap.forEach(publications::add));
+
+        publications.forEach(Publication::close);
     }
 }

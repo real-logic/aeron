@@ -100,20 +100,9 @@ public class MultiDriverTest
     @After
     public void closeEverything()
     {
-        if (null != publication)
-        {
-            publication.close();
-        }
-
-        if (null != subscriptionA)
-        {
-            subscriptionA.close();
-        }
-
-        if (null != subscriptionB)
-        {
-            subscriptionB.close();
-        }
+        publication.close();
+        subscriptionA.close();
+        subscriptionB.close();
 
         clientB.close();
         clientA.close();

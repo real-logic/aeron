@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
@@ -35,19 +36,22 @@ public class LogBuffers implements AutoCloseable
 {
     private final MappedByteBuffer[] mappedByteBuffers;
     private final UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
+    private final FileChannel fileChannel;
 
     public LogBuffers(final String logFileName)
     {
-        try (final FileChannel logChannel = new RandomAccessFile(logFileName, "rw").getChannel())
+        try (final RandomAccessFile file = new RandomAccessFile(logFileName, "rw"))
         {
-            final long logLength = logChannel.size();
+            fileChannel = file.getChannel();
+
+            final long logLength = fileChannel.size();
             final int termLength = computeTermLength(logLength);
 
             checkTermLength(termLength);
 
             if (logLength < Integer.MAX_VALUE)
             {
-                final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
+                final MappedByteBuffer mappedBuffer = fileChannel.map(READ_WRITE, 0, logLength);
                 mappedByteBuffers = new MappedByteBuffer[]{mappedBuffer};
 
                 final int metaDataSectionOffset = termLength * PARTITION_COUNT;
@@ -69,13 +73,13 @@ public class LogBuffers implements AutoCloseable
                 final long metaDataSectionOffset = termLength * (long)PARTITION_COUNT;
                 final int metaDataSectionLength = (int)(logLength - metaDataSectionOffset);
 
-                final MappedByteBuffer metaDataMappedBuffer = logChannel.map(
+                final MappedByteBuffer metaDataMappedBuffer = fileChannel.map(
                     READ_WRITE, metaDataSectionOffset, metaDataSectionLength);
                 mappedByteBuffers[mappedByteBuffers.length - 1] = metaDataMappedBuffer;
 
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
-                    mappedByteBuffers[i] = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
+                    mappedByteBuffers[i] = fileChannel.map(READ_WRITE, termLength * (long)i, termLength);
 
                     atomicBuffers[i] = new UnsafeBuffer(mappedByteBuffers[i]);
                     atomicBuffers[i + PARTITION_COUNT] = new UnsafeBuffer(
@@ -102,8 +106,22 @@ public class LogBuffers implements AutoCloseable
         return atomicBuffers;
     }
 
+    public FileChannel fileChannel()
+    {
+        return fileChannel;
+    }
+
     public void close()
     {
+        try
+        {
+            fileChannel.close();
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
         for (final MappedByteBuffer buffer : mappedByteBuffers)
         {
             IoUtil.unmap(buffer);

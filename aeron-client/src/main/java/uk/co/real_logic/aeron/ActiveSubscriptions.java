@@ -18,8 +18,11 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Consumer;
+
+import static java.util.stream.Collectors.toList;
 
 class ActiveSubscriptions
 {
@@ -54,5 +57,15 @@ class ActiveSubscriptions
                 subscriptionsByStreamIdMap.remove(streamId);
             }
         }
+    }
+
+    public void close()
+    {
+        subscriptionsByStreamIdMap
+            .values()
+            .stream()
+            .flatMap(Collection::stream)
+            .collect(toList())
+            .forEach(Subscription::close);
     }
 }

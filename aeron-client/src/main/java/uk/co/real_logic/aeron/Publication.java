@@ -144,8 +144,8 @@ public class Publication implements AutoCloseable
             if (--refCount == 0)
             {
                 isClosed = true;
-                logBuffers.close();
                 clientConductor.releasePublication(this);
+                logBuffers.close();
             }
         }
     }

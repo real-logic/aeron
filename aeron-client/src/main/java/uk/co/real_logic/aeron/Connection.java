@@ -181,7 +181,7 @@ public class Connection
         final int bytesConsumed = resultingOffset - termOffset;
         if (resultingOffset > termOffset)
         {
-            final long offset = (capacity * activeIndex) + termOffset;
+            final long offset = ((long)capacity * activeIndex) + termOffset;
             try
             {
                 fileBlockHandler.onBlock(logBuffers.fileChannel(), offset, bytesConsumed, sessionId);

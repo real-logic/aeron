@@ -15,25 +15,22 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
+import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
-import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
-import static uk.co.real_logic.aeron.logbuffer.TermScanner.available;
-import static uk.co.real_logic.aeron.logbuffer.TermScanner.padding;
-import static uk.co.real_logic.aeron.logbuffer.TermScanner.scanForAvailability;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.TermScanner.*;
 
 /**
  * Publication to be sent to registered subscribers.
@@ -51,7 +48,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private final Position publisherLimit;
     private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
-    private final InetSocketAddress dstAddress;
     private final SystemCounters systemCounters;
 
     private final int positionBitsToShift;
@@ -87,7 +83,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         this.rawLog = rawLog;
         this.senderPosition = senderPosition;
         this.systemCounters = systemCounters;
-        this.dstAddress = channelEndpoint.udpChannel().remoteData();
         this.clock = clock;
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
@@ -222,7 +217,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
                 sendBuffer.limit(termOffset + available).position(termOffset);
 
-                if (available != channelEndpoint.sendTo(sendBuffer, dstAddress))
+                if (available != channelEndpoint.send(sendBuffer))
                 {
                     systemCounters.dataPacketShortSends().orderedIncrement();
                     break;
@@ -322,7 +317,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
                 final ByteBuffer sendBuffer = sendBuffers[activeIndex];
                 sendBuffer.limit(termOffset + available).position(termOffset);
 
-                if (available == channelEndpoint.sendTo(sendBuffer, dstAddress))
+                if (available == channelEndpoint.send(sendBuffer))
                 {
                     timeOfLastSendOrHeartbeat = now;
                     trackSenderLimits = true;
@@ -352,7 +347,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             setupFrameBuffer.clear();
             setupHeader.activeTermId(activeTermId).termOffset(termOffset);
 
-            final int bytesSent = channelEndpoint.sendTo(setupFrameBuffer, dstAddress);
+            final int bytesSent = channelEndpoint.send(setupFrameBuffer);
             if (SetupFlyweight.HEADER_LENGTH != bytesSent)
             {
                 systemCounters.setupMessageShortSends().orderedIncrement();
@@ -376,7 +371,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             heartbeatFrameBuffer.clear();
             dataHeader.termId(activeTermId).termOffset(termOffset);
 
-            final int bytesSent = channelEndpoint.sendTo(heartbeatFrameBuffer, dstAddress);
+            final int bytesSent = channelEndpoint.send(heartbeatFrameBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 systemCounters.dataPacketShortSends().orderedIncrement();

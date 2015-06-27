@@ -58,7 +58,13 @@ public final class ReceiverUdpChannelTransport extends UdpChannelTransport
         final EventLogger logger,
         final LossGenerator lossGenerator)
     {
-        super(udpChannel, udpChannel.remoteData(), udpChannel.remoteData(), lossGenerator, logger);
+        super(
+            udpChannel,
+            udpChannel.remoteData(),
+            udpChannel.remoteData(),
+            null,
+            lossGenerator,
+            logger);
 
         this.dataPacketHandler = dataPacketHandler;
         this.setupMessageHandler = setupMessageHandler;

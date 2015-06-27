@@ -113,7 +113,7 @@ public class SenderTest
     {
         final SendChannelEndpoint mockSendChannelEndpoint = mock(SendChannelEndpoint.class);
         when(mockSendChannelEndpoint.udpChannel()).thenReturn(udpChannel);
-        when(mockSendChannelEndpoint.sendTo(anyObject(), anyObject())).thenAnswer(saveByteBufferAnswer);
+        when(mockSendChannelEndpoint.send(anyObject())).thenAnswer(saveByteBufferAnswer);
         when(mockSystemCounters.heartbeatsSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.bytesSent()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.senderFlowControlLimits()).thenReturn(mock(AtomicCounter.class));

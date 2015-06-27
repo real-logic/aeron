@@ -24,10 +24,7 @@ import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
-import java.net.SocketOption;
-import java.net.StandardSocketOptions;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.DatagramChannel;
@@ -43,16 +40,19 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private final EventLogger logger;
     private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
-    private DatagramChannel datagramChannel;
+    private DatagramChannel sendDatagramChannel;
+    private DatagramChannel receiveDatagramChannel;
     private SelectionKey selectionKey;
     private TransportPoller transportPoller;
     private InetSocketAddress bindSocketAddress;
     private InetSocketAddress endPointSocketAddress;
+    private InetSocketAddress connectAddress;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
         final InetSocketAddress endPointSocketAddress,
         final InetSocketAddress bindSocketAddress,
+        final InetSocketAddress connectAddress,
         final LossGenerator lossGenerator,
         final EventLogger logger)
     {
@@ -61,6 +61,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         this.logger = logger;
         this.endPointSocketAddress = endPointSocketAddress;
         this.bindSocketAddress = bindSocketAddress;
+        this.connectAddress = connectAddress;
     }
 
     /**
@@ -70,32 +71,49 @@ public abstract class UdpChannelTransport implements AutoCloseable
     {
         try
         {
-            datagramChannel = DatagramChannel.open(udpChannel.protocolFamily());
+            sendDatagramChannel = DatagramChannel.open(udpChannel.protocolFamily());
+            receiveDatagramChannel = sendDatagramChannel;
             if (udpChannel.isMulticast())
             {
                 final NetworkInterface localInterface = udpChannel.localInterface();
 
-                datagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-                datagramChannel.bind(new InetSocketAddress(endPointSocketAddress.getPort()));
-                datagramChannel.join(endPointSocketAddress.getAddress(), localInterface);
-                datagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
+                if (null != connectAddress)
+                {
+                    receiveDatagramChannel = DatagramChannel.open(udpChannel.protocolFamily());
+                }
+
+                receiveDatagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+                receiveDatagramChannel.bind(new InetSocketAddress(endPointSocketAddress.getPort()));
+                receiveDatagramChannel.join(endPointSocketAddress.getAddress(), localInterface);
+                sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
+
+                if (null != connectAddress)
+                {
+                    sendDatagramChannel.connect(connectAddress);
+                }
             }
             else
             {
-                datagramChannel.bind(bindSocketAddress);
+                sendDatagramChannel.bind(bindSocketAddress);
+
+                if (null != connectAddress)
+                {
+                    sendDatagramChannel.connect(connectAddress);
+                }
             }
 
             if (0 != Configuration.SOCKET_SNDBUF_LENGTH)
             {
-                datagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
+                sendDatagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
             }
 
             if (0 != Configuration.SOCKET_RCVBUF_LENGTH)
             {
-                datagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_LENGTH);
+                receiveDatagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_LENGTH);
             }
 
-            datagramChannel.configureBlocking(false);
+            sendDatagramChannel.configureBlocking(false);
+            receiveDatagramChannel.configureBlocking(false);
         }
         catch (final IOException ex)
         {
@@ -130,9 +148,36 @@ public abstract class UdpChannelTransport implements AutoCloseable
      *
      * @return {@link DatagramChannel} for this transport channel.
      */
-    public DatagramChannel datagramChannel()
+    public DatagramChannel receiveDatagramChannel()
     {
-        return datagramChannel;
+        return receiveDatagramChannel;
+    }
+
+    /**
+     * Send contents of {@link ByteBuffer} to connected address
+     *
+     * @param buffer to send
+     * @return number of bytes sent
+     */
+    public int send(final ByteBuffer buffer)
+    {
+        logger.logFrameOut(buffer, connectAddress);
+
+        int byteSent = 0;
+        try
+        {
+            byteSent = sendDatagramChannel.write(buffer);
+        }
+        catch (final PortUnreachableException ex)
+        {
+            // ignore
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return byteSent;
     }
 
     /**
@@ -149,7 +194,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         int bytesSent = 0;
         try
         {
-            bytesSent = datagramChannel.send(buffer, remoteAddress);
+            bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
         }
         catch (final IOException ex)
         {
@@ -176,7 +221,12 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 transportPoller.cancelRead(this);
             }
 
-            datagramChannel.close();
+            sendDatagramChannel.close();
+
+            if (receiveDatagramChannel != sendDatagramChannel)
+            {
+                receiveDatagramChannel.close();
+            }
         }
         catch (final Exception ex)
         {
@@ -206,7 +256,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         T option = null;
         try
         {
-            option = datagramChannel.getOption(name);
+            option = sendDatagramChannel.getOption(name);
         }
         catch (final IOException ex)
         {
@@ -289,9 +339,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
         InetSocketAddress address = null;
         try
         {
-            address = (InetSocketAddress)datagramChannel.receive(receiveByteBuffer);
+            address = (InetSocketAddress) receiveDatagramChannel.receive(receiveByteBuffer);
         }
-        catch (final ClosedByInterruptException ignored)
+        catch (final PortUnreachableException | ClosedByInterruptException ignored)
         {
             // do nothing
         }

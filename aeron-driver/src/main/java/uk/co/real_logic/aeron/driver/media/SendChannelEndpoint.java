@@ -74,12 +74,11 @@ public class SendChannelEndpoint implements AutoCloseable
      * Called from the {@link Sender} to send data or retransmits.
      *
      * @param buffer to send
-     * @param address to send to
      * @return bytes sent
      */
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress address)
+    public int send(final ByteBuffer buffer)
     {
-        return transport.sendTo(buffer, address);
+        return transport.send(buffer);
     }
 
     /**

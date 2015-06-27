@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.logbuffer.BlockHandler;
-import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
-import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.aeron.logbuffer.TermBlockScanner;
+import uk.co.real_logic.aeron.logbuffer.*;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -131,7 +128,7 @@ public class Connection
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
      * will be delivered via the {@link BlockHandler} up to a limited number of bytes.
      *
-     * @param blockHandler     to which block is.
+     * @param blockHandler     to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
      */
@@ -150,6 +147,44 @@ public class Connection
             try
             {
                 blockHandler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId);
+            }
+            catch (final Throwable t)
+            {
+                errorHandler.onError(t);
+            }
+
+            subscriberPosition.setOrdered(position + bytesConsumed);
+        }
+
+        return bytesConsumed;
+    }
+
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered via the {@link FileBlockHandler} up to a limited number of bytes.
+     *
+     * @param fileBlockHandler to which block is delivered.
+     * @param blockLengthLimit up to which a block may be in length.
+     * @return the number of bytes that have been consumed.
+     */
+    public int poll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
+    {
+        final long position = subscriberPosition.get();
+        final int termOffset = (int)position & termLengthMask;
+        final int activeIndex = indexByPosition(position, positionBitsToShift);
+        final UnsafeBuffer termBuffer = termBuffers[activeIndex];
+        final int capacity = termBuffer.capacity();
+        final int limit = Math.min(termOffset + blockLengthLimit, capacity);
+
+        final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limit);
+
+        final int bytesConsumed = resultingOffset - termOffset;
+        if (resultingOffset > termOffset)
+        {
+            final long offset = (capacity * activeIndex) + termOffset;
+            try
+            {
+                fileBlockHandler.onBlock(logBuffers.fileChannel(), offset, bytesConsumed, sessionId);
             }
             catch (final Throwable t)
             {

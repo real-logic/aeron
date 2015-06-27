@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.BlockHandler;
+import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
 /**
@@ -142,8 +143,30 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Close the Subscription so that associated buffers can be released.
+     * Poll the {@link Connection}s under the subscription for available message fragments in blocks.
      *
+     * @param fileBlockHandler to receive a block of fragments from each {@link Connection}.
+     * @param blockLengthLimit for each individual block.
+     * @return the number of bytes consumed.
+     * @throws IllegalStateException if the subscription is closed.
+     */
+    public long poll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
+    {
+        ensureOpen();
+
+        long bytesConsumed = 0;
+        final Connection[] connections = this.connections;
+        for (final Connection connection : connections)
+        {
+            bytesConsumed += connection.poll(fileBlockHandler, blockLengthLimit);
+        }
+
+        return bytesConsumed;
+    }
+
+    /**
+     * Close the Subscription so that associated buffers can be released.
+     * <p>
      * This method is idempotent.
      */
     public void close()

@@ -92,6 +92,15 @@ namespace BitUtil
     }
 
     /*
+     * Works for 32-bit fields only at the moment.
+     */
+    template<typename value_t>
+    inline static value_t findNextPowerOfTwo(value_t value)
+    {
+        return 1 << (32 - numberOfTrailingZeroes(value));
+    }
+
+    /*
      * Hacker's Delight Section 10-3 and http://www.hackersdelight.org/divcMore.pdf
      * Solution is Figure 10-24.
      */

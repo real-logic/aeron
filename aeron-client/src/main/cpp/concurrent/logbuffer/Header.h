@@ -65,31 +65,31 @@ public:
         m_buffer.wrap(buffer);
     }
 
-    inline std::int32_t frameLength()
+    inline std::int32_t frameLength() const
     {
         // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset);
     }
 
-    inline std::int32_t sessionId()
+    inline std::int32_t sessionId() const
     {
         // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset + DataFrameHeader::SESSION_ID_FIELD_OFFSET);
     }
 
-    inline std::int32_t streamId()
+    inline std::int32_t streamId() const
     {
         // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset + DataFrameHeader::STREAM_ID_FIELD_OFFSET);
     }
 
-    inline std::int32_t termId()
+    inline std::int32_t termId() const
     {
         // TODO: add LITTLE_ENDIAN check
         return m_buffer.getInt32(m_offset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
     }
 
-    inline std::int32_t termOffset()
+    inline std::int32_t termOffset() const
     {
         return m_offset;
     }
@@ -103,6 +103,11 @@ public:
     inline std::uint8_t flags()
     {
         return m_buffer.getUInt8(m_offset + DataFrameHeader::FLAGS_FIELD_OFFSET);
+    }
+
+    inline std::int64_t position() const
+    {
+        return LogBufferDescriptor::computePosition(termId(), termOffset() + frameLength(), m_positionBitsToShift, m_initialTermId);
     }
 
 private:

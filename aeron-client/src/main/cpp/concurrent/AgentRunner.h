@@ -34,14 +34,13 @@ public:
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
-        m_running(true),
-        m_thread(nullptr)
+        m_running(true)
     {
     }
 
     inline void start()
     {
-        m_thread = new std::thread([&]()
+        m_thread = std::thread([&]()
         {
             run();
         });
@@ -66,10 +65,7 @@ public:
     inline void close()
     {
         m_running = false;
-        if (nullptr != m_thread)
-        {
-            m_thread->join();
-        }
+        m_thread.join();
         m_agent.onClose();
     }
 private:
@@ -77,7 +73,7 @@ private:
     IdleStrategy& m_idleStrategy;
     exception_handler_t& m_exceptionHandler;
     std::atomic<bool> m_running;
-    std::thread* m_thread;
+    std::thread m_thread;
 };
 
 }}

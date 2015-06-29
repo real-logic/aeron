@@ -31,7 +31,7 @@ static long currentTimeMillis()
 }
 
 Aeron::Aeron(Context &context) :
-    m_randomEngine(m_randomEngine()),
+    m_randomEngine(m_randomDevice()),
     m_sessionIdDistribution(-INT_MAX, INT_MAX),
     m_context(context.conclude()),
     m_cncBuffer(mapCncFile(context)),

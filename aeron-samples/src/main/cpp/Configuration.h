@@ -23,10 +23,13 @@ namespace aeron { namespace samples {
 
 namespace configuration {
 
-    const static std::string DEFAULT_CHANNEL = "udp://localhost:40123";
-    const static std::int32_t DEFAULT_STREAM_ID = 10;
-    const static int DEFAULT_NUMBER_OF_MESSAGES = 1000000;
-    const static int DEFAULT_LINGER_TIMEOUT_MS = 5000;
+const static std::string DEFAULT_CHANNEL = "udp://localhost:40123";
+const static std::int32_t DEFAULT_STREAM_ID = 10;
+const static long DEFAULT_NUMBER_OF_MESSAGES = 1000000;
+const static int DEFAULT_MESSAGE_LENGTH = 256;
+const static int DEFAULT_LINGER_TIMEOUT_MS = 5000;
+const static int DEFAULT_FRAGMENT_COUNT_LIMIT = 10;
+const static bool DEFAULT_RANDOM_MESSAGE_LENGTH = false;
 
 }
 

@@ -18,9 +18,9 @@
 
 #include <string>
 #include <sstream>
+#include <iostream>
 #include <type_traits>
 #include "Exceptions.h"
-
 
 namespace aeron { namespace util {
 
@@ -95,6 +95,21 @@ std::string strconcat (Ts... vs)
     std::stringstream s;
     private_impl::concat(s, vs...);
     return s.str();
+}
+
+inline bool continuationBarrier(const std::string& label)
+{
+    bool result = false;
+    char response;
+    std::cout << std::endl << label << " (y/n): ";
+    std::cin >> response;
+
+    if ('y' == response || 'Y' == response)
+    {
+        result = true;
+    }
+
+    return result;
 }
 
 }}

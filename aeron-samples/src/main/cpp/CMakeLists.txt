@@ -15,12 +15,15 @@
 #
 
 set(HEADERS
-    Configuration.h)
+    Configuration.h
+    RateReporter.h)
 
 add_executable(AeronStat AeronStat.cpp ${HEADERS})
 add_executable(BasicPublisher BasicPublisher.cpp ${HEADERS})
 add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(BasicSubscriber BasicSubscriber.cpp ${HEADERS})
+add_executable(StreamingPublisher StreamingPublisher.cpp ${HEADERS})
+add_executable(RateSubscriber RateSubscriber.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
     aeron_client
@@ -37,3 +40,10 @@ target_link_libraries(BasicSubscriber
     aeron_client
     ${CMAKE_THREAD_LIBS_INIT})
 
+target_link_libraries(StreamingPublisher
+    aeron_client
+    ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(RateSubscriber
+    aeron_client
+    ${CMAKE_THREAD_LIBS_INIT})

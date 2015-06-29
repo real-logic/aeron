@@ -74,6 +74,20 @@ int CommandOption::getParamAsInt(size_t index)
     }
 }
 
+long CommandOption::getParamAsLong(size_t index)
+{
+    checkIndex(index);
+
+    std::string param = m_params[index];
+
+    try {
+        return parse<long>(param);
+    }
+    catch (ParseException &) {
+        throw CommandOptionException(std::string("Invalid numeric value: \"") + param + "\" on option -" + m_optionChar, SOURCEINFO);
+    }
+}
+
 int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int defaultValue)
 {
     // if this option was not present on the command line then return the default value.
@@ -84,6 +98,21 @@ int CommandOption::getParamAsInt(size_t index, int minValue, int maxValue, int d
     if ((value < minValue) || (value > maxValue))
         throw CommandOptionException(std::string("Value \"") + toString(value) + "\" out of range: [" +
                 toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar, SOURCEINFO);
+
+
+    return value;
+}
+
+long CommandOption::getParamAsLong(size_t index, long minValue, long maxValue, long defaultValue)
+{
+    // if this option was not present on the command line then return the default value.
+    if (!isPresent())
+        return defaultValue;
+
+    long value = getParamAsLong(index);
+    if ((value < minValue) || (value > maxValue))
+        throw CommandOptionException(std::string("Value \"") + toString(value) + "\" out of range: [" +
+            toString(minValue) + ".." + toString(maxValue) + "] on option -" + m_optionChar, SOURCEINFO);
 
 
     return value;

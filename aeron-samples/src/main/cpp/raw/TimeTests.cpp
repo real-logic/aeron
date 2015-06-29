@@ -94,6 +94,8 @@ int main(int argc, char** argv)
 
     cout << "nano_clock sample:                   " << count << "\n";
 
+    cout << "duration ratio:                      " << chrono::duration<double, std::ratio<1,1>>(diff).count() << "\n";
+
     return 0;
 }
 

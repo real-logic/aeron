@@ -87,7 +87,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
     {
         switch (state.m_status)
         {
-            case RegistrationStatus::AWAITING:
+            case RegistrationStatus::AWAITING_MEDIA_DRIVER:
                 if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
                 {
                     throw DriverTimeoutException(
@@ -95,7 +95,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
                 }
                 break;
 
-            case RegistrationStatus::REGISTERED:
+            case RegistrationStatus::REGISTERED_MEDIA_DRIVER:
                 {
                     UnsafeBufferPosition publicationLimit(m_counterValuesBuffer, state.m_positionLimitCounterId);
 
@@ -106,7 +106,7 @@ std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t regis
                 }
                 break;
 
-            case RegistrationStatus::ERRORED:
+            case RegistrationStatus::ERRORED_MEDIA_DRIVER:
                 throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
         }
     }
@@ -170,7 +170,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
         state.m_subscriptionCache.reset();
     }
 
-    if (!sub && RegistrationStatus::AWAITING == state.m_status)
+    if (!sub && RegistrationStatus::AWAITING_MEDIA_DRIVER == state.m_status)
     {
         if (m_epochClock() > (state.m_timeOfRegistration + m_driverTimeoutMs))
         {
@@ -178,7 +178,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
                 strPrintf("No response from driver in %d ms", m_driverTimeoutMs), SOURCEINFO);
         }
     }
-    else if (!sub && RegistrationStatus::ERRORED == state.m_status)
+    else if (!sub && RegistrationStatus::ERRORED_MEDIA_DRIVER == state.m_status)
     {
         throw RegistrationException(state.m_errorCode, state.m_errorMessage, SOURCEINFO);
     }
@@ -224,7 +224,7 @@ void ClientConductor::onNewPublication(
 
     if (it != m_publications.end())
     {
-        (*it).m_status = RegistrationStatus::REGISTERED;
+        (*it).m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         (*it).m_positionLimitCounterId = positionLimitCounterId;
         (*it).m_buffers = std::make_shared<LogBuffers>(logFileName.c_str());
 
@@ -242,9 +242,9 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
             return (correlationId == entry.m_registrationId);
         });
 
-    if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING)
+    if (subIt != m_subscriptions.end() && (*subIt).m_status == RegistrationStatus::AWAITING_MEDIA_DRIVER)
     {
-        (*subIt).m_status = RegistrationStatus::REGISTERED;
+        (*subIt).m_status = RegistrationStatus::REGISTERED_MEDIA_DRIVER;
         (*subIt).m_subscriptionCache =
             std::make_shared<Subscription>(*this, (*subIt).m_registrationId, (*subIt).m_channel, (*subIt).m_streamId);
         (*subIt).m_subscription = std::weak_ptr<Subscription>((*subIt).m_subscriptionCache);
@@ -268,7 +268,7 @@ void ClientConductor::onErrorResponse(
 
     if (subIt != m_subscriptions.end())
     {
-        (*subIt).m_status = RegistrationStatus::ERRORED;
+        (*subIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
         (*subIt).m_errorCode = errorCode;
         (*subIt).m_errorMessage = errorMessage;
         return;
@@ -282,7 +282,7 @@ void ClientConductor::onErrorResponse(
 
     if (pubIt != m_publications.end())
     {
-        (*pubIt).m_status = RegistrationStatus::ERRORED;
+        (*pubIt).m_status = RegistrationStatus::ERRORED_MEDIA_DRIVER;
         (*pubIt).m_errorCode = errorCode;
         (*pubIt).m_errorMessage = errorMessage;
         return;

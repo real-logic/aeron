@@ -169,8 +169,8 @@ int main(int argc, char **argv)
             publication = aeron.findPublication(id);
         }
 
-        AERON_DECL_ALIGNED(std::uint8_t buffer[settings.messageLength], 16);
-        concurrent::AtomicBuffer srcBuffer(buffer, settings.messageLength);
+        std::unique_ptr<std::uint8_t[]> buffer(new std::uint8_t[settings.messageLength]);
+        concurrent::AtomicBuffer srcBuffer(buffer.get(), settings.messageLength);
         BusySpinIdleStrategy offerIdleStrategy;
         on_new_length_t lengthGenerator = composeLengthGenerator(settings.randomMessageLength, settings.messageLength);
         RateReporter rateReporter(std::chrono::seconds(1), printRate);

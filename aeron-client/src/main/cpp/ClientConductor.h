@@ -155,7 +155,7 @@ protected:
 private:
     enum RegistrationStatus
     {
-        AWAITING, REGISTERED, ERRORED
+        AWAITING_MEDIA_DRIVER, REGISTERED_MEDIA_DRIVER, ERRORED_MEDIA_DRIVER
     };
 
     struct PublicationStateDefn
@@ -166,7 +166,7 @@ private:
         std::int32_t m_sessionId;
         std::int32_t m_positionLimitCounterId = -1;
         long m_timeOfRegistration;
-        RegistrationStatus m_status = RegistrationStatus::AWAITING;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
         std::shared_ptr<LogBuffers> m_buffers;
@@ -185,7 +185,7 @@ private:
         std::int64_t m_registrationId;
         std::int32_t m_streamId;
         long m_timeOfRegistration;
-        RegistrationStatus m_status = RegistrationStatus::AWAITING;
+        RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
         std::int32_t m_errorCode;
         std::string m_errorMessage;
         std::shared_ptr<Subscription> m_subscriptionCache;

@@ -68,6 +68,7 @@ SET(HEADERS
     concurrent/logbuffer/TermAppender.h
     concurrent/logbuffer/LogBufferPartition.h
     concurrent/logbuffer/LogBufferDescriptor.h
+    concurrent/logbuffer/TermBlockScanner.h
     concurrent/logbuffer/TermReader.h
     concurrent/ringbuffer/ManyToOneRingBuffer.h
     concurrent/ringbuffer/RecordDescriptor.h

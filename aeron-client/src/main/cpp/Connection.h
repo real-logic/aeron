@@ -21,7 +21,9 @@
 #include <concurrent/logbuffer/LogBufferDescriptor.h>
 #include <concurrent/logbuffer/Header.h>
 #include <concurrent/logbuffer/TermReader.h>
+#include <concurrent/logbuffer/TermBlockScanner.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
+#include <algorithm>
 #include "LogBuffers.h"
 
 namespace aeron {
@@ -117,6 +119,26 @@ public:
         }
 
         return readOutcome.fragmentsRead;
+    }
+
+    int poll(const block_handler_t& blockHandler, int blockLengthLimit)
+    {
+        const std::int64_t position = m_subscriberPosition.get();
+        const std::int32_t termOffset = (std::int32_t)position & m_termLengthMask;
+        AtomicBuffer& termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift)];
+        const std::int32_t limit = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
+
+        const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limit);
+
+        const std::int32_t bytesConsumed = resultingOffset - termOffset;
+
+        if (resultingOffset > termOffset)
+        {
+            blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId);
+            m_subscriberPosition.setOrdered(position + bytesConsumed);
+        }
+
+        return bytesConsumed;
     }
 
     std::shared_ptr<LogBuffers> logBuffers()

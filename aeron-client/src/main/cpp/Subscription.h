@@ -54,7 +54,7 @@ public:
     inline int poll(const fragment_handler_t fragmentHandler, int fragmentLimit)
     {
         int fragmentsRead = 0;
-        int length = std::atomic_load(&m_connectionsLength);
+        const int length = std::atomic_load(&m_connectionsLength);
         Connection* connections = std::atomic_load(&m_connections);
 
         if (length > 0)
@@ -80,6 +80,20 @@ public:
         }
 
         return fragmentsRead;
+    }
+
+    inline long poll(const block_handler_t blockHandler, int blockLengthLimit)
+    {
+        const int length = std::atomic_load(&m_connectionsLength);
+        Connection* connections = std::atomic_load(&m_connections);
+        long bytesConsumed = 0;
+
+        for (int i = 0; i < length; i++)
+        {
+            bytesConsumed += connections[i].poll(blockHandler, blockLengthLimit);
+        }
+
+        return bytesConsumed;
     }
 
     bool isConnected(std::int32_t sessionId)

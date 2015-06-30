@@ -46,8 +46,9 @@ inline void release()
 #pragma GCC diagnostic ignored "-Wunused-variable"
     // Avoid hitting the same cache-line from different threads.
     volatile std::int64_t dummy = 0;
-#pragma GCC diagnostic pop
 }
+// must come after closing brace so that gcc knows it is actually unused
+#pragma GCC diagnostic pop
 
 /**
 * A more jitter friendly alternate to thread:yield in spin waits.

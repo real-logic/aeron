@@ -99,6 +99,7 @@ void sendPingAndReceivePong(
     {
         do
         {
+            // timestamps in the message are relative to this app, so just send the timepoint directly.
             steady_clock::time_point start = steady_clock::now();
 
             srcBuffer.putBytes(0, (std::uint8_t*)&start, sizeof(steady_clock::time_point));

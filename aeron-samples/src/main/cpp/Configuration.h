@@ -24,7 +24,11 @@ namespace aeron { namespace samples {
 namespace configuration {
 
 const static std::string DEFAULT_CHANNEL = "udp://localhost:40123";
+const static std::string DEFAULT_PING_CHANNEL = "udp://localhost:40123";
+const static std::string DEFAULT_PONG_CHANNEL = "udp://localhost:40124";
 const static std::int32_t DEFAULT_STREAM_ID = 10;
+const static std::int32_t DEFAULT_PING_STREAM_ID = 10;
+const static std::int32_t DEFAULT_PONG_STREAM_ID = 10;
 const static long DEFAULT_NUMBER_OF_MESSAGES = 1000000;
 const static int DEFAULT_MESSAGE_LENGTH = 256;
 const static int DEFAULT_LINGER_TIMEOUT_MS = 5000;

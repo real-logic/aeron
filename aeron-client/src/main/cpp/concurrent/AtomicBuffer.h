@@ -264,6 +264,12 @@ public:
         ::memcpy(m_buffer + index, srcBuffer, length);
     }
 
+    inline void getBytes(util::index_t index, std::uint8_t *dst, util::index_t length)
+    {
+        boundsCheck(index, length);
+        ::memcpy(dst, m_buffer + index, length);
+    }
+
     inline void setMemory(util::index_t offset , size_t length, std::uint8_t value)
     {
         boundsCheck(offset, length);

@@ -52,6 +52,25 @@ set(GMOCK_LIBS
 )
 
 ##########################################################
+# HdrHistogram usage - use MD5 as means to identify snapshot
+
+ExternalProject_Add(
+    hdr_histogram
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-master.zip
+    URL_MD5 0c89f11747433c1b00a364aca45f8fe5
+    INSTALL_COMMAND ""
+)
+
+ExternalProject_Get_Property(hdr_histogram source_dir)
+set(HDRHISTOGRAM_SOURCE_DIR ${source_dir})
+ExternalProject_Get_Property(hdr_histogram binary_dir)
+set(HDRHISTOGRAM_BINARY_DIR ${binary_dir})
+
+set(HDRHISTOGRAM_LIBS
+    ${HDRHISTOGRAM_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}
+)
+
+##########################################################
 # Platform flags, etc.
 
 find_package(Threads)
@@ -93,6 +112,9 @@ set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
 # gmock - includes gtest
 include_directories(${GMOCK_SOURCE_DIR}/include)
 include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
+
+# hdr_histogram
+include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
 
 ##########################################################
 

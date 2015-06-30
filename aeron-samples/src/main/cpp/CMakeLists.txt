@@ -24,6 +24,8 @@ add_executable(TimeTests raw/TimeTests.cpp ${HEADERS})
 add_executable(BasicSubscriber BasicSubscriber.cpp ${HEADERS})
 add_executable(StreamingPublisher StreamingPublisher.cpp ${HEADERS})
 add_executable(RateSubscriber RateSubscriber.cpp ${HEADERS})
+add_executable(Pong Pong.cpp ${HEADERS})
+add_executable(Ping Ping.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
     aeron_client
@@ -47,3 +49,14 @@ target_link_libraries(StreamingPublisher
 target_link_libraries(RateSubscriber
     aeron_client
     ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(Pong
+    aeron_client
+    ${CMAKE_THREAD_LIBS_INIT})
+
+target_link_libraries(Ping
+    aeron_client
+    ${HDRHISTOGRAM_LIBS}
+    ${CMAKE_THREAD_LIBS_INIT})
+
+add_dependencies(Ping hdr_histogram)

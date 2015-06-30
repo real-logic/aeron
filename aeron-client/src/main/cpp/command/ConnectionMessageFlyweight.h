@@ -117,7 +117,7 @@ public:
         return *this;
     }
 
-    inline std::string channel()
+    inline std::string channel() const
     {
         return stringGet(offsetof(ConnectionMessageDefn, channel));
     }
@@ -128,7 +128,7 @@ public:
         return *this;
     }
 
-    util::index_t length()
+    inline std::int32_t length() const
     {
         return offsetof(ConnectionMessageDefn, channel.channelData) + m_struct.channel.channelLength;
     }

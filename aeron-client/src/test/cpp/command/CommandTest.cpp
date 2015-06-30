@@ -94,7 +94,7 @@ TEST (commandTests, testConnectionMessageFlyweight)
         ASSERT_EQ(cmd.position(), 64);
         ASSERT_EQ(cmd.channel(), channelData);
 
-        ASSERT_EQ(cmd.length(), offsetof(ConnectionMessageDefn, channel.channelData) + channelData.length());
+        ASSERT_EQ(cmd.length(), 24 + sizeof(std::int32_t) + channelData.length());
     });
 }
 
@@ -126,7 +126,7 @@ TEST (commandTests, testPublicationReadyFlyweight)
         ASSERT_EQ(cmd.positionLimitCounterId(), 10);
         ASSERT_EQ(cmd.logFileName(), logFileNameData);
 
-        ASSERT_EQ(cmd.length(), offsetof(PublicationBuffersReadyDefn, logFile.logFileData) + logFileNameData.length());
+        ASSERT_EQ(cmd.length(), 20 + sizeof(std::int32_t) + logFileNameData.length());
     });
 }
 

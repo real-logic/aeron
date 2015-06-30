@@ -80,17 +80,17 @@ Full clean and build of all modules
     
 ### C++ Build
 
-__C++ API is a work in progress and may not build or be stable for usage at this time.__
-
 You require the following to build the C++ API for Aeron:
 
-* 2.8 or higher of [CMake](http://www.cmake.org/)
+* 2.8.4 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
+* Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires clang
+currently.
 
 __NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
 with Visual Studio Express 12 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
 
-For convenience, a script is provided that does a full clean, build, and test of all targets.
+For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build.
 
     $ ./cppbuild/cppbuild
 

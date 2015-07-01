@@ -25,10 +25,7 @@ import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 import java.nio.ByteBuffer;
@@ -57,9 +54,14 @@ public class EmbeddedPingPong
 
     public static void main(final String[] args) throws Exception
     {
+        if (1 == args.length)
+        {
+            MediaDriver.loadPropertiesFile(args[0]);
+        }
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new NoOpIdleStrategy())
+            .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
             .receiverIdleStrategy(new NoOpIdleStrategy())
             .senderIdleStrategy(new NoOpIdleStrategy());
 

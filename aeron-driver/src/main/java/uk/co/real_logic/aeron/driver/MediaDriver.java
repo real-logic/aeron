@@ -36,7 +36,9 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
@@ -44,6 +46,7 @@ import java.nio.channels.DatagramChannel;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -74,12 +77,49 @@ public final class MediaDriver implements AutoCloseable
     private final Context ctx;
 
     /**
+     * Load system properties from a given filename.
+     *
+     * File is first searched in resources, then file system. Both are loaded if both found.
+     *
+     * @param filename that holds properties
+     */
+    public static void loadPropertiesFile(final String filename)
+    {
+        final Properties properties = new Properties(System.getProperties());
+
+        try (final InputStream inputStream = MediaDriver.class.getClassLoader().getResourceAsStream(filename))
+        {
+            properties.load(inputStream);
+        }
+        catch (final Exception ex)
+        {
+            // ignore
+        }
+
+        try (final FileInputStream inputStream = new FileInputStream(filename))
+        {
+            properties.load(inputStream);
+        }
+        catch (final Exception ex)
+        {
+            // ignore
+        }
+
+        System.setProperties(properties);
+    }
+
+    /**
      * Start Media Driver as a stand-alone process.
      *
      * @param args command line arguments
      */
     public static void main(final String[] args) throws Exception
     {
+        if (1 == args.length)
+        {
+            loadPropertiesFile(args[0]);
+        }
+
         try (final MediaDriver ignored = MediaDriver.launch())
         {
             new SigIntBarrier().await();

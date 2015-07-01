@@ -52,6 +52,11 @@ public class EmbeddedThroughput
 
     public static void main(final String[] args) throws Exception
     {
+        if (1 == args.length)
+        {
+            MediaDriver.loadPropertiesFile(args[0]);
+        }
+
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new NoOpIdleStrategy())

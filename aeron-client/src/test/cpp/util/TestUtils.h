@@ -17,8 +17,11 @@
 #ifndef AERON_TESTUTILS_H
 #define AERON_TESTUTILS_H
 
+#if !defined(_MSC_VER)
 #include <unistd.h>
 #include <stdlib.h>
+#endif
+
 #include <util/Exceptions.h>
 
 namespace aeron { namespace test {
@@ -39,7 +42,7 @@ std::string makeTempFileName()
 
     if (::GetTempPath(MAX_PATH, &tmpdir[0]) > 0)
     {
-        if (::GetTempFileName(buff, TEXT("aeron-c"), 0, &tmpfile[0]) != 0)
+        if (::GetTempFileName(tmpdir, TEXT("aeron-c"), 0, &tmpfile[0]) != 0)
         {
             return std::string(tmpfile);
         }

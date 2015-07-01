@@ -361,7 +361,7 @@ public class SubscriberTool
                             streamIdMap.put(channel.streamIdentifiers()[j], sessionIdMap);
                         }
 
-                        final FragmentHandler dataHandler = new FragmentAssemblyAdapter(new MessageStreamHandler(
+                        final FragmentHandler dataHandler = new FragmentAssembler(new MessageStreamHandler(
                                 channel.channel(), channel.streamIdentifiers()[j], sessionIdMap)::onMessage);
                         final Subscription subscription = aeron.addSubscription(
                                 channel.channel(), channel.streamIdentifiers()[j]);

@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.tools.perf_tools;
 
 import org.apache.commons.cli.*;
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
@@ -46,7 +46,7 @@ public class AeronLatencyUnderLoadSubscriber
             throw new RuntimeException(ex);
         }
         final Aeron.Context ctx = new Aeron.Context();
-        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(this::msgHandler);
+        final FragmentAssembler dataHandler = new FragmentAssembler(this::msgHandler);
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication publication = aeron.addPublication(reflectChannel, pubStreamId);

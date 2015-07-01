@@ -26,13 +26,13 @@ import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
  * <p>
  * By default fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
- * should be created with a {@link FragmentAssemblyAdapter} or a custom implementation.
+ * should be created with a {@link FragmentAssembler} or a custom implementation.
  * <p>
  * It is an applications responsibility to {@link #poll} the Subscriber for new messages.
  * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  *
- * @see FragmentAssemblyAdapter
+ * @see FragmentAssembler
  */
 public class Subscription implements AutoCloseable
 {
@@ -85,7 +85,7 @@ public class Subscription implements AutoCloseable
      * @param fragmentLimit   number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
      * @throws IllegalStateException if the subscription is closed.
-     * @see FragmentAssemblyAdapter
+     * @see FragmentAssembler
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {

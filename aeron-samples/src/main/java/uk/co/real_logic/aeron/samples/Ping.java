@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.samples;
 
 import org.HdrHistogram.Histogram;
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
@@ -61,7 +61,7 @@ public class Ping
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(Ping::newPongConnectionHandler);
-        final FragmentHandler fragmentHandler = new FragmentAssemblyAdapter(Ping::pongHandler);
+        final FragmentHandler fragmentHandler = new FragmentAssembler(Ping::pongHandler);
 
         if (EMBEDDED_MEDIA_DRIVER)
         {

@@ -36,7 +36,7 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
  * When sessions go inactive see {@link InactiveConnectionHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
-public class FragmentAssemblyAdapter implements FragmentHandler
+public class FragmentAssembler implements FragmentHandler
 {
     private final FragmentHandler delegate;
     private final AssemblyHeader assemblyHeader = new AssemblyHeader();
@@ -48,7 +48,7 @@ public class FragmentAssemblyAdapter implements FragmentHandler
      *
      * @param delegate onto which whole messages are forwarded.
      */
-    public FragmentAssemblyAdapter(final FragmentHandler delegate)
+    public FragmentAssembler(final FragmentHandler delegate)
     {
         this(delegate, BufferBuilder.INITIAL_CAPACITY);
     }
@@ -59,7 +59,7 @@ public class FragmentAssemblyAdapter implements FragmentHandler
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.
      */
-    public FragmentAssemblyAdapter(final FragmentHandler delegate, final int initialBufferLength)
+    public FragmentAssembler(final FragmentHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
         builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);

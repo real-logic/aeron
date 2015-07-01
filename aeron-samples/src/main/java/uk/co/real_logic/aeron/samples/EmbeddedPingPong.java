@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.samples;
 
 import org.HdrHistogram.Histogram;
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
@@ -86,7 +86,7 @@ public class EmbeddedPingPong
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
         System.out.println("Message size of " + MESSAGE_LENGTH + " bytes");
 
-        final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(EmbeddedPingPong::pongHandler);
+        final FragmentAssembler dataHandler = new FragmentAssembler(EmbeddedPingPong::pongHandler);
 
         try (final Aeron aeron = Aeron.connect(ctx);
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
@@ -136,7 +136,7 @@ public class EmbeddedPingPong
                      final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
                      final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
                 {
-                    final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(
+                    final FragmentAssembler dataHandler = new FragmentAssembler(
                         (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
 
                     while (RUNNING.get())

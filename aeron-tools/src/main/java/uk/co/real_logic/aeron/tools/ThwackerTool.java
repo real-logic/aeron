@@ -660,7 +660,7 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
 
             if (createSubscriber)
             {
-                msgHandler = new FragmentAssemblyAdapter(new Handler(this)::messageHandler);
+                msgHandler = new FragmentAssembler(new Handler(this)::messageHandler);
                 streamMap = new Int2ObjectHashMap<>();
             }
             else

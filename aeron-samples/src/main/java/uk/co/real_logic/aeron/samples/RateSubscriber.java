@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.driver.RateReporter;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
@@ -62,7 +62,7 @@ public class RateSubscriber
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
 
         // Create a data handler to be called when a message is received
-        final FragmentHandler rateReporterHandler = new FragmentAssemblyAdapter(rateReporterHandler(reporter));
+        final FragmentHandler rateReporterHandler = new FragmentAssembler(rateReporterHandler(reporter));
 
         final AtomicBoolean running = new AtomicBoolean(true);
 

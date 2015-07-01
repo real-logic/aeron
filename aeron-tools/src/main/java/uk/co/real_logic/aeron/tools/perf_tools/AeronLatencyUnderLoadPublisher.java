@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.tools.perf_tools;
 
 import org.apache.commons.cli.*;
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
@@ -73,7 +73,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         }
         final Aeron.Context ctx = new Aeron.Context()
             .newConnectionHandler(this::connectionHandler);
-        fragmentHandler = new FragmentAssemblyAdapter(this::msgHandler);
+        fragmentHandler = new FragmentAssembler(this::msgHandler);
         final Aeron aeron = Aeron.connect(ctx);
         System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
         pub = aeron.addPublication(pubChannel, pubStreamId);

@@ -63,7 +63,7 @@ public class FragmentedMessageTest
         final MediaDriver.Context ctx = new MediaDriver.Context();
         ctx.threadingMode(threadingMode);
 
-        final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockFragmentHandler);
+        final FragmentAssembler adapter = new FragmentAssembler(mockFragmentHandler);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());

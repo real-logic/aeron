@@ -43,8 +43,8 @@ public class MultiSubscriberTest
         final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
         final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);
 
-        final FragmentAssemblyAdapter adapterOne = new FragmentAssemblyAdapter(mockFragmentHandlerOne);
-        final FragmentAssemblyAdapter adapterTwo = new FragmentAssemblyAdapter(mockFragmentHandlerTwo);
+        final FragmentAssembler adapterOne = new FragmentAssembler(mockFragmentHandlerOne);
+        final FragmentAssembler adapterTwo = new FragmentAssembler(mockFragmentHandlerTwo);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());

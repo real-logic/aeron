@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -53,10 +53,10 @@ public class MultipleSubscribersWithFragmentAssembly
 
         // dataHandler method is called for every new message received
         // When a message is completely reassembled, the delegate method 'reassembledStringMessage' is called
-        final FragmentAssemblyAdapter dataHandler1 = new FragmentAssemblyAdapter(reassembledStringMessage1(STREAM_ID_1));
+        final FragmentAssembler dataHandler1 = new FragmentAssembler(reassembledStringMessage1(STREAM_ID_1));
 
         // Another Data handler for the second stream
-        final FragmentAssemblyAdapter dataHandler2 = new FragmentAssemblyAdapter(reassembledStringMessage2(STREAM_ID_2));
+        final FragmentAssembler dataHandler2 = new FragmentAssembler(reassembledStringMessage2(STREAM_ID_2));
 
         final AtomicBoolean running = new AtomicBoolean(true);
 

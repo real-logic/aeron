@@ -38,7 +38,7 @@ public class AeronPing implements NewConnectionHandler
     private final int msgLen = 32;
     private long[][] timestamps = null;
     private boolean warmedUp = false;
-    private final FragmentHandler fragmentHandler = new FragmentAssemblyAdapter(this::pongHandler);
+    private final FragmentHandler fragmentHandler = new FragmentAssembler(this::pongHandler);
     private final Aeron aeron;
     private final Publication pub;
     private final Subscription sub;

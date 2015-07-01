@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.tools.perf_tools;
 
 import org.apache.commons.cli.*;
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
@@ -56,11 +56,11 @@ public class AeronPong
         final Aeron.Context ctx = new Aeron.Context();
         if (claim)
         {
-            fragmentHandler = new FragmentAssemblyAdapter(this::pingHandlerClaim);
+            fragmentHandler = new FragmentAssembler(this::pingHandlerClaim);
         }
         else
         {
-            fragmentHandler = new FragmentAssemblyAdapter(this::pingHandler);
+            fragmentHandler = new FragmentAssembler(this::pingHandler);
         }
         aeron = Aeron.connect(ctx);
         pongPublication = aeron.addPublication(pongChannel, pongStreamId);

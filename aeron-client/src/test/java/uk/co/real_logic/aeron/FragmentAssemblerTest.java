@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
-public class FragmentAssemblyAdapterTest
+public class FragmentAssemblerTest
 {
     private static final int SESSION_ID = 777;
     private static final int INITIAL_TERM_ID = 3;
@@ -39,7 +39,7 @@ public class FragmentAssemblyAdapterTest
     private final FragmentHandler delegateFragmentHandler = mock(FragmentHandler.class);
     private final UnsafeBuffer termBuffer = mock(UnsafeBuffer.class);
     private final Header header = spy(new Header(INITIAL_TERM_ID, LogBufferDescriptor.TERM_MIN_LENGTH));
-    private final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(delegateFragmentHandler);
+    private final FragmentAssembler adapter = new FragmentAssembler(delegateFragmentHandler);
 
     @Before
     public void setUp()

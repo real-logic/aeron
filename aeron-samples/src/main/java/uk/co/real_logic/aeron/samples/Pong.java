@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssemblyAdapter;
+import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -68,7 +68,7 @@ public class Pong
              final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);
              final Subscription pingSubscription = aeron.addSubscription(PING_CHANNEL, PING_STREAM_ID))
         {
-            final FragmentAssemblyAdapter dataHandler = new FragmentAssemblyAdapter(
+            final FragmentAssembler dataHandler = new FragmentAssembler(
                 (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
 
             while (running.get())

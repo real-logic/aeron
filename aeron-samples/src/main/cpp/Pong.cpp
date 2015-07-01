@@ -22,7 +22,7 @@
 #include <Aeron.h>
 #include <array>
 #include <concurrent/BusySpinIdleStrategy.h>
-#include "FragmentAssemblyAdapter.h"
+#include "FragmentAssembler.h"
 #include "Configuration.h"
 
 using namespace aeron::util;
@@ -151,7 +151,7 @@ int main(int argc, char **argv)
 
         BusySpinIdleStrategy idleStrategy;
         BusySpinIdleStrategy pingHandlerIdleStrategy;
-        FragmentAssemblyAdapter fragmentAssemblyAdapter(
+        FragmentAssembler fragmentAssembler(
             [&](AtomicBuffer& buffer, index_t offset, index_t length, Header& header)
             {
                 while (pongPublication->offer(buffer, offset, length) < 0L)
@@ -160,7 +160,7 @@ int main(int argc, char **argv)
                 }
             });
 
-        fragment_handler_t handler = fragmentAssemblyAdapter.handler();
+        fragment_handler_t handler = fragmentAssembler.handler();
 
         while (running)
         {

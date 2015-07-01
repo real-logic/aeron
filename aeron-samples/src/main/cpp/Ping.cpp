@@ -22,7 +22,7 @@
 #include <Aeron.h>
 #include <array>
 #include <concurrent/BusySpinIdleStrategy.h>
-#include "FragmentAssemblyAdapter.h"
+#include "FragmentAssembler.h"
 #include "Configuration.h"
 
 extern "C"
@@ -209,7 +209,7 @@ int main(int argc, char **argv)
         {
             hdr_reset(histogram);
 
-            FragmentAssemblyAdapter fragmentAssemblyAdapter(
+            FragmentAssembler fragmentAssembler(
                 [&](AtomicBuffer& buffer, index_t offset, index_t length, Header& header)
                 {
                     steady_clock::time_point end = steady_clock::now();
@@ -224,7 +224,7 @@ int main(int argc, char **argv)
             ::setlocale(LC_NUMERIC, "");
             printf("Pinging %'ld messages of length %d bytes\n", settings.numberOfMessages, settings.messageLength);
 
-            sendPingAndReceivePong(fragmentAssemblyAdapter.handler(), pingPublication, pongSubscription, settings);
+            sendPingAndReceivePong(fragmentAssembler.handler(), pingPublication, pongSubscription, settings);
 
             hdr_percentiles_print(histogram, stdout, 5, 1000.0, CLASSIC);
             fflush(stdout);

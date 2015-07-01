@@ -24,10 +24,10 @@ namespace aeron {
 
 static const std::size_t DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
 
-class FragmentAssemblyAdapter
+class FragmentAssembler
 {
 public:
-    FragmentAssemblyAdapter(
+    FragmentAssembler(
         const fragment_handler_t& delegate, size_t initialBufferLength = DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_initialBufferLength(initialBufferLength), m_delegate(delegate)
     {

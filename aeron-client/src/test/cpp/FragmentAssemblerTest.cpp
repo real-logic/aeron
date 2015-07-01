@@ -17,7 +17,7 @@
 #include <gmock/gmock.h>
 
 #include <array>
-#include "FragmentAssemblyAdapter.h"
+#include "FragmentAssembler.h"
 
 using namespace aeron::util;
 using namespace aeron;
@@ -33,10 +33,10 @@ static const util::index_t MTU_LENGTH = 128;
 
 typedef std::array<std::uint8_t, TERM_LENGTH> fragment_buffer_t;
 
-class FragmentAssemblyAdapterTest : public testing::Test
+class FragmentAssemblerTest : public testing::Test
 {
 public:
-    FragmentAssemblyAdapterTest() :
+    FragmentAssemblerTest() :
         m_buffer(&m_fragment[0], m_fragment.size()),
         m_header(INITIAL_TERM_ID, TERM_LENGTH)
     {
@@ -85,7 +85,7 @@ protected:
     Header m_header;
 };
 
-TEST_F(FragmentAssemblyAdapterTest, shouldPassThroughUnfragmentedMessage)
+TEST_F(FragmentAssemblerTest, shouldPassThroughUnfragmentedMessage)
 {
     std::int32_t msgLength = 158;
     fillFrame(FrameDescriptor::UNFRAGMENTED, 0, msgLength, 0);
@@ -106,12 +106,12 @@ TEST_F(FragmentAssemblyAdapterTest, shouldPassThroughUnfragmentedMessage)
         verifyPayload(buffer, offset, length);
     };
 
-    FragmentAssemblyAdapter adapter(handler);
+    FragmentAssembler adapter(handler);
     adapter.handler()(m_buffer, 0 + DataFrameHeader::LENGTH, msgLength, m_header);
     EXPECT_TRUE(called);
 }
 
-TEST_F(FragmentAssemblyAdapterTest, shouldReassembleFromTwoFragments)
+TEST_F(FragmentAssemblerTest, shouldReassembleFromTwoFragments)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
@@ -132,7 +132,7 @@ TEST_F(FragmentAssemblyAdapterTest, shouldReassembleFromTwoFragments)
         verifyPayload(buffer, offset, length);
     };
 
-    FragmentAssemblyAdapter adapter(handler);
+    FragmentAssembler adapter(handler);
 
     fillFrame(FrameDescriptor::BEGIN_FRAG, 0, msgLength, 0);
     m_header.offset(0);
@@ -145,7 +145,7 @@ TEST_F(FragmentAssemblyAdapterTest, shouldReassembleFromTwoFragments)
     ASSERT_TRUE(called);
 }
 
-TEST_F(FragmentAssemblyAdapterTest, shouldReassembleFromThreeFragments)
+TEST_F(FragmentAssemblerTest, shouldReassembleFromThreeFragments)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
@@ -166,7 +166,7 @@ TEST_F(FragmentAssemblyAdapterTest, shouldReassembleFromThreeFragments)
         verifyPayload(buffer, offset, length);
     };
 
-    FragmentAssemblyAdapter adapter(handler);
+    FragmentAssembler adapter(handler);
 
     fillFrame(FrameDescriptor::BEGIN_FRAG, 0, msgLength, 0);
     m_header.offset(0);
@@ -184,7 +184,7 @@ TEST_F(FragmentAssemblyAdapterTest, shouldReassembleFromThreeFragments)
     ASSERT_TRUE(called);
 }
 
-TEST_F(FragmentAssemblyAdapterTest, shouldNotReassembleIfEndFirstFragment)
+TEST_F(FragmentAssemblerTest, shouldNotReassembleIfEndFirstFragment)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
@@ -193,7 +193,7 @@ TEST_F(FragmentAssemblyAdapterTest, shouldNotReassembleIfEndFirstFragment)
         called = true;
     };
 
-    FragmentAssemblyAdapter adapter(handler);
+    FragmentAssembler adapter(handler);
 
     m_header.offset(MTU_LENGTH);
     fillFrame(FrameDescriptor::END_FRAG, MTU_LENGTH, msgLength, msgLength % 256);
@@ -201,7 +201,7 @@ TEST_F(FragmentAssemblyAdapterTest, shouldNotReassembleIfEndFirstFragment)
     ASSERT_FALSE(called);
 }
 
-TEST_F(FragmentAssemblyAdapterTest, shouldNotReassembleIfMissingBegin)
+TEST_F(FragmentAssemblerTest, shouldNotReassembleIfMissingBegin)
 {
     util::index_t msgLength = MTU_LENGTH - DataFrameHeader::LENGTH;
     bool called = false;
@@ -210,7 +210,7 @@ TEST_F(FragmentAssemblyAdapterTest, shouldNotReassembleIfMissingBegin)
         called = true;
     };
 
-    FragmentAssemblyAdapter adapter(handler);
+    FragmentAssembler adapter(handler);
 
     m_header.offset(MTU_LENGTH);
     fillFrame(0, MTU_LENGTH, msgLength, msgLength % 256);

@@ -24,7 +24,7 @@
 #include <concurrent/BusySpinIdleStrategy.h>
 #include "Configuration.h"
 #include "RateReporter.h"
-#include "FragmentAssemblyAdapter.h"
+#include "FragmentAssembler.h"
 
 using namespace aeron::util;
 using namespace aeron;
@@ -143,8 +143,8 @@ int main(int argc, char **argv)
 
         BusySpinIdleStrategy idleStrategy;
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
-        FragmentAssemblyAdapter fragmentAssemblyAdapter(rateReporterHandler(rateReporter));
-        fragment_handler_t handler = fragmentAssemblyAdapter.handler();
+        FragmentAssembler fragmentAssembler(rateReporterHandler(rateReporter));
+        fragment_handler_t handler = fragmentAssembler.handler();
 
         std::thread rateReporterThread([&](){ rateReporter.run(); });
 

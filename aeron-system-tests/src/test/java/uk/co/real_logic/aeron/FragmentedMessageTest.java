@@ -61,7 +61,6 @@ public class FragmentedMessageTest
     public void shouldReceivePublishedMessage(final String channel, final ThreadingMode threadingMode) throws Exception
     {
         final MediaDriver.Context ctx = new MediaDriver.Context();
-        ctx.dirsDeleteOnExit(true);
         ctx.threadingMode(threadingMode);
 
         final FragmentAssemblyAdapter adapter = new FragmentAssemblyAdapter(mockFragmentHandler);
@@ -106,6 +105,10 @@ public class FragmentedMessageTest
             }
 
             assertThat(headerArg.getValue().flags(), is(FrameDescriptor.UNFRAGMENTED));
+        }
+        finally
+        {
+            ctx.deleteAeronDirectory();
         }
     }
 }

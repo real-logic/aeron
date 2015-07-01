@@ -39,7 +39,6 @@ public class MultiSubscriberTest
     public void shouldReceiveMessageOnSeparateSubscriptions() throws Exception
     {
         final MediaDriver.Context ctx = new MediaDriver.Context();
-        ctx.dirsDeleteOnExit(true);
 
         final FragmentHandler mockFragmentHandlerOne = mock(FragmentHandler.class);
         final FragmentHandler mockFragmentHandlerTwo = mock(FragmentHandler.class);
@@ -76,6 +75,10 @@ public class MultiSubscriberTest
 
             verifyData(srcBuffer, mockFragmentHandlerOne);
             verifyData(srcBuffer, mockFragmentHandlerTwo);
+        }
+        finally
+        {
+            ctx.deleteAeronDirectory();
         }
     }
 

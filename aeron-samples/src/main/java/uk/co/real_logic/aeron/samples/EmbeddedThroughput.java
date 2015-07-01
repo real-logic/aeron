@@ -56,8 +56,7 @@ public class EmbeddedThroughput
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new NoOpIdleStrategy())
             .receiverIdleStrategy(new NoOpIdleStrategy())
-            .senderIdleStrategy(new NoOpIdleStrategy())
-            .dirsDeleteOnExit(true);
+            .senderIdleStrategy(new NoOpIdleStrategy());
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);

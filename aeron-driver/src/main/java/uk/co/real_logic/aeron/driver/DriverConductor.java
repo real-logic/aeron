@@ -114,7 +114,7 @@ public class DriverConductor implements Agent
         unicastFlowControl = ctx.unicastSenderFlowControl();
         multicastFlowControl = ctx.multicastSenderFlowControl();
         countersManager = ctx.countersManager();
-        countersBuffer = ctx.countersBuffer();
+        countersBuffer = ctx.counterValuesBuffer();
         timerWheel = ctx.conductorTimerWheel();
         epochClock = ctx.epochClock();
         nanoClock = timerWheel.clock();

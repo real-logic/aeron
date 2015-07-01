@@ -16,10 +16,14 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.File;
+import java.nio.MappedByteBuffer;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import static java.lang.System.getProperty;
 
@@ -38,10 +42,13 @@ public class CommonContext implements AutoCloseable
     /** The value of the top level Aeron directory unless overridden by {@link #dirName(String)} */
     public static final String AERON_DIR_PROP_DEFAULT;
 
+    public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
+
+    private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
     private String dirName;
     private File cncFile;
     private UnsafeBuffer counterLabelsBuffer;
-    private UnsafeBuffer countersBuffer;
+    private UnsafeBuffer counterValuesBuffer;
 
     static
     {
@@ -62,9 +69,9 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Convert the current default Aeron directory name to be a random name for use with embedded drivers.
+     * Convert the default Aeron directory name to be a random name for use with embedded drivers.
      *
-     * @return random directory name with current directory name as base
+     * @return random directory name with default directory name as base
      */
     public static String generateRandomDirName()
     {
@@ -146,19 +153,19 @@ public class CommonContext implements AutoCloseable
      * Get the buffer containing the counters.
      * @return The buffer storing the counters.
      */
-    public UnsafeBuffer countersBuffer()
+    public UnsafeBuffer counterValuesBuffer()
     {
-        return countersBuffer;
+        return counterValuesBuffer;
     }
 
     /**
      * Set the buffer containing the counters
-     * @param countersBuffer The new counters buffer.
+     * @param counterValuesBuffer The new counters buffer.
      * @return this Object for method chaining.
      */
-    public CommonContext countersBuffer(final UnsafeBuffer countersBuffer)
+    public CommonContext counterValuesBuffer(final UnsafeBuffer counterValuesBuffer)
     {
-        this.countersBuffer = countersBuffer;
+        this.counterValuesBuffer = counterValuesBuffer;
         return this;
     }
 
@@ -169,6 +176,101 @@ public class CommonContext implements AutoCloseable
     public File cncFile()
     {
         return cncFile;
+    }
+
+    /**
+     * Set the driver timeout in milliseconds
+     *
+     * @param driverTimeoutMs to indicate liveness of driver
+     * @return driver timeout in milliseconds
+     */
+    public CommonContext driverTimeoutMs(final long driverTimeoutMs)
+    {
+        this.driverTimeoutMs = driverTimeoutMs;
+        return this;
+    }
+
+    /**
+     * Get the driver timeout in milliseconds.
+     *
+     * @return driver timeout in milliseconds.
+     */
+    public long driverTimeoutMs()
+    {
+        return driverTimeoutMs;
+    }
+
+    /**
+     * Delete the current Aeron directory, throwing errors if not possible.
+     */
+    public void deleteAeronDirectory()
+    {
+        final File dirFile = new File(dirName);
+
+        IoUtil.delete(dirFile, false);
+    }
+
+    /**
+     * Is a media driver active in the current Aeron directory?
+     *
+     * @param driverTimeoutMs for the driver liveness check
+     * @param logHandler for feedback as liveness checked
+     * @return true if a driver is active or false if not
+     */
+    public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
+    {
+        final File dirFile = new File(dirName);
+
+        if (dirFile.exists() && dirFile.isDirectory())
+        {
+            final File cncFile = new File(dirName, CncFileDescriptor.CNC_FILE);
+
+            logHandler.accept(String.format("INFO: Aeron directory %s exists", dirFile));
+
+            if (cncFile.exists())
+            {
+                MappedByteBuffer cncByteBuffer = null;
+
+                logHandler.accept(String.format("INFO: Aeron CnC file %s exists", cncFile));
+
+                try
+                {
+                    cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
+                    final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+
+                    final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+                    if (CncFileDescriptor.CNC_VERSION != cncVersion)
+                    {
+                        throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
+                    }
+
+                    final ManyToOneRingBuffer toDriverBuffer = new ManyToOneRingBuffer(
+                        CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
+
+                    final long timestamp = toDriverBuffer.consumerHeartbeatTime();
+                    final long now = System.currentTimeMillis();
+                    final long diff = now - timestamp;
+
+                    logHandler.accept(String.format("INFO: Aeron toDriver consumer heartbeat is %d ms old", diff));
+
+                    if (diff <= driverTimeoutMs)
+                    {
+                        return true;
+                    }
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+                finally
+                {
+                    IoUtil.unmap(cncByteBuffer);
+                }
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -61,8 +61,7 @@ public class EmbeddedPingPong
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new NoOpIdleStrategy())
             .receiverIdleStrategy(new NoOpIdleStrategy())
-            .senderIdleStrategy(new NoOpIdleStrategy())
-            .dirsDeleteOnExit(true);
+            .senderIdleStrategy(new NoOpIdleStrategy());
 
         try (final MediaDriver ignored = MediaDriver.launch(ctx))
         {

@@ -58,12 +58,12 @@ public class StopStartSecondSubscriberTest
     private int subscriber2Count = 0;
     private FragmentHandler fragmentHandler2 = (buffer, offset, length, header) -> subscriber2Count++;
 
+    final MediaDriver.Context mediaDriverContext1 = new MediaDriver.Context();
+    final MediaDriver.Context mediaDriverContext2 = new MediaDriver.Context();
+
     private void launch(final String channel1, final int stream1, final String channel2, final int stream2)
         throws Exception
     {
-        final MediaDriver.Context mediaDriverContext1 = new MediaDriver.Context().dirsDeleteOnExit(true);
-        final MediaDriver.Context mediaDriverContext2 = new MediaDriver.Context().dirsDeleteOnExit(true);
-
         driver1 = MediaDriver.launchEmbedded(mediaDriverContext1);
         driver2 = MediaDriver.launchEmbedded(mediaDriverContext2);
 
@@ -98,6 +98,9 @@ public class StopStartSecondSubscriberTest
 
         driver1.close();
         driver2.close();
+
+        mediaDriverContext1.deleteAeronDirectory();
+        mediaDriverContext2.deleteAeronDirectory();
     }
 
     @Test(timeout = 10000)

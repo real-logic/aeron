@@ -60,7 +60,6 @@ public final class Aeron implements AutoCloseable
 
     private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
     private static final long NULL_TIMEOUT = -1;
-    private static final long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10_000;
     private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
     private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
@@ -77,7 +76,7 @@ public final class Aeron implements AutoCloseable
             ctx.epochClock,
             ctx.toClientBuffer,
             ctx.logBuffersFactory,
-            ctx.countersBuffer(),
+            ctx.counterValuesBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
             new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL),
             ctx.errorHandler,
@@ -175,7 +174,6 @@ public final class Aeron implements AutoCloseable
      */
     public static class Context extends CommonContext
     {
-        private long mediaDriverTimeoutMs = NULL_TIMEOUT;
         private final AtomicBoolean isClosed = new AtomicBoolean(false);
         private EpochClock epochClock;
         private IdleStrategy idleStrategy;
@@ -204,11 +202,6 @@ public final class Aeron implements AutoCloseable
                 if (null == epochClock)
                 {
                     epochClock = new SystemEpochClock();
-                }
-
-                if (mediaDriverTimeoutMs == NULL_TIMEOUT)
-                {
-                    mediaDriverTimeoutMs = DEFAULT_MEDIA_DRIVER_TIMEOUT_MS;
                 }
 
                 if (null == idleStrategy)
@@ -247,9 +240,9 @@ public final class Aeron implements AutoCloseable
                     counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                if (countersBuffer() == null)
+                if (counterValuesBuffer() == null)
                 {
-                    countersBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    counterValuesBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 if (null == logBuffersFactory)
@@ -392,7 +385,7 @@ public final class Aeron implements AutoCloseable
          */
         public Context mediaDriverTimeout(final long value)
         {
-            this.mediaDriverTimeoutMs = value;
+            driverTimeoutMs(value);
             return this;
         }
 
@@ -404,7 +397,7 @@ public final class Aeron implements AutoCloseable
          */
         public long mediaDriverTimeout()
         {
-            return mediaDriverTimeoutMs;
+            return driverTimeoutMs();
         }
 
         /**

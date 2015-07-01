@@ -23,6 +23,7 @@ import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.driver.exceptions.ActiveDriverException;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.agrona.ErrorHandler;
@@ -49,7 +50,6 @@ import java.util.function.Supplier;
 
 import static java.lang.Boolean.getBoolean;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
-import static uk.co.real_logic.agrona.IoUtil.deleteIfExists;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
 /**
@@ -66,11 +66,10 @@ import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 public final class MediaDriver implements AutoCloseable
 {
     /**
-     * Attempt to delete directories on exit
+     * Attempt to delete directories on start if they exist
      */
-    public static final String DIRS_DELETE_ON_EXIT_PROP_NAME = "aeron.dir.delete.on.exit";
+    public static final String DIRS_DELETE_ON_START_PROP_NAME = "aeron.dir.delete.on.start";
 
-    private final File parentDirectory;
     private final List<AgentRunner> runners;
     private final Context ctx;
 
@@ -98,9 +97,7 @@ public final class MediaDriver implements AutoCloseable
     {
         this.ctx = ctx;
 
-        parentDirectory = new File(ctx.dirName());
-
-        ensureDirectoriesAreRecreated();
+        ensureDirectoryIsRecreated(ctx);
 
         validateSufficientSocketBufferLengths(ctx);
 
@@ -212,8 +209,6 @@ public final class MediaDriver implements AutoCloseable
 
             freeSocketsForReuseOnWindows();
             ctx.close();
-
-            deleteDirectories();
         }
         catch (final Exception ex)
         {
@@ -294,8 +289,36 @@ public final class MediaDriver implements AutoCloseable
         }
     }
 
-    private void ensureDirectoriesAreRecreated()
+    private void ensureDirectoryIsRecreated(final Context ctx)
     {
+        final File aeronDir = new File(ctx.dirName());
+        Consumer<String> logProgress = (message) -> { };
+
+        if (aeronDir.exists())
+        {
+            if (ctx.warnIfDirectoriesExist())
+            {
+                System.err.println("WARNING: " + aeronDir + " already exists.");
+                logProgress = System.err::println;
+            }
+
+            if (ctx.dirsDeleteOnStart())
+            {
+                ctx.deleteAeronDirectory();
+            }
+            else
+            {
+                final boolean driverActive = ctx.isDriverActive(ctx.driverTimeoutMs(), logProgress);
+
+                if (driverActive)
+                {
+                    throw new ActiveDriverException("active driver detected");
+                }
+
+                ctx.deleteAeronDirectory();
+            }
+        }
+
         final BiConsumer<String, String> callback =
             (path, name) ->
             {
@@ -305,15 +328,7 @@ public final class MediaDriver implements AutoCloseable
                 }
             };
 
-        IoUtil.ensureDirectoryIsRecreated(parentDirectory, "aeron", callback);
-    }
-
-    private void deleteDirectories() throws Exception
-    {
-        if (ctx.dirsDeleteOnExit())
-        {
-            IoUtil.delete(parentDirectory, false);
-        }
+        IoUtil.ensureDirectoryIsRecreated(aeronDir, "aeron", callback);
     }
 
     public static class Context extends CommonContext
@@ -363,7 +378,7 @@ public final class MediaDriver implements AutoCloseable
         private EventLogger eventLogger;
         private Consumer<String> eventConsumer;
         private ThreadingMode threadingMode;
-        private boolean dirsDeleteOnExit;
+        private boolean dirsDeleteOnStart;
 
         private LossGenerator dataLossGenerator;
         private LossGenerator controlLossGenerator;
@@ -385,7 +400,7 @@ public final class MediaDriver implements AutoCloseable
 
             warnIfDirectoriesExist = true;
 
-            dirsDeleteOnExit(getBoolean(DIRS_DELETE_ON_EXIT_PROP_NAME));
+            dirsDeleteOnStart(getBoolean(DIRS_DELETE_ON_START_PROP_NAME));
         }
 
         public Context conclude()
@@ -418,13 +433,6 @@ public final class MediaDriver implements AutoCloseable
 
                 Configuration.validateTermBufferLength(termBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
-
-                deleteIfExists(cncFile());
-
-                if (dirsDeleteOnExit())
-                {
-                    cncFile().deleteOnExit();
-                }
 
                 cncByteBuffer = mapNewFile(
                     cncFile(),
@@ -715,14 +723,14 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Set whether or not this application will attempt to delete the Aeron directories when exiting.
+         * Set whether or not this application will attempt to delete the Aeron directories when starting.
          *
-         * @param dirsDeleteOnExit Attempt deletion.
+         * @param dirsDeleteOnStart Attempt deletion.
          * @return this Object for method chaining.
          */
-        public Context dirsDeleteOnExit(final boolean dirsDeleteOnExit)
+        public Context dirsDeleteOnStart(final boolean dirsDeleteOnStart)
         {
-            this.dirsDeleteOnExit = dirsDeleteOnExit;
+            this.dirsDeleteOnStart = dirsDeleteOnStart;
             return this;
         }
 
@@ -923,13 +931,13 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Get whether or not this application will attempt to delete the Aeron directories when exiting.
+         * Get whether or not this application will attempt to delete the Aeron directories when starting.
          *
          * @return true when directories will be deleted, otherwise false.
          */
-        public boolean dirsDeleteOnExit()
+        public boolean dirsDeleteOnStart()
         {
-            return dirsDeleteOnExit;
+            return dirsDeleteOnStart;
         }
 
         public Consumer<String> eventConsumer()
@@ -949,11 +957,7 @@ public final class MediaDriver implements AutoCloseable
 
         public void close()
         {
-            if (null != systemCounters)
-            {
-                systemCounters.close();
-            }
-
+            // do not close the systemsCounters so that all counters are kept as is.
             IoUtil.unmap(cncByteBuffer);
 
             super.close();
@@ -968,12 +972,12 @@ public final class MediaDriver implements AutoCloseable
                     counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                if (countersBuffer() == null)
+                if (counterValuesBuffer() == null)
                 {
-                    countersBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    counterValuesBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                countersManager(new CountersManager(counterLabelsBuffer(), countersBuffer()));
+                countersManager(new CountersManager(counterLabelsBuffer(), counterValuesBuffer()));
             }
 
             if (null == systemCounters)

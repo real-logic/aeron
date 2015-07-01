@@ -78,14 +78,12 @@ public class MultiDriverTest
         buffer.putInt(0, 1);
 
         driverAContext.termBufferLength(TERM_BUFFER_SIZE);
-        driverAContext.dirsDeleteOnExit(true);
         driverAContext.dirName(baseDirA);
         driverAContext.threadingMode(THREADING_MODE);
 
         aeronAContext.dirName(driverAContext.dirName());
 
         driverBContext.termBufferLength(TERM_BUFFER_SIZE);
-        driverBContext.dirsDeleteOnExit(true);
         driverBContext.dirName(baseDirB);
         driverBContext.threadingMode(THREADING_MODE);
 

@@ -67,7 +67,6 @@ public class PubAndSubTest
 
     private void launch(final String channel) throws Exception
     {
-        context.dirsDeleteOnExit(true);
         context.threadingMode(THREADING_MODE);
 
         driver = MediaDriver.launch(context);
@@ -93,6 +92,8 @@ public class PubAndSubTest
         subscribingClient.close();
         publishingClient.close();
         driver.close();
+
+        context.deleteAeronDirectory();
     }
 
     @Theory

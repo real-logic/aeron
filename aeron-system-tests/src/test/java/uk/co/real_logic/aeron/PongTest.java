@@ -61,7 +61,6 @@ public class PongTest
     @Before
     public void setUp() throws Exception
     {
-        context.dirsDeleteOnExit(true);
         context.threadingMode(THREADING_MODE);
 
         driver = MediaDriver.launch(context);
@@ -101,6 +100,8 @@ public class PongTest
         pongClient.close();
         pingClient.close();
         driver.close();
+
+        context.deleteAeronDirectory();
     }
 
     @Test

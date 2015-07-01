@@ -17,6 +17,9 @@
 #include <gtest/gtest.h>
 
 #include "ClientConductorFixture.h"
+#include "util/TestUtils.h"
+
+using namespace aeron::test;
 
 static const std::string CHANNEL = "udp://localhost:40123";
 static const std::int32_t STREAM_ID = 10;
@@ -26,15 +29,6 @@ static const std::int32_t TERM_LENGTH = LogBufferDescriptor::TERM_MIN_LENGTH;
 static const std::int64_t LOG_FILE_LENGTH = LogBufferDescriptor::computeLogLength(TERM_LENGTH);
 static const std::string SOURCE_IDENTITY = "127.0.0.1:43567";
 static const std::int64_t POSITION = 438;
-
-std::string makeTempFileName ()
-{
-    char* rawname = tempnam(nullptr, "aeron");
-    std::string name = rawname;
-    free(rawname);
-
-    return name;
-}
 
 class ClientConductorTest : public testing::Test, public ClientConductorFixture
 {

@@ -18,17 +18,10 @@
 #include <string>
 
 #include <util/MemoryMappedFile.h>
+#include "TestUtils.h"
 
 using namespace aeron::util;
-
-std::string makeTempFileName ()
-{
-    char* rawname = tempnam(nullptr, "aeron");
-    std::string name = rawname;
-    free(rawname);
-
-    return name;
-}
+using namespace aeron::test;
 
 TEST(mmfileTest, failToOpen)
 {
@@ -42,9 +35,10 @@ TEST(mmfileTest, createCheck)
     MemoryMappedFile::ptr_t m;
 
     const size_t size = 10000;
+    const std::string name(makeTempFileName());
 
     ASSERT_NO_THROW({
-        m = MemoryMappedFile::createNew(makeTempFileName().c_str(), size);
+        m = MemoryMappedFile::createNew(name.c_str(), size);
     });
 
     ASSERT_EQ(m->getMemorySize(), size);
@@ -54,6 +48,8 @@ TEST(mmfileTest, createCheck)
     {
         ASSERT_EQ(m->getMemoryPtr()[n], 0);
     }
+
+    ::unlink(name.c_str());
 }
 
 TEST(mmfileTest, writeReadCheck)
@@ -85,4 +81,6 @@ TEST(mmfileTest, writeReadCheck)
     {
         ASSERT_EQ(m->getMemoryPtr()[n], static_cast<uint8_t>(n & 0xff));
     }
+
+    ::unlink(name.c_str());
 }

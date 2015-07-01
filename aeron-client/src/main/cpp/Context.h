@@ -157,12 +157,35 @@ public:
 #endif
     }
 
+    inline static std::string getUserName()
+    {
+        const char *username = ::getenv("USER");
+#if (__MSC_VER)
+        if (nullptr == username)
+        {
+            username = ::getenv("USERNAME");
+            if (nullptr == username)
+            {
+                 username = "default";
+            }
+        }
+#else
+        if (nullptr == username)
+        {
+            username = "default";
+        }
+#endif
+        return username;
+    }
+
     inline static std::string defaultAeronPath()
     {
 #if defined(__linux__)
-        return "/dev/shm/aeron";
+        return "/dev/shm/aeron-" + getUserName();
+#elif (__MSC_VER)
+        return tmpDir() + "\aeron-" + getUserName();
 #else
-        return tmpDir() + "/aeron";
+        return tmpDir() + "/aeron-" + getUserName();
 #endif
     }
 

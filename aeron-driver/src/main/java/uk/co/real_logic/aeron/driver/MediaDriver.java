@@ -60,14 +60,8 @@ import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
  * $ java -jar aeron-driver.jar
  * $ java -Doption=value -jar aeron-driver.jar
  * </code>
- * Properties
- * <ul>
- * <li><code>aeron.rcv.buffer.length</code>: Use int value as length of buffer for receiving from network.</li>
- * <li><code>aeron.command.buffer.length</code>: Use int value as length of the command buffers between threads.</li>
- * <li><code>aeron.conductor.buffer.length</code>: Use int value as length of the conductor buffers between the media
- * driver and the client.</li>
- * <li><code>aeron.dir.delete.on.exit</code>: Attempt to delete Aeron directories on exit.</li>
- * </ul>
+ * <p>
+ * {@link Configuration}
  */
 public final class MediaDriver implements AutoCloseable
 {
@@ -182,7 +176,7 @@ public final class MediaDriver implements AutoCloseable
      */
     public static MediaDriver launchEmbedded(final Context ctx)
     {
-        ctx.dirName(CommonContext.generateEmbeddedDirName());
+        ctx.dirName(CommonContext.generateRandomDirName());
         return launch(ctx);
     }
 
@@ -228,7 +222,8 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Used to access the configured dirName for this MediaDriver Context typically after the launchIsolated method
+     * Used to access the configured dirName for this MediaDriver Context typically used after the
+     * {@link #launchEmbedded()} method is used.
      *
      * @return the context dirName
      */

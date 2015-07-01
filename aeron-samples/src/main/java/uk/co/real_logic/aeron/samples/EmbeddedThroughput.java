@@ -18,11 +18,10 @@ package uk.co.real_logic.aeron.samples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.CommonContext;
-import uk.co.real_logic.aeron.driver.RateReporter;
-import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.RateReporter;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
@@ -49,6 +48,8 @@ public class EmbeddedThroughput
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
+    private static volatile boolean printingActive = true;
+
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver.Context ctx = new MediaDriver.Context()
@@ -58,16 +59,11 @@ public class EmbeddedThroughput
             .senderIdleStrategy(new NoOpIdleStrategy())
             .dirsDeleteOnExit(true);
 
-        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
+        final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
         final Aeron.Context context = new Aeron.Context();
-        final String embeddedDirName = CommonContext.generateEmbeddedDirName();
-        ctx.dirName(embeddedDirName);
-        context.dirName(embeddedDirName);
-
-        System.out.format("Aeron dir '%s'\n", embeddedDirName);
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
@@ -87,6 +83,8 @@ public class EmbeddedThroughput
                 System.out.format(
                     "\nStreaming %,d messages of size %d bytes to %s on stream Id %d\n",
                     NUMBER_OF_MESSAGES, MESSAGE_LENGTH, CHANNEL, STREAM_ID);
+
+                printingActive = true;
 
                 long backPressureCount = 0;
 
@@ -109,12 +107,25 @@ public class EmbeddedThroughput
                     Thread.sleep(LINGER_TIMEOUT_MS);
                 }
 
+                printingActive = false;
+
             }
             while (barrier.await());
 
             running.set(false);
             reporter.halt();
             executor.shutdown();
+        }
+    }
+
+    public static void printRate(
+        final double messagesPerSec, final double bytesPerSec, final long totalFragments, final long totalBytes)
+    {
+        if (printingActive)
+        {
+            System.out.format(
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
+                messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
         }
     }
 }

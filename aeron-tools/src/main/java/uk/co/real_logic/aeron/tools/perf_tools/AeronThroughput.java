@@ -113,7 +113,7 @@ public class AeronThroughput
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
 
-        final String embeddedDirName = CommonContext.generateEmbeddedDirName();
+        final String embeddedDirName = CommonContext.generateRandomDirName();
         ctx.dirName(embeddedDirName);
         final Aeron.Context context = new Aeron.Context();
         context.dirName(embeddedDirName);

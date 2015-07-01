@@ -64,7 +64,7 @@ public class EmbeddedPingPong
             .senderIdleStrategy(new NoOpIdleStrategy())
             .dirsDeleteOnExit(true);
 
-        try (final MediaDriver ignored = MediaDriver.launchEmbedded(ctx))
+        try (final MediaDriver ignored = MediaDriver.launch(ctx))
         {
             final Thread pongThread = startPong(ignored.contextDirName());
             pongThread.start();

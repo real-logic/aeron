@@ -37,8 +37,6 @@ public class CommonContext implements AutoCloseable
     public static final String AERON_DIR_PROP_NAME = "aeron.dir";
     /** The value of the top level Aeron directory unless overridden by {@link #dirName(String)} */
     public static final String AERON_DIR_PROP_DEFAULT;
-    /** Name of the default multicast interface */
-    public static final String MULTICAST_DEFAULT_INTERFACE_PROP_NAME = "aeron.multicast.default.interface";
 
     private String dirName;
     private File cncFile;
@@ -47,7 +45,7 @@ public class CommonContext implements AutoCloseable
 
     static
     {
-        String aeronDirName = IoUtil.tmpDirName() + "aeron";
+        String baseDirName = IoUtil.tmpDirName() + "aeron";
 
         // Use shared memory on Linux to avoid contention on the page cache.
         if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
@@ -56,30 +54,23 @@ public class CommonContext implements AutoCloseable
 
             if (devShmDir.exists())
             {
-                aeronDirName = "/dev/shm/aeron";
+                baseDirName = "/dev/shm/aeron";
             }
         }
 
-        AERON_DIR_PROP_DEFAULT = aeronDirName;
+        AERON_DIR_PROP_DEFAULT = baseDirName + "-" + System.getProperty("user.name", "default");
     }
 
-    public static String generateEmbeddedDirName()
+    /**
+     * Convert the current default Aeron directory name to be a random name for use with embedded drivers.
+     *
+     * @return random directory name with current directory name as base
+     */
+    public static String generateRandomDirName()
     {
         final String randomDirName = UUID.randomUUID().toString();
-        String aeronDirName = IoUtil.tmpDirName() + "aeron-" + randomDirName;
 
-        // Use shared memory on Linux to avoid contention on the page cache.
-        if ("Linux".equalsIgnoreCase(System.getProperty("os.name")))
-        {
-            final File devShmDir = new File("/dev/shm");
-
-            if (devShmDir.exists())
-            {
-                aeronDirName = "/dev/shm/aeron-" + randomDirName;
-            }
-        }
-
-        return aeronDirName;
+        return AERON_DIR_PROP_DEFAULT + "-" + randomDirName;
     }
 
     /**

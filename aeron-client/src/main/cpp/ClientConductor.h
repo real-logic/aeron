@@ -35,6 +35,7 @@ using namespace aeron::concurrent::status;
 using namespace aeron::concurrent;
 
 typedef std::function<long()> epoch_clock_t;
+typedef std::function<long()> nano_clock_t;
 
 static const long KEEPALIVE_TIMEOUT_MS = 500;
 static const long RESOURCE_TIMEOUT_MS = 1000;

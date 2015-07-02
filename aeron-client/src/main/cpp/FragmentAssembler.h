@@ -24,15 +24,39 @@ namespace aeron {
 
 static const std::size_t DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
 
+/**
+ * A handler that sits in a chain-of-responsibility pattern that reassembles fragmented messages
+ * so that the next handler in the chain only sees whole messages.
+ * <p>
+ * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
+ * buffer for reassembly before delegation.
+ * <p>
+ * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
+ * When sessions go inactive see {@link on_inactive_connection_t}, it is possible to free the buffer by calling
+ * {@link #deleteSessionBuffer(std::int32_t)}.
+ */
 class FragmentAssembler
 {
 public:
+
+    /**
+     * Construct an adapter to reassembly message fragments and delegate on only whole messages.
+     *
+     * @param delegate            onto which whole messages are forwarded.
+     * @param initialBufferLength to be used for each session.
+     */
     FragmentAssembler(
         const fragment_handler_t& delegate, size_t initialBufferLength = DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
         m_initialBufferLength(initialBufferLength), m_delegate(delegate)
     {
     }
 
+    /**
+     * Compose a fragment_handler_t that calls the this FragmentAssembler instance for reassembly. Suitable for
+     * passing to Subscription::poll(fragment_handler_t, int).
+     *
+     * @return fragment_handler_t composed with the FragmentAssembler instance
+     */
     fragment_handler_t handler()
     {
         return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
@@ -41,6 +65,12 @@ public:
         };
     }
 
+    /**
+     * Free an existing session buffer to reduce memory pressure when a connection goes inactive or no more
+     * large messages are expected.
+     *
+     * @param sessionId to have its buffer freed
+     */
     void deleteSessionBuffer(std::int32_t sessionId)
     {
         m_builderBySessionIdMap.erase(sessionId);

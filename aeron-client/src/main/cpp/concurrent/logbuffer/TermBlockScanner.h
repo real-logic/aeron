@@ -26,8 +26,19 @@
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
-/** The block handler function signature */
-typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index_t, std::int32_t sessionId)> block_handler_t;
+/**
+ * Callback for handling a block of messages being read from a log.
+ *
+ * @param buffer    containing the block of message fragments.
+ * @param offset    at which the block begins.
+ * @param length    of the block in bytes.
+ * @param sessionId of the stream containing this block of message fragments.
+ */
+typedef std::function<void(
+    concurrent::AtomicBuffer& buffer,
+    util::index_t offset,
+    util::index_t length,
+    std::int32_t sessionId)> block_handler_t;
 
 namespace TermBlockScanner {
 

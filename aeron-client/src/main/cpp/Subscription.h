@@ -29,28 +29,72 @@ using namespace aeron::concurrent::logbuffer;
 
 class ClientConductor;
 
+/**
+ * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
+ * Subscribers are created via an {@link Aeron} object, and received messages are delivered
+ * to the {@link fragment_handler_t}.
+ * <p>
+ * By default fragmented messages are not reassembled before delivery. If an application must
+ * receive whole messages, whether or not they were fragmented, then the Subscriber
+ * should be created with a {@link FragmentAssembler} or a custom implementation.
+ * <p>
+ * It is an applications responsibility to {@link #poll} the Subscriber for new messages.
+ * <p>
+ * Subscriptions are not threadsafe and should not be shared between subscribers.
+ *
+ * @see FragmentAssembler
+ */
 class Subscription
 {
 public:
+    /// @cond HIDDEN_SYMBOLS
     Subscription(
         ClientConductor& conductor, std::int64_t registrationId, const std::string& channel, std::int32_t streamId);
+    /// @endcond
     virtual ~Subscription();
 
+    /**
+     * Media address for delivery to the channel.
+     *
+     * @return Media address for delivery to the channel.
+     */
     inline const std::string& channel() const
     {
         return m_channel;
     }
 
+    /**
+     * Stream identity for scoping within the channel media address.
+     *
+     * @return Stream identity for scoping within the channel media address.
+     */
     inline std::int32_t streamId() const
     {
         return m_streamId;
     }
 
+    /**
+     * Registration Id returned by Aeron::addSubscription when this Subscription was added.
+     *
+     * @return the registrationId of the subscription.
+     */
     inline std::int64_t registrationId() const
     {
         return m_registrationId;
     }
 
+    /**
+     * Poll the {@link Connection}s under the subscription for available message fragments.
+     * <p>
+     * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
+     * as a series of fragments ordered withing a session.
+     *
+     * @param fragmentHandler callback for handling each message fragment as it is read.
+     * @param fragmentLimit   number of message fragments to limit for a single poll operation.
+     * @return the number of fragments received
+     *
+     * @see FragmentAssembler
+     */
     inline int poll(const fragment_handler_t fragmentHandler, int fragmentLimit)
     {
         int fragmentsRead = 0;
@@ -82,6 +126,13 @@ public:
         return fragmentsRead;
     }
 
+    /**
+     * Poll the {@link Connection}s under the subscription for available message fragments in blocks.
+     *
+     * @param blockHandler     to receive a block of fragments from each {@link Connection}.
+     * @param blockLengthLimit for each individual block.
+     * @return the number of bytes consumed.
+     */
     inline long poll(const block_handler_t blockHandler, int blockLengthLimit)
     {
         const int length = std::atomic_load(&m_connectionsLength);
@@ -96,6 +147,7 @@ public:
         return bytesConsumed;
     }
 
+    /// @cond HIDDEN_SYMBOLS
     bool isConnected(std::int32_t sessionId)
     {
         Connection* connections = std::atomic_load(&m_connections);
@@ -169,6 +221,7 @@ public:
             (-1 != index) ? oldArray : nullptr,
             index);
     }
+    /// @endcond
 
 private:
     ClientConductor& m_conductor;

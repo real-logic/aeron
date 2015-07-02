@@ -22,9 +22,18 @@
 #include <thread>
 #include <atomic>
 
-namespace aeron { namespace concurrent {
+namespace aeron {
 
+/**
+ * Function called by Aeron to indicate an exception has occurred.
+ *
+ * @param exception that has occurred in the Aeron client.
+ *
+ * @see defaultErrroHandler for the default handler.
+ */
 typedef std::function<void(util::SourcedException& exception)> exception_handler_t;
+
+namespace concurrent {
 
 template <typename Agent, typename IdleStrategy>
 class AgentRunner
@@ -38,6 +47,11 @@ public:
     {
     }
 
+    /**
+     * Start the Agent running
+     *
+     * Will spawn a std::thread.
+     */
     inline void start()
     {
         m_thread = std::thread([&]()
@@ -46,6 +60,9 @@ public:
         });
     }
 
+    /**
+     * Run the Agent duty cycle until closed
+     */
     inline void run()
     {
         while (m_running)

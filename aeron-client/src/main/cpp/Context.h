@@ -30,37 +30,102 @@ namespace aeron {
 using namespace aeron::concurrent::ringbuffer;
 using namespace aeron::concurrent::broadcast;
 
-typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t joiningPosition, const std::string& sourceIdentity)> on_new_connection_t;
-typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)> on_inactive_connection_t;
-typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t correlationId)> on_new_publication_t;
-typedef std::function<void(const std::string& channel, std::int32_t streamId, std::int64_t correlationId)> on_new_subscription_t;
+/**
+ * Function called by Aeron to deliver notification of a new connection
+ *
+ * @param channel         The channel for the new session.
+ * @param streamId        The scope within the channel for the new session.
+ * @param sessionId       The publisher instance identifier for the new session.
+ * @param joiningPosition At which the stream is being joined by the subscriber.
+ * @param sourceIdentity  A transport specific string with additional details about the publisher.
+ */
+typedef std::function<void(
+    const std::string& channel,
+    std::int32_t streamId,
+    std::int32_t sessionId,
+    std::int64_t joiningPosition,
+    const std::string& sourceIdentity)> on_new_connection_t;
+
+/**
+ * Function called by Aeron to deliver notification that a Publisher has gone inactive.
+ *
+ * @param channel   The channel of the inactive Publisher.
+ * @param streamId  The scope within the channel of the inactive Publisher.
+ * @param sessionId The instance identifier of the inactive Publisher.
+ * @param position  at which the connection went inactive.
+ */
+typedef std::function<void(
+    const std::string& channel,
+    std::int32_t streamId,
+    std::int32_t sessionId,
+    std::int64_t position)> on_inactive_connection_t;
+
+/**
+ * Function called by Aeron to deliver notification that the media driver has added a Publication successfully
+ *
+ * @param channel of the Publication
+ * @param streamId within the channel of the Publication
+ * @param sessionId of the Publication
+ * @param correlationId used by the Publication for adding. Aka the registrationId returned by Aeron::addPublication
+ */
+typedef std::function<void(
+    const std::string& channel,
+    std::int32_t streamId,
+    std::int32_t sessionId,
+    std::int64_t correlationId)> on_new_publication_t;
+
+/**
+ * Function called by Aeron to deliver notification that the media driver has added a Subscription successfully
+ *
+ * @param channel of the Subscription
+ * @param streamId within the channel of the Subscription
+ * @param correlationId used by the Subscription for adding. Aka the registrationId returned by Aeron::addSubscription
+ */
+typedef std::function<void(
+    const std::string& channel,
+    std::int32_t streamId,
+    std::int64_t correlationId)> on_new_subscription_t;
 
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
 const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
 
-inline static void defaultErrorHandler(util::SourcedException& exception)
+/**
+ * The Default handler for Aeron runtime exceptions.
+ * When a DriverTimeoutException is encountered, this handler will exit the program.
+ *
+ * The error handler can be overridden by supplying an {@link Context} with a custom handler.
+ *
+ * @see Context#errorHandler
+ */
+inline void defaultErrorHandler(util::SourcedException& exception)
 {
     std::cerr << "ERROR: " << exception.what() << " : " << exception.where() << std::endl;
     ::exit(-1);
 }
 
-inline static void defaultOnNewPublicationHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t)
+inline void defaultOnNewPublicationHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t)
 {
 }
 
-inline static void defaultOnNewConnectionHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&)
+inline void defaultOnNewConnectionHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&)
 {
 }
 
-inline static void defaultOnNewSubscriptionHandler(const std::string&, std::int32_t, std::int64_t)
+inline void defaultOnNewSubscriptionHandler(const std::string&, std::int32_t, std::int64_t)
 {
 }
 
-inline static void defaultOnInactiveConnectionHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t)
+inline void defaultOnInactiveConnectionHandler(const std::string&, std::int32_t, std::int32_t, std::int64_t)
 {
 }
 
+/**
+ * This class provides configuration for the {@link Aeron} class via the {@link Aeron::Aeron} or {@link Aeron::connect}
+ * methods and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
+ * It can also set up error handling as well as application callbacks for connection information from the
+ * Media Driver.
+ */
 class Context
 {
     friend class Aeron;
@@ -71,6 +136,7 @@ public:
     {
     }
 
+    /// @cond HIDDEN_SYMBOLS
     this_t& conclude()
     {
         if (NULL_TIMEOUT == m_mediaDriverTimeout)
@@ -85,48 +151,114 @@ public:
 
         return *this;
     }
+    /// @endcond
 
+    /**
+     * Set the directory that the Aeron client will use to communicate with the media driver
+     *
+     * @param base directory to use
+     * @return reference to this Context instance
+     */
     inline this_t& aeronDir(const std::string &base)
     {
         m_dirName = base;
         return *this;
     }
 
+    /**
+     * Return the path to the CnC file used by the Aeron client for communication with the media driver
+     *
+     * @return path of the CnC file
+     */
     inline const std::string cncFileName()
     {
         return m_dirName + "/" + CncFileDescriptor::CNC_FILE;
     }
 
+    /**
+     * Set the handler for exceptions from the Aeron client
+     *
+     * @param handler called when exceptions arise
+     * @return reference to this Context instance
+     *
+     * @see defaultErrorHandler for how the default behavior is handled
+     */
+    inline this_t& errorHandler(const exception_handler_t& handler)
+    {
+        m_exceptionHandler = handler;
+        return *this;
+    }
+
+    /**
+     * Set the handler for successful Aeron::addPublication notifications
+     *
+     * @param handler called when add is completed successfully
+     * @return reference to this Context instance
+     */
     inline this_t& newPublicationHandler(const on_new_publication_t& handler)
     {
         m_onNewPublicationHandler = handler;
         return *this;
     }
 
+    /**
+     * Set the handler for successful Aeron::addSubscription notifications
+     *
+     * @param handler called when add is completed successfully
+     * @return reference to this Context instance
+     */
     inline this_t& newSubscriptionHandler(const on_new_subscription_t& handler)
     {
         m_onNewSubscriptionHandler = handler;
         return *this;
     }
 
+    /**
+     * Set the handler for new connection notifications
+     *
+     * @param handler called when event occurs
+     * @return reference to this Context instance
+     */
     inline this_t& newConnectionHandler(const on_new_connection_t& handler)
     {
         m_onNewConnectionHandler = handler;
         return *this;
     }
 
+    /**
+     * Set the handler for inactive connection notifications
+     *
+     * @param handler called when event occurs
+     * @return reference to this Context instance
+     */
     inline this_t& inactiveConnectionHandler(const on_inactive_connection_t& handler)
     {
         m_onInactiveConnectionHandler = handler;
         return *this;
     }
 
+    /**
+     * Set the amount of time, in milliseconds, that this client will wait until it determines the
+     * Media Driver is unavailable. When this happens a
+     * DriverTimeoutException will be generated for the error handler.
+     *
+     * @param value Number of milliseconds.
+     * @return reference to this Context instance
+     * @see errorHandler
+     */
     inline this_t& mediaDriverTimeout(long value)
     {
         m_mediaDriverTimeout = value;
         return *this;
     }
 
+    /**
+     * Set the amount of time, in milliseconds, that this client will to linger inactive connections and internal
+     * arrays before they are free'd.
+     *
+     * @param value Number of milliseconds.
+     * @return reference to this Context instance
+     */
     inline this_t& resourceLingerTimeout(long value)
     {
         m_resourceLingerTimeout = value;

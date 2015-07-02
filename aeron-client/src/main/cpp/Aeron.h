@@ -31,20 +31,66 @@
 #include "Subscription.h"
 #include "Context.h"
 
+/// Top namespace for Aeron C++ API
 namespace aeron {
 
 using namespace aeron::util;
 using namespace aeron::concurrent;
 using namespace aeron::concurrent::broadcast;
 
+/**
+ * @example BasicPublisher.cpp
+ * An example of a basic publishing application
+ *
+ * @example BasicSubscriber.cpp
+ * An example of a basic subscribing application
+ */
+
+/**
+ * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.
+ * Use a {@link Context} to configure the Aeron object.
+ * <p>
+ * A client application requires only one Aeron object per Media Driver.
+ */
 class Aeron
 {
 public:
-    typedef Aeron this_t;
-
+    /**
+     * Create an Aeron instance and connect to the media driver.
+     * <p>
+     * Threads required for interacting with the media driver are created and managed within the Aeron instance.
+     *
+     * @param context for configuration of the client.
+     */
     Aeron(Context& context);
     virtual ~Aeron();
 
+    /**
+     * Create an Aeron instance and connect to the media driver.
+     * <p>
+     * Threads required for interacting with the media driver are created and managed within the Aeron instance.
+     *
+     * @param context for configuration of the client.
+     * @return the new Aeron instance connected to the Media Driver.
+     */
+    inline std::shared_ptr<Aeron> connect(Context& context)
+    {
+        return std::make_shared<Aeron>(context);
+    }
+
+    /**
+     * Add a {@link Publication} for publishing messages to subscribers
+     *
+     * If the sessionId is 0, a random one will be generated.
+     *
+     * This function returns immediately and does not wait for the response from the media driver. The returned
+     * registration id is to be used to determine the status of the command with the media driver.
+     *
+     * @param channel for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @param sessionId to identify the Publication instance within a channel and streamId pair.
+     * @return registration id for the publication
+     */
     inline std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
     {
         std::int32_t sessionIdToRequest = sessionId;
@@ -57,25 +103,63 @@ public:
         return m_conductor.addPublication(channel, streamId, sessionIdToRequest);
     }
 
-    inline std::shared_ptr<Publication> findPublication(std::int64_t id)
+    /**
+     * Retrieve the Publication associated with the given registrationId.
+     *
+     * This method is non-blocking.
+     *
+     * The value returned is dependent on what has occurred with respect to the media driver:
+     *
+     * - If the registrationId is unknown, then a nullptr is returned.
+     * - If the media driver has not answered the add command, then a nullptr is returned.
+     * - If the media driver has successfully added the Publication then what is returned is the Publication.
+     * - If the media driver has returned an error, this method will throw the error returned.
+     *
+     * @see Aeron::addPublication
+     *
+     * @param registrationId of the Publication returned by Aeron::addPublication
+     * @return Publication associated with the registrationId
+     */
+    inline std::shared_ptr<Publication> findPublication(std::int64_t registrationId)
     {
-        return m_conductor.findPublication(id);
+        return m_conductor.findPublication(registrationId);
     }
 
+    /**
+     * Add a new {@link Subscription} for subscribing to messages from publishers.
+     *
+     * This function returns immediately and does not wait for the response from the media driver. The returned
+     * registration id is to be used to determine the status of the command with the media driver.
+     *
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
+     * @return registration id for the subscription
+     */
     inline std::int64_t addSubscription(const std::string& channel, std::int32_t streamId)
     {
         return m_conductor.addSubscription(channel, streamId);
     }
 
-    inline std::shared_ptr<Subscription> findSubscription(std::int64_t id)
+    /**
+     * Retrieve the Subscription associated with the given registrationId.
+     *
+     * This method is non-blocking.
+     *
+     * The value returned is dependent on what has occurred with respect to the media driver:
+     *
+     * - If the registrationId is unknown, then a nullptr is returned.
+     * - If the media driver has not answered the add command, then a nullptr is returned.
+     * - If the media driver has successfully added the Subscription then what is returned is the Subscription.
+     * - If the media driver has returned an error, this method will throw the error returned.
+     *
+     * @see Aeron::addSubscription
+     *
+     * @param registrationId of the Subscription returned by Aeron::addSubscription
+     * @return Subscription associated with the registrationId
+     */
+    inline std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId)
     {
-        return m_conductor.findSubscription(id);
-    }
-
-    inline bool isPublicationClosed(std::int64_t id)
-    {
-        // TODO:
-        return true;
+        return m_conductor.findSubscription(registrationId);
     }
 
 private:

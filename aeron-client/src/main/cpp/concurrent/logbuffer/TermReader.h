@@ -24,10 +24,30 @@
 #include "LogBufferPartition.h"
 #include "Header.h"
 
-namespace aeron { namespace concurrent { namespace logbuffer {
+namespace aeron {
 
-/** The data handler function signature */
-typedef std::function<void(concurrent::AtomicBuffer&, util::index_t, util::index_t, Header&)> fragment_handler_t;
+/** Concurrent operations and data structures */
+namespace concurrent {
+
+/** Logbuffer data structure */
+namespace logbuffer {
+
+/**
+ * Callback for handling fragments of data being read from a log.
+ *
+ * Handler for reading data that is coming from a log buffer. The frame will either contain a whole message
+ * or a fragment of a message to be reassembled. Messages are fragmented if greater than the frame for MTU in length.
+
+ * @param buffer containing the data.
+ * @param offset at which the data begins.
+ * @param length of the data in bytes.
+ * @param header representing the meta data for the data.
+ */
+typedef std::function<void(
+    concurrent::AtomicBuffer& buffer,
+    util::index_t offset,
+    util::index_t length,
+    Header& header)> fragment_handler_t;
 
 namespace TermReader {
 

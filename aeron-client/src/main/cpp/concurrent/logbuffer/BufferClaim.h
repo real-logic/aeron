@@ -23,6 +23,12 @@
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
+/**
+ * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
+ * <p>
+ * The claimed space is in {@link #buffer()} between {@link #offset()} and {@link #offset()} + {@link #length()}.
+ * When the buffer is filled with message data, use {@link #commit()} to make it available to subscribers.
+ */
 class BufferClaim
 {
 public:
@@ -32,31 +38,54 @@ public:
     {
     }
 
+    /// @cond HIDDEN_SYMBOLS
     inline void wrap(std::uint8_t *buffer, util::index_t length)
     {
         m_buffer.wrap(buffer, length);
     }
+    /// @endcond
 
+    /// @cond HIDDEN_SYMBOLS
     inline void wrap(AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         m_buffer.wrap(buffer.buffer() + offset, length);
     }
+    /// @endcond
 
+
+    /**
+     * The referenced buffer to be used.
+     *
+     * @return the referenced buffer to be used..
+     */
     inline AtomicBuffer& buffer()
     {
         return m_buffer;
     }
 
+    /**
+     * The offset in the buffer at which the claimed range begins.
+     *
+     * @return offset in the buffer at which the range begins.
+     */
     inline util::index_t offset() const
     {
         return DataFrameHeader::LENGTH;
     }
 
+    /**
+     * The length of the claimed range in the buffer.
+     *
+     * @return length of the range in the buffer.
+     */
     inline util::index_t length() const
     {
         return m_buffer.capacity() - DataFrameHeader::LENGTH;
     }
 
+    /**
+     * Commit the message to the log buffer so that is it available to subscribers.
+     */
     inline void commit()
     {
         m_buffer.putInt32Ordered(0, m_buffer.capacity());

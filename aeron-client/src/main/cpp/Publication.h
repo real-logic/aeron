@@ -33,10 +33,25 @@ class ClientConductor;
 static const std::int64_t PUBLICATION_NOT_CONNECTED = -1;
 static const std::int64_t PUBLICATION_BACK_PRESSURE = -2;
 
+/**
+ * @example BasicPublisher.cpp
+ */
+/**
+ * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
+ * are created via an {@link Aeron} object, and messages are sent via an offer method or a claim and commit
+ * method combination.
+ * <p>
+ * The APIs used to send are all non-blocking.
+ * <p>
+ * Note: Publication instances are threadsafe and can be shared between publisher threads.
+ * @see Aeron#addPublication
+ * @see Aeron#findPublication
+ */
 class Publication
 {
 public:
 
+    /// @cond HIDDEN_SYMBOLS
     Publication(
         ClientConductor& conductor,
         const std::string& channel,
@@ -45,34 +60,65 @@ public:
         std::int32_t sessionId,
         UnsafeBufferPosition& publicationLimit,
         LogBuffers& buffers);
+    /// @endcond
 
     virtual ~Publication();
 
+    /**
+     * Media address for delivery to the channel.
+     *
+     * @return Media address for delivery to the channel.
+     */
     inline const std::string& channel() const
     {
         return m_channel;
     }
 
+    /**
+     * Stream identity for scoping within the channel media address.
+     *
+     * @return Stream identity for scoping within the channel media address.
+     */
     inline std::int32_t streamId() const
     {
         return m_streamId;
     }
 
+    /**
+     * Session under which messages are published. Identifies this Publication instance.
+     *
+     * @return the session id for this publication.
+     */
     inline std::int32_t sessionId() const
     {
         return m_sessionId;
     }
 
+    /**
+     * Registration Id returned by Aeron::addPublication when this Publication was added.
+     *
+     * @return the registrationId of the publication.
+     */
     inline std::int64_t registrationId() const
     {
         return m_registrationId;
     }
 
+    /**
+     * Maximum message length supported in bytes.
+     *
+     * @return maximum message length supported in bytes.
+     */
     inline util::index_t maxMessageLength() const
     {
         return m_appenders[0]->maxMessageLength();
     }
 
+    /**
+     * Get the current position to which the publication has advanced for this stream.
+     *
+     * @return the current position to which the publication has advanced for this stream.
+     */
     inline std::int64_t position()
     {
         const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
@@ -83,6 +129,14 @@ public:
         return LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
     }
 
+    /**
+     * Non-blocking publish of a buffer containing a message.
+     *
+     * @param buffer containing message.
+     * @param offset offset in the buffer at which the encoded message begins.
+     * @param length in bytes of the encoded message.
+     * @return The new stream position on success, otherwise {@link BACK_PRESSURED} or {@link NOT_CONNECTED}.
+     */
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
         const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
@@ -105,11 +159,48 @@ public:
         return newPosition;
     }
 
+    /**
+     * Non-blocking publish of a buffer containing a message.
+     *
+     * @param buffer containing message.
+     * @return The new stream position on success, otherwise {@link BACK_PRESSURED} or {@link NOT_CONNECTED}.
+     */
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer)
     {
         return offer(buffer, 0, buffer.capacity());
     }
 
+    /**
+     * Try to claim a range in the publication log into which a message can be written with zero copy semantics.
+     * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
+     * <p>
+     * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
+     *
+     * @code
+     *     BufferClaim bufferClaim; // Can be stored and reused to avoid allocation
+     *
+     *     if (publication->tryClaim(messageLength, bufferClaim))
+     *     {
+     *         try
+     *         {
+     *              AtomicBuffer& buffer = bufferClaim.buffer();
+     *              const index_t offset = bufferClaim.offset();
+     *
+     *              // Work with buffer directly or wrap with a flyweight
+     *         }
+     *         finally
+     *         {
+     *             bufferClaim.commit();
+     *         }
+     *     }
+     * @endcode
+     *
+     * @param length      of the range to claim, in bytes..
+     * @param bufferClaim to be populate if the claim succeeds.
+     * @return The new stream position on success, otherwise {@link BACK_PRESSURED} or {@link NOT_CONNECTED}.
+     * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
+     * @see BufferClaim::commit
+     */
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {
         const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);

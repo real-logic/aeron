@@ -59,9 +59,6 @@ public final class Aeron implements AutoCloseable
 
 
     private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
-    private static final long NULL_TIMEOUT = -1;
-    private static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
-    private static final int CONDUCTOR_TICK_DURATION_US = 10_000;
 
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -74,11 +71,11 @@ public final class Aeron implements AutoCloseable
 
         conductor = new ClientConductor(
             ctx.epochClock,
+            ctx.nanoClock,
             ctx.toClientBuffer,
             ctx.logBuffersFactory,
             ctx.counterValuesBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
-            new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL),
             ctx.errorHandler,
             ctx.newConnectionHandler,
             ctx.inactiveConnectionHandler,
@@ -176,6 +173,7 @@ public final class Aeron implements AutoCloseable
     {
         private final AtomicBoolean isClosed = new AtomicBoolean(false);
         private EpochClock epochClock;
+        private NanoClock nanoClock;
         private IdleStrategy idleStrategy;
         private CopyBroadcastReceiver toClientBuffer;
         private RingBuffer toDriverBuffer;
@@ -202,6 +200,11 @@ public final class Aeron implements AutoCloseable
                 if (null == epochClock)
                 {
                     epochClock = new SystemEpochClock();
+                }
+
+                if (null == nanoClock)
+                {
+                    nanoClock = new SystemNanoClock();
                 }
 
                 if (null == idleStrategy)
@@ -279,11 +282,23 @@ public final class Aeron implements AutoCloseable
          * Set the {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
          *
          * @param clock {@link EpochClock} to be used for tracking wall clock time when interacting with the driver.
-         * @return this Aeron.Context for method chainin
+         * @return this Aeron.Context for method chaining
          */
         public Context epochClock(final EpochClock clock)
         {
             this.epochClock = clock;
+            return this;
+        }
+
+        /**
+         * Set the {@link NanoClock} to be used for tracking high resolution time.
+         *
+         * @param clock {@link NanoClock} to be used for tracking high resolution time.
+         * @return this Aeron.Context for method chaining
+         */
+        public Context nanoClock(final NanoClock clock)
+        {
+            this.nanoClock = clock;
             return this;
         }
 

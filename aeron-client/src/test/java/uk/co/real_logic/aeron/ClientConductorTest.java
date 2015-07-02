@@ -17,18 +17,18 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.command.*;
+import uk.co.real_logic.aeron.command.ControlProtocolEvents;
+import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
+import uk.co.real_logic.aeron.command.ErrorResponseFlyweight;
+import uk.co.real_logic.aeron.command.PublicationBuffersReadyFlyweight;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.collections.Long2LongHashMap;
-import uk.co.real_logic.agrona.concurrent.EpochClock;
-import uk.co.real_logic.agrona.concurrent.SystemEpochClock;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import java.nio.ByteBuffer;
@@ -80,7 +80,7 @@ public class ClientConductorTest
     private final UnsafeBuffer counterValuesBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(COUNTER_BUFFER_LENGTH));
 
     private final EpochClock epochClock = new SystemEpochClock();
-    private final TimerWheel timerWheel = mock(TimerWheel.class);
+    private final NanoClock nanoClock = new SystemNanoClock();
     private final ErrorHandler mockClientErrorHandler = Throwable::printStackTrace;
 
     private DriverProxy driverProxy;
@@ -100,15 +100,14 @@ public class ClientConductorTest
         when(driverProxy.removePublication(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
-        when(timerWheel.clock()).thenReturn(System::nanoTime);
 
         conductor = new ClientConductor(
             epochClock,
+            nanoClock,
             mockToClientReceiver,
             logBuffersFactory,
             counterValuesBuffer,
             driverProxy,
-            timerWheel,
             mockClientErrorHandler,
             mockNewConnectionHandler,
             mockInactiveConnectionHandler,

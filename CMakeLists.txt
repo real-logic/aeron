@@ -75,6 +75,11 @@ set(HDRHISTOGRAM_LIBS
 
 find_package(Threads)
 
+##########################################################
+# Doxygen for generating doc
+
+find_package(Doxygen)
+
 # all UNIX-based platform compiler flags
 if(UNIX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++11 -fexceptions -g -m64")
@@ -124,4 +129,21 @@ add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_TEST_PATH})
 add_subdirectory(${AERON_SAMPLES_PATH})
 
+##########################################################
+# doc target
 
+if(DOXYGEN_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    add_custom_target(
+        doc
+        ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        COMMENT "Generating API documentation with Doxygen" VERBATIM
+    )
+endif(DOXYGEN_FOUND)
+
+##########################################################
+# packaging
+
+set(CPACK_GENERATOR "TGZ")
+include(CPack)

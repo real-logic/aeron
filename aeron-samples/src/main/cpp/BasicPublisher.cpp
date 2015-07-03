@@ -102,17 +102,17 @@ int main(int argc, char** argv)
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
 
-        Aeron aeron(context);
+        std::shared_ptr<Aeron> aeron = Aeron::connect(context);
 
         // add the publication to start the process
-        std::int64_t id = aeron.addPublication(settings.channel, settings.streamId);
+        std::int64_t id = aeron->addPublication(settings.channel, settings.streamId);
 
-        std::shared_ptr<Publication> publication = aeron.findPublication(id);
+        std::shared_ptr<Publication> publication = aeron->findPublication(id);
         // wait for the publication to be valid
         while (!publication)
         {
             std::this_thread::yield();
-            publication = aeron.findPublication(id);
+            publication = aeron->findPublication(id);
         }
 
         AERON_DECL_ALIGNED(buffer_t buffer, 16);

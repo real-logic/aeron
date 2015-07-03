@@ -122,17 +122,17 @@ int main(int argc, char** argv)
                 std::cout << " at position=" << position << std::endl;
             });
 
-        Aeron aeron(context);
+        std::shared_ptr<Aeron> aeron = Aeron::connect(context);
 
         // add the subscription to start the process
-        std::int64_t id = aeron.addSubscription(settings.channel, settings.streamId);
+        std::int64_t id = aeron->addSubscription(settings.channel, settings.streamId);
 
-        std::shared_ptr<Subscription> subscription = aeron.findSubscription(id);
+        std::shared_ptr<Subscription> subscription = aeron->findSubscription(id);
         // wait for the subscription to be valid
         while (!subscription)
         {
             std::this_thread::yield();
-            subscription = aeron.findSubscription(id);
+            subscription = aeron->findSubscription(id);
         }
 
         fragment_handler_t handler = printStringMessage();

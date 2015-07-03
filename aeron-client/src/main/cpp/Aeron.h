@@ -73,7 +73,7 @@ public:
      * @param context for configuration of the client.
      * @return the new Aeron instance connected to the Media Driver.
      */
-    inline std::shared_ptr<Aeron> connect(Context& context)
+    inline static std::shared_ptr<Aeron> connect(Context& context)
     {
         return std::make_shared<Aeron>(context);
     }

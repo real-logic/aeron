@@ -181,6 +181,8 @@ int main(int argc, char **argv)
         {
             printingActive = true;
 
+            long backPressureCount = 0;
+
             for (long i = 0; i < settings.numberOfMessages && running; i++)
             {
                 const int length = lengthGenerator();
@@ -188,13 +190,15 @@ int main(int argc, char **argv)
 
                 while (publication->offer(srcBuffer, 0, length) < 0L)
                 {
+                    backPressureCount++;
                     offerIdleStrategy.idle(0);
                 }
 
                 rateReporter.onMessage(1, length);
             }
 
-            std::cout << "Done streaming." << std::endl;
+            std::cout << "Done streaming. Back pressure ratio ";
+            std::cout << ((double)backPressureCount / (double)settings.numberOfMessages) << std::endl;
 
             if (running && settings.lingerTimeoutMs > 0)
             {

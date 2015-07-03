@@ -92,6 +92,8 @@ public class StreamingPublisher
                     CHANNEL,
                     STREAM_ID);
 
+                long backPressureCount = 0;
+
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
                     final int length = LENGTH_GENERATOR.getAsInt();
@@ -103,13 +105,14 @@ public class StreamingPublisher
                         // The offer failed, which is usually due to the publication
                         // being temporarily blocked.  Retry the offer after a short
                         // spin/yield/sleep, depending on the chosen IdleStrategy.
+                        backPressureCount++;
                         OFFER_IDLE_STRATEGY.idle(0);
                     }
 
                     reporter.onMessage(1, length);
                 }
 
-                System.out.println("Done streaming.");
+                System.out.println("Done streaming. Back pressure ratio " + ((double)backPressureCount / NUMBER_OF_MESSAGES));
 
                 if (0 < LINGER_TIMEOUT_MS)
                 {

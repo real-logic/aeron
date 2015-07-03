@@ -89,25 +89,6 @@ public:
     {
     }
 
-    /*
-     * non-blocking API semantics
-     * - addPublication, addSubscription do NOT return objects, but instead return a registrationId
-     * - addPublication/addSubscription should NOT take futures for completion
-     * - onNewPublication -> deliver notification via Aeron to inform app (but not hand back Publication, just id)
-     * - onNewSubscription -> deliver notification via Aeron to inform app (but not hand back Subscription, just id)
-     * - onNewConnection -> deliver notification (as is done currently in Java)
-     * - on error [timeout or error return] -> deliver notification via errorHandler of Aeron
-     * - app can poll for usage of Publication/Subscription (concurrent array/map)
-     *      - use correlationId as key
-     */
-
-    /*
-     * addPublication - create unique_ptr<state entry> (if doesn't exist), send command, etc.
-     * onNewPublication - create buffers, save them to state entry
-     * findPublication - create Publication (if it doesn't exist), returning shared_ptr, keep weak_ptr.
-     * releasePublication - delete unique_ptr<state entry> (should be called by Publication dtor) (should only delete once operation success from driver?)
-     */
-
     std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
     std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
     void releasePublication(std::int64_t registrationId);

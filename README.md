@@ -12,6 +12,7 @@ For those who prefer to watch a video then try [Aeron Messaging](https://www.you
 ### How do I use Aeron?
 
 1. [Java Programming Guide](https://github.com/real-logic/Aeron/wiki/Java-Programming-Guide)
+1. [C++11 Programming Guide](https://github.com/real-logic/Aeron/wiki/Cpp-Programming-Guide)
 1. [Best Practices Guide](https://github.com/real-logic/Aeron/wiki/Best-Practices-Guide)
 
 ### How does Aeron work?
@@ -85,7 +86,7 @@ You require the following to build the C++ API for Aeron:
 * 2.8.4 or higher of [CMake](http://www.cmake.org/)
 * C++11 supported compiler for the supported platform
 * Requirements to build [HdrHistogram_c](https://github.com/HdrHistogram/HdrHistogram_c). HdrHistogram requires clang
-currently.
+and `zlib.h` currently.
 
 __NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
 with Visual Studio Express 12 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
@@ -101,6 +102,8 @@ If you are comfortable with using CMake, then a full clean, build, and test look
     $ cmake ../..
     $ cmake --build . --clean-first
     $ ctest
+
+If you have doxygen installed and want to build the Doxygen doc, there is a nice `doc` target that can be used.
 
 Running Samples
 ---------------

@@ -105,6 +105,14 @@ If you are comfortable with using CMake, then a full clean, build, and test look
 
 If you have doxygen installed and want to build the Doxygen doc, there is a nice `doc` target that can be used.
 
+    $ make doc
+    
+If you would like a packaged version of the compiled API, there is the `package` target that uses CPack. If the doc
+has been built previous to the packaging, it will be included. Packages created are "TGZ;STGZ", but can be changed
+by running `cpack` directly.
+
+    $ make package
+
 Running Samples
 ---------------
 

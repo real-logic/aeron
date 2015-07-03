@@ -24,6 +24,11 @@ include(ExternalProject)
 
 project("aeron")
 
+# version info
+set(aeron_VERSION_MAJOR 0)
+set(aeron_VERSION_MINOR 1)
+set(aeron_VERSION_PATCH 0)
+
 enable_testing()
 
 # default built type is Release
@@ -134,16 +139,25 @@ add_subdirectory(${AERON_SAMPLES_PATH})
 
 if(DOXYGEN_FOUND)
     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+
     add_custom_target(
         doc
         ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen" VERBATIM
     )
+
+    # install the doc if it has been built
+    install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc DESTINATION share OPTIONAL)
 endif(DOXYGEN_FOUND)
 
 ##########################################################
-# packaging
+# package target
 
-set(CPACK_GENERATOR "TGZ")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE")
+set(CPACK_PACKAGE_VERSION_MAJOR "${aeron_VERSION_MAJOR}")
+set(CPACK_PACKAGE_VERSION_MINOR "${aeron_VERSION_MINOR}")
+set(CPACK_PACKAGE_VERSION_PATCH "${aeron_VERSION_PATCH}")
+
+set(CPACK_GENERATOR "TGZ;STGZ")
 include(CPack)

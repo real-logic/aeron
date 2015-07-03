@@ -60,3 +60,7 @@ target_link_libraries(Ping
     ${CMAKE_THREAD_LIBS_INIT})
 
 add_dependencies(Ping hdr_histogram)
+
+install(
+    TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong
+    DESTINATION bin)

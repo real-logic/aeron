@@ -89,3 +89,6 @@ SET(HEADERS
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})
+
+install(TARGETS aeron_client ARCHIVE DESTINATION lib)
+install(DIRECTORY . DESTINATION  include FILES_MATCHING PATTERN "*.h")

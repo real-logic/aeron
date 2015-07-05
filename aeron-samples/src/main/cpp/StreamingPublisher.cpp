@@ -198,7 +198,7 @@ int main(int argc, char **argv)
             }
 
             std::cout << "Done streaming. Back pressure ratio ";
-            std::cout << ((double)backPressureCount / (double)settings.numberOfMessages) << std::endl;
+            std::cout << ((double)backPressureCount / settings.numberOfMessages) << std::endl;
 
             if (running && settings.lingerTimeoutMs > 0)
             {

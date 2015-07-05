@@ -36,6 +36,7 @@ static void clearBuffer()
     testBuffer.fill(0);
 }
 
+#if !defined(DISABLE_BOUNDS_CHECKS)
 TEST (atomicBufferTests, checkBounds)
 {
     clearBuffer();
@@ -78,7 +79,7 @@ TEST (atomicBufferTests, checkBounds)
         ab.putStringUtf8(testBuffer.size() - testString.length() - sizeof(std::int32_t) + 1, testString);
     }, OutOfBoundsException);
 }
-
+#endif
 
 TEST (atomicBufferTests, stringStore)
 {
@@ -152,9 +153,11 @@ TEST (atomicBufferTests, checkStructOveray)
         ab.overlayStruct<testStruct>(ab.capacity() - sizeof(testStruct));
     });
 
+#if !defined(DISABLE_BOUNDS_CHECKS)
     ASSERT_THROW({
         ab.overlayStruct<testStruct>(ab.capacity() - sizeof(testStruct) + 1);
     }, OutOfBoundsException);
+#endif
 
     testStruct ts { 1, 2, 3 };
     ASSERT_NO_THROW({

@@ -33,7 +33,7 @@ static const std::int32_t NEEDS_CLEANING = 1;
 
 static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
 
-static const int PARTITION_COUNT = 3;
+constexpr static const int PARTITION_COUNT = 3;
 
 /*
  * Layout description for log buffers which contains partitions of terms with associated term meta data,
@@ -164,27 +164,28 @@ inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
 }
 
-// compiler should optimize for mod 3. But if not, then do it by hand for these via BitUtil::fastMod3().
-
 inline static int nextPartitionIndex(int currentIndex)
 {
-    return (currentIndex + 1) % PARTITION_COUNT;
+    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
+    return util::BitUtil::fastMod3(currentIndex + 1);
 }
 
 inline static int previousPartitionIndex(int currentIndex)
 {
-    return (currentIndex + (PARTITION_COUNT - 1)) % PARTITION_COUNT;
+    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
+    return util::BitUtil::fastMod3(currentIndex + (PARTITION_COUNT - 1));
 }
 
 inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId)
 {
-    // return util::BitUtil::fastMod3(activeTermId - initialTermId)
-    return (activeTermId - initialTermId) % PARTITION_COUNT;
+    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
+    return util::BitUtil::fastMod3(activeTermId - initialTermId);
 }
 
 inline static int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift)
 {
-    return (int)(((std::uint64_t)position >> positionBitsToShift) % PARTITION_COUNT);
+    static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
+    return (int)(util::BitUtil::fastMod3((std::uint64_t)position >> positionBitsToShift));
 }
 
 inline static std::int64_t computePosition(

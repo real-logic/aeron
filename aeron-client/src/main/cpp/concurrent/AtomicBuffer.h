@@ -323,12 +323,14 @@ private:
 
     inline void boundsCheck(util::index_t index, util::index_t length) const
     {
+#if !defined(DISABLE_BOUNDS_CHECKS)
         if ((index + length) > m_length)
         {
             throw util::OutOfBoundsException(
                 util::strPrintf("Index Out of Bounds[%p]. Index: %d + %d Capacity: %d", this, index, length, m_length),
                 SOURCEINFO);
         }
+#endif
     }
 };
 

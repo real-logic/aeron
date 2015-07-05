@@ -20,13 +20,11 @@ import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 
-import java.util.stream.IntStream;
-
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Tracking and handling of retransmit request, NAKs, for senders and receivers
- *
+ * <p>
  * A max number of retransmits is permitted by {@link #MAX_RETRANSMITS}. Additional received NAKs will be
  * ignored if this maximum is reached.
  */
@@ -71,56 +69,54 @@ public class RetransmitHandler
         this.capacity = capacity;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
 
-        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool[i] = new RetransmitAction());
-    }
-
-    public void close()
-    {
+        for (int i = 0; i < MAX_RETRANSMITS; i++)
+        {
+            retransmitActionPool[i] = new RetransmitAction();
+        }
     }
 
     /**
      * Called on reception of a NAK to start retransmits handling.
      *
-     * @param termId     from the NAK and the term id of the buffer to retransmit from
-     * @param termOffset from the NAK and the offset of the data to retransmit
-     * @param length     of the missing data
+     * @param termId           from the NAK and the term id of the buffer to retransmit from
+     * @param termOffset       from the NAK and the offset of the data to retransmit
+     * @param length           of the missing data
      * @param retransmitSender to call if an immediate retransmit is required
      */
     public void onNak(final int termId, final int termOffset, final int length, final RetransmitSender retransmitSender)
     {
-        if (isInvalid(termOffset))
+        if (!isInvalid(termOffset))
         {
-            return;
-        }
+            final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
 
-        final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-
-        if (activeRetransmitByPositionMap.size() < MAX_RETRANSMITS && null == activeRetransmitByPositionMap.get(position))
-        {
-            final RetransmitAction action = findInactiveRetransmitAction();
-            action.termId = termId;
-            action.termOffset = termOffset;
-            action.length = Math.min(length, capacity - termOffset);
-            action.position = position;
-
-            final long delay = determineRetransmitDelay();
-            if (0 == delay)
+            if (activeRetransmitByPositionMap.size() < MAX_RETRANSMITS &&
+                null == activeRetransmitByPositionMap.get(position))
             {
-                perform(action, retransmitSender);
-                action.linger(determineLingerTimeout());
-            }
-            else
-            {
-                action.delay(delay);
-            }
+                final RetransmitAction action = assignRetransmitAction();
+                action.termId = termId;
+                action.termOffset = termOffset;
+                action.length = Math.min(length, capacity - termOffset);
+                action.position = position;
 
-            activeRetransmitByPositionMap.put(position, action);
+                final long delay = determineRetransmitDelay();
+                if (0 == delay)
+                {
+                    perform(action, retransmitSender);
+                    action.linger(determineLingerTimeout());
+                }
+                else
+                {
+                    action.delay(delay);
+                }
+
+                activeRetransmitByPositionMap.put(position, action);
+            }
         }
     }
 
     /**
      * Called to indicate a retransmission is received that may obviate the need to send one ourselves.
-     *
+     * <p>
      * NOTE: Currently only called from unit tests. Would be used for retransmitting from receivers for NAK suppression
      *
      * @param termId     of the data
@@ -133,8 +129,7 @@ public class RetransmitHandler
 
         if (null != action && State.DELAYED == action.state)
         {
-            activeRetransmitByPositionMap.remove(position);
-            action.state = State.INACTIVE;
+            action.cancel();
             // do not go into linger
         }
     }
@@ -142,7 +137,7 @@ public class RetransmitHandler
     /**
      * Called to process any outstanding timeouts.
      *
-     * @param now time in nanoseconds
+     * @param now              time in nanoseconds
      * @param retransmitSender to call on retransmissions
      * @return count of expired actions performed
      */
@@ -152,10 +147,8 @@ public class RetransmitHandler
 
         if (activeRetransmitByPositionMap.size() > 0)
         {
-            for (int i = 0, length = retransmitActionPool.length; i < length; i++)
+            for (final RetransmitAction action : retransmitActionPool)
             {
-                final RetransmitAction action = retransmitActionPool[i];
-
                 switch (action.state)
                 {
                     case DELAYED:
@@ -207,13 +200,13 @@ public class RetransmitHandler
         retransmitSender.resend(action.termId, action.termOffset, action.length);
     }
 
-    private RetransmitAction findInactiveRetransmitAction()
+    private RetransmitAction assignRetransmitAction()
     {
-        for (int i = 0, length = retransmitActionPool.length; i < length; i++)
+        for (final RetransmitAction action : retransmitActionPool)
         {
-            if (State.INACTIVE == retransmitActionPool[i].state)
+            if (State.INACTIVE == action.state)
             {
-                return retransmitActionPool[i];
+                return action;
             }
         }
 
@@ -256,12 +249,13 @@ public class RetransmitHandler
 
         public void onLingerTimeout()
         {
-            state = State.INACTIVE;
             activeRetransmitByPositionMap.remove(position);
+            state = State.INACTIVE;
         }
 
         public void cancel()
         {
+            activeRetransmitByPositionMap.remove(position);
             state = State.INACTIVE;
         }
     }

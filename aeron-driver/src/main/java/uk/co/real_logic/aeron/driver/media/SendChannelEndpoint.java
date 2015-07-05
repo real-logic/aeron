@@ -19,12 +19,10 @@ import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.*;
-import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
@@ -105,22 +103,6 @@ public class SendChannelEndpoint implements AutoCloseable
     }
 
     /**
-     * Validate the MTU length with the underlying transport
-     *
-     * @param mtuLength to validate against
-     */
-    public void validateMtuLength(final int mtuLength)
-    {
-        final int soSndbuf = transport.getOption(StandardSocketOptions.SO_SNDBUF);
-
-        if (mtuLength > soSndbuf)
-        {
-            throw new ConfigurationException(
-                String.format("MTU greater than socket SO_SNDBUF: mtuLength=%d, SO_SNDBUF=%d", mtuLength, soSndbuf));
-        }
-    }
-
-    /**
      * Called from the {@link DriverConductor} to find the publication associated with a sessionId and streamId
      *
      * @param sessionId for the publication
@@ -185,13 +167,7 @@ public class SendChannelEndpoint implements AutoCloseable
      */
     public void removeFromDispatcher(final NetworkPublication publication)
     {
-        final PublicationAssembly assembly =
-            assemblyByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
-
-        if (null != assembly)
-        {
-            assembly.retransmitHandler.close();
-        }
+        assemblyByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
     }
 
     private void onStatusMessage(final StatusMessageFlyweight statusMsg, final InetSocketAddress srcAddress)

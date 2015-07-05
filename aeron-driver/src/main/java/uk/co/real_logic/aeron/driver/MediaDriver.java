@@ -77,7 +77,7 @@ public final class MediaDriver implements AutoCloseable
 
     /**
      * Load system properties from a given filename.
-     *
+     * <p>
      * File is first searched in resources, then file system. Both are loaded if both found.
      *
      * @param filename that holds properties
@@ -315,15 +315,13 @@ public final class MediaDriver implements AutoCloseable
 
             if (ctx.mtuLength() > soSndbuf)
             {
-                throw new ConfigurationException(
-                    String.format(
-                        "MTU greater than socket SO_SNDBUF: mtuLength=%d, SO_SNDBUF=%d", ctx.mtuLength(), soSndbuf));
+                throw new ConfigurationException(String.format(
+                    "MTU greater than socket SO_SNDBUF: mtuLength=%d, SO_SNDBUF=%d", ctx.mtuLength(), soSndbuf));
             }
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(
-                String.format("probe socket: %s", ex.toString()), ex);
+            throw new RuntimeException(String.format("probe socket: %s", ex.toString()), ex);
         }
     }
 

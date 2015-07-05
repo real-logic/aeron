@@ -67,7 +67,8 @@ public final class SenderUdpChannelTransport extends UdpChannelTransport
             udpChannel.remoteControl(),
             udpChannel.localControl(),
             udpChannel.remoteData(),
-            lossGenerator, logger);
+            lossGenerator,
+            logger);
 
         this.smMessageHandler = smMessageHandler;
         this.nakMessageHandler = nakMessageHandler;

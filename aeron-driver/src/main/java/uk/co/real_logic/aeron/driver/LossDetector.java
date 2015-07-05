@@ -43,8 +43,7 @@ public class LossDetector implements GapHandler
      * @param delayGenerator   to use for delay determination
      * @param nakMessageSender to call when sending a NAK is indicated
      */
-    public LossDetector(
-        final FeedbackDelayGenerator delayGenerator, final NakMessageSender nakMessageSender)
+    public LossDetector(final FeedbackDelayGenerator delayGenerator, final NakMessageSender nakMessageSender)
     {
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
@@ -106,7 +105,6 @@ public class LossDetector implements GapHandler
         else
         {
             expire = TIMER_INACTIVE;
-
             rebuildOffset = rebuildTermOffset;
         }
 

@@ -15,10 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
-import java.util.concurrent.TimeUnit;
 
 import static uk.co.real_logic.aeron.logbuffer.TermGapScanner.GapHandler;
 import static uk.co.real_logic.aeron.logbuffer.TermGapScanner.scanForGap;
@@ -28,39 +25,35 @@ import static uk.co.real_logic.aeron.logbuffer.TermGapScanner.scanForGap;
  * <p>
  * This detector only notifies a single NAK at a time.
  */
-public class LossDetector
+public class LossDetector implements GapHandler
 {
+    private static final long TIMER_INACTIVE = -1;
+
     private final FeedbackDelayGenerator delayGenerator;
     private final NakMessageSender nakMessageSender;
-    private final TimerWheel.Timer timer;
-    private final TimerWheel wheel;
     private final Gap scannedGap = new Gap();
     private final Gap activeGap = new Gap();
-    private final GapHandler onGapFunc = this::onGap;
-    private final Runnable onTimerExpireFunc = this::onTimerExpire;
 
+    private long expire = TIMER_INACTIVE;
     private int rebuildOffset = 0;
 
     /**
      * Create a loss handler for a channel.
      *
-     * @param wheel            for timer management
      * @param delayGenerator   to use for delay determination
      * @param nakMessageSender to call when sending a NAK is indicated
      */
     public LossDetector(
-        final TimerWheel wheel, final FeedbackDelayGenerator delayGenerator, final NakMessageSender nakMessageSender)
+        final FeedbackDelayGenerator delayGenerator, final NakMessageSender nakMessageSender)
     {
-        this.wheel = wheel;
-        this.timer = wheel.newBlankTimer();
         this.delayGenerator = delayGenerator;
         this.nakMessageSender = nakMessageSender;
     }
 
     /**
-     * Get the offset to which the term is rebuilt after a {@link #scan(UnsafeBuffer, long, long, int, int, int)}.
+     * Get the offset to which the term is rebuilt after a {@link #scan(UnsafeBuffer, long, long, long, int, int, int)}.
      *
-     * @return the offset to which the term is rebuilt after a {@link #scan(UnsafeBuffer, long, long, int, int, int)}.
+     * @return the offset to which the term is rebuilt after a {@link #scan(UnsafeBuffer, long, long, long, int, int, int)}.
      */
     public int rebuildOffset()
     {
@@ -78,11 +71,12 @@ public class LossDetector
         final UnsafeBuffer termBuffer,
         final long rebuildPosition,
         final long hwmPosition,
+        final long now,
         final int termLengthMask,
         final int positionBitsToShift,
         final int initialTermId)
     {
-        int workCount = 1;
+        int workCount = 0;
 
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
         final int hwmTermOffset = (int)hwmPosition & termLengthMask;
@@ -96,14 +90,14 @@ public class LossDetector
             final int activeTermLimit = (rebuildTermsCount == hwmTermsCount) ? hwmTermOffset : termBuffer.capacity();
             rebuildOffset = activeTermLimit;
 
-            rebuildOffset = scanForGap(termBuffer, activeTermId, rebuildTermOffset, activeTermLimit, onGapFunc);
+            rebuildOffset = scanForGap(termBuffer, activeTermId, rebuildTermOffset, activeTermLimit, this);
             if (rebuildOffset < activeTermLimit)
             {
                 final Gap gap = scannedGap;
-                if (!timer.isActive() || !gap.matches(activeGap.termId, activeGap.termOffset))
+                if (TIMER_INACTIVE == expire || !gap.matches(activeGap.termId, activeGap.termOffset))
                 {
-                    activateGap(gap.termId, gap.termOffset, gap.length);
-                    workCount = 0;
+                    activateGap(now, gap.termId, gap.termOffset, gap.length);
+                    workCount = 1;
                 }
 
                 rebuildOffset = gap.termOffset;
@@ -111,14 +105,12 @@ public class LossDetector
         }
         else
         {
-            if (timer.isActive())
-            {
-                timer.cancel();
-            }
+            expire = TIMER_INACTIVE;
 
             rebuildOffset = rebuildTermOffset;
-            workCount = 0;
         }
+
+        workCount += checkTimerExpire(now);
 
         return workCount;
     }
@@ -129,32 +121,28 @@ public class LossDetector
      * @param termId     in the NAK
      * @param termOffset in the NAK
      */
-    public void onNak(final int termId, final int termOffset)
+    public void onNak(final long now, final int termId, final int termOffset)
     {
-        if (timer.isActive() && activeGap.matches(termId, termOffset))
+        if (TIMER_INACTIVE != expire && activeGap.matches(termId, termOffset))
         {
-            suppressNak();
+            expire = now + determineNakDelay();
         }
     }
 
-    private void suppressNak()
-    {
-        scheduleTimer();
-    }
-
-    private void onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
+    public void onGap(final int termId, final UnsafeBuffer buffer, final int offset, final int length)
     {
         scannedGap.reset(termId, offset, length);
     }
 
-    private void activateGap(final int termId, final int termOffset, final int length)
+    private void activateGap(final long now, final int termId, final int termOffset, final int length)
     {
         activeGap.reset(termId, termOffset, length);
         if (determineNakDelay() == -1)
         {
             return;
         }
-        scheduleTimer();
+
+        expire = now + determineNakDelay();
 
         if (delayGenerator.shouldFeedbackImmediately())
         {
@@ -162,10 +150,18 @@ public class LossDetector
         }
     }
 
-    private void onTimerExpire()
+    private int checkTimerExpire(final long now)
     {
-        sendNakMessage();
-        scheduleTimer();
+        int result = 0;
+
+        if (TIMER_INACTIVE != expire && now > expire)
+        {
+            sendNakMessage();
+            expire = now + determineNakDelay();
+            result = 1;
+        }
+
+        return result;
     }
 
     private void sendNakMessage()
@@ -176,18 +172,6 @@ public class LossDetector
     private long determineNakDelay()
     {
         return delayGenerator.generateDelay();
-    }
-
-    private void scheduleTimer()
-    {
-        final long delay = determineNakDelay();
-
-        if (timer.isActive())
-        {
-            timer.cancel();
-        }
-
-        wheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, timer, onTimerExpireFunc);
     }
 
     static final class Gap

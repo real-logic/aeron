@@ -38,7 +38,6 @@ import static uk.co.real_logic.aeron.logbuffer.TermScanner.*;
 public class NetworkPublication implements RetransmitSender, AutoCloseable
 {
     private final RawLog rawLog;
-    private final NanoClock clock;
     private final SetupFlyweight setupHeader = new SetupFlyweight();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
@@ -49,6 +48,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
     private final SystemCounters systemCounters;
+    private final RetransmitHandler retransmitHandler;
 
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -77,13 +77,14 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         final int initialTermId,
         final int mtuLength,
         final long initialPositionLimit,
-        final SystemCounters systemCounters)
+        final SystemCounters systemCounters,
+        final RetransmitHandler retransmitHandler)
     {
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.senderPosition = senderPosition;
         this.systemCounters = systemCounters;
-        this.clock = clock;
+        this.retransmitHandler = retransmitHandler;
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
 
@@ -119,7 +120,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         senderPosition.close();
     }
 
-    public int send()
+    public int send(final long now)
     {
         int bytesSent = 0;
 
@@ -128,7 +129,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             final long senderPosition = this.senderPosition.get();
             final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
             final int termOffset = (int)senderPosition & termLengthMask;
-            final long now = clock.nanoTime();
 
             if (shouldSendSetupFrame)
             {
@@ -141,6 +141,8 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             {
                 heartbeatMessageCheck(now, senderPosition, activeTermId);
             }
+
+            retransmitHandler.processTimeouts(now, this);
         }
 
         return bytesSent;

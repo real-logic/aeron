@@ -18,24 +18,23 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import uk.co.real_logic.aeron.driver.buffer.RawLog;
+import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
+import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
+import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
+import uk.co.real_logic.aeron.driver.media.TransportPoller;
+import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.logbuffer.TermReader;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
-import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
-import uk.co.real_logic.aeron.driver.cmd.CreateConnectionCmd;
-import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.TransportPoller;
-import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
@@ -49,7 +48,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import static java.lang.Integer.numberOfTrailingZeros;
 import static junit.framework.TestCase.assertTrue;
@@ -57,8 +55,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.LogBufferHelper.newTestLogBuffers;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 public class ReceiverTest
@@ -102,8 +100,6 @@ public class ReceiverTest
 
     private final RawLog rawLog = newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH);
     private final EventLogger mockLogger = mock(EventLogger.class);
-    private final TimerWheel timerWheel = new TimerWheel(
-        clock, Configuration.CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_LENGTH);
     private UnsafeBuffer[] termBuffers;
@@ -132,10 +128,10 @@ public class ReceiverTest
             .receiverNioSelector(mockTransportPoller)
             .senderNioSelector(mockTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
-            .conductorTimerWheel(timerWheel)
             .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .eventLogger(mockLogger);
+            .eventLogger(mockLogger)
+            .nanoClock(() -> currentTime);
 
         toConductorQueue = ctx.toConductorFromReceiverCommandQueue();
         final DriverConductorProxy driverConductorProxy =
@@ -193,7 +189,6 @@ public class ReceiverTest
             INITIAL_TERM_OFFSET,
             INITIAL_WINDOW_LENGTH,
             rawLog,
-            timerWheel,
             mockFeedbackDelayGenerator,
             POSITIONS,
             mockHighestReceivedPosition,
@@ -219,7 +214,7 @@ public class ReceiverTest
 
         receiver.doWork();
 
-        connection.trackRebuild();
+        connection.trackRebuild(currentTime);
         connection.sendPendingStatusMessage(1000, STATUS_MESSAGE_TIMEOUT);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
@@ -264,7 +259,6 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        timerWheel,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,
@@ -327,7 +321,6 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        timerWheel,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,
@@ -393,7 +386,6 @@ public class ReceiverTest
                         INITIAL_TERM_OFFSET,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        timerWheel,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,
@@ -463,7 +455,6 @@ public class ReceiverTest
                         initialTermOffset,
                         INITIAL_WINDOW_LENGTH,
                         rawLog,
-                        timerWheel,
                         mockFeedbackDelayGenerator,
                         POSITIONS,
                         mockHighestReceivedPosition,

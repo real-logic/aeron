@@ -28,7 +28,6 @@ import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
@@ -91,8 +90,7 @@ public class DriverConductorTest
     private final DriverConductorProxy fromReceiverConductorProxy = mock(DriverConductorProxy.class);
 
     private long currentTime;
-    private final TimerWheel wheel = new TimerWheel(
-        () -> currentTime, CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
+    private NanoClock nanoClock = () -> currentTime;
 
     private DriverConductor driverConductor;
 
@@ -125,13 +123,13 @@ public class DriverConductorTest
             .senderNioSelector(transportPoller)
             .unicastSenderFlowControl(UnicastFlowControl::new)
             .multicastSenderFlowControl(MaxMulticastFlowControl::new)
-            .conductorTimerWheel(wheel)
             // TODO: remove
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
             .rawLogBuffersFactory(mockRawLogFactory)
-            .countersManager(countersManager);
+            .countersManager(countersManager)
+            .nanoClock(nanoClock);
 
         ctx.toEventReader(toEventReader);
         ctx.toDriverCommands(fromClientCommands);
@@ -224,7 +222,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
         verify(senderProxy).removePublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4005)));
@@ -245,7 +243,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(senderProxy, times(4)).removePublication(any());
     }
@@ -371,7 +369,7 @@ public class DriverConductorTest
 
         final NetworkPublication publication = captor.getValue();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(senderProxy).removePublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -389,15 +387,15 @@ public class DriverConductorTest
 
         final NetworkPublication publication = captor.getValue();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
 
         writeKeepaliveClientMessage();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(senderProxy, never()).removePublication(eq(publication));
     }
@@ -415,7 +413,7 @@ public class DriverConductorTest
 
         verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(receiverProxy, times(1)).removeSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
@@ -435,15 +433,15 @@ public class DriverConductorTest
 
         verify(receiverProxy).addSubscription(eq(receiveChannelEndpoint), eq(STREAM_ID_1));
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
         writeKeepaliveClientMessage();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
         writeKeepaliveClientMessage();
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(receiverProxy, never()).removeSubscription(any(), anyInt());
         assertNotNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_URI + 4000)));
@@ -534,7 +532,7 @@ public class DriverConductorTest
 
         networkConnection.status(NetworkConnection.Status.INACTIVE);
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
 
         verify(mockClientProxy).onInactiveConnection(
             eq(networkConnection.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
@@ -574,7 +572,7 @@ public class DriverConductorTest
 
         networkConnection.status(NetworkConnection.Status.INACTIVE);
 
-        doWorkUntil(() -> wheel.clock().nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> nanoClock.nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy, times(2)).onConnectionReady(
@@ -621,18 +619,14 @@ public class DriverConductorTest
 
     private long doWorkUntil(final BooleanSupplier condition) throws Exception
     {
-        final long startTime = wheel.clock().nanoTime();
+        final long startTime = currentTime;
 
         while (!condition.getAsBoolean())
         {
-            if (wheel.computeDelayInMs() > 0)
-            {
-                currentTime += TimeUnit.MICROSECONDS.toNanos(Configuration.CONDUCTOR_TICK_DURATION_US);
-            }
-
+            currentTime += TimeUnit.MILLISECONDS.toNanos(10);
             driverConductor.doWork();
         }
 
-        return wheel.clock().nanoTime() - startTime;
+        return currentTime - startTime;
     }
 }

@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.function.Consumer;
@@ -35,6 +36,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final DriverConductorProxy conductorProxy;
     private final AtomicCounter totalBytesSent;
+    private final NanoClock nanoClock;
 
     private NetworkPublication[] publications = EMPTY_PUBLICATIONS;
     private int roundRobinIndex = 0;
@@ -45,12 +47,14 @@ public class Sender implements Agent, Consumer<SenderCmd>
         this.commandQueue = ctx.senderCommandQueue();
         this.conductorProxy = ctx.fromSenderDriverConductorProxy();
         this.totalBytesSent = ctx.systemCounters().bytesSent();
+        this.nanoClock = ctx.nanoClock();
     }
 
     public int doWork()
     {
+        final long now = nanoClock.nanoTime();
         final int workCount = commandQueue.drain(this);
-        final int bytesSent = doSend();
+        final int bytesSent = doSend(now);
         final int bytesReceived = transportPoller.pollTransports();
 
         return workCount + bytesSent + bytesReceived;
@@ -114,7 +118,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         cmd.execute(this);
     }
 
-    private int doSend()
+    private int doSend(final long now)
     {
         int bytesSent = 0;
         final NetworkPublication[] publications = this.publications;
@@ -132,7 +136,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
             do
             {
-                bytesSent += publications[i].send();
+                bytesSent += publications[i].send(now);
 
                 if (++i == length)
                 {

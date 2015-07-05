@@ -225,7 +225,8 @@ public class SendChannelEndpoint implements AutoCloseable
 
         if (null != assembly)
         {
-            assembly.retransmitHandler.onNak(nakMessage.termId(), nakMessage.termOffset(), nakMessage.length());
+            assembly.retransmitHandler.onNak(
+                nakMessage.termId(), nakMessage.termOffset(), nakMessage.length(), assembly.publication);
             nakMessagesReceived.orderedIncrement();
         }
     }

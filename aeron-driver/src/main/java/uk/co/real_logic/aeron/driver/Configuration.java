@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
@@ -342,7 +341,7 @@ public class Configuration
     /**
      * how often to check liveness & cleanup
      */
-    public static final int HEARTBEAT_TIMEOUT_MS = 1000;
+    public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 
     /**
      * How far ahead the receiver can get from the subscriber position.
@@ -446,11 +445,6 @@ public class Configuration
         }
 
         return flowControl;
-    }
-
-    public static TimerWheel newConductorTimerWheel()
-    {
-        return new TimerWheel(CONDUCTOR_TICK_DURATION_US, TimeUnit.MICROSECONDS, CONDUCTOR_TICKS_PER_WHEEL);
     }
 
     public static int termBufferLength()

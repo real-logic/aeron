@@ -15,12 +15,11 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.agrona.TimerWheel;
+import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -29,8 +28,8 @@ import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.driver.NetworkConnection.Status.ACTIVE;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
 class NetworkConnectionPadding1
 {
@@ -123,7 +122,6 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         final int initialTermOffset,
         final int initialWindowLength,
         final RawLog rawLog,
-        final TimerWheel timerwheel,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
         final List<ReadablePosition> subscriberPositions,
         final Position hwmPosition,
@@ -148,7 +146,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         this.lastPacketTimestamp = time;
 
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
-        this.lossDetector = new LossDetector(timerwheel, lossFeedbackDelayGenerator, this);
+        this.lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
         final int termCapacity = termBuffers[0].capacity();
 
@@ -335,9 +333,10 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     /**
      * Called from the {@link DriverConductor}.
      *
+     * @param now in nanoseconds
      * @return if work has been done or not
      */
-    public int trackRebuild()
+    public int trackRebuild(final long now)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -357,7 +356,13 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
         final int index = indexByPosition(rebuildPosition, positionBitsToShift);
 
         final int workCount = lossDetector.scan(
-            termBuffers[index], rebuildPosition, hwmPosition.getVolatile(), termLengthMask, positionBitsToShift, initialTermId);
+            termBuffers[index],
+            rebuildPosition,
+            hwmPosition.getVolatile(),
+            now,
+            termLengthMask,
+            positionBitsToShift,
+            initialTermId);
 
         final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
         final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + lossDetector.rebuildOffset();

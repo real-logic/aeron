@@ -16,13 +16,10 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import uk.co.real_logic.agrona.concurrent.NanoClock;
 
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
@@ -31,7 +28,7 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePositi
  * Tracking and handling of retransmit request, NAKs, for senders and receivers
  *
  * A max number of retransmits is permitted by {@link #MAX_RETRANSMITS}. Additional received NAKs will be
- * ignored if this maximum is reached. Each retransmit will have 1 timer.
+ * ignored if this maximum is reached.
  */
 public class RetransmitHandler
 {
@@ -40,13 +37,12 @@ public class RetransmitHandler
      */
     public static final int MAX_RETRANSMITS = Configuration.MAX_RETRANSMITS_DEFAULT;
 
-    private final TimerWheel timerWheel;
-    private final Queue<RetransmitAction> retransmitActionPool = new OneToOneConcurrentArrayQueue<>(MAX_RETRANSMITS);
+    private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS];
     private final Long2ObjectHashMap<RetransmitAction> activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
+    private final NanoClock nanoClock;
     private final AtomicCounter invalidPackets;
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
-    private final RetransmitSender retransmitSender;
     private final int initialTermId;
     private final int capacity;
     private final int positionBitsToShift;
@@ -54,35 +50,32 @@ public class RetransmitHandler
     /**
      * Create a retransmit handler.
      *
-     * @param timerWheel             for timers
+     * @param nanoClock              used to determine time
      * @param systemCounters         for recording significant events.
      * @param delayGenerator         to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
      */
     public RetransmitHandler(
-        final TimerWheel timerWheel,
+        final NanoClock nanoClock,
         final SystemCounters systemCounters,
         final FeedbackDelayGenerator delayGenerator,
         final FeedbackDelayGenerator lingerTimeoutGenerator,
-        final RetransmitSender retransmitSender,
         final int initialTermId,
         final int capacity)
     {
-        this.timerWheel = timerWheel;
+        this.nanoClock = nanoClock;
         this.invalidPackets = systemCounters.invalidPackets();
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
-        this.retransmitSender = retransmitSender;
         this.initialTermId = initialTermId;
         this.capacity = capacity;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
 
-        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool.offer(new RetransmitAction()));
+        IntStream.range(0, MAX_RETRANSMITS).forEach((i) -> retransmitActionPool[i] = new RetransmitAction());
     }
 
     public void close()
     {
-        activeRetransmitByPositionMap.forEach((position, retransmitAction) -> retransmitAction.cancel());
     }
 
     /**
@@ -91,8 +84,9 @@ public class RetransmitHandler
      * @param termId     from the NAK and the term id of the buffer to retransmit from
      * @param termOffset from the NAK and the offset of the data to retransmit
      * @param length     of the missing data
+     * @param retransmitSender to call if an immediate retransmit is required
      */
-    public void onNak(final int termId, final int termOffset, final int length)
+    public void onNak(final int termId, final int termOffset, final int length, final RetransmitSender retransmitSender)
     {
         if (isInvalid(termOffset))
         {
@@ -101,9 +95,9 @@ public class RetransmitHandler
 
         final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
 
-        if (!retransmitActionPool.isEmpty() && null == activeRetransmitByPositionMap.get(position))
+        if (activeRetransmitByPositionMap.size() < MAX_RETRANSMITS && null == activeRetransmitByPositionMap.get(position))
         {
-            final RetransmitAction action = retransmitActionPool.poll();
+            final RetransmitAction action = findInactiveRetransmitAction();
             action.termId = termId;
             action.termOffset = termOffset;
             action.length = Math.min(length, capacity - termOffset);
@@ -112,7 +106,7 @@ public class RetransmitHandler
             final long delay = determineRetransmitDelay();
             if (0 == delay)
             {
-                perform(action);
+                perform(action, retransmitSender);
                 action.linger(determineLingerTimeout());
             }
             else
@@ -141,10 +135,49 @@ public class RetransmitHandler
         {
             activeRetransmitByPositionMap.remove(position);
             action.state = State.INACTIVE;
-            retransmitActionPool.offer(action);
-            action.delayTimer.cancel();
             // do not go into linger
         }
+    }
+
+    /**
+     * Called to process any outstanding timeouts.
+     *
+     * @param now time in nanoseconds
+     * @param retransmitSender to call on retransmissions
+     * @return count of expired actions performed
+     */
+    public int processTimeouts(final long now, final RetransmitSender retransmitSender)
+    {
+        int result = 0;
+
+        if (activeRetransmitByPositionMap.size() > 0)
+        {
+            for (int i = 0, length = retransmitActionPool.length; i < length; i++)
+            {
+                final RetransmitAction action = retransmitActionPool[i];
+
+                switch (action.state)
+                {
+                    case DELAYED:
+                        if (now > action.expire)
+                        {
+                            action.onDelayTimeout(retransmitSender);
+                            result++;
+                        }
+                        break;
+
+                    case LINGERING:
+                        if (now > action.expire)
+                        {
+                            action.onLingerTimeout();
+                            result++;
+                        }
+                        break;
+                }
+            }
+        }
+
+        return result;
     }
 
     private boolean isInvalid(final int termOffset)
@@ -169,9 +202,22 @@ public class RetransmitHandler
         return lingerTimeoutGenerator.generateDelay();
     }
 
-    private void perform(final RetransmitAction action)
+    private void perform(final RetransmitAction action, final RetransmitSender retransmitSender)
     {
         retransmitSender.resend(action.termId, action.termOffset, action.length);
+    }
+
+    private RetransmitAction findInactiveRetransmitAction()
+    {
+        for (int i = 0, length = retransmitActionPool.length; i < length; i++)
+        {
+            if (State.INACTIVE == retransmitActionPool[i].state)
+            {
+                return retransmitActionPool[i];
+            }
+        }
+
+        throw new IllegalStateException("no more INACTIVE RetransmitActions");
     }
 
     private enum State
@@ -183,29 +229,28 @@ public class RetransmitHandler
 
     final class RetransmitAction
     {
+        long expire;
         long position;
         int termId;
         int termOffset;
         int length;
         State state = State.INACTIVE;
-        TimerWheel.Timer delayTimer = timerWheel.newBlankTimer();
-        TimerWheel.Timer lingerTimer = timerWheel.newBlankTimer();
 
         public void delay(final long delay)
         {
             state = State.DELAYED;
-            timerWheel.rescheduleTimeout(delay, TimeUnit.NANOSECONDS, delayTimer, this::onDelayTimeout);
+            expire = nanoClock.nanoTime() + delay;
         }
 
         public void linger(final long timeout)
         {
             state = State.LINGERING;
-            timerWheel.rescheduleTimeout(timeout, TimeUnit.NANOSECONDS, lingerTimer, this::onLingerTimeout);
+            expire = nanoClock.nanoTime() + timeout;
         }
 
-        public void onDelayTimeout()
+        public void onDelayTimeout(final RetransmitSender retransmitSender)
         {
-            perform(this);
+            perform(this, retransmitSender);
             linger(determineLingerTimeout());
         }
 
@@ -213,13 +258,11 @@ public class RetransmitHandler
         {
             state = State.INACTIVE;
             activeRetransmitByPositionMap.remove(position);
-            retransmitActionPool.offer(this);
         }
 
         public void cancel()
         {
-            delayTimer.cancel();
-            lingerTimer.cancel();
+            state = State.INACTIVE;
         }
     }
 }

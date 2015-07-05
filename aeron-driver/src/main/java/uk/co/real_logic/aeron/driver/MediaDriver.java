@@ -29,7 +29,6 @@ import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -143,7 +142,6 @@ public final class MediaDriver implements AutoCloseable
 
         ctx.unicastSenderFlowControl(Configuration::unicastFlowControlStrategy)
             .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
-            .conductorTimerWheel(Configuration.newConductorTimerWheel())
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
@@ -379,7 +377,7 @@ public final class MediaDriver implements AutoCloseable
         private Supplier<FlowControl> unicastSenderFlowControl;
         private Supplier<FlowControl> multicastSenderFlowControl;
         private EpochClock epochClock;
-        private TimerWheel conductorTimerWheel;
+        private NanoClock nanoClock;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromSenderCommandQueue;
         private OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue;
@@ -454,6 +452,11 @@ public final class MediaDriver implements AutoCloseable
                     epochClock = new SystemEpochClock();
                 }
 
+                if (null == nanoClock)
+                {
+                    nanoClock = new SystemNanoClock();
+                }
+
                 if (threadingMode == null)
                 {
                     threadingMode = Configuration.threadingMode();
@@ -526,6 +529,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context nanoClock(final NanoClock clock)
+        {
+            this.nanoClock = clock;
+            return this;
+        }
+
         public Context toConductorFromReceiverCommandQueue(
             final OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue)
         {
@@ -567,12 +576,6 @@ public final class MediaDriver implements AutoCloseable
         public Context multicastSenderFlowControl(final Supplier<FlowControl> senderFlowControl)
         {
             this.multicastSenderFlowControl = senderFlowControl;
-            return this;
-        }
-
-        public Context conductorTimerWheel(final TimerWheel timerWheel)
-        {
-            this.conductorTimerWheel = timerWheel;
             return this;
         }
 
@@ -779,6 +782,11 @@ public final class MediaDriver implements AutoCloseable
             return epochClock;
         }
 
+        public NanoClock nanoClock()
+        {
+            return nanoClock;
+        }
+
         public OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue()
         {
             return toConductorFromReceiverCommandQueue;
@@ -812,11 +820,6 @@ public final class MediaDriver implements AutoCloseable
         public Supplier<FlowControl> multicastSenderFlowControl()
         {
             return multicastSenderFlowControl;
-        }
-
-        public TimerWheel conductorTimerWheel()
-        {
-            return conductorTimerWheel;
         }
 
         public OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()

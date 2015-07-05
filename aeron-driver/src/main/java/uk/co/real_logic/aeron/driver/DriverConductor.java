@@ -33,7 +33,6 @@ import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -44,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -89,8 +87,6 @@ public class DriverConductor implements Agent
 
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
-    private final TimerWheel timerWheel;
-    private final TimerWheel.Timer checkTimeoutTimer;
     private final SystemCounters systemCounters;
     private final UnsafeBuffer countersBuffer;
     private final CountersManager countersManager;
@@ -100,6 +96,8 @@ public class DriverConductor implements Agent
     private final MessageHandler onEventFunc;
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
+
+    private long timeOfLastTimeoutCheck;
 
     public DriverConductor(final Context ctx)
     {
@@ -115,16 +113,14 @@ public class DriverConductor implements Agent
         multicastFlowControl = ctx.multicastSenderFlowControl();
         countersManager = ctx.countersManager();
         countersBuffer = ctx.counterValuesBuffer();
-        timerWheel = ctx.conductorTimerWheel();
         epochClock = ctx.epochClock();
-        nanoClock = timerWheel.clock();
+        nanoClock = ctx.nanoClock();
         toDriverCommands = ctx.toDriverCommands();
         toEventReader = ctx.toEventReader();
         clientProxy = ctx.clientProxy();
         fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
         logger = ctx.eventLogger();
         systemCounters = ctx.systemCounters();
-        checkTimeoutTimer = timerWheel.newTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, this::onHeartbeatCheckTimeouts);
         dataLossGenerator = ctx.dataLossGenerator();
         controlLossGenerator = ctx.controlLossGenerator();
 
@@ -138,7 +134,8 @@ public class DriverConductor implements Agent
         correlatedMsgFlyweight.wrap(buffer, 0);
         removeMsgFlyweight.wrap(buffer, 0);
 
-        toDriverCommands.consumerHeartbeatTime(nanoClock.nanoTime());
+        toDriverCommands.consumerHeartbeatTime(epochClock.time());
+        timeOfLastTimeoutCheck = nanoClock.nanoTime();
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)
@@ -230,13 +227,15 @@ public class DriverConductor implements Agent
         workCount += fromReceiverDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += fromSenderDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += toEventReader.read(onEventFunc, EVENT_READER_FRAME_LIMIT);
-        workCount += processTimers();
+
+        final long now = nanoClock.nanoTime();
+        workCount += processTimers(now);
 
         final ArrayList<NetworkConnection> connections = this.connections;
         for (int i = 0, size = connections.size(); i < size; i++)
         {
             final NetworkConnection connection = connections.get(i);
-            workCount += connection.trackRebuild();
+            workCount += connection.trackRebuild(now);
         }
 
         final ArrayList<NetworkPublication> publications = this.publications;
@@ -249,18 +248,15 @@ public class DriverConductor implements Agent
         return workCount;
     }
 
-    private void onHeartbeatCheckTimeouts()
+    private void onHeartbeatCheckTimeouts(final long nanoTimeNow)
     {
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
-        final long now = nanoClock.nanoTime();
-        onCheckClients(now);
-        onCheckPublications(now);
-        onCheckPublicationLinks(now);
-        onCheckConnections(now);
-        onCheckSubscriptionLinks(now);
-
-        timerWheel.rescheduleTimeout(HEARTBEAT_TIMEOUT_MS, TimeUnit.MILLISECONDS, checkTimeoutTimer);
+        onCheckClients(nanoTimeNow);
+        onCheckPublications(nanoTimeNow);
+        onCheckPublicationLinks(nanoTimeNow);
+        onCheckConnections(nanoTimeNow);
+        onCheckSubscriptionLinks(nanoTimeNow);
     }
 
     public void onCreateConnection(
@@ -304,7 +300,6 @@ public class DriverConductor implements Agent
                 initialTermOffset,
                 initialWindowLength,
                 rawLog,
-                timerWheel,
                 Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
                     udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                 subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
@@ -456,13 +451,15 @@ public class DriverConductor implements Agent
         }
     }
 
-    private int processTimers()
+    private int processTimers(final long now)
     {
         int workCount = 0;
 
-        if (timerWheel.computeDelayInMs() <= 0)
+        if (now > (timeOfLastTimeoutCheck + HEARTBEAT_TIMEOUT_NS))
         {
-            workCount = timerWheel.expireTimers();
+            onHeartbeatCheckTimeouts(now);
+            timeOfLastTimeoutCheck = now;
+            workCount = 1;
         }
 
         return workCount;
@@ -480,6 +477,14 @@ public class DriverConductor implements Agent
             final int initialTermId = BitUtil.generateRandomisedId();
             final FlowControl flowControl = udpChannel.isMulticast() ? multicastFlowControl.get() : unicastFlowControl.get();
 
+            final RetransmitHandler retransmitHandler = new RetransmitHandler(
+                nanoClock,
+                systemCounters,
+                RETRANSMIT_UNICAST_DELAY_GENERATOR,
+                RETRANSMIT_UNICAST_LINGER_GENERATOR,
+                initialTermId,
+                termBufferLength);
+
             publication = new NetworkPublication(
                 channelEndpoint,
                 nanoClock,
@@ -491,11 +496,12 @@ public class DriverConductor implements Agent
                 initialTermId,
                 mtuLength,
                 flowControl.initialPositionLimit(initialTermId, termBufferLength),
-                systemCounters);
+                systemCounters,
+                retransmitHandler);
 
             channelEndpoint.addPublication(publication);
             publications.add(publication);
-            senderProxy.newPublication(publication, newRetransmitHandler(publication, initialTermId), flowControl);
+            senderProxy.newPublication(publication, retransmitHandler, flowControl);
         }
 
         final AeronClient client = getOrAddClient(clientId);
@@ -519,18 +525,6 @@ public class DriverConductor implements Agent
         }
 
         publicationLinks.add(new PublicationLink(registrationId, publication, client));
-    }
-
-    private RetransmitHandler newRetransmitHandler(final NetworkPublication publication, final int initialTermId)
-    {
-        return new RetransmitHandler(
-            timerWheel,
-            systemCounters,
-            RETRANSMIT_UNICAST_DELAY_GENERATOR,
-            RETRANSMIT_UNICAST_LINGER_GENERATOR,
-            publication,
-            initialTermId,
-            termBufferLength);
     }
 
     private RawLog newPublicationLog(

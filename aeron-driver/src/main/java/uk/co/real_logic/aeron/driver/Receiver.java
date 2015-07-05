@@ -45,7 +45,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         transportPoller = ctx.receiverNioSelector();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().bytesReceived();
-        clock = ctx.conductorTimerWheel().clock();
+        clock = ctx.nanoClock();
     }
 
     public String roleName()

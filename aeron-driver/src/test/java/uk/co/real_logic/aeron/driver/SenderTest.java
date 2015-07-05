@@ -19,20 +19,19 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.logbuffer.TermAppender;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.TransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
+import uk.co.real_logic.aeron.logbuffer.TermAppender;
+import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.SetupFlyweight;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -43,7 +42,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayDeque;
 import java.util.Queue;
-import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -79,12 +77,6 @@ public class SenderTest
     private final RetransmitHandler mockRetransmitHandler = mock(RetransmitHandler.class);
 
     private long currentTimestamp = 0;
-
-    private final TimerWheel wheel = new TimerWheel(
-        () -> currentTimestamp,
-        Configuration.CONDUCTOR_TICK_DURATION_US,
-        TimeUnit.MICROSECONDS,
-        Configuration.CONDUCTOR_TICKS_PER_WHEEL);
 
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 
@@ -123,7 +115,8 @@ public class SenderTest
                 .senderNioSelector(mockTransportPoller)
                 .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)
-                .eventLogger(mockLogger));
+                .eventLogger(mockLogger)
+                .nanoClock(() -> currentTimestamp));
 
         termAppenders = rawLog
             .stream()
@@ -132,7 +125,7 @@ public class SenderTest
 
         publication = new NetworkPublication(
             mockSendChannelEndpoint,
-            wheel.clock(),
+            () -> currentTimestamp,
             rawLog,
             new AtomicLongPosition(),
             mock(Position.class),
@@ -141,7 +134,8 @@ public class SenderTest
             INITIAL_TERM_ID,
             MAX_FRAME_LENGTH,
             flowControl.initialPositionLimit(INITIAL_TERM_ID, TERM_BUFFER_LENGTH),
-            mockSystemCounters);
+            mockSystemCounters,
+            mockRetransmitHandler);
 
         senderCommandQueue.offer(new NewPublicationCmd(publication, mockRetransmitHandler, flowControl));
     }

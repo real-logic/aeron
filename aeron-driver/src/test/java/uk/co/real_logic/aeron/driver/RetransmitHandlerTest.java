@@ -26,13 +26,11 @@ import uk.co.real_logic.aeron.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
-import uk.co.real_logic.agrona.TimerWheel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import java.util.function.BooleanSupplier;
 import java.util.stream.IntStream;
 
 import static org.mockito.Mockito.*;
@@ -64,19 +62,13 @@ public class RetransmitHandlerTest
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
 
-    private long currentTime;
-
-    private final TimerWheel wheel = new TimerWheel(
-        () -> currentTime,
-        Configuration.CONDUCTOR_TICK_DURATION_US,
-        TimeUnit.MICROSECONDS,
-        Configuration.CONDUCTOR_TICKS_PER_WHEEL);
+    private long currentTime = 0;
 
     private final RetransmitSender retransmitSender = mock(RetransmitSender.class);
     private final SystemCounters systemCounters = mock(SystemCounters.class);
 
     private RetransmitHandler handler = new RetransmitHandler(
-        wheel, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, TERM_BUFFER_LENGTH);
+        () -> currentTime, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR, TERM_ID, TERM_BUFFER_LENGTH);
 
     @DataPoint
     public static final BiConsumer<RetransmitHandlerTest, Integer> SENDER_ADD_DATA_FRAME =
@@ -90,8 +82,9 @@ public class RetransmitHandlerTest
     public void shouldRetransmitOnNak(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
@@ -100,10 +93,12 @@ public class RetransmitHandlerTest
     public void shouldNotRetransmitOnNakWhileInLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(40));
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
+        handler.processTimeouts(currentTime, retransmitSender);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
@@ -112,10 +107,14 @@ public class RetransmitHandlerTest
     public void shouldRetransmitOnNakAfterLinger(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(200));
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
+        handler.processTimeouts(currentTime, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(200);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         verify(retransmitSender, times(2)).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
@@ -124,9 +123,10 @@ public class RetransmitHandlerTest
     public void shouldRetransmitOnMultipleNaks(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        handler.onNak(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        handler.onNak(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         final InOrder inOrder = inOrder(retransmitSender);
         inOrder.verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
@@ -137,8 +137,9 @@ public class RetransmitHandlerTest
     public void shouldRetransmitOnNakOverMessageLength(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 10);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH * 5);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH * 5, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH * 5);
     }
@@ -148,8 +149,9 @@ public class RetransmitHandlerTest
     {
         final int numFramesPerMtu = MTU_LENGTH / ALIGNED_FRAME_LENGTH;
         createTermBuffer(creator, numFramesPerMtu * 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), MTU_LENGTH * 2);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
+        handler.onNak(TERM_ID, offsetOfFrame(0), MTU_LENGTH * 2, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), MTU_LENGTH * 2);
     }
@@ -158,9 +160,10 @@ public class RetransmitHandlerTest
     public void shouldStopRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
         handler.onRetransmitReceived(TERM_ID, offsetOfFrame(0));
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         verifyZeroInteractions(retransmitSender);
     }
@@ -169,10 +172,11 @@ public class RetransmitHandlerTest
     public void shouldStopOneRetransmitOnRetransmitReception(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        handler.onNak(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        handler.onNak(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH, retransmitSender);
         handler.onRetransmitReceived(TERM_ID, offsetOfFrame(0));
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(100));
+        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
+        handler.processTimeouts(currentTime, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(1), ALIGNED_FRAME_LENGTH);
     }
@@ -183,7 +187,7 @@ public class RetransmitHandlerTest
         createTermBuffer(creator, 5);
         handler = newZeroDelayRetransmitHandler();
 
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
@@ -194,9 +198,10 @@ public class RetransmitHandlerTest
         createTermBuffer(creator, 5);
         handler = newZeroDelayRetransmitHandler();
 
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
-        processTimersUntil(() -> wheel.clock().nanoTime() >= TimeUnit.MILLISECONDS.toNanos(40));
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
+        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
+        handler.processTimeouts(currentTime, retransmitSender);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
 
         verify(retransmitSender).resend(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
     }
@@ -205,7 +210,7 @@ public class RetransmitHandlerTest
     public void shouldOnlyRetransmitOnNakWhenConfiguredTo(final BiConsumer<RetransmitHandlerTest, Integer> creator)
     {
         createTermBuffer(creator, 5);
-        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH);
+        handler.onNak(TERM_ID, offsetOfFrame(0), ALIGNED_FRAME_LENGTH, retransmitSender);
 
         verifyZeroInteractions(retransmitSender);
     }
@@ -213,7 +218,7 @@ public class RetransmitHandlerTest
     private RetransmitHandler newZeroDelayRetransmitHandler()
     {
         return new RetransmitHandler(
-            wheel, systemCounters, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, retransmitSender, TERM_ID, TERM_BUFFER_LENGTH);
+            () -> currentTime, systemCounters, ZERO_DELAY_GENERATOR, LINGER_GENERATOR, TERM_ID, TERM_BUFFER_LENGTH);
     }
 
     private void createTermBuffer(final BiConsumer<RetransmitHandlerTest, Integer> creator, final int num)
@@ -248,22 +253,5 @@ public class RetransmitHandlerTest
         dataHeader.buffer().putBytes(dataHeader.dataOffset(), DATA);
 
         TermRebuilder.insert(termBuffer, offsetOfFrame(msgNum), rcvBuffer, MESSAGE_LENGTH);
-    }
-
-    private long processTimersUntil(final BooleanSupplier condition)
-    {
-        final long start = wheel.clock().nanoTime();
-
-        while (!condition.getAsBoolean())
-        {
-            if (wheel.computeDelayInMs() > 0)
-            {
-                currentTime += TimeUnit.MICROSECONDS.toNanos(Configuration.CONDUCTOR_TICK_DURATION_US);
-            }
-
-            wheel.expireTimers();
-        }
-
-        return wheel.clock().nanoTime() - start;
     }
 }

@@ -134,11 +134,11 @@ public class SelectorAndTransportTest
                 return null;
             })
             .when(mockDispatcher).onDataPacket(
-                any(ReceiveChannelEndpoint.class),
-                any(DataHeaderFlyweight.class),
-                any(UnsafeBuffer.class),
-                anyInt(),
-                any(InetSocketAddress.class));
+            any(ReceiveChannelEndpoint.class),
+            any(DataHeaderFlyweight.class),
+            any(UnsafeBuffer.class),
+            anyInt(),
+            any(InetSocketAddress.class));
 
         transportPoller = new TransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
@@ -184,11 +184,11 @@ public class SelectorAndTransportTest
                 return null;
             })
             .when(mockDispatcher).onDataPacket(
-                any(ReceiveChannelEndpoint.class),
-                any(DataHeaderFlyweight.class),
-                any(UnsafeBuffer.class),
-                anyInt(),
-                any(InetSocketAddress.class));
+            any(ReceiveChannelEndpoint.class),
+            any(DataHeaderFlyweight.class),
+            any(UnsafeBuffer.class),
+            anyInt(),
+            any(InetSocketAddress.class));
 
         transportPoller = new TransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
@@ -237,6 +237,16 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleSmFrameFromReceiverToSender() throws Exception
     {
+        final AtomicInteger controlMessagesReceived = new AtomicInteger(0);
+
+        doAnswer(
+            (invocation) ->
+            {
+                controlMessagesReceived.incrementAndGet();
+                return null;
+            })
+            .when(mockPublication).onStatusMessage(anyInt(), anyInt(), anyInt(), any(InetSocketAddress.class));
+
         transportPoller = new TransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
@@ -264,7 +274,10 @@ public class SelectorAndTransportTest
         processLoop(transportPoller, 5);
         receiveChannelEndpoint.sendTo(byteBuffer, rcvRemoteAddress);
 
-        processLoop(transportPoller, 3);
+        while (controlMessagesReceived.get() < 1)
+        {
+            processLoop(transportPoller, 1);
+        }
 
         verify(mockStatusMessagesReceivedCounter, times(1)).orderedIncrement();
     }

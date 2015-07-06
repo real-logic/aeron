@@ -46,6 +46,7 @@ static const char optMessages = 'm';
 static const char optLinger   = 'l';
 static const char optLength   = 'L';
 static const char optRandLen  = 'r';
+static const char optProgress = 'P';
 
 struct Settings
 {
@@ -56,6 +57,7 @@ struct Settings
     int messageLength = samples::configuration::DEFAULT_MESSAGE_LENGTH;
     int lingerTimeoutMs = samples::configuration::DEFAULT_LINGER_TIMEOUT_MS;
     bool randomMessageLength = samples::configuration::DEFAULT_RANDOM_MESSAGE_LENGTH;
+    bool progress = samples::configuration::DEFAULT_PUBLICATION_RATE_PROGRESS;
 };
 
 Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
@@ -76,6 +78,7 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     s.messageLength = cp.getOption(optLength).getParamAsInt(0, sizeof(std::int64_t), INT32_MAX, s.messageLength);
     s.lingerTimeoutMs = cp.getOption(optLinger).getParamAsInt(0, 0, 60 * 60 * 1000, s.lingerTimeoutMs);
     s.randomMessageLength = cp.getOption(optRandLen).isPresent();
+    s.progress = cp.getOption(optProgress).isPresent();
     return s;
 }
 
@@ -120,6 +123,7 @@ int main(int argc, char **argv)
     CommandOptionParser cp;
     cp.addOption(CommandOption (optHelp,     0, 0, "                Displays help information."));
     cp.addOption(CommandOption (optRandLen,  0, 0, "                Random Message Length."));
+    cp.addOption(CommandOption (optProgress, 0, 0, "                Print rate progress while sending."));
     cp.addOption(CommandOption (optPrefix,   1, 1, "dir             Prefix directory for aeron driver."));
     cp.addOption(CommandOption (optChannel,  1, 1, "channel         Channel."));
     cp.addOption(CommandOption (optStreamId, 1, 1, "streamId        Stream ID."));
@@ -174,14 +178,23 @@ int main(int argc, char **argv)
         BusySpinIdleStrategy offerIdleStrategy;
         on_new_length_t lengthGenerator = composeLengthGenerator(settings.randomMessageLength, settings.messageLength);
         RateReporter rateReporter(std::chrono::seconds(1), printRate);
+        std::shared_ptr<std::thread> rateReporterThread;
 
-        std::thread rateReporterThread([&](){ rateReporter.run(); });
+        if (settings.progress)
+        {
+            rateReporterThread = std::make_shared<std::thread>([&](){ rateReporter.run(); });
+        }
 
         do
         {
             printingActive = true;
 
             long backPressureCount = 0;
+
+            if (nullptr == rateReporterThread)
+            {
+                rateReporter.reset();
+            }
 
             for (long i = 0; i < settings.numberOfMessages && running; i++)
             {
@@ -195,6 +208,11 @@ int main(int argc, char **argv)
                 }
 
                 rateReporter.onMessage(1, length);
+            }
+
+            if (nullptr == rateReporterThread)
+            {
+                rateReporter.report();
             }
 
             std::cout << "Done streaming. Back pressure ratio ";
@@ -211,7 +229,11 @@ int main(int argc, char **argv)
         while (running && continuationBarrier("Execute again?"));
 
         rateReporter.halt();
-        rateReporterThread.join();
+
+        if (nullptr != rateReporterThread)
+        {
+            rateReporterThread->join();
+        }
     }
     catch (CommandOptionException& e)
     {

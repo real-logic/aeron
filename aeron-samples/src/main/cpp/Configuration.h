@@ -34,6 +34,7 @@ const static int DEFAULT_MESSAGE_LENGTH = 256;
 const static int DEFAULT_LINGER_TIMEOUT_MS = 5000;
 const static int DEFAULT_FRAGMENT_COUNT_LIMIT = 10;
 const static bool DEFAULT_RANDOM_MESSAGE_LENGTH = false;
+const static bool DEFAULT_PUBLICATION_RATE_PROGRESS = false;
 
 }
 

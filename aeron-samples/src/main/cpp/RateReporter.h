@@ -44,21 +44,37 @@ public:
         {
             std::this_thread::sleep_for(m_reportInterval);
 
-            long currentTotalBytes = std::atomic_load(&m_totalBytes);
-            long currentTotalMessages = std::atomic_load(&m_totalMessages);
-            steady_clock::time_point currentTimestamp = steady_clock::now();
-
-            const double timeSpanSec = duration<double, std::ratio<1,1>>(currentTimestamp - m_lastTimestamp).count();
-            const double messagesPerSec = (currentTotalMessages - m_lastTotalMessages) / timeSpanSec;
-            const double bytesPerSec = (currentTotalBytes - m_lastTotalBytes) / timeSpanSec;
-
-            m_onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
-
-            m_lastTotalBytes = currentTotalBytes;
-            m_lastTotalMessages = currentTotalMessages;
-            m_lastTimestamp = currentTimestamp;
+            report();
         }
         while (!m_halt);
+    }
+
+    void report()
+    {
+        long currentTotalBytes = std::atomic_load(&m_totalBytes);
+        long currentTotalMessages = std::atomic_load(&m_totalMessages);
+        steady_clock::time_point currentTimestamp = steady_clock::now();
+
+        const double timeSpanSec = duration<double, std::ratio<1,1>>(currentTimestamp - m_lastTimestamp).count();
+        const double messagesPerSec = (currentTotalMessages - m_lastTotalMessages) / timeSpanSec;
+        const double bytesPerSec = (currentTotalBytes - m_lastTotalBytes) / timeSpanSec;
+
+        m_onReport(messagesPerSec, bytesPerSec, currentTotalMessages, currentTotalBytes);
+
+        m_lastTotalBytes = currentTotalBytes;
+        m_lastTotalMessages = currentTotalMessages;
+        m_lastTimestamp = currentTimestamp;
+    }
+
+    void reset()
+    {
+        long currentTotalBytes = std::atomic_load(&m_totalBytes);
+        long currentTotalMessages = std::atomic_load(&m_totalMessages);
+        steady_clock::time_point currentTimestamp = steady_clock::now();
+
+        m_lastTotalBytes = currentTotalBytes;
+        m_lastTotalMessages = currentTotalMessages;
+        m_lastTimestamp = currentTimestamp;
     }
 
     inline void halt()

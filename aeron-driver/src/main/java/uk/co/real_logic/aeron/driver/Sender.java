@@ -78,10 +78,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         transportPoller.selectNowWithoutProcessing();
     }
 
-    public void onNewPublication(
-        final NetworkPublication publication,
-        final RetransmitHandler retransmitHandler,
-        final FlowControl flowControl)
+    public void onNewPublication(final NetworkPublication publication, final FlowControl flowControl)
     {
         final NetworkPublication[] oldPublications = publications;
         final int length = oldPublications.length;
@@ -92,7 +89,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
         publications = newPublications;
 
-        publication.sendChannelEndpoint().addToDispatcher(publication, retransmitHandler, flowControl);
+        publication.sendChannelEndpoint().addToDispatcher(publication, flowControl);
     }
 
     public void onRemovePublication(final NetworkPublication publication)

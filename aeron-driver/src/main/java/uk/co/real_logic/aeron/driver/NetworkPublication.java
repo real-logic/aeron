@@ -303,6 +303,11 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         return workCount;
     }
 
+    public void onNak(final int termId, final int termOffset, final int length)
+    {
+        retransmitHandler.onNak(termId, termOffset, length, this);
+    }
+
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;

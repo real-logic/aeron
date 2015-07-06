@@ -126,15 +126,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
      * Called from the {@link Sender} to add information to the control packet dispatcher.
      *
      * @param publication to add to the dispatcher
-     * @param retransmitHandler to add to the dispatcher
      * @param flowControl to add to the dispatcher
      */
-    public void addToDispatcher(
-        final NetworkPublication publication, final RetransmitHandler retransmitHandler, final FlowControl flowControl)
+    public void addToDispatcher(final NetworkPublication publication, final FlowControl flowControl)
     {
         assemblyByStreamAndSessionIdMap.put(
             publication.sessionId(), publication.streamId(),
-            new PublicationAssembly(publication, retransmitHandler, flowControl));
+            new PublicationAssembly(publication, flowControl));
     }
 
     /**
@@ -197,8 +195,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         if (null != assembly)
         {
-            assembly.retransmitHandler.onNak(
-                nakMessage.termId(), nakMessage.termOffset(), nakMessage.length(), assembly.publication);
+            assembly.publication.onNak(nakMessage.termId(), nakMessage.termOffset(), nakMessage.length());
             nakMessagesReceived.orderedIncrement();
         }
     }
@@ -206,14 +203,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
     static final class PublicationAssembly
     {
         final NetworkPublication publication;
-        final RetransmitHandler retransmitHandler;
         final FlowControl flowControl;
 
-        public PublicationAssembly(
-            final NetworkPublication publication, final RetransmitHandler retransmitHandler, final FlowControl flowControl)
+        public PublicationAssembly(final NetworkPublication publication, final FlowControl flowControl)
         {
             this.publication = publication;
-            this.retransmitHandler = retransmitHandler;
             this.flowControl = flowControl;
         }
     }

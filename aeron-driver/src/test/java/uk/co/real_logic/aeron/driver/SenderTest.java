@@ -137,7 +137,7 @@ public class SenderTest
             mockSystemCounters,
             mockRetransmitHandler);
 
-        senderCommandQueue.offer(new NewPublicationCmd(publication, mockRetransmitHandler, flowControl));
+        senderCommandQueue.offer(new NewPublicationCmd(publication, flowControl));
     }
 
     @After

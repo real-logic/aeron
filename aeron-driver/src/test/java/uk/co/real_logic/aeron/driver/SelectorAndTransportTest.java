@@ -66,7 +66,6 @@ public class SelectorAndTransportTest
     private final DataPacketDispatcher mockDispatcher = mock(DataPacketDispatcher.class);
     private final NetworkPublication mockPublication = mock(NetworkPublication.class);
     private final FlowControl mockFlowControl = mock(FlowControl.class);
-    private final RetransmitHandler mockRetransmitHandler = mock(RetransmitHandler.class);
 
     private TransportPoller transportPoller;
     private SendChannelEndpoint sendChannelEndpoint;
@@ -243,7 +242,7 @@ public class SelectorAndTransportTest
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
-        sendChannelEndpoint.addToDispatcher(mockPublication, mockRetransmitHandler, mockFlowControl);
+        sendChannelEndpoint.addToDispatcher(mockPublication, mockFlowControl);
 
         receiveChannelEndpoint.openDatagramChannel();
         receiveChannelEndpoint.registerForRead(transportPoller);

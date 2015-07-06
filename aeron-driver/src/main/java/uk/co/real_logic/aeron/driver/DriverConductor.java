@@ -501,7 +501,7 @@ public class DriverConductor implements Agent
 
             channelEndpoint.addPublication(publication);
             publications.add(publication);
-            senderProxy.newPublication(publication, retransmitHandler, flowControl);
+            senderProxy.newPublication(publication, flowControl);
         }
 
         final AeronClient client = getOrAddClient(clientId);

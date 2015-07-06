@@ -135,9 +135,10 @@ public class SenderTest
             MAX_FRAME_LENGTH,
             flowControl.initialPositionLimit(INITIAL_TERM_ID, TERM_BUFFER_LENGTH),
             mockSystemCounters,
+            flowControl,
             mockRetransmitHandler);
 
-        senderCommandQueue.offer(new NewPublicationCmd(publication, flowControl));
+        senderCommandQueue.offer(new NewPublicationCmd(publication));
     }
 
     @After

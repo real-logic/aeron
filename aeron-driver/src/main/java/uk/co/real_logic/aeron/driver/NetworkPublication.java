@@ -25,6 +25,7 @@ import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
@@ -48,6 +49,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
     private final SystemCounters systemCounters;
+    private final FlowControl flowControl;
     private final RetransmitHandler retransmitHandler;
 
     private final int positionBitsToShift;
@@ -78,12 +80,14 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         final int mtuLength,
         final long initialPositionLimit,
         final SystemCounters systemCounters,
+        final FlowControl flowControl,
         final RetransmitHandler retransmitHandler)
     {
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
         this.senderPosition = senderPosition;
         this.systemCounters = systemCounters;
+        this.flowControl = flowControl;
         this.retransmitHandler = retransmitHandler;
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
@@ -345,6 +349,13 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         }
 
         return bytesSent;
+    }
+
+    public void onStatusMessage(
+        final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress srcAddress)
+    {
+        final long position = flowControl.onStatusMessage(termId, termOffset, receiverWindowLength, srcAddress);
+        senderPositionLimit(position);
     }
 
     private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)

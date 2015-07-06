@@ -497,11 +497,12 @@ public class DriverConductor implements Agent
                 mtuLength,
                 flowControl.initialPositionLimit(initialTermId, termBufferLength),
                 systemCounters,
+                flowControl,
                 retransmitHandler);
 
             channelEndpoint.addPublication(publication);
             publications.add(publication);
-            senderProxy.newPublication(publication, flowControl);
+            senderProxy.newPublication(publication);
         }
 
         final AeronClient client = getOrAddClient(clientId);

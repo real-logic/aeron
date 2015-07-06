@@ -167,7 +167,7 @@ public class DriverConductorTest
 
         verify(senderProxy).registerSendChannelEndpoint(any());
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture(), any());
+        verify(senderProxy, times(1)).newPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
         assertThat(publication.sessionId(), is(1));
@@ -211,7 +211,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verify(senderProxy, times(4)).newPublication(any(), any());
+        verify(senderProxy, times(4)).newPublication(any());
     }
 
     @Test
@@ -321,7 +321,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verify(senderProxy).newPublication(any(), any());
+        verify(senderProxy).newPublication(any());
         verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
         verify(mockConductorLogger).logException(any());
@@ -335,7 +335,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verify(senderProxy).newPublication(any(), any());
+        verify(senderProxy).newPublication(any());
         verify(senderProxy, never()).removePublication(any());
         verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
@@ -350,7 +350,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         driverConductor.doWork();
 
-        verify(senderProxy, never()).newPublication(any(), any());
+        verify(senderProxy, never()).newPublication(any());
 
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
@@ -365,7 +365,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture(), any());
+        verify(senderProxy, times(1)).newPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
 
@@ -383,7 +383,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture(), any());
+        verify(senderProxy, times(1)).newPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
 

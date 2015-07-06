@@ -39,8 +39,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final NakFlyweight nakMessage = new NakFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
-    private final BiInt2ObjectMap<NetworkPublication> publicationByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
-    private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<NetworkPublication> driversPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<NetworkPublication> sendersPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
 
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusMessagesReceived;
@@ -88,7 +88,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public NetworkPublication getPublication(final int sessionId, final int streamId)
     {
-        return publicationByStreamAndSessionIdMap.get(sessionId, streamId);
+        return driversPublicationByStreamAndSessionId.get(sessionId, streamId);
     }
 
     /**
@@ -98,7 +98,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void addPublication(final NetworkPublication publication)
     {
-        publicationByStreamAndSessionIdMap.put(publication.sessionId(), publication.streamId(), publication);
+        driversPublicationByStreamAndSessionId.put(publication.sessionId(), publication.streamId(), publication);
     }
 
     /**
@@ -109,7 +109,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public NetworkPublication removePublication(final NetworkPublication publication)
     {
-        return publicationByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
+        return driversPublicationByStreamAndSessionId.remove(publication.sessionId(), publication.streamId());
     }
 
     /**
@@ -119,20 +119,17 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public int sessionCount()
     {
-        return publicationByStreamAndSessionIdMap.size();
+        return driversPublicationByStreamAndSessionId.size();
     }
 
     /**
      * Called from the {@link Sender} to add information to the control packet dispatcher.
      *
      * @param publication to add to the dispatcher
-     * @param flowControl to add to the dispatcher
      */
-    public void addToDispatcher(final NetworkPublication publication, final FlowControl flowControl)
+    public void addToDispatcher(final NetworkPublication publication)
     {
-        assemblyByStreamAndSessionIdMap.put(
-            publication.sessionId(), publication.streamId(),
-            new PublicationAssembly(publication, flowControl));
+        sendersPublicationByStreamAndSessionId.put(publication.sessionId(), publication.streamId(), publication);
     }
 
     /**
@@ -142,7 +139,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void removeFromDispatcher(final NetworkPublication publication)
     {
-        assemblyByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
+        sendersPublicationByStreamAndSessionId.remove(publication.sessionId(), publication.streamId());
     }
 
     protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
@@ -166,49 +163,34 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private void onStatusMessage(final StatusMessageFlyweight statusMsg, final InetSocketAddress srcAddress)
     {
-        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(statusMsg.sessionId(), statusMsg.streamId());
-
-        if (null != assembly)
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
+            statusMsg.sessionId(), statusMsg.streamId());
+        if (null != publication)
         {
             if (SEND_SETUP_FLAG == (statusMsg.flags() & SEND_SETUP_FLAG))
             {
-                assembly.publication.triggerSendSetupFrame();
+                publication.triggerSendSetupFrame();
             }
             else
             {
-                final long positionLimit = assembly.flowControl.onStatusMessage(
+                publication.onStatusMessage(
                     statusMsg.consumptionTermId(),
                     statusMsg.consumptionTermOffset(),
                     statusMsg.receiverWindowLength(),
                     srcAddress);
-
-                assembly.publication.senderPositionLimit(positionLimit);
             }
 
             statusMessagesReceived.orderedIncrement();
         }
     }
 
-    private void onNakMessage(final NakFlyweight nakMessage)
+    private void onNakMessage(final NakFlyweight nakMsg)
     {
-        final PublicationAssembly assembly = assemblyByStreamAndSessionIdMap.get(nakMessage.sessionId(), nakMessage.streamId());
-
-        if (null != assembly)
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(nakMsg.sessionId(), nakMsg.streamId());
+        if (null != publication)
         {
-            assembly.publication.onNak(nakMessage.termId(), nakMessage.termOffset(), nakMessage.length());
+            publication.onNak(nakMsg.termId(), nakMsg.termOffset(), nakMsg.length());
             nakMessagesReceived.orderedIncrement();
-        }
-    }
-
-    static final class PublicationAssembly
-    {
-        final NetworkPublication publication;
-        final FlowControl flowControl;
-
-        public PublicationAssembly(final NetworkPublication publication, final FlowControl flowControl)
-        {
-            this.publication = publication;
-            this.flowControl = flowControl;
         }
     }
 }

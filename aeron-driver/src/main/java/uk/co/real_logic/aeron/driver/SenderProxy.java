@@ -81,15 +81,15 @@ public class SenderProxy
         }
     }
 
-    public void newPublication(final NetworkPublication publication, final FlowControl flowControl)
+    public void newPublication(final NetworkPublication publication)
     {
         if (isSharedThread())
         {
-            sender.onNewPublication(publication, flowControl);
+            sender.onNewPublication(publication);
         }
         else
         {
-            offer(new NewPublicationCmd(publication, flowControl));
+            offer(new NewPublicationCmd(publication));
         }
     }
 

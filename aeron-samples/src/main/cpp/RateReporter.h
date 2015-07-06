@@ -51,8 +51,8 @@ public:
 
     void report()
     {
-        long currentTotalBytes = std::atomic_load(&m_totalBytes);
-        long currentTotalMessages = std::atomic_load(&m_totalMessages);
+        long currentTotalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
+        long currentTotalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
         steady_clock::time_point currentTimestamp = steady_clock::now();
 
         const double timeSpanSec = duration<double, std::ratio<1,1>>(currentTimestamp - m_lastTimestamp).count();
@@ -68,8 +68,8 @@ public:
 
     void reset()
     {
-        long currentTotalBytes = std::atomic_load(&m_totalBytes);
-        long currentTotalMessages = std::atomic_load(&m_totalMessages);
+        long currentTotalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
+        long currentTotalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
         steady_clock::time_point currentTimestamp = steady_clock::now();
 
         m_lastTotalBytes = currentTotalBytes;
@@ -84,11 +84,11 @@ public:
 
     inline void onMessage(long messages, long bytes)
     {
-        long currentTotalBytes = std::atomic_load(&m_totalBytes);
-        long currentTotalMessages = std::atomic_load(&m_totalMessages);
+        long currentTotalBytes = std::atomic_load_explicit(&m_totalBytes, std::memory_order_relaxed);
+        long currentTotalMessages = std::atomic_load_explicit(&m_totalMessages, std::memory_order_relaxed);
 
-        std::atomic_store(&m_totalBytes, currentTotalBytes + bytes);
-        std::atomic_store(&m_totalMessages, currentTotalMessages + messages);
+        std::atomic_store_explicit(&m_totalBytes, currentTotalBytes + bytes, std::memory_order_relaxed);
+        std::atomic_store_explicit(&m_totalMessages, currentTotalMessages + messages, std::memory_order_relaxed);
     }
 
 private:

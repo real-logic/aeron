@@ -312,6 +312,13 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         retransmitHandler.onNak(termId, termOffset, length, this);
     }
 
+    public void onStatusMessage(
+        final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress srcAddress)
+    {
+        final long position = flowControl.onStatusMessage(termId, termOffset, receiverWindowLength, srcAddress);
+        senderPositionLimit(position);
+    }
+
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
@@ -349,13 +356,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         }
 
         return bytesSent;
-    }
-
-    public void onStatusMessage(
-        final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress srcAddress)
-    {
-        final long position = flowControl.onStatusMessage(termId, termOffset, receiverWindowLength, srcAddress);
-        senderPositionLimit(position);
     }
 
     private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)

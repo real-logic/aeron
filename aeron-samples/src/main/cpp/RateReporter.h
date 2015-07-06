@@ -92,7 +92,7 @@ public:
     }
 
 private:
-    nanoseconds m_reportInterval;
+    const nanoseconds m_reportInterval;
     const on_rate_report_t m_onReport;
     std::atomic<bool> m_halt = { false };
     std::atomic<long> m_totalBytes = { 0 };

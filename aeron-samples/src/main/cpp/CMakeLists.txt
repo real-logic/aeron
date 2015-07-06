@@ -26,6 +26,7 @@ add_executable(StreamingPublisher StreamingPublisher.cpp ${HEADERS})
 add_executable(RateSubscriber RateSubscriber.cpp ${HEADERS})
 add_executable(Pong Pong.cpp ${HEADERS})
 add_executable(Ping Ping.cpp ${HEADERS})
+add_executable(Throughput Throughput.cpp ${HEADERS})
 
 target_link_libraries(AeronStat
     aeron_client
@@ -61,6 +62,10 @@ target_link_libraries(Ping
 
 add_dependencies(Ping hdr_histogram)
 
+target_link_libraries(Throughput
+    aeron_client
+    ${CMAKE_THREAD_LIBS_INIT})
+
 install(
-    TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong
+    TARGETS AeronStat BasicPublisher TimeTests BasicSubscriber StreamingPublisher RateSubscriber Ping Pong Throughput
     DESTINATION bin)

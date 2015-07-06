@@ -15,11 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
-import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.UdpChannelTransport;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -40,14 +39,11 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
     private final Int2ObjectHashMap<Int2ObjectHashMap<NetworkConnection>> sessionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
-    private final ReceiveChannelEndpoint channelEndpoint;
 
-    public DataPacketDispatcher(
-        final DriverConductorProxy conductorProxy, final Receiver receiver, final ReceiveChannelEndpoint channelEndpoint)
+    public DataPacketDispatcher(final DriverConductorProxy conductorProxy, final Receiver receiver)
     {
         this.conductorProxy = conductorProxy;
         this.receiver = receiver;
-        this.channelEndpoint = channelEndpoint;
     }
 
     public void addSubscription(final int streamId)
@@ -110,7 +106,11 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
     }
 
     public int onDataPacket(
-        final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final ReceiveChannelEndpoint channelEndpoint,
+        final DataHeaderFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
         final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = sessionsByStreamIdMap.get(streamId);
@@ -127,7 +127,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             }
             else if (null == initialisationInProgressMap.get(sessionId, streamId))
             {
-                elicitSetupMessageFromSource(srcAddress, streamId, sessionId);
+                elicitSetupMessageFromSource(channelEndpoint, srcAddress, streamId, sessionId);
             }
         }
 
@@ -135,7 +135,11 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
     }
 
     public void onSetupMessage(
-        final SetupFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+        final ReceiveChannelEndpoint channelEndpoint,
+        final SetupFlyweight header,
+        final UnsafeBuffer buffer,
+        final int length,
+        final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
         final Int2ObjectHashMap<NetworkConnection> connectionBySessionIdMap = sessionsByStreamIdMap.get(streamId);
@@ -150,6 +154,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             if (null == connection && isNotAlreadyInProgress(streamId, sessionId))
             {
                 createConnection(
+                    channelEndpoint,
                     srcAddress,
                     streamId,
                     sessionId,
@@ -167,11 +172,14 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         return !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId));
     }
 
-    private void elicitSetupMessageFromSource(final InetSocketAddress srcAddress, final int streamId, final int sessionId)
+    private void elicitSetupMessageFromSource(
+        final ReceiveChannelEndpoint channelEndpoint,
+        final InetSocketAddress srcAddress,
+        final int streamId,
+        final int sessionId)
     {
-        final UdpChannelTransport transport = channelEndpoint.transport();
         final InetSocketAddress controlAddress =
-            transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
+            channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
         initialisationInProgressMap.put(sessionId, streamId, PENDING_SETUP_FRAME);
 
@@ -180,6 +188,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
     }
 
     private void createConnection(
+        final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress srcAddress,
         final int streamId,
         final int sessionId,
@@ -189,9 +198,8 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final int termLength,
         final int mtuLength)
     {
-        final UdpChannelTransport transport = channelEndpoint.transport();
         final InetSocketAddress controlAddress =
-            transport.isMulticast() ? transport.udpChannel().remoteControl() : srcAddress;
+            channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
         initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createConnection(

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -26,10 +27,16 @@ public interface SetupMessageHandler
     /**
      * Handle a Setup Frame
      *
-     * @param header of the Setup Frame in the message (may be re-wrapped if needed)
-     * @param buffer holding the Setup Info (always starts at 0 offset)
-     * @param length of the Frame (may be longer than the header frame length)
-     * @param srcAddress of the Frame
+     * @param channelEndpoint from which the message is delivered.
+     * @param header          of the Setup Frame in the message (may be re-wrapped if needed)
+     * @param buffer          holding the Setup Info (always starts at 0 offset)
+     * @param length          of the Frame (may be longer than the header frame length)
+     * @param srcAddress      of the Frame
      */
-    void onSetupMessage(SetupFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
+    void onSetupMessage(
+        ReceiveChannelEndpoint channelEndpoint,
+        SetupFlyweight header,
+        UnsafeBuffer buffer,
+        int length,
+        InetSocketAddress srcAddress);
 }

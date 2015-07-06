@@ -27,16 +27,23 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_SETUP;
+
 /**
  * Aggregator of multiple subscriptions onto a single transport session for processing of data frames.
  */
-public class ReceiveChannelEndpoint implements AutoCloseable
+public class ReceiveChannelEndpoint extends UdpChannelTransport
 {
-    private final UdpChannelTransport transport;
     private final DataPacketDispatcher dispatcher;
     private final SystemCounters systemCounters;
 
     private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
+
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
 
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
@@ -47,12 +54,19 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
-        final DriverConductorProxy conductorProxy,
-        final Receiver receiver,
+        final DataPacketDispatcher dispatcher,
         final EventLogger logger,
         final SystemCounters systemCounters,
         final LossGenerator lossGenerator)
     {
+        super(
+            udpChannel,
+            udpChannel.remoteData(),
+            udpChannel.remoteData(),
+            null,
+            lossGenerator,
+            logger);
+
         smHeader.wrap(smBuffer, 0);
         smHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
@@ -67,29 +81,21 @@ public class ReceiveChannelEndpoint implements AutoCloseable
             .headerType(HeaderFlyweight.HDR_TYPE_NAK)
             .frameLength(NakFlyweight.HEADER_LENGTH);
 
+        dataHeader.wrap(receiveBuffer(), 0);
+        setupHeader.wrap(receiveBuffer(), 0);
+
+        this.dispatcher = dispatcher;
         this.systemCounters = systemCounters;
-        dispatcher = new DataPacketDispatcher(conductorProxy, receiver, this);
-        transport = new ReceiverUdpChannelTransport(udpChannel, dispatcher, dispatcher, logger, lossGenerator);
-    }
-
-    public UdpChannelTransport transport()
-    {
-        return transport;
-    }
-
-    public UdpChannel udpChannel()
-    {
-        return transport.udpChannel();
     }
 
     public String originalUriString()
     {
-        return transport.udpChannel().originalUriString();
+        return udpChannel().originalUriString();
     }
 
     public void close()
     {
-        transport.close();
+        super.close();
         isClosed = true;
     }
 
@@ -100,12 +106,7 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public void openChannel()
     {
-        transport.openDatagramChannel();
-    }
-
-    public void registerForRead(final TransportPoller transportPoller)
-    {
-        transport.registerForRead(transportPoller);
+        openDatagramChannel();
     }
 
     public DataPacketDispatcher dispatcher()
@@ -155,13 +156,13 @@ public class ReceiveChannelEndpoint implements AutoCloseable
     public int onDataPacket(
         final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
-        return dispatcher.onDataPacket(header, buffer, length, srcAddress);
+        return dispatcher.onDataPacket(this, header, buffer, length, srcAddress);
     }
 
     public void onSetupMessage(
         final SetupFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
-        dispatcher.onSetupMessage(header, buffer, length, srcAddress);
+        dispatcher.onSetupMessage(this, header, buffer, length, srcAddress);
     }
 
     public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
@@ -171,34 +172,33 @@ public class ReceiveChannelEndpoint implements AutoCloseable
 
     public void validateWindowMaxLength(final int windowMaxLength)
     {
-        final int soRcvbuf = transport.getOption(StandardSocketOptions.SO_RCVBUF);
+        final int soRcvbuf = getOption(StandardSocketOptions.SO_RCVBUF);
 
         if (windowMaxLength > soRcvbuf)
         {
-            throw new ConfigurationException(
-                String.format("Max Window length greater than socket SO_RCVBUF: windowMaxLength=%d, SO_RCVBUF=%d",
-                    windowMaxLength, soRcvbuf));
+            throw new ConfigurationException(String.format(
+                "Max Window length greater than socket SO_RCVBUF: windowMaxLength=%d, SO_RCVBUF=%d",
+                windowMaxLength, soRcvbuf));
         }
     }
 
     public void validateSenderMtuLength(final int senderMtuLength)
     {
-        final int soRcvbuf = transport.getOption(StandardSocketOptions.SO_RCVBUF);
+        final int soRcvbuf = getOption(StandardSocketOptions.SO_RCVBUF);
 
         if (senderMtuLength > soRcvbuf)
         {
-            throw new ConfigurationException(
-                String.format("Sender MTU greater than socket SO_RCVBUF: senderMtuLength=%d, SO_RCVBUF=%d",
-                    senderMtuLength, soRcvbuf));
+            throw new ConfigurationException(String.format(
+                "Sender MTU greater than socket SO_RCVBUF: senderMtuLength=%d, SO_RCVBUF=%d",
+                senderMtuLength, soRcvbuf));
         }
 
-        final int capacity = transport.receiveBufferCapacity();
-
+        final int capacity = receiveBufferCapacity();
         if (senderMtuLength > capacity)
         {
-            throw new ConfigurationException(
-                String.format("Sender MTU greater than receive buffer capacity: senderMtuLength=%d, capacity=%d",
-                    senderMtuLength, capacity));
+            throw new ConfigurationException(String.format(
+                "Sender MTU greater than receive buffer capacity: senderMtuLength=%d, capacity=%d",
+                senderMtuLength, capacity));
         }
     }
 
@@ -214,14 +214,15 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         if (!isClosed)
         {
             smBuffer.clear();
-            smHeader.sessionId(sessionId)
-                    .streamId(streamId)
-                    .consumptionTermId(termId)
-                    .consumptionTermOffset(termOffset)
-                    .receiverWindowLength(window)
-                    .flags(flags);
+            smHeader
+                .sessionId(sessionId)
+                .streamId(streamId)
+                .consumptionTermId(termId)
+                .consumptionTermOffset(termOffset)
+                .receiverWindowLength(window)
+                .flags(flags);
 
-            final int bytesSent = transport.sendTo(smBuffer, controlAddress);
+            final int bytesSent = sendTo(smBuffer, controlAddress);
             if (StatusMessageFlyweight.HEADER_LENGTH != bytesSent)
             {
                 systemCounters.statusMessageShortSends().orderedIncrement();
@@ -240,17 +241,36 @@ public class ReceiveChannelEndpoint implements AutoCloseable
         if (!isClosed)
         {
             nakBuffer.clear();
-            nakHeader.streamId(streamId)
-                     .sessionId(sessionId)
-                     .termId(termId)
-                     .termOffset(termOffset)
-                     .length(length);
+            nakHeader
+                .streamId(streamId)
+                .sessionId(sessionId)
+                .termId(termId)
+                .termOffset(termOffset)
+                .length(length);
 
-            final int bytesSent = transport.sendTo(nakBuffer, controlAddress);
+            final int bytesSent = sendTo(nakBuffer, controlAddress);
             if (NakFlyweight.HEADER_LENGTH != bytesSent)
             {
                 systemCounters.nakMessageShortSends().orderedIncrement();
             }
         }
+    }
+
+    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    {
+        int bytesReceived = 0;
+        switch (frameType(buffer, 0))
+        {
+            case HDR_TYPE_PAD:
+            case HDR_TYPE_DATA:
+                bytesReceived = dispatcher.onDataPacket(this, dataHeader, buffer, length, srcAddress);
+                break;
+
+            case HDR_TYPE_SETUP:
+                dispatcher.onSetupMessage(this, setupHeader, buffer, length, srcAddress);
+                break;
+        }
+
+        return bytesReceived;
     }
 }

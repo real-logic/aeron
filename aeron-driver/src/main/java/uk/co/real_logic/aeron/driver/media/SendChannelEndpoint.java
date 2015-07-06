@@ -21,20 +21,27 @@ import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
 import static uk.co.real_logic.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
- * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for processing of control frames.
+ * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for
+ * sending data and processing of control frames.
  */
-public class SendChannelEndpoint implements AutoCloseable
+public class SendChannelEndpoint extends UdpChannelTransport
 {
+    private final NakFlyweight nakMessage = new NakFlyweight();
+    private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
+
     private final BiInt2ObjectMap<NetworkPublication> publicationByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
     private final BiInt2ObjectMap<PublicationAssembly> assemblyByStreamAndSessionIdMap = new BiInt2ObjectMap<>();
-    private final UdpChannelTransport transport;
+
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusMessagesReceived;
 
@@ -44,10 +51,19 @@ public class SendChannelEndpoint implements AutoCloseable
         final LossGenerator lossGenerator,
         final SystemCounters systemCounters)
     {
-        this.transport = new SenderUdpChannelTransport(
-            udpChannel, this::onStatusMessage, this::onNakMessage, logger, lossGenerator);
+        super(
+            udpChannel,
+            udpChannel.remoteControl(),
+            udpChannel.localControl(),
+            udpChannel.remoteData(),
+            lossGenerator,
+            logger);
+
         this.nakMessagesReceived = systemCounters.nakMessagesReceived();
         this.statusMessagesReceived = systemCounters.statusMessagesReceived();
+
+        nakMessage.wrap(receiveBuffer(), 0);
+        statusMessage.wrap(receiveBuffer(), 0);
     }
 
     /**
@@ -55,51 +71,12 @@ public class SendChannelEndpoint implements AutoCloseable
      */
     public void openChannel()
     {
-        transport.openDatagramChannel();
-    }
-
-    /**
-     * Called from the {@link Sender} to register the transport for reading.
-     *
-     * @param transportPoller to register with
-     */
-    public void registerForRead(final TransportPoller transportPoller)
-    {
-        transport.registerForRead(transportPoller);
-    }
-
-    /**
-     * Called from the {@link Sender} to send data or retransmits.
-     *
-     * @param buffer to send
-     * @return bytes sent
-     */
-    public int send(final ByteBuffer buffer)
-    {
-        return transport.send(buffer);
-    }
-
-    /**
-     * Close endpoint.
-     */
-    public void close()
-    {
-        transport.close();
-    }
-
-    /**
-     * Return the {@link UdpChannel} for the endpoint.
-     *
-     * @return UdpChannel for the endpoint
-     */
-    public UdpChannel udpChannel()
-    {
-        return transport.udpChannel();
+        openDatagramChannel();
     }
 
     public String originalUriString()
     {
-        return transport.udpChannel().originalUriString();
+        return udpChannel().originalUriString();
     }
 
     /**
@@ -168,6 +145,25 @@ public class SendChannelEndpoint implements AutoCloseable
     public void removeFromDispatcher(final NetworkPublication publication)
     {
         assemblyByStreamAndSessionIdMap.remove(publication.sessionId(), publication.streamId());
+    }
+
+    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    {
+        int framesRead = 0;
+        switch (frameType(buffer, 0))
+        {
+            case HDR_TYPE_NAK:
+                onNakMessage(nakMessage);
+                framesRead = 1;
+                break;
+
+            case HDR_TYPE_SM:
+                onStatusMessage(statusMessage, srcAddress);
+                framesRead = 1;
+                break;
+        }
+
+        return framesRead;
     }
 
     private void onStatusMessage(final StatusMessageFlyweight statusMsg, final InetSocketAddress srcAddress)

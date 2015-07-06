@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -26,11 +27,17 @@ public interface DataPacketHandler
     /**
      * Handle a Data Frame from the network.
      *
-     * @param header of the first Data Frame in the packet (may be re-wrapped if needed)
-     * @param buffer holding the data (always starts at 0 offset)
-     * @param length of the packet (may be longer than the header frame length)
-     * @param srcAddress of the packet
+     * @param channelEndpoint from which the data is delivered.
+     * @param header          of the first Data Frame in the packet (may be re-wrapped if needed)
+     * @param buffer          holding the data (always starts at 0 offset)
+     * @param length          of the packet (may be longer than the header frame length)
+     * @param srcAddress      of the packet
      * @return the number of bytes received.
      */
-    int onDataPacket(DataHeaderFlyweight header, UnsafeBuffer buffer, int length, InetSocketAddress srcAddress);
+    int onDataPacket(
+        ReceiveChannelEndpoint channelEndpoint,
+        DataHeaderFlyweight header,
+        UnsafeBuffer buffer,
+        int length,
+        InetSocketAddress srcAddress);
 }

@@ -652,7 +652,11 @@ public class DriverConductor implements Agent
         if (null == channelEndpoint)
         {
             channelEndpoint = new ReceiveChannelEndpoint(
-                udpChannel, fromReceiverConductorProxy, receiverProxy.receiver(), logger, systemCounters, dataLossGenerator);
+                udpChannel,
+                new DataPacketDispatcher(fromReceiverConductorProxy, receiverProxy.receiver()),
+                logger,
+                systemCounters,
+                dataLossGenerator);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);

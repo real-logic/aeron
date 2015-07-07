@@ -30,6 +30,7 @@ public interface BlockHandler
      * @param offset    at which the block begins.
      * @param length    of the block in bytes.
      * @param sessionId of the stream containing this block of message fragments.
+     * @param termId    of the stream containing this block of message fragments.
      */
-    void onBlock(DirectBuffer buffer, int offset, int length, int sessionId);
+    void onBlock(DirectBuffer buffer, int offset, int length, int sessionId, int termId);
 }

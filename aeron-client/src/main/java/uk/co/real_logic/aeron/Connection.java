@@ -21,10 +21,12 @@ import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
+import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 
 /**
  * Represents an incoming {@link Connection} from a publisher to a {@link Subscription}.
@@ -146,7 +148,9 @@ public class Connection
         {
             try
             {
-                blockHandler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId);
+                final int termId = termId(termBuffer, termOffset);
+
+                blockHandler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId, termId);
             }
             catch (final Throwable t)
             {
@@ -181,10 +185,12 @@ public class Connection
         final int bytesConsumed = resultingOffset - termOffset;
         if (resultingOffset > termOffset)
         {
-            final long offset = ((long)capacity * activeIndex) + termOffset;
             try
             {
-                fileBlockHandler.onBlock(logBuffers.fileChannel(), offset, bytesConsumed, sessionId);
+                final long offset = ((long)capacity * activeIndex) + termOffset;
+                final int termId = termId(termBuffer, termOffset);
+
+                fileBlockHandler.onBlock(logBuffers.fileChannel(), offset, bytesConsumed, sessionId, termId);
             }
             catch (final Throwable t)
             {
@@ -200,6 +206,11 @@ public class Connection
     ManagedResource managedResource()
     {
         return new ConnectionManagedResource();
+    }
+
+    private static int termId(final UnsafeBuffer buffer, final int frameOffset)
+    {
+        return buffer.getInt(frameOffset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     private class ConnectionManagedResource implements ManagedResource

@@ -30,6 +30,7 @@ public interface FileBlockHandler
      * @param offset      at which the block begins.
      * @param length      of the block in bytes.
      * @param sessionId   of the stream of fragments.
+     * @param termId      of the stream of fragments.
      */
-    void onBlock(FileChannel fileChannel, long offset, int length, int sessionId);
+    void onBlock(FileChannel fileChannel, long offset, int length, int sessionId, int termId);
 }

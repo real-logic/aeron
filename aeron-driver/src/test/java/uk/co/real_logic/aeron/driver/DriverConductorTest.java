@@ -109,7 +109,7 @@ public class DriverConductorTest
     {
         when(mockRawLogFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
-        when(mockRawLogFactory.newConnection(anyObject(), anyInt(), anyInt(), anyInt(), eq(TERM_BUFFER_LENGTH)))
+        when(mockRawLogFactory.newImage(anyObject(), anyInt(), anyInt(), anyInt(), eq(TERM_BUFFER_LENGTH)))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
 
         currentTime = 0;
@@ -448,7 +448,7 @@ public class DriverConductorTest
     }
 
     @Test
-    public void shouldCreateConnectionOnSubscription() throws Exception
+    public void shouldCreateImageOnSubscription() throws Exception
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
         final int initialTermId = 1;
@@ -465,25 +465,25 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateConnection(
+        driverConductor.onCreateImage(
             SESSION_ID, STREAM_ID_1, initialTermId, activeTermId, termOffset, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        final ArgumentCaptor<NetworkConnection> captor = ArgumentCaptor.forClass(NetworkConnection.class);
-        verify(receiverProxy).newConnection(eq(receiveChannelEndpoint), captor.capture());
+        final ArgumentCaptor<NetworkedImage> captor = ArgumentCaptor.forClass(NetworkedImage.class);
+        verify(receiverProxy).newImage(eq(receiveChannelEndpoint), captor.capture());
 
-        final NetworkConnection networkConnection = captor.getValue();
-        assertThat(networkConnection.sessionId(), is(SESSION_ID));
-        assertThat(networkConnection.streamId(), is(STREAM_ID_1));
+        final NetworkedImage networkedImage = captor.getValue();
+        assertThat(networkedImage.sessionId(), is(SESSION_ID));
+        assertThat(networkedImage.streamId(), is(STREAM_ID_1));
 
         final long position =
             computePosition(activeTermId, termOffset, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), initialTermId);
-        verify(mockClientProxy).onConnectionReady(
+        verify(mockClientProxy).onImageReady(
             eq(STREAM_ID_1), eq(SESSION_ID), eq(position), anyObject(), anyLong(), anyObject(), anyString());
     }
 
     @Test
-    public void shouldNotCreateConnectionOnUnknownSubscription() throws Exception
+    public void shouldNotCreateImageOnUnknownSubscription() throws Exception
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -497,17 +497,17 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateConnection(
+        driverConductor.onCreateImage(
             SESSION_ID, STREAM_ID_2, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        verify(receiverProxy, never()).newConnection(any(), any());
-        verify(mockClientProxy, never()).onConnectionReady(
+        verify(receiverProxy, never()).newImage(any(), any());
+        verify(mockClientProxy, never()).onImageReady(
             anyInt(), anyInt(), anyLong(), anyObject(), anyLong(), anyObject(), anyString());
     }
 
     @Test
-    public void shouldSignalInactiveConnectionWhenConnectionTimesout() throws Exception
+    public void shouldSignalInactiveImageWhenImageTimesout() throws Exception
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -521,25 +521,25 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateConnection(
+        driverConductor.onCreateImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        final ArgumentCaptor<NetworkConnection> captor = ArgumentCaptor.forClass(NetworkConnection.class);
-        verify(receiverProxy).newConnection(eq(receiveChannelEndpoint), captor.capture());
+        final ArgumentCaptor<NetworkedImage> captor = ArgumentCaptor.forClass(NetworkedImage.class);
+        verify(receiverProxy).newImage(eq(receiveChannelEndpoint), captor.capture());
 
-        final NetworkConnection networkConnection = captor.getValue();
+        final NetworkedImage networkedImage = captor.getValue();
 
-        networkConnection.status(NetworkConnection.Status.INACTIVE);
+        networkedImage.status(NetworkedImage.Status.INACTIVE);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
-        verify(mockClientProxy).onInactiveConnection(
-            eq(networkConnection.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
+        verify(mockClientProxy).onInactiveImage(
+            eq(networkedImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
     }
 
     @Test
-    public void shouldAlwaysGiveNetworkConnectionCorrelationIdToClientCallbacks() throws Exception
+    public void shouldAlwaysGiveNetworkImageCorrelationIdToClientCallbacks() throws Exception
     {
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
 
@@ -554,32 +554,32 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateConnection(
+        driverConductor.onCreateImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        final ArgumentCaptor<NetworkConnection> captor = ArgumentCaptor.forClass(NetworkConnection.class);
-        verify(receiverProxy).newConnection(eq(receiveChannelEndpoint), captor.capture());
+        final ArgumentCaptor<NetworkedImage> captor = ArgumentCaptor.forClass(NetworkedImage.class);
+        verify(receiverProxy).newImage(eq(receiveChannelEndpoint), captor.capture());
 
-        final NetworkConnection networkConnection = captor.getValue();
+        final NetworkedImage networkedImage = captor.getValue();
 
-        networkConnection.status(NetworkConnection.Status.ACTIVE);
+        networkedImage.status(NetworkedImage.Status.ACTIVE);
 
         writeSubscriptionMessage(
             ADD_SUBSCRIPTION, CHANNEL_URI + 4000, STREAM_ID_1, fromClientCommands.nextCorrelationId());
 
         driverConductor.doWork();
 
-        networkConnection.status(NetworkConnection.Status.INACTIVE);
+        networkedImage.status(NetworkedImage.Status.INACTIVE);
 
-        doWorkUntil(() -> nanoClock.nanoTime() >= CONNECTION_LIVENESS_TIMEOUT_NS + 1000);
+        doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
         final InOrder inOrder = inOrder(mockClientProxy);
-        inOrder.verify(mockClientProxy, times(2)).onConnectionReady(
+        inOrder.verify(mockClientProxy, times(2)).onImageReady(
             eq(STREAM_ID_1), eq(SESSION_ID), eq(0L), anyObject(),
-            eq(networkConnection.correlationId()), anyObject(), anyString());
-        inOrder.verify(mockClientProxy, times(1)).onInactiveConnection(
-            eq(networkConnection.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
+            eq(networkedImage.correlationId()), anyObject(), anyString());
+        inOrder.verify(mockClientProxy, times(1)).onInactiveImage(
+            eq(networkedImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
     }
 
     private void writePublicationMessage(

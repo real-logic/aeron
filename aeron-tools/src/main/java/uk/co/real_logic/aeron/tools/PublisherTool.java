@@ -16,10 +16,7 @@
 package uk.co.real_logic.aeron.tools;
 
 import org.apache.commons.cli.ParseException;
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.InactiveConnectionHandler;
-import uk.co.real_logic.aeron.NewConnectionHandler;
-import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
@@ -251,7 +248,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         return totalMessages;
     }
 
-    class PublisherThread implements Runnable, InactiveConnectionHandler, NewConnectionHandler, RateController.Callback
+    class PublisherThread implements Runnable, InactiveImageHandler, NewImageHandler, RateController.Callback
     {
         final int threadId;
         private long nonVerifiableMessagesSent;
@@ -290,8 +287,8 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             /* Create a context and subscribe to what we're supposed to
              * according to our thread ID. */
             ctx = new Aeron.Context()
-                .inactiveConnectionHandler(this)
-                .newConnectionHandler(this)
+                .inactiveImageHandler(this)
+                .newImageHandler(this)
                 .errorHandler(
                     (throwable) ->
                     {
@@ -417,16 +414,22 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             ctx.close();
         }
 
-        public void onInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
+        public void onInactiveImage(
+            final Image image, final String channel, final int streamId, final int sessionId, final long position)
         {
-            LOG.info(String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x",
+            LOG.info(String.format("INACTIVE IMAGE: channel \"%s\", stream %d, session %d, position 0x%x",
                 channel, streamId, sessionId, position));
         }
 
-        public void onNewConnection(
-            final String channel, final int streamId, final int sessionId, final long position, final String sourceIdentity)
+        public void onNewImage(
+            final Image image,
+            final String channel,
+            final int streamId,
+            final int sessionId,
+            final long position,
+            final String sourceIdentity)
         {
-            LOG.info(String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
+            LOG.info(String.format("NEW IMAGE: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
                 channel, streamId, sessionId, position, sourceIdentity));
         }
 

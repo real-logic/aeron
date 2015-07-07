@@ -43,9 +43,9 @@ public class SubscriptionTest
     private final UnsafeBuffer atomicReadBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(READ_BUFFER_CAPACITY));
     private final ClientConductor conductor = mock(ClientConductor.class);
     private final FragmentHandler fragmentHandler = mock(FragmentHandler.class);
-    private final Connection connectionOneMock = mock(Connection.class);
+    private final Image imageOneMock = mock(Image.class);
     private final Header header = mock(Header.class);
-    private final Connection connectionTwoMock = mock(Connection.class);
+    private final Image imageTwoMock = mock(Image.class);
 
     private Subscription subscription;
 
@@ -65,7 +65,7 @@ public class SubscriptionTest
     }
 
     @Test
-    public void shouldReadNothingWithNoConnections()
+    public void shouldReadNothingWhenNoImages()
     {
         assertThat(subscription.poll(fragmentHandler, 1), is(0));
     }
@@ -73,7 +73,7 @@ public class SubscriptionTest
     @Test
     public void shouldReadNothingWhenThereIsNoData()
     {
-        subscription.addConnection(connectionOneMock);
+        subscription.addImage(imageOneMock);
 
         assertThat(subscription.poll(fragmentHandler, 1), is(0));
     }
@@ -81,9 +81,9 @@ public class SubscriptionTest
     @Test
     public void shouldReadData()
     {
-        subscription.addConnection(connectionOneMock);
+        subscription.addImage(imageOneMock);
 
-        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
+        when(imageOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
             (invocation) ->
             {
                 final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];
@@ -103,10 +103,10 @@ public class SubscriptionTest
     @Test
     public void shouldReadDataFromMultipleSources()
     {
-        subscription.addConnection(connectionOneMock);
-        subscription.addConnection(connectionTwoMock);
+        subscription.addImage(imageOneMock);
+        subscription.addImage(imageTwoMock);
 
-        when(connectionOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
+        when(imageOneMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
             (invocation) ->
             {
                 final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];
@@ -115,7 +115,7 @@ public class SubscriptionTest
                 return 1;
             });
 
-        when(connectionTwoMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
+        when(imageTwoMock.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT)).then(
             (invocation) ->
             {
                 final FragmentHandler handler = (FragmentHandler)invocation.getArguments()[0];

@@ -275,8 +275,9 @@ task docs(type: Javadoc) {
     options.addStringOption('XDignore.symbol.file', '-quiet')
     include '**/Aeron.java'
     include '**/FragmentAssemblyAdapter.java'
-    include '**/InactiveConnectionHandler.java'
-    include '**/NewConnectionHandler.java'
+    include '**/InactiveImageHandler.java'
+    include '**/NewImageHandler.java'
+    include '**/Image.java'
     include '**/Publication.java'
     include '**/Subscription.java'
     include '**/CommonContext.java'

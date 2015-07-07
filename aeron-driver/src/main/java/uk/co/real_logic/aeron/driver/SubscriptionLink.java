@@ -30,7 +30,7 @@ public class SubscriptionLink
     private final int streamId;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
-    private final Map<NetworkConnection, ReadablePosition> positionByConnectionMap = new IdentityHashMap<>();
+    private final Map<NetworkedImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
 
     public SubscriptionLink(
         final long registrationId,
@@ -69,18 +69,18 @@ public class SubscriptionLink
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
 
-    public void addConnection(final NetworkConnection connection, final ReadablePosition position)
+    public void addImage(final NetworkedImage image, final ReadablePosition position)
     {
-        positionByConnectionMap.put(connection, position);
+        positionByImageMap.put(image, position);
     }
 
-    public void removeConnection(final NetworkConnection connection)
+    public void removeImage(final NetworkedImage image)
     {
-        positionByConnectionMap.remove(connection);
+        positionByImageMap.remove(image);
     }
 
     public void close()
     {
-        positionByConnectionMap.forEach(NetworkConnection::removeSubscriber);
+        positionByImageMap.forEach(NetworkedImage::removeSubscriber);
     }
 }

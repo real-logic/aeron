@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_CONNECTION_READY;
+import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_IMAGE_READY;
 import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_PUBLICATION_READY;
 
 /**
@@ -42,9 +42,9 @@ public class ClientProxy
 
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
-    private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
+    private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
-    private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
+    private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final EventLogger logger;
 
     public ClientProxy(final BroadcastTransmitter transmitter, final EventLogger logger)
@@ -72,7 +72,7 @@ public class ClientProxy
         transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorResponse.length());
     }
 
-    public void onConnectionReady(
+    public void onImageReady(
         final int streamId,
         final int sessionId,
         final long joiningPosition,
@@ -81,28 +81,28 @@ public class ClientProxy
         final List<SubscriberPosition> subscriberPositions,
         final String sourceIdentity)
     {
-        connectionReady.wrap(tmpBuffer, 0);
-        connectionReady
+        imageReady.wrap(tmpBuffer, 0);
+        imageReady
             .sessionId(sessionId)
             .streamId(streamId)
             .joiningPosition(joiningPosition)
             .correlationId(correlationId);
 
         final int size = subscriberPositions.size();
-        connectionReady.subscriberPositionCount(size);
+        imageReady.subscriberPositionCount(size);
         for (int i = 0; i < size; i++)
         {
             final SubscriberPosition position = subscriberPositions.get(i);
-            connectionReady.subscriberPositionId(i, position.positionCounterId());
-            connectionReady.positionIndicatorRegistrationId(i, position.subscription().registrationId());
+            imageReady.subscriberPositionId(i, position.positionCounterId());
+            imageReady.positionIndicatorRegistrationId(i, position.subscription().registrationId());
         }
 
-        connectionReady
+        imageReady
             .logFileName(rawLog.logFileName())
             .sourceIdentity(sourceIdentity);
 
-        logger.log(CMD_OUT_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());
-        transmitter.transmit(ON_CONNECTION_READY, tmpBuffer, 0, connectionReady.length());
+        logger.log(CMD_OUT_IMAGE_READY, tmpBuffer, 0, imageReady.length());
+        transmitter.transmit(ON_IMAGE_READY, tmpBuffer, 0, imageReady.length());
     }
 
     public void onPublicationReady(
@@ -137,19 +137,19 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onInactiveConnection(
+    public void onInactiveImage(
         final long correlationId, final int sessionId, final int streamId, final long position, final String channel)
     {
-        connectionMessage.wrap(tmpBuffer, 0);
-        connectionMessage
+        imageMessage.wrap(tmpBuffer, 0);
+        imageMessage
             .correlationId(correlationId)
             .sessionId(sessionId)
             .streamId(streamId)
             .position(position)
             .channel(channel);
 
-        logger.log(EventCode.CMD_OUT_ON_INACTIVE_CONNECTION, tmpBuffer, 0, connectionMessage.length());
+        logger.log(EventCode.CMD_OUT_ON_INACTIVE_IMAGE, tmpBuffer, 0, imageMessage.length());
 
-        transmitter.transmit(ON_INACTIVE_CONNECTION, tmpBuffer, 0, connectionMessage.length());
+        transmitter.transmit(ON_INACTIVE_IMAGE, tmpBuffer, 0, imageMessage.length());
     }
 }

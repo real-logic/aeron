@@ -82,21 +82,21 @@ public class RawLogFactoryTest
     }
 
     @Test
-    public void shouldCreateCorrectLengthAndZeroedFilesForConnection() throws Exception
+    public void shouldCreateCorrectLengthAndZeroedFilesForImage() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final int connectionTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
-        final RawLog rawLog = rawLogFactory.newConnection(
-            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, connectionTermBufferMaxLength);
+        final int imageTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
+        final RawLog rawLog = rawLogFactory.newImage(
+            canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
 
         rawLog.stream().forEach(
             (partition) ->
             {
                 final UnsafeBuffer term = partition.termBuffer();
 
-                assertThat(term.capacity(), is(connectionTermBufferMaxLength));
+                assertThat(term.capacity(), is(imageTermBufferMaxLength));
                 assertThat(term.getByte(0), is((byte)0));
-                assertThat(term.getByte(connectionTermBufferMaxLength - 1), is((byte)0));
+                assertThat(term.getByte(imageTermBufferMaxLength - 1), is((byte)0));
 
                 final UnsafeBuffer metaData = partition.metaDataBuffer();
 
@@ -110,7 +110,7 @@ public class RawLogFactoryTest
     public void shouldExceptionIfRequestedTermBufferLengthGreaterThanMax()
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final int connectionTermBufferMaxLength = TERM_BUFFER_MAX_LENGTH * 2;
-        rawLogFactory.newConnection(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, connectionTermBufferMaxLength);
+        final int imageTermBufferMaxLength = TERM_BUFFER_MAX_LENGTH * 2;
+        rawLogFactory.newImage(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
     }
 }

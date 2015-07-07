@@ -71,7 +71,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  *...                                                              |
  * +---------------------------------------------------------------+
  */
-public class ConnectionBuffersReadyFlyweight extends Flyweight
+public class ImageBuffersReadyFlyweight extends Flyweight
 {
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
@@ -99,7 +99,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param correlationId field value
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight correlationId(final long correlationId)
+    public ImageBuffersReadyFlyweight correlationId(final long correlationId)
     {
         buffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
 
@@ -122,7 +122,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param joiningPosition field value
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight joiningPosition(final long joiningPosition)
+    public ImageBuffersReadyFlyweight joiningPosition(final long joiningPosition)
     {
         buffer().putLong(offset() + JOINING_POSITION_OFFSET, joiningPosition, ByteOrder.LITTLE_ENDIAN);
 
@@ -144,7 +144,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight sessionId(final int sessionId)
+    public ImageBuffersReadyFlyweight sessionId(final int sessionId)
     {
         buffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
 
@@ -167,7 +167,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param streamId field value
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight streamId(final int streamId)
+    public ImageBuffersReadyFlyweight streamId(final int streamId)
     {
         buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
@@ -190,7 +190,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param value the number of position indicators
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight subscriberPositionCount(final int value)
+    public ImageBuffersReadyFlyweight subscriberPositionCount(final int value)
     {
         buffer().putInt(offset() + SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET, SUBSCRIBER_POSITION_BLOCK_LENGTH, LITTLE_ENDIAN);
         buffer().putInt(offset() + SUBSCRIBER_POSITION_COUNT_OFFSET, value, LITTLE_ENDIAN);
@@ -205,7 +205,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param id for the subscriber position
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight subscriberPositionId(final int index, final int id)
+    public ImageBuffersReadyFlyweight subscriberPositionId(final int index, final int id)
     {
         buffer().putInt(subscriberPositionOffset(index), id);
 
@@ -230,7 +230,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param id for the subscriber position
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight positionIndicatorRegistrationId(final int index, final long id)
+    public ImageBuffersReadyFlyweight positionIndicatorRegistrationId(final int index, final long id)
     {
         buffer().putLong(subscriberPositionOffset(index) + SIZE_OF_INT, id);
 
@@ -261,10 +261,10 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
     /**
      * Set the log filename
      *
-     * @param logFileName for the connection
+     * @param logFileName for the image
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight logFileName(final String logFileName)
+    public ImageBuffersReadyFlyweight logFileName(final String logFileName)
     {
         buffer().putStringUtf8(logFileNameOffset(), logFileName, ByteOrder.LITTLE_ENDIAN);
         return this;
@@ -286,7 +286,7 @@ public class ConnectionBuffersReadyFlyweight extends Flyweight
      * @param value for the source identity
      * @return flyweight
      */
-    public ConnectionBuffersReadyFlyweight sourceIdentity(final String value)
+    public ImageBuffersReadyFlyweight sourceIdentity(final String value)
     {
         buffer().putStringUtf8(sourceIdentityOffset(), value, ByteOrder.LITTLE_ENDIAN);
         return this;

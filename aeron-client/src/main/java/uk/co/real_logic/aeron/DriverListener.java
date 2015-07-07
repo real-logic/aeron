@@ -30,7 +30,7 @@ interface DriverListener
         String logFileName,
         long correlationId);
 
-    void onNewConnection(
+    void onNewImage(
         int streamId,
         int sessionId,
         long initialPosition,
@@ -39,7 +39,7 @@ interface DriverListener
         String sourceIdentity,
         long correlationId);
 
-    void onInactiveConnection(
+    void onInactiveImage(
         int streamId,
         int sessionId,
         long position,

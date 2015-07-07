@@ -44,7 +44,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
  * ...                                                             |
  * +---------------------------------------------------------------+
  */
-public class ConnectionMessageFlyweight extends Flyweight
+public class ImageMessageFlyweight extends Flyweight
 {
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = 8;
@@ -68,7 +68,7 @@ public class ConnectionMessageFlyweight extends Flyweight
      * @param correlationId field value
      * @return flyweight
      */
-    public ConnectionMessageFlyweight correlationId(final long correlationId)
+    public ImageMessageFlyweight correlationId(final long correlationId)
     {
         buffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
 
@@ -89,7 +89,7 @@ public class ConnectionMessageFlyweight extends Flyweight
      * @param sessionId field value
      * @return flyweight
      */
-    public ConnectionMessageFlyweight sessionId(final int sessionId)
+    public ImageMessageFlyweight sessionId(final int sessionId)
     {
         buffer().putInt(offset() + SESSION_ID_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
 
@@ -112,7 +112,7 @@ public class ConnectionMessageFlyweight extends Flyweight
      * @param streamId field value
      * @return flyweight
      */
-    public ConnectionMessageFlyweight streamId(final int streamId)
+    public ImageMessageFlyweight streamId(final int streamId)
     {
         buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
 
@@ -120,9 +120,9 @@ public class ConnectionMessageFlyweight extends Flyweight
     }
 
     /**
-     * The position at which this connection when inactive.
+     * The position at which this image when inactive.
      *
-     * @return position at which this connection when inactive.
+     * @return position at which this image when inactive.
      */
     public long position()
     {
@@ -130,12 +130,12 @@ public class ConnectionMessageFlyweight extends Flyweight
     }
 
     /**
-     * The position at which this connection when inactive.
+     * The position at which this image when inactive.
      *
-     * @param position at which this connection when inactive.
+     * @param position at which this image when inactive.
      * @return flyweight
      */
-    public ConnectionMessageFlyweight position(final long position)
+    public ImageMessageFlyweight position(final long position)
     {
         buffer().putLong(offset() + POSITION_FIELD_OFFSET, position, ByteOrder.LITTLE_ENDIAN);
 
@@ -162,7 +162,7 @@ public class ConnectionMessageFlyweight extends Flyweight
      * @param channel field value
      * @return flyweight
      */
-    public ConnectionMessageFlyweight channel(final String channel)
+    public ImageMessageFlyweight channel(final String channel)
     {
         lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
 

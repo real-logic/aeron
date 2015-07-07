@@ -50,9 +50,9 @@ public class Header
     }
 
     /**
-     * Get the current position to which the connection has advanced on reading this message.
+     * Get the current position to which the image has advanced on reading this message.
      *
-     * @return the current position to which the connection has advanced on reading this message.
+     * @return the current position to which the image has advanced on reading this message.
      */
     public final long position()
     {

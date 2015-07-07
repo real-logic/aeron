@@ -59,8 +59,8 @@ class ClientConductor implements Agent, DriverListener
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
-    private final NewConnectionHandler newConnectionHandler;
-    private final InactiveConnectionHandler inactiveConnectionHandler;
+    private final NewImageHandler newImageHandler;
+    private final InactiveImageHandler inactiveImageHandler;
 
     private RegistrationException driverException;
 
@@ -72,8 +72,8 @@ class ClientConductor implements Agent, DriverListener
         final UnsafeBuffer counterValuesBuffer,
         final DriverProxy driverProxy,
         final ErrorHandler errorHandler,
-        final NewConnectionHandler newConnectionHandler,
-        final InactiveConnectionHandler inactiveConnectionHandler,
+        final NewImageHandler newImageHandler,
+        final InactiveImageHandler inactiveImageHandler,
         final long driverTimeoutMs)
     {
         this.epochClock = epochClock;
@@ -84,8 +84,8 @@ class ClientConductor implements Agent, DriverListener
         this.counterValuesBuffer = counterValuesBuffer;
         this.driverProxy = driverProxy;
         this.logBuffersFactory = logBuffersFactory;
-        this.newConnectionHandler = newConnectionHandler;
-        this.inactiveConnectionHandler = inactiveConnectionHandler;
+        this.newImageHandler = newImageHandler;
+        this.inactiveImageHandler = inactiveImageHandler;
         this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
 
@@ -187,7 +187,7 @@ class ClientConductor implements Agent, DriverListener
         activePublications.put(channel, sessionId, streamId, publication);
     }
 
-    public void onNewConnection(
+    public void onNewImage(
         final int streamId,
         final int sessionId,
         final long joiningPosition,
@@ -200,23 +200,24 @@ class ClientConductor implements Agent, DriverListener
             streamId,
             (subscription) ->
             {
-                if (!subscription.isConnected(sessionId))
+                if (!subscription.hasImage(sessionId))
                 {
                     final long positionId = subscriberPositionMap.get(subscription.registrationId());
 
                     if (DriverListenerAdapter.MISSING_REGISTRATION_ID != positionId)
                     {
-                        subscription.addConnection(
-                            new Connection(
-                                sessionId,
-                                joiningPosition,
-                                new UnsafeBufferPosition(counterValuesBuffer, (int) positionId),
-                                logBuffersFactory.map(logFileName),
-                                errorHandler,
-                                correlationId));
+                        final Image image = new Image(
+                            sessionId,
+                            joiningPosition,
+                            new UnsafeBufferPosition(counterValuesBuffer, (int)positionId),
+                            logBuffersFactory.map(logFileName),
+                            errorHandler,
+                            correlationId);
 
-                        newConnectionHandler.onNewConnection(
-                            subscription.channel(), streamId, sessionId, joiningPosition, sourceIdentity);
+                        subscription.addImage(image);
+
+                        newImageHandler.onNewImage(
+                            image, subscription.channel(), streamId, sessionId, joiningPosition, sourceIdentity);
                     }
                 }
             });
@@ -227,15 +228,16 @@ class ClientConductor implements Agent, DriverListener
         driverException = new RegistrationException(errorCode, message);
     }
 
-    public void onInactiveConnection(final int streamId, final int sessionId, final long position, final long correlationId)
+    public void onInactiveImage(final int streamId, final int sessionId, final long position, final long correlationId)
     {
         activeSubscriptions.forEach(
             streamId,
             (subscription) ->
             {
-                if (subscription.removeConnection(correlationId))
+                final Image image = subscription.removeImage(correlationId);
+                if (null != image)
                 {
-                    inactiveConnectionHandler.onInactiveConnection(subscription.channel(), streamId, sessionId, position);
+                    inactiveImageHandler.onInactiveImage(image, subscription.channel(), streamId, sessionId, position);
                 }
             });
     }

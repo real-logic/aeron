@@ -49,12 +49,12 @@ public class EventCodec
         ThreadLocal.withInitial(SubscriptionMessageFlyweight::new);
     private static final ThreadLocal<PublicationBuffersReadyFlyweight> PUBLICATION_READY =
         ThreadLocal.withInitial(PublicationBuffersReadyFlyweight::new);
-    private static final ThreadLocal<ConnectionBuffersReadyFlyweight> CONNECTION_READY =
-        ThreadLocal.withInitial(ConnectionBuffersReadyFlyweight::new);
+    private static final ThreadLocal<ImageBuffersReadyFlyweight> IMAGE_READY =
+        ThreadLocal.withInitial(ImageBuffersReadyFlyweight::new);
     private static final ThreadLocal<CorrelatedMessageFlyweight> CORRELATED_MSG =
         ThreadLocal.withInitial(CorrelatedMessageFlyweight::new);
-    private static final ThreadLocal<ConnectionMessageFlyweight> CONNECTION_MSG =
-        ThreadLocal.withInitial(ConnectionMessageFlyweight::new);
+    private static final ThreadLocal<ImageMessageFlyweight> IMAGE_MSG =
+        ThreadLocal.withInitial(ImageMessageFlyweight::new);
     private static final ThreadLocal<RemoveMessageFlyweight> REMOVE_MSG =
         ThreadLocal.withInitial(RemoveMessageFlyweight::new);
 
@@ -237,8 +237,8 @@ public class EventCodec
                 builder.append(dissect(newBuffer));
                 break;
 
-            case CMD_OUT_CONNECTION_READY:
-                final ConnectionBuffersReadyFlyweight connectionReadyCommand = CONNECTION_READY.get();
+            case CMD_OUT_IMAGE_READY:
+                final ImageBuffersReadyFlyweight connectionReadyCommand = IMAGE_READY.get();
                 connectionReadyCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(connectionReadyCommand));
                 break;
@@ -250,8 +250,8 @@ public class EventCodec
                 builder.append(dissect(correlatedCmd));
                 break;
 
-            case CMD_OUT_ON_INACTIVE_CONNECTION:
-                final ConnectionMessageFlyweight connectionCmd = CONNECTION_MSG.get();
+            case CMD_OUT_ON_INACTIVE_IMAGE:
+                final ImageMessageFlyweight connectionCmd = IMAGE_MSG.get();
                 connectionCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(connectionCmd));
                 break;
@@ -519,7 +519,7 @@ public class EventCodec
             command.logFileName());
     }
 
-    private static String dissect(final ConnectionBuffersReadyFlyweight command)
+    private static String dissect(final ImageBuffersReadyFlyweight command)
     {
         final StringBuilder positions = new StringBuilder();
 
@@ -551,7 +551,7 @@ public class EventCodec
             command.correlationId());
     }
 
-    private static String dissect(final ConnectionMessageFlyweight command)
+    private static String dissect(final ImageMessageFlyweight command)
     {
         return String.format(
             "%s %d:%d [%d]",

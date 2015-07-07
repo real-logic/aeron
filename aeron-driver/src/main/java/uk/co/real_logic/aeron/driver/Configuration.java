@@ -45,7 +45,7 @@ public class Configuration
     public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
 
     /**
-     * Length (in bytes) of the log buffers for terms for incoming connections
+     * Length (in bytes) of the log buffers for terms for incoming images
      */
     public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
 
@@ -107,9 +107,9 @@ public class Configuration
     public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";
 
     /**
-     * Property name for connection liveness timeout
+     * Property name for image liveness timeout
      */
-    public static final String CONNECTION_LIVENESS_TIMEOUT_PROP_NAME = "aeron.connection.liveness.timeout";
+    public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
      * Property name for data loss rate
@@ -273,9 +273,9 @@ public class Configuration
     /**
      * Timeout for connection liveness in nanoseconds
      */
-    public static final long CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
-    public static final long CONNECTION_LIVENESS_TIMEOUT_NS = getLong(
-        CONNECTION_LIVENESS_TIMEOUT_PROP_NAME, CONNECTION_LIVENESS_TIMEOUT_DEFAULT_NS);
+    public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+    public static final long IMAGE_LIVENESS_TIMEOUT_NS = getLong(
+        IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
      * ticksPerWheel for TimerWheel in conductor thread

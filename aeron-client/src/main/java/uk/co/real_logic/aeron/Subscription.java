@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
 /**
- * Aeron Subscriber API for receiving messages from publishers on a given channel and streamId pair.
+ * Aeron Subscriber API for receiving {@link Image}s of messages from publishers on a given channel and streamId pair.
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
  * to the {@link FragmentHandler}.
  * <p>
@@ -36,14 +36,14 @@ import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
  */
 public class Subscription implements AutoCloseable
 {
-    private static final Connection[] EMPTY_ARRAY = new Connection[0];
+    private static final Image[] EMPTY_ARRAY = new Image[0];
 
     private final long registrationId;
     private final int streamId;
     private int roundRobinIndex = 0;
     private volatile boolean isClosed = false;
 
-    private volatile Connection[] connections = EMPTY_ARRAY;
+    private volatile Image[] images = EMPTY_ARRAY;
     private final ClientConductor clientConductor;
     private final String channel;
 
@@ -76,7 +76,7 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Poll the {@link Connection}s under the subscription for available message fragments.
+     * Poll the {@link Image}s under the subscription for available message fragments.
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered withing a session.
@@ -91,8 +91,8 @@ public class Subscription implements AutoCloseable
     {
         ensureOpen();
 
-        final Connection[] connections = this.connections;
-        final int length = connections.length;
+        final Image[] images = this.images;
+        final int length = images.length;
         int fragmentsRead = 0;
 
         if (length > 0)
@@ -107,7 +107,7 @@ public class Subscription implements AutoCloseable
 
             do
             {
-                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit);
+                fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
 
                 if (++i == length)
                 {
@@ -121,9 +121,9 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Poll the {@link Connection}s under the subscription for available message fragments in blocks.
+     * Poll the {@link Image}s under the subscription for available message fragments in blocks.
      *
-     * @param blockHandler     to receive a block of fragments from each {@link Connection}.
+     * @param blockHandler     to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      * @throws IllegalStateException if the subscription is closed.
@@ -133,19 +133,19 @@ public class Subscription implements AutoCloseable
         ensureOpen();
 
         long bytesConsumed = 0;
-        final Connection[] connections = this.connections;
-        for (final Connection connection : connections)
+        final Image[] images = this.images;
+        for (final Image image : images)
         {
-            bytesConsumed += connection.blockPoll(blockHandler, blockLengthLimit);
+            bytesConsumed += image.blockPoll(blockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;
     }
 
     /**
-     * Poll the {@link Connection}s under the subscription for available message fragments in blocks.
+     * Poll the {@link Image}s under the subscription for available message fragments in blocks.
      *
-     * @param fileBlockHandler to receive a block of fragments from each {@link Connection}.
+     * @param fileBlockHandler to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      * @throws IllegalStateException if the subscription is closed.
@@ -155,17 +155,17 @@ public class Subscription implements AutoCloseable
         ensureOpen();
 
         long bytesConsumed = 0;
-        final Connection[] connections = this.connections;
-        for (final Connection connection : connections)
+        final Image[] images = this.images;
+        for (final Image image : images)
         {
-            bytesConsumed += connection.filePoll(fileBlockHandler, blockLengthLimit);
+            bytesConsumed += image.filePoll(fileBlockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;
     }
 
     /**
-     * Close the Subscription so that associated buffers can be released.
+     * Close the Subscription so that associated {@link Image} can be released.
      * <p>
      * This method is idempotent.
      */
@@ -179,12 +179,12 @@ public class Subscription implements AutoCloseable
 
                 clientConductor.releaseSubscription(this);
 
-                final Connection[] connections = this.connections;
-                for (final Connection connection : connections)
+                final Image[] images = this.images;
+                for (final Image image : images)
                 {
-                    clientConductor.lingerResource(connection.managedResource());
+                    clientConductor.lingerResource(image.managedResource());
                 }
-                this.connections = EMPTY_ARRAY;
+                this.images = EMPTY_ARRAY;
             }
         }
     }
@@ -194,23 +194,23 @@ public class Subscription implements AutoCloseable
         return registrationId;
     }
 
-    void addConnection(final Connection connection)
+    void addImage(final Image image)
     {
-        final Connection[] oldArray = connections;
+        final Image[] oldArray = images;
         final int oldLength = oldArray.length;
-        final Connection[] newArray = new Connection[oldLength + 1];
+        final Image[] newArray = new Image[oldLength + 1];
 
         System.arraycopy(oldArray, 0, newArray, 0, oldLength);
-        newArray[oldLength] = connection;
+        newArray[oldLength] = image;
 
-        connections = newArray;
+        images = newArray;
     }
 
-    boolean removeConnection(final long correlationId)
+    Image removeImage(final long correlationId)
     {
-        final Connection[] oldArray = connections;
+        final Image[] oldArray = images;
         final int oldLength = oldArray.length;
-        Connection removedConnection = null;
+        Image removedImage = null;
         int index = -1;
 
         for (int i = 0; i < oldLength; i++)
@@ -218,34 +218,32 @@ public class Subscription implements AutoCloseable
             if (oldArray[i].correlationId() == correlationId)
             {
                 index = i;
-                removedConnection = oldArray[i];
+                removedImage = oldArray[i];
             }
         }
 
-        if (null != removedConnection)
+        if (null != removedImage)
         {
             final int newLength = oldLength - 1;
-            final Connection[] newArray = new Connection[newLength];
+            final Image[] newArray = new Image[newLength];
             System.arraycopy(oldArray, 0, newArray, 0, index);
             System.arraycopy(oldArray, index + 1, newArray, index, newLength - index);
-            connections = newArray;
+            images = newArray;
 
-            clientConductor.lingerResource(removedConnection.managedResource());
-
-            return true;
+            clientConductor.lingerResource(removedImage.managedResource());
         }
 
-        return false;
+        return removedImage;
     }
 
-    boolean isConnected(final int sessionId)
+    boolean hasImage(final int sessionId)
     {
         boolean isConnected = false;
 
-        final Connection[] connections = this.connections;
-        for (final Connection connection : connections)
+        final Image[] images = this.images;
+        for (final Image image : images)
         {
-            if (sessionId == connection.sessionId())
+            if (sessionId == image.sessionId())
             {
                 isConnected = true;
                 break;
@@ -255,9 +253,9 @@ public class Subscription implements AutoCloseable
         return isConnected;
     }
 
-    boolean hasNoConnections()
+    boolean hasNoImages()
     {
-        return connections.length == 0;
+        return images.length == 0;
     }
 
     private void ensureOpen()

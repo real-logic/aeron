@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.Image;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
@@ -46,7 +47,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
 {
     private Publication pub = null;
     private Subscription sub = null;
-    private CountDownLatch connectionLatch = null;
+    private CountDownLatch imageLatch = null;
     private FragmentHandler fragmentHandler = null;
     private final int pubStreamId = 10;
     private final int subStreamId = 11;
@@ -72,13 +73,13 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
             throw new RuntimeException(e);
         }
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(this::connectionHandler);
+            .newImageHandler(this::imageHandler);
         fragmentHandler = new FragmentAssembler(this::msgHandler);
         final Aeron aeron = Aeron.connect(ctx);
         System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);
         pub = aeron.addPublication(pubChannel, pubStreamId);
         sub = aeron.addSubscription(reflectChannel, subStreamId);
-        connectionLatch = new CountDownLatch(1);
+        imageLatch = new CountDownLatch(1);
         final IdleStrategy idle = new BusySpinIdleStrategy();
         bufferClaim = new BufferClaim();
 
@@ -117,7 +118,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
 
         try
         {
-            connectionLatch.await();
+            imageLatch.await();
         }
         catch (final InterruptedException e)
         {
@@ -206,7 +207,8 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         return msgLen;
     }
 
-    private void connectionHandler(
+    private void imageHandler(
+        final Image image,
         final String channel,
         final int streamId,
         final int sessionId,
@@ -216,14 +218,13 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         System.out.println(channel + " " + streamId);
         if (channel.equals(reflectChannel) && subStreamId == streamId)
         {
-            connectionLatch.countDown();
+            imageLatch.countDown();
             System.out.println("Connected");
         }
     }
 
     private void msgHandler(
-        final DirectBuffer buffer,
-        final int offset,
+        final DirectBuffer buffer, final int offset,
         final int length,
         final Header header)
     {
@@ -398,6 +399,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
             g.drawLine(posX, posY, posX, 960);
         }
     }
+
     public static void main(final String[] args)
     {
         new AeronLatencyUnderLoadPublisher(args);

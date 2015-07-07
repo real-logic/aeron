@@ -75,15 +75,15 @@ public class ReceiverProxy
         }
     }
 
-    public void newConnection(final ReceiveChannelEndpoint channelEndpoint, final NetworkConnection connection)
+    public void newImage(final ReceiveChannelEndpoint channelEndpoint, final NetworkedImage image)
     {
         if (isSharedThread())
         {
-            receiver.onNewConnection(channelEndpoint, connection);
+            receiver.onNewImage(channelEndpoint, image);
         }
         else
         {
-            offer(new NewConnectionCmd(channelEndpoint, connection));
+            offer(new NewImageCmd(channelEndpoint, image));
         }
     }
 

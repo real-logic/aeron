@@ -31,31 +31,31 @@ import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamL
 public class RawLogFactory implements AutoCloseable
 {
     private final int publicationTermBufferLength;
-    private final int connectionTermBufferMaxLength;
+    private final int imagesTermBufferMaxLength;
     private final FileChannel blankTemplate;
     private final File publicationsDir;
-    private final File connectionsDir;
+    private final File imagesDir;
     private final EventLogger logger;
 
     public RawLogFactory(
         final String dataDirectoryName,
         final int publicationTermBufferLength,
-        final int connectionTermBufferMaxLength,
+        final int imagesTermBufferMaxLength,
         final EventLogger logger)
     {
         this.logger = logger;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
-        connectionsDir = fileMappingConvention.connectionsDir();
+        imagesDir = fileMappingConvention.imagesDir();
 
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
-        IoUtil.ensureDirectoryExists(connectionsDir, FileMappingConvention.CONNECTIONS);
+        IoUtil.ensureDirectoryExists(imagesDir, FileMappingConvention.IMAGES);
 
         this.publicationTermBufferLength = publicationTermBufferLength;
-        this.connectionTermBufferMaxLength = connectionTermBufferMaxLength;
+        this.imagesTermBufferMaxLength = imagesTermBufferMaxLength;
 
-        final int maxTermLength = Math.max(publicationTermBufferLength, connectionTermBufferMaxLength);
+        final int maxTermLength = Math.max(publicationTermBufferLength, imagesTermBufferMaxLength);
         final long blankTemplateLength = computeLogLength(maxTermLength);
 
         blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
@@ -100,16 +100,16 @@ public class RawLogFactory implements AutoCloseable
      * @param termBufferLength to use for the log buffer
      * @return the newly allocated {@link RawLog}
      */
-    public RawLog newConnection(
+    public RawLog newImage(
         final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
-        if (termBufferLength > connectionTermBufferMaxLength)
+        if (termBufferLength > imagesTermBufferMaxLength)
         {
             throw new IllegalArgumentException(
-                "connection term buffer larger than max length: " + termBufferLength + " > " + connectionTermBufferMaxLength);
+                "image term buffer larger than max length: " + termBufferLength + " > " + imagesTermBufferMaxLength);
         }
 
-        return newInstance(connectionsDir, channel, sessionId, streamId, correlationId, termBufferLength);
+        return newInstance(imagesDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
 
     private static FileChannel createTemplateFile(final String dataDir, final String name, final long length)

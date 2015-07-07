@@ -42,7 +42,7 @@ public class FileMappingConventionTest
     private void assertIsValidFile(final String channelDir) throws IOException
     {
         final File file = new File(channelDir);
-        assertTrue("Can't create a file", file.mkdir());
+        assertTrue("Can't createImage a file", file.mkdir());
         assertTrue("Failed to clean up", file.delete());
     }
 }

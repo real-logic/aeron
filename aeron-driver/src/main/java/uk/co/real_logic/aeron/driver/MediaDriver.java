@@ -400,7 +400,7 @@ public final class MediaDriver implements AutoCloseable
         private SystemCounters systemCounters;
 
         private int publicationTermBufferLength;
-        private int maxConnectionTermBufferLength;
+        private int maxImageTermBufferLength;
         private int initialWindowLength;
         private int eventBufferLength;
         private long statusMessageTimeout;
@@ -508,7 +508,7 @@ public final class MediaDriver implements AutoCloseable
                     threadingMode, toConductorFromSenderCommandQueue, systemCounters.conductorProxyFails()));
 
                 rawLogBuffersFactory(new RawLogFactory(
-                    dirName(), publicationTermBufferLength, maxConnectionTermBufferLength, eventLogger));
+                    dirName(), publicationTermBufferLength, maxImageTermBufferLength, eventLogger));
 
                 concludeIdleStrategies();
                 concludeLossGenerators();
@@ -669,7 +669,7 @@ public final class MediaDriver implements AutoCloseable
 
         public Context termBufferMaxLength(final int termBufferMaxLength)
         {
-            this.maxConnectionTermBufferLength = termBufferMaxLength;
+            this.maxImageTermBufferLength = termBufferMaxLength;
             return this;
         }
 
@@ -897,7 +897,7 @@ public final class MediaDriver implements AutoCloseable
 
         public int termBufferMaxLength()
         {
-            return maxConnectionTermBufferLength;
+            return maxImageTermBufferLength;
         }
 
         public int initialWindowLength()

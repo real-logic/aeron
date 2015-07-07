@@ -16,10 +16,7 @@
 package uk.co.real_logic.aeron.samples;
 
 import org.HdrHistogram.Histogram;
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssembler;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -60,7 +57,7 @@ public class Ping
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(Ping::newPongConnectionHandler);
+            .newImageHandler(Ping::newPongImageHandler);
         final FragmentHandler fragmentHandler = new FragmentAssembler(Ping::pongHandler);
 
         if (EMBEDDED_MEDIA_DRIVER)
@@ -148,10 +145,15 @@ public class Ping
         HISTOGRAM.recordValue(rttNs);
     }
 
-    private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
+    private static void newPongImageHandler(
+        final Image image,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long joiningPosition,
+        final String sourceIdentity)
     {
-        System.out.format("New connection: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
+        System.out.format("New image: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
 
         if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
         {

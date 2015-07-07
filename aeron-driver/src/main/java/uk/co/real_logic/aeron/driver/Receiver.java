@@ -36,7 +36,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final NanoClock clock;
-    private final ArrayList<NetworkConnection> connections = new ArrayList<>();
+    private final ArrayList<NetworkedImage> images = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
 
     public Receiver(final MediaDriver.Context ctx)
@@ -59,18 +59,18 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         final int bytesReceived = transportPoller.pollTransports();
 
         final long now = clock.nanoTime();
-        for (int i = connections.size() - 1; i >= 0; i--)
+        for (int i = images.size() - 1; i >= 0; i--)
         {
-            final NetworkConnection connection = connections.get(i);
-            if (!connection.checkForActivity(now, Configuration.CONNECTION_LIVENESS_TIMEOUT_NS))
+            final NetworkedImage image = images.get(i);
+            if (!image.checkForActivity(now, Configuration.IMAGE_LIVENESS_TIMEOUT_NS))
             {
-                connection.removeFromDispatcher();
-                connections.remove(i);
+                image.removeFromDispatcher();
+                images.remove(i);
             }
             else
             {
-                workCount += connection.sendPendingStatusMessage(now, statusMessageTimeout);
-                workCount += connection.sendPendingNak();
+                workCount += image.sendPendingStatusMessage(now, statusMessageTimeout);
+                workCount += image.sendPendingNak();
             }
         }
 
@@ -98,10 +98,10 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.dispatcher().removeSubscription(streamId);
     }
 
-    public void onNewConnection(final ReceiveChannelEndpoint channelEndpoint, final NetworkConnection connection)
+    public void onNewImage(final ReceiveChannelEndpoint channelEndpoint, final NetworkedImage image)
     {
-        connections.add(connection);
-        channelEndpoint.dispatcher().addConnection(connection);
+        images.add(image);
+        channelEndpoint.dispatcher().addImage(image);
     }
 
     public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)

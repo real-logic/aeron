@@ -21,8 +21,8 @@ import java.nio.ByteBuffer;
 import java.util.stream.Stream;
 
 /**
- * Represents the collection of term and associated state buffers for the connection between a publisher and subscriber
- * connection for the replicated log.
+ * Represents the collection of term and associated state buffers for the image between a publisher and subscriber
+ * image for the replicated log.
  */
 public interface RawLog extends AutoCloseable
 {

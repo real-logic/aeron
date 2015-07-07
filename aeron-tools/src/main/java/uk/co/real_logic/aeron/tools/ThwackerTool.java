@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
-public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHandler
+public class ThwackerTool implements InactiveImageHandler, NewImageHandler
 {
     static
     {
@@ -160,12 +160,12 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         SigInt.register(() -> this.running = false);
 
         final Aeron.Context ctx = new Aeron.Context();
-        /* Set timeout to be very large so the connections will not timeout when
+        /* Set timeout to be very large so the images will not timeout when
            debugging or examining a hang.
          */
         ctx.mediaDriverTimeout(9999999999L);
-        ctx.inactiveConnectionHandler(this);
-        ctx.newConnectionHandler(this);
+        ctx.inactiveImageHandler(this);
+        ctx.newImageHandler(this);
 
         aeron = Aeron.connect(ctx);
         active = true;
@@ -204,7 +204,6 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         maxSize = opts.maxMsgSize();
         minSize = opts.minMsgSize();
     }
-
 
     /**
      * populateArrays()
@@ -512,7 +511,8 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.fine("RecSubs all done!");
     }
 
-    public void onInactiveConnection(
+    public void onInactiveImage(
+        final Image image,
         final String channel,
         final int streamId,
         final int sessionId,
@@ -521,14 +521,15 @@ public class ThwackerTool implements InactiveConnectionHandler, NewConnectionHan
         LOG.fine("ON INACTIVE ::: " + channel + streamId + sessionId + position);
     }
 
-    public void onNewConnection(
+    public void onNewImage(
+        final Image image,
         final String channel,
         final int streamId,
         final int sessionId,
         final long position,
         final String sourceIdentity)
     {
-        LOG.fine("ON NEW CONNECTION ::: " + channel + streamId + sessionId + position + sourceIdentity);
+        LOG.fine("ON NEW IMAGE ::: " + channel + streamId + sessionId + position + sourceIdentity);
     }
 
     /**

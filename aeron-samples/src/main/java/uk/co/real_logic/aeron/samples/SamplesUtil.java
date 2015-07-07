@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import uk.co.real_logic.aeron.Image;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.driver.RateReporter;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
@@ -147,34 +148,42 @@ public class SamplesUtil
     }
 
     /**
-     * Print the information for a new connection to stdout.
+     * Print the information for a new image to stdout.
      *
-     * @param channel         for the connection
+     * @param image           that has been created
+     * @param channel         for the image
      * @param streamId        for the stream
-     * @param sessionId       for the connection publication
+     * @param sessionId       for the image publication
      * @param joiningPosition for the subscriber in the stream
      * @param sourceIdentity  that is transport specific
      */
-    public static void printNewConnection(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
+    public static void printNewImage(
+        final Image image,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long joiningPosition,
+        final String sourceIdentity)
     {
         System.out.println(String.format(
-            "New connection on %s streamId=%d sessionId=%d at position=%d from %s",
+            "New image on %s streamId=%d sessionId=%d at position=%d from %s",
             channel, streamId, sessionId, joiningPosition, sourceIdentity));
     }
 
     /**
-     * Print the information for an inactive connection to stdout.
+     * Print the information for an inactive image to stdout.
      *
-     * @param channel   for the connection
+     * @param image     that has gone inactive
+     * @param channel   for the image
      * @param streamId  for the stream
-     * @param sessionId for the connection publication
-     * @param position  at which the connection when inactive
+     * @param sessionId for the image publication
+     * @param position  at which the image went inactive
      */
-    public static void printInactiveConnection(final String channel, final int streamId, final int sessionId, final long position)
+    public static void printInactiveImage(
+        final Image image, final String channel, final int streamId, final int sessionId, final long position)
     {
         System.out.println(String.format(
-            "Inactive connection on %s streamId=%d sessionId=%d at position=%d",
+            "Inactive image on %s streamId=%d sessionId=%d at position=%d",
             channel, streamId, sessionId, position));
     }
 }

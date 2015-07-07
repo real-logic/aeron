@@ -29,10 +29,10 @@ import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 
 /**
- * Represents an incoming {@link Connection} from a publisher to a {@link Subscription}.
- * Each {@link Connection} identifies a source publisher by session id.
+ * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
+ * Each {@link Image} identifies a source publisher by session id.
  */
-public class Connection
+public class Image
 {
     private final long correlationId;
     private final int sessionId;
@@ -46,7 +46,7 @@ public class Connection
     private final LogBuffers logBuffers;
 
     /**
-     * Construct a new connection over a log to represent a stream of messages from a {@link Publication}.
+     * Construct a new image over a log to represent a stream of messages from a {@link Publication}.
      *
      * @param sessionId          of the stream of messages.
      * @param initialPosition    at which the subscriber is joining the stream.
@@ -55,7 +55,7 @@ public class Connection
      * @param errorHandler       to be called if an error occurs when polling for messages.
      * @param correlationId      of the request to the media driver.
      */
-    public Connection(
+    public Image(
         final int sessionId,
         final long initialPosition,
         final Position subscriberPosition,
@@ -92,9 +92,9 @@ public class Connection
     }
 
     /**
-     * The correlationId for identification of the connection with the media driver.
+     * The correlationId for identification of the image with the media driver.
      *
-     * @return the correlationId for identification of the connection with the media driver.
+     * @return the correlationId for identification of the image with the media driver.
      */
     public long correlationId()
     {
@@ -205,7 +205,7 @@ public class Connection
 
     ManagedResource managedResource()
     {
-        return new ConnectionManagedResource();
+        return new ImageManagedResource();
     }
 
     private static int termId(final UnsafeBuffer buffer, final int frameOffset)
@@ -213,7 +213,7 @@ public class Connection
         return buffer.getInt(frameOffset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
-    private class ConnectionManagedResource implements ManagedResource
+    private class ImageManagedResource implements ManagedResource
     {
         private long timeOfLastStateChange = 0;
 

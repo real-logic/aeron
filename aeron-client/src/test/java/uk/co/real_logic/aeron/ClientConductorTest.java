@@ -85,8 +85,8 @@ public class ClientConductorTest
 
     private DriverProxy driverProxy;
     private ClientConductor conductor;
-    private NewConnectionHandler mockNewConnectionHandler = mock(NewConnectionHandler.class);
-    private InactiveConnectionHandler mockInactiveConnectionHandler = mock(InactiveConnectionHandler.class);
+    private NewImageHandler mockNewImageHandler = mock(NewImageHandler.class);
+    private InactiveImageHandler mockInactiveImageHandler = mock(InactiveImageHandler.class);
     private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
     private Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(-1L);
 
@@ -109,8 +109,8 @@ public class ClientConductorTest
             counterValuesBuffer,
             driverProxy,
             mockClientErrorHandler,
-            mockNewConnectionHandler,
-            mockInactiveConnectionHandler,
+            mockNewImageHandler,
+            mockInactiveImageHandler,
             AWAIT_TIMEOUT);
 
         publicationReady.wrap(publicationReadyBuffer, 0);
@@ -440,7 +440,7 @@ public class ClientConductorTest
     }
 
     @Test
-    public void clientNotifiedOfNewConnectionShouldMapLogFile()
+    public void clientNotifiedOfNewImageShouldMapLogFile()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS,
@@ -453,14 +453,14 @@ public class ClientConductorTest
 
         conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
-        conductor.onNewConnection(
+        conductor.onNewImage(
             STREAM_ID_1, SESSION_ID_1, 0L, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
 
         verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
     }
 
     @Test
-    public void clientNotifiedOfNewConnectionsAndInactiveConnections()
+    public void clientNotifiedOfNewAndInactiveImages()
     {
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS,
@@ -473,49 +473,51 @@ public class ClientConductorTest
 
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
-        conductor.onNewConnection(
+        conductor.onNewImage(
             STREAM_ID_1, SESSION_ID_1, 0L, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
 
-        assertFalse(subscription.hasNoConnections());
-        verify(mockNewConnectionHandler).onNewConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, 0L, SOURCE_INFO);
+        assertFalse(subscription.hasNoImages());
+        verify(mockNewImageHandler)
+            .onNewImage(any(Image.class), eq(CHANNEL), eq(STREAM_ID_1), eq(SESSION_ID_1), eq(0L), eq(SOURCE_INFO));
 
         final long position = 0L;
-        conductor.onInactiveConnection(STREAM_ID_1, SESSION_ID_1, position, CORRELATION_ID);
+        conductor.onInactiveImage(STREAM_ID_1, SESSION_ID_1, position, CORRELATION_ID);
 
-        verify(mockInactiveConnectionHandler).onInactiveConnection(CHANNEL, STREAM_ID_1, SESSION_ID_1, position);
-        assertTrue(subscription.hasNoConnections());
-        assertFalse(subscription.isConnected(SESSION_ID_1));
+        verify(mockInactiveImageHandler)
+            .onInactiveImage(any(Image.class), eq(CHANNEL), eq(STREAM_ID_1), eq(SESSION_ID_1), eq(position));
+        assertTrue(subscription.hasNoImages());
+        assertFalse(subscription.hasImage(SESSION_ID_1));
     }
 
     @Test
-    public void shouldIgnoreUnknownNewConnection()
+    public void shouldIgnoreUnknownNewImage()
     {
-        conductor.onNewConnection(
+        conductor.onNewImage(
             STREAM_ID_2, SESSION_ID_2, 0L, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO, CORRELATION_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
-        verify(mockNewConnectionHandler, never()).onNewConnection(anyString(), anyInt(), anyInt(), anyLong(), anyString());
+        verify(mockNewImageHandler, never())
+            .onNewImage(any(Image.class), anyString(), anyInt(), anyInt(), anyLong(), anyString());
     }
 
     @Test
-    public void shouldIgnoreUnknownInactiveConnection()
+    public void shouldIgnoreUnknownInactiveImage()
     {
-        conductor.onInactiveConnection(STREAM_ID_2, SESSION_ID_2, 0L, CORRELATION_ID_2);
+        conductor.onInactiveImage(STREAM_ID_2, SESSION_ID_2, 0L, CORRELATION_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
-        verify(mockInactiveConnectionHandler, never()).onInactiveConnection(anyString(), anyInt(), anyInt(), anyLong());
+        verify(mockInactiveImageHandler, never()).onInactiveImage(any(Image.class), anyString(), anyInt(), anyInt(), anyLong());
     }
 
     private void whenReceiveBroadcastOnMessage(
-        final int msgTypeId,
-        final MutableDirectBuffer buffer,
-        final Function<MutableDirectBuffer, Integer> filler)
+        final int msgTypeId, final MutableDirectBuffer buffer, final Function<MutableDirectBuffer, Integer> filler)
     {
         doAnswer(
             (invocation) ->
             {
                 final int length = filler.apply(buffer);
                 conductor.driverListenerAdapter().onMessage(msgTypeId, buffer, 0, length);
+
                 return 1;
             }).when(mockToClientReceiver).receive(anyObject());
     }

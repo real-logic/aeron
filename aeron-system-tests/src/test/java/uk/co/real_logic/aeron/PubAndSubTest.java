@@ -565,16 +565,16 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
         final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
         final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
-        final CountDownLatch newConnectionLatch = new CountDownLatch(1);
+        final CountDownLatch newImageLatch = new CountDownLatch(1);
         final int stage[] = { 1 };
 
         context.termBufferLength(termBufferLength);
-        subscribingAeronContext.newConnectionHandler(
-            (c, streamId, sessionId, position, info) ->
+        subscribingAeronContext.newImageHandler(
+            (image, channelStr, streamId, sessionId, position, info) ->
             {
                 if (2 == stage[0])
                 {
-                    newConnectionLatch.countDown();
+                    newImageLatch.countDown();
                 }
             });
 
@@ -603,7 +603,7 @@ public class PubAndSubTest
         stage[0] = 2;
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
 
-        newConnectionLatch.await();
+        newImageLatch.await();
 
         for (int i = 0; i < numMessagesToSendStageTwo; i++)
         {

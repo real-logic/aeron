@@ -77,7 +77,7 @@ public class DriverConductor implements Agent
     private final ArrayList<PublicationLink> publicationLinks = new ArrayList<>();
     private final ArrayList<NetworkPublication> publications = new ArrayList<>();
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
-    private final ArrayList<NetworkConnection> connections = new ArrayList<>();
+    private final ArrayList<NetworkedImage> images = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
 
     private final PublicationMessageFlyweight publicationMsgFlyweight = new PublicationMessageFlyweight();
@@ -199,7 +199,7 @@ public class DriverConductor implements Agent
     {
         rawLogFactory.close();
         publications.forEach(NetworkPublication::close);
-        connections.forEach(NetworkConnection::close);
+        images.forEach(NetworkedImage::close);
         sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
@@ -231,11 +231,11 @@ public class DriverConductor implements Agent
         final long now = nanoClock.nanoTime();
         workCount += processTimers(now);
 
-        final ArrayList<NetworkConnection> connections = this.connections;
-        for (int i = 0, size = connections.size(); i < size; i++)
+        final ArrayList<NetworkedImage> images = this.images;
+        for (int i = 0, size = images.size(); i < size; i++)
         {
-            final NetworkConnection connection = connections.get(i);
-            workCount += connection.trackRebuild(now);
+            final NetworkedImage image = images.get(i);
+            workCount += image.trackRebuild(now);
         }
 
         final ArrayList<NetworkPublication> publications = this.publications;
@@ -255,11 +255,11 @@ public class DriverConductor implements Agent
         onCheckClients(nanoTimeNow);
         onCheckPublications(nanoTimeNow);
         onCheckPublicationLinks(nanoTimeNow);
-        onCheckConnections(nanoTimeNow);
+        onCheckNetworkImages(nanoTimeNow);
         onCheckSubscriptionLinks(nanoTimeNow);
     }
 
-    public void onCreateConnection(
+    public void onCreateImage(
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -286,10 +286,10 @@ public class DriverConductor implements Agent
 
         if (subscriberPositions.size() > 0)
         {
-            final RawLog rawLog = newConnectionLog(
+            final RawLog rawLog = newImageLog(
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, connectionCorrelationId);
 
-            final NetworkConnection connection = new NetworkConnection(
+            final NetworkedImage connection = new NetworkedImage(
                 connectionCorrelationId,
                 channelEndpoint,
                 controlAddress,
@@ -310,12 +310,12 @@ public class DriverConductor implements Agent
 
             subscriberPositions.forEach(
                 (subscriberPosition) ->
-                    subscriberPosition.subscription().addConnection(connection, subscriberPosition.position()));
+                    subscriberPosition.subscription().addImage(connection, subscriberPosition.position()));
 
-            connections.add(connection);
-            receiverProxy.newConnection(channelEndpoint, connection);
+            images.add(connection);
+            receiverProxy.newImage(channelEndpoint, connection);
 
-            clientProxy.onConnectionReady(
+            clientProxy.onImageReady(
                 streamId,
                 sessionId,
                 joiningPosition,
@@ -543,7 +543,7 @@ public class DriverConductor implements Agent
         return rawLog;
     }
 
-    private RawLog newConnectionLog(
+    private RawLog newImageLog(
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -553,7 +553,7 @@ public class DriverConductor implements Agent
         final long correlationId)
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = rawLogFactory.newConnection(canonicalForm, sessionId, streamId, correlationId, termBufferLength);
+        final RawLog rawLog = rawLogFactory.newImage(canonicalForm, sessionId, streamId, correlationId, termBufferLength);
 
         final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
@@ -624,26 +624,26 @@ public class DriverConductor implements Agent
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
 
-        connections
+        images
             .stream()
-            .filter((connection) -> connection.matches(channelEndpoint, streamId) && (connection.subscriberCount() > 0))
+            .filter((image) -> image.matches(channelEndpoint, streamId) && (image.subscriberCount() > 0))
             .forEach(
-                (connection) ->
+                (image) ->
                 {
                     final Position position = newPosition(
-                        "subscriber pos", channel, connection.sessionId(), streamId, registrationId);
+                        "subscriber pos", channel, image.sessionId(), streamId, registrationId);
 
-                    connection.addSubscriber(position);
-                    subscription.addConnection(connection, position);
+                    image.addSubscriber(position);
+                    subscription.addImage(image, position);
 
-                    clientProxy.onConnectionReady(
+                    clientProxy.onImageReady(
                         streamId,
-                        connection.sessionId(),
-                        connection.rebuildPosition(),
-                        connection.rawLog(),
-                        connection.correlationId(),
+                        image.sessionId(),
+                        image.rebuildPosition(),
+                        image.rawLog(),
+                        image.correlationId(),
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
-                        generateSourceIdentity(connection.sourceAddress()));
+                        generateSourceIdentity(image.sourceAddress()));
                 });
     }
 
@@ -781,42 +781,42 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void onCheckConnections(final long now)
+    private void onCheckNetworkImages(final long now)
     {
-        final ArrayList<NetworkConnection> connections = this.connections;
-        for (int i = connections.size() - 1; i >= 0; i--)
+        final ArrayList<NetworkedImage> images = this.images;
+        for (int i = images.size() - 1; i >= 0; i--)
         {
-            final NetworkConnection conn = connections.get(i);
+            final NetworkedImage image = images.get(i);
 
-            switch (conn.status())
+            switch (image.status())
             {
                 case INACTIVE:
-                    if (conn.isDrained() || now > (conn.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (image.isDrained() || now > (image.timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
                     {
-                        conn.status(NetworkConnection.Status.LINGER);
+                        image.status(NetworkedImage.Status.LINGER);
 
-                        clientProxy.onInactiveConnection(
-                            conn.correlationId(),
-                            conn.sessionId(),
-                            conn.streamId(),
-                            conn.rebuildPosition(),
-                            conn.channelUriString());
+                        clientProxy.onInactiveImage(
+                            image.correlationId(),
+                            image.sessionId(),
+                            image.streamId(),
+                            image.rebuildPosition(),
+                            image.channelUriString());
                     }
                     break;
 
                 case LINGER:
-                    if (now > (conn.timeOfLastStatusChange() + CONNECTION_LIVENESS_TIMEOUT_NS))
+                    if (now > (image.timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
                     {
-                        logger.logConnectionRemoval(
-                            conn.channelUriString(), conn.sessionId(), conn.streamId(), conn.correlationId());
+                        logger.logImageRemoval(
+                            image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
 
-                        connections.remove(i);
+                        images.remove(i);
 
                         subscriptionLinks.stream()
-                            .filter((link) -> conn.matches(link.channelEndpoint(), link.streamId()))
-                            .forEach((subscriptionLink) -> subscriptionLink.removeConnection(conn));
+                            .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))
+                            .forEach((subscriptionLink) -> subscriptionLink.removeImage(image));
 
-                        conn.close();
+                        image.close();
                     }
                     break;
             }
@@ -829,7 +829,7 @@ public class DriverConductor implements Agent
         {
             final AeronClient client = clients.get(i);
 
-            if (now > (client.timeOfLastKeepalive() + CONNECTION_LIVENESS_TIMEOUT_NS))
+            if (now > (client.timeOfLastKeepalive() + IMAGE_LIVENESS_TIMEOUT_NS))
             {
                 clients.remove(i);
             }

@@ -33,7 +33,7 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
  * buffer for reassembly before delegation.
  * <p>
  * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
- * When sessions go inactive see {@link InactiveConnectionHandler}, it is possible to free the buffer by calling
+ * When sessions go inactive see {@link InactiveImageHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
 public class FragmentAssembler implements FragmentHandler
@@ -107,7 +107,7 @@ public class FragmentAssembler implements FragmentHandler
     }
 
     /**
-     * Free an existing session buffer to reduce memory pressure when a connection goes inactive or no more
+     * Free an existing session buffer to reduce memory pressure when an image goes inactive or no more
      * large messages are expected.
      *
      * @param sessionId to have its buffer freed

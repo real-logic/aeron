@@ -28,16 +28,16 @@ import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.driver.NetworkConnection.Status.ACTIVE;
+import static uk.co.real_logic.aeron.driver.NetworkedImage.Status.ACTIVE;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
-class NetworkConnectionPadding1
+class NetworkedImagePadding1
 {
     @SuppressWarnings("unused")
     protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
-class NetworkConnectionConductorFields extends NetworkConnectionPadding1
+class NetworkedImageConductorFields extends NetworkedImagePadding1
 {
     protected long timeOfLastStatusChange;
     protected long rebuildPosition;
@@ -49,13 +49,13 @@ class NetworkConnectionConductorFields extends NetworkConnectionPadding1
     protected int lossLength;
 }
 
-class NetworkConnectionPadding2 extends NetworkConnectionConductorFields
+class NetworkedImagePadding2 extends NetworkedImageConductorFields
 {
     @SuppressWarnings("unused")
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
-class NetworkConnectionHotFields extends NetworkConnectionPadding2
+class NetworkedImageHotFields extends NetworkedImagePadding2
 {
     protected long lastPacketTimestamp;
     protected long lastStatusMessageTimestamp;
@@ -63,19 +63,19 @@ class NetworkConnectionHotFields extends NetworkConnectionPadding2
     protected long lastChangeNumber = -1;
 }
 
-class NetworkConnectionPadding3 extends NetworkConnectionHotFields
+class NetworkedImagePadding3 extends NetworkedImageHotFields
 {
     @SuppressWarnings("unused")
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
-class NetworkConnectionStatusFields extends NetworkConnectionPadding3
+class NetworkedImageStatusFields extends NetworkedImagePadding3
 {
     protected volatile long newStatusMessagePosition;
-    protected volatile NetworkConnection.Status status = NetworkConnection.Status.INIT;
+    protected volatile NetworkedImage.Status status = NetworkedImage.Status.INIT;
 }
 
-class NetworkConnectionPadding4 extends NetworkConnectionStatusFields
+class NetworkedImagePadding4 extends NetworkedImageStatusFields
 {
     @SuppressWarnings("unused")
     protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
@@ -84,7 +84,7 @@ class NetworkConnectionPadding4 extends NetworkConnectionStatusFields
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class NetworkConnection extends NetworkConnectionPadding4 implements AutoCloseable, NakMessageSender
+public class NetworkedImage extends NetworkedImagePadding4 implements AutoCloseable, NakMessageSender
 {
     public enum Status
     {
@@ -111,7 +111,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
 
-    public NetworkConnection(
+    public NetworkedImage(
         final long correlationId,
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress controlAddress,
@@ -190,9 +190,9 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * The stream id of this connection within a channel.
+     * The stream id of this image within a channel.
      *
-     * @return stream id of this connection within a channel.
+     * @return stream id of this image within a channel.
      */
     public int streamId()
     {
@@ -210,7 +210,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * The address of the source associated with the connection.
+     * The address of the source associated with the image.
      *
      * @return source address
      */
@@ -220,15 +220,15 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Remove this connection from the {@link DataPacketDispatcher} so it will process no further packets from the network.
+     * Remove this image from the {@link DataPacketDispatcher} so it will process no further packets from the network.
      */
     public void removeFromDispatcher()
     {
-        channelEndpoint.dispatcher().removeConnection(this);
+        channelEndpoint.dispatcher().removeImage(this);
     }
 
     /**
-     * Does this connection match a given {@link ReceiveChannelEndpoint} and stream id?
+     * Does this image match a given {@link ReceiveChannelEndpoint} and stream id?
      *
      * @param channelEndpoint to match by identity.
      * @param streamId        to match on value.
@@ -240,9 +240,9 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Get the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this connection.
+     * Get the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this image.
      *
-     * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this connection.
+     * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this image.
      */
     public RawLog rawLog()
     {
@@ -250,9 +250,9 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Return status of the connection. Retrieved by {@link DriverConductor}.
+     * Return status of the image. Retrieved by {@link DriverConductor}.
      *
-     * @return status of the connection
+     * @return status of the image
      */
     public Status status()
     {
@@ -260,13 +260,13 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Set status of the connection.
-     *
+     * Set status of the image.
+     * <p>
      * Set by {@link Receiver} for INIT -> ACTIVE -> INACTIVE
-     *
+     * <p>
      * Set by {@link DriverConductor} for INACTIVE -> LINGER
      *
-     * @param status of the connection
+     * @param status of the image
      */
     public void status(final Status status)
     {
@@ -296,9 +296,9 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Called from the {@link DriverConductor} to determine if the subscribers have drained the connection yet.
+     * Called from the {@link DriverConductor} to determine if the subscribers have drained the image yet.
      *
-     * @return true if the subscribers have drained the connection stream.
+     * @return true if the subscribers have drained the stream.
      */
     public boolean isDrained()
     {
@@ -421,17 +421,17 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * To be called from the {@link Receiver} to see if a connection should be garbage collected.
+     * To be called from the {@link Receiver} to see if a image should be garbage collected.
      *
-     * @param now                       current time to check against.
-     * @param connectionLivenessTimeout timeout for inactivity test.
+     * @param now                  current time to check against.
+     * @param imageLivenessTimeout timeout for inactivity test.
      * @return true if still active otherwise false.
      */
-    public boolean checkForActivity(final long now, final long connectionLivenessTimeout)
+    public boolean checkForActivity(final long now, final long imageLivenessTimeout)
     {
         boolean activity = true;
 
-        if (now > (lastPacketTimestamp + connectionLivenessTimeout))
+        if (now > (lastPacketTimestamp + imageLivenessTimeout))
         {
             activity = false;
         }
@@ -442,7 +442,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     /**
      * Called from the {@link Receiver} to send any pending Status Messages.
      *
-     * @param now time in nanoseconds.
+     * @param now                  time in nanoseconds.
      * @param statusMessageTimeout for sending of Status Messages.
      * @return number of work items processed.
      */
@@ -511,7 +511,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Add a new subscriber to this connection so their position can be tracked for flow control.
+     * Add a new subscriber to this image so their position can be tracked for flow control.
      *
      * @param subscriberPosition for the subscriber to be added.
      */
@@ -521,7 +521,7 @@ public class NetworkConnection extends NetworkConnectionPadding4 implements Auto
     }
 
     /**
-     * Return number of subscribers to this connection.
+     * Return number of subscribers to this image.
      *
      * @return number of subscribers
      */

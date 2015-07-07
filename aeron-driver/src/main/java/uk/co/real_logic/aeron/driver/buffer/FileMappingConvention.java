@@ -31,9 +31,9 @@ import java.io.File;
 class FileMappingConvention
 {
     public static final String PUBLICATIONS = "publications";
-    public static final String CONNECTIONS = "connections";
+    public static final String IMAGES = "images";
 
-    private final File connectionsDir;
+    private final File imagesDir;
     private final File publicationsDir;
 
     public FileMappingConvention(final String dataDirName)
@@ -42,7 +42,7 @@ class FileMappingConvention
         IoUtil.ensureDirectoryExists(dataDir, "data directory");
 
         publicationsDir = new File(dataDir, PUBLICATIONS);
-        connectionsDir = new File(dataDir, CONNECTIONS);
+        imagesDir = new File(dataDir, IMAGES);
     }
 
     /**
@@ -60,9 +60,9 @@ class FileMappingConvention
      *
      * @return the directory used for receiver files
      */
-    public File connectionsDir()
+    public File imagesDir()
     {
-        return connectionsDir;
+        return imagesDir;
     }
 
     public static File streamLocation(

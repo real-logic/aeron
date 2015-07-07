@@ -16,10 +16,7 @@
 package uk.co.real_logic.aeron.samples;
 
 import org.HdrHistogram.Histogram;
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.FragmentAssembler;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
@@ -48,7 +45,7 @@ public class EmbeddedPingPong
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-    private static final CountDownLatch PONG_CONNECTION_LATCH = new CountDownLatch(1);
+    private static final CountDownLatch PONG_IMAGE_LATCH = new CountDownLatch(1);
     private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
     private static final AtomicBoolean RUNNING = new AtomicBoolean(true);
 
@@ -81,7 +78,7 @@ public class EmbeddedPingPong
     private static void runPing(final String embeddedDirName) throws InterruptedException
     {
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(EmbeddedPingPong::newPongConnectionHandler);
+            .newImageHandler(EmbeddedPingPong::newPongImageHandler);
         ctx.dirName(embeddedDirName);
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
@@ -94,9 +91,9 @@ public class EmbeddedPingPong
              final Publication pingPublication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
              final Subscription pongSubscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
         {
-            System.out.println("Waiting for new connection from Pong...");
+            System.out.println("Waiting for new image from Pong...");
 
-            PONG_CONNECTION_LATCH.await();
+            PONG_IMAGE_LATCH.await();
 
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
@@ -184,12 +181,17 @@ public class EmbeddedPingPong
         HISTOGRAM.recordValue(rttNs);
     }
 
-    private static void newPongConnectionHandler(
-        final String channel, final int streamId, final int sessionId, final long joiningPosition, final String sourceIdentity)
+    private static void newPongImageHandler(
+        final Image image,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long joiningPosition,
+        final String sourceIdentity)
     {
         if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
         {
-            PONG_CONNECTION_LATCH.countDown();
+            PONG_IMAGE_LATCH.countDown();
         }
     }
 

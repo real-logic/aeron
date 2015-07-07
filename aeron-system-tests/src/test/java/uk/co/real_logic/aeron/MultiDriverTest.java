@@ -119,7 +119,7 @@ public class MultiDriverTest
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        Thread.sleep(20); // allow for connections to be established
+        Thread.sleep(20); // allow for images to be established
     }
 
     @Test(timeout = 10000)
@@ -127,9 +127,9 @@ public class MultiDriverTest
     {
         final int numMessagesToSendPreJoin = NUM_MESSAGES_PER_TERM / 2;
         final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
-        final CountDownLatch newConnectionLatch = new CountDownLatch(1);
+        final CountDownLatch newImageLatch = new CountDownLatch(1);
 
-        aeronBContext.newConnectionHandler((channel, streamId, sessionId, position, info) -> newConnectionLatch.countDown());
+        aeronBContext.newImageHandler((image, channel, streamId, sessionId, position, info) -> newImageLatch.countDown());
 
         launch();
 
@@ -157,8 +157,8 @@ public class MultiDriverTest
 
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        // wait until new subscriber gets new connection indication
-        newConnectionLatch.await();
+        // wait until new subscriber gets new image indication
+        newImageLatch.await();
 
         for (int i = 0; i < numMessagesToSendPostJoin; i++)
         {

@@ -61,8 +61,8 @@ public class SubscriberTool
     private static final int CONTROL_PORT_START = 62777;
     private static final int CONTROL_STREAMID = 9999;
 
-    private static final int CONTROL_ACTION_NEW_CONNECTION = 0;
-    private static final int CONTROL_ACTION_INACTIVE_CONNECTION = 1;
+    private static final int CONTROL_ACTION_NEW_IMAGE = 0;
+    private static final int CONTROL_ACTION_INACTIVE_IMAGE = 1;
 
     /* IPv6 addresses have a max string length of 45, plus port, plus "udp://", etc.
      * This should be big enough to include all of that and any reasonable Aeron-
@@ -155,7 +155,9 @@ public class SubscriberTool
             nonVerifiableMessages));
     }
 
-    /** Warn about options settings that might cause trouble. */
+    /**
+     * Warn about options settings that might cause trouble.
+     */
     private static void sanityCheckOptions(final PubSubOptions options)
     {
         if (options.threads() > 1)
@@ -170,6 +172,7 @@ public class SubscriberTool
     /**
      * A snapshot (non-atomic) total of the number of verifiable messages
      * received across all receiving threads.
+     *
      * @return current total number of verifiable messages received
      */
     public long verifiableMessages()
@@ -186,6 +189,7 @@ public class SubscriberTool
     /**
      * A snapshot (non-atomic) total of the number of bytes
      * received across all receiving threads.
+     *
      * @return current total number of bytes received
      */
     public long bytes()
@@ -202,6 +206,7 @@ public class SubscriberTool
     /**
      * A snapshot (non-atomic) total of the number of non-verifiable messages
      * received across all receiving threads.
+     *
      * @return current total number of non-verifiable messages received
      */
     public long nonVerifiableMessages()
@@ -217,6 +222,7 @@ public class SubscriberTool
 
     /**
      * Optionally sets the random seed used for the TLRandom class, and reports the seed used.
+     *
      * @return the seed to use
      */
     public long setSeed(long seed)
@@ -246,7 +252,7 @@ public class SubscriberTool
         }
     }
 
-    class SubscriberThread implements Runnable, InactiveConnectionHandler, NewConnectionHandler, RateController.Callback
+    class SubscriberThread implements Runnable, InactiveImageHandler, NewImageHandler, RateController.Callback
     {
         final int threadId;
         private long nonVerifiableMessagesReceived;
@@ -293,8 +299,8 @@ public class SubscriberTool
             rateController = rc;
             /* Create a context and connect to the media driver. */
             ctx = new Aeron.Context()
-                .inactiveConnectionHandler(this)
-                .newConnectionHandler(this)
+                .inactiveImageHandler(this)
+                .newImageHandler(this)
                 .errorHandler((throwable) ->
                 {
                     throwable.printStackTrace();
@@ -362,13 +368,14 @@ public class SubscriberTool
                         }
 
                         final FragmentHandler dataHandler = new FragmentAssembler(new MessageStreamHandler(
-                                channel.channel(), channel.streamIdentifiers()[j], sessionIdMap)::onMessage);
+                            channel.channel(), channel.streamIdentifiers()[j], sessionIdMap)::onMessage);
                         final Subscription subscription = aeron.addSubscription(
-                                channel.channel(), channel.streamIdentifiers()[j]);
+                            channel.channel(), channel.streamIdentifiers()[j]);
                         final SubscriptionWithHandler subAndHandler = new SubscriptionWithHandler(subscription, dataHandler);
 
                         subscriptionsList.add(subAndHandler);
                     }
+
                     streamIdx++;
                 }
             }
@@ -379,8 +386,10 @@ public class SubscriberTool
             activeSubscriptionsLength = 0; /* No subscriptions are in the active list to start. */
         }
 
-        /** Get the number of bytes of all message types received so far by this
+        /**
+         * Get the number of bytes of all message types received so far by this
          * individual subscriber thread.
+         *
          * @return the number of bytes received by this thread
          */
         public long bytesReceived()
@@ -390,6 +399,7 @@ public class SubscriberTool
 
         /**
          * Gets the number of non-verifiable messages received by this individual subscriber thread.
+         *
          * @return number of non-verifiable messages received by this thread
          */
         public long nonVerifiableMessagesReceived()
@@ -399,6 +409,7 @@ public class SubscriberTool
 
         /**
          * Gets the number of verifiable messages received by this individual subscriber thread.
+         *
          * @return number of verifiable messages received by this thread
          */
         public long verifiableMessagesReceived()
@@ -406,7 +417,9 @@ public class SubscriberTool
             return verifiableMessagesReceived;
         }
 
-        /** Looks for a connection in the active subscriptions list; if it's not found, it adds it. */
+        /**
+         * Looks for a images in the active subscriptions list; if it's not found, it adds it.
+         */
         private void makeActive(final String channel, final int streamId)
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
@@ -438,7 +451,9 @@ public class SubscriberTool
             activeSubscriptionsLength++;
         }
 
-        /** Looks for a connection in the active subscriptions list; if it's found, take it out. */
+        /**
+         * Looks for an image in the active subscriptions list; if it's found, take it out.
+         */
         private void makeInactive(final String channel, final int streamId)
         {
             for (int i = 0; i < activeSubscriptionsLength; i++)
@@ -460,7 +475,6 @@ public class SubscriberTool
         /**
          * Implements the DataHandler callback for subscribers and checks
          * any verifiable messages received.
-         *
          */
         public class MessageStreamHandler
         {
@@ -472,16 +486,14 @@ public class SubscriberTool
             private final OutputStream os = options.output();
 
             public MessageStreamHandler(
-                final String channel,
-                final int streamId,
-                final Int2ObjectHashMap<MessageStream> sessionIdMap)
+                final String channel, final int streamId, final Int2ObjectHashMap<MessageStream> sessionIdMap)
             {
                 this.channel = channel;
                 this.streamId = streamId;
                 this.sessionIdMap = sessionIdMap;
             }
 
-            public void channel(String channel)
+            public void channel(final String channel)
             {
                 this.channel = channel;
             }
@@ -503,23 +515,23 @@ public class SubscriberTool
                 final int streamId = buffer.getInt(offset + 8 + channelLen);
                 final int sessionId = buffer.getInt(offset + 12 + channelLen);
 
-                if (action == CONTROL_ACTION_NEW_CONNECTION)
+                if (action == CONTROL_ACTION_NEW_IMAGE)
                 {
-                    LOG.info(String.format("NEW CONNECTION: channel \"%s\", stream %d, session %d",
+                    LOG.info(String.format("NEW IMAGE: channel \"%s\", stream %d, session %d",
                         channel, streamId, sessionId));
 
-                    /* Create a new MessageStream for this connection if it doesn't already exist. */
+                    /* Create a new MessageStream for this image if it doesn't already exist. */
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap = messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warning("New connection detected for channel we were not subscribed to.");
+                        LOG.warning("New image detected for channel we were not subscribed to.");
                     }
                     else
                     {
                         final Int2ObjectHashMap<MessageStream> sessionIdMap = streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warning("New connection detected for channel we were not subscribed to.");
+                            LOG.warning("New image detected for channel we were not subscribed to.");
                         }
                         else
                         {
@@ -532,39 +544,39 @@ public class SubscriberTool
                         }
                     }
 
-                    /* And add this channel/stream ID to the active connections list if it wasn't already in it. */
+                    /* And add this channel/stream ID to the active images list if it wasn't already in it. */
                     makeActive(channel, streamId);
                 }
-                else if (action == CONTROL_ACTION_INACTIVE_CONNECTION)
+                else if (action == CONTROL_ACTION_INACTIVE_IMAGE)
                 {
-                    LOG.info(String.format("INACTIVE CONNECTION: channel \"%s\", stream %d, session %d",
+                    LOG.info(String.format("INACTIVE IMAGE: channel \"%s\", stream %d, session %d",
                         channel, streamId, sessionId));
 
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap = messageStreams.get(channel);
                     if (streamIdMap == null)
                     {
-                        LOG.warning("Inactive connection detected for unknown connection.");
+                        LOG.warning("Inactive image detected for unknown stream.");
                     }
                     else
                     {
                         final Int2ObjectHashMap<MessageStream> sessionIdMap = streamIdMap.get(streamId);
                         if (sessionIdMap == null)
                         {
-                            LOG.warning("Inactive connection detected for unknown connection.");
+                            LOG.warning("Inactive image detected for unknown session.");
                         }
                         else
                         {
                             final MessageStream ms = sessionIdMap.get(sessionId);
                             if (ms == null)
                             {
-                                LOG.warning("Inactive connection detected for unknown connection.");
+                                LOG.warning("Inactive image detected for unknown session.");
                             }
                             else
                             {
                                 /* Great, found the message stream.  Now get rid of it. */
                                 sessionIdMap.remove(sessionId);
                                 /* If that was the last sessionId we were subscribed to, go ahead and make
-                                 * this connection inactive. */
+                                 * this image inactive. */
                                 if (sessionIdMap.isEmpty())
                                 {
                                     makeInactive(channel, streamId);
@@ -657,7 +669,8 @@ public class SubscriberTool
             }
         }
 
-        /** Subscriber thread.  Creates its own Aeron context, and subscribes
+        /**
+         * Subscriber thread.  Creates its own Aeron context, and subscribes
          * on a round-robin'd subset of the channels and stream IDs configured.
          */
         public void run()
@@ -716,25 +729,27 @@ public class SubscriberTool
             }
         }
 
-        public void onInactiveConnection(
+        public void onInactiveImage(
+            final Image image,
             final String channel,
             final int streamId,
             final int sessionId,
             final long position)
         {
-            /* Handle processing the inactive connection notice on the subscriber thread. */
-            enqueueControlMessage(CONTROL_ACTION_INACTIVE_CONNECTION, channel, streamId, sessionId);
+            /* Handle processing the inactive image notice on the subscriber thread. */
+            enqueueControlMessage(CONTROL_ACTION_INACTIVE_IMAGE, channel, streamId, sessionId);
         }
 
-        public void onNewConnection(
+        public void onNewImage(
+            final Image image,
             final String channel,
             final int streamId,
             final int sessionId,
             final long position,
             final String sourceIdentity)
         {
-            /* Handle processing the new connection notice on the subscriber thread. */
-            enqueueControlMessage(CONTROL_ACTION_NEW_CONNECTION, channel, streamId, sessionId);
+            /* Handle processing the new image notice on the subscriber thread. */
+            enqueueControlMessage(CONTROL_ACTION_NEW_IMAGE, channel, streamId, sessionId);
         }
 
         public int onNext()
@@ -749,5 +764,4 @@ public class SubscriberTool
     {
         LOG.info(reportString.toString());
     }
-
 }

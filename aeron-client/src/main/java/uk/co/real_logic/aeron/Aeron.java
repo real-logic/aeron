@@ -77,8 +77,8 @@ public final class Aeron implements AutoCloseable
             ctx.counterValuesBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
             ctx.errorHandler,
-            ctx.newConnectionHandler,
-            ctx.inactiveConnectionHandler,
+            ctx.newImageHandler,
+            ctx.inactiveImageHandler,
             ctx.mediaDriverTimeout());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
@@ -166,7 +166,7 @@ public final class Aeron implements AutoCloseable
     /**
      * This class provides configuration for the {@link Aeron} class via the {@link Aeron#connect(Aeron.Context)}
      * method and its overloads. It gives applications some control over the interactions with the Aeron Media Driver.
-     * It can also set up error handling as well as application callbacks for connection information from the
+     * It can also set up error handling as well as application callbacks for image information from the
      * Media Driver.
      */
     public static class Context extends CommonContext
@@ -181,8 +181,8 @@ public final class Aeron implements AutoCloseable
         private DirectBuffer cncMetaDataBuffer;
         private LogBuffersFactory logBuffersFactory;
         private ErrorHandler errorHandler;
-        private NewConnectionHandler newConnectionHandler;
-        private InactiveConnectionHandler inactiveConnectionHandler;
+        private NewImageHandler newImageHandler;
+        private InactiveImageHandler inactiveImageHandler;
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
@@ -258,14 +258,14 @@ public final class Aeron implements AutoCloseable
                     errorHandler = DEFAULT_ERROR_HANDLER;
                 }
 
-                if (null == newConnectionHandler)
+                if (null == newImageHandler)
                 {
-                    newConnectionHandler = (channel, streamId, sessionId, joiningPosition, sourceIdentity) -> { };
+                    newImageHandler = (image, channel, streamId, sessionId, joiningPosition, sourceIdentity) -> { };
                 }
 
-                if (null == inactiveConnectionHandler)
+                if (null == inactiveImageHandler)
                 {
-                    inactiveConnectionHandler = (channel, streamId, sessionId, position) -> { };
+                    inactiveImageHandler = (image, channel, streamId, sessionId, position) -> { };
                 }
             }
             catch (final Exception ex)
@@ -366,26 +366,26 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
-         * Set up a callback for when a new connection is created.
+         * Set up a callback for when a new {@link Image} is created.
          *
          * @param handler Callback method for handling new connection notifications.
          * @return this Aeron.Context for method chaining.
          */
-        public Context newConnectionHandler(final NewConnectionHandler handler)
+        public Context newImageHandler(final NewImageHandler handler)
         {
-            this.newConnectionHandler = handler;
+            this.newImageHandler = handler;
             return this;
         }
 
         /**
-         * Set up a callback for when a connection determined to be inactive.
+         * Set up a callback for when a {@link Image} determined to be inactive.
          *
-         * @param handler Callback method for handling inactive connection notifications.
+         * @param handler Callback method for handling inactive image notifications.
          * @return this Aeron.Context for method chaining.
          */
-        public Context inactiveConnectionHandler(final InactiveConnectionHandler handler)
+        public Context inactiveImageHandler(final InactiveImageHandler handler)
         {
-            this.inactiveConnectionHandler = handler;
+            this.inactiveImageHandler = handler;
             return this;
         }
 

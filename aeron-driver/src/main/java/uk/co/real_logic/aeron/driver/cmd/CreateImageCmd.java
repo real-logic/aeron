@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 
 import java.net.InetSocketAddress;
 
-public class CreateConnectionCmd implements DriverConductorCmd
+public class CreateImageCmd implements DriverConductorCmd
 {
     private final int sessionId;
     private final int streamId;
@@ -33,12 +33,12 @@ public class CreateConnectionCmd implements DriverConductorCmd
     private final InetSocketAddress srcAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
 
-    public CreateConnectionCmd(
+    public CreateImageCmd(
         final int sessionId,
         final int streamId,
         final int initialTermId,
         final int activeTermId,
-        final int termOffet,
+        final int termOffset,
         final int termLength,
         final int senderMtuLength,
         final InetSocketAddress controlAddress,
@@ -49,7 +49,7 @@ public class CreateConnectionCmd implements DriverConductorCmd
         this.streamId = streamId;
         this.initialTermId = initialTermId;
         this.activeTermId = activeTermId;
-        this.termOffset = termOffet;
+        this.termOffset = termOffset;
         this.termLength = termLength;
         this.senderMtuLength = senderMtuLength;
         this.controlAddress = controlAddress;
@@ -59,7 +59,7 @@ public class CreateConnectionCmd implements DriverConductorCmd
 
     public void execute(final DriverConductor conductor)
     {
-        conductor.onCreateConnection(
+        conductor.onCreateImage(
             sessionId,
             streamId,
             initialTermId,

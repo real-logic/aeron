@@ -145,11 +145,11 @@ public class EventLogger
         }
     }
 
-    public void logConnectionRemoval(final CharSequence uri, final int sessionId, final int streamId, final long id)
+    public void logImageRemoval(final CharSequence uri, final int sessionId, final int streamId, final long id)
     {
-        if (isEnabled(EventCode.REMOVE_CONNECTION_CLEANUP, ENABLED_EVENT_CODES))
+        if (isEnabled(EventCode.REMOVE_IMAGE_CLEANUP, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.REMOVE_CONNECTION_CLEANUP, String.format("%s %d:%d [%d]", uri, sessionId, streamId, id));
+            logString(EventCode.REMOVE_IMAGE_CLEANUP, String.format("%s %d:%d [%d]", uri, sessionId, streamId, id));
         }
     }
 

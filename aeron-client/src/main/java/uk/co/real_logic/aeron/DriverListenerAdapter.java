@@ -34,9 +34,9 @@ class DriverListenerAdapter implements MessageHandler
 
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
-    private final ConnectionBuffersReadyFlyweight connectionReady = new ConnectionBuffersReadyFlyweight();
+    private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
-    private final ConnectionMessageFlyweight connectionMessage = new ConnectionMessageFlyweight();
+    private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final DriverListener listener;
     private final Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(MISSING_REGISTRATION_ID);
 
@@ -89,26 +89,26 @@ class DriverListenerAdapter implements MessageHandler
                 break;
             }
 
-            case ON_CONNECTION_READY:
+            case ON_IMAGE_READY:
             {
-                connectionReady.wrap(buffer, index);
+                imageReady.wrap(buffer, index);
 
-                for (int i = 0, max = connectionReady.subscriberPositionCount(); i < max; i++)
+                for (int i = 0, max = imageReady.subscriberPositionCount(); i < max; i++)
                 {
-                    final long registrationId = connectionReady.positionIndicatorRegistrationId(i);
-                    final int positionId = connectionReady.subscriberPositionId(i);
+                    final long registrationId = imageReady.positionIndicatorRegistrationId(i);
+                    final int positionId = imageReady.subscriberPositionId(i);
 
                     subscriberPositionMap.put(registrationId, positionId);
                 }
 
-                listener.onNewConnection(
-                    connectionReady.streamId(),
-                    connectionReady.sessionId(),
-                    connectionReady.joiningPosition(),
+                listener.onNewImage(
+                    imageReady.streamId(),
+                    imageReady.sessionId(),
+                    imageReady.joiningPosition(),
                     subscriberPositionMap,
-                    connectionReady.logFileName(),
-                    connectionReady.sourceIdentity(),
-                    connectionReady.correlationId());
+                    imageReady.logFileName(),
+                    imageReady.sourceIdentity(),
+                    imageReady.correlationId());
 
                 subscriberPositionMap.clear();
                 break;
@@ -126,15 +126,15 @@ class DriverListenerAdapter implements MessageHandler
                 break;
             }
 
-            case ON_INACTIVE_CONNECTION:
+            case ON_INACTIVE_IMAGE:
             {
-                connectionMessage.wrap(buffer, index);
+                imageMessage.wrap(buffer, index);
 
-                listener.onInactiveConnection(
-                    connectionMessage.streamId(),
-                    connectionMessage.sessionId(),
-                    connectionMessage.position(),
-                    connectionMessage.correlationId());
+                listener.onInactiveImage(
+                    imageMessage.streamId(),
+                    imageMessage.sessionId(),
+                    imageMessage.position(),
+                    imageMessage.correlationId());
                 break;
             }
 

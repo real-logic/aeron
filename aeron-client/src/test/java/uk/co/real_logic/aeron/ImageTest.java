@@ -37,7 +37,7 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
-public class ConnectionTest
+public class ImageTest
 {
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int POSITION_BITS_TO_SHIFT = Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH);
@@ -93,11 +93,11 @@ public class ConnectionTest
     public void shouldReportCorrectPositionOnReception()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-        final Connection connection = createConnection(initialPosition);
+        final Image image = createImage(initialPosition);
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(0));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        final int messages = image.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -119,11 +119,11 @@ public class ConnectionTest
         final long initialPosition = computePosition(
             INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        final Connection connection = createConnection(initialPosition);
+        final Image image = createImage(initialPosition);
 
         insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        final int messages = image.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -146,11 +146,11 @@ public class ConnectionTest
         final long initialPosition =
             computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-        final Connection connection = createConnection(initialPosition);
+        final Image image = createImage(initialPosition);
 
         insertDataFrame(activeTermId, offsetOfFrame(initialMessageIndex));
 
-        final int messages = connection.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        final int messages = image.poll(mockFragmentHandler, Integer.MAX_VALUE);
         assertThat(messages, is(1));
 
         verify(mockFragmentHandler).onFragment(
@@ -164,9 +164,9 @@ public class ConnectionTest
         inOrder.verify(position).setOrdered(initialPosition + ALIGNED_FRAME_LENGTH);
     }
 
-    public Connection createConnection(final long initialPosition)
+    public Image createImage(final long initialPosition)
     {
-        return new Connection(SESSION_ID, initialPosition, position, logBuffers, errorHandler, CORRELATION_ID);
+        return new Image(SESSION_ID, initialPosition, position, logBuffers, errorHandler, CORRELATION_ID);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

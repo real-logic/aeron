@@ -31,7 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
-public class AeronPing implements NewConnectionHandler
+public class AeronPing implements NewImageHandler
 {
     private final int numMsgs = 1000000;
     private final int numWarmupMsgs = 50000;
@@ -42,7 +42,7 @@ public class AeronPing implements NewConnectionHandler
     private final Aeron aeron;
     private final Publication pub;
     private final Subscription sub;
-    private final CountDownLatch connectionLatch;
+    private final CountDownLatch imageLatch;
     private final int pingStreamId = 10;
     private final int pongStreamId = 11;
     private String pingChannel = "udp://localhost:44444";
@@ -59,12 +59,12 @@ public class AeronPing implements NewConnectionHandler
         parseArgs(args);
 
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(this);
+            .newImageHandler(this);
 
         aeron = Aeron.connect(ctx);
         pub = aeron.addPublication(pingChannel, pingStreamId);
         sub = aeron.addSubscription(pongChannel, pongStreamId);
-        connectionLatch = new CountDownLatch(1);
+        imageLatch = new CountDownLatch(1);
         buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(msgLen));
         timestamps = new long[2][numMsgs];
 
@@ -78,7 +78,7 @@ public class AeronPing implements NewConnectionHandler
     {
         try
         {
-            connectionLatch.await();
+            imageLatch.await();
             System.out.println("Connected");
         }
         catch (final InterruptedException e)
@@ -248,7 +248,8 @@ public class AeronPing implements NewConnectionHandler
         }
     }
 
-    public void onNewConnection(
+    public void onNewImage(
+        final Image image,
         final String channel,
         final int streamId,
         final int sessionId,
@@ -257,7 +258,7 @@ public class AeronPing implements NewConnectionHandler
     {
         if (channel.equals(pongChannel) && pongStreamId == streamId)
         {
-            connectionLatch.countDown();
+            imageLatch.countDown();
         }
     }
 

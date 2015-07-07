@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssembler;
+import uk.co.real_logic.aeron.Image;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -48,8 +49,8 @@ public class MultipleSubscribersWithFragmentAssembly
             CHANNEL, STREAM_ID_1, STREAM_ID_2);
 
         final Aeron.Context ctx = new Aeron.Context()
-            .newConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventNewConnection)
-            .inactiveConnectionHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveConnection);
+            .newImageHandler(MultipleSubscribersWithFragmentAssembly::eventNewImage)
+            .inactiveImageHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveImage);
 
         // dataHandler method is called for every new message received
         // When a message is completely reassembled, the delegate method 'reassembledStringMessage' is called
@@ -90,36 +91,43 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Print the information for a new connection to stdout.
+     * Print the information for a new image to stdout.
      *
-     * @param channel        for the connection
+     * @param image          that has been created
+     * @param channel        for the image
      * @param streamId       for the stream
-     * @param sessionId      for the connection publication
+     * @param sessionId      for the image publication
      * @param position       in the stream
      * @param sourceIdentity that is transport specific
      */
-    public static void eventNewConnection(
-        final String channel, final int streamId, final int sessionId, final long position, final String sourceIdentity)
+    public static void eventNewImage(
+        final Image image,
+        final String channel,
+        final int streamId,
+        final int sessionId,
+        final long position,
+        final String sourceIdentity)
     {
         System.out.format(
-            "new connection on %s streamId %x sessionId %x from %s%n",
+            "new image on %s streamId %x sessionId %x from %s%n",
             channel, streamId, sessionId, sourceIdentity);
 
     }
 
     /**
-     * This handler is called when connection goes inactive
+     * This handler is called when image goes inactive
      *
-     * @param channel   for the connection
+     * @param image     that has gone inactive
+     * @param channel   for the image
      * @param streamId  for the stream
-     * @param sessionId for the connection publication
+     * @param sessionId for the publication image
      * @param position  within the stream
      */
-    public static void eventInactiveConnection(
-        final String channel, final int streamId, final int sessionId, final long position)
+    public static void eventInactiveImage(
+        final Image image, final String channel, final int streamId, final int sessionId, final long position)
     {
         System.out.format(
-            "inactive connection on %s streamId %d sessionId %x%n",
+            "inactive image on %s streamId %d sessionId %x%n",
             channel, streamId, sessionId);
     }
 

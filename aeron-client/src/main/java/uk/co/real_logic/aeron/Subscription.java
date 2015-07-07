@@ -128,7 +128,7 @@ public class Subscription implements AutoCloseable
      * @return the number of bytes consumed.
      * @throws IllegalStateException if the subscription is closed.
      */
-    public long poll(final BlockHandler blockHandler, final int blockLengthLimit)
+    public long blockPoll(final BlockHandler blockHandler, final int blockLengthLimit)
     {
         ensureOpen();
 
@@ -136,7 +136,7 @@ public class Subscription implements AutoCloseable
         final Connection[] connections = this.connections;
         for (final Connection connection : connections)
         {
-            bytesConsumed += connection.poll(blockHandler, blockLengthLimit);
+            bytesConsumed += connection.blockPoll(blockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;
@@ -150,7 +150,7 @@ public class Subscription implements AutoCloseable
      * @return the number of bytes consumed.
      * @throws IllegalStateException if the subscription is closed.
      */
-    public long poll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
+    public long filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
     {
         ensureOpen();
 
@@ -158,7 +158,7 @@ public class Subscription implements AutoCloseable
         final Connection[] connections = this.connections;
         for (final Connection connection : connections)
         {
-            bytesConsumed += connection.poll(fileBlockHandler, blockLengthLimit);
+            bytesConsumed += connection.filePoll(fileBlockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;

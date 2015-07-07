@@ -132,7 +132,7 @@ public class Connection
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
      */
-    public int poll(final BlockHandler blockHandler, final int blockLengthLimit)
+    public int blockPoll(final BlockHandler blockHandler, final int blockLengthLimit)
     {
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
@@ -167,7 +167,7 @@ public class Connection
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
      */
-    public int poll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
+    public int filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
     {
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;

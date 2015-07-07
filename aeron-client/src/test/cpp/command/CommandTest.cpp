@@ -19,8 +19,8 @@
 #include <util/Exceptions.h>
 #include <util/Index.h>
 #include <concurrent/AtomicBuffer.h>
-#include <command/ConnectionMessageFlyweight.h>
-#include <command/ConnectionBuffersReadyFlyweight.h>
+#include <command/ImageMessageFlyweight.h>
+#include <command/ImageBuffersReadyFlyweight.h>
 #include <command/RemoveMessageFlyweight.h>
 #include <command/SubscriptionMessageFlyweight.h>
 #include <command/PublicationMessageFlyweight.h>
@@ -46,11 +46,11 @@ TEST (commandTests, testInstantiateFlyweights)
     std::string channelData = "channelData";
 
     ASSERT_NO_THROW({
-        ConnectionMessageFlyweight cmd(ab, BASEOFFSET);
+        ImageMessageFlyweight cmd(ab, BASEOFFSET);
     });
 
     ASSERT_NO_THROW({
-        ConnectionBuffersReadyFlyweight cmd(ab, BASEOFFSET);
+        ImageBuffersReadyFlyweight cmd(ab, BASEOFFSET);
     });
 
     ASSERT_NO_THROW({
@@ -79,7 +79,7 @@ TEST (commandTests, testConnectionMessageFlyweight)
     std::string channelData = "channelData";
 
     ASSERT_NO_THROW({
-        ConnectionMessageFlyweight cmd (ab, BASEOFFSET);
+        ImageMessageFlyweight cmd (ab, BASEOFFSET);
         cmd.correlationId(1).sessionId(2).streamId(3).position(64).channel(channelData);
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), 1);
@@ -141,32 +141,32 @@ TEST (commandTests, testConnectionReadyFlyweight)
 
     ASSERT_NO_THROW(
     {
-        ConnectionBuffersReadyFlyweight cmd(ab, BASEOFFSET);
+        ImageBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
         cmd.correlationId(-1).joiningPosition(64).streamId(0x01010101).sessionId(0x02020202).subscriberPositionCount(4);
         cmd.logFileName(logFileNameData).sourceIdentity(sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
-            cmd.subscriberPosition(n, ConnectionBuffersReadyDefn::SubscriberPosition {n, n});
+            cmd.subscriberPosition(n, ImageBuffersReadyDefn::SubscriberPosition {n, n});
         }
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 8), 64);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 0x02020202);
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 0x01010101);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), sizeof(ConnectionBuffersReadyDefn::SubscriberPosition));
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), sizeof(ImageBuffersReadyDefn::SubscriberPosition));
         ASSERT_EQ(ab.getInt32(BASEOFFSET + 28), 4);
 
         const index_t startOfSubscriberPositions = BASEOFFSET + 32;
         for (int n = 0; n < 4; n++)
         {
             ASSERT_EQ(
-                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition))), n);
+                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition))), n);
             ASSERT_EQ(
-                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition)) + 4), n);
+                ab.getInt32(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition)) + 4), n);
         }
 
-        const index_t startOfLogFileName = BASEOFFSET + 32 + (4 * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition));
+        const index_t startOfLogFileName = BASEOFFSET + 32 + (4 * sizeof(ImageBuffersReadyDefn::SubscriberPosition));
         ASSERT_EQ(ab.getInt32(startOfLogFileName), logFileNameData.length());
         ASSERT_EQ(ab.getStringUtf8(startOfLogFileName), logFileNameData);
 
@@ -183,13 +183,13 @@ TEST (commandTests, testConnectionReadyFlyweight)
         ASSERT_EQ(cmd.sourceIdentity(), sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
-            const ConnectionBuffersReadyDefn::SubscriberPosition subscriberPosition = cmd.subscriberPosition(n);
+            const ImageBuffersReadyDefn::SubscriberPosition subscriberPosition = cmd.subscriberPosition(n);
 
             ASSERT_EQ(subscriberPosition.indicatorId, n);
             ASSERT_EQ(subscriberPosition.registrationId, n);
         }
 
-        const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions = cmd.subscriberPositions();
+        const ImageBuffersReadyDefn::SubscriberPosition* subscriberPositions = cmd.subscriberPositions();
         for (int n = 0; n < 4; n++)
         {
             ASSERT_EQ(subscriberPositions[n].indicatorId, n);
@@ -198,8 +198,8 @@ TEST (commandTests, testConnectionReadyFlyweight)
 
         ASSERT_EQ(
             cmd.length(),
-            sizeof(ConnectionBuffersReadyDefn) +
-                (4 * sizeof(ConnectionBuffersReadyDefn::SubscriberPosition)) +
+            sizeof(ImageBuffersReadyDefn) +
+                (4 * sizeof(ImageBuffersReadyDefn::SubscriberPosition)) +
                 sizeof(std::int32_t) + logFileNameData.length() +
                 sizeof(std::int32_t) + sourceInfoData.length());
     }

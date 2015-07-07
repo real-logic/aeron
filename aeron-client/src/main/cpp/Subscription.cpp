@@ -25,15 +25,15 @@ Subscription::Subscription(
     m_channel(channel),
     m_registrationId(registrationId),
     m_streamId(streamId),
-    m_connections(nullptr),
-    m_connectionsLength(0)
+    m_images(nullptr),
+    m_imagesLength(0)
 {
 
 }
 
 Subscription::~Subscription()
 {
-    m_conductor.releaseSubscription(m_registrationId, m_connections, m_connectionsLength);
+    m_conductor.releaseSubscription(m_registrationId, m_images, m_imagesLength);
 }
 
 }

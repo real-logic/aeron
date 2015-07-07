@@ -104,21 +104,22 @@ int main(int argc, char** argv)
                 std::cout << "Subscription: " << channel << " " << correlationId << ":" << streamId << std::endl;
             });
 
-        context.newConnectionHandler([](
-            const std::string& channel,
+        context.newImageHandler([](
+            Image& image,
+            const std::string &channel,
             std::int32_t streamId,
             std::int32_t sessionId,
             std::int64_t joiningPosition,
-            const std::string& sourceIdentity)
-            {
-                std::cout << "New connection on " << channel << " streamId=" << streamId << " sessionId=" << sessionId;
-                std::cout << " at position=" << joiningPosition << " from " << sourceIdentity << std::endl;
-            });
+            const std::string &sourceIdentity)
+        {
+            std::cout << "New image on " << channel << " streamId=" << streamId << " sessionId=" << sessionId;
+            std::cout << " at position=" << joiningPosition << " from " << sourceIdentity << std::endl;
+        });
 
-        context.inactiveConnectionHandler(
-            [](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)
+        context.inactiveImageHandler(
+            [](Image& image, const std::string &channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)
             {
-                std::cout << "Inactive connection on " << channel << "streamId=" << streamId << " sessionId=" << sessionId;
+                std::cout << "Inactive image on " << channel << "streamId=" << streamId << " sessionId=" << sessionId;
                 std::cout << " at position=" << position << std::endl;
             });
 

@@ -75,7 +75,7 @@ namespace aeron { namespace command {
 
 #pragma pack(push)
 #pragma pack(4)
-struct ConnectionBuffersReadyDefn
+struct ImageBuffersReadyDefn
 {
     std::int64_t correlationId;
     std::int64_t joiningPosition;
@@ -92,13 +92,13 @@ struct ConnectionBuffersReadyDefn
 };
 #pragma pack(pop)
 
-class ConnectionBuffersReadyFlyweight : public Flyweight<ConnectionBuffersReadyDefn>
+class ImageBuffersReadyFlyweight : public Flyweight<ImageBuffersReadyDefn>
 {
 public:
-    typedef ConnectionBuffersReadyFlyweight this_t;
+    typedef ImageBuffersReadyFlyweight this_t;
 
-    inline ConnectionBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : Flyweight<ConnectionBuffersReadyDefn>(buffer, offset)
+    inline ImageBuffersReadyFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
+        : Flyweight<ImageBuffersReadyDefn>(buffer, offset)
     {
     }
 
@@ -153,25 +153,25 @@ public:
 
     inline this_t& subscriberPositionCount(std::int32_t value)
     {
-        m_struct.subscriberPositionBlockLength = sizeof(ConnectionBuffersReadyDefn::SubscriberPosition);
+        m_struct.subscriberPositionBlockLength = sizeof(ImageBuffersReadyDefn::SubscriberPosition);
         m_struct.subscriberPositionCount = value;
         return *this;
     }
 
-    inline this_t& subscriberPosition(std::int32_t index, const ConnectionBuffersReadyDefn::SubscriberPosition& value)
+    inline this_t& subscriberPosition(std::int32_t index, const ImageBuffersReadyDefn::SubscriberPosition& value)
     {
-        overlayStruct<ConnectionBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index)) = value;
+        overlayStruct<ImageBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index)) = value;
         return *this;
     }
 
-    inline const ConnectionBuffersReadyDefn::SubscriberPosition subscriberPosition(std::int32_t index) const
+    inline const ImageBuffersReadyDefn::SubscriberPosition subscriberPosition(std::int32_t index) const
     {
-        return overlayStruct<ConnectionBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index));
+        return overlayStruct<ImageBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(index));
     }
 
-    inline const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions() const
+    inline const ImageBuffersReadyDefn::SubscriberPosition* subscriberPositions() const
     {
-        return &overlayStruct<ConnectionBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(0));
+        return &overlayStruct<ImageBuffersReadyDefn::SubscriberPosition>(subscriberPositionOffset(0));
     }
 
     inline std::string logFileName() const
@@ -207,9 +207,9 @@ private:
 
     inline util::index_t subscriberPositionOffset(int index) const
     {
-        const util::index_t startOfPositions = sizeof(ConnectionBuffersReadyDefn);
+        const util::index_t startOfPositions = sizeof(ImageBuffersReadyDefn);
 
-        return startOfPositions + (index * (util::index_t)sizeof(ConnectionBuffersReadyDefn::SubscriberPosition));
+        return startOfPositions + (index * (util::index_t)sizeof(ImageBuffersReadyDefn::SubscriberPosition));
     }
 
     inline util::index_t logFileNameOffset() const

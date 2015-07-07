@@ -161,9 +161,9 @@ public:
     }
 
     /**
-     * Get the current position to which the connection has advanced on reading this message.
+     * Get the current position to which the Image has advanced on reading this message.
      *
-     * @return the current position to which the connection has advanced on reading this message.
+     * @return the current position to which the Image has advanced on reading this message.
      */
     inline std::int64_t position() const
     {

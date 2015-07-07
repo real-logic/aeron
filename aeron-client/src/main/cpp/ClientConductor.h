@@ -51,8 +51,8 @@ public:
         AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
         const on_new_subscription_t& newSubscriptionHandler,
-        const on_new_connection_t& newConnectionHandler,
-        const on_inactive_connection_t& inactiveConnectionHandler,
+        const on_new_image_t& newImageHandler,
+        const on_inactive_image_t& inactiveImageHandler,
         const exception_handler_t& errorHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs) :
@@ -61,8 +61,8 @@ public:
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
         m_onNewSubscpriptionHandler(newSubscriptionHandler),
-        m_onNewConnectionHandler(newConnectionHandler),
-        m_onInactiveConnectionHandler(inactiveConnectionHandler),
+        m_onNewImageHandler(newImageHandler),
+        m_onInactiveImageHandler(inactiveImageHandler),
         m_errorHandler(errorHandler),
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
@@ -95,7 +95,7 @@ public:
 
     std::int64_t addSubscription(const std::string& channel, std::int32_t streamId);
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
-    void releaseSubscription(std::int64_t registrationId, Connection* connections, int connectionsLength);
+    void releaseSubscription(std::int64_t registrationId, Image * connections, int connectionsLength);
 
     void onNewPublication(
         std::int32_t streamId,
@@ -111,17 +111,17 @@ public:
         std::int32_t errorCode,
         const std::string& errorMessage);
 
-    void onNewConnection(
+    void onNewImage(
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int64_t joiningPosition,
-        const std::string& logFilename,
-        const std::string& sourceIdentity,
+        const std::string &logFilename,
+        const std::string &sourceIdentity,
         std::int32_t subscriberPositionCount,
-        const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
+        const ImageBuffersReadyDefn::SubscriberPosition *subscriberPositions,
         std::int64_t correlationId);
 
-    void onInactiveConnection(
+    void onInactiveImage(
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int64_t position,
@@ -130,9 +130,9 @@ public:
 protected:
     void onCheckManagedResources(long now);
 
-    void lingerResource(long now, Connection* array);
+    void lingerResource(long now, Image * array);
     void lingerResource(long now, std::shared_ptr<LogBuffers> logBuffers);
-    void lingerResources(long now, Connection* connections, int connectionsLength);
+    void lingerResources(long now, Image *image, int connectionsLength);
 
 private:
     enum RegistrationStatus
@@ -180,12 +180,12 @@ private:
         }
     };
 
-    struct ConnectionArrayLingerDefn
+    struct ImageArrayLingerDefn
     {
         long m_timeOfLastStatusChange;
-        Connection* m_array;
+        Image * m_array;
 
-        ConnectionArrayLingerDefn(long now, Connection *array) :
+        ImageArrayLingerDefn(long now, Image *array) :
             m_timeOfLastStatusChange(now), m_array(array)
         {
         }
@@ -208,7 +208,7 @@ private:
     std::vector<SubscriptionStateDefn> m_subscriptions;
 
     std::vector<LogBuffersLingerDefn> m_lingeringLogBuffers;
-    std::vector<ConnectionArrayLingerDefn> m_lingeringConnectionArrays;
+    std::vector<ImageArrayLingerDefn> m_lingeringImageArrays;
 
     DriverProxy& m_driverProxy;
     DriverListenerAdapter<ClientConductor> m_driverListenerAdapter;
@@ -217,8 +217,8 @@ private:
 
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscpriptionHandler;
-    on_new_connection_t m_onNewConnectionHandler;
-    on_inactive_connection_t m_onInactiveConnectionHandler;
+    on_new_image_t m_onNewImageHandler;
+    on_inactive_image_t m_onInactiveImageHandler;
     exception_handler_t m_errorHandler;
 
     epoch_clock_t m_epochClock;

@@ -21,7 +21,7 @@
 #include <iostream>
 #include <atomic>
 #include <concurrent/logbuffer/TermReader.h>
-#include "Connection.h"
+#include "Image.h"
 
 namespace aeron {
 
@@ -84,7 +84,7 @@ public:
     }
 
     /**
-     * Poll the {@link Connection}s under the subscription for available message fragments.
+     * Poll the {@link Image}s under the subscription for available message fragments.
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered withing a session.
@@ -98,8 +98,8 @@ public:
     inline int poll(const fragment_handler_t fragmentHandler, int fragmentLimit)
     {
         int fragmentsRead = 0;
-        const int length = std::atomic_load(&m_connectionsLength);
-        Connection* connections = std::atomic_load(&m_connections);
+        const int length = std::atomic_load(&m_imagesLength);
+        Image *images = std::atomic_load(&m_images);
 
         if (length > 0)
         {
@@ -113,7 +113,7 @@ public:
 
             do
             {
-                fragmentsRead += connections[i].poll(fragmentHandler, fragmentLimit);
+                fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
 
                 if (++i == length)
                 {
@@ -127,35 +127,35 @@ public:
     }
 
     /**
-     * Poll the {@link Connection}s under the subscription for available message fragments in blocks.
+     * Poll the {@link Image}s under the subscription for available message fragments in blocks.
      *
-     * @param blockHandler     to receive a block of fragments from each {@link Connection}.
+     * @param blockHandler     to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      */
     inline long blockPoll(const block_handler_t blockHandler, int blockLengthLimit)
     {
-        const int length = std::atomic_load(&m_connectionsLength);
-        Connection* connections = std::atomic_load(&m_connections);
+        const int length = std::atomic_load(&m_imagesLength);
+        Image *images = std::atomic_load(&m_images);
         long bytesConsumed = 0;
 
         for (int i = 0; i < length; i++)
         {
-            bytesConsumed += connections[i].blockPoll(blockHandler, blockLengthLimit);
+            bytesConsumed += images[i].blockPoll(blockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;
     }
 
     /// @cond HIDDEN_SYMBOLS
-    bool isConnected(std::int32_t sessionId)
+    bool hasImage(std::int32_t sessionId)
     {
-        Connection* connections = std::atomic_load(&m_connections);
+        Image *images = std::atomic_load(&m_images);
         bool isConnected = false;
 
-        for (int i = 0, length = std::atomic_load(&m_connectionsLength); i < length; i++)
+        for (int i = 0, length = std::atomic_load(&m_imagesLength); i < length; i++)
         {
-            if (connections[i].sessionId() == sessionId)
+            if (images[i].sessionId() == sessionId)
             {
                 isConnected = true;
                 break;
@@ -165,11 +165,11 @@ public:
         return isConnected;
     }
 
-    Connection* addConnection(Connection& connection)
+    Image *addImage(Image &connection)
     {
-        Connection* oldArray = std::atomic_load(&m_connections);
-        int length = std::atomic_load(&m_connectionsLength);
-        Connection* newArray = new Connection[length + 1];
+        Image * oldArray = std::atomic_load(&m_images);
+        int length = std::atomic_load(&m_imagesLength);
+        Image * newArray = new Image[length + 1];
 
         for (int i = 0; i < length; i++)
         {
@@ -178,17 +178,17 @@ public:
 
         newArray[length] = std::move(connection);
 
-        std::atomic_store(&m_connections, newArray);
-        std::atomic_store(&m_connectionsLength, length + 1);
+        std::atomic_store(&m_images, newArray);
+        std::atomic_store(&m_imagesLength, length + 1);
 
         // oldArray to linger and be deleted by caller (aka client conductor)
         return oldArray;
     }
 
-    std::pair<Connection*, int> removeConnection(std::int64_t correlationId)
+    std::pair<Image*, int> removeImage(std::int64_t correlationId)
     {
-        Connection* oldArray = std::atomic_load(&m_connections);
-        int length = std::atomic_load(&m_connectionsLength);
+        Image * oldArray = std::atomic_load(&m_images);
+        int length = std::atomic_load(&m_imagesLength);
         int index = -1;
 
         for (int i = 0; i < length; i++)
@@ -202,7 +202,7 @@ public:
 
         if (-1 != index)
         {
-            Connection* newArray = new Connection[length - 1];
+            Image * newArray = new Image[length - 1];
 
             for (int i = 0, j = 0; i < length; i++)
             {
@@ -212,12 +212,12 @@ public:
                 }
             }
 
-            std::atomic_store(&m_connections, newArray);
-            std::atomic_store(&m_connectionsLength, length - 1);
+            std::atomic_store(&m_images, newArray);
+            std::atomic_store(&m_imagesLength, length - 1);
         }
 
         // oldArray to linger and be deleted by caller (aka client conductor)
-        return std::pair<Connection*, int>(
+        return std::pair<Image *, int>(
             (-1 != index) ? oldArray : nullptr,
             index);
     }
@@ -230,8 +230,8 @@ private:
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
 
-    std::atomic<Connection*> m_connections;
-    std::atomic<int> m_connectionsLength;
+    std::atomic<Image*> m_images;
+    std::atomic<int> m_imagesLength;
 };
 
 }

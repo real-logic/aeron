@@ -29,8 +29,8 @@ ClientConductor::~ClientConductor()
             entry.m_subscriptionCache.reset();
         });
 
-    std::for_each(m_lingeringConnectionArrays.begin(), m_lingeringConnectionArrays.end(),
-        [](ConnectionArrayLingerDefn& entry)
+    std::for_each(m_lingeringImageArrays.begin(), m_lingeringImageArrays.end(),
+        [](ImageArrayLingerDefn & entry)
         {
             delete[] entry.m_array;
             entry.m_array = nullptr;
@@ -186,7 +186,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     return sub;
 }
 
-void ClientConductor::releaseSubscription(std::int64_t registrationId, Connection* connections, int connectionsLength)
+void ClientConductor::releaseSubscription(std::int64_t registrationId, Image * connections, int connectionsLength)
 {
     verifyDriverIsActive();
 
@@ -290,14 +290,14 @@ void ClientConductor::onErrorResponse(
 }
 
 
-void ClientConductor::onNewConnection(
+void ClientConductor::onNewImage(
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int64_t joiningPosition,
-    const std::string& logFilename,
-    const std::string& sourceIdentity,
+    const std::string &logFilename,
+    const std::string &sourceIdentity,
     std::int32_t subscriberPositionCount,
-    const ConnectionBuffersReadyDefn::SubscriberPosition* subscriberPositions,
+    const ImageBuffersReadyDefn::SubscriberPosition *subscriberPositions,
     std::int64_t correlationId)
 {
     std::lock_guard<std::mutex> lock(m_adminLock);
@@ -310,7 +310,7 @@ void ClientConductor::onNewConnection(
                 std::shared_ptr<Subscription> subscription = entry.m_subscription.lock();
 
                 if (subscription != nullptr &&
-                    !(subscription->isConnected(sessionId)))
+                    !(subscription->hasImage(sessionId)))
                 {
                     for (int i = 0; i < subscriberPositionCount; i++)
                     {
@@ -320,18 +320,18 @@ void ClientConductor::onNewConnection(
 
                             UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositions[i].indicatorId);
 
-                            Connection connection(
+                            Image image(
                                 sessionId, joiningPosition, correlationId, subscriberPosition, logBuffers);
 
-                            Connection* oldArray = subscription->addConnection(connection);
+                            Image* oldArray = subscription->addImage(image);
 
                             if (nullptr != oldArray)
                             {
                                 lingerResource(m_epochClock(), oldArray);
                             }
 
-                            m_onNewConnectionHandler(
-                                subscription->channel(), streamId, sessionId, joiningPosition, sourceIdentity);
+                            m_onNewImageHandler(
+                                image, subscription->channel(), streamId, sessionId, joiningPosition, sourceIdentity);
                             break;
                         }
                     }
@@ -340,7 +340,7 @@ void ClientConductor::onNewConnection(
         });
 }
 
-void ClientConductor::onInactiveConnection(
+void ClientConductor::onInactiveImage(
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int64_t position,
@@ -358,15 +358,15 @@ void ClientConductor::onInactiveConnection(
 
                 if (nullptr != subscription)
                 {
-                    std::pair<Connection*, int> result = subscription->removeConnection(correlationId);
-                    Connection* oldArray = result.first;
+                    std::pair<Image*, int> result = subscription->removeImage(correlationId);
+                    Image* oldArray = result.first;
                     const int index = result.second;
 
                     if (nullptr != oldArray)
                     {
                         lingerResource(now, oldArray[index].logBuffers());
                         lingerResource(now, oldArray);
-                        m_onInactiveConnectionHandler(subscription->channel(), streamId, sessionId, position);
+                        m_onInactiveImageHandler(oldArray[index], subscription->channel(), streamId, sessionId, position);
                     }
                 }
             }
@@ -390,9 +390,9 @@ void ClientConductor::onCheckManagedResources(long now)
     m_lingeringLogBuffers.erase(logIt, m_lingeringLogBuffers.end());
 
     // check old arrays
-    std::vector<ConnectionArrayLingerDefn>::iterator arrayIt =
-        std::remove_if(m_lingeringConnectionArrays.begin(), m_lingeringConnectionArrays.end(),
-            [&](ConnectionArrayLingerDefn& entry)
+    std::vector<ImageArrayLingerDefn>::iterator arrayIt =
+        std::remove_if(m_lingeringImageArrays.begin(), m_lingeringImageArrays.end(),
+            [&](ImageArrayLingerDefn & entry)
             {
                 if (now > (entry.m_timeOfLastStatusChange + m_resourceLingerTimeoutMs))
                 {
@@ -404,12 +404,12 @@ void ClientConductor::onCheckManagedResources(long now)
                 return false;
             });
 
-    m_lingeringConnectionArrays.erase(arrayIt, m_lingeringConnectionArrays.end());
+    m_lingeringImageArrays.erase(arrayIt, m_lingeringImageArrays.end());
 }
 
-void ClientConductor::lingerResource(long now, Connection* array)
+void ClientConductor::lingerResource(long now, Image* array)
 {
-    m_lingeringConnectionArrays.push_back(ConnectionArrayLingerDefn(now, array));
+    m_lingeringImageArrays.push_back(ImageArrayLingerDefn(now, array));
 }
 
 void ClientConductor::lingerResource(long now, std::shared_ptr<LogBuffers> logBuffers)
@@ -417,16 +417,16 @@ void ClientConductor::lingerResource(long now, std::shared_ptr<LogBuffers> logBu
     m_lingeringLogBuffers.push_back(LogBuffersLingerDefn(now, logBuffers));
 }
 
-void ClientConductor::lingerResources(long now, Connection* connections, int connectionsLength)
+void ClientConductor::lingerResources(long now, Image* image, int connectionsLength)
 {
     for (int i = 0; i < connectionsLength; i++)
     {
-        lingerResource(now, connections[i].logBuffers());
+        lingerResource(now, image[i].logBuffers());
     }
 
-    if (nullptr != connections)
+    if (nullptr != image)
     {
-        lingerResource(now, connections);
+        lingerResource(now, image);
     }
 }
 

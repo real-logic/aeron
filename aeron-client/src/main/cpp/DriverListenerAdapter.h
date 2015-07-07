@@ -20,8 +20,8 @@
 #include <concurrent/broadcast/CopyBroadcastReceiver.h>
 #include <command/ControlProtocolEvents.h>
 #include <command/PublicationBuffersReadyFlyweight.h>
-#include <command/ConnectionBuffersReadyFlyweight.h>
-#include <command/ConnectionMessageFlyweight.h>
+#include <command/ImageBuffersReadyFlyweight.h>
+#include <command/ImageMessageFlyweight.h>
 #include <command/ErrorResponseFlyweight.h>
 
 namespace aeron {
@@ -60,19 +60,19 @@ public:
                     }
                     break;
 
-                    case ControlProtocolEvents::ON_CONNECTION_READY:
+                    case ControlProtocolEvents::ON_IMAGE_READY:
                     {
-                        const ConnectionBuffersReadyFlyweight connectionReady(buffer, offset);
+                        const ImageBuffersReadyFlyweight imageReady(buffer, offset);
 
-                        m_driverListener.onNewConnection(
-                            connectionReady.streamId(),
-                            connectionReady.sessionId(),
-                            connectionReady.joiningPosition(),
-                            connectionReady.logFileName(),
-                            connectionReady.sourceIdentity(),
-                            connectionReady.subscriberPositionCount(),
-                            connectionReady.subscriberPositions(),
-                            connectionReady.correlationId());
+                        m_driverListener.onNewImage(
+                            imageReady.streamId(),
+                            imageReady.sessionId(),
+                            imageReady.joiningPosition(),
+                            imageReady.logFileName(),
+                            imageReady.sourceIdentity(),
+                            imageReady.subscriberPositionCount(),
+                            imageReady.subscriberPositions(),
+                            imageReady.correlationId());
                     }
                     break;
 
@@ -84,15 +84,15 @@ public:
                     }
                     break;
 
-                    case ControlProtocolEvents::ON_INACTIVE_CONNECTION:
+                    case ControlProtocolEvents::ON_INACTIVE_IMAGE:
                     {
-                        const ConnectionMessageFlyweight connectionMessage(buffer, offset);
+                        const ImageMessageFlyweight imageMessage(buffer, offset);
 
-                        m_driverListener.onInactiveConnection(
-                            connectionMessage.streamId(),
-                            connectionMessage.sessionId(),
-                            connectionMessage.position(),
-                            connectionMessage.correlationId());
+                        m_driverListener.onInactiveImage(
+                            imageMessage.streamId(),
+                            imageMessage.sessionId(),
+                            imageMessage.position(),
+                            imageMessage.correlationId());
                     }
                     break;
 

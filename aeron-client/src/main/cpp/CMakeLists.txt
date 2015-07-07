@@ -28,7 +28,7 @@ SET(SOURCE
 SET(HEADERS
     ClientConductor.h
     CncFileDescriptor.h
-    Connection.h
+    Image.h
     Context.h
     Aeron.h
     Publication.h
@@ -37,8 +37,8 @@ SET(HEADERS
     DriverListenerAdapter.h
     LogBuffers.h
     FragmentAssembler.h
-    command/ConnectionMessageFlyweight.h
-    command/ConnectionBuffersReadyFlyweight.h
+    command/ImageMessageFlyweight.h
+    command/ImageBuffersReadyFlyweight.h
     command/ControlProtocolEvents.h
     command/CorrelatedMessageFlyweight.h
     command/ErrorResponseFlyweight.h

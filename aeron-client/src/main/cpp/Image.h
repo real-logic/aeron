@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef AERON_CONNECTION_H
-#define AERON_CONNECTION_H
+#ifndef AERON_IMAGE_H
+#define AERON_IMAGE_H
 
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/LogBufferDescriptor.h>
@@ -34,16 +34,21 @@ using namespace aeron::concurrent::status;
 
 static UnsafeBufferPosition NULL_POSITION;
 
-class Connection
+/**
+ * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
+ * Each {@link Image} identifies a source publisher by session id.
+ */
+class Image
 {
 public:
-    Connection() :
+    Image() :
         m_header(0, 0),
         m_subscriberPosition(NULL_POSITION)
     {
     }
 
-    Connection(
+    /// @cond HIDDEN_SYMBOLS
+    Image(
         std::int32_t sessionId,
         std::int64_t initialPosition,
         std::int64_t correlationId,
@@ -69,10 +74,10 @@ public:
         m_subscriberPosition.setOrdered(initialPosition);
     }
 
-    Connection(Connection&) = delete;
-    Connection& operator=(Connection&) = delete;
+    Image(Image &) = delete;
+    Image & operator=(Image &) = delete;
 
-    Connection& operator=(Connection&& connection)
+    Image & operator=(Image && connection)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
@@ -88,21 +93,42 @@ public:
         m_positionBitsToShift = connection.m_positionBitsToShift;
         return *this;
     }
+    /// @endcond
 
-    virtual ~Connection()
+    virtual ~Image()
     {
     }
 
+    /**
+     * The sessionId for the steam of messages.
+     *
+     * @return the sessionId for the steam of messages.
+     */
     inline std::int32_t sessionId()
     {
         return m_sessionId;
     }
 
+    /**
+     * The correlationId for identification of the image with the media driver.
+     *
+     * @return the correlationId for identification of the image with the media driver.
+     */
     inline std::int64_t correlationId()
     {
         return m_correlationId;
     }
 
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered via the fragment_handler_t up to a limited number of fragments as specified.
+     *
+     * @param fragmentHandler to which messages are delivered.
+     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
+     * @return the number of fragments that have been consumed.
+     *
+     * @see fragment_handler_t
+     */
     int poll(const fragment_handler_t& fragmentHandler, int fragmentLimit)
     {
         const std::int64_t position = m_subscriberPosition.get();
@@ -121,6 +147,16 @@ public:
         return readOutcome.fragmentsRead;
     }
 
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered via the block_handler_t up to a limited number of bytes.
+     *
+     * @param blockHandler     to which block is delivered.
+     * @param blockLengthLimit up to which a block may be in length.
+     * @return the number of bytes that have been consumed.
+     *
+     * @see block_handler_t
+     */
     int blockPoll(const block_handler_t& blockHandler, int blockLengthLimit)
     {
         const std::int64_t position = m_subscriberPosition.get();
@@ -162,4 +198,4 @@ private:
 
 }
 
-#endif //AERON_CONNECTION_H
+#endif //AERON_IMAGE_H

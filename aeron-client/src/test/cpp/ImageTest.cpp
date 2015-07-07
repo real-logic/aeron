@@ -45,10 +45,10 @@ static const std::int32_t POSITION_BITS_TO_SHIFT = BitUtil::numberOfTrailingZero
 static const util::index_t ALIGNED_FRAME_LENGTH =
     BitUtil::align(DataFrameHeader::LENGTH + (std::int32_t)DATA.size(), FrameDescriptor::FRAME_ALIGNMENT);
 
-class ConnectionTest : public testing::Test, ClientConductorFixture
+class ImageTest : public testing::Test, ClientConductorFixture
 {
 public:
-    ConnectionTest() :
+    ImageTest() :
         m_srcBuffer(&m_src[0], m_src.size()),
         m_subscriberPosition(m_counterValuesBuffer, SUBSCRIBER_POSITION_ID)
     {
@@ -125,13 +125,13 @@ public:
     }
 };
 
-TEST_F(ConnectionTest, shouldReportCorrectPositionOnReception)
+TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
+    Image connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
     MockFragmentHandler fragmentHandler;
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
@@ -146,13 +146,13 @@ TEST_F(ConnectionTest, shouldReportCorrectPositionOnReception)
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition + ALIGNED_FRAME_LENGTH);
 }
 
-TEST_F(ConnectionTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInInitialTermId)
+TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInInitialTermId)
 {
     const std::int32_t messageIndex = 5;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
+    Image connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
     MockFragmentHandler fragmentHandler;
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
@@ -167,14 +167,14 @@ TEST_F(ConnectionTest, shouldReportCorrectPositionOnReceptionWithNonZeroPosition
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition + ALIGNED_FRAME_LENGTH);
 }
 
-TEST_F(ConnectionTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNonInitialTermId)
+TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNonInitialTermId)
 {
     const std::int32_t activeTermId = INITIAL_TERM_ID + 1;
     const std::int32_t messageIndex = 5;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Connection connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
+    Image connection(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
     MockFragmentHandler fragmentHandler;
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);

@@ -23,7 +23,7 @@
 namespace aeron { namespace command {
 
 /**
-* Control message flyweight for any message that needs to represent a connection
+* Control message flyweight for any message that needs to represent an image
 *
 * <p>
 * 0                   1                   2                   3
@@ -48,7 +48,7 @@ namespace aeron { namespace command {
 
 #pragma pack(push)
 #pragma pack(4)
-struct ConnectionMessageDefn
+struct ImageMessageDefn
 {
     std::int64_t correlationId;
     std::int32_t sessionId;
@@ -63,13 +63,13 @@ struct ConnectionMessageDefn
 #pragma pack(pop)
 
 
-class ConnectionMessageFlyweight : public Flyweight<ConnectionMessageDefn>
+class ImageMessageFlyweight : public Flyweight<ImageMessageDefn>
 {
 public:
-    typedef ConnectionMessageFlyweight this_t;
+    typedef ImageMessageFlyweight this_t;
 
-    inline ConnectionMessageFlyweight (concurrent::AtomicBuffer& buffer, util::index_t offset) :
-        Flyweight<ConnectionMessageDefn>(buffer, offset)
+    inline ImageMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset) :
+        Flyweight<ImageMessageDefn>(buffer, offset)
     {
     }
 
@@ -119,18 +119,18 @@ public:
 
     inline std::string channel() const
     {
-        return stringGet(offsetof(ConnectionMessageDefn, channel));
+        return stringGet(offsetof(ImageMessageDefn, channel));
     }
 
     inline this_t& channel(const std::string& value)
     {
-        stringPut(offsetof(ConnectionMessageDefn, channel), value);
+        stringPut(offsetof(ImageMessageDefn, channel), value);
         return *this;
     }
 
     inline std::int32_t length() const
     {
-        return offsetof(ConnectionMessageDefn, channel.channelData) + m_struct.channel.channelLength;
+        return offsetof(ImageMessageDefn, channel.channelData) + m_struct.channel.channelLength;
     }
 };
 

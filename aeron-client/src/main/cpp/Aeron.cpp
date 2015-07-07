@@ -49,8 +49,8 @@ Aeron::Aeron(Context &context) :
         m_countersValueBuffer,
         context.m_onNewPublicationHandler,
         context.m_onNewSubscriptionHandler,
-        context.m_onNewConnectionHandler,
-        context.m_onInactiveConnectionHandler,
+        context.m_onNewImageHandler,
+        context.m_onInactiveImageHandler,
         context.m_exceptionHandler,
         context.m_mediaDriverTimeout,
         context.m_resourceLingerTimeout),
@@ -65,8 +65,6 @@ Aeron::~Aeron()
     m_conductorRunner.close();
 
     // memory mapped files should be free'd by the destructor of the shared_ptr
-
-    // TODO: do cleanup of anything created
 }
 
 inline MemoryMappedFile::ptr_t Aeron::mapCncFile(Context &context)

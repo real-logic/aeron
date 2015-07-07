@@ -54,8 +54,8 @@ public:
 
     MOCK_METHOD4(onNewPub, void(const std::string&, std::int32_t, std::int32_t, std::int64_t));
     MOCK_METHOD3(onNewSub, void(const std::string&, std::int32_t, std::int64_t));
-    MOCK_METHOD5(onNewConn, void(const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&));
-    MOCK_METHOD4(onInactive, void(const std::string&, std::int32_t, std::int32_t, std::int64_t));
+    MOCK_METHOD6(onNewImage, void(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&));
+    MOCK_METHOD5(onInactive, void(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t));
 
     static on_new_publication_t newPub(MockClientConductorHandlers& handlers)
     {
@@ -73,19 +73,19 @@ public:
         };
     }
 
-    static on_new_connection_t newConn(MockClientConductorHandlers& handlers)
+    static on_new_image_t newConn(MockClientConductorHandlers& handlers)
     {
-        return [&](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position, const std::string& sourceIdentity)
+        return [&](Image& image, const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position, const std::string& sourceIdentity)
         {
-            handlers.onNewConn(channel, streamId, sessionId, position, sourceIdentity);
+            handlers.onNewImage(image, channel, streamId, sessionId, position, sourceIdentity);
         };
     }
 
-    static on_inactive_connection_t inactive(MockClientConductorHandlers& handlers)
+    static on_inactive_image_t inactive(MockClientConductorHandlers& handlers)
     {
-        return [&](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)
+        return [&](Image& image, const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)
         {
-            handlers.onInactive(channel, streamId, sessionId, position);
+            handlers.onInactive(image, channel, streamId, sessionId, position);
         };
     }
 };

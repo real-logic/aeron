@@ -121,7 +121,7 @@ public:
         return readOutcome.fragmentsRead;
     }
 
-    int poll(const block_handler_t& blockHandler, int blockLengthLimit)
+    int blockPoll(const block_handler_t& blockHandler, int blockLengthLimit)
     {
         const std::int64_t position = m_subscriberPosition.get();
         const std::int32_t termOffset = (std::int32_t)position & m_termLengthMask;
@@ -134,7 +134,9 @@ public:
 
         if (resultingOffset > termOffset)
         {
-            blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId);
+            const std::int32_t termId = termBuffer.getInt32(termOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
+
+            blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
             m_subscriberPosition.setOrdered(position + bytesConsumed);
         }
 

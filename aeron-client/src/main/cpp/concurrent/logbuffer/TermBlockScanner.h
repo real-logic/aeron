@@ -33,12 +33,14 @@ namespace aeron { namespace concurrent { namespace logbuffer {
  * @param offset    at which the block begins.
  * @param length    of the block in bytes.
  * @param sessionId of the stream containing this block of message fragments.
+ * @param termId    of the stream containing this block of message fragments.
  */
 typedef std::function<void(
     concurrent::AtomicBuffer& buffer,
     util::index_t offset,
     util::index_t length,
-    std::int32_t sessionId)> block_handler_t;
+    std::int32_t sessionId,
+    std::int32_t termId)> block_handler_t;
 
 namespace TermBlockScanner {
 

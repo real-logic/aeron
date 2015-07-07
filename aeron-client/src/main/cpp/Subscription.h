@@ -133,7 +133,7 @@ public:
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
      */
-    inline long poll(const block_handler_t blockHandler, int blockLengthLimit)
+    inline long blockPoll(const block_handler_t blockHandler, int blockLengthLimit)
     {
         const int length = std::atomic_load(&m_connectionsLength);
         Connection* connections = std::atomic_load(&m_connections);
@@ -141,7 +141,7 @@ public:
 
         for (int i = 0; i < length; i++)
         {
-            bytesConsumed += connections[i].poll(blockHandler, blockLengthLimit);
+            bytesConsumed += connections[i].blockPoll(blockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;

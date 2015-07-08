@@ -58,7 +58,7 @@ public class SubscriberTool
     private SubscriberThread subscribers[];
 
     private static final String CONTROL_CHANNEL = "udp://localhost:";
-    private static final int CONTROL_PORT_START = 62777;
+    private static final int CONTROL_PORT_START = Integer.getInteger("aeron.tools.controlChannelPort", 62777);
     private static final int CONTROL_STREAMID = 9999;
 
     private static final int CONTROL_ACTION_NEW_IMAGE = 0;

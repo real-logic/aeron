@@ -19,6 +19,9 @@ import uk.co.real_logic.aeron.logbuffer.BlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * Aeron Subscriber API for receiving {@link Image}s of messages from publishers on a given channel and streamId pair.
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
@@ -170,7 +173,7 @@ public class Subscription implements AutoCloseable
      * @param sessionId associated with the Image.
      * @return Image associated with the given sessionId or null if no Image exist.
      */
-    Image imageForSessionId(final int sessionId)
+    public Image getImage(final int sessionId)
     {
         Image result = null;
 
@@ -185,6 +188,16 @@ public class Subscription implements AutoCloseable
         }
 
         return result;
+    }
+
+    /**
+     * Get a {@link List} of active {@link Image}s that match this subscription.
+     *
+     * @return a {@link List} of active {@link Image}s that match this subscription.
+     */
+    public List<Image> images()
+    {
+        return Arrays.asList(images);
     }
 
     /**

@@ -35,6 +35,8 @@ class Image;
 /**
  * Function called by Aeron to deliver notification of a new image
  *
+ * The Image passed may not be the image used internally, but may be copied or moved freely.
+ *
  * @param image           that has been created.
  * @param channel         The channel for the new session.
  * @param streamId        The scope within the channel for the new session.
@@ -52,6 +54,8 @@ typedef std::function<void(
 
 /**
  * Function called by Aeron to deliver notification that a Publisher has gone inactive.
+ *
+ * The Image passed is not guaranteed to be valid after the callback.
  *
  * @param image     that has gone inactive
  * @param channel   The channel of the inactive Publisher.

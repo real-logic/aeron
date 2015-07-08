@@ -37,17 +37,29 @@ static UnsafeBufferPosition NULL_POSITION;
 /**
  * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
  * Each {@link Image} identifies a source publisher by session id.
+ *
+ * Is an overlay on the LogBuffers and Position. So, can be effectively copied and moved.
  */
 class Image
 {
 public:
+    typedef Image this_t;
+
     Image() :
         m_header(0, 0),
         m_subscriberPosition(NULL_POSITION)
     {
     }
 
-    /// @cond HIDDEN_SYMBOLS
+    /**
+     * Construct a new image over a log to represent a stream of messages from a {@link Publication}.
+     *
+     * @param sessionId          of the stream of messages.
+     * @param initialPosition    at which the subscriber is joining the stream.
+     * @param subscriberPosition for indicating the position of the subscriber in the stream.
+     * @param logBuffers         containing the stream of messages.
+     * @param correlationId      of the request to the media driver.
+     */
     Image(
         std::int32_t sessionId,
         std::int64_t initialPosition,
@@ -74,26 +86,56 @@ public:
         m_subscriberPosition.setOrdered(initialPosition);
     }
 
-    Image(Image &) = delete;
-    Image & operator=(Image &) = delete;
-
-    Image & operator=(Image && connection)
+    Image(Image &image) :
+        m_header(image.m_header),
+        m_subscriberPosition(image.m_subscriberPosition)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
-            m_termBuffers[i].wrap(connection.m_termBuffers[i]);
+            m_termBuffers[i].wrap(image.m_termBuffers[i]);
         }
 
-        m_header = connection.m_header;
-        m_subscriberPosition.wrap(connection.m_subscriberPosition);
-        m_logBuffers = std::move(connection.m_logBuffers);
-        m_correlationId = connection.m_correlationId;
-        m_sessionId = connection.m_sessionId;
-        m_termLengthMask = connection.m_termLengthMask;
-        m_positionBitsToShift = connection.m_positionBitsToShift;
+        m_subscriberPosition.wrap(image.m_subscriberPosition);
+        m_logBuffers = image.m_logBuffers;
+        m_correlationId = image.m_correlationId;
+        m_sessionId = image.m_sessionId;
+        m_termLengthMask = image.m_termLengthMask;
+        m_positionBitsToShift = image.m_positionBitsToShift;
+    }
+
+    Image& operator=(Image& image)
+    {
+        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
+        {
+            m_termBuffers[i].wrap(image.m_termBuffers[i]);
+        }
+
+        m_header = image.m_header;
+        m_subscriberPosition.wrap(image.m_subscriberPosition);
+        m_logBuffers = image.m_logBuffers;
+        m_correlationId = image.m_correlationId;
+        m_sessionId = image.m_sessionId;
+        m_termLengthMask = image.m_termLengthMask;
+        m_positionBitsToShift = image.m_positionBitsToShift;
         return *this;
     }
-    /// @endcond
+
+    Image& operator=(Image&& image)
+    {
+        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
+        {
+            m_termBuffers[i].wrap(image.m_termBuffers[i]);
+        }
+
+        m_header = image.m_header;
+        m_subscriberPosition.wrap(image.m_subscriberPosition);
+        m_logBuffers = std::move(image.m_logBuffers);
+        m_correlationId = image.m_correlationId;
+        m_sessionId = image.m_sessionId;
+        m_termLengthMask = image.m_termLengthMask;
+        m_positionBitsToShift = image.m_positionBitsToShift;
+        return *this;
+    }
 
     virtual ~Image()
     {
@@ -117,6 +159,16 @@ public:
     inline std::int64_t correlationId()
     {
         return m_correlationId;
+    }
+
+    /**
+     * The initial term at which the stream started for this session.
+     *
+     * @return the initial term id.
+     */
+    inline std::int32_t initialTermId()
+    {
+        return m_header.initialTermId();
     }
 
     /**

@@ -223,7 +223,7 @@ public:
         newArray[length] = std::move(connection);
 
         std::atomic_store(&m_images, newArray);
-        std::atomic_store(&m_imagesLength, length + 1);
+        std::atomic_store(&m_imagesLength, length + 1); // set length last. Don't go over end of old array on poll
 
         // oldArray to linger and be deleted by caller (aka client conductor)
         return oldArray;
@@ -256,8 +256,8 @@ public:
                 }
             }
 
+            std::atomic_store(&m_imagesLength, length - 1);  // set length first. Don't go over end of new array on poll
             std::atomic_store(&m_images, newArray);
-            std::atomic_store(&m_imagesLength, length - 1);
         }
 
         // oldArray to linger and be deleted by caller (aka client conductor)

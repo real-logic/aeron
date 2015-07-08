@@ -153,7 +153,7 @@ public:
      * @param sessionId associated with the Image.
      * @return Image associated with the given sessionId or nullptr if no Image exist.
      */
-    inline std::shared_ptr<Image> imageForSessionId(std::int32_t sessionId)
+    inline std::shared_ptr<Image> getImage(std::int32_t sessionId)
     {
         Image* images = std::atomic_load(&m_images);
         int index = -1;

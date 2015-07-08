@@ -147,6 +147,29 @@ public:
         return bytesConsumed;
     }
 
+    /**
+     * Return the {@link Image} associated with the given sessionId.
+     *
+     * @param sessionId associated with the Image.
+     * @return Image associated with the given sessionId or nullptr if no Image exist.
+     */
+    inline std::shared_ptr<Image> imageForSessionId(std::int32_t sessionId)
+    {
+        Image* images = std::atomic_load(&m_images);
+        int index = -1;
+
+        for (int i = 0, length = std::atomic_load(&m_imagesLength); i < length; i++)
+        {
+            if (images[i].sessionId() == sessionId)
+            {
+                index = i;
+                break;
+            }
+        }
+
+        return (index != -1) ? std::shared_ptr<Image>(new Image(images[index])) : std::shared_ptr<Image>();
+    }
+
     /// @cond HIDDEN_SYMBOLS
     bool hasImage(std::int32_t sessionId)
     {

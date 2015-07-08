@@ -75,7 +75,7 @@ public class Image
         final int capacity = termBuffers[0].capacity();
         this.termLengthMask = capacity - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
-        final int initialTermId = initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]);
+        final int initialTermId = LogBufferDescriptor.initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]);
         header = new Header(initialTermId, capacity);
 
         subscriberPosition.setOrdered(initialPosition);
@@ -89,6 +89,16 @@ public class Image
     public int sessionId()
     {
         return sessionId;
+    }
+
+    /**
+     * The initial term at which the stream started for this session.
+     *
+     * @return the initial term id.
+     */
+    public int initialTermId()
+    {
+        return header.initialTermId();
     }
 
     /**

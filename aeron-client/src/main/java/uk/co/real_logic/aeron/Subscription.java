@@ -165,6 +165,29 @@ public class Subscription implements AutoCloseable
     }
 
     /**
+     * Return the {@link Image} associated with the given sessionId.
+     *
+     * @param sessionId associated with the Image.
+     * @return Image associated with the given sessionId or null if no Image exist.
+     */
+    Image imageForSessionId(final int sessionId)
+    {
+        Image result = null;
+
+        final Image[] images = this.images;
+        for (final Image image : images)
+        {
+            if (sessionId == image.sessionId())
+            {
+                result = image;
+                break;
+            }
+        }
+
+        return result;
+    }
+
+    /**
      * Close the Subscription so that associated {@link Image} can be released.
      * <p>
      * This method is idempotent.

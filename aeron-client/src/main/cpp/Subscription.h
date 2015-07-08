@@ -155,10 +155,11 @@ public:
      */
     inline std::shared_ptr<Image> getImage(std::int32_t sessionId)
     {
+        const int length = std::atomic_load(&m_imagesLength);
         Image* images = std::atomic_load(&m_images);
         int index = -1;
 
-        for (int i = 0, length = std::atomic_load(&m_imagesLength); i < length; i++)
+        for (int i = 0; i < length; i++)
         {
             if (images[i].sessionId() == sessionId)
             {
@@ -170,13 +171,33 @@ public:
         return (index != -1) ? std::shared_ptr<Image>(new Image(images[index])) : std::shared_ptr<Image>();
     }
 
+    /**
+     * Get a std::vector of active {@link Image}s that match this subscription.
+     *
+     * @return a std::vector of active {@link Image}s that match this subscription.
+     */
+    inline std::shared_ptr<std::vector<Image>> images()
+    {
+        const int length = std::atomic_load(&m_imagesLength);
+        Image *images = std::atomic_load(&m_images);
+        std::shared_ptr<std::vector<Image>> result(new std::vector<Image>(length));
+
+        for (int i = 0; i < length; i++)
+        {
+            (*result)[i] = images[i];
+        }
+
+        return result;
+    }
+
     /// @cond HIDDEN_SYMBOLS
     bool hasImage(std::int32_t sessionId)
     {
+        const int length = std::atomic_load(&m_imagesLength);
         Image *images = std::atomic_load(&m_images);
         bool isConnected = false;
 
-        for (int i = 0, length = std::atomic_load(&m_imagesLength); i < length; i++)
+        for (int i = 0; i < length; i++)
         {
             if (images[i].sessionId() == sessionId)
             {

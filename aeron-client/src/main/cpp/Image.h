@@ -86,7 +86,7 @@ public:
         m_subscriberPosition.setOrdered(initialPosition);
     }
 
-    Image(Image &image) :
+    Image(Image& image) :
         m_header(image.m_header),
         m_subscriberPosition(image.m_subscriberPosition)
     {

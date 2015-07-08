@@ -274,19 +274,19 @@ public class Subscription implements AutoCloseable
 
     boolean hasImage(final int sessionId)
     {
-        boolean isConnected = false;
+        boolean hasImage = false;
 
         final Image[] images = this.images;
         for (final Image image : images)
         {
             if (sessionId == image.sessionId())
             {
-                isConnected = true;
+                hasImage = true;
                 break;
             }
         }
 
-        return isConnected;
+        return hasImage;
     }
 
     boolean hasNoImages()

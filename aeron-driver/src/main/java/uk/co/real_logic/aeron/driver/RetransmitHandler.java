@@ -52,6 +52,8 @@ public class RetransmitHandler
      * @param systemCounters         for recording significant events.
      * @param delayGenerator         to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
+     * @param initialTermId          to use for the retransmission
+     * @param capacity               of the term buffer
      */
     public RetransmitHandler(
         final NanoClock nanoClock,

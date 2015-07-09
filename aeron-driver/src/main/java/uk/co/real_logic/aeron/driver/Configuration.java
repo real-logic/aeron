@@ -339,7 +339,7 @@ public class Configuration
     public static final String DO_NOT_SEND_NAK_PROP_NAME = "aeron.driver.disable.naks";
 
     /**
-     * how often to check liveness & cleanup
+     * how often to check liveness and cleanup
      */
     public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 

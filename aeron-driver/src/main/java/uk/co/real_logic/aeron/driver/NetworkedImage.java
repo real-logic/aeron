@@ -262,9 +262,9 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
     /**
      * Set status of the image.
      * <p>
-     * Set by {@link Receiver} for INIT -> ACTIVE -> INACTIVE
+     * Set by {@link Receiver} for INIT to ACTIVE to INACTIVE
      * <p>
-     * Set by {@link DriverConductor} for INACTIVE -> LINGER
+     * Set by {@link DriverConductor} for INACTIVE to LINGER
      *
      * @param status of the image
      */
@@ -388,6 +388,8 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
     /**
      * Insert frame into term buffer.
      *
+     * @param termId  for the data packet to insert into the appropriate term.
+     * @param termOffset for the start of the packet in the term.
      * @param buffer for the data packet to insert into the appropriate term.
      * @param length of the data packet
      * @return number of bytes applied as a result of this insertion.

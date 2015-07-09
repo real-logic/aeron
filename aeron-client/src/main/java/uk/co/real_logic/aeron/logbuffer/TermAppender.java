@@ -121,7 +121,7 @@ public class TermAppender extends LogBufferPartition
      * @param srcOffset at which the encoded message begins.
      * @param length    of the message in bytes.
      * @return the resulting termOffset on success otherwise {@link #FAILED} if beyond end of the term, or
-     * {@link #TRIPPED if first failure.
+     * {@link #TRIPPED} if first failure.
      * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
      */
     public int append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -151,7 +151,7 @@ public class TermAppender extends LogBufferPartition
      * @param length      of the message payload
      * @param bufferClaim to be completed for the claim if successful.
      * @return the resulting termOffset on success otherwise {@link #FAILED} if beyond end of the term, or
-     * {@link #TRIPPED if first failure.
+     * {@link #TRIPPED} if first failure.
      */
     public int claim(final int length, final BufferClaim bufferClaim)
     {

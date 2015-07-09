@@ -175,6 +175,8 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
     /**
      * This is performed on the {@link DriverConductor} thread
+     *
+     * @return amount of work done
      */
     public int cleanLogBuffer()
     {

@@ -49,12 +49,12 @@ public class MessageSizePattern
     private int patternMinSize = Integer.MAX_VALUE;
     /* maximum size starts at min value so it can be set higher */
     private int patternMaxSize = 0;
-    private final List<MessageSizeEntry> entries = new ArrayList<MessageSizeEntry>();
+    private final List<MessageSizeEntry> entries = new ArrayList<>();
 
     /**
      * Instantiate a MessageSizePattern and always return the given message size.
      *
-     * @param messageSize
+     * @param messageSize to use
      * @throws Exception when message size is invalid
      */
     public MessageSizePattern(final int messageSize) throws Exception
@@ -66,8 +66,9 @@ public class MessageSizePattern
     /**
      * Instantiate a MessageSizePattern with a number of messages and their size.
      *
-     * @param messageCount
-     * @param messageSize
+     * @param messageCount to use
+     * @param messageSize to use
+     * @throws Exception if an error occurs
      */
     public MessageSizePattern(final long messageCount, final int messageSize) throws Exception
     {
@@ -77,9 +78,10 @@ public class MessageSizePattern
     /**
      * Instantiate a MessageCount with a number of message, and random size range.
      *
-     * @param messageCount
-     * @param minSize
-     * @param maxSize
+     * @param messageCount to use
+     * @param minSize to use
+     * @param maxSize to use
+     * @throws Exception if an error occurs
      */
     public MessageSizePattern(final long messageCount, final int minSize, final int maxSize) throws Exception
     {
@@ -105,9 +107,9 @@ public class MessageSizePattern
     /**
      * Add a number of messages with the given size to the pattern.
      *
-     * @param messageCount
-     * @param size
-     * @throws Exception
+     * @param messageCount to use
+     * @param size to use
+     * @throws Exception if an error occurs
      */
     public void addPatternEntry(final long messageCount, final int size) throws Exception
     {
@@ -213,7 +215,7 @@ public class MessageSizePattern
     /**
      * Get the range minimum value of the current message.
      *
-     * @return
+     * @return current range min
      */
     public int currentRangeMinimum()
     {
@@ -223,7 +225,7 @@ public class MessageSizePattern
     /**
      * Get the range maximum value of the current message.
      *
-     * @return
+     * @return curren range max
      */
     public int currentRangeMaximum()
     {

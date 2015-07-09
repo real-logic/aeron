@@ -50,7 +50,7 @@ public class RandomInputStream extends InputStream
 
     /**
      * Does nothing.
-     * @param b
+     * @param b to use
      * @return The value passed in
      */
     public long skip(final long b)
@@ -60,8 +60,8 @@ public class RandomInputStream extends InputStream
 
     /**
      * Returns between 0 and up to 400 bytes, or less if the buffer is not large enough.
-     * @param b
-     * @return
+     * @param b to use
+     * @return length
      */
     public int read(final byte[] b) throws IOException
     {
@@ -76,7 +76,7 @@ public class RandomInputStream extends InputStream
 
     /**
      * Put random data into the byte array. This will always read the given length.
-     * @param b
+     * @param b to use
      * @param off Where to start in the buffer
      * @param len Amount of bytes to read
      * @return Always the same as len

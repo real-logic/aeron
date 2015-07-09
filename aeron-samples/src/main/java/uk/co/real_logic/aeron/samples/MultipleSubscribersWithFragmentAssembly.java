@@ -136,7 +136,7 @@ public class MultipleSubscribersWithFragmentAssembly
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
-     * @throws Exception
+     * @throws Exception if an error occurs
      */
     public static FragmentHandler reassembledStringMessage1(final int streamId) throws Exception
     {
@@ -164,6 +164,7 @@ public class MultipleSubscribersWithFragmentAssembly
      *
      * @param streamId to show when printing
      * @return subscription data handler function that prints the message contents
+     * @throws Exception if an error occurs
      */
     public static FragmentHandler reassembledStringMessage2(final int streamId) throws Exception
     {

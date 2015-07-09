@@ -349,6 +349,7 @@ public class LogBufferDescriptor
      * Determine the partition index given a stream position.
      *
      * @param position in the stream in bytes.
+     * @param positionBitsToShift number of times to right shift the position for term count
      * @return the partition index for the position
      */
     public static int indexByPosition(final long position, final int positionBitsToShift)

@@ -147,8 +147,8 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
     }
 
     /**
-     * createAndInitObjects():
-     *  Initializes all the necessary objects used
+     * Initializes all the necessary objects used
+     * @param opts to use
      */
     public void createAndInitObjects(final ThwackerOptions opts)
     {
@@ -275,6 +275,9 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
      * Run function that allows threads to run for a set duration
      * If iterations is set, add/remove threads will be running for one duration then
      * will sleep for a few seconds and repeat until the set number of iterations.
+     *
+     * @param duration to use
+     * @param iterations to use
      */
     public void run(final int duration, int iterations)
     {
@@ -614,9 +617,10 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
         }
     }
 
-    /** Thwacking Element:
-     *  Internal object used to contain either a publication or subscription
-     *  and state associated along with it
+    /*
+     * Thwacking Element:
+     * Internal object used to contain either a publication or subscription
+     * and state associated along with it
      */
     private class ThwackingElement
     {

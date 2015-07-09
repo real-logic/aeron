@@ -340,7 +340,7 @@ public class MessageStream
      *
      * @param buffer The buffer to write a message to.
      * @return number of bytes written
-     * @throws Exception
+     * @throws Exception if an errors occurs
      */
     public int getNext(final UnsafeBuffer buffer) throws Exception
     {
@@ -387,7 +387,7 @@ public class MessageStream
      * @param buffer The buffer to write a message to.
      * @param size   The length of the message to write, in bytes
      * @return number of bytes written
-     * @throws Exception
+     * @throws Exception if an error occurs
      */
     public int getNext(final UnsafeBuffer buffer, final int size) throws Exception
     {

@@ -380,6 +380,8 @@ public final class UdpChannel
      * The general format is:
      * UDP-interface-localPort-remoteAddress-remotePort
      *
+     * @param localData  for the channel
+     * @param remoteData for the channel
      * @return canonical representation as a string
      */
     public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
@@ -406,7 +408,7 @@ public final class UdpChannel
      * Local interface to be used by the channel
      *
      * @return {@link NetworkInterface} for the local interface used by the channel
-     * @throws SocketException
+     * @throws SocketException if an error occurs
      */
     public NetworkInterface localInterface() throws SocketException
     {

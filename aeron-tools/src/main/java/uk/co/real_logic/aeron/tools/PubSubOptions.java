@@ -150,8 +150,8 @@ public class PubSubOptions
         sizePattern = null;
         input = null;
         output = null;
-        channels = new ArrayList<ChannelDescriptor>();
-        rateIntervals = new ArrayList<RateControllerInterval>();
+        channels = new ArrayList<>();
+        rateIntervals = new ArrayList<>();
     }
 
     /**
@@ -183,8 +183,8 @@ public class PubSubOptions
 
         /**
          * Helper function to add a single port to a channel string.
-         * @param port
-         * @return
+         * @param port to use
+         * @return string
          */
         String getChannelWithPort(final int port)
         {
@@ -282,7 +282,7 @@ public class PubSubOptions
      * also call #close().
      * @param args Command line arguments
      * @return 0 when options parsed, 1 if program should call {@link #printHelp(String)}.
-     * @throws ParseException
+     * @throws ParseException if an error occurs
      */
     public int parseArgs(final String[] args) throws ParseException
     {
@@ -369,7 +369,7 @@ public class PubSubOptions
 
     /**
      * Get the list of channels on which to publish or subscribe.
-     * @return
+     * @return channels
      */
     public List<ChannelDescriptor> channels()
     {
@@ -378,7 +378,7 @@ public class PubSubOptions
 
     /**
      * Set the list of channels on which to publish or subscribe
-     * @param channels
+     * @param channels to use
      */
     public void channels(final List<ChannelDescriptor> channels)
     {
@@ -387,7 +387,7 @@ public class PubSubOptions
 
     /**
      * Get the output stream where a subscriber will write received data.
-     * @return
+     * @return output stream
      */
     public OutputStream output()
     {
@@ -396,7 +396,7 @@ public class PubSubOptions
 
     /**
      * Set the output stream where a subscriber will write received data.
-     * @param output
+     * @param output to use
      */
     public void output(final OutputStream output)
     {
@@ -405,7 +405,7 @@ public class PubSubOptions
 
     /**
      * Get the input stream that a Publisher will read for data to send.
-     * @return
+     * @return input stream
      */
     public InputStream input()
     {
@@ -414,7 +414,7 @@ public class PubSubOptions
 
     /**
      * Get if messages use additional space to store checksums for the message and stream.
-     * @return
+     * @return true if verify
      */
     public boolean verify()
     {
@@ -423,7 +423,7 @@ public class PubSubOptions
 
     /**
      * Set if messages use additional space to store checksums for the message and stream.
-     * @param verify
+     * @param verify or not
      */
     public void verify(final boolean verify)
     {
@@ -432,7 +432,7 @@ public class PubSubOptions
 
     /**
      * Set the input stream that a Publisher will read for data to send.
-     * @param input
+     * @param input stream to use
      */
     public void input(final InputStream input)
     {
@@ -451,7 +451,7 @@ public class PubSubOptions
 
     /**
      * Get the number of threads for the application to use.
-     * @return
+     * @return threads
      */
     public int threads()
     {
@@ -478,7 +478,7 @@ public class PubSubOptions
 
     /**
      * Set the total number of messages an application will send or receive before exiting.
-     * @param messages
+     * @param messages to sue
      */
     public void messages(final long messages)
     {
@@ -487,7 +487,7 @@ public class PubSubOptions
 
     /**
      * The number of times to run the rate sequence.
-     * @return
+     * @return iterations
      */
     public long iterations()
     {
@@ -496,7 +496,7 @@ public class PubSubOptions
 
     /**
      * The seed for a random number generator.
-     * @return
+     * @return random seed
      */
     public long randomSeed()
     {
@@ -505,7 +505,7 @@ public class PubSubOptions
 
     /**
      * Set the seed for a random number generator.
-     * @param value
+     * @param value to use
      */
     public void randomSeed(final long value)
     {
@@ -514,7 +514,7 @@ public class PubSubOptions
 
     /**
      * Set the number of times to run the rate sequence.
-     * @param value
+     * @param value iterations
      */
     public void iterations(final long value)
     {
@@ -523,7 +523,7 @@ public class PubSubOptions
 
     /**
      * True when application should use an embedded Aeron media driver.
-     * @return
+     * @return true if embedded
      */
     public boolean useEmbeddedDriver()
     {
@@ -532,7 +532,7 @@ public class PubSubOptions
 
     /**
      * Set the use of an embedded Aeron media driver.
-     * @param embedded
+     * @param embedded true if embedded
      */
     public void useEmbeddedDriver(final boolean embedded)
     {
@@ -542,7 +542,7 @@ public class PubSubOptions
     /**
      * Enable or disable the use of a specific session ID.
      * @see #sessionId(int)
-     * @param enabled
+     * @param enabled true if use session Id
      */
     public void useSessionId(final boolean enabled)
     {
@@ -563,7 +563,7 @@ public class PubSubOptions
     /**
      * Set the session ID to be used when #useSessionId() returns true.
      * @see #useSessionId #sessionId(boolean)
-     * @param id
+     * @param id to use
      */
     public void sessionId(final int id)
     {
@@ -581,7 +581,7 @@ public class PubSubOptions
 
     /**
      * Get the message size pattern used to determine what each messages size should be.
-     * @return
+     * @return pattern
      */
     public MessageSizePattern messageSizePattern()
     {
@@ -590,7 +590,7 @@ public class PubSubOptions
 
     /**
      * Set the message size pattern used to determine what each message size should be.
-     * @param pattern
+     * @param pattern to use
      */
     public void messageSizePattern(final MessageSizePattern pattern)
     {
@@ -614,10 +614,13 @@ public class PubSubOptions
     {
         totalStreams = value;
     }
+
     /**
      * If the parsed arguments created file input or output streams, those need to be closed.
      * This is a convenience method that will handle all the closable cases for you. Call this
      * before shutting down an application. Output streams will also be flushed.
+     *
+     * @throws IOException if an error occurs
      */
     public void close() throws IOException
     {
@@ -724,7 +727,7 @@ public class PubSubOptions
      * Parses a comma separated list of channels. The channels can use ranges for ports and
      * stream-id on a per address basis. Channel Example: udp://192.168.0.100:21000-21004#1-10
      * will give 5 channels with 10 streams each.
-     * @param csv
+     * @param csv to use
      * @throws ParseException
      */
     private void parseChannels(final String csv) throws ParseException
@@ -875,8 +878,8 @@ public class PubSubOptions
     /**
      * Walk the string to find the end of the ports, which can be a number or range.
      * Ports will end at the end of the string, or at a # or | character.
-     * @param input
-     * @param startIdx
+     * @param input to use
+     * @param startIdx to use
      * @return The index of the first character not part of the ports string.
      */
     private int findPortsEndIdx(final String input, final int startIdx)
@@ -1000,8 +1003,8 @@ public class PubSubOptions
     /**
      * Function to add ChannelDescriptor objects to the channels list.
      * @param chan Channel address including port low and high
-     * @param streamIdLow
-     * @param streamIdHigh
+     * @param streamIdLow to use
+     * @param streamIdHigh to use
      */
     private void addChannelRanges(final ChannelStruct chan, final int streamIdLow, final int streamIdHigh)
     {
@@ -1027,7 +1030,7 @@ public class PubSubOptions
 
     /**
      *
-     * @param ratesCsv
+     * @param ratesCsv to use
      */
     private void parseRates(final String ratesCsv) throws ParseException
     {
@@ -1328,12 +1331,6 @@ public class PubSubOptions
         }
     }
 
-    /**
-     *
-     * @param filename
-     * @return
-     * @throws ParseException
-     */
     private PubSubOptions.OptionValuesStruct getDefaultsFromOptionsFile(final String filename) throws ParseException
     {
         BufferedReader br;
@@ -1382,12 +1379,6 @@ public class PubSubOptions
         return new BufferedReader(new FileReader(filename));
     }
 
-    /**
-     * Parses a bit rate multiplier based on a string that may contain Gbps, Mbps, Kbps, bps
-     * @param s
-     * @return
-     * @throws Exception
-     */
     private int parseBitRateMultiplier(final String s) throws ParseException
     {
         final String rateLowercase = s.toLowerCase();
@@ -1411,12 +1402,6 @@ public class PubSubOptions
         throw new ParseException("bit rate " + s + " was not 'Gbps','Mbps','Kbps', or 'bps'.");
     }
 
-    /**
-     * Parses a long string and returns the value. Value must be positive.
-     * @param longStr
-     * @return
-     * @throws ParseException
-     */
     private long parseLongCheckPositive(final String longStr) throws ParseException
     {
         long value;
@@ -1436,11 +1421,8 @@ public class PubSubOptions
         return value;
     }
 
-    /**
+    /*
      * Parses an integer and returns the value if positive.
-     * @param intStr
-     * @return
-     * @throws ParseException
      */
     private int parseIntCheckPositive(final String intStr) throws  ParseException
     {

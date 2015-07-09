@@ -172,6 +172,7 @@ public class RateController
     {
         /**
          * Returns the number of bytes "sent", or -1 to indicate sending should stop.
+         * @return number of bytes sent
          */
         int onNext();
     }

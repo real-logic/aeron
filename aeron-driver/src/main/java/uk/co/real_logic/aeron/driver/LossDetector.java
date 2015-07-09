@@ -64,6 +64,13 @@ public class LossDetector implements GapHandler
      * <p>
      * The handler keeps track from scan to scan what is a gap and what must have been repaired.
      *
+     * @param termBuffer to scan
+     * @param rebuildPosition to start scanning from
+     * @param hwmPosition to scan up to
+     * @param now time in nanoseconds
+     * @param termLengthMask used for offset calculation
+     * @param positionBitsToShift used for position calculation
+     * @param initialTermId used by the scanner
      * @return the work count for this operation.
      */
     public int scan(
@@ -116,6 +123,7 @@ public class LossDetector implements GapHandler
     /**
      * Called on reception of a NAK
      *
+     * @param now        time in nanoseconds
      * @param termId     in the NAK
      * @param termOffset in the NAK
      */

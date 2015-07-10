@@ -20,9 +20,10 @@ import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
@@ -34,17 +35,15 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
  */
 public class LogBuffers implements AutoCloseable
 {
-    private final MappedByteBuffer[] mappedByteBuffers;
-    private final UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private final FileChannel fileChannel;
-    private final RandomAccessFile file;
+    private final UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
+    private final MappedByteBuffer[] mappedByteBuffers;
 
     public LogBuffers(final String logFileName)
     {
         try
         {
-            file = new RandomAccessFile(logFileName, "rw");
-            fileChannel = file.getChannel();
+            fileChannel = FileChannel.open(Paths.get(logFileName), StandardOpenOption.READ, StandardOpenOption.WRITE);
 
             final long logLength = fileChannel.size();
             final int termLength = computeTermLength(logLength);
@@ -115,7 +114,6 @@ public class LogBuffers implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.quietClose(file);
         CloseHelper.quietClose(fileChannel);
 
         for (final MappedByteBuffer buffer : mappedByteBuffers)

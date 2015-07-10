@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
@@ -115,15 +115,8 @@ public class LogBuffers implements AutoCloseable
 
     public void close()
     {
-        try
-        {
-            file.close();
-            fileChannel.close();
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
+        CloseHelper.quietClose(file);
+        CloseHelper.quietClose(fileChannel);
 
         for (final MappedByteBuffer buffer : mappedByteBuffers)
         {

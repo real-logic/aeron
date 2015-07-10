@@ -26,7 +26,6 @@ import org.mockito.InOrder;
 import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.BitUtil;
@@ -39,6 +38,9 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Test that has a publisher and subscriber and single media driver for unicast and multicast cases
@@ -129,8 +131,8 @@ public class PubAndSubTest
 
         verify(fragmentHandler).onFragment(
             any(UnsafeBuffer.class),
-            eq(DataHeaderFlyweight.HEADER_LENGTH),
-            eq(BitUtil.SIZE_OF_INT),
+            eq(HEADER_LENGTH),
+            eq(SIZE_OF_INT),
             any(Header.class));
     }
 
@@ -153,11 +155,15 @@ public class PubAndSubTest
             Integer.MAX_VALUE,
             TimeUnit.MILLISECONDS.toNanos(9900));
 
+        final long expectedOffset = 0L;
+        final int messageSize = SIZE_OF_INT;
+        final int expectedLength = BitUtil.align(HEADER_LENGTH + messageSize, FRAME_ALIGNMENT);
+
         final ArgumentCaptor<FileChannel> channelArgumentCaptor = ArgumentCaptor.forClass(FileChannel.class);
         verify(fileBlockHandler).onBlock(
             channelArgumentCaptor.capture(),
-            eq(0L),
-            eq(32), // Why is this 32 and DataHeaderFlyweight.HEADER_LENGTH + BitUtil.SIZE_OF_INT?
+            eq(expectedOffset),
+            eq(expectedLength),
             eq(SESSION_ID),
             anyInt());
 
@@ -168,7 +174,7 @@ public class PubAndSubTest
     {
         buffer.putInt(0, 1);
 
-        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        while (publication.offer(buffer, 0, SIZE_OF_INT) < 0L)
         {
             Thread.yield();
         }
@@ -180,7 +186,7 @@ public class PubAndSubTest
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
         context.termBufferLength(termBufferLength);
@@ -218,11 +224,11 @@ public class PubAndSubTest
     public void shouldContinueAfterRolloverWithMinimalPaddingHeader(final String channel) throws Exception
     {
         final int termBufferLength = 64 * 1024;
-        final int termBufferLengthMinusPaddingHeader = termBufferLength - DataHeaderFlyweight.HEADER_LENGTH;
+        final int termBufferLengthMinusPaddingHeader = termBufferLength - HEADER_LENGTH;
         final int num1kMessagesInTermBuffer = 63;
         final int lastMessageLength =
-            termBufferLengthMinusPaddingHeader - (num1kMessagesInTermBuffer * 1024) - DataHeaderFlyweight.HEADER_LENGTH;
-        final int messageLength = 1024 - DataHeaderFlyweight.HEADER_LENGTH;
+            termBufferLengthMinusPaddingHeader - (num1kMessagesInTermBuffer * 1024) - HEADER_LENGTH;
+        final int messageLength = 1024 - HEADER_LENGTH;
 
         context.termBufferLength(termBufferLength);
 
@@ -304,7 +310,7 @@ public class PubAndSubTest
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
 
         context.termBufferLength(termBufferLength);
@@ -345,7 +351,7 @@ public class PubAndSubTest
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
         final int numBatches = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatches;
@@ -393,7 +399,7 @@ public class PubAndSubTest
         final int numBatchesPerTerm = 4;
         final int numMessagesPerBatch = 16;
         final int numMessagesInTermBuffer = numMessagesPerBatch * numBatchesPerTerm;
-        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
         context.termBufferLength(termBufferLength);
@@ -456,7 +462,7 @@ public class PubAndSubTest
          * so, sending 64 messages causes last to overflow
          */
         final int termBufferLength = 64 * 1024;
-        final int messageLength = 1032 - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = 1032 - HEADER_LENGTH;
         final int numMessagesToSend = 64;
 
         context.termBufferLength(termBufferLength);
@@ -500,7 +506,7 @@ public class PubAndSubTest
          * so, sending 64 messages causes last to overflow
          */
         final int termBufferLength = 64 * 1024;
-        final int messageLength = 1032 - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = 1032 - HEADER_LENGTH;
         final int numMessagesToSend = 64;
         final int numBatchesPerTerm = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatchesPerTerm;
@@ -548,7 +554,7 @@ public class PubAndSubTest
          */
         final int termBufferLength = 64 * 1024;
         final int numMessagesPerTerm = 64;
-        final int messageLength = (termBufferLength / numMessagesPerTerm) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesPerTerm) - HEADER_LENGTH;
         final int maxFails = 10000;
         int messagesSent = 0;
 
@@ -602,7 +608,7 @@ public class PubAndSubTest
     {
         final int termBufferLength = 64 * 1024;
         final int numMessagesInTermBuffer = 64;
-        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - DataHeaderFlyweight.HEADER_LENGTH;
+        final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSendStageOne = numMessagesInTermBuffer / 2;
         final int numMessagesToSendStageTwo = numMessagesInTermBuffer;
         final CountDownLatch newImageLatch = new CountDownLatch(1);
@@ -678,7 +684,7 @@ public class PubAndSubTest
         final int termBufferLength = 64 * 1024;
         final int numFragmentsPerMessage = 2;
         final int mtuLength = 4096;
-        final int frameLength = mtuLength - DataHeaderFlyweight.HEADER_LENGTH;
+        final int frameLength = mtuLength - HEADER_LENGTH;
         final int messageLength = frameLength * numFragmentsPerMessage;
         final int numMessagesToSend = 2;
         final int numFramesToExpect = numMessagesToSend * numFragmentsPerMessage;

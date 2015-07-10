@@ -27,8 +27,9 @@ public interface BlockHandler
      * Callback for handling a block of messages being read from a log.
      *
      * @param buffer    containing the block of message fragments.
-     * @param offset    at which the block begins.
-     * @param length    of the block in bytes.
+     * @param offset    at which the block begins, including any frame headers.
+     * @param length    of the block in bytes, including any frame headers that is aligned up to
+     *                  {@link uk.co.real_logic.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
      * @param sessionId of the stream containing this block of message fragments.
      * @param termId    of the stream containing this block of message fragments.
      */

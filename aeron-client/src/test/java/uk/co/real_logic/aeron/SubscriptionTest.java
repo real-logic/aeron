@@ -127,5 +127,4 @@ public class SubscriptionTest
 
         assertThat(subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT), is(2));
     }
-
 }

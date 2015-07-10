@@ -28,7 +28,8 @@ public interface FileBlockHandler
      *
      * @param fileChannel containing the block of fragments.
      * @param offset      at which the block begins, including any frame headers.
-     * @param length      of the block in bytes, including any frame headers.
+     * @param length      of the block in bytes, including any frame headers that is aligned up to
+     *                    {@link uk.co.real_logic.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
      * @param sessionId   of the stream of fragments.
      * @param termId      of the stream of fragments.
      */

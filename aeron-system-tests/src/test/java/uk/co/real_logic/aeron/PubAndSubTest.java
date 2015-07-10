@@ -21,7 +21,9 @@ import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
@@ -30,9 +32,11 @@ import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.channels.FileChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -64,6 +68,7 @@ public class PubAndSubTest
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
     private FragmentHandler fragmentHandler = mock(FragmentHandler.class);
+    private FileBlockHandler fileBlockHandler = mock(FileBlockHandler.class);
 
     private void launch(final String channel) throws Exception
     {
@@ -109,12 +114,7 @@ public class PubAndSubTest
     {
         launch(channel);
 
-        buffer.putInt(0, 1);
-
-        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
-        {
-            Thread.yield();
-        }
+        publishMessage();
 
         final int fragmentsRead[] = new int[1];
         SystemTestHelper.executeUntil(
@@ -132,6 +132,46 @@ public class PubAndSubTest
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),
             any(Header.class));
+    }
+
+    @Theory
+    @Test(timeout = 10000)
+    public void shouldReceivePublishedMessageViaPollFile(final String channel) throws Exception
+    {
+        launch(channel);
+
+        publishMessage();
+
+        final int fragmentsRead[] = new int[1];
+        SystemTestHelper.executeUntil(
+            () -> fragmentsRead[0] > 0,
+            (i) ->
+            {
+                fragmentsRead[0] += subscription.filePoll(fileBlockHandler, Integer.MAX_VALUE);
+                Thread.yield();
+            },
+            Integer.MAX_VALUE,
+            TimeUnit.MILLISECONDS.toNanos(9900));
+
+        final ArgumentCaptor<FileChannel> channelArgumentCaptor = ArgumentCaptor.forClass(FileChannel.class);
+        verify(fileBlockHandler).onBlock(
+            channelArgumentCaptor.capture(),
+            eq(0L),
+            eq(32), // Why is this 32 and DataHeaderFlyweight.HEADER_LENGTH + BitUtil.SIZE_OF_INT?
+            eq(SESSION_ID),
+            anyInt());
+
+        assertTrue("File Channel is closed", channelArgumentCaptor.getValue().isOpen());
+    }
+
+    private void publishMessage()
+    {
+        buffer.putInt(0, 1);
+
+        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Thread.yield();
+        }
     }
 
     @Theory

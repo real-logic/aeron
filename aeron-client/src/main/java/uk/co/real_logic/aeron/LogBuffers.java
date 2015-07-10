@@ -37,11 +37,13 @@ public class LogBuffers implements AutoCloseable
     private final MappedByteBuffer[] mappedByteBuffers;
     private final UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private final FileChannel fileChannel;
+    private final RandomAccessFile file;
 
     public LogBuffers(final String logFileName)
     {
-        try (final RandomAccessFile file = new RandomAccessFile(logFileName, "rw"))
+        try
         {
+            file = new RandomAccessFile(logFileName, "rw");
             fileChannel = file.getChannel();
 
             final long logLength = fileChannel.size();
@@ -115,6 +117,7 @@ public class LogBuffers implements AutoCloseable
     {
         try
         {
+            file.close();
             fileChannel.close();
         }
         catch (final IOException ex)

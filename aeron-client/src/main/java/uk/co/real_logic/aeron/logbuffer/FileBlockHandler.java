@@ -27,8 +27,8 @@ public interface FileBlockHandler
      * Notification of an available block of fragments.
      *
      * @param fileChannel containing the block of fragments.
-     * @param offset      at which the block begins.
-     * @param length      of the block in bytes.
+     * @param offset      at which the block begins, including any frame headers.
+     * @param length      of the block in bytes, including any frame headers.
      * @param sessionId   of the stream of fragments.
      * @param termId      of the stream of fragments.
      */

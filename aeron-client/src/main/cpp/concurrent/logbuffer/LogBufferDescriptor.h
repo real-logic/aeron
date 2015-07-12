@@ -33,7 +33,14 @@ static const std::int32_t NEEDS_CLEANING = 1;
 
 static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
 
+#if defined(__GNUC__)
 constexpr static const int PARTITION_COUNT = 3;
+#else
+// Visual Studio 2013 doesn't like constexpr without an update
+// https://msdn.microsoft.com/en-us/library/vstudio/hh567368.aspx
+// https://www.microsoft.com/en-us/download/details.aspx?id=41151
+static const int PARTITION_COUNT = 3;
+#endif
 
 /*
  * Layout description for log buffers which contains partitions of terms with associated term meta data,

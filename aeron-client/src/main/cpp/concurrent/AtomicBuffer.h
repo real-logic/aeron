@@ -30,18 +30,17 @@
 
 namespace aeron { namespace concurrent {
 
-
 // note: Atomic Buffer does not own the memory it wraps.
 class AtomicBuffer
 {
 public:
-    AtomicBuffer()
-        : m_buffer(nullptr), m_length(0)
+    AtomicBuffer() :
+        m_buffer(nullptr), m_length(0)
     {
     }
 
-    AtomicBuffer(std::uint8_t *buffer, util::index_t length)
-        : m_buffer (buffer), m_length(length)
+    AtomicBuffer(std::uint8_t *buffer, util::index_t length) :
+        m_buffer(buffer), m_length(length)
     {
     }
 
@@ -302,19 +301,16 @@ public:
         boundsCheck(offset, value.length() + sizeof(std::int32_t));
 
         putInt32(offset, length);
-        memcpy (m_buffer + offset + sizeof(std::int32_t), value.c_str(), length);
+        ::memcpy(m_buffer + offset + sizeof(std::int32_t), value.c_str(), value.length());
 
         return static_cast<std::int32_t>(sizeof(std::int32_t)) + length;
     }
 
     std::int32_t putStringUtf8WithoutLength(util::index_t offset, const std::string& value)
     {
-        std::int32_t length = static_cast<std::int32_t>(value.length());
-
         boundsCheck(offset, value.length());
-
-        memcpy (m_buffer + offset, value.c_str(), length);
-        return length;
+        ::memcpy(m_buffer + offset, value.c_str(), value.length());
+        return static_cast<std::int32_t>(value.length());
     }
 
 private:
@@ -324,7 +320,7 @@ private:
     inline void boundsCheck(util::index_t index, util::index_t length) const
     {
 #if !defined(DISABLE_BOUNDS_CHECKS)
-        if ((index + length) > m_length)
+        if (AERON_COND_EXPECT((index + length) > m_length, false))
         {
             throw util::OutOfBoundsException(
                 util::strPrintf("Index Out of Bounds[%p]. Index: %d + %d Capacity: %d", this, index, length, m_length),

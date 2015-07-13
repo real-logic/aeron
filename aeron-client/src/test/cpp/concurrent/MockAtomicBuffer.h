@@ -39,7 +39,7 @@ public:
     MOCK_CONST_METHOD1(getInt32Volatile, std::int32_t(util::index_t offset));
     MOCK_METHOD2(getAndAddInt32, std::int32_t(util::index_t offset, std::int32_t delta));
     MOCK_METHOD4(putBytes, void(util::index_t index, concurrent::AtomicBuffer& srcBuffer, util::index_t srcIndex, util::index_t length));
-    MOCK_METHOD3(putBytes, void(util::index_t index, std::uint8_t *srcBuffer, util::index_t length));
+    MOCK_METHOD3(putBytes, void(util::index_t index, const std::uint8_t *srcBuffer, util::index_t length));
     MOCK_METHOD2(putInt32Ordered, void(util::index_t offset, std::int32_t v));
     MOCK_METHOD1(getUInt16, std::uint16_t(util::index_t offset));
     MOCK_CONST_METHOD1(getInt64, std::int64_t(util::index_t offset));

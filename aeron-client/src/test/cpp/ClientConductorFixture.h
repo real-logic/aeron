@@ -64,9 +64,9 @@ class ClientConductorFixture
 {
 public:
     ClientConductorFixture() :
-        m_toDriverBuffer(&m_toDriver[0], m_toDriver.size(), 0),
-        m_toClientsBuffer(&m_toClients[0], m_toClients.size(), 0),
-        m_counterValuesBuffer(&m_counterValues[0], m_counterValues.size(), 0),
+        m_toDriverBuffer(m_toDriver, 0),
+        m_toClientsBuffer(m_toClients, 0),
+        m_counterValuesBuffer(m_counterValues, 0),
         m_manyToOneRingBuffer(m_toDriverBuffer),
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),

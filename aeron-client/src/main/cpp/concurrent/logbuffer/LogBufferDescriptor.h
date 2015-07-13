@@ -214,9 +214,12 @@ inline static std::int64_t computeTermLength(std::int64_t logLength)
     return (logLength - metaDataSectionLength) / 3;
 }
 
-inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int partitionIndex)
+inline static AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int partitionIndex)
 {
-    return logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+    std::uint8_t *header =
+        logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+
+    return AtomicBuffer(header, DataFrameHeader::LENGTH);
 }
 
 inline static void defaultHeaderTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)

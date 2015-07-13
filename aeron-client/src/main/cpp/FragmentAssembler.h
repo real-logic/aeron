@@ -82,9 +82,9 @@ private:
     public:
         typedef BufferBuilder this_t;
 
-        BufferBuilder(size_t initialLength) :
+        BufferBuilder(std::uint32_t initialLength) :
             m_capacity(BitUtil::findNextPowerOfTwo(initialLength)),
-            m_limit(DataFrameHeader::LENGTH),
+            m_limit(static_cast<std::uint32_t>(DataFrameHeader::LENGTH)),
             m_buffer(new std::uint8_t[m_capacity])
         {
         }
@@ -103,32 +103,32 @@ private:
             return &m_buffer[0];
         }
 
-        size_t limit() const
+        std::uint32_t limit() const
         {
             return m_limit;
         }
 
         this_t& reset()
         {
-            m_limit = DataFrameHeader::LENGTH;
+            m_limit = static_cast<std::uint32_t>(DataFrameHeader::LENGTH);
             return *this;
         }
 
         this_t& append(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            ensureCapacity(length);
+            ensureCapacity(static_cast<std::uint32_t>(length));
 
-            ::memcpy(&m_buffer[0] + m_limit, buffer.buffer() + offset, length);
+            ::memcpy(&m_buffer[0] + m_limit, buffer.buffer() + offset, static_cast<std::uint32_t>(length));
             m_limit += length;
             return *this;
         }
 
     private:
-        std::size_t m_capacity;
-        std::size_t m_limit = 0;
+        std::uint32_t m_capacity;
+        std::uint32_t m_limit = 0;
         std::unique_ptr<std::uint8_t[]> m_buffer;
 
-        inline static size_t findSuitableCapacity(size_t capacity, size_t requiredCapacity)
+        inline static std::uint32_t findSuitableCapacity(std::uint32_t capacity, std::uint32_t requiredCapacity)
         {
             do
             {
@@ -139,13 +139,13 @@ private:
             return capacity;
         }
 
-        void ensureCapacity(size_t additionalCapacity)
+        void ensureCapacity(std::uint32_t additionalCapacity)
         {
-            const size_t requiredCapacity = m_limit + additionalCapacity;
+            const std::uint32_t requiredCapacity = m_limit + additionalCapacity;
 
             if (requiredCapacity > m_capacity)
             {
-                const size_t newCapacity = findSuitableCapacity(m_capacity, requiredCapacity);
+                const std::uint32_t newCapacity = findSuitableCapacity(m_capacity, requiredCapacity);
                 std::unique_ptr<std::uint8_t[]> newBuffer(new std::uint8_t[newCapacity]);
 
                 ::memcpy(&newBuffer[0], &m_buffer[0], m_limit);

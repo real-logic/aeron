@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <string.h>
 #include <string>
+#include <array>
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>
 #include <util/Index.h>
@@ -48,6 +49,19 @@ public:
         m_buffer(buffer), m_length(length)
     {
         setMemory(0, (size_t)length, initialValue);
+    }
+
+    template<size_t N>
+    AtomicBuffer(std::array<std::uint8_t, N>& buffer)
+    {
+        wrap(buffer);
+    }
+
+    template<size_t N>
+    AtomicBuffer(std::array<std::uint8_t, N>& buffer, std::uint8_t initialValue)
+    {
+        wrap(buffer);
+        buffer.fill(initialValue);
     }
 
     AtomicBuffer(const AtomicBuffer& buffer) :
@@ -82,6 +96,13 @@ public:
     {
         m_buffer = buffer.m_buffer;
         m_length = buffer.m_length;
+    }
+
+    template<size_t N>
+    inline void wrap(std::array<std::uint8_t, N>& buffer)
+    {
+        m_buffer = buffer.data();
+        m_length = static_cast<util::index_t>(N);
     }
 
     inline util::index_t capacity() const
@@ -257,13 +278,13 @@ public:
         ::memcpy(m_buffer + index, srcBuffer.m_buffer + srcIndex, length);
     }
 
-    inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, std::uint8_t *srcBuffer, util::index_t length)
+    inline COND_MOCK_VIRTUAL void putBytes(util::index_t index, const std::uint8_t *srcBuffer, util::index_t length)
     {
         boundsCheck(index, length);
         ::memcpy(m_buffer + index, srcBuffer, length);
     }
 
-    inline void getBytes(util::index_t index, std::uint8_t *dst, util::index_t length)
+    inline void getBytes(util::index_t index, std::uint8_t *dst, util::index_t length) const
     {
         boundsCheck(index, length);
         ::memcpy(dst, m_buffer + index, length);

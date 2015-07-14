@@ -79,6 +79,6 @@ TEST(utilTests, stringUtilstrPrintfTest)
 
 TEST(utilTests, findNextPowerOfTwo)
 {
-    EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(33), 64);
-    EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(4096), 4096);
+    EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(33), 64u);
+    EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(4096), 4096u);
 }

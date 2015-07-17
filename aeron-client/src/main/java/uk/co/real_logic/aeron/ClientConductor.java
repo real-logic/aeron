@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static uk.co.real_logic.aeron.DriverListenerAdapter.MISSING_REGISTRATION_ID;
 
 /**
  * Client conductor takes responses and notifications from media driver and acts on them.
@@ -51,7 +52,7 @@ class ClientConductor implements Agent, DriverListener
 
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
-    private final DriverListenerAdapter driverListenerAdapter;
+    private final DriverListenerAdapter driverListener;
     private final LogBuffersFactory logBuffersFactory;
     private final ActivePublications activePublications = new ActivePublications();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
@@ -89,7 +90,7 @@ class ClientConductor implements Agent, DriverListener
         this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
 
-        this.driverListenerAdapter = new DriverListenerAdapter(broadcastReceiver, this);
+        this.driverListener = new DriverListenerAdapter(broadcastReceiver, this);
     }
 
     public void onClose()
@@ -204,7 +205,7 @@ class ClientConductor implements Agent, DriverListener
                 {
                     final long positionId = subscriberPositionMap.get(subscription.registrationId());
 
-                    if (DriverListenerAdapter.MISSING_REGISTRATION_ID != positionId)
+                    if (MISSING_REGISTRATION_ID != positionId)
                     {
                         final Image image = new Image(
                             sessionId,
@@ -244,7 +245,7 @@ class ClientConductor implements Agent, DriverListener
 
     public DriverListenerAdapter driverListenerAdapter()
     {
-        return driverListenerAdapter;
+        return driverListener;
     }
 
     public void lingerResource(final ManagedResource managedResource)
@@ -282,7 +283,7 @@ class ClientConductor implements Agent, DriverListener
         try
         {
             workCount += onCheckTimeouts();
-            workCount += driverListenerAdapter.pollMessage(correlationId, expectedChannel);
+            workCount += driverListener.pollMessage(correlationId, expectedChannel);
         }
         catch (final Exception ex)
         {
@@ -300,7 +301,7 @@ class ClientConductor implements Agent, DriverListener
         {
             doWork(correlationId, expectedChannel);
 
-            if (driverListenerAdapter.lastReceivedCorrelationId() == correlationId)
+            if (driverListener.lastReceivedCorrelationId() == correlationId)
             {
                 if (null != driverException)
                 {

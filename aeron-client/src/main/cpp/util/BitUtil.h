@@ -22,6 +22,9 @@
 
 namespace aeron { namespace util {
 
+/**
+ * Bit manipulation functions and constants
+ */
 namespace BitUtil
 {
     /** Size of the data blocks used by the CPU cache sub-system in bytes. */
@@ -67,13 +70,28 @@ namespace BitUtil
         return current - 1;
     }
 
+    template<typename value_t>
+    inline int numberOfLeadingZeroes(value_t value)
+    {
+#if defined(__GNUC__)
+        return __builtin_clz(value);
+#elif defined(__MSC_VER)
+        return __lzcnt(value);
+#else
+#error "do not understand how to clz"
+#endif
+    }
+
     /* Taken from Hacker's Delight as ntz10 at http://www.hackersdelight.org/hdcodetxt/ntz.c.txt */
     template<typename value_t>
-    inline static int numberOfTrailingZeroes(value_t value)
+    inline int numberOfTrailingZeroes(value_t value)
     {
 #if defined(__GNUC__)
         return __builtin_ctz(value);
 #else
+        static_assert(std::is_integral<value_t>::value, "numberOfTrailingZeroes only available on integral types");
+        static_assert(sizeof(value_t)==4, "numberOfTrailingZeroes only available on 32-bit integral types");
+
         static char table[32] = {
             0, 1, 2, 24, 3, 19, 6, 25,
             22, 4, 20, 10, 16, 7, 12, 26,
@@ -95,9 +113,12 @@ namespace BitUtil
      * Works for 32-bit fields only at the moment.
      */
     template<typename value_t>
-    inline static value_t findNextPowerOfTwo(value_t value)
+    inline value_t findNextPowerOfTwo(value_t value)
     {
-        return 1 << (32 - numberOfTrailingZeroes(value));
+        static_assert(std::is_integral<value_t>::value, "findNextPowerOfTwo only available on integral types");
+        static_assert(sizeof(value_t)==4, "findNextPowerOfTwo only available on 32-bit integral types");
+
+        return 1 << (32 - numberOfLeadingZeroes(value - 1));
     }
 
     /*
@@ -105,8 +126,10 @@ namespace BitUtil
      * Solution is Figure 10-24.
      */
     template <typename value_t>
-    inline static int fastMod3(value_t value)
+    inline int fastMod3(value_t value)
     {
+        static_assert(std::is_integral<value_t>::value, "fastMod3 only available on integral types");
+
         static char table[62] = {0,1,2, 0,1,2, 0,1,2, 0,1,2,
             0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2,
             0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2, 0,1,2,

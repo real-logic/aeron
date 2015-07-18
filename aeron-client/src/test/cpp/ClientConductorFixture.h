@@ -34,6 +34,8 @@ using namespace aeron::concurrent;
 using namespace aeron::command;
 using namespace aeron;
 
+using namespace std::placeholders;
+
 #define CAPACITY (1024)
 #define MANY_TO_ONE_RING_BUFFER_LENGTH (CAPACITY + RingBufferDescriptor::TRAILER_LENGTH)
 #define BROADCAST_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
@@ -56,47 +58,15 @@ public:
     MOCK_METHOD3(onNewSub, void(const std::string&, std::int32_t, std::int64_t));
     MOCK_METHOD6(onNewImage, void(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&));
     MOCK_METHOD5(onInactive, void(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t));
-
-    static on_new_publication_t newPub(MockClientConductorHandlers& handlers)
-    {
-        return [&](const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t registrationId)
-        {
-            handlers.onNewPub(channel, streamId, sessionId, registrationId);
-        };
-    }
-
-    static on_new_subscription_t newSub(MockClientConductorHandlers& handlers)
-    {
-        return [&](const std::string& channel, std::int32_t streamId, std::int64_t registrationId)
-        {
-            handlers.onNewSub(channel, streamId, registrationId);
-        };
-    }
-
-    static on_new_image_t newConn(MockClientConductorHandlers& handlers)
-    {
-        return [&](Image& image, const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position, const std::string& sourceIdentity)
-        {
-            handlers.onNewImage(image, channel, streamId, sessionId, position, sourceIdentity);
-        };
-    }
-
-    static on_inactive_image_t inactive(MockClientConductorHandlers& handlers)
-    {
-        return [&](Image& image, const std::string& channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)
-        {
-            handlers.onInactive(image, channel, streamId, sessionId, position);
-        };
-    }
 };
 
 class ClientConductorFixture
 {
 public:
     ClientConductorFixture() :
-        m_toDriverBuffer(&m_toDriver[0], m_toDriver.size(), 0),
-        m_toClientsBuffer(&m_toClients[0], m_toClients.size(), 0),
-        m_counterValuesBuffer(&m_counterValues[0], m_counterValues.size(), 0),
+        m_toDriverBuffer(m_toDriver, 0),
+        m_toClientsBuffer(m_toClients, 0),
+        m_counterValuesBuffer(m_counterValues, 0),
         m_manyToOneRingBuffer(m_toDriverBuffer),
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
@@ -107,10 +77,10 @@ public:
             m_driverProxy,
             m_copyBroadcastReceiver,
             m_counterValuesBuffer,
-            MockClientConductorHandlers::newPub(m_handlers),
-            MockClientConductorHandlers::newSub(m_handlers),
-            MockClientConductorHandlers::newConn(m_handlers),
-            MockClientConductorHandlers::inactive(m_handlers),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewSub, &m_handlers, _1, _2, _3),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewImage, &m_handlers, _1, _2, _3, _4, _5, _6),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1, _2, _3, _4, _5),
             [&](SourcedException& exception) { m_errorHandler(exception); },
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS),

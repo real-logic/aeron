@@ -41,7 +41,7 @@ Publication::Publication(
 
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
-        std::uint8_t* defaultFrameHeader = LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, i);
+        AtomicBuffer defaultFrameHeader = LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, i);
 
         /*
          * TODO:
@@ -52,7 +52,6 @@ Publication::Publication(
             buffers.atomicBuffer(i),
             buffers.atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT),
             defaultFrameHeader,
-            DataFrameHeader::LENGTH,
             mtuLength));
     }
 

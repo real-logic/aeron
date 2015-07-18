@@ -28,4 +28,10 @@
     #define COND_MOCK_VIRTUAL
 #endif
 
+#if defined(__GNUC__)
+    #define AERON_COND_EXPECT(exp,c) (__builtin_expect((exp),c))
+#else
+    #define AERON_COND_EXPECT(exp,c) (exp)
+#endif
+
 #endif

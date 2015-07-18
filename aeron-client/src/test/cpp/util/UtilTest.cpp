@@ -18,6 +18,7 @@
 
 #include <util/ScopeUtils.h>
 #include <util/StringUtil.h>
+#include <util/BitUtil.h>
 
 #include <gtest/gtest.h>
 
@@ -74,4 +75,10 @@ TEST(utilTests, stringUtilstrPrintfTest)
     std::string val = strPrintf("%s %s", "hello", "world");
     ASSERT_EQ(val, "hello world");
 
+}
+
+TEST(utilTests, findNextPowerOfTwo)
+{
+    EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(33), 64u);
+    EXPECT_EQ(BitUtil::findNextPowerOfTwo<std::uint32_t>(4096), 4096u);
 }

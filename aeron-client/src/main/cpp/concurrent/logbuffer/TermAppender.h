@@ -33,16 +33,14 @@ class TermAppender : public LogBufferPartition
 {
 public:
     TermAppender(
-        AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer,
-        std::uint8_t *defaultHdr, util::index_t defaultHdrLength, util::index_t maxFrameLength) :
+        AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer, AtomicBuffer& defaultHdr, util::index_t maxFrameLength) :
         LogBufferPartition(termBuffer, metaDataBuffer),
-        m_defaultHdrBuffer(defaultHdr, defaultHdrLength),
-        m_defaultHdr(defaultHdr),
+        m_defaultHdr(defaultHdr.buffer()),
         m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(termBuffer.capacity())),
         m_maxFrameLength(maxFrameLength),
-        m_maxPayloadLength(m_maxFrameLength - defaultHdrLength)
+        m_maxPayloadLength(m_maxFrameLength - DataFrameHeader::LENGTH)
     {
-        FrameDescriptor::checkHeaderLength(defaultHdrLength);
+        FrameDescriptor::checkHeaderLength(defaultHdr.capacity());
         FrameDescriptor::checkMaxFrameLength(maxFrameLength);
     }
 
@@ -112,7 +110,6 @@ public:
     }
 
 private:
-    AtomicBuffer m_defaultHdrBuffer;
     std::uint8_t *m_defaultHdr;
     const util::index_t m_maxMessageLength;
     const util::index_t m_maxFrameLength;

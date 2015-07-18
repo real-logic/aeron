@@ -94,6 +94,7 @@ endif()
 
 # platform specific flags
 if(APPLE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wsign-compare")
     add_definitions(-DDarwin)
     add_definitions(-Wno-deprecated-register)
 elseif(CYGWIN)

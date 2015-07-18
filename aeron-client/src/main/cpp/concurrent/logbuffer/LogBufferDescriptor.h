@@ -33,7 +33,14 @@ static const std::int32_t NEEDS_CLEANING = 1;
 
 static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
 
+#if defined(__GNUC__)
 constexpr static const int PARTITION_COUNT = 3;
+#else
+// Visual Studio 2013 doesn't like constexpr without an update
+// https://msdn.microsoft.com/en-us/library/vstudio/hh567368.aspx
+// https://www.microsoft.com/en-us/download/details.aspx?id=41151
+static const int PARTITION_COUNT = 3;
+#endif
 
 /*
  * Layout description for log buffers which contains partitions of terms with associated term meta data,
@@ -207,9 +214,12 @@ inline static std::int64_t computeTermLength(std::int64_t logLength)
     return (logLength - metaDataSectionLength) / 3;
 }
 
-inline static std::uint8_t* defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int partitionIndex)
+inline static AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int partitionIndex)
 {
-    return logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+    std::uint8_t *header =
+        logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+
+    return AtomicBuffer(header, DataFrameHeader::LENGTH);
 }
 
 inline static void defaultHeaderTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)

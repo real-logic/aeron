@@ -26,6 +26,8 @@ using namespace aeron;
 #define LOG_META_DATA_LENGTH (LogBufferDescriptor::LOG_META_DATA_LENGTH)
 #define SRC_BUFFER_LENGTH 1024
 
+static_assert(LogBufferDescriptor::PARTITION_COUNT==3, "partition count assumed to be 3 for these test");
+
 typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH)> log_buffer_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_LENGTH> src_buffer_t;
 
@@ -41,25 +43,24 @@ class PublicationTest : public testing::Test, ClientConductorFixture
 {
 public:
     PublicationTest() :
-        m_srcBuffer(&m_src[0], m_src.size()),
+        m_srcBuffer(m_src, 0),
+        m_logBuffers(m_log.data(), static_cast<index_t>(m_log.size())),
         m_publicationLimit(m_counterValuesBuffer, PUBLICATION_LIMIT_COUNTER_ID)
     {
         m_log.fill(0);
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
-            m_termBuffers[i].wrap(&(m_log[i * TERM_LENGTH]), TERM_LENGTH);
-            m_metaDataBuffers[i].wrap(&(m_log[(TERM_LENGTH * 3) + (i * TERM_META_DATA_LENGTH)]), TERM_META_DATA_LENGTH);
+            m_termBuffers[i] = m_logBuffers.atomicBuffer(i);
+            m_metaDataBuffers[i] = m_logBuffers.atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT);
         }
 
-        m_logMetaDataBuffer.wrap(&m_log[m_log.size() - LOG_META_DATA_LENGTH], LOG_META_DATA_LENGTH);
+        m_logMetaDataBuffer = m_logBuffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX);
 
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
 
-        m_logBuffers = std::unique_ptr<LogBuffers>(new LogBuffers(&m_log[0], (index_t)m_log.size()));
-
         m_publication = std::unique_ptr<Publication>(new Publication(
-            m_conductor, CHANNEL, CORRELATION_ID, STREAM_ID, SESSION_ID, m_publicationLimit, *(m_logBuffers.get())));
+            m_conductor, CHANNEL, CORRELATION_ID, STREAM_ID, SESSION_ID, m_publicationLimit, m_logBuffers));
     }
 
     virtual void SetUp()
@@ -80,9 +81,9 @@ protected:
     AtomicBuffer m_logMetaDataBuffer;
     AtomicBuffer m_srcBuffer;
 
-    std::unique_ptr<LogBuffers> m_logBuffers;
-    std::unique_ptr<Publication> m_publication;
+    LogBuffers m_logBuffers;
     UnsafeBufferPosition m_publicationLimit;
+    std::unique_ptr<Publication> m_publication;
 };
 
 TEST_F(PublicationTest, shouldReportInitialPosition)
@@ -139,14 +140,12 @@ TEST_F(PublicationTest, shouldRotateWhenAppendTrips)
 
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_ID_OFFSET), TERM_ID_1 + 1);
 
-    AtomicBuffer defaultHdr;
-
-    defaultHdr.wrap(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, cleaningIndex), DataFrameHeader::LENGTH);
-    EXPECT_EQ(defaultHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 2);
+    AtomicBuffer cleaningHdr(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, cleaningIndex));
+    EXPECT_EQ(cleaningHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 2);
 
     const int newTermIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
-    defaultHdr.wrap(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, newTermIndex), DataFrameHeader::LENGTH);
-    EXPECT_EQ(defaultHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 1);
+    AtomicBuffer newTermHdr(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, newTermIndex));
+    EXPECT_EQ(newTermHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 1);
 }
 
 TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
@@ -167,12 +166,10 @@ TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
 
     EXPECT_EQ(m_logMetaDataBuffer.getInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_ID_OFFSET), TERM_ID_1 + 1);
 
-    AtomicBuffer defaultHdr;
-
-    defaultHdr.wrap(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, cleaningIndex), DataFrameHeader::LENGTH);
-    EXPECT_EQ(defaultHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 2);
+    AtomicBuffer cleaningHdr(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, cleaningIndex));
+    EXPECT_EQ(cleaningHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 2);
 
     const int newTermIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1 + 1);
-    defaultHdr.wrap(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, newTermIndex), DataFrameHeader::LENGTH);
-    EXPECT_EQ(defaultHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 1);
+    AtomicBuffer newTermHdr(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, newTermIndex));
+    EXPECT_EQ(newTermHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET), TERM_ID_1 + 1);
 }

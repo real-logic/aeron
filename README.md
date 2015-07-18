@@ -9,6 +9,8 @@ For details of usage, protocol specification, FAQ, etc. please check out the
 
 For those who prefer to watch a video then try [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from StrangeLoop 2014. Things have moved on quite a bit with performance and some features but the basic design still applies.
 
+For the latest version and [Change Log](https://github.com/real-logic/Aeron/wiki/Change-Log). 
+
 ### How do I use Aeron?
 
 1. [Java Programming Guide](https://github.com/real-logic/Aeron/wiki/Java-Programming-Guide)

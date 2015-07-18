@@ -59,9 +59,14 @@ subprojects {
     repositories {
         mavenCentral()
         mavenLocal()
+        maven {
+            url "http://sevntu-checkstyle.github.com/sevntu.checkstyle/maven2"
+        }
     }
 
     dependencies {
+        checkstyle "com.github.sevntu.checkstyle:sevntu-checks:1.13.4"
+
         testCompile 'org.hamcrest:hamcrest-all:1.3',
                 'junit:junit:4.12',
                 'org.mockito:mockito-all:1.10.19'
@@ -69,7 +74,7 @@ subprojects {
 
     checkstyle {
         configFile = new File(rootDir, 'config/checkstyle/checkstyle.xml')
-        toolVersion = 6.7
+        toolVersion = "6.8.1"
     }
 
     test {

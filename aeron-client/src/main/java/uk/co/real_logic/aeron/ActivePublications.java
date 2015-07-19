@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,41 +25,41 @@ import java.util.Map;
 import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
- * Map for navigating to active {@link Publication}s. These are keyed by a triple of channel/sessionId/streamId.
+ * Map for navigating to active {@link Publication}s.
  */
 public class ActivePublications
 {
-    private final Map<String, BiInt2ObjectMap<Publication>> publicationsByChannelMap = new HashMap<>();
+    private final Map<String, Int2ObjectHashMap<Publication>> publicationsByChannelMap = new HashMap<>();
 
-    public Publication get(final String channel, final int sessionId, final int streamId)
+    public Publication get(final String channel, final int streamId)
     {
-        final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap = publicationsByChannelMap.get(channel);
-        if (null == publicationBySessionAndStreamMap)
+        final Int2ObjectHashMap<Publication> publicationByStreamIdMap = publicationsByChannelMap.get(channel);
+        if (null == publicationByStreamIdMap)
         {
             return null;
         }
 
-        return publicationBySessionAndStreamMap.get(sessionId, streamId);
+        return publicationByStreamIdMap.get(streamId);
     }
 
-    public Publication put(final String channel, final int sessionId, final int streamId, final Publication value)
+    public Publication put(final String channel, final int streamId, final Publication publication)
     {
-        final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap =
-            getOrDefault(publicationsByChannelMap, channel, (ignore) -> new BiInt2ObjectMap<>());
+        final Int2ObjectHashMap<Publication> publicationByStreamIdMap =
+            getOrDefault(publicationsByChannelMap, channel, (ignore) -> new Int2ObjectHashMap<>());
 
-        return publicationBySessionAndStreamMap.put(sessionId, streamId, value);
+        return publicationByStreamIdMap.put(streamId, publication);
     }
 
-    public Publication remove(final String channel, final int sessionId, final int streamId)
+    public Publication remove(final String channel, final int streamId)
     {
-        final BiInt2ObjectMap<Publication> publicationBySessionAndStreamMap = publicationsByChannelMap.get(channel);
-        if (null == publicationBySessionAndStreamMap)
+        final Int2ObjectHashMap<Publication> publicationByStreamIdMap = publicationsByChannelMap.get(channel);
+        if (null == publicationByStreamIdMap)
         {
             return null;
         }
 
-        final Publication publication = publicationBySessionAndStreamMap.remove(sessionId, streamId);
-        if (publicationBySessionAndStreamMap.isEmpty())
+        final Publication publication = publicationByStreamIdMap.remove(streamId);
+        if (publicationByStreamIdMap.isEmpty())
         {
             publicationsByChannelMap.remove(channel);
         }
@@ -73,7 +73,7 @@ public class ActivePublications
         publicationsByChannelMap
             .values()
             .stream()
-            .forEach((publicationMap) -> publicationMap.forEach(publications::add));
+            .forEach((publicationMap) -> publicationMap.values().forEach(publications::add));
 
         publications.forEach(Publication::close);
     }

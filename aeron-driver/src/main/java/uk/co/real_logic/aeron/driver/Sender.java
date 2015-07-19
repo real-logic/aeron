@@ -89,7 +89,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
         publications = newPublications;
 
-        publication.sendChannelEndpoint().addToDispatcher(publication);
+        publication.sendChannelEndpoint().registerForSend(publication);
     }
 
     public void onRemovePublication(final NetworkPublication publication)
@@ -106,7 +106,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         }
 
         publications = newPublications;
-        publication.sendChannelEndpoint().removeFromDispatcher(publication);
+        publication.sendChannelEndpoint().unregisterForSend(publication);
         conductorProxy.closeResource(publication);
     }
 

@@ -20,6 +20,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.MutableInteger;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -62,7 +63,6 @@ public class StopStartSecondSubscriberTest
     final MediaDriver.Context mediaDriverContext2 = new MediaDriver.Context();
 
     private void launch(final String channel1, final int stream1, final String channel2, final int stream2)
-        throws Exception
     {
         driver1 = MediaDriver.launchEmbedded(mediaDriverContext1);
         driver2 = MediaDriver.launchEmbedded(mediaDriverContext2);
@@ -89,7 +89,7 @@ public class StopStartSecondSubscriberTest
     }
 
     @After
-    public void closeEverything() throws Exception
+    public void closeEverything()
     {
         subscribingClient1.close();
         publishingClient1.close();
@@ -104,13 +104,13 @@ public class StopStartSecondSubscriberTest
     }
 
     @Test(timeout = 10000)
-    public void shouldSpinUpAndShutdown() throws Exception
+    public void shouldSpinUpAndShutdown()
     {
         launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
     }
 
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage() throws Exception
+    public void shouldReceivePublishedMessage()
     {
         launch(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
 
@@ -145,25 +145,25 @@ public class StopStartSecondSubscriberTest
     }
 
     @Test(timeout = 10000)
-    public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream() throws Exception
+    public void shouldReceiveMessagesAfterStopStartOnSameChannelSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID1);
     }
 
     @Test(timeout = 10000)
-    public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams() throws Exception
+    public void shouldReceiveMessagesAfterStopStartOnSameChannelDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL1, STREAM_ID2);
     }
 
     @Test(timeout = 10000)
-    public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream() throws Exception
+    public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsSameStream()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID1);
     }
 
     @Test(timeout = 10000)
-    public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams() throws Exception
+    public void shouldReceiveMessagesAfterStopStartOnDifferentChannelsDifferentStreams()
     {
         shouldReceiveMessagesAfterStopStart(CHANNEL1, STREAM_ID1, CHANNEL2, STREAM_ID2);
     }
@@ -181,7 +181,6 @@ public class StopStartSecondSubscriberTest
 
     private void shouldReceiveMessagesAfterStopStart(
         final String channel1, final int stream1, final String channel2, final int stream2)
-        throws Exception
     {
         final ExecutorService executor = Executors.newFixedThreadPool(2);
         final int numMessages = 1;
@@ -241,9 +240,17 @@ public class StopStartSecondSubscriberTest
             subscriber2AfterRestartCount.value >= numMessages);
 
         executor.shutdown();
-        while (!executor.awaitTermination(1, TimeUnit.SECONDS))
+
+        try
         {
-            System.err.println("Still awaiting termination");
+            while (!executor.awaitTermination(1, TimeUnit.SECONDS))
+            {
+                System.err.println("Still awaiting termination");
+            }
+        }
+        catch (final InterruptedException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
         }
     }
 }

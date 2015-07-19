@@ -59,7 +59,7 @@ public class SubscriberTool
 
     private static final String CONTROL_CHANNEL = "udp://localhost:";
     private static final int CONTROL_PORT_START = Integer.getInteger("aeron.tools.controlChannelPort", 62777);
-    private static final int CONTROL_STREAMID = 9999;
+    private static final int CONTROL_STREAM_ID = 9999;
 
     private static final int CONTROL_ACTION_NEW_IMAGE = 0;
     private static final int CONTROL_ACTION_INACTIVE_IMAGE = 1;
@@ -314,7 +314,7 @@ public class SubscriberTool
             aeron = Aeron.connect(ctx);
 
             /* Create the control publication and subscription. */
-            controlHandler = new MessageStreamHandler("control_channel", CONTROL_STREAMID, null);
+            controlHandler = new MessageStreamHandler("control_channel", CONTROL_STREAM_ID, null);
             for (int i = 0; i < 1000; i++)
             {
                 /* Try 1000 ports and if we don't get one, just exit */
@@ -322,7 +322,7 @@ public class SubscriberTool
                 controlHandler.channel(controlChannel);
                 try
                 {
-                    controlSubscription = aeron.addSubscription(controlChannel, CONTROL_STREAMID);
+                    controlSubscription = aeron.addSubscription(controlChannel, CONTROL_STREAM_ID);
                     break;
                 }
                 catch (RegistrationException ignore)
@@ -334,7 +334,7 @@ public class SubscriberTool
                 LOG.severe("Couldn't create control channel.");
                 System.exit(1);
             }
-            controlPublication = aeron.addPublication(controlChannel, CONTROL_STREAMID, controlSessionId);
+            controlPublication = aeron.addPublication(controlChannel, CONTROL_STREAM_ID);
 
             /* Create the subscriptionsList and populate it with just the channels this thread is supposed
              * to subscribe to. */
@@ -712,7 +712,7 @@ public class SubscriberTool
         private void enqueueControlMessage(final int type, final String channel, final int streamId, final int sessionId)
         {
             /* Don't deliver events for the control channel itself. */
-            if ((streamId != CONTROL_STREAMID)
+            if ((streamId != CONTROL_STREAM_ID)
                 || (!channel.equals(controlChannel)))
             {
                 /* Enqueue the control message. */

@@ -30,8 +30,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                         Correlation ID                        |
  * |                                                               |
  * +---------------------------------------------------------------+
- * |                          Session ID                           |
- * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
  * |                        Channel Length                         |
@@ -42,34 +40,10 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  */
 public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
 {
-    private static final int SESSION_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
-    private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_FIELD_OFFSET + SIZE_OF_INT;
+    private static final int STREAM_ID_FIELD_OFFSET = CORRELATION_ID_FIELD_OFFSET + SIZE_OF_LONG;
     private static final int CHANNEL_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
 
     private int lengthOfChannel;
-
-    /**
-     * Get the session id field
-     *
-     * @return session id field
-     */
-    public int sessionId()
-    {
-        return buffer().getInt(offset() + SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * Set session id field
-     *
-     * @param sessionId field value
-     * @return flyweight
-     */
-    public PublicationMessageFlyweight sessionId(final int sessionId)
-    {
-        buffer().putInt(offset() + SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
-
-        return this;
-    }
 
     /**
      * Get the stream id field

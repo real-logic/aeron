@@ -110,19 +110,19 @@ class ClientConductor implements Agent, DriverListener
         return "client-conductor";
     }
 
-    public synchronized Publication addPublication(final String channel, final int streamId, final int sessionId)
+    public synchronized Publication addPublication(final String channel, final int streamId)
     {
         verifyDriverIsActive();
 
-        Publication publication = activePublications.get(channel, sessionId, streamId);
+        Publication publication = activePublications.get(channel, streamId);
         if (publication == null)
         {
-            final long correlationId = driverProxy.addPublication(channel, streamId, sessionId);
+            final long correlationId = driverProxy.addPublication(channel, streamId);
             final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
 
             doWorkUntil(correlationId, timeout, channel);
 
-            publication = activePublications.get(channel, sessionId, streamId);
+            publication = activePublications.get(channel, streamId);
         }
 
         publication.incRef();
@@ -135,7 +135,7 @@ class ClientConductor implements Agent, DriverListener
         verifyDriverIsActive();
 
         final long correlationId = driverProxy.removePublication(publication.registrationId());
-        activePublications.remove(publication.channel(), publication.sessionId(), publication.streamId());
+        activePublications.remove(publication.channel(), publication.streamId());
         final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
 
         doWorkUntil(correlationId, timeout, publication.channel());
@@ -185,7 +185,7 @@ class ClientConductor implements Agent, DriverListener
             logBuffersFactory.map(logFileName),
             correlationId);
 
-        activePublications.put(channel, sessionId, streamId, publication);
+        activePublications.put(channel, streamId, publication);
     }
 
     public void onNewImage(

@@ -312,21 +312,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                 {
                     if ((streamIdx % numThreads) == this.threadId)
                     {
-                        Publication pub;
-                        if (options.useSessionId())
-                        {
-                            pub = aeron.addPublication(
-                                channel.channel(),
-                                channel.streamIdentifiers()[j],
-                                options.sessionId());
-                        }
-                        else
-                        {
-                            // Aeron will generate a random sessionId
-                            pub = aeron.addPublication(
-                                channel.channel(),
-                                channel.streamIdentifiers()[j]);
-                        }
+                        final Publication pub = aeron.addPublication(channel.channel(), channel.streamIdentifiers()[j]);
                         publicationsList.add(pub);
 
                         LOG.info(String.format("%s publishing %d messages to: %s#%d[%d]",

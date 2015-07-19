@@ -123,7 +123,7 @@ public class DriverConductorTest
             .senderNioSelector(transportPoller)
             .unicastSenderFlowControl(UnicastFlowControl::new)
             .multicastSenderFlowControl(MaxMulticastFlowControl::new)
-            // TODO: remove
+                // TODO: remove
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
@@ -161,7 +161,7 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddSinglePublication() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -204,10 +204,10 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToAddMultipleStreams() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4001, CORRELATION_ID_1);
-        writePublicationMessage(ADD_PUBLICATION, 1, 3, 4002, CORRELATION_ID_2);
-        writePublicationMessage(ADD_PUBLICATION, 3, 2, 4003, CORRELATION_ID_3);
-        writePublicationMessage(ADD_PUBLICATION, 3, 4, 4004, CORRELATION_ID_4);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4001, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 3, 4002, CORRELATION_ID_2);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4003, CORRELATION_ID_3);
+        writePublicationMessage(ADD_PUBLICATION, 4, 4004, CORRELATION_ID_4);
 
         driverConductor.doWork();
 
@@ -217,8 +217,8 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveSingleStream() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4005, CORRELATION_ID_1);
-        writePublicationMessage(REMOVE_PUBLICATION, 1, 2, 4005, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4005, CORRELATION_ID_1);
+        writePublicationMessage(REMOVE_PUBLICATION, 2, 4005, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -231,10 +231,10 @@ public class DriverConductorTest
     @Test
     public void shouldBeAbleToRemoveMultipleStreams() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4006, CORRELATION_ID_1);
-        writePublicationMessage(ADD_PUBLICATION, 1, 3, 4007, CORRELATION_ID_2);
-        writePublicationMessage(ADD_PUBLICATION, 3, 2, 4008, CORRELATION_ID_3);
-        writePublicationMessage(ADD_PUBLICATION, 3, 4, 4008, CORRELATION_ID_4);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4006, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 3, 4007, CORRELATION_ID_2);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4008, CORRELATION_ID_3);
+        writePublicationMessage(ADD_PUBLICATION, 4, 4008, CORRELATION_ID_4);
 
         removePublicationMessage(CORRELATION_ID_1);
         removePublicationMessage(CORRELATION_ID_2);
@@ -316,8 +316,8 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownSessionId() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
-        writePublicationMessage(REMOVE_PUBLICATION, 2, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(REMOVE_PUBLICATION, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -330,8 +330,8 @@ public class DriverConductorTest
     @Test
     public void shouldErrorOnRemoveChannelOnUnknownStreamId() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
-        writePublicationMessage(REMOVE_PUBLICATION, 1, 3, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(REMOVE_PUBLICATION, 3, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -360,7 +360,7 @@ public class DriverConductorTest
     @Test
     public void shouldTimeoutPublication() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -378,7 +378,7 @@ public class DriverConductorTest
     @Test
     public void shouldNotTimeoutPublicationOnKeepAlive() throws Exception
     {
-        writePublicationMessage(ADD_PUBLICATION, 1, 2, 4000, CORRELATION_ID_1);
+        writePublicationMessage(ADD_PUBLICATION, 2, 4000, CORRELATION_ID_1);
 
         driverConductor.doWork();
 
@@ -582,12 +582,10 @@ public class DriverConductorTest
             eq(networkedImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
     }
 
-    private void writePublicationMessage(
-        final int msgTypeId, final int sessionId, final int streamId, final int port, final long correlationId)
+    private void writePublicationMessage(final int msgTypeId, final int streamId, final int port, final long correlationId)
     {
         publicationMessage.wrap(writeBuffer, 0);
         publicationMessage.streamId(streamId);
-        publicationMessage.sessionId(sessionId);
         publicationMessage.channel(CHANNEL_URI + port);
         publicationMessage.clientId(CLIENT_ID);
         publicationMessage.correlationId(correlationId);
@@ -599,11 +597,12 @@ public class DriverConductorTest
         final int msgTypeId, final String channel, final int streamId, final long registrationCorrelationId)
     {
         subscriptionMessage.wrap(writeBuffer, 0);
-        subscriptionMessage.streamId(streamId)
-                           .channel(channel)
-                           .registrationCorrelationId(registrationCorrelationId)
-                           .correlationId(registrationCorrelationId)
-                           .clientId(CLIENT_ID);
+        subscriptionMessage
+            .streamId(streamId)
+            .channel(channel)
+            .registrationCorrelationId(registrationCorrelationId)
+            .correlationId(registrationCorrelationId)
+            .clientId(CLIENT_ID);
 
         fromClientCommands.write(msgTypeId, writeBuffer, 0, subscriptionMessage.length());
     }

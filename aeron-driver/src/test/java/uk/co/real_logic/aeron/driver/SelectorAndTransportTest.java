@@ -251,7 +251,7 @@ public class SelectorAndTransportTest
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
-        sendChannelEndpoint.addToDispatcher(mockPublication);
+        sendChannelEndpoint.registerForSend(mockPublication);
 
         receiveChannelEndpoint.openDatagramChannel();
         receiveChannelEndpoint.registerForRead(transportPoller);

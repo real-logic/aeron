@@ -95,8 +95,8 @@ public class ClientConductorTest
     {
         driverProxy = mock(DriverProxy.class);
 
-        when(driverProxy.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1)).thenReturn(CORRELATION_ID);
-        when(driverProxy.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2)).thenReturn(CORRELATION_ID_2);
+        when(driverProxy.addPublication(CHANNEL, STREAM_ID_1)).thenReturn(CORRELATION_ID);
+        when(driverProxy.addPublication(CHANNEL, STREAM_ID_2)).thenReturn(CORRELATION_ID_2);
         when(driverProxy.removePublication(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
         when(driverProxy.addSubscription(anyString(), anyInt())).thenReturn(CORRELATION_ID);
         when(driverProxy.removeSubscription(CORRELATION_ID)).thenReturn(CLOSE_CORRELATION_ID);
@@ -173,9 +173,9 @@ public class ClientConductorTest
             publicationReadyBuffer,
             (buffer) -> publicationReady.length());
 
-        conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        conductor.addPublication(CHANNEL, STREAM_ID_1);
 
-        verify(driverProxy).addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        verify(driverProxy).addPublication(CHANNEL, STREAM_ID_1);
     }
 
     @Test
@@ -186,7 +186,7 @@ public class ClientConductorTest
             publicationReadyBuffer,
             (buffer) -> publicationReady.length());
 
-        conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
     }
@@ -194,7 +194,7 @@ public class ClientConductorTest
     @Test(expected = DriverTimeoutException.class)
     public void addPublicationShouldTimeoutWithoutReadyMessage()
     {
-        conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        conductor.addPublication(CHANNEL, STREAM_ID_1);
     }
 
     @Test
@@ -205,8 +205,8 @@ public class ClientConductorTest
             publicationReadyBuffer,
             (buffer) -> publicationReady.length());
 
-        final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
-        final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1);
+        final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         assertThat(firstPublication, sameInstance(secondPublication));
     }
@@ -217,7 +217,7 @@ public class ClientConductorTest
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
-        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
@@ -233,7 +233,7 @@ public class ClientConductorTest
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
-        final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication firstPublication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
@@ -243,7 +243,7 @@ public class ClientConductorTest
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
-        final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication secondPublication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         assertThat(firstPublication, not(sameInstance(secondPublication)));
     }
@@ -254,7 +254,7 @@ public class ClientConductorTest
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
-        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_ERROR,
@@ -284,7 +284,7 @@ public class ClientConductorTest
                 return errorResponse.length();
             });
 
-        conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        conductor.addPublication(CHANNEL, STREAM_ID_1);
     }
 
     @Test
@@ -293,8 +293,8 @@ public class ClientConductorTest
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
-        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
-        conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
+        conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         publication.close();
 
@@ -314,7 +314,7 @@ public class ClientConductorTest
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY, publicationReadyBuffer, (buffer) -> publicationReady.length());
 
-        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_PUBLICATION_READY,
@@ -328,7 +328,7 @@ public class ClientConductorTest
                 return publicationReady.length();
             });
 
-        conductor.addPublication(CHANNEL, STREAM_ID_2, SESSION_ID_2);
+        conductor.addPublication(CHANNEL, STREAM_ID_2);
 
         whenReceiveBroadcastOnMessage(
             ControlProtocolEvents.ON_OPERATION_SUCCESS, correlatedMessageBuffer, (buffer) -> CorrelatedMessageFlyweight.LENGTH);
@@ -360,7 +360,7 @@ public class ClientConductorTest
                 return publicationReady.length();
             });
 
-        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1, SESSION_ID_1);
+        final Publication publication = conductor.addPublication(CHANNEL, STREAM_ID_1);
         conductor.doWork();
 
         verify(logBuffersFactory, times(1)).map(anyString());

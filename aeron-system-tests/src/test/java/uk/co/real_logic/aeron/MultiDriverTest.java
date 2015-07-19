@@ -43,7 +43,6 @@ public class MultiDriverTest
     public static final String MULTICAST_URI = "udp://localhost@224.20.30.39:54326";
 
     private static final int STREAM_ID = 1;
-    private static final int SESSION_ID = 2;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private static final int TERM_BUFFER_SIZE = 64 * 1024;
@@ -115,7 +114,7 @@ public class MultiDriverTest
     {
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID, SESSION_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
@@ -133,7 +132,7 @@ public class MultiDriverTest
 
         launch();
 
-        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID, SESSION_ID);
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
 
         for (int i = 0; i < numMessagesToSendPreJoin; i++)

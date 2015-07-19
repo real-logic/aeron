@@ -108,38 +108,14 @@ public final class Aeron implements AutoCloseable
 
     /**
      * Add a {@link Publication} for publishing messages to subscribers.
-     * <p>
-     * A session id will be generated for this publication.
      *
-     * @param channel  for receiving the messages known to the media layer.
-     * @param streamId within the channel scope.
+     * @param channel   for receiving the messages known to the media layer.
+     * @param streamId  within the channel scope.
      * @return the new Publication.
      */
     public Publication addPublication(final String channel, final int streamId)
     {
-        return addPublication(channel, streamId, 0);
-    }
-
-    /**
-     * Add a {@link Publication} for publishing messages to subscribers.
-     * <p>
-     * If the sessionId is 0, then a random one will be generated.
-     *
-     * @param channel   for receiving the messages known to the media layer.
-     * @param streamId  within the channel scope.
-     * @param sessionId To identify the Publication instance within a channel and streamId pair.
-     * @return the new Publication.
-     */
-    public Publication addPublication(final String channel, final int streamId, final int sessionId)
-    {
-        int sessionIdToRequest = sessionId;
-
-        if (0 == sessionId)
-        {
-            sessionIdToRequest = BitUtil.generateRandomisedId();
-        }
-
-        return conductor.addPublication(channel, streamId, sessionIdToRequest);
+        return conductor.addPublication(channel, streamId);
     }
 
     /**

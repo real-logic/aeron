@@ -35,7 +35,6 @@ public class DriverProxyTest
     public static final String CHANNEL = "udp://localhost:40123@localhost:40124";
 
     private static final int STREAM_ID = 1;
-    private static final int SESSION_ID = 2;
     private static final long CORRELATION_ID = 3;
     private final RingBuffer conductorBuffer = new ManyToOneRingBuffer(
         new UnsafeBuffer(ByteBuffer.allocateDirect(TRAILER_LENGTH + 1024)));
@@ -44,7 +43,7 @@ public class DriverProxyTest
     @Test
     public void threadSendsAddChannelMessage()
     {
-        threadSendsChannelMessage(() -> conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID), ADD_PUBLICATION);
+        threadSendsChannelMessage(() -> conductor.addPublication(CHANNEL, STREAM_ID), ADD_PUBLICATION);
     }
 
     @Test
@@ -75,7 +74,6 @@ public class DriverProxyTest
 
                 assertThat(msgTypeId, is(expectedMsgTypeId));
                 assertThat(publicationMessage.channel(), is(CHANNEL));
-                assertThat(publicationMessage.sessionId(), is(SESSION_ID));
                 assertThat(publicationMessage.streamId(), is(STREAM_ID));
             }
         );

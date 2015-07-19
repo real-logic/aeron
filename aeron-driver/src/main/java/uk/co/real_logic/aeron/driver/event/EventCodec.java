@@ -489,8 +489,7 @@ public class EventCodec
     private static String dissect(final PublicationMessageFlyweight command)
     {
         return String.format(
-            "%3$s %1$d:%2$d [%5$d:%4$d]",
-            command.sessionId(),
+            "%2$s %1$d [%4$d:%3$d]",
             command.streamId(),
             command.channel(),
             command.correlationId(),

@@ -55,7 +55,6 @@ public class PubAndSubTest
     public static final String MULTICAST_URI = "udp://localhost@224.20.30.39:54326";
 
     private static final int STREAM_ID = 1;
-    private static final int SESSION_ID = 2;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
     private final MediaDriver.Context context = new MediaDriver.Context();
@@ -79,7 +78,7 @@ public class PubAndSubTest
         driver = MediaDriver.launch(context);
         publishingClient = Aeron.connect(publishingAeronContext);
         subscribingClient = Aeron.connect(subscribingAeronContext);
-        publication = publishingClient.addPublication(channel, STREAM_ID, SESSION_ID);
+        publication = publishingClient.addPublication(channel, STREAM_ID);
         subscription = subscribingClient.addSubscription(channel, STREAM_ID);
     }
 
@@ -164,7 +163,7 @@ public class PubAndSubTest
             channelArgumentCaptor.capture(),
             eq(expectedOffset),
             eq(expectedLength),
-            eq(SESSION_ID),
+            anyInt(),
             anyInt());
 
         assertTrue("File Channel is closed", channelArgumentCaptor.getValue().isOpen());

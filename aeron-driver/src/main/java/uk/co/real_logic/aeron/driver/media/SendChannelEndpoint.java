@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
+import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -39,7 +40,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final NakFlyweight nakMessage = new NakFlyweight();
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
-    private final BiInt2ObjectMap<NetworkPublication> driversPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
+    private final Int2ObjectHashMap<NetworkPublication> driversPublicationByStreamId = new Int2ObjectHashMap<>();
     private final BiInt2ObjectMap<NetworkPublication> sendersPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
 
     private final AtomicCounter nakMessagesReceived;
@@ -82,13 +83,12 @@ public class SendChannelEndpoint extends UdpChannelTransport
     /**
      * Called from the {@link DriverConductor} to find the publication associated with a sessionId and streamId
      *
-     * @param sessionId for the publication
      * @param streamId for the publication
      * @return publication
      */
-    public NetworkPublication getPublication(final int sessionId, final int streamId)
+    public NetworkPublication getPublication(final int streamId)
     {
-        return driversPublicationByStreamAndSessionId.get(sessionId, streamId);
+        return driversPublicationByStreamId.get(streamId);
     }
 
     /**
@@ -98,7 +98,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void addPublication(final NetworkPublication publication)
     {
-        driversPublicationByStreamAndSessionId.put(publication.sessionId(), publication.streamId(), publication);
+        driversPublicationByStreamId.put(publication.streamId(), publication);
     }
 
     /**
@@ -109,7 +109,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public NetworkPublication removePublication(final NetworkPublication publication)
     {
-        return driversPublicationByStreamAndSessionId.remove(publication.sessionId(), publication.streamId());
+        return driversPublicationByStreamId.remove(publication.streamId());
     }
 
     /**
@@ -119,7 +119,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public int sessionCount()
     {
-        return driversPublicationByStreamAndSessionId.size();
+        return driversPublicationByStreamId.size();
     }
 
     /**
@@ -127,7 +127,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      *
      * @param publication to add to the dispatcher
      */
-    public void addToDispatcher(final NetworkPublication publication)
+    public void registerForSend(final NetworkPublication publication)
     {
         sendersPublicationByStreamAndSessionId.put(publication.sessionId(), publication.streamId(), publication);
     }
@@ -137,7 +137,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
      *
      * @param publication to remove
      */
-    public void removeFromDispatcher(final NetworkPublication publication)
+    public void unregisterForSend(final NetworkPublication publication)
     {
         sendersPublicationByStreamAndSessionId.remove(publication.sessionId(), publication.streamId());
     }
@@ -165,6 +165,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
         final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
             statusMsg.sessionId(), statusMsg.streamId());
+
         if (null != publication)
         {
             if (SEND_SETUP_FLAG == (statusMsg.flags() & SEND_SETUP_FLAG))

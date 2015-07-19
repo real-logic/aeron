@@ -67,9 +67,9 @@ class DriverProxy
         return toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
-    public long addPublication(final String channel, final int streamId, final int sessionId)
+    public long addPublication(final String channel, final int streamId)
     {
-        return sendPublicationMessage(channel, streamId, sessionId, ADD_PUBLICATION);
+        return sendPublicationMessage(channel, streamId, ADD_PUBLICATION);
     }
 
     public long removePublication(final long registrationId)
@@ -116,14 +116,13 @@ class DriverProxy
         }
     }
 
-    private long sendPublicationMessage(final String channel, final int streamId, final int sessionId, final int msgTypeId)
+    private long sendPublicationMessage(final String channel, final int streamId, final int msgTypeId)
     {
         final long correlationId = toDriverCommandBuffer.nextCorrelationId();
 
         publicationMessage.clientId(clientId);
         publicationMessage.correlationId(correlationId);
         publicationMessage.streamId(streamId);
-        publicationMessage.sessionId(sessionId);
         publicationMessage.channel(channel);
 
         if (!toDriverCommandBuffer.write(msgTypeId, writeBuffer, 0, publicationMessage.length()))

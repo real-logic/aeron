@@ -33,7 +33,6 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publisher threads.
  * @see Aeron#addPublication(String, int)
- * @see Aeron#addPublication(String, int, int)
  */
 public class Publication implements AutoCloseable
 {

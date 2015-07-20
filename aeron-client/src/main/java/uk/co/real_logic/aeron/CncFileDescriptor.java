@@ -60,7 +60,7 @@ public class CncFileDescriptor
 {
     public static final String CNC_FILE = "cnc";
 
-    public static final int CNC_VERSION = 1;
+    public static final int CNC_VERSION = 2;
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int META_DATA_OFFSET;

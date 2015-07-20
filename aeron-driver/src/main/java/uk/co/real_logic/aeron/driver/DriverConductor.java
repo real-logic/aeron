@@ -60,7 +60,7 @@ public class DriverConductor implements Agent
     private final int mtuLength;
     private final int termBufferLength;
     private final int initialWindowLength;
-    private int nextSessionId = 0;
+    private int nextSessionId = BitUtil.generateRandomisedId();
 
     private final RawLogFactory rawLogFactory;
     private final ReceiverProxy receiverProxy;

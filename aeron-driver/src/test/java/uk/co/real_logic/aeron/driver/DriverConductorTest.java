@@ -170,7 +170,6 @@ public class DriverConductorTest
         verify(senderProxy, times(1)).newPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
-        assertThat(publication.sessionId(), is(1));
         assertThat(publication.streamId(), is(2));
 
         verify(mockClientProxy).onPublicationReady(eq(2), anyInt(), any(), anyLong(), anyInt());

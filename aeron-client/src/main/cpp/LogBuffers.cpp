@@ -100,9 +100,6 @@ LogBuffers::LogBuffers(std::uint8_t *address, index_t length)
             LogBufferDescriptor::LOG_META_DATA_LENGTH);
 }
 
-
-LogBuffers::~LogBuffers()
-{
-}
+LogBuffers::~LogBuffers() = default;
 
 }

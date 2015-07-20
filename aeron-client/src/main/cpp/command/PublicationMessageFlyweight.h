@@ -21,6 +21,7 @@
 #include "Flyweight.h"
 
 #include "CorrelatedMessageFlyweight.h"
+#include "PublicationBuffersReadyFlyweight.h"
 
 namespace aeron { namespace command {
 
@@ -37,8 +38,6 @@ namespace aeron { namespace command {
 * |                         Correlation ID                        |
 * |                                                               |
 * +---------------------------------------------------------------+
-* |                          Session ID                           |
-* +---------------------------------------------------------------+
 * |                          Stream ID                            |
 * +---------------------------------------------------------------+
 * |                        Channel Length                         |
@@ -54,7 +53,6 @@ namespace aeron { namespace command {
 struct PublicationMessageDefn
 {
     CorrelatedMessageDefn correlatedMessage;
-    std::int32_t sessionId;
     std::int32_t streamId;
     struct
     {
@@ -68,22 +66,11 @@ struct PublicationMessageDefn
 class PublicationMessageFlyweight : public CorrelatedMessageFlyweight
 {
 public:
-    typedef PublicationMessageFlyweight this_t;
+    using this_t = PublicationMessageFlyweight;
 
     inline PublicationMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
         : CorrelatedMessageFlyweight(buffer, offset), m_struct(overlayStruct<PublicationMessageDefn>(0))
     {
-    }
-
-    inline std::int32_t sessionId() const
-    {
-        return m_struct.sessionId;
-    }
-
-    inline this_t& sessionId(std::int32_t value)
-    {
-        m_struct.sessionId = value;
-        return *this;
     }
 
     inline std::int32_t streamId() const

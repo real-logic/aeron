@@ -18,7 +18,7 @@
 #define INCLUDED_AERON_UTIL_BITUTIL__
 
 #include <type_traits>
-
+#include <util/Exceptions.h>
 
 namespace aeron { namespace util {
 
@@ -31,26 +31,26 @@ namespace BitUtil
     static const size_t CACHE_LINE_LENGTH = 64;
 
     template <typename value_t>
-    inline bool isPowerOfTwo(value_t value)
+    inline bool isPowerOfTwo(value_t value) AERON_NOEXCEPT
     {
         return value > 0 && ((value & (~value + 1)) == value);
     }
 
     template <typename value_t>
-    inline value_t align(value_t value, value_t alignment)
+    inline value_t align(value_t value, value_t alignment) AERON_NOEXCEPT
     {
         return (value + (alignment - 1)) & ~(alignment - 1);
     }
 
     template <typename value_t>
-    bool isEven(value_t value)
+    bool isEven(value_t value) noexcept
     {
         static_assert (std::is_integral<value_t>::value, "isEven only available on integer types");
         return (value & 1) == 0;
     }
 
     template <typename value_t>
-    value_t next(value_t current, value_t max)
+    value_t next(value_t current, value_t max) AERON_NOEXCEPT
     {
         static_assert (std::is_integral<value_t>::value, "next only available on integer types");
         value_t next = current + 1;
@@ -61,7 +61,7 @@ namespace BitUtil
     }
 
     template <typename value_t>
-    value_t previous(value_t current, value_t max)
+    value_t previous(value_t current, value_t max) AERON_NOEXCEPT
     {
         static_assert (std::is_integral<value_t>::value, "previous only available on integer types");
         if (0 == current)
@@ -71,7 +71,7 @@ namespace BitUtil
     }
 
     template<typename value_t>
-    inline int numberOfLeadingZeroes(value_t value)
+    inline int numberOfLeadingZeroes(value_t value) AERON_NOEXCEPT
     {
 #if defined(__GNUC__)
         return __builtin_clz(value);
@@ -84,7 +84,7 @@ namespace BitUtil
 
     /* Taken from Hacker's Delight as ntz10 at http://www.hackersdelight.org/hdcodetxt/ntz.c.txt */
     template<typename value_t>
-    inline int numberOfTrailingZeroes(value_t value)
+    inline int numberOfTrailingZeroes(value_t value) AERON_NOEXCEPT
     {
 #if defined(__GNUC__)
         return __builtin_ctz(value);
@@ -113,7 +113,7 @@ namespace BitUtil
      * Works for 32-bit fields only at the moment.
      */
     template<typename value_t>
-    inline value_t findNextPowerOfTwo(value_t value)
+    inline value_t findNextPowerOfTwo(value_t value) AERON_NOEXCEPT
     {
         static_assert(std::is_integral<value_t>::value, "findNextPowerOfTwo only available on integral types");
         static_assert(sizeof(value_t)==4, "findNextPowerOfTwo only available on 32-bit integral types");
@@ -126,7 +126,7 @@ namespace BitUtil
      * Solution is Figure 10-24.
      */
     template <typename value_t>
-    inline int fastMod3(value_t value)
+    inline int fastMod3(value_t value) AERON_NOEXCEPT
     {
         static_assert(std::is_integral<value_t>::value, "fastMod3 only available on integral types");
 

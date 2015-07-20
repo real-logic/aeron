@@ -63,7 +63,7 @@ TEST_F(ClientConductorTest, shouldReturnNullForUnknownPublication)
 
 TEST_F(ClientConductorTest, shouldReturnNullForPublicationWithoutLogBuffers)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
 
@@ -72,7 +72,7 @@ TEST_F(ClientConductorTest, shouldReturnNullForPublicationWithoutLogBuffers)
 
 TEST_F(ClientConductorTest, shouldSendAddPublicationToDriver)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
     static std::int32_t ADD_PUBLICATION = ControlProtocolEvents::ADD_PUBLICATION;
 
     int count = m_manyToOneRingBuffer.read(
@@ -83,7 +83,6 @@ TEST_F(ClientConductorTest, shouldSendAddPublicationToDriver)
             EXPECT_EQ(msgTypeId, ADD_PUBLICATION);
             EXPECT_EQ(message.correlationId(), id);
             EXPECT_EQ(message.streamId(), STREAM_ID);
-            EXPECT_EQ(message.sessionId(), SESSION_ID);
             EXPECT_EQ(message.channel(), CHANNEL);
         });
 
@@ -92,7 +91,7 @@ TEST_F(ClientConductorTest, shouldSendAddPublicationToDriver)
 
 TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
 
@@ -107,7 +106,7 @@ TEST_F(ClientConductorTest, shouldReturnPublicationAfterLogBuffersCreated)
 
 TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
     static std::int32_t REMOVE_PUBLICATION = ControlProtocolEvents::REMOVE_PUBLICATION;
 
     // drain ring buffer
@@ -141,15 +140,15 @@ TEST_F(ClientConductorTest, shouldReleasePublicationAfterGoingOutOfScope)
 
 TEST_F(ClientConductorTest, shouldReturnSameIdForDuplicateAddPublication)
 {
-    std::int64_t id1 = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
-    std::int64_t id2 = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id1 = m_conductor.addPublication(CHANNEL, STREAM_ID);
+    std::int64_t id2 = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     EXPECT_EQ(id1, id2);
 }
 
 TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
 
@@ -163,7 +162,7 @@ TEST_F(ClientConductorTest, shouldReturnSamePublicationAfterLogBuffersCreated)
 
 TEST_F(ClientConductorTest, shouldIgnorePublicationReadyForUnknownCorrelationId)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id + 1);
 
@@ -174,7 +173,7 @@ TEST_F(ClientConductorTest, shouldIgnorePublicationReadyForUnknownCorrelationId)
 
 TEST_F(ClientConductorTest, shouldTimeoutAddPublicationWithoutPublicationReady)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_currentTime += DRIVER_TIMEOUT_MS + 1;
 
@@ -186,7 +185,7 @@ TEST_F(ClientConductorTest, shouldTimeoutAddPublicationWithoutPublicationReady)
 
 TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAddPublication)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     m_conductor.onErrorResponse(id, ERROR_CODE_INVALID_CHANNEL, "invalid channel");
 
@@ -379,7 +378,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive
 
     ASSERT_THROW(
     {
-        m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+        m_conductor.addPublication(CHANNEL, STREAM_ID);
     }, util::DriverTimeoutException);
 }
 
@@ -430,7 +429,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverIna
 
 TEST_F(ClientConductorTest, shouldCallOnNewPubAfterLogBuffersCreated)
 {
-    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID, SESSION_ID);
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
 
     EXPECT_CALL(m_handlers, onNewPub(testing::StrEq(CHANNEL), STREAM_ID, SESSION_ID, id))
         .Times(1);

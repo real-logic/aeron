@@ -14,16 +14,20 @@
 # limitations under the License.
 #
 
-function(aeron_client_test name file)
-    add_executable(${name} ${file} ClientConductorFixture.h util/TestUtils.h ClientConductorFixture.cpp)
-    target_link_libraries(${name} aeron_client ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
-    add_dependencies(${name} gmock)
-    add_test(NAME ${name} COMMAND ${name})
-endfunction()
+set(TEST_HEADERS
+    ClientConductorFixture.h
+    util/TestUtils.h
+    concurrent/MockAtomicBuffer.h)
 
-function(aeron_common_test name file)
-    add_executable(${name} ${file} concurrent/MockAtomicBuffer.h util/TestUtils.h concurrent/MockAtomicBuffer.cpp)
-    target_link_libraries(${name} aeron_client ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+set(TEST_SOURCE
+    ClientConductorFixture.cpp
+    concurrent/MockAtomicBuffer.cpp)
+
+add_library(aeron_client_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
+
+function(aeron_client_test name file)
+    add_executable(${name} ${file})
+    target_link_libraries(${name} aeron_client aeron_client_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
@@ -32,14 +36,14 @@ aeron_client_test(clientConductorTest ClientConductorTest.cpp)
 aeron_client_test(publicationTest PublicationTest.cpp)
 aeron_client_test(imageTest ImageTest.cpp)
 aeron_client_test(fragmentAssemblyTest FragmentAssemblerTest.cpp)
-aeron_common_test(commandTest command/CommandTest.cpp)
-aeron_common_test(utilTest util/UtilTest.cpp)
-aeron_common_test(memoryMappedFileTest util/MemoryMappedFileTest.cpp)
-aeron_common_test(broadcastReceiverTest concurrent/BroadcastReceiverTest.cpp)
-aeron_common_test(broadcastTransmitterTest concurrent/BroadcastTransmitterTest.cpp)
-aeron_common_test(concurrentTest concurrent/ConcurrentTest.cpp)
-aeron_common_test(countersManagerTest concurrent/CountersManagerTest.cpp)
-aeron_common_test(termAppenderTest concurrent/TermAppenderTest.cpp)
-aeron_common_test(termReaderTest concurrent/TermReaderTest.cpp)
-aeron_common_test(termBlockScannerTest concurrent/TermBlockScannerTest.cpp)
-aeron_common_test(manyToOneRingBufferTest concurrent/ManyToOneRingBufferTest.cpp)
+aeron_client_test(commandTest command/CommandTest.cpp)
+aeron_client_test(utilTest util/UtilTest.cpp)
+aeron_client_test(memoryMappedFileTest util/MemoryMappedFileTest.cpp)
+aeron_client_test(broadcastReceiverTest concurrent/BroadcastReceiverTest.cpp)
+aeron_client_test(broadcastTransmitterTest concurrent/BroadcastTransmitterTest.cpp)
+aeron_client_test(concurrentTest concurrent/ConcurrentTest.cpp)
+aeron_client_test(countersManagerTest concurrent/CountersManagerTest.cpp)
+aeron_client_test(termAppenderTest concurrent/TermAppenderTest.cpp)
+aeron_client_test(termReaderTest concurrent/TermReaderTest.cpp)
+aeron_client_test(termBlockScannerTest concurrent/TermBlockScannerTest.cpp)
+aeron_client_test(manyToOneRingBufferTest concurrent/ManyToOneRingBufferTest.cpp)

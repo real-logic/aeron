@@ -81,26 +81,16 @@ public:
     /**
      * Add a {@link Publication} for publishing messages to subscribers
      *
-     * If the sessionId is 0, a random one will be generated.
-     *
      * This function returns immediately and does not wait for the response from the media driver. The returned
      * registration id is to be used to determine the status of the command with the media driver.
      *
      * @param channel for receiving the messages known to the media layer.
      * @param streamId within the channel scope.
-     * @param sessionId to identify the Publication instance within a channel and streamId pair.
      * @return registration id for the publication
      */
-    inline std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId = 0)
+    inline std::int64_t addPublication(const std::string& channel, std::int32_t streamId)
     {
-        std::int32_t sessionIdToRequest = sessionId;
-
-        if (0 == sessionIdToRequest)
-        {
-            sessionIdToRequest = m_sessionIdDistribution(m_randomEngine);
-        }
-
-        return m_conductor.addPublication(channel, streamId, sessionIdToRequest);
+        return m_conductor.addPublication(channel, streamId);
     }
 
     /**

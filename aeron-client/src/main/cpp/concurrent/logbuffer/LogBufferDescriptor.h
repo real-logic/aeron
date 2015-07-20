@@ -20,6 +20,7 @@
 #include <util/Index.h>
 #include <util/StringUtil.h>
 #include <util/BitUtil.h>
+#include <util/Exceptions.h>
 #include <concurrent/AtomicBuffer.h>
 #include "FrameDescriptor.h"
 #include "DataFrameHeader.h"
@@ -171,32 +172,32 @@ inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
 }
 
-inline static int nextPartitionIndex(int currentIndex)
+inline static int nextPartitionIndex(int currentIndex) AERON_NOEXCEPT
 {
     static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
     return util::BitUtil::fastMod3(currentIndex + 1);
 }
 
-inline static int previousPartitionIndex(int currentIndex)
+inline static int previousPartitionIndex(int currentIndex) AERON_NOEXCEPT
 {
     static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
     return util::BitUtil::fastMod3(currentIndex + (PARTITION_COUNT - 1));
 }
 
-inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId)
+inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) AERON_NOEXCEPT
 {
     static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
     return util::BitUtil::fastMod3(activeTermId - initialTermId);
 }
 
-inline static int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift)
+inline static int indexByPosition(std::int64_t position, std::int32_t positionBitsToShift) AERON_NOEXCEPT
 {
     static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
     return (int)(util::BitUtil::fastMod3((std::uint64_t)position >> positionBitsToShift));
 }
 
 inline static std::int64_t computePosition(
-    std::int32_t activeTermId, std::int32_t termOffset, std::int32_t positionBitsToShift, std::int32_t initialTermId)
+    std::int32_t activeTermId, std::int32_t termOffset, std::int32_t positionBitsToShift, std::int32_t initialTermId) AERON_NOEXCEPT
 {
     const std::int64_t termCount = activeTermId - initialTermId;
 

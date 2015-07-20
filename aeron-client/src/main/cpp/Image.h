@@ -137,9 +137,7 @@ public:
         return *this;
     }
 
-    virtual ~Image()
-    {
-    }
+    virtual ~Image() = default;
 
     /**
      * The sessionId for the steam of messages.

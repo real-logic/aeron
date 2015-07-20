@@ -16,10 +16,6 @@
 
 #include "ClientConductorFixture.h"
 
-MockClientConductorHandlers::MockClientConductorHandlers()
-{
-}
+MockClientConductorHandlers::MockClientConductorHandlers() = default;
 
-MockClientConductorHandlers::~MockClientConductorHandlers()
-{
-}
+MockClientConductorHandlers::~MockClientConductorHandlers() = default;

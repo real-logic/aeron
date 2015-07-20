@@ -140,11 +140,7 @@ class Context
 {
     friend class Aeron;
 public:
-    typedef Context this_t;
-
-    inline Context()
-    {
-    }
+    using this_t = Context;
 
     /// @cond HIDDEN_SYMBOLS
     this_t& conclude()

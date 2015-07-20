@@ -64,27 +64,14 @@ public:
         buffer.fill(initialValue);
     }
 
-    AtomicBuffer(const AtomicBuffer& buffer) :
-        m_buffer(buffer.m_buffer), m_length(buffer.m_length)
-    {
-    }
+    AtomicBuffer(const AtomicBuffer& buffer) = default;
 
-    AtomicBuffer(AtomicBuffer&& buffer) :
-        m_buffer(buffer.m_buffer), m_length(buffer.m_length)
-    {
-    }
+    AtomicBuffer(AtomicBuffer&& buffer) = default;
 
-    AtomicBuffer& operator=(AtomicBuffer& buffer)
-    {
-        m_buffer = buffer.m_buffer;
-        m_length = buffer.m_length;
-        return *this;
-    }
+    AtomicBuffer& operator=(AtomicBuffer& buffer) = default;
 
-    virtual ~AtomicBuffer()
-    {
-        // this class does not own the memory. It simply overlays it.
-    }
+    // this class does not own the memory. It simply overlays it.
+    virtual ~AtomicBuffer() = default;
 
     inline void wrap(std::uint8_t* buffer, util::index_t length)
     {

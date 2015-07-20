@@ -21,6 +21,7 @@
 #include <mutex>
 #include <concurrent/logbuffer/TermReader.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
+#include <util/LangUtil.h>
 #include "Publication.h"
 #include "Subscription.h"
 #include "DriverProxy.h"
@@ -89,7 +90,7 @@ public:
     {
     }
 
-    std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId);
+    std::int64_t addPublication(const std::string& channel, std::int32_t streamId);
     std::shared_ptr<Publication> findPublication(std::int64_t registrationId);
     void releasePublication(std::int64_t registrationId);
 
@@ -135,7 +136,7 @@ protected:
     void lingerResources(long now, Image *image, int connectionsLength);
 
 private:
-    enum RegistrationStatus
+    enum class RegistrationStatus
     {
         AWAITING_MEDIA_DRIVER, REGISTERED_MEDIA_DRIVER, ERRORED_MEDIA_DRIVER
     };
@@ -145,7 +146,7 @@ private:
         std::string m_channel;
         std::int64_t m_registrationId;
         std::int32_t m_streamId;
-        std::int32_t m_sessionId;
+        std::int32_t m_sessionId = -1;
         std::int32_t m_positionLimitCounterId = -1;
         long m_timeOfRegistration;
         RegistrationStatus m_status = RegistrationStatus::AWAITING_MEDIA_DRIVER;
@@ -155,8 +156,8 @@ private:
         std::weak_ptr<Publication> m_publication;
 
         PublicationStateDefn(
-            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, std::int32_t sessionId, long now) :
-            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_sessionId(sessionId), m_timeOfRegistration(now)
+            const std::string& channel, std::int64_t registrationId, std::int32_t streamId, long now) :
+            m_channel(channel), m_registrationId(registrationId), m_streamId(streamId), m_timeOfRegistration(now)
         {
         }
     };

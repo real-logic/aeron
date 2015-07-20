@@ -47,7 +47,7 @@ public:
         return m_toDriverCommandBuffer.consumerHeartbeatTime();
     }
 
-    std::int64_t addPublication(const std::string& channel, std::int32_t streamId, std::int32_t sessionId)
+    std::int64_t addPublication(const std::string& channel, std::int32_t streamId)
     {
         std::int64_t correlationId = m_toDriverCommandBuffer.nextCorrelationId();
 
@@ -58,7 +58,6 @@ public:
             publicationMessage.clientId(m_clientId);
             publicationMessage.correlationId(correlationId);
             publicationMessage.streamId(streamId);
-            publicationMessage.sessionId(sessionId);
             publicationMessage.channel(channel);
 
             length = publicationMessage.length();

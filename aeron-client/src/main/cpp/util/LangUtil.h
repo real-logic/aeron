@@ -14,15 +14,28 @@
  * limitations under the License.
  */
 
-#include "MockAtomicBuffer.h"
+#ifndef AERON_LANGUTIL_H
+#define AERON_LANGUTIL_H
 
-namespace aeron { namespace concurrent { namespace mock {
+#include <algorithm>
 
-MockAtomicBuffer::MockAtomicBuffer(std::uint8_t *buffer, util::index_t length) :
-    AtomicBuffer(buffer, length)
+/**
+ * @file
+ * Utilities related to C++ and C++ standard libraries
+ */
+
+namespace aeron { namespace util {
+
+// Bjarne Stroustrup - Make Simple Tasks Simple - https://www.youtube.com/watch?v=nesCaocNjtQ
+template<typename T>
+using Iterator = typename T::iterator;
+
+template<typename Container, typename Predicate>
+Iterator<Container> find_if(Container &c, Predicate p)
 {
+    return std::find_if(std::begin(c), std::end(c), p);
 }
 
-MockAtomicBuffer::~MockAtomicBuffer() = default;
+}}
 
-}}};
+#endif //AERON_LANGUTIL_H

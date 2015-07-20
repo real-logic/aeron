@@ -81,6 +81,7 @@ SET(HEADERS
     util/CommandOptionParser.h
     util/StringUtil.h
     util/Exceptions.h
+    util/LangUtil.h
     util/MacroUtil.h
     util/ScopeUtils.h
     util/BitUtil.h

@@ -29,7 +29,7 @@
 namespace aeron { namespace util {
 
 
-#ifdef _WIN32
+#ifdef _MSC_VER
     #define SOURCEINFO __FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
     #define AERON_NOEXCEPT
 #else

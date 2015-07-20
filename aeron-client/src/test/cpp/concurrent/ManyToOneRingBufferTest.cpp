@@ -299,7 +299,53 @@ TEST_F(ManyToOneRingBufferTest, shouldLimitReadOfMessages)
     EXPECT_EQ(m_ab.getInt32(RecordDescriptor::lengthOffset(alignedRecordLength)), recordLength);
 }
 
-// TODO: add test for dealing with exception from handler correctly
+TEST_F(ManyToOneRingBufferTest, shouldCopeWithExceptionFromHandler)
+{
+    util::index_t length = 8;
+    util::index_t head = 0;
+    util::index_t recordLength = length + RecordDescriptor::HEADER_LENGTH;
+    util::index_t alignedRecordLength = util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+    util::index_t tail = alignedRecordLength * 2;
+
+    m_ab.putInt64(HEAD_COUNTER_INDEX, head);
+    m_ab.putInt64(TAIL_COUNTER_INDEX, tail);
+
+    m_ab.putInt32(RecordDescriptor::typeOffset(0), MSG_TYPE_ID);
+    m_ab.putInt32(RecordDescriptor::lengthOffset(0), recordLength);
+
+    m_ab.putInt32(RecordDescriptor::typeOffset(0 + alignedRecordLength), MSG_TYPE_ID);
+    m_ab.putInt32(RecordDescriptor::lengthOffset(0 + alignedRecordLength), recordLength);
+
+    int timesCalled = 0;
+    auto handler = [&](std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)
+        {
+            timesCalled++;
+            if (2 == timesCalled)
+            {
+                throw std::runtime_error("expected exception");
+            }
+        };
+
+    bool exceptionReceived = false;
+
+    try
+    {
+        m_ringBuffer.read(handler);
+    }
+    catch (std::runtime_error ignored)
+    {
+        exceptionReceived = true;
+    }
+
+    EXPECT_EQ(timesCalled, 2);
+    EXPECT_TRUE(exceptionReceived);
+    EXPECT_EQ(m_ab.getInt64(HEAD_COUNTER_INDEX), head + alignedRecordLength + alignedRecordLength);
+
+    for (int i = 0; i < RecordDescriptor::ALIGNMENT * 2; i += 4)
+    {
+        EXPECT_EQ(m_ab.getInt32(i), 0) << "buffer has not been zeroed between indexes " << i << "-" << i+3;
+    }
+}
 
 #define NUM_MESSAGES_PER_PUBLISHER (10 * 1000 * 1000)
 #define NUM_IDS_PER_THREAD (10 * 1000 * 1000)

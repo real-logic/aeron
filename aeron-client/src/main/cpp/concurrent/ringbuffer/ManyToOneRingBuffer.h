@@ -21,6 +21,7 @@
 #include <functional>
 #include <algorithm>
 #include <util/Index.h>
+#include <util/LangUtil.h>
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/Atomic64.h>
 #include "RingBufferDescriptor.h"
@@ -98,6 +99,13 @@ public:
             const std::int32_t contiguousBlockSize = std::min(available, m_capacity - headIndex);
             int bytesRead = 0;
 
+            auto cleanup = util::InvokeOnScopeExit {
+                [&]()
+                {
+                    m_buffer.setMemory(headIndex, bytesRead, 0);
+                    m_buffer.putInt64Ordered(m_headCounterIndex, head + bytesRead);
+                }};
+
             while ((bytesRead < contiguousBlockSize) && (messagesRead < messageCountLimit))
             {
                 const std::int32_t recordIndex = headIndex + bytesRead;
@@ -121,10 +129,6 @@ public:
                     msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
                     recordLength - RecordDescriptor::HEADER_LENGTH);
             }
-
-            // TODO: RAII for catching exceptions from handler call
-            m_buffer.setMemory(headIndex, bytesRead, 0);
-            m_buffer.putInt64Ordered(m_headCounterIndex, head + bytesRead);
         }
 
         return messagesRead;

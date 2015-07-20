@@ -36,6 +36,24 @@ Iterator<Container> find_if(Container &c, Predicate p)
     return std::find_if(std::begin(c), std::end(c), p);
 }
 
+class InvokeOnScopeExit
+{
+public:
+    using func_t = std::function<void()>;
+
+    inline InvokeOnScopeExit(const func_t& func) :
+        m_func(func)
+    {
+    }
+
+    inline virtual ~InvokeOnScopeExit()
+    {
+        m_func();
+    }
+private:
+    func_t m_func;
+};
+
 }}
 
 #endif //AERON_LANGUTIL_H

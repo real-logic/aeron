@@ -24,6 +24,7 @@ set(TEST_SOURCE
     concurrent/MockAtomicBuffer.cpp)
 
 add_library(aeron_client_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
+add_dependencies(aeron_client_test gmock)
 
 function(aeron_client_test name file)
     add_executable(${name} ${file})

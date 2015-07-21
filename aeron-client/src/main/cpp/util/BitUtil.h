@@ -43,7 +43,7 @@ namespace BitUtil
     }
 
     template <typename value_t>
-    bool isEven(value_t value) noexcept
+    bool isEven(value_t value) AERON_NOEXCEPT
     {
         static_assert (std::is_integral<value_t>::value, "isEven only available on integer types");
         return (value & 1) == 0;
@@ -75,7 +75,7 @@ namespace BitUtil
     {
 #if defined(__GNUC__)
         return __builtin_clz(value);
-#elif defined(__MSC_VER)
+#elif defined(_MSC_VER)
         return __lzcnt(value);
 #else
 #error "do not understand how to clz"

@@ -31,7 +31,7 @@ namespace aeron { namespace util {
 
 #ifdef _MSC_VER
     #define SOURCEINFO __FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
-    #define AERON_NOEXCEPT
+    #define AERON_NOEXCEPT throw()
 #else
     #define SOURCEINFO  __PRETTY_FUNCTION__,  " : "  __FILE__  " : " TOSTRING(__LINE__)
     #define AERON_NOEXCEPT noexcept

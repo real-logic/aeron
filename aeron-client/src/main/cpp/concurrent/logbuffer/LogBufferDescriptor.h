@@ -34,7 +34,7 @@ static const std::int32_t NEEDS_CLEANING = 1;
 
 static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
 
-#if defined(__GNUC__)
+#if defined(__GNUC__) || _MSC_VER >= 1900
 constexpr static const int PARTITION_COUNT = 3;
 #else
 // Visual Studio 2013 doesn't like constexpr without an update

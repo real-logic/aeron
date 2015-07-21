@@ -47,6 +47,10 @@ static const std::int32_t POSITION_BITS_TO_SHIFT = BitUtil::numberOfTrailingZero
 static const util::index_t ALIGNED_FRAME_LENGTH =
     BitUtil::align(DataFrameHeader::LENGTH + (std::int32_t)DATA.size(), FrameDescriptor::FRAME_ALIGNMENT);
 
+void exceptionHandler(std::exception&)
+{
+}
+
 class MockFragmentHandler
 {
 public:
@@ -129,7 +133,7 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
 
@@ -149,7 +153,7 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInIni
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
 
@@ -170,7 +174,7 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNon
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers);
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
 

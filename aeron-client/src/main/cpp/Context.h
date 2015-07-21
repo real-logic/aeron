@@ -28,6 +28,7 @@
 namespace aeron {
 
 using namespace aeron::concurrent::ringbuffer;
+using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::broadcast;
 
 class Image;
@@ -108,9 +109,21 @@ const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
  *
  * @see Context#errorHandler
  */
-inline void defaultErrorHandler(util::SourcedException& exception)
+inline void defaultErrorHandler(std::exception& exception)
 {
-    std::cerr << "ERROR: " << exception.what() << " : " << exception.where() << std::endl;
+    std::cerr << "ERROR: " << exception.what();
+
+    try
+    {
+        SourcedException& sourcedException = dynamic_cast<SourcedException&>(exception);
+        std::cerr << " : " << sourcedException.where();
+    }
+    catch (std::bad_cast)
+    {
+        // ignore
+    }
+
+    std::cerr << std::endl;
     ::exit(-1);
 }
 

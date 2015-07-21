@@ -49,6 +49,14 @@ typedef std::function<void(
     util::index_t length,
     Header& header)> fragment_handler_t;
 
+/**
+ * Callback to indicate an exception has occurred.
+ *
+ * @param exception that has occurred.
+ */
+typedef std::function<void(
+    std::exception& exception)> exception_handler_t;
+
 namespace TermReader {
 
 struct ReadOutcome
@@ -66,32 +74,41 @@ inline ReadOutcome read(
     std::int32_t termOffset,
     const fragment_handler_t & handler,
     int fragmentsLimit,
-    Header& header)
+    Header& header,
+    const exception_handler_t & exceptionHandler)
 {
     int fragmentsRead = 0;
     const util::index_t capacity = termBuffer.capacity();
 
-    do
+    try
     {
-        const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, termOffset);
-        if (frameLength <= 0)
+        do
         {
-            break;
+            const std::int32_t frameLength = FrameDescriptor::frameLengthVolatile(termBuffer, termOffset);
+            if (frameLength <= 0)
+            {
+                break;
+            }
+
+            const std::int32_t fragmentOffset = termOffset;
+            termOffset += util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
+
+            if (!FrameDescriptor::isPaddingFrame(termBuffer, fragmentOffset))
+            {
+                header.buffer(termBuffer);
+                header.offset(fragmentOffset);
+                handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH,
+                    header);
+
+                ++fragmentsRead;
+            }
         }
-
-        const std::int32_t fragmentOffset = termOffset;
-        termOffset += util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
-
-        if (!FrameDescriptor::isPaddingFrame(termBuffer, fragmentOffset))
-        {
-            header.buffer(termBuffer);
-            header.offset(fragmentOffset);
-            handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH, header);
-
-            ++fragmentsRead;
-        }
+        while (fragmentsRead < fragmentsLimit && termOffset < capacity);
     }
-    while (fragmentsRead < fragmentsLimit && termOffset < capacity);
+    catch (std::exception ex)
+    {
+        exceptionHandler(ex);
+    }
 
     return ReadOutcome(termOffset, fragmentsRead);
 }

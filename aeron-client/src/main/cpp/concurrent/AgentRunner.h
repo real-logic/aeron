@@ -21,17 +21,9 @@
 #include <functional>
 #include <thread>
 #include <atomic>
+#include <concurrent/logbuffer/TermReader.h>
 
 namespace aeron {
-
-/**
- * Function called by Aeron to indicate an exception has occurred.
- *
- * @param exception that has occurred in the Aeron client.
- *
- * @see defaultErrroHandler for the default handler.
- */
-typedef std::function<void(util::SourcedException& exception)> exception_handler_t;
 
 namespace concurrent {
 
@@ -39,7 +31,7 @@ template <typename Agent, typename IdleStrategy>
 class AgentRunner
 {
 public:
-    AgentRunner(Agent& agent, IdleStrategy& idleStrategy, exception_handler_t& exceptionHandler) :
+    AgentRunner(Agent& agent, IdleStrategy& idleStrategy, logbuffer::exception_handler_t& exceptionHandler) :
         m_agent(agent),
         m_idleStrategy(idleStrategy),
         m_exceptionHandler(exceptionHandler),
@@ -88,7 +80,7 @@ public:
 private:
     Agent& m_agent;
     IdleStrategy& m_idleStrategy;
-    exception_handler_t& m_exceptionHandler;
+    logbuffer::exception_handler_t& m_exceptionHandler;
     std::atomic<bool> m_running;
     std::thread m_thread;
 };

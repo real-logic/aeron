@@ -59,18 +59,21 @@ public:
      * @param subscriberPosition for indicating the position of the subscriber in the stream.
      * @param logBuffers         containing the stream of messages.
      * @param correlationId      of the request to the media driver.
+     * @param exceptionHandler   to call if an exception is encountered on polling.
      */
     Image(
         std::int32_t sessionId,
         std::int64_t initialPosition,
         std::int64_t correlationId,
         UnsafeBufferPosition& subscriberPosition,
-        std::shared_ptr<LogBuffers> logBuffers) :
+        std::shared_ptr<LogBuffers> logBuffers,
+        const exception_handler_t& exceptionHandler) :
         m_header(
             LogBufferDescriptor::initialTermId(logBuffers->atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
             logBuffers->atomicBuffer(0).capacity()),
         m_subscriberPosition(subscriberPosition),
         m_logBuffers(logBuffers),
+        m_exceptionHandler(exceptionHandler),
         m_correlationId(correlationId),
         m_sessionId(sessionId)
     {
@@ -88,7 +91,8 @@ public:
 
     Image(Image& image) :
         m_header(image.m_header),
-        m_subscriberPosition(image.m_subscriberPosition)
+        m_subscriberPosition(image.m_subscriberPosition),
+        m_exceptionHandler(image.m_exceptionHandler)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
         {
@@ -113,6 +117,7 @@ public:
         m_header = image.m_header;
         m_subscriberPosition.wrap(image.m_subscriberPosition);
         m_logBuffers = image.m_logBuffers;
+        m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
@@ -130,6 +135,7 @@ public:
         m_header = image.m_header;
         m_subscriberPosition.wrap(image.m_subscriberPosition);
         m_logBuffers = std::move(image.m_logBuffers);
+        m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
@@ -186,7 +192,7 @@ public:
         AtomicBuffer& termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift)];
 
         const TermReader::ReadOutcome readOutcome =
-            TermReader::read(termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header);
+            TermReader::read(termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
 
         const std::int64_t newPosition = position + (readOutcome.offset - termOffset);
         if (newPosition > position)
@@ -239,6 +245,7 @@ private:
     Header m_header;
     Position<UnsafeBufferPosition> m_subscriberPosition;
     std::shared_ptr<LogBuffers> m_logBuffers;
+    exception_handler_t m_exceptionHandler;
 
     std::int64_t m_correlationId;
     std::int32_t m_sessionId;

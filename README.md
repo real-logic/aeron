@@ -91,7 +91,7 @@ You require the following to build the C++ API for Aeron:
 and `zlib.h` currently.
 
 __NOTE__: Aeron is supported on Linux, Mac, and Windows. Windows builds require Visual Studio and are being developed
-with Visual Studio Express 12 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
+with Visual Studio 2013 and 2015 with 64-bit builds only. Cygwin, MSys, etc. may work, but are not maintained at this time.
 
 For convenience, a script is provided that does a full clean, build, and test of all targets as a Release build.
 

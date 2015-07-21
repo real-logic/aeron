@@ -226,9 +226,17 @@ public:
 
         if (resultingOffset > termOffset)
         {
-            const std::int32_t termId = termBuffer.getInt32(termOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
+            try
+            {
+                const std::int32_t termId = termBuffer.getInt32(termOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
 
-            blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
+                blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
+            }
+            catch (std::exception ex)
+            {
+                m_exceptionHandler(ex);
+            }
+
             m_subscriberPosition.setOrdered(position + bytesConsumed);
         }
 

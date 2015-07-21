@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.agrona.UnsafeAccess;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -488,6 +489,8 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
             final int termId = lossTermId;
             final int termOffset = lossTermOffset;
             final int length = lossLength;
+
+            UnsafeAccess.UNSAFE.loadFence(); // LoadLoad required so value loads don't move past version check below.
 
             if (changeNumber == beginLossChange)
             {

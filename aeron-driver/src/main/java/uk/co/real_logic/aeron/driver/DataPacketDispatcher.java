@@ -34,8 +34,9 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 {
     private static final Integer PENDING_SETUP_FRAME = 1;
     private static final Integer INIT_IN_PROGRESS = 2;
+    private static final Integer ON_COOLDOWN = 3;
 
-    private final BiInt2ObjectMap<Integer> initialisationInProgressMap = new BiInt2ObjectMap<>();
+    private final BiInt2ObjectMap<Integer> ignoredSessionsMap = new BiInt2ObjectMap<>();
     private final Int2ObjectHashMap<Int2ObjectHashMap<NetworkedImage>> sessionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
@@ -77,7 +78,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
 
         imageBySessionIdMap.put(sessionId, image);
-        initialisationInProgressMap.remove(sessionId, streamId);
+        ignoredSessionsMap.remove(sessionId, streamId);
 
         image.status(NetworkedImage.Status.ACTIVE);
     }
@@ -91,7 +92,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         if (null != imageBySessionIdMap)
         {
             imageBySessionIdMap.remove(sessionId);
-            initialisationInProgressMap.remove(sessionId, streamId);
+            ignoredSessionsMap.remove(sessionId, streamId);
         }
 
         image.ifActiveGoInactive();
@@ -99,9 +100,22 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     public void removePendingSetup(final int sessionId, final int streamId)
     {
-        if (PENDING_SETUP_FRAME.equals(initialisationInProgressMap.get(sessionId, streamId)))
+        if (PENDING_SETUP_FRAME.equals(ignoredSessionsMap.get(sessionId, streamId)))
         {
-            initialisationInProgressMap.remove(sessionId, streamId);
+            ignoredSessionsMap.remove(sessionId, streamId);
+        }
+    }
+
+    public void addCooldown(final int sessionId, final int streamId)
+    {
+        ignoredSessionsMap.put(sessionId, streamId, ON_COOLDOWN);
+    }
+
+    public void removeCooldown(final int sessionId, final int streamId)
+    {
+        if (ON_COOLDOWN.equals(ignoredSessionsMap.get(sessionId, streamId)))
+        {
+            ignoredSessionsMap.remove(sessionId, streamId);
         }
     }
 
@@ -125,7 +139,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             {
                 return image.insertPacket(termId, header.termOffset(), buffer, length);
             }
-            else if (null == initialisationInProgressMap.get(sessionId, streamId))
+            else if (null == ignoredSessionsMap.get(sessionId, streamId))
             {
                 elicitSetupMessageFromSource(channelEndpoint, srcAddress, streamId, sessionId);
             }
@@ -169,7 +183,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     private boolean isNotAlreadyInProgress(final int streamId, final int sessionId)
     {
-        return !INIT_IN_PROGRESS.equals(initialisationInProgressMap.get(sessionId, streamId));
+        return !INIT_IN_PROGRESS.equals(ignoredSessionsMap.get(sessionId, streamId));
     }
 
     private void elicitSetupMessageFromSource(
@@ -181,7 +195,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final InetSocketAddress controlAddress =
             channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
-        initialisationInProgressMap.put(sessionId, streamId, PENDING_SETUP_FRAME);
+        ignoredSessionsMap.put(sessionId, streamId, PENDING_SETUP_FRAME);
 
         channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
         receiver.addPendingSetupMessage(sessionId, streamId, channelEndpoint);
@@ -201,7 +215,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final InetSocketAddress controlAddress =
             channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
-        initialisationInProgressMap.put(sessionId, streamId, INIT_IN_PROGRESS);
+        ignoredSessionsMap.put(sessionId, streamId, INIT_IN_PROGRESS);
         conductorProxy.createImage(
             sessionId,
             streamId,

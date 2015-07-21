@@ -17,11 +17,11 @@ package uk.co.real_logic.aeron.tools;
 
 import org.apache.commons.cli.ParseException;
 import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
-import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
@@ -34,7 +34,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -273,9 +272,8 @@ public class SubscriberTool
 
         private final Publication controlPublication;
         private Subscription controlSubscription;
-        /* Doesn't use TLRandom, since this really does need to be random and shouldn't
-         * be affected by manually setting the seed. */
-        private final int controlSessionId = ThreadLocalRandom.current().nextInt();
+
+        private int controlSessionId;
         private String controlChannel;
 
         /* channel -> stream ID -> session ID */
@@ -335,6 +333,7 @@ public class SubscriberTool
                 System.exit(1);
             }
             controlPublication = aeron.addPublication(controlChannel, CONTROL_STREAM_ID);
+            controlSessionId = controlPublication.sessionId();
 
             /* Create the subscriptionsList and populate it with just the channels this thread is supposed
              * to subscribe to. */

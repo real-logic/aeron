@@ -117,6 +117,11 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         transportPoller.selectNowWithoutProcessing();
     }
 
+    public void onRemoveCooldown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
+    {
+        channelEndpoint.dispatcher().removeCooldown(sessionId, streamId);
+    }
+
     public void accept(final ReceiverCmd cmd)
     {
         cmd.execute(this);

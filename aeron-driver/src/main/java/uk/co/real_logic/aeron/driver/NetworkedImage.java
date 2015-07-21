@@ -221,11 +221,25 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
     }
 
     /**
+     * Return the {@link ReceiveChannelEndpoint} that the image is attached to.
+     *
+     * @return {@link ReceiveChannelEndpoint} that the image is attached to.
+     */
+    public ReceiveChannelEndpoint channelEndpoint()
+    {
+        return channelEndpoint;
+    }
+
+    /**
      * Remove this image from the {@link DataPacketDispatcher} so it will process no further packets from the network.
+     * Called from the {@link Receiver} thread.
      */
     public void removeFromDispatcher()
     {
-        channelEndpoint.dispatcher().removeImage(this);
+        final DataPacketDispatcher dispatcher = channelEndpoint.dispatcher();
+
+        dispatcher.removeImage(this);
+        dispatcher.addCooldown(sessionId, streamId);
     }
 
     /**

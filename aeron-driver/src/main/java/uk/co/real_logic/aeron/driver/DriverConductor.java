@@ -747,6 +747,8 @@ public class DriverConductor implements Agent
                             image.streamId(),
                             image.rebuildPosition(),
                             image.channelUriString());
+
+                        receiverProxy.removeCooldown(image.channelEndpoint(), image.sessionId(), image.streamId());
                     }
                     break;
 

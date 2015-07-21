@@ -111,6 +111,18 @@ public class ReceiverProxy
         }
     }
 
+    public void removeCooldown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
+    {
+        if (isSharedThread())
+        {
+            receiver.onRemoveCooldown(channelEndpoint, sessionId, streamId);
+        }
+        else
+        {
+            offer(new RemoveCooldownCmd(channelEndpoint, sessionId, streamId));
+        }
+    }
+
     private boolean isSharedThread()
     {
         return threadingMode == SHARED;

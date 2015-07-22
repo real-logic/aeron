@@ -96,6 +96,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
 
         image.ifActiveGoInactive();
+        ignoredSessionsMap.put(sessionId, streamId, ON_COOLDOWN);
     }
 
     public void removePendingSetup(final int sessionId, final int streamId)
@@ -104,11 +105,6 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         {
             ignoredSessionsMap.remove(sessionId, streamId);
         }
-    }
-
-    public void addCooldown(final int sessionId, final int streamId)
-    {
-        ignoredSessionsMap.put(sessionId, streamId, ON_COOLDOWN);
     }
 
     public void removeCooldown(final int sessionId, final int streamId)
@@ -165,7 +161,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             final int activeTermId = header.activeTermId();
             final NetworkedImage image = imageBySessionIdMap.get(sessionId);
 
-            if (null == image && isNotAlreadyInProgress(streamId, sessionId))
+            if (null == image && isNotAlreadyInProgressOrOnCooldown(streamId, sessionId))
             {
                 createImage(
                     channelEndpoint,
@@ -181,9 +177,11 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         }
     }
 
-    private boolean isNotAlreadyInProgress(final int streamId, final int sessionId)
+    private boolean isNotAlreadyInProgressOrOnCooldown(final int streamId, final int sessionId)
     {
-        return !INIT_IN_PROGRESS.equals(ignoredSessionsMap.get(sessionId, streamId));
+        final Integer value = ignoredSessionsMap.get(sessionId, streamId);
+
+        return !INIT_IN_PROGRESS.equals(value) && !ON_COOLDOWN.equals(value);
     }
 
     private void elicitSetupMessageFromSource(

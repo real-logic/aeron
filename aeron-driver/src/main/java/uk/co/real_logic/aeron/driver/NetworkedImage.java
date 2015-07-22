@@ -236,10 +236,7 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
      */
     public void removeFromDispatcher()
     {
-        final DataPacketDispatcher dispatcher = channelEndpoint.dispatcher();
-
-        dispatcher.removeImage(this);
-        dispatcher.addCooldown(sessionId, streamId);
+        channelEndpoint.dispatcher().removeImage(this);
     }
 
     /**

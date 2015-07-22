@@ -493,6 +493,52 @@ public class ReceiverTest
         assertThat(TermReader.fragmentsRead(readOutcome), is(1));
     }
 
+    @Test
+    public void shouldRemoveImageFromDispatcherWithNoActivity() throws Exception
+    {
+        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
+        receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
+
+        receiver.doWork();
+
+        fillSetupFrame(setupHeader);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+
+        final NetworkedImage mockImage = mock(NetworkedImage.class);
+        when(mockImage.sessionId()).thenReturn(SESSION_ID);
+        when(mockImage.streamId()).thenReturn(STREAM_ID);
+        when(mockImage.checkForActivity(anyLong(), anyLong())).thenReturn(false);
+
+        receiver.onNewImage(receiveChannelEndpoint, mockImage);
+        receiver.doWork();
+
+        verify(mockImage).removeFromDispatcher();
+    }
+
+    @Test
+    public void shouldNotRemoveImageFromDispatcherOnRemoveSubscription() throws Exception
+    {
+        receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
+        receiverProxy.addSubscription(receiveChannelEndpoint, STREAM_ID);
+
+        receiver.doWork();
+
+        fillSetupFrame(setupHeader);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+
+        final NetworkedImage mockImage = mock(NetworkedImage.class);
+        when(mockImage.sessionId()).thenReturn(SESSION_ID);
+        when(mockImage.streamId()).thenReturn(STREAM_ID);
+        when(mockImage.checkForActivity(anyLong(), anyLong())).thenReturn(true);
+
+        receiver.onNewImage(receiveChannelEndpoint, mockImage);
+        receiver.onRemoveSubscription(receiveChannelEndpoint, STREAM_ID);
+        receiver.doWork();
+
+        verify(mockImage).ifActiveGoInactive();
+        verify(mockImage, never()).removeFromDispatcher();
+    }
+
     private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)
     {
         header.wrap(dataBuffer, 0);

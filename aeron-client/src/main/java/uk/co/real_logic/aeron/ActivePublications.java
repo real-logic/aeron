@@ -17,11 +17,9 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static java.util.stream.Collectors.toList;
 import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
@@ -69,12 +67,11 @@ public class ActivePublications
 
     public void close()
     {
-        final List<Publication> publications = new ArrayList<>();
         publicationsByChannelMap
             .values()
             .stream()
-            .forEach((publicationMap) -> publicationMap.values().forEach(publications::add));
-
-        publications.forEach(Publication::close);
+            .flatMap((publicationByStreamIdMap) -> publicationByStreamIdMap.values().stream())
+            .collect(toList())
+            .forEach(Publication::close);
     }
 }

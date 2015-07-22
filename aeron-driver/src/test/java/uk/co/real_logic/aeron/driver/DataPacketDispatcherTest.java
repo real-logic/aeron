@@ -183,7 +183,7 @@ public class DataPacketDispatcherTest
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addImage(mockImage);
         dispatcher.removeImage(mockImage);
-        dispatcher.removeCooldown(SESSION_ID, STREAM_ID);
+        dispatcher.removeCoolDown(SESSION_ID, STREAM_ID);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
 

@@ -119,7 +119,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onRemoveCooldown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        channelEndpoint.dispatcher().removeCooldown(sessionId, streamId);
+        channelEndpoint.dispatcher().removeCoolDown(sessionId, streamId);
     }
 
     public void accept(final ReceiverCmd cmd)

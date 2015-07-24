@@ -276,45 +276,14 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveByteBuffer.capacity();
     }
 
-    protected abstract int dispatch(final UnsafeBuffer receiveBuffer, final int length, final InetSocketAddress srcAddress);
-
     /**
      * Attempt to receive waiting data.
      *
      * @return number of bytes received.
      */
-    public int pollForData()
-    {
-        int bytesReceived = 0;
-        final InetSocketAddress srcAddress = receive();
+    public abstract int pollForData();
 
-        if (null != srcAddress)
-        {
-            final int length = receiveByteBuffer.position();
-            if (lossGenerator.shouldDropFrame(srcAddress, receiveBuffer, length))
-            {
-                logger.logFrameInDropped(receiveByteBuffer, 0, length, srcAddress);
-            }
-            else
-            {
-                logger.logFrameIn(receiveByteBuffer, 0, length, srcAddress);
-
-                if (isValidFrame(receiveBuffer, length))
-                {
-                    bytesReceived = dispatch(receiveBuffer, length, srcAddress);
-                }
-            }
-        }
-
-        return bytesReceived;
-    }
-
-    protected UnsafeBuffer receiveBuffer()
-    {
-        return receiveBuffer;
-    }
-
-    private boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)
+    public final boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)
     {
         boolean isFrameValid = true;
 
@@ -332,7 +301,27 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return isFrameValid;
     }
 
-    private InetSocketAddress receive()
+    protected final UnsafeBuffer receiveBuffer()
+    {
+        return receiveBuffer;
+    }
+
+    protected final ByteBuffer receiveByteBuffer()
+    {
+        return receiveByteBuffer;
+    }
+
+    protected final EventLogger logger()
+    {
+        return logger;
+    }
+
+    protected final LossGenerator lossGenerator()
+    {
+        return lossGenerator;
+    }
+
+    protected final InetSocketAddress receive()
     {
         receiveByteBuffer.clear();
 

@@ -262,18 +262,21 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         if (null != srcAddress)
         {
-            final int length = receiveByteBuffer().position();
-            if (lossGenerator().shouldDropFrame(srcAddress, receiveBuffer(), length))
+            final ByteBuffer receiveByteBuffer = receiveByteBuffer();
+            final int length = receiveByteBuffer.position();
+            final UnsafeBuffer receiveBuffer = receiveBuffer();
+
+            if (lossGenerator().shouldDropFrame(srcAddress, receiveBuffer, length))
             {
-                logger().logFrameInDropped(receiveByteBuffer(), 0, length, srcAddress);
+                logger().logFrameInDropped(receiveByteBuffer, 0, length, srcAddress);
             }
             else
             {
-                logger().logFrameIn(receiveByteBuffer(), 0, length, srcAddress);
+                logger().logFrameIn(receiveByteBuffer, 0, length, srcAddress);
 
-                if (isValidFrame(receiveBuffer(), length))
+                if (isValidFrame(receiveBuffer, length))
                 {
-                    bytesReceived = dispatch(receiveBuffer(), length, srcAddress);
+                    bytesReceived = dispatch(receiveBuffer, length, srcAddress);
                 }
             }
         }

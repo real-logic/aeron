@@ -25,6 +25,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
@@ -149,12 +150,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         if (null != srcAddress)
         {
-            final int length = receiveByteBuffer().position();
-            logger().logFrameIn(receiveByteBuffer(), 0, length, srcAddress);
+            final ByteBuffer receiveByteBuffer = receiveByteBuffer();
+            final int length = receiveByteBuffer.position();
+            logger().logFrameIn(receiveByteBuffer, 0, length, srcAddress);
 
-            if (isValidFrame(receiveBuffer(), length))
+            final UnsafeBuffer receiveBuffer = receiveBuffer();
+            if (isValidFrame(receiveBuffer, length))
             {
-                bytesReceived = dispatch(receiveBuffer(), srcAddress);
+                bytesReceived = dispatch(receiveBuffer, srcAddress);
             }
         }
 

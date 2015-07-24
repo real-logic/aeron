@@ -44,14 +44,6 @@ public class EventLogger
     private static final boolean IS_FRAME_OUT_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_OUT.tagBit()) == FRAME_OUT.tagBit();
 
-    /**
-     *  The index in the stack trace of the method that called logException().
-     *
-     *  NB: stack[0] is Thread.currentThread().getStackTrace() and
-     *  stack[1] is logException().
-     */
-    private static final int INVOKING_METHOD_INDEX = 2;
-
     private final ManyToOneRingBuffer ringBuffer;
 
     public EventLogger(final ByteBuffer buffer)
@@ -156,19 +148,6 @@ public class EventLogger
         if (isEnabled(EventCode.CHANNEL_CREATION, ENABLED_EVENT_CODES))
         {
             logString(EventCode.CHANNEL_CREATION, description);
-        }
-    }
-
-    public void logInvocation()
-    {
-        if (isEnabled(INVOCATION, ENABLED_EVENT_CODES))
-        {
-            final StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, stack[INVOKING_METHOD_INDEX]);
-
-            ringBuffer.write(INVOCATION.id(), encodedBuffer, 0, encodedLength);
         }
     }
 

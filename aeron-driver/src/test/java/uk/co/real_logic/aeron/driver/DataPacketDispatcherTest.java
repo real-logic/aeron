@@ -37,7 +37,6 @@ public class DataPacketDispatcherTest
     private static final int SESSION_ID = 1;
     private static final int TERM_OFFSET = 0;
     private static final int LENGTH = DataHeaderFlyweight.HEADER_LENGTH + 100;
-    private static final int SETUP_LENGTH = SetupFlyweight.HEADER_LENGTH;
     private static final int MTU_LENGTH = 1024;
     private static final int TERM_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final InetSocketAddress SRC_ADDRESS = new InetSocketAddress("localhost", 4510);
@@ -114,7 +113,7 @@ public class DataPacketDispatcherTest
     public void shouldRequestCreateImageUponReceivingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
         verify(mockConductorProxy).createImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
@@ -125,9 +124,9 @@ public class DataPacketDispatcherTest
     public void shouldOnlyRequestCreateImageOnceUponReceivingSetup()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
         verify(mockConductorProxy).createImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
@@ -139,7 +138,7 @@ public class DataPacketDispatcherTest
     {
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.addImage(mockImage);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
         verifyZeroInteractions(mockConductorProxy);
     }
@@ -171,7 +170,7 @@ public class DataPacketDispatcherTest
         dispatcher.addImage(mockImage);
         dispatcher.removeImage(mockImage);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
         verifyZeroInteractions(mockConductorProxy);
         verifyZeroInteractions(mockReceiver);
@@ -185,7 +184,7 @@ public class DataPacketDispatcherTest
         dispatcher.removeImage(mockImage);
         dispatcher.removeCoolDown(SESSION_ID, STREAM_ID);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SETUP_LENGTH, SRC_ADDRESS);
+        dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
         verify(mockImage, never()).insertPacket(anyInt(), anyInt(), any(), anyInt());
 

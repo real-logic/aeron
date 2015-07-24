@@ -328,7 +328,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         InetSocketAddress address = null;
         try
         {
-            address = (InetSocketAddress) receiveDatagramChannel.receive(receiveByteBuffer);
+            address = (InetSocketAddress)receiveDatagramChannel.receive(receiveByteBuffer);
         }
         catch (final PortUnreachableException | ClosedByInterruptException ignored)
         {

@@ -159,10 +159,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return dispatcher.onDataPacket(this, header, buffer, length, srcAddress);
     }
 
-    public void onSetupMessage(
-        final SetupFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    public void onSetupMessage(final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
     {
-        dispatcher.onSetupMessage(this, header, buffer, length, srcAddress);
+        dispatcher.onSetupMessage(this, header, buffer, srcAddress);
     }
 
     public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
@@ -293,7 +292,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 break;
 
             case HDR_TYPE_SETUP:
-                dispatcher.onSetupMessage(this, setupHeader, buffer, length, srcAddress);
+                dispatcher.onSetupMessage(this, setupHeader, buffer, srcAddress);
                 break;
         }
 

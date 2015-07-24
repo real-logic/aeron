@@ -153,7 +153,6 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final ReceiveChannelEndpoint channelEndpoint,
         final SetupFlyweight header,
         final UnsafeBuffer buffer,
-        final int length,
         final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();

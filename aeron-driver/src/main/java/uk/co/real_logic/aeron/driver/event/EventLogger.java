@@ -115,9 +115,7 @@ public class EventLogger
         }
     }
 
-    public void logFrameOut(
-        final ByteBuffer buffer,
-        final InetSocketAddress dstAddress)
+    public void logFrameOut(final ByteBuffer buffer, final InetSocketAddress dstAddress)
     {
         if (IS_FRAME_OUT_ENABLED)
         {

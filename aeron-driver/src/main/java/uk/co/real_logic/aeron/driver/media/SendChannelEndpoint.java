@@ -154,14 +154,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
             if (isValidFrame(receiveBuffer(), length))
             {
-                bytesReceived = dispatch(receiveBuffer(), length, srcAddress);
+                bytesReceived = dispatch(receiveBuffer(), srcAddress);
             }
         }
 
         return bytesReceived;
     }
 
-    private int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    private int dispatch(final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
         switch (frameType(buffer, 0))

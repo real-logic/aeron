@@ -176,7 +176,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
         final NetworkedImage image = new NetworkedImage(
             CORRELATION_ID,
@@ -240,7 +240,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
         final int commandsRead = toConductorQueue.drain(
             (e) ->
@@ -302,7 +302,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
         final int commandsRead = toConductorQueue.drain(
             (e) ->
@@ -367,7 +367,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
         final int commandsRead = toConductorQueue.drain(
             (e) ->
@@ -436,7 +436,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader, initialTermOffset);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
         final int commandsRead = toConductorQueue.drain(
             (e) ->
@@ -502,7 +502,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
         final NetworkedImage mockImage = mock(NetworkedImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);
@@ -524,7 +524,7 @@ public class ReceiverTest
         receiver.doWork();
 
         fillSetupFrame(setupHeader);
-        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, setupHeader.frameLength(), senderAddress);
+        receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
         final NetworkedImage mockImage = mock(NetworkedImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);

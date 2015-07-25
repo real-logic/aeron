@@ -136,7 +136,18 @@ int main(int argc, char** argv)
 
             if (result < 0)
             {
-                std::cout << " ah?!" << std::endl;
+                if (PUBLICATION_NOT_CONNECTED == result)
+                {
+                    std::cout << " not connected yet." << std::endl;
+                }
+                else if (PUBLICATION_BACK_PRESSURE == result)
+                {
+                    std::cout << " back pressured." << std::endl;
+                }
+                else
+                {
+                    std::cout << " ah?! unknown " << result << std::endl;
+                }
             }
             else
             {

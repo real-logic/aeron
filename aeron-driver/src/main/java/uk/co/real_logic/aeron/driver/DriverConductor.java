@@ -681,9 +681,7 @@ public class DriverConductor implements Agent
                 logger.logPublicationRemoval(
                     channelEndpoint.originalUriString(), publication.sessionId(), publication.streamId());
 
-                channelEndpoint.removePublication(publication);
                 publications.remove(i);
-
                 senderProxy.removePublication(publication);
 
                 if (channelEndpoint.sessionCount() == 0)

@@ -247,7 +247,14 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
     public int decRef()
     {
-        return --refCount;
+        final int count = --refCount;
+
+        if (0 == count)
+        {
+            channelEndpoint.removePublication(this);
+        }
+
+        return count;
     }
 
     public int incRef()

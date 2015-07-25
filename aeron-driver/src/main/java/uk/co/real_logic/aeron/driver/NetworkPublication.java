@@ -78,7 +78,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         final int streamId,
         final int initialTermId,
         final int mtuLength,
-        final long initialPositionLimit,
         final SystemCounters systemCounters,
         final FlowControl flowControl,
         final RetransmitHandler retransmitHandler)
@@ -91,6 +90,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         this.retransmitHandler = retransmitHandler;
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
+        this.initialTermId = initialTermId;
 
         logPartitions = rawLog
             .stream()
@@ -101,14 +101,14 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
         final int termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
-        senderPositionLimit = initialPositionLimit;
+        flowControl.initialize(initialTermId, termLength);
 
         timeOfLastSendOrHeartbeat = clock.nanoTime();
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        this.initialTermId = initialTermId;
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
-        publisherLimit.setOrdered(0);
+        this.publisherLimit.setOrdered(0);
+        senderPositionLimit = 0;
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
         initSetupFrame(initialTermId, termLength, sessionId, streamId);

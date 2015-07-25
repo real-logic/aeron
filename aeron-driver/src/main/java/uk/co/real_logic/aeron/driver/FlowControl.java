@@ -26,19 +26,18 @@ public interface FlowControl
      * Update the sender flow control strategy based on a status message from the receiver.
      *
      * @param termId               currently active for the receiver.
-     * @param rebuildTermOffset    within the current active term for the receiver.
+     * @param termOffset           within the current active term for the receiver.
      * @param receiverWindowLength supported by the receiver.
      * @param address              of the receiver.
      * @return the new position limit to be employed by the sender.
      */
-    long onStatusMessage(int termId, int rebuildTermOffset, int receiverWindowLength, InetSocketAddress address);
+    long onStatusMessage(int termId, int termOffset, int receiverWindowLength, InetSocketAddress address);
 
     /**
-     * Initial limit to which the {@link Sender} position can progress.
+     * Initialize the flow control strategy
      *
      * @param initialTermId      for the term buffers
      * @param termBufferCapacity to use as the length of each term buffer
-     * @return limit to which the position can go.
      */
-    long initialPositionLimit(int initialTermId, int termBufferCapacity);
+    void initialize(int initialTermId, int termBufferCapacity);
 }

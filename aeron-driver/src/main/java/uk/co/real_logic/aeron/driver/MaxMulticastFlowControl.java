@@ -35,9 +35,9 @@ public class MaxMulticastFlowControl implements FlowControl
      * {@inheritDoc}
      */
     public long onStatusMessage(
-        final int termId, final int rebuildTermOffset, final int receiverWindowLength, final InetSocketAddress address)
+        final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress address)
     {
-        final long position = computePosition(termId, rebuildTermOffset, positionBitsToShift, initialTermId);
+        final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowLength;
 
         positionLimit = Math.max(positionLimit, newPositionLimit);
@@ -48,13 +48,10 @@ public class MaxMulticastFlowControl implements FlowControl
     /**
      * {@inheritDoc}
      */
-    public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
+    public void initialize(final int initialTermId, final int termBufferCapacity)
     {
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
-
         positionLimit = computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
-
-        return positionLimit;
     }
 }

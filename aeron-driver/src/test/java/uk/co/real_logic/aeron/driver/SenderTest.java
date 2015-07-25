@@ -133,7 +133,6 @@ public class SenderTest
             STREAM_ID,
             INITIAL_TERM_ID,
             MAX_FRAME_LENGTH,
-            flowControl.initialPositionLimit(INITIAL_TERM_ID, TERM_BUFFER_LENGTH),
             mockSystemCounters,
             flowControl,
             mockRetransmitHandler);

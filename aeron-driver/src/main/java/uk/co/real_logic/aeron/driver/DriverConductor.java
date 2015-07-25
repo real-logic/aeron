@@ -437,7 +437,6 @@ public class DriverConductor implements Agent
                 streamId,
                 initialTermId,
                 mtuLength,
-                flowControl.initialPositionLimit(initialTermId, termBufferLength),
                 systemCounters,
                 flowControl,
                 retransmitHandler);

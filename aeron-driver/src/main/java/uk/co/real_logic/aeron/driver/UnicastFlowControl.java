@@ -19,28 +19,38 @@ import java.net.InetSocketAddress;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
+/**
+ * Default unicast sender flow control strategy.
+ *
+ * Max of right edges.
+ * No tracking of receivers.
+ */
 public class UnicastFlowControl implements FlowControl
 {
     private long positionLimit = 0;
     private int positionBitsToShift;
     private int initialTermId;
 
+    /**
+     * {@inheritDoc}
+     */
     public long onStatusMessage(
-        final int termId, final int rebuildTermOffset, final int receiverWindowLength, final InetSocketAddress address)
+        final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress address)
     {
-        final long position = computePosition(termId, rebuildTermOffset, positionBitsToShift, initialTermId);
+        final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
         final long newPositionLimit = position + receiverWindowLength;
         positionLimit = Math.max(positionLimit, newPositionLimit);
 
         return positionLimit;
     }
 
-    public long initialPositionLimit(final int initialTermId, final int termBufferCapacity)
+    /**
+     * {@inheritDoc}
+     */
+    public void initialize(final int initialTermId, final int termBufferCapacity)
     {
         this.initialTermId = initialTermId;
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
         positionLimit = computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
-
-        return positionLimit;
     }
 }

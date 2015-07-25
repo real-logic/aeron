@@ -60,7 +60,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
     private long timeOfFlush = 0;
     private long timeOfLastSendOrHeartbeat;
-    private long senderPositionLimit;
+    private volatile long senderPositionLimit;
     private int statusMessagesReceivedCount = 0;
 
     private int refCount = 0;
@@ -108,7 +108,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.initialTermId = initialTermId;
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
-        publisherLimit.setOrdered(termWindowLength);
+        publisherLimit.setOrdered(0);
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
         initSetupFrame(initialTermId, termLength, sessionId, streamId);
@@ -294,7 +294,14 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     public int updatePublishersLimit()
     {
         int workCount = 0;
-        final long candidatePublisherLimit = senderPosition.getVolatile() + termWindowLength;
+        final long currentSenderPosition = senderPosition.getVolatile();
+        long candidatePublisherLimit = currentSenderPosition + termWindowLength;
+
+        if (0 == currentSenderPosition && 0 == senderPositionLimit)
+        {
+            candidatePublisherLimit = 0;
+        }
+
         if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
         {
             workCount = 1;

@@ -66,7 +66,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private int refCount = 0;
     private boolean trackSenderLimits = true;
     private boolean shouldSendSetupFrame = true;
-    private volatile boolean isActive = true;
+    private boolean isActive = true;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -126,28 +126,23 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
     public int send(final long now)
     {
-        int bytesSent = 0;
+        final long senderPosition = this.senderPosition.get();
+        final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
+        final int termOffset = (int)senderPosition & termLengthMask;
 
-        if (isActive)
+        if (shouldSendSetupFrame)
         {
-            final long senderPosition = this.senderPosition.get();
-            final int activeTermId = computeTermIdFromPosition(senderPosition, positionBitsToShift, initialTermId);
-            final int termOffset = (int)senderPosition & termLengthMask;
-
-            if (shouldSendSetupFrame)
-            {
-                setupMessageCheck(now, activeTermId, termOffset, senderPosition);
-            }
-
-            bytesSent = sendData(now, senderPosition, termOffset);
-
-            if (0 == bytesSent)
-            {
-                heartbeatMessageCheck(now, senderPosition, activeTermId);
-            }
-
-            retransmitHandler.processTimeouts(now, this);
+            setupMessageCheck(now, activeTermId, termOffset, senderPosition);
         }
+
+        final int bytesSent = sendData(now, senderPosition, termOffset);
+
+        if (0 == bytesSent)
+        {
+            heartbeatMessageCheck(now, senderPosition, activeTermId);
+        }
+
+        retransmitHandler.processTimeouts(now, this);
 
         return bytesSent;
     }
@@ -259,15 +254,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
     public int incRef()
     {
-        final int i = ++refCount;
-
-        if (i == 1)
-        {
-            timeOfFlush = 0;
-            isActive = true;
-        }
-
-        return i;
+        return ++refCount;
     }
 
     public boolean isUnreferencedAndFlushed(final long now)
@@ -279,7 +266,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
             isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailVolatile();
 
-            if (isFlushed && isActive)
+            if (isActive && isFlushed)
             {
                 timeOfFlush = now;
                 isActive = false;

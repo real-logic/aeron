@@ -209,7 +209,7 @@ public class DriverConductor implements Agent
 
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();
-        final long connectionCorrelationId = generateCreationCorrelationId();
+        final long imageCorrelationId = nextImageCorrelationId();
 
         final long joiningPosition = LogBufferDescriptor.computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
@@ -220,10 +220,10 @@ public class DriverConductor implements Agent
         if (subscriberPositions.size() > 0)
         {
             final RawLog rawLog = newImageLog(
-                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, connectionCorrelationId);
+                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, imageCorrelationId);
 
-            final NetworkedImage connection = new NetworkedImage(
-                connectionCorrelationId,
+            final NetworkedImage image = new NetworkedImage(
+                imageCorrelationId,
                 channelEndpoint,
                 controlAddress,
                 sessionId,
@@ -236,24 +236,23 @@ public class DriverConductor implements Agent
                 Configuration.doNotSendNaks() ? NO_NAK_DELAY_GENERATOR :
                     udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                 subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
-                newPosition("receiver hwm", channel, sessionId, streamId, connectionCorrelationId),
+                newPosition("receiver hwm", channel, sessionId, streamId, imageCorrelationId),
                 nanoClock,
                 systemCounters,
                 sourceAddress);
 
             subscriberPositions.forEach(
-                (subscriberPosition) ->
-                    subscriberPosition.subscription().addImage(connection, subscriberPosition.position()));
+                (subscriberPosition) -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));
 
-            images.add(connection);
-            receiverProxy.newImage(channelEndpoint, connection);
+            images.add(image);
+            receiverProxy.newImage(channelEndpoint, image);
 
             clientProxy.onImageReady(
                 streamId,
                 sessionId,
                 joiningPosition,
                 rawLog,
-                connectionCorrelationId,
+                imageCorrelationId,
                 subscriberPositions,
                 generateSourceIdentity(sourceAddress));
         }
@@ -551,6 +550,7 @@ public class DriverConductor implements Agent
         }
 
         publicationLink.remove();
+
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -814,7 +814,7 @@ public class DriverConductor implements Agent
         return countersManager.allocate(String.format("%s: %s %d %d %d", type, channel, sessionId, streamId, correlationId));
     }
 
-    private long generateCreationCorrelationId()
+    private long nextImageCorrelationId()
     {
         return toDriverCommands.nextCorrelationId();
     }

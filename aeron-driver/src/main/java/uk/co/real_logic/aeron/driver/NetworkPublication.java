@@ -58,15 +58,15 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private final int mtuLength;
     private final int termWindowLength;
 
-    private long timeOfLastSendOrHeartbeat;
     private long timeOfFlush = 0;
+    private long timeOfLastSendOrHeartbeat;
+    private long senderPositionLimit;
     private int statusMessagesReceivedCount = 0;
-    private int refCount = 0;
 
-    private volatile long senderPositionLimit;
+    private int refCount = 0;
     private boolean trackSenderLimits = true;
+    private boolean shouldSendSetupFrame = true;
     private volatile boolean isActive = true;
-    private volatile boolean shouldSendSetupFrame = true;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,

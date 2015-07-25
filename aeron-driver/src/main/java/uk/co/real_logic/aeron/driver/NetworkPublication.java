@@ -58,12 +58,12 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private final int mtuLength;
     private final int termWindowLength;
 
-    private long timeOfFlush = 0;
     private long timeOfLastSendOrHeartbeat;
-    private volatile long senderPositionLimit;
-    private int statusMessagesReceivedCount = 0;
-
+    private long senderPositionLimit;
+    private long timeOfFlush = 0;
     private int refCount = 0;
+
+    private volatile boolean hasStatusMessageBeenReceived = false;
     private boolean trackSenderLimits = true;
     private boolean shouldSendSetupFrame = true;
     private boolean isActive = true;
@@ -164,8 +164,12 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
     public void senderPositionLimit(final long positionLimit)
     {
-        statusMessagesReceivedCount++;
         senderPositionLimit = positionLimit;
+
+        if (!hasStatusMessageBeenReceived)
+        {
+            hasStatusMessageBeenReceived = true;
+        }
     }
 
     /**
@@ -297,7 +301,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         final long currentSenderPosition = senderPosition.getVolatile();
         long candidatePublisherLimit = currentSenderPosition + termWindowLength;
 
-        if (0 == currentSenderPosition && 0 == senderPositionLimit)
+        if (!hasStatusMessageBeenReceived)
         {
             candidatePublisherLimit = 0;
         }
@@ -377,7 +381,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
             timeOfLastSendOrHeartbeat = now;
         }
 
-        if (statusMessagesReceivedCount > 0)
+        if (hasStatusMessageBeenReceived)
         {
             shouldSendSetupFrame = false;
         }

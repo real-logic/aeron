@@ -417,7 +417,6 @@ public class DriverConductor implements Agent
         {
             final int sessionId = nextSessionId + nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
-            final FlowControl flowControl = udpChannel.isMulticast() ? multicastFlowControl.get() : unicastFlowControl.get();
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
                 nanoClock,
@@ -438,7 +437,7 @@ public class DriverConductor implements Agent
                 initialTermId,
                 mtuLength,
                 systemCounters,
-                flowControl,
+                udpChannel.isMulticast() ? multicastFlowControl.get() : unicastFlowControl.get(),
                 retransmitHandler);
 
             channelEndpoint.addPublication(publication);

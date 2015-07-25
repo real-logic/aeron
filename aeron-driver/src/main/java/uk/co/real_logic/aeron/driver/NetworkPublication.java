@@ -78,7 +78,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         final int streamId,
         final int initialTermId,
         final int mtuLength,
-        final long initialPositionLimit,
         final SystemCounters systemCounters,
         final FlowControl flowControl,
         final RetransmitHandler retransmitHandler)
@@ -101,7 +100,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
 
         final int termLength = logPartitions[0].termBuffer().capacity();
         termLengthMask = termLength - 1;
-        senderPositionLimit = initialPositionLimit;
+        senderPositionLimit = flowControl.initialPositionLimit(initialTermId, termLength);
 
         timeOfLastSendOrHeartbeat = clock.nanoTime();
 

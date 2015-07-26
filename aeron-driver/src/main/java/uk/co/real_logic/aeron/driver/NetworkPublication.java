@@ -71,20 +71,6 @@ class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
  */
 public class NetworkPublication extends NetworkPublicationPadding3 implements RetransmitSender, AutoCloseable
 {
-    private final RawLog rawLog;
-    private final SetupFlyweight setupHeader = new SetupFlyweight();
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
-    private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final LogBufferPartition[] logPartitions;
-    private final ByteBuffer[] sendBuffers;
-    private final Position publisherLimit;
-    private final Position senderPosition;
-    private final SendChannelEndpoint channelEndpoint;
-    private final SystemCounters systemCounters;
-    private final FlowControl flowControl;
-    private final RetransmitHandler retransmitHandler;
-
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
@@ -92,6 +78,20 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements Re
     private final int termWindowLength;
 
     private volatile boolean hasStatusMessageBeenReceived = false;
+
+    private final LogBufferPartition[] logPartitions;
+    private final ByteBuffer[] sendBuffers;
+    private final Position publisherLimit;
+    private final Position senderPosition;
+    private final SendChannelEndpoint channelEndpoint;
+    private final SystemCounters systemCounters;
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
+    private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
+    private final SetupFlyweight setupHeader = new SetupFlyweight();
+    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
+    private final FlowControl flowControl;
+    private final RetransmitHandler retransmitHandler;
+    private final RawLog rawLog;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,

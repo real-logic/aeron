@@ -33,10 +33,43 @@ import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIME
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermScanner.*;
 
+class NetworkPublicationPadding1
+{
+    @SuppressWarnings("unused")
+    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
+}
+
+class NetworkPublicationConductorFields extends NetworkPublicationPadding1
+{
+    protected long timeOfFlush = 0;
+    protected int refCount = 0;
+    protected boolean isActive = true;
+}
+
+class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
+{
+    @SuppressWarnings("unused")
+    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+}
+
+class NetworkPublicationReceiverFields extends NetworkPublicationPadding2
+{
+    protected long timeOfLastSendOrHeartbeat;
+    protected long senderPositionLimit = 0;
+    protected boolean trackSenderLimits = true;
+    protected boolean shouldSendSetupFrame = true;
+}
+
+class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
+{
+    @SuppressWarnings("unused")
+    protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+}
+
 /**
  * Publication to be sent to registered subscribers.
  */
-public class NetworkPublication implements RetransmitSender, AutoCloseable
+public class NetworkPublication extends NetworkPublicationPadding3 implements RetransmitSender, AutoCloseable
 {
     private final RawLog rawLog;
     private final SetupFlyweight setupHeader = new SetupFlyweight();
@@ -58,15 +91,7 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     private final int mtuLength;
     private final int termWindowLength;
 
-    private long timeOfLastSendOrHeartbeat;
-    private long senderPositionLimit;
-    private long timeOfFlush = 0;
-    private int refCount = 0;
-
     private volatile boolean hasStatusMessageBeenReceived = false;
-    private boolean trackSenderLimits = true;
-    private boolean shouldSendSetupFrame = true;
-    private boolean isActive = true;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -108,7 +133,6 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
         this.publisherLimit.setOrdered(0);
-        senderPositionLimit = 0;
 
         setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
         initSetupFrame(initialTermId, termLength, sessionId, streamId);
@@ -298,13 +322,9 @@ public class NetworkPublication implements RetransmitSender, AutoCloseable
     public int updatePublishersLimit()
     {
         int workCount = 0;
-        final long currentSenderPosition = senderPosition.getVolatile();
-        long candidatePublisherLimit = currentSenderPosition + termWindowLength;
 
-        if (!hasStatusMessageBeenReceived)
-        {
-            candidatePublisherLimit = 0;
-        }
+        final long candidatePublisherLimit =
+            hasStatusMessageBeenReceived ? senderPosition.getVolatile() + termWindowLength : 0L;
 
         if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
         {

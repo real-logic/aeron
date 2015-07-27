@@ -22,7 +22,7 @@ plugins {
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
 def aeronGroup = 'uk.co.real-logic'
-def aeronVersion = '0.1.2-SNAPSHOT'
+def aeronVersion = '0.1.2'
 
 group = aeronGroup
 version = aeronVersion
@@ -214,7 +214,7 @@ project(':aeron-driver') {
 
 project(':aeron-client') {
     dependencies {
-        compile 'uk.co.real-logic:Agrona:0.4.1'
+        compile 'uk.co.real-logic:Agrona:0.4.2'
     }
 
     task sourcesJar(type: Jar) {

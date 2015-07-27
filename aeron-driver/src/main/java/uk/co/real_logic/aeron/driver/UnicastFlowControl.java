@@ -53,4 +53,12 @@ public class UnicastFlowControl implements FlowControl
         positionBitsToShift = Long.numberOfTrailingZeros(termBufferCapacity);
         positionLimit = computePosition(initialTermId, 0, positionBitsToShift, initialTermId);
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long onIdle(final long now)
+    {
+        return positionLimit;
+    }
 }

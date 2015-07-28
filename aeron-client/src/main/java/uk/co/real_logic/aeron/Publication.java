@@ -140,7 +140,7 @@ public class Publication implements AutoCloseable
     {
         synchronized (clientConductor)
         {
-            if (--refCount == 0)
+            if (!isClosed && --refCount == 0)
             {
                 isClosed = true;
                 clientConductor.releasePublication(this);

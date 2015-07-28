@@ -40,4 +40,12 @@ public interface FlowControl
      * @param termBufferCapacity to use as the length of each term buffer
      */
     void initialize(int initialTermId, int termBufferCapacity);
+
+    /**
+     * Perform any maintenance needed by the flow control strategy and return current position
+     *
+     * @param now time in nanoseconds.
+     * @return the position limit to be employed by the sender.
+     */
+    long onIdle(long now);
 }

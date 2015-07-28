@@ -164,6 +164,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements Re
         if (0 == bytesSent)
         {
             heartbeatMessageCheck(now, senderPosition, activeTermId);
+            senderPositionLimit = flowControl.onIdle(now);
         }
 
         retransmitHandler.processTimeouts(now, this);

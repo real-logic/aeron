@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
+import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
@@ -80,32 +81,13 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     public void onNewPublication(final NetworkPublication publication)
     {
-        final NetworkPublication[] oldPublications = publications;
-        final int length = oldPublications.length;
-        final NetworkPublication[] newPublications = new NetworkPublication[length + 1];
-
-        System.arraycopy(oldPublications, 0, newPublications, 0, length);
-        newPublications[length] = publication;
-
-        publications = newPublications;
-
+        publications = ArrayUtil.add(publications, publication);
         publication.sendChannelEndpoint().registerForSend(publication);
     }
 
     public void onRemovePublication(final NetworkPublication publication)
     {
-        final NetworkPublication[] oldPublications = publications;
-        final int length = oldPublications.length;
-        final NetworkPublication[] newPublications = new NetworkPublication[length - 1];
-        for (int i = 0, j = 0; i < length; i++)
-        {
-            if (oldPublications[i] != publication)
-            {
-                newPublications[j++] = oldPublications[i];
-            }
-        }
-
-        publications = newPublications;
+        publications = ArrayUtil.remove(publications, publication);
         publication.sendChannelEndpoint().unregisterForSend(publication);
         conductorProxy.closeResource(publication);
     }

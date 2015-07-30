@@ -115,7 +115,7 @@ public class ReceiverProxy
     {
         if (isSharedThread())
         {
-            receiver.onRemoveCooldown(channelEndpoint, sessionId, streamId);
+            receiver.onRemoveCoolDown(channelEndpoint, sessionId, streamId);
         }
         else
         {

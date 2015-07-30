@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.aeron.logbuffer.BlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.List;
@@ -215,11 +216,11 @@ public class Subscription implements AutoCloseable
 
                 clientConductor.releaseSubscription(this);
 
-                final Image[] images = this.images;
                 for (final Image image : images)
                 {
                     clientConductor.lingerResource(image.managedResource());
                 }
+
                 this.images = EMPTY_ARRAY;
             }
         }
@@ -232,14 +233,7 @@ public class Subscription implements AutoCloseable
 
     void addImage(final Image image)
     {
-        final Image[] oldArray = images;
-        final int oldLength = oldArray.length;
-        final Image[] newArray = new Image[oldLength + 1];
-
-        System.arraycopy(oldArray, 0, newArray, 0, oldLength);
-        newArray[oldLength] = image;
-
-        images = newArray;
+        images = ArrayUtil.add(images, image);
     }
 
     Image removeImage(final long correlationId)
@@ -247,25 +241,19 @@ public class Subscription implements AutoCloseable
         final Image[] oldArray = images;
         final int oldLength = oldArray.length;
         Image removedImage = null;
-        int index = -1;
 
         for (int i = 0; i < oldLength; i++)
         {
             if (oldArray[i].correlationId() == correlationId)
             {
-                index = i;
                 removedImage = oldArray[i];
+                break;
             }
         }
 
         if (null != removedImage)
         {
-            final int newLength = oldLength - 1;
-            final Image[] newArray = new Image[newLength];
-            System.arraycopy(oldArray, 0, newArray, 0, index);
-            System.arraycopy(oldArray, index + 1, newArray, index, newLength - index);
-            images = newArray;
-
+            images = ArrayUtil.remove(oldArray, removedImage);
             clientConductor.lingerResource(removedImage.managedResource());
         }
 

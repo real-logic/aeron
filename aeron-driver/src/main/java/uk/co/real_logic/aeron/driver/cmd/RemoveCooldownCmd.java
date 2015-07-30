@@ -33,6 +33,6 @@ public class RemoveCooldownCmd implements ReceiverCmd
 
     public void execute(Receiver receiver)
     {
-        receiver.onRemoveCooldown(channelEndpoint, sessionId, streamId);
+        receiver.onRemoveCoolDown(channelEndpoint, sessionId, streamId);
     }
 }

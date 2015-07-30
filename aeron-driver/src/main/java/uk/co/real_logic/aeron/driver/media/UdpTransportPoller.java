@@ -101,5 +101,4 @@ public class UdpTransportPoller extends TransportPoller
     {
         transports = ArrayUtil.remove(transports, transport);
     }
-
 }

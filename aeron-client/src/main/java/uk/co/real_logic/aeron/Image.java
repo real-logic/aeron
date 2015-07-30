@@ -22,6 +22,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.ByteOrder;
+import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
@@ -109,6 +110,16 @@ public class Image
     public long correlationId()
     {
         return correlationId;
+    }
+
+    /**
+     * The {@link FileChannel} to the raw log of the Image.
+     *
+     * @return the {@link FileChannel} to the raw log of the Image.
+     */
+    public FileChannel fileChannel()
+    {
+        return logBuffers.fileChannel();
     }
 
     /**

@@ -239,14 +239,13 @@ public class Subscription implements AutoCloseable
     Image removeImage(final long correlationId)
     {
         final Image[] oldArray = images;
-        final int oldLength = oldArray.length;
         Image removedImage = null;
 
-        for (int i = 0; i < oldLength; i++)
+        for (final Image image : oldArray)
         {
-            if (oldArray[i].correlationId() == correlationId)
+            if (image.correlationId() == correlationId)
             {
-                removedImage = oldArray[i];
+                removedImage = image;
                 break;
             }
         }

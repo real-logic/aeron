@@ -27,7 +27,6 @@ import java.nio.channels.SelectionKey;
  */
 public class UdpTransportPoller extends TransportPoller
 {
-
     private UdpChannelTransport[] transports = new UdpChannelTransport[0];
 
     /**

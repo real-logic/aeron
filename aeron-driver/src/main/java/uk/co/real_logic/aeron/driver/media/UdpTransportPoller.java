@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.nio.TransportPoller;
 
 import java.io.IOException;
@@ -80,7 +81,7 @@ public class UdpTransportPoller extends TransportPoller
         SelectionKey key = null;
         try
         {
-            addTransport(transport);
+            transports = ArrayUtil.add(transports, transport);
             key = transport.receiveDatagramChannel().register(selector, SelectionKey.OP_READ, transport);
         }
         catch (final ClosedChannelException ex)
@@ -98,34 +99,7 @@ public class UdpTransportPoller extends TransportPoller
      */
     public void cancelRead(final UdpChannelTransport transport)
     {
-        removeTransport(transport);
+        transports = ArrayUtil.remove(transports, transport);
     }
 
-    private void addTransport(final UdpChannelTransport transport)
-    {
-        final UdpChannelTransport[] oldTransports = transports;
-        final int length = oldTransports.length;
-        final UdpChannelTransport[] newTransports = new UdpChannelTransport[length + 1];
-
-        System.arraycopy(oldTransports, 0, newTransports, 0, length);
-        newTransports[length] = transport;
-
-        transports = newTransports;
-    }
-
-    private void removeTransport(final UdpChannelTransport transport)
-    {
-        final UdpChannelTransport[] oldTransports = transports;
-        final int length = oldTransports.length;
-        final UdpChannelTransport[] newTransports = new UdpChannelTransport[length - 1];
-        for (int i = 0, j = 0; i < length; i++)
-        {
-            if (oldTransports[i] != transport)
-            {
-                newTransports[j++] = oldTransports[i];
-            }
-        }
-
-        transports = newTransports;
-    }
 }

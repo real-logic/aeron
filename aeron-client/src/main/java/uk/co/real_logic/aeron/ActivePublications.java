@@ -72,6 +72,6 @@ public class ActivePublications
             .stream()
             .flatMap((publicationByStreamIdMap) -> publicationByStreamIdMap.values().stream())
             .collect(toList())
-            .forEach(Publication::close);
+            .forEach(Publication::release);
     }
 }

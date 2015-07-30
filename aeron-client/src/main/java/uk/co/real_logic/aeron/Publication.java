@@ -132,7 +132,7 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Release resources used by this Publication.
+     * Release resources used by this Publication when there are no more references.
      *
      * Publications are reference counted and are only truly closed when the ref count reaches zero.
      */
@@ -142,11 +142,19 @@ public class Publication implements AutoCloseable
         {
             if (!isClosed && --refCount == 0)
             {
-                isClosed = true;
-                clientConductor.releasePublication(this);
-                logBuffers.close();
+                release();
             }
         }
+    }
+
+    /**
+     * Release resources and forcibly close the Publication regardless of reference count.
+     */
+    void release()
+    {
+        isClosed = true;
+        clientConductor.releasePublication(this);
+        logBuffers.close();
     }
 
     /**

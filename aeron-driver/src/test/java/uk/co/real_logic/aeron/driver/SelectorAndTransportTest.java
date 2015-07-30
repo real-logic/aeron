@@ -66,7 +66,7 @@ public class SelectorAndTransportTest
     private final DataPacketDispatcher mockDispatcher = mock(DataPacketDispatcher.class);
     private final NetworkPublication mockPublication = mock(NetworkPublication.class);
 
-    private TransportPoller transportPoller;
+    private UdpTransportPoller transportPoller;
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
@@ -109,7 +109,7 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTearDown() throws Exception
     {
-        transportPoller = new TransportPoller();
+        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
@@ -140,7 +140,7 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        transportPoller = new TransportPoller();
+        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
@@ -190,7 +190,7 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        transportPoller = new TransportPoller();
+        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
@@ -247,7 +247,7 @@ public class SelectorAndTransportTest
             })
             .when(mockPublication).onStatusMessage(anyInt(), anyInt(), anyInt(), any(InetSocketAddress.class));
 
-        transportPoller = new TransportPoller();
+        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
@@ -282,7 +282,7 @@ public class SelectorAndTransportTest
         verify(mockStatusMessagesReceivedCounter, times(1)).orderedIncrement();
     }
 
-    private void processLoop(final TransportPoller transportPoller, final int iterations) throws Exception
+    private void processLoop(final UdpTransportPoller transportPoller, final int iterations) throws Exception
     {
         for (int i = 0; i < iterations; i++)
         {

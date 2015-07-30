@@ -214,7 +214,7 @@ project(':aeron-driver') {
 
 project(':aeron-client') {
     dependencies {
-        compile 'uk.co.real-logic:Agrona:0.4.2'
+        compile 'uk.co.real-logic:Agrona:0.4.3-SNAPSHOT'
     }
 
     task sourcesJar(type: Jar) {

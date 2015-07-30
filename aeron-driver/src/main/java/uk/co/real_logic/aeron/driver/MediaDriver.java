@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.ActiveDriverException;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
-import uk.co.real_logic.aeron.driver.media.TransportPoller;
+import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
@@ -371,8 +371,8 @@ public final class MediaDriver implements AutoCloseable
     public static class Context extends CommonContext
     {
         private RawLogFactory rawLogFactory;
-        private TransportPoller receiverTransportPoller;
-        private TransportPoller senderTransportPoller;
+        private UdpTransportPoller receiverTransportPoller;
+        private UdpTransportPoller senderTransportPoller;
         private Supplier<FlowControl> unicastSenderFlowControl;
         private Supplier<FlowControl> multicastSenderFlowControl;
         private EpochClock epochClock;
@@ -470,8 +470,8 @@ public final class MediaDriver implements AutoCloseable
 
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
-                receiverNioSelector(new TransportPoller());
-                senderNioSelector(new TransportPoller());
+                receiverNioSelector(new UdpTransportPoller());
+                senderNioSelector(new UdpTransportPoller());
 
                 Configuration.validateTermBufferLength(termBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
@@ -554,13 +554,13 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context receiverNioSelector(final TransportPoller transportPoller)
+        public Context receiverNioSelector(final UdpTransportPoller transportPoller)
         {
             this.receiverTransportPoller = transportPoller;
             return this;
         }
 
-        public Context senderNioSelector(final TransportPoller transportPoller)
+        public Context senderNioSelector(final UdpTransportPoller transportPoller)
         {
             this.senderTransportPoller = transportPoller;
             return this;
@@ -801,12 +801,12 @@ public final class MediaDriver implements AutoCloseable
             return rawLogFactory;
         }
 
-        public TransportPoller receiverNioSelector()
+        public UdpTransportPoller receiverNioSelector()
         {
             return receiverTransportPoller;
         }
 
-        public TransportPoller senderNioSelector()
+        public UdpTransportPoller senderNioSelector()
         {
             return senderTransportPoller;
         }

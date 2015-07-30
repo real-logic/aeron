@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples.raw;
 
-import uk.co.real_logic.aeron.driver.media.NioSelectedKeySet;
+import uk.co.real_logic.agrona.nio.NioSelectedKeySet;
 import uk.co.real_logic.agrona.IoUtil;
 
 import java.io.File;

@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.TransportPoller;
+import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
@@ -32,7 +32,7 @@ import java.util.function.Consumer;
 public class Receiver implements Agent, Consumer<ReceiverCmd>
 {
     private final long statusMessageTimeout;
-    private final TransportPoller transportPoller;
+    private final UdpTransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final NanoClock clock;

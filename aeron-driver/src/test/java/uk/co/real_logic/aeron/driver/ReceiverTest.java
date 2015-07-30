@@ -25,7 +25,7 @@ import uk.co.real_logic.aeron.driver.cmd.CreateImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.TransportPoller;
+import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.Header;
@@ -80,7 +80,7 @@ public class ReceiverTest
     private static final List<ReadablePosition> POSITIONS = Collections.singletonList(POSITION);
 
     private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
-    private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
+    private final UdpTransportPoller mockTransportPoller = mock(UdpTransportPoller.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
     private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());

@@ -43,7 +43,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     private DatagramChannel sendDatagramChannel;
     private DatagramChannel receiveDatagramChannel;
     private SelectionKey selectionKey;
-    private TransportPoller transportPoller;
+    private UdpTransportPoller transportPoller;
     private InetSocketAddress bindSocketAddress;
     private InetSocketAddress endPointSocketAddress;
     private InetSocketAddress connectAddress;
@@ -123,11 +123,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Register this transport for reading from a {@link TransportPoller}.
+     * Register this transport for reading from a {@link UdpTransportPoller}.
      *
      * @param transportPoller to register read with
      */
-    public void registerForRead(final TransportPoller transportPoller)
+    public void registerForRead(final UdpTransportPoller transportPoller)
     {
         this.transportPoller = transportPoller;
         selectionKey = transportPoller.registerForRead(this);

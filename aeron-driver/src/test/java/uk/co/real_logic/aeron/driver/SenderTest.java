@@ -24,7 +24,7 @@ import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.TransportPoller;
+import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.TermAppender;
@@ -64,7 +64,7 @@ public class SenderTest
     private static final int ALIGNED_FRAME_LENGTH = align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
 
     private final EventLogger mockLogger = mock(EventLogger.class);
-    private final TransportPoller mockTransportPoller = mock(TransportPoller.class);
+    private final UdpTransportPoller mockTransportPoller = mock(UdpTransportPoller.class);
 
     private final RawLog rawLog =
         LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, LogBufferDescriptor.TERM_META_DATA_LENGTH);

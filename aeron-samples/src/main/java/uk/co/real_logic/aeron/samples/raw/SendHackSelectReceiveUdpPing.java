@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.samples.raw;
 
 import org.HdrHistogram.Histogram;
-import uk.co.real_logic.aeron.driver.media.NioSelectedKeySet;
+import uk.co.real_logic.agrona.nio.NioSelectedKeySet;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
 import java.io.IOException;

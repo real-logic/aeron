@@ -44,13 +44,13 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
     std::lock_guard<std::mutex> lock(m_adminLock);
     std::int64_t id;
 
-    auto it = std::find_if(m_publications.cbegin(), m_publications.cend(),
+    auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [channel, streamId](const PublicationStateDefn &entry)
         {
             return (streamId == entry.m_streamId && channel == entry.m_channel);
         });
 
-    if (it == m_publications.cend())
+    if (it == m_publications.end())
     {
         std::int64_t registrationId = m_driverProxy.addPublication(channel, streamId);
 
@@ -120,13 +120,13 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
 
     std::lock_guard<std::mutex> lock(m_adminLock);
 
-    auto it = std::find_if(m_publications.cbegin(), m_publications.cend(),
+    auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
         {
             return (registrationId == entry.m_registrationId);
         });
 
-    if (it != m_publications.cend())
+    if (it != m_publications.end())
     {
         m_driverProxy.removePublication(registrationId);
         m_publications.erase(it);
@@ -192,13 +192,13 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image * c
 
     std::lock_guard<std::mutex> lock(m_adminLock);
 
-    auto it = std::find_if(m_subscriptions.cbegin(), m_subscriptions.cend(),
+    auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
         {
             return (registrationId == entry.m_registrationId);
         });
 
-    if (it != m_subscriptions.cend())
+    if (it != m_subscriptions.end())
     {
         m_driverProxy.removeSubscription((*it).m_registrationId);
         m_subscriptions.erase(it);
@@ -307,7 +307,7 @@ void ClientConductor::onNewImage(
 {
     std::lock_guard<std::mutex> lock(m_adminLock);
 
-    std::for_each(m_subscriptions.cbegin(), m_subscriptions.cend(),
+    std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
         {
             if (streamId == entry.m_streamId)
@@ -354,7 +354,7 @@ void ClientConductor::onInactiveImage(
     const long now = m_epochClock();
     std::lock_guard<std::mutex> lock(m_adminLock);
 
-    std::for_each(m_subscriptions.cbegin(), m_subscriptions.cend(),
+    std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
         {
             if (streamId == entry.m_streamId)

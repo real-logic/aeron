@@ -230,14 +230,13 @@ project(':aeron-client') {
     artifacts {
         archives sourcesJar, javadocJar
     }
-
 }
 
 project(':aeron-samples') {
     apply plugin: 'com.github.johnrengelman.shadow'
 
     dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), 'org.hdrhistogram:HdrHistogram:2.1.4'
+        compile project(':aeron-client'), project(':aeron-driver'), 'org.hdrhistogram:HdrHistogram:2.1.6'
     }
 
     shadowJar {
@@ -257,7 +256,6 @@ project(':aeron-samples') {
     artifacts {
         archives sourcesJar, javadocJar
     }
-
 }
 
 project(':aeron-system-tests') {
@@ -310,7 +308,6 @@ project(':aeron-tools') {
     artifacts {
         archives sourcesJar, javadocJar
     }
-
 }
 
 project(':aeron-all') {

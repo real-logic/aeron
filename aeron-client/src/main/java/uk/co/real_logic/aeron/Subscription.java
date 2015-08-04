@@ -137,7 +137,6 @@ public class Subscription implements AutoCloseable
         ensureOpen();
 
         long bytesConsumed = 0;
-        final Image[] images = this.images;
         for (final Image image : images)
         {
             bytesConsumed += image.blockPoll(blockHandler, blockLengthLimit);
@@ -159,7 +158,6 @@ public class Subscription implements AutoCloseable
         ensureOpen();
 
         long bytesConsumed = 0;
-        final Image[] images = this.images;
         for (final Image image : images)
         {
             bytesConsumed += image.filePoll(fileBlockHandler, blockLengthLimit);
@@ -178,7 +176,6 @@ public class Subscription implements AutoCloseable
     {
         Image result = null;
 
-        final Image[] images = this.images;
         for (final Image image : images)
         {
             if (sessionId == image.sessionId())
@@ -263,7 +260,6 @@ public class Subscription implements AutoCloseable
     {
         boolean hasImage = false;
 
-        final Image[] images = this.images;
         for (final Image image : images)
         {
             if (sessionId == image.sessionId())

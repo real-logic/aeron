@@ -26,7 +26,6 @@ import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -69,7 +68,6 @@ public class DriverConductorTest
     private final ByteBuffer toEventBuffer = ByteBuffer.allocateDirect(
         EventConfiguration.BUFFER_LENGTH_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
 
-    private final UdpTransportPoller transportPoller = mock(UdpTransportPoller.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
 
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer));
@@ -119,8 +117,6 @@ public class DriverConductorTest
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH)), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .receiverNioSelector(transportPoller)
-            .senderNioSelector(transportPoller)
             .unicastSenderFlowControl(UnicastFlowControl::new)
             .multicastSenderFlowControl(MaxMulticastFlowControl::new)
                 // TODO: remove

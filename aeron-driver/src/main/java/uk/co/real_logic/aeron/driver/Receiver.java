@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 public class Receiver implements Agent, Consumer<ReceiverCmd>
 {
     private final long statusMessageTimeout;
-    private final DataTransportPoller transportPoller;
+    private final DataTransportPoller dataTransportPoller;
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final NanoClock clock;
@@ -41,7 +41,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public Receiver(final MediaDriver.Context ctx)
     {
         statusMessageTimeout = ctx.statusMessageTimeout();
-        transportPoller = ctx.receiverTransportPoller();
+        dataTransportPoller = ctx.receiverTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().bytesReceived();
         clock = ctx.nanoClock();
@@ -55,7 +55,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public int doWork() throws Exception
     {
         int workCount = commandQueue.drain(this);
-        final int bytesReceived = transportPoller.pollTransports();
+        final int bytesReceived = dataTransportPoller.pollTransports();
 
         final long now = clock.nanoTime();
         for (int i = images.size() - 1; i >= 0; i--)
@@ -106,14 +106,14 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.openChannel();
-        channelEndpoint.registerForRead(transportPoller);
-        transportPoller.selectNowWithoutProcessing();
+        channelEndpoint.registerForRead(dataTransportPoller);
+        dataTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
-        transportPoller.selectNowWithoutProcessing();
+        dataTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)

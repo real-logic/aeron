@@ -32,7 +32,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 {
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
-    private final ControlTransportPoller transportPoller;
+    private final ControlTransportPoller controlTransportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final DriverConductorProxy conductorProxy;
     private final AtomicCounter totalBytesSent;
@@ -43,7 +43,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     public Sender(final MediaDriver.Context ctx)
     {
-        this.transportPoller = ctx.senderTransportPoller();
+        this.controlTransportPoller = ctx.senderTransportPoller();
         this.commandQueue = ctx.senderCommandQueue();
         this.conductorProxy = ctx.fromSenderDriverConductorProxy();
         this.totalBytesSent = ctx.systemCounters().bytesSent();
@@ -55,7 +55,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         final long now = nanoClock.nanoTime();
         final int workCount = commandQueue.drain(this);
         final int bytesSent = doSend(now);
-        final int bytesReceived = transportPoller.pollTransports();
+        final int bytesReceived = controlTransportPoller.pollTransports();
 
         return workCount + bytesSent + bytesReceived;
     }
@@ -68,14 +68,14 @@ public class Sender implements Agent, Consumer<SenderCmd>
     public void onRegisterSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         channelEndpoint.openChannel();
-        channelEndpoint.registerForRead(transportPoller);
-        transportPoller.selectNowWithoutProcessing();
+        channelEndpoint.registerForRead(controlTransportPoller);
+        controlTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
-        transportPoller.selectNowWithoutProcessing();
+        controlTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onNewPublication(final NetworkPublication publication)

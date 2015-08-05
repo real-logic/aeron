@@ -268,8 +268,8 @@ public final class MediaDriver implements AutoCloseable
 
     private void freeSocketsForReuseOnWindows()
     {
-        ctx.receiverNioSelector().selectNowWithoutProcessing();
-        ctx.senderNioSelector().selectNowWithoutProcessing();
+        ctx.receiverTransportPoller().selectNowWithoutProcessing();
+        ctx.senderTransportPoller().selectNowWithoutProcessing();
     }
 
     private MediaDriver start()
@@ -470,8 +470,8 @@ public final class MediaDriver implements AutoCloseable
 
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
-                receiverNioSelector(new UdpTransportPoller());
-                senderNioSelector(new UdpTransportPoller());
+                receiverTransportPoller(new UdpTransportPoller());
+                senderTransportPoller(new UdpTransportPoller());
 
                 Configuration.validateTermBufferLength(termBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
@@ -554,13 +554,13 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context receiverNioSelector(final UdpTransportPoller transportPoller)
+        public Context receiverTransportPoller(final UdpTransportPoller transportPoller)
         {
             this.receiverTransportPoller = transportPoller;
             return this;
         }
 
-        public Context senderNioSelector(final UdpTransportPoller transportPoller)
+        public Context senderTransportPoller(final UdpTransportPoller transportPoller)
         {
             this.senderTransportPoller = transportPoller;
             return this;
@@ -801,12 +801,12 @@ public final class MediaDriver implements AutoCloseable
             return rawLogFactory;
         }
 
-        public UdpTransportPoller receiverNioSelector()
+        public UdpTransportPoller receiverTransportPoller()
         {
             return receiverTransportPoller;
         }
 
-        public UdpTransportPoller senderNioSelector()
+        public UdpTransportPoller senderTransportPoller()
         {
             return senderTransportPoller;
         }

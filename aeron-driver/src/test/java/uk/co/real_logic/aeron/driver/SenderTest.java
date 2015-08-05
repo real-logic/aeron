@@ -112,7 +112,7 @@ public class SenderTest
 
         sender = new Sender(
             new MediaDriver.Context()
-                .senderNioSelector(mockTransportPoller)
+                .senderTransportPoller(mockTransportPoller)
                 .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)
                 .eventLogger(mockLogger)

@@ -42,7 +42,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public Receiver(final MediaDriver.Context ctx)
     {
         statusMessageTimeout = ctx.statusMessageTimeout();
-        transportPoller = ctx.receiverNioSelector();
+        transportPoller = ctx.receiverTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
         totalBytesReceived = ctx.systemCounters().bytesReceived();
         clock = ctx.nanoClock();

@@ -24,9 +24,7 @@ import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.cmd.CreateImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
-import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.aeron.driver.media.*;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.logbuffer.TermReader;
@@ -80,7 +78,9 @@ public class ReceiverTest
     private static final List<ReadablePosition> POSITIONS = Collections.singletonList(POSITION);
 
     private final FeedbackDelayGenerator mockFeedbackDelayGenerator = mock(FeedbackDelayGenerator.class);
-    private final UdpTransportPoller mockTransportPoller = mock(UdpTransportPoller.class);
+    private final DataTransportPoller mockDataTransportPoller = mock(DataTransportPoller.class);
+    private final ControlTransportPoller mockControlTransportPoller = mock(ControlTransportPoller.class);
+
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
     private final Position mockHighestReceivedPosition = spy(new AtomicLongPosition());
@@ -125,8 +125,8 @@ public class ReceiverTest
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .receiverTransportPoller(mockTransportPoller)
-            .senderTransportPoller(mockTransportPoller)
+            .receiverTransportPoller(mockDataTransportPoller)
+            .senderTransportPoller(mockControlTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
             .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))

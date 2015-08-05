@@ -66,7 +66,8 @@ public class SelectorAndTransportTest
     private final DataPacketDispatcher mockDispatcher = mock(DataPacketDispatcher.class);
     private final NetworkPublication mockPublication = mock(NetworkPublication.class);
 
-    private UdpTransportPoller transportPoller;
+    private DataTransportPoller dataTransportPoller = new DataTransportPoller();
+    private ControlTransportPoller controlTransportPoller = new ControlTransportPoller();
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
@@ -86,18 +87,19 @@ public class SelectorAndTransportTest
             if (null != sendChannelEndpoint)
             {
                 sendChannelEndpoint.close();
-                processLoop(transportPoller, 5);
+                processLoop(controlTransportPoller, 5);
             }
 
             if (null != receiveChannelEndpoint)
             {
                 receiveChannelEndpoint.close();
-                processLoop(transportPoller, 5);
+                processLoop(dataTransportPoller, 5);
             }
 
-            if (null != transportPoller)
+            if (null != dataTransportPoller)
             {
-                transportPoller.close();
+                dataTransportPoller.close();
+                controlTransportPoller.close();
             }
         }
         catch (final Exception ex)
@@ -109,17 +111,16 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTearDown() throws Exception
     {
-        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
 
         receiveChannelEndpoint.openDatagramChannel();
-        receiveChannelEndpoint.registerForRead(transportPoller);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
         sendChannelEndpoint.openDatagramChannel();
-        sendChannelEndpoint.registerForRead(transportPoller);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
 
-        processLoop(transportPoller, 5);
+        processLoop(dataTransportPoller, 5);
     }
 
     @Test(timeout = 1000)
@@ -140,15 +141,14 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
 
         receiveChannelEndpoint.openDatagramChannel();
-        receiveChannelEndpoint.registerForRead(transportPoller);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
         sendChannelEndpoint.openDatagramChannel();
-        sendChannelEndpoint.registerForRead(transportPoller);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         encodeDataHeader.wrap(buffer, 0);
         encodeDataHeader
@@ -162,11 +162,11 @@ public class SelectorAndTransportTest
             .termId(TERM_ID);
         byteBuffer.position(0).limit(FRAME_LENGTH);
 
-        processLoop(transportPoller, 5);
+        processLoop(dataTransportPoller, 5);
         sendChannelEndpoint.sendTo(byteBuffer, srcRemoteAddress);
         while (dataHeadersReceived.get() < 1)
         {
-            processLoop(transportPoller, 1);
+            processLoop(dataTransportPoller, 1);
         }
 
         assertThat(dataHeadersReceived.get(), is(1));
@@ -190,15 +190,14 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
 
         receiveChannelEndpoint.openDatagramChannel();
-        receiveChannelEndpoint.registerForRead(transportPoller);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
         sendChannelEndpoint.openDatagramChannel();
-        sendChannelEndpoint.registerForRead(transportPoller);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         encodeDataHeader.wrap(buffer, 0);
         encodeDataHeader
@@ -224,11 +223,11 @@ public class SelectorAndTransportTest
 
         byteBuffer.position(0).limit(2 * BitUtil.align(FRAME_LENGTH, FrameDescriptor.FRAME_ALIGNMENT));
 
-        processLoop(transportPoller, 5);
+        processLoop(dataTransportPoller, 5);
         sendChannelEndpoint.sendTo(byteBuffer, srcRemoteAddress);
         while (dataHeadersReceived.get() < 1)
         {
-            processLoop(transportPoller, 1);
+            processLoop(dataTransportPoller, 1);
         }
 
         assertThat(dataHeadersReceived.get(), is(1));
@@ -247,16 +246,15 @@ public class SelectorAndTransportTest
             })
             .when(mockPublication).onStatusMessage(anyInt(), anyInt(), anyInt(), any(InetSocketAddress.class));
 
-        transportPoller = new UdpTransportPoller();
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
         sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
         sendChannelEndpoint.registerForSend(mockPublication);
 
         receiveChannelEndpoint.openDatagramChannel();
-        receiveChannelEndpoint.registerForRead(transportPoller);
+        receiveChannelEndpoint.registerForRead(dataTransportPoller);
         sendChannelEndpoint.openDatagramChannel();
-        sendChannelEndpoint.registerForRead(transportPoller);
+        sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         statusMessage.wrap(buffer, 0);
         statusMessage
@@ -271,12 +269,12 @@ public class SelectorAndTransportTest
             .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
         byteBuffer.position(0).limit(statusMessage.frameLength());
 
-        processLoop(transportPoller, 5);
+        processLoop(dataTransportPoller, 5);
         receiveChannelEndpoint.sendTo(byteBuffer, rcvRemoteAddress);
 
         while (controlMessagesReceived.get() < 1)
         {
-            processLoop(transportPoller, 1);
+            processLoop(controlTransportPoller, 1);
         }
 
         verify(mockStatusMessagesReceivedCounter, times(1)).orderedIncrement();

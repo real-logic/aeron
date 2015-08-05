@@ -16,8 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
-import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.UdpTransportPoller;
+import uk.co.real_logic.aeron.driver.media.*;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -33,7 +32,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 {
     private static final NetworkPublication[] EMPTY_PUBLICATIONS = new NetworkPublication[0];
 
-    private final UdpTransportPoller transportPoller;
+    private final ControlTransportPoller transportPoller;
     private final OneToOneConcurrentArrayQueue<SenderCmd> commandQueue;
     private final DriverConductorProxy conductorProxy;
     private final AtomicCounter totalBytesSent;

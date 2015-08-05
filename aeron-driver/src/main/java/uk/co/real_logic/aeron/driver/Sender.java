@@ -103,26 +103,20 @@ public class Sender implements Agent, Consumer<SenderCmd>
         final NetworkPublication[] publications = this.publications;
         final int length = publications.length;
 
-        if (length > 0)
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            int startingIndex = roundRobinIndex++;
-            if (startingIndex >= length)
-            {
-                roundRobinIndex = startingIndex = 0;
-            }
+            roundRobinIndex = startingIndex = 0;
+        }
 
-            int i = startingIndex;
+        for (int i = startingIndex; i < length; i++)
+        {
+            bytesSent += publications[i].send(now);
+        }
 
-            do
-            {
-                bytesSent += publications[i].send(now);
-
-                if (++i == length)
-                {
-                    i = 0;
-                }
-            }
-            while (i != startingIndex);
+        for (int i = 0; i < startingIndex; i++)
+        {
+            bytesSent += publications[i].send(now);
         }
 
         totalBytesSent.addOrdered(bytesSent);

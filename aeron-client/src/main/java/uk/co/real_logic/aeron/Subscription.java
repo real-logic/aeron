@@ -99,26 +99,20 @@ public class Subscription implements AutoCloseable
         final int length = images.length;
         int fragmentsRead = 0;
 
-        if (length > 0)
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
         {
-            int startingIndex = roundRobinIndex++;
-            if (startingIndex >= length)
-            {
-                roundRobinIndex = startingIndex = 0;
-            }
+            roundRobinIndex = startingIndex = 0;
+        }
 
-            int i = startingIndex;
+        for (int i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
+        }
 
-            do
-            {
-                fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
-
-                if (++i == length)
-                {
-                    i = 0;
-                }
-            }
-            while (fragmentsRead < fragmentLimit && i != startingIndex);
+        for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
         }
 
         return fragmentsRead;

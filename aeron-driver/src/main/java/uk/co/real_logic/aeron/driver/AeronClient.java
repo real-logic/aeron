@@ -20,15 +20,17 @@ import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOU
 /**
  * Aeron client library tracker.
  */
-public class AeronClient
+public class AeronClient implements DriverManagedResourceProvider
 {
     private final long clientId;
     private long timeOfLastKeepalive;
+    private DriverManagedResource driverManagedResource;
 
     public AeronClient(final long clientId, final long now)
     {
         this.clientId = clientId;
         this.timeOfLastKeepalive = now;
+        this.driverManagedResource = new AeronClientManagedResource();
     }
 
     public long clientId()
@@ -49,5 +51,43 @@ public class AeronClient
     public boolean hasTimedOut(final long now)
     {
         return now > (timeOfLastKeepalive + CLIENT_LIVENESS_TIMEOUT_NS);
+    }
+
+    public DriverManagedResource managedResource()
+    {
+        return driverManagedResource;
+    }
+
+    private class AeronClientManagedResource implements DriverManagedResource
+    {
+        private boolean reachedEndOfLife = false;
+
+        public void onTimeEvent(long time, DriverConductor conductor)
+        {
+            if (time > (timeOfLastKeepalive + CLIENT_LIVENESS_TIMEOUT_NS))
+            {
+                reachedEndOfLife = true;
+            }
+        }
+
+        public boolean hasReachedEndOfLife()
+        {
+            return reachedEndOfLife;
+        }
+
+        public void timeOfLastStateChange(long time)
+        {
+            timeOfLastKeepalive = time;
+        }
+
+        public long timeOfLastStateChange()
+        {
+            return timeOfLastKeepalive;
+        }
+
+        public void delete()
+        {
+            // nothing to do
+        }
     }
 }

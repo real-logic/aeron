@@ -270,6 +270,64 @@ public class DriverConductor implements Agent
         }
     }
 
+    public void cleanupPublication(final NetworkPublication publication)
+    {
+        final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
+
+        logger.logPublicationRemoval(
+            channelEndpoint.originalUriString(), publication.sessionId(), publication.streamId());
+
+        senderProxy.removePublication(publication);
+
+        if (channelEndpoint.sessionCount() == 0)
+        {
+            sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+            senderProxy.closeSendChannelEndpoint(channelEndpoint);
+        }
+    }
+
+    public void cleanupSubscriptionLink(final SubscriptionLink link)
+    {
+        final ReceiveChannelEndpoint channelEndpoint = link.channelEndpoint();
+        final int streamId = link.streamId();
+
+        logger.logSubscriptionRemoval(
+            channelEndpoint.originalUriString(), link.streamId(), link.registrationId());
+
+        if (0 == channelEndpoint.decRefToStream(link.streamId()))
+        {
+            receiverProxy.removeSubscription(channelEndpoint, streamId);
+        }
+
+        if (channelEndpoint.streamCount() == 0)
+        {
+            receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
+            receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
+        }
+    }
+
+    public void imageTransitionToLinger(final NetworkedImage image)
+    {
+        clientProxy.onInactiveImage(
+            image.correlationId(),
+            image.sessionId(),
+            image.streamId(),
+            image.rebuildPosition(),
+            image.channelUriString());
+
+        receiverProxy.removeCooldown(image.channelEndpoint(), image.sessionId(), image.streamId());
+    }
+
+    public void cleanupImage(final NetworkedImage image)
+    {
+        logger.logImageRemoval(
+            image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
+
+        subscriptionLinks.stream()
+            .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))
+            .forEach((subscriptionLink) -> subscriptionLink.removeImage(image));
+    }
+
     private List<SubscriberPosition> listSubscriberPositions(
         final int sessionId,
         final int streamId,
@@ -293,15 +351,33 @@ public class DriverConductor implements Agent
             .collect(toList());
     }
 
+    private <T extends DriverManagedResourceProvider> void onCheckManagedResources(
+        final ArrayList<T> list,
+        final long time)
+    {
+        for (int i = list.size() - 1; i >= 0; i--)
+        {
+            final DriverManagedResource resource = list.get(i).managedResource();
+
+            resource.onTimeEvent(time, this);
+
+            if (resource.hasReachedEndOfLife())
+            {
+                list.remove(i);
+                resource.delete();
+            }
+        }
+    }
+
     private void onHeartbeatCheckTimeouts(final long nanoTimeNow)
     {
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
-        onCheckClients(nanoTimeNow);
-        onCheckPublications(nanoTimeNow);
-        onCheckPublicationLinks(nanoTimeNow);
-        onCheckNetworkedImages(nanoTimeNow);
-        onCheckSubscriptionLinks(nanoTimeNow);
+        onCheckManagedResources(clients, nanoTimeNow);
+        onCheckManagedResources(publications, nanoTimeNow);
+        onCheckManagedResources(publicationLinks, nanoTimeNow);
+        onCheckManagedResources(images, nanoTimeNow);
+        onCheckManagedResources(subscriptionLinks, nanoTimeNow);
     }
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
@@ -649,134 +725,6 @@ public class DriverConductor implements Agent
         if (null != client)
         {
             client.timeOfLastKeepalive(nanoClock.nanoTime());
-        }
-    }
-
-    private void onCheckPublicationLinks(final long now)
-    {
-        final ArrayList<PublicationLink> publicationLinks = this.publicationLinks;
-        for (int i = publicationLinks.size() - 1; i >= 0; i--)
-        {
-            final PublicationLink link = publicationLinks.get(i);
-            if (link.hasClientTimedOut(now))
-            {
-                publicationLinks.remove(i);
-            }
-        }
-    }
-
-    private void onCheckPublications(final long now)
-    {
-        final ArrayList<NetworkPublication> publications = this.publications;
-        for (int i = publications.size() - 1; i >= 0; i--)
-        {
-            final NetworkPublication publication = publications.get(i);
-
-            if (publication.isUnreferencedAndFlushed(now) && now > (publication.timeOfFlush() + PUBLICATION_LINGER_NS))
-            {
-                final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
-
-                logger.logPublicationRemoval(
-                    channelEndpoint.originalUriString(), publication.sessionId(), publication.streamId());
-
-                publications.remove(i);
-                senderProxy.removePublication(publication);
-
-                if (channelEndpoint.sessionCount() == 0)
-                {
-                    sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                    senderProxy.closeSendChannelEndpoint(channelEndpoint);
-                }
-            }
-        }
-    }
-
-    private void onCheckSubscriptionLinks(final long now)
-    {
-        final ArrayList<SubscriptionLink> subscriptionLinks = this.subscriptionLinks;
-        for (int i = subscriptionLinks.size() - 1; i >= 0; i--)
-        {
-            final SubscriptionLink link = subscriptionLinks.get(i);
-
-            if (now > (link.timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
-            {
-                final ReceiveChannelEndpoint channelEndpoint = link.channelEndpoint();
-                final int streamId = link.streamId();
-
-                logger.logSubscriptionRemoval(
-                    channelEndpoint.originalUriString(), link.streamId(), link.registrationId());
-
-                subscriptionLinks.remove(i);
-                link.close();
-
-                if (0 == channelEndpoint.decRefToStream(link.streamId()))
-                {
-                    receiverProxy.removeSubscription(channelEndpoint, streamId);
-                }
-
-                if (channelEndpoint.streamCount() == 0)
-                {
-                    receiveChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
-                    receiverProxy.closeReceiveChannelEndpoint(channelEndpoint);
-                }
-            }
-        }
-    }
-
-    private void onCheckNetworkedImages(final long now)
-    {
-        final ArrayList<NetworkedImage> images = this.images;
-        for (int i = images.size() - 1; i >= 0; i--)
-        {
-            final NetworkedImage image = images.get(i);
-
-            switch (image.status())
-            {
-                case INACTIVE:
-                    if (image.isDrained() || now > (image.timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
-                    {
-                        image.status(NetworkedImage.Status.LINGER);
-
-                        clientProxy.onInactiveImage(
-                            image.correlationId(),
-                            image.sessionId(),
-                            image.streamId(),
-                            image.rebuildPosition(),
-                            image.channelUriString());
-
-                        receiverProxy.removeCooldown(image.channelEndpoint(), image.sessionId(), image.streamId());
-                    }
-                    break;
-
-                case LINGER:
-                    if (now > (image.timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
-                    {
-                        logger.logImageRemoval(
-                            image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
-
-                        images.remove(i);
-
-                        subscriptionLinks.stream()
-                            .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))
-                            .forEach((subscriptionLink) -> subscriptionLink.removeImage(image));
-
-                        image.close();
-                    }
-                    break;
-            }
-        }
-    }
-
-    private void onCheckClients(final long now)
-    {
-        for (int i = clients.size() - 1; i >= 0; i--)
-        {
-            final AeronClient client = clients.get(i);
-
-            if (now > (client.timeOfLastKeepalive() + IMAGE_LIVENESS_TIMEOUT_NS))
-            {
-                clients.remove(i);
-            }
         }
     }
 

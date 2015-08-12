@@ -29,6 +29,7 @@ import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
+import static uk.co.real_logic.aeron.driver.Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.NetworkedImage.Status.ACTIVE;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
@@ -85,7 +86,8 @@ class NetworkedImagePadding4 extends NetworkedImageStatusFields
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class NetworkedImage extends NetworkedImagePadding4 implements AutoCloseable, NakMessageSender
+public class NetworkedImage extends NetworkedImagePadding4 implements
+    AutoCloseable, NakMessageSender, DriverManagedResourceProvider
 {
     public enum Status
     {
@@ -111,6 +113,7 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
     private final Position hwmPosition;
     private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
+    private final DriverManagedResource driverManagedResource;
 
     public NetworkedImage(
         final long correlationId,
@@ -163,6 +166,8 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
         this.newStatusMessagePosition = this.lastStatusMessagePosition;
         this.rebuildPosition = initialPosition;
         this.hwmPosition.setOrdered(initialPosition);
+
+        this.driverManagedResource = new NetworkedImageDriverManagedResource();
     }
 
     /**
@@ -556,6 +561,11 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
         return rebuildPosition;
     }
 
+    public DriverManagedResource managedResource()
+    {
+        return driverManagedResource;
+    }
+
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
     {
         return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(0) == 0;
@@ -589,5 +599,52 @@ public class NetworkedImage extends NetworkedImagePadding4 implements AutoClosea
         }
 
         return isFlowControlOverRun;
+    }
+
+    private class NetworkedImageDriverManagedResource implements DriverManagedResource
+    {
+        private boolean reachedEndOfLife = false;
+
+        public void onTimeEvent(long time, DriverConductor conductor)
+        {
+            switch (status())
+            {
+                case INACTIVE:
+                    if (isDrained() || time > (timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
+                    {
+                        status(NetworkedImage.Status.LINGER);
+                        conductor.imageTransitionToLinger(NetworkedImage.this);
+                    }
+                    break;
+
+                case LINGER:
+                    if (time > (timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
+                    {
+                        reachedEndOfLife = true;
+                        conductor.cleanupImage(NetworkedImage.this);
+                    }
+                    break;
+            }
+        }
+
+        public boolean hasReachedEndOfLife()
+        {
+            return reachedEndOfLife;
+        }
+
+        public void timeOfLastStateChange(long time)
+        {
+
+        }
+
+        public long timeOfLastStateChange()
+        {
+            return NetworkedImage.this.timeOfLastStatusChange();
+        }
+
+        public void delete()
+        {
+            close();
+        }
     }
 }

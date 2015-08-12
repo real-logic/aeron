@@ -21,16 +21,19 @@ import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
+
 /**
  * Subscription registration from a client used for liveness tracking
  */
-public class SubscriptionLink
+public class SubscriptionLink implements DriverManagedResourceProvider
 {
     private final long registrationId;
     private final int streamId;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
     private final Map<NetworkedImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
+    private final DriverManagedResource driverManagedResource;
 
     public SubscriptionLink(
         final long registrationId,
@@ -42,6 +45,7 @@ public class SubscriptionLink
         this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
         this.aeronClient = aeronClient;
+        this.driverManagedResource = new SubscriptionLinkDriverManagedResource();
     }
 
     public long registrationId()
@@ -82,5 +86,44 @@ public class SubscriptionLink
     public void close()
     {
         positionByImageMap.forEach(NetworkedImage::removeSubscriber);
+    }
+
+    public DriverManagedResource managedResource()
+    {
+        return driverManagedResource;
+    }
+
+    private class SubscriptionLinkDriverManagedResource implements DriverManagedResource
+    {
+        private boolean reachedEndOfLife = false;
+
+        public void onTimeEvent(long time, DriverConductor conductor)
+        {
+            if (time > (timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
+            {
+                reachedEndOfLife = true;
+                conductor.cleanupSubscriptionLink(SubscriptionLink.this);
+            }
+        }
+
+        public boolean hasReachedEndOfLife()
+        {
+            return reachedEndOfLife;
+        }
+
+        public void timeOfLastStateChange(long time)
+        {
+            // not set this way
+        }
+
+        public long timeOfLastStateChange()
+        {
+            return timeOfLastKeepaliveFromClient();
+        }
+
+        public void delete()
+        {
+            close();
+        }
     }
 }

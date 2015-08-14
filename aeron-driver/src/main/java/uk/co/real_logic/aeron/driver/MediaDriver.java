@@ -400,8 +400,8 @@ public final class MediaDriver implements AutoCloseable
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
-        private long imageLivenessTimeoutNs = -1;
-        private long clientLivenessTimeoutNs = -1;
+        private long imageLivenessTimeoutNs = IMAGE_LIVENESS_TIMEOUT_NS;
+        private long clientLivenessTimeoutNs = CLIENT_LIVENESS_TIMEOUT_NS;
 
         private int publicationTermBufferLength;
         private int maxImageTermBufferLength;
@@ -469,16 +469,6 @@ public final class MediaDriver implements AutoCloseable
                 if (null == eventLogger)
                 {
                     eventLogger = new EventLogger(eventByteBuffer);
-                }
-
-                if (-1 == imageLivenessTimeoutNs)
-                {
-                    imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
-                }
-
-                if (-1 == clientLivenessTimeoutNs)
-                {
-                    clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
                 }
 
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));

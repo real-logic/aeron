@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermScanner.*;
@@ -69,7 +70,8 @@ class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
 /**
  * Publication to be sent to registered subscribers.
  */
-public class NetworkPublication extends NetworkPublicationPadding3 implements RetransmitSender, AutoCloseable
+public class NetworkPublication extends NetworkPublicationPadding3 implements
+    RetransmitSender, AutoCloseable, DriverManagedResourceProvider
 {
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -92,6 +94,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements Re
     private final FlowControl flowControl;
     private final RetransmitHandler retransmitHandler;
     private final RawLog rawLog;
+    private final DriverManagedResource driverManagedResource;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -139,6 +142,8 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements Re
 
         dataHeader.wrap(new UnsafeBuffer(heartbeatFrameBuffer), 0);
         initHeartBeatFrame(sessionId, streamId);
+
+        driverManagedResource = new NetworkPublicationDriverManagedResource();
     }
 
     public void close()
@@ -347,6 +352,11 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements Re
         senderPositionLimit(position);
     }
 
+    public DriverManagedResource managedResource()
+    {
+        return driverManagedResource;
+    }
+
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
@@ -453,5 +463,39 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements Re
             .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
             .headerType(HeaderFlyweight.HDR_TYPE_DATA)
             .frameLength(0);
+    }
+
+    private class NetworkPublicationDriverManagedResource implements DriverManagedResource
+    {
+        private boolean reachedEndOfLife = false;
+
+        public void onTimeEvent(long time, DriverConductor conductor)
+        {
+            if (isUnreferencedAndFlushed(time) && time > (timeOfFlush() + PUBLICATION_LINGER_NS))
+            {
+                reachedEndOfLife = true;
+                conductor.cleanupPublication(NetworkPublication.this);
+            }
+        }
+
+        public boolean hasReachedEndOfLife()
+        {
+            return reachedEndOfLife;
+        }
+
+        public void timeOfLastStateChange(long time)
+        {
+
+        }
+
+        public long timeOfLastStateChange()
+        {
+            return timeOfFlush();
+        }
+
+        public void delete()
+        {
+            // close is done once sender thread has removed
+        }
     }
 }

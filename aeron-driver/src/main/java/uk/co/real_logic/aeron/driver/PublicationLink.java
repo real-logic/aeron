@@ -18,17 +18,19 @@ package uk.co.real_logic.aeron.driver;
 /**
  * Tracks a aeron client interest registration in a {@link NetworkPublication}.
  */
-public class PublicationLink
+public class PublicationLink implements DriverManagedResourceProvider
 {
     private final long registrationId;
     private final NetworkPublication publication;
     private final AeronClient client;
+    private final DriverManagedResource driverManagedResource;
 
     public PublicationLink(final long registrationId, final NetworkPublication publication, final AeronClient client)
     {
         this.registrationId = registrationId;
         this.publication = publication;
         this.client = client;
+        this.driverManagedResource = new PublicationLinkManagedResource();
     }
 
     public void remove()
@@ -41,15 +43,41 @@ public class PublicationLink
         return registrationId;
     }
 
-    public boolean hasClientTimedOut(final long now)
+    public DriverManagedResource managedResource()
     {
-        final boolean hasClientTimedOut = client.hasTimedOut(now);
+        return driverManagedResource;
+    }
 
-        if (hasClientTimedOut)
+    private class PublicationLinkManagedResource implements DriverManagedResource
+    {
+        private boolean reachedEndOfLife = false;
+
+        public void onTimeEvent(long time, DriverConductor conductor)
+        {
+            if (client.hasTimedOut(time))
+            {
+                reachedEndOfLife = true;
+            }
+        }
+
+        public boolean hasReachedEndOfLife()
+        {
+            return reachedEndOfLife;
+        }
+
+        public void timeOfLastStateChange(long time)
+        {
+            // not set this way
+        }
+
+        public long timeOfLastStateChange()
+        {
+            return client.timeOfLastKeepalive();
+        }
+
+        public void delete()
         {
             publication.decRef();
         }
-
-        return hasClientTimedOut;
     }
 }

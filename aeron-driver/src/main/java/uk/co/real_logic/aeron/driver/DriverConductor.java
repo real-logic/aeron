@@ -58,6 +58,7 @@ import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READE
 public class DriverConductor implements Agent
 {
     private final long imageLivenessTimeoutNs;
+    private final long clientLivenessTimeoutNs;
     private final int mtuLength;
     private final int termBufferLength;
     private final int initialWindowLength;
@@ -104,6 +105,7 @@ public class DriverConductor implements Agent
     public DriverConductor(final Context ctx)
     {
         imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
+        clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
         fromReceiverDriverConductorCmdQueue = ctx.toConductorFromReceiverCommandQueue();
         fromSenderDriverConductorCmdQueue = ctx.toConductorFromSenderCommandQueue();
         receiverProxy = ctx.receiverProxy();
@@ -739,7 +741,7 @@ public class DriverConductor implements Agent
         AeronClient client = findClient(clients, clientId);
         if (null == client)
         {
-            client = new AeronClient(clientId, nanoClock.nanoTime());
+            client = new AeronClient(clientId, clientLivenessTimeoutNs, nanoClock.nanoTime());
             clients.add(client);
         }
 

@@ -23,12 +23,17 @@ import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOU
 public class AeronClient implements DriverManagedResourceProvider
 {
     private final long clientId;
+    private final long clientLivenessTimeoutNs;
     private long timeOfLastKeepalive;
     private DriverManagedResource driverManagedResource;
 
-    public AeronClient(final long clientId, final long now)
+    public AeronClient(
+        final long clientId,
+        final long clientLivenessTimeoutNs,
+        final long now)
     {
         this.clientId = clientId;
+        this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
         this.timeOfLastKeepalive = now;
         this.driverManagedResource = new AeronClientManagedResource();
     }
@@ -50,7 +55,7 @@ public class AeronClient implements DriverManagedResourceProvider
 
     public boolean hasTimedOut(final long now)
     {
-        return now > (timeOfLastKeepalive + CLIENT_LIVENESS_TIMEOUT_NS);
+        return now > (timeOfLastKeepalive + clientLivenessTimeoutNs);
     }
 
     public DriverManagedResource managedResource()
@@ -64,7 +69,7 @@ public class AeronClient implements DriverManagedResourceProvider
 
         public void onTimeEvent(long time, DriverConductor conductor)
         {
-            if (time > (timeOfLastKeepalive + CLIENT_LIVENESS_TIMEOUT_NS))
+            if (time > (timeOfLastKeepalive + clientLivenessTimeoutNs))
             {
                 reachedEndOfLife = true;
             }

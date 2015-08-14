@@ -142,6 +142,7 @@ public class DriverConductorTest
         ctx.senderProxy(senderProxy);
         ctx.fromReceiverDriverConductorProxy(fromReceiverConductorProxy);
         ctx.fromSenderDriverConductorProxy(fromSenderConductorProxy);
+        ctx.clientLivenessTimeoutNs(CLIENT_LIVENESS_TIMEOUT_NS);
 
         driverConductor = new DriverConductor(ctx);
 

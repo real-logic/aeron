@@ -401,6 +401,7 @@ public final class MediaDriver implements AutoCloseable
         private SystemCounters systemCounters;
 
         private long imageLivenessTimeoutNs = -1;
+        private long clientLivenessTimeoutNs = -1;
 
         private int publicationTermBufferLength;
         private int maxImageTermBufferLength;
@@ -473,6 +474,11 @@ public final class MediaDriver implements AutoCloseable
                 if (-1 == imageLivenessTimeoutNs)
                 {
                     imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
+                }
+
+                if (-1 == clientLivenessTimeoutNs)
+                {
+                    clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
                 }
 
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
@@ -723,6 +729,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context clientLivenessTimeoutNs(final long timeout)
+        {
+            this.clientLivenessTimeoutNs = timeout;
+            return this;
+        }
+
         public Context eventBufferLength(final int length)
         {
             this.eventBufferLength = length;
@@ -907,6 +919,11 @@ public final class MediaDriver implements AutoCloseable
         public long imageLivenessTimeoutNs()
         {
             return imageLivenessTimeoutNs;
+        }
+
+        public long clientLivenessTimeoutNs()
+        {
+            return clientLivenessTimeoutNs;
         }
 
         public int termBufferLength()

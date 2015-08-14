@@ -394,6 +394,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
         final Random rand = SeedableThreadLocalRandom.current();
         int i;
         ThwackingElement pub;
+
         while (running)
         {
             if (active)
@@ -405,6 +406,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
             }
             Thread.yield();
         }
+
         allDone.countDown();
         LOG.fine("DeletePubs all done!");
     }
@@ -433,6 +435,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
 
             Thread.yield();
         }
+
         allDone.countDown();
         LOG.fine("Sending thread " + threadId + " all done!");
     }
@@ -457,6 +460,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
             }
             Thread.yield();
         }
+
         allDone.countDown();
         LOG.fine("CreateSubs all done!");
     }
@@ -489,6 +493,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
             }
             Thread.yield();
         }
+
         allDone.countDown();
         LOG.fine("DeleteSubs all done!");
     }
@@ -501,7 +506,6 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
     {
         while (running)
         {
-            /* Run through each sub slot sequentially */
             for (final ThwackingElement s : subs)
             {
                 s.tryGetMessages();
@@ -510,29 +514,26 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
             /* Every iteration calls poll() on the control subscription */
             ctrlSub.tryGetMessages();
         }
+
         allDone.countDown();
         LOG.fine("RecSubs all done!");
     }
 
     public void onInactiveImage(
         final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
+        final Subscription subscription,
         final long position)
     {
-        LOG.fine("ON INACTIVE ::: " + channel + streamId + sessionId + position);
+        LOG.fine("ON INACTIVE ::: " + channel + subscription.streamId() + image.sessionId() + position);
     }
 
     public void onNewImage(
         final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
+        final Subscription subscription,
         final long position,
         final String sourceIdentity)
     {
-        LOG.fine("ON NEW IMAGE ::: " + channel + streamId + sessionId + position + sourceIdentity);
+        LOG.fine("ON NEW IMAGE ::: " + channel + subscription.streamId() + image.sessionId() + position + sourceIdentity);
     }
 
     /**
@@ -607,8 +608,8 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
                          */
                         if (!e.getMessage().contains("but was expecting 0"))
                         {
-                            LOG.warning(e.getMessage() + " StreamID" + header.streamId() + ":" + header.sessionId() + ":" +
-                                threadId);
+                            LOG.warning(
+                                e.getMessage() + " StreamID" + header.streamId() + ":" + header.sessionId() + ":" + threadId);
                         }
                     }
                 }
@@ -628,7 +629,6 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
         private ThreadLocal<UnsafeBuffer> buffer = null;
         private Publication pub;
         private Subscription sub;
-        private MessageStream ms;
         private final String channel;
         private final int streamId;
         private final AtomicInteger msgCount;
@@ -651,7 +651,6 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
         private ThreadLocal<MessageStream> senderStream = null;
         private int lastSessionId;
         private long lastThreadId;
-
 
         ThwackingElement(final String chan, final int stId, final boolean verifiable, final boolean createSubscriber)
         {
@@ -845,10 +844,6 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
                     /* Check if send was successful or we hit the RETRY_LIMIT */
                     if (rc >= 0)
                     {
-                        if (previousSendFailed.get())
-                        {
-                            /* A failed offer() of a message has finally completed */
-                        }
                         previousSendFailed.set(false);
                         /* Send success! Increment sent messages counter */
                         msgCount.incrementAndGet();
@@ -878,7 +873,6 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
                 sub.close();
             }
             isActive = null;
-            ms = null;
         }
     }
 }

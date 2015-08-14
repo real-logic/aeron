@@ -183,13 +183,11 @@ public class EmbeddedPingPong
 
     private static void newPongImageHandler(
         final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
+        final Subscription subscription,
         final long joiningPosition,
         final String sourceIdentity)
     {
-        if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
+        if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel()))
         {
             PONG_IMAGE_LATCH.countDown();
         }

@@ -128,7 +128,7 @@ public class MultiDriverTest
         final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
         final CountDownLatch newImageLatch = new CountDownLatch(1);
 
-        aeronBContext.newImageHandler((image, channel, streamId, sessionId, position, info) -> newImageLatch.countDown());
+        aeronBContext.newImageHandler((image, subscription, position, info) -> newImageLatch.countDown());
 
         launch();
 

@@ -236,12 +236,12 @@ public final class Aeron implements AutoCloseable
 
                 if (null == newImageHandler)
                 {
-                    newImageHandler = (image, channel, streamId, sessionId, joiningPosition, sourceIdentity) -> { };
+                    newImageHandler = (image, subscription, joiningPosition, sourceIdentity) -> { };
                 }
 
                 if (null == inactiveImageHandler)
                 {
-                    inactiveImageHandler = (image, channel, streamId, sessionId, position) -> { };
+                    inactiveImageHandler = (image, subscription, position) -> { };
                 }
             }
             catch (final Exception ex)

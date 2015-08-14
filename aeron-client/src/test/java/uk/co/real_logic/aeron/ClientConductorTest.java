@@ -478,13 +478,13 @@ public class ClientConductorTest
 
         assertFalse(subscription.hasNoImages());
         verify(mockNewImageHandler)
-            .onNewImage(any(Image.class), eq(CHANNEL), eq(STREAM_ID_1), eq(SESSION_ID_1), eq(0L), eq(SOURCE_INFO));
+            .onNewImage(any(Image.class), eq(subscription), eq(0L), eq(SOURCE_INFO));
 
         final long position = 0L;
         conductor.onInactiveImage(STREAM_ID_1, SESSION_ID_1, position, CORRELATION_ID);
 
         verify(mockInactiveImageHandler)
-            .onInactiveImage(any(Image.class), eq(CHANNEL), eq(STREAM_ID_1), eq(SESSION_ID_1), eq(position));
+            .onInactiveImage(any(Image.class), eq(subscription), eq(position));
         assertTrue(subscription.hasNoImages());
         assertFalse(subscription.hasImage(SESSION_ID_1));
     }
@@ -497,7 +497,7 @@ public class ClientConductorTest
 
         verify(logBuffersFactory, never()).map(anyString());
         verify(mockNewImageHandler, never())
-            .onNewImage(any(Image.class), anyString(), anyInt(), anyInt(), anyLong(), anyString());
+            .onNewImage(any(Image.class), any(Subscription.class), anyLong(), anyString());
     }
 
     @Test
@@ -506,7 +506,7 @@ public class ClientConductorTest
         conductor.onInactiveImage(STREAM_ID_2, SESSION_ID_2, 0L, CORRELATION_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
-        verify(mockInactiveImageHandler, never()).onInactiveImage(any(Image.class), anyString(), anyInt(), anyInt(), anyLong());
+        verify(mockInactiveImageHandler, never()).onInactiveImage(any(Image.class), any(Subscription.class), anyLong());
     }
 
     private void whenReceiveBroadcastOnMessage(

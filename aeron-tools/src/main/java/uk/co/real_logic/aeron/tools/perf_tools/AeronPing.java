@@ -31,6 +31,7 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
+@SuppressWarnings("StatementWithEmptyBody")
 public class AeronPing implements NewImageHandler
 {
     private final int numMsgs = 1000000;
@@ -115,7 +116,8 @@ public class AeronPing implements NewImageHandler
             }
         }
 
-        buffer.putByte(0, (byte) 'q');
+        buffer.putByte(0, (byte)'q');
+
         while (pub.offer(buffer, 0, msgLen) <= 0)
         {
         }
@@ -133,8 +135,8 @@ public class AeronPing implements NewImageHandler
         double min = Double.MAX_VALUE;
         int maxIdx = 0;
         int minIdx = 0;
-        double mean = 0.0;
-        double stdDev = 0.0;
+        double mean;
+        double stdDev;
 
         tmp = new double[timestamps[0].length];
         sorted = new double[tmp.length];
@@ -248,27 +250,17 @@ public class AeronPing implements NewImageHandler
         }
     }
 
-    public void onNewImage(
-        final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final long position,
-        final String sourceIdentity)
+    public void onNewImage(final Image image, final Subscription subscription, final long position, final String sourceIdentity)
     {
-        if (channel.equals(pongChannel) && pongStreamId == streamId)
+        if (subscription.channel().equals(pongChannel) && pongStreamId == subscription.streamId())
         {
             imageLatch.countDown();
         }
     }
 
-    private void pongHandler(
-        final DirectBuffer buffer,
-        final int offset,
-        final int length,
-        final Header header)
+    private void pongHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
-        if (buffer.getByte(offset + 0) == (byte)'p')
+        if (buffer.getByte(offset) == (byte)'p')
         {
             timestamps[1][buffer.getInt(offset + 1)] = System.nanoTime();
         }
@@ -278,7 +270,7 @@ public class AeronPing implements NewImageHandler
     {
         if (!warmedUp)
         {
-            buffer.putByte(0, (byte) 'w');
+            buffer.putByte(0, (byte)'w');
         }
         else
         {
@@ -286,6 +278,7 @@ public class AeronPing implements NewImageHandler
             buffer.putInt(1, msgCount);
             timestamps[0][msgCount++] = System.nanoTime();
         }
+
         while (pub.offer(buffer, 0, msgLen) <= 0)
         {
         }
@@ -303,11 +296,11 @@ public class AeronPing implements NewImageHandler
             final int offset = bufferClaim.offset();
             if (!warmedUp)
             {
-                buffer.putByte(offset + 0, (byte) 'w');
+                buffer.putByte(offset, (byte)'w');
             }
             else
             {
-                buffer.putByte(offset + 0, (byte) 'p');
+                buffer.putByte(offset, (byte)'p');
                 buffer.putInt(offset + 1, msgCount);
                 timestamps[0][msgCount++] = System.nanoTime();
             }

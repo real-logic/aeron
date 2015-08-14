@@ -217,8 +217,7 @@ class ClientConductor implements Agent, DriverListener
 
                         subscription.addImage(image);
 
-                        newImageHandler.onNewImage(
-                            image, subscription.channel(), streamId, sessionId, joiningPosition, sourceIdentity);
+                        newImageHandler.onNewImage(image, subscription, joiningPosition, sourceIdentity);
                     }
                 }
             });
@@ -238,7 +237,7 @@ class ClientConductor implements Agent, DriverListener
                 final Image image = subscription.removeImage(correlationId);
                 if (null != image)
                 {
-                    inactiveImageHandler.onInactiveImage(image, subscription.channel(), streamId, sessionId, position);
+                    inactiveImageHandler.onInactiveImage(image, subscription, position);
                 }
             });
     }

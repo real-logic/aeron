@@ -20,6 +20,7 @@ import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.tools.SeedableThreadLocalRandom.SeedCallback;
+import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -42,7 +43,6 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
     private static final Logger LOG = Logger.getLogger(PublisherTool.class.getName());
 
     private final PubSubOptions options;
-    private final Thread[] pubThreads;
     private final PublisherThread[] publishers;
     private final int numThreads;
     private boolean shuttingDown;
@@ -109,7 +109,8 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             LOG.warning(options.threads() + " threads were requested, but only " + options.numberOfStreams() +
                 " channel(s) were specified; using " + numThreads + " thread(s) instead.");
         }
-        pubThreads = new Thread[numThreads];
+
+        final Thread[] pubThreads = new Thread[numThreads];
         publishers = new PublisherThread[numThreads];
         final long messagesPerThread = options.messages() / numThreads;
         long leftoverMessages = options.messages() - (messagesPerThread * numThreads);
@@ -139,7 +140,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         /* Close the driver if we had opened it. */
         if (options.useEmbeddedDriver())
         {
-            driver.close();
+            CloseHelper.quietClose(driver);
         }
 
         try
@@ -302,7 +303,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                 .mediaDriverTimeout(10000); /* ten seconds */
 
             aeron = Aeron.connect(ctx);
-            final ArrayList<Publication> publicationsList = new ArrayList<Publication>();
+            final ArrayList<Publication> publicationsList = new ArrayList<>();
 
             int streamIdx = 0;
             for (int i = 0; i < options.channels().size(); i++)
@@ -400,23 +401,17 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             ctx.close();
         }
 
-        public void onInactiveImage(
-            final Image image, final String channel, final int streamId, final int sessionId, final long position)
+        public void onInactiveImage(final Image image, final Subscription subscription, final long position)
         {
             LOG.info(String.format("INACTIVE IMAGE: channel \"%s\", stream %d, session %d, position 0x%x",
-                channel, streamId, sessionId, position));
+                subscription.channel(), subscription.streamId(), image.sessionId(), position));
         }
 
         public void onNewImage(
-            final Image image,
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final long position,
-            final String sourceIdentity)
+            final Image image, final Subscription subscription, final long position, final String sourceIdentity)
         {
             LOG.info(String.format("NEW IMAGE: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",
-                channel, streamId, sessionId, position, sourceIdentity));
+                subscription.channel(), subscription.streamId(), image.sessionId(), position, sourceIdentity));
         }
 
         /**
@@ -444,9 +439,9 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                 length = ms.getNext(sendBuffer, msp.getNext());
                 if (length >= 0)
                 {
+                    //noinspection StatementWithEmptyBody
                     while (!(sendSucceeded = (pub.offer(sendBuffer, 0, length) >= 0L)) && !shuttingDown)
                     {
-
                     }
                 }
             }

@@ -151,39 +151,29 @@ public class SamplesUtil
      * Print the information for a new image to stdout.
      *
      * @param image           that has been created
-     * @param channel         for the image
-     * @param streamId        for the stream
-     * @param sessionId       for the image publication
+     * @param subscription    that the image is associated with
      * @param joiningPosition for the subscriber in the stream
      * @param sourceIdentity  that is transport specific
      */
     public static void printNewImage(
-        final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final long joiningPosition,
-        final String sourceIdentity)
+        final Image image, final Subscription subscription, final long joiningPosition, final String sourceIdentity)
     {
         System.out.println(String.format(
             "New image on %s streamId=%d sessionId=%d at position=%d from %s",
-            channel, streamId, sessionId, joiningPosition, sourceIdentity));
+            subscription.channel(), subscription.streamId(), image.sessionId(), joiningPosition, sourceIdentity));
     }
 
     /**
      * Print the information for an inactive image to stdout.
      *
-     * @param image     that has gone inactive
-     * @param channel   for the image
-     * @param streamId  for the stream
-     * @param sessionId for the image publication
-     * @param position  at which the image went inactive
+     * @param image        that has gone inactive
+     * @param subscription that the image is associated with
+     * @param position     at which the image went inactive
      */
-    public static void printInactiveImage(
-        final Image image, final String channel, final int streamId, final int sessionId, final long position)
+    public static void printInactiveImage(final Image image, final Subscription subscription, final long position)
     {
         System.out.println(String.format(
             "Inactive image on %s streamId=%d sessionId=%d at position=%d",
-            channel, streamId, sessionId, position));
+            subscription.channel(), subscription.streamId(), image.sessionId(), position));
     }
 }

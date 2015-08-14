@@ -94,41 +94,30 @@ public class MultipleSubscribersWithFragmentAssembly
      * Print the information for a new image to stdout.
      *
      * @param image          that has been created
-     * @param channel        for the image
-     * @param streamId       for the stream
-     * @param sessionId      for the image publication
+     * @param subscription   that the image is associated with
      * @param position       in the stream
      * @param sourceIdentity that is transport specific
      */
     public static void eventNewImage(
-        final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final long position,
-        final String sourceIdentity)
+        final Image image, final Subscription subscription, final long position, final String sourceIdentity)
     {
         System.out.format(
             "new image on %s streamId %x sessionId %x from %s%n",
-            channel, streamId, sessionId, sourceIdentity);
-
+            subscription.channel(), subscription.streamId(), image.sessionId(), sourceIdentity);
     }
 
     /**
      * This handler is called when image goes inactive
      *
      * @param image     that has gone inactive
-     * @param channel   for the image
-     * @param streamId  for the stream
-     * @param sessionId for the publication image
+     * @param subscription   that the image is associated with
      * @param position  within the stream
      */
-    public static void eventInactiveImage(
-        final Image image, final String channel, final int streamId, final int sessionId, final long position)
+    public static void eventInactiveImage(final Image image, final Subscription subscription, final long position)
     {
         System.out.format(
             "inactive image on %s streamId %d sessionId %x%n",
-            channel, streamId, sessionId);
+            subscription.channel(), subscription.streamId(), image.sessionId());
     }
 
     /**

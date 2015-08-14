@@ -615,7 +615,7 @@ public class PubAndSubTest
 
         context.termBufferLength(termBufferLength);
         subscribingAeronContext.newImageHandler(
-            (image, channelStr, streamId, sessionId, position, info) ->
+            (image, subscription, position, info) ->
             {
                 if (2 == stage[0])
                 {

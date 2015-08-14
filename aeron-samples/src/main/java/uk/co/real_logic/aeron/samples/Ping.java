@@ -146,16 +146,13 @@ public class Ping
     }
 
     private static void newPongImageHandler(
-        final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final long joiningPosition,
-        final String sourceIdentity)
+        final Image image, final Subscription subscription, final long joiningPosition, final String sourceIdentity)
     {
-        System.out.format("New image: channel=%s streamId=%d session=%d\n", channel, streamId, sessionId);
+        System.out.format(
+            "New image: channel=%s streamId=%d session=%d\n",
+            subscription.channel(), subscription.streamId(), image.sessionId());
 
-        if (PONG_STREAM_ID == streamId && PONG_CHANNEL.equals(channel))
+        if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel()))
         {
             pongConnectionLatch.countDown();
         }

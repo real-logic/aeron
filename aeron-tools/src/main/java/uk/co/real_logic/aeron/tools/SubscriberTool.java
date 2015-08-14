@@ -299,15 +299,16 @@ public class SubscriberTool
             ctx = new Aeron.Context()
                 .inactiveImageHandler(this)
                 .newImageHandler(this)
-                .errorHandler((throwable) ->
-                {
-                    throwable.printStackTrace();
-                    if (throwable instanceof DriverTimeoutException)
+                .errorHandler(
+                    (throwable) ->
                     {
-                        LOG.severe("Driver does not appear to be running or has been unresponsive for ten seconds.");
-                        System.exit(-1);
-                    }
-                })
+                        throwable.printStackTrace();
+                        if (throwable instanceof DriverTimeoutException)
+                        {
+                            LOG.severe("Driver does not appear to be running or has been unresponsive for ten seconds.");
+                            System.exit(-1);
+                        }
+                    })
                 .mediaDriverTimeout(10000); /* ten seconds */
             aeron = Aeron.connect(ctx);
 
@@ -323,7 +324,7 @@ public class SubscriberTool
                     controlSubscription = aeron.addSubscription(controlChannel, CONTROL_STREAM_ID);
                     break;
                 }
-                catch (RegistrationException ignore)
+                catch (final RegistrationException ignore)
                 {
                 }
             }
@@ -516,8 +517,8 @@ public class SubscriberTool
 
                 if (action == CONTROL_ACTION_NEW_IMAGE)
                 {
-                    LOG.info(String.format("NEW IMAGE: channel \"%s\", stream %d, session %d",
-                        channel, streamId, sessionId));
+                    LOG.info(String.format(
+                        "NEW IMAGE: channel \"%s\", stream %d, session %d", channel, streamId, sessionId));
 
                     /* Create a new MessageStream for this image if it doesn't already exist. */
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap = messageStreams.get(channel);
@@ -548,8 +549,8 @@ public class SubscriberTool
                 }
                 else if (action == CONTROL_ACTION_INACTIVE_IMAGE)
                 {
-                    LOG.info(String.format("INACTIVE IMAGE: channel \"%s\", stream %d, session %d",
-                        channel, streamId, sessionId));
+                    LOG.info(String.format(
+                        "INACTIVE IMAGE: channel \"%s\", stream %d, session %d", channel, streamId, sessionId));
 
                     final Int2ObjectHashMap<Int2ObjectHashMap<MessageStream>> streamIdMap = messageStreams.get(channel);
                     if (streamIdMap == null)
@@ -711,8 +712,7 @@ public class SubscriberTool
         private void enqueueControlMessage(final int type, final String channel, final int streamId, final int sessionId)
         {
             /* Don't deliver events for the control channel itself. */
-            if ((streamId != CONTROL_STREAM_ID)
-                || (!channel.equals(controlChannel)))
+            if ((streamId != CONTROL_STREAM_ID) || (!channel.equals(controlChannel)))
             {
                 /* Enqueue the control message. */
                 final byte[] channelBytes = channel.getBytes();
@@ -728,27 +728,18 @@ public class SubscriberTool
             }
         }
 
-        public void onInactiveImage(
-            final Image image,
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final long position)
+        public void onInactiveImage(final Image image, final Subscription subscription, final long position)
         {
             /* Handle processing the inactive image notice on the subscriber thread. */
-            enqueueControlMessage(CONTROL_ACTION_INACTIVE_IMAGE, channel, streamId, sessionId);
+            enqueueControlMessage(
+                CONTROL_ACTION_INACTIVE_IMAGE, subscription.channel(), subscription.streamId(), image.sessionId());
         }
 
         public void onNewImage(
-            final Image image,
-            final String channel,
-            final int streamId,
-            final int sessionId,
-            final long position,
-            final String sourceIdentity)
+            final Image image, final Subscription subscription, final long position, final String sourceIdentity)
         {
             /* Handle processing the new image notice on the subscriber thread. */
-            enqueueControlMessage(CONTROL_ACTION_NEW_IMAGE, channel, streamId, sessionId);
+            enqueueControlMessage(CONTROL_ACTION_NEW_IMAGE, subscription.channel(), subscription.streamId(), image.sessionId());
         }
 
         public int onNext()

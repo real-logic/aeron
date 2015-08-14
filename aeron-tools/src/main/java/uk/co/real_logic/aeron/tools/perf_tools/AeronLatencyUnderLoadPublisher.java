@@ -134,7 +134,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
             }
             final MutableDirectBuffer buffer = bufferClaim.buffer();
             final int offset = bufferClaim.offset();
-            buffer.putByte(offset, (byte) 'w');
+            buffer.putByte(offset, (byte)'w');
             bufferClaim.commit();
         }
         try
@@ -200,7 +200,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
 
         final MutableDirectBuffer buffer = bufferClaim.buffer();
         final int offset = bufferClaim.offset();
-        buffer.putByte(offset, (byte) 'p');
+        buffer.putByte(offset, (byte)'p');
         buffer.putInt(offset + 1, msgCount++);
         buffer.putLong(offset + 5, System.nanoTime());
         bufferClaim.commit();
@@ -208,13 +208,10 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
     }
 
     private void imageHandler(
-        final Image image,
-        final String channel,
-        final int streamId,
-        final int sessionId,
-        final long position,
-        final String sourceIdentity)
+        final Image image, final Subscription subscription, final long position, final String sourceIdentity)
     {
+        final String channel = subscription.channel();
+        final int streamId = subscription.streamId();
         System.out.println(channel + " " + streamId);
         if (channel.equals(reflectChannel) && subStreamId == streamId)
         {
@@ -223,10 +220,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         }
     }
 
-    private void msgHandler(
-        final DirectBuffer buffer, final int offset,
-        final int length,
-        final Header header)
+    private void msgHandler(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         if (buffer.getByte(offset) == (byte)'p')
         {
@@ -287,7 +281,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
                 System.exit(1);
             }
             sum += ts;
-            if (ts  < min)
+            if (ts < min)
             {
                 min = ts;
             }
@@ -330,7 +324,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
         g2.setColor(Color.black);
         g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
         g2.drawString("Latency ScatterPlot (microseconds)",
-                900 - fm.stringWidth("Latency ScatterPlot (microseconds)") / 2, 20);
+            900 - fm.stringWidth("Latency ScatterPlot (microseconds)") / 2, 20);
         g2.drawString("" + max, 10, 20);
         g2.drawLine(100, 20, 100, 960);
         g2.drawLine(100, 960, 1790, 960);

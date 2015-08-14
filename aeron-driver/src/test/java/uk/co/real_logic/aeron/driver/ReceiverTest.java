@@ -180,6 +180,7 @@ public class ReceiverTest
 
         final NetworkedImage image = new NetworkedImage(
             CORRELATION_ID,
+            Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
             receiveChannelEndpoint,
             senderAddress,
             SESSION_ID,
@@ -250,7 +251,9 @@ public class ReceiverTest
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
                     new NetworkedImage(
-                        CORRELATION_ID, receiveChannelEndpoint,
+                        CORRELATION_ID,
+                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                        receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,
                         STREAM_ID,
@@ -312,7 +315,9 @@ public class ReceiverTest
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
                     new NetworkedImage(
-                        CORRELATION_ID, receiveChannelEndpoint,
+                        CORRELATION_ID,
+                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                        receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,
                         STREAM_ID,
@@ -377,7 +382,9 @@ public class ReceiverTest
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
                     new NetworkedImage(
-                        CORRELATION_ID, receiveChannelEndpoint,
+                        CORRELATION_ID,
+                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                        receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,
                         STREAM_ID,
@@ -446,7 +453,9 @@ public class ReceiverTest
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
                     new NetworkedImage(
-                        CORRELATION_ID, receiveChannelEndpoint,
+                        CORRELATION_ID,
+                        Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
+                        receiveChannelEndpoint,
                         senderAddress,
                         SESSION_ID,
                         STREAM_ID,
@@ -507,7 +516,7 @@ public class ReceiverTest
         final NetworkedImage mockImage = mock(NetworkedImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);
         when(mockImage.streamId()).thenReturn(STREAM_ID);
-        when(mockImage.checkForActivity(anyLong(), anyLong())).thenReturn(false);
+        when(mockImage.checkForActivity(anyLong())).thenReturn(false);
 
         receiver.onNewImage(receiveChannelEndpoint, mockImage);
         receiver.doWork();
@@ -529,7 +538,7 @@ public class ReceiverTest
         final NetworkedImage mockImage = mock(NetworkedImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);
         when(mockImage.streamId()).thenReturn(STREAM_ID);
-        when(mockImage.checkForActivity(anyLong(), anyLong())).thenReturn(true);
+        when(mockImage.checkForActivity(anyLong())).thenReturn(true);
 
         receiver.onNewImage(receiveChannelEndpoint, mockImage);
         receiver.onRemoveSubscription(receiveChannelEndpoint, STREAM_ID);
@@ -542,14 +551,15 @@ public class ReceiverTest
     private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)
     {
         header.wrap(dataBuffer, 0);
-        header.termOffset(termOffset)
-              .termId(ACTIVE_TERM_ID)
-              .streamId(STREAM_ID)
-              .sessionId(SESSION_ID)
-              .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
-              .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-              .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-              .version(HeaderFlyweight.CURRENT_VERSION);
+        header
+            .termOffset(termOffset)
+            .termId(ACTIVE_TERM_ID)
+            .streamId(STREAM_ID)
+            .sessionId(SESSION_ID)
+            .frameLength(DataHeaderFlyweight.HEADER_LENGTH + payload.length)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .version(HeaderFlyweight.CURRENT_VERSION);
 
         if (0 < payload.length)
         {
@@ -565,14 +575,15 @@ public class ReceiverTest
     private void fillSetupFrame(final SetupFlyweight header, final int termOffset)
     {
         header.wrap(setupBuffer, 0);
-        header.streamId(STREAM_ID)
-              .sessionId(SESSION_ID)
-              .initialTermId(INITIAL_TERM_ID)
-              .activeTermId(ACTIVE_TERM_ID)
-              .termOffset(termOffset)
-              .frameLength(SetupFlyweight.HEADER_LENGTH)
-              .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
-              .flags((byte)0)
-              .version(HeaderFlyweight.CURRENT_VERSION);
+        header
+            .streamId(STREAM_ID)
+            .sessionId(SESSION_ID)
+            .initialTermId(INITIAL_TERM_ID)
+            .activeTermId(ACTIVE_TERM_ID)
+            .termOffset(termOffset)
+            .frameLength(SetupFlyweight.HEADER_LENGTH)
+            .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
+            .flags((byte)0)
+            .version(HeaderFlyweight.CURRENT_VERSION);
     }
 }

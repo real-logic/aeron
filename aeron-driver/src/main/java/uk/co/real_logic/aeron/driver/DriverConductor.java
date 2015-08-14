@@ -57,6 +57,7 @@ import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READE
  */
 public class DriverConductor implements Agent
 {
+    private final long imageLivenessTimeoutNs;
     private final int mtuLength;
     private final int termBufferLength;
     private final int initialWindowLength;
@@ -102,6 +103,7 @@ public class DriverConductor implements Agent
 
     public DriverConductor(final Context ctx)
     {
+        imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         fromReceiverDriverConductorCmdQueue = ctx.toConductorFromReceiverCommandQueue();
         fromSenderDriverConductorCmdQueue = ctx.toConductorFromSenderCommandQueue();
         receiverProxy = ctx.receiverProxy();
@@ -224,6 +226,7 @@ public class DriverConductor implements Agent
 
             final NetworkedImage image = new NetworkedImage(
                 imageCorrelationId,
+                imageLivenessTimeoutNs,
                 channelEndpoint,
                 controlAddress,
                 sessionId,
@@ -351,9 +354,7 @@ public class DriverConductor implements Agent
             .collect(toList());
     }
 
-    private <T extends DriverManagedResourceProvider> void onCheckManagedResources(
-        final ArrayList<T> list,
-        final long time)
+    private <T extends DriverManagedResourceProvider> void onCheckManagedResources(final ArrayList<T> list, final long time)
     {
         for (int i = list.size() - 1; i >= 0; i--)
         {

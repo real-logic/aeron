@@ -29,7 +29,6 @@ import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.driver.Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.NetworkedImage.Status.ACTIVE;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
@@ -86,8 +85,9 @@ class NetworkedImagePadding4 extends NetworkedImageStatusFields
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class NetworkedImage extends NetworkedImagePadding4 implements
-    AutoCloseable, NakMessageSender, DriverManagedResourceProvider
+public class NetworkedImage
+    extends NetworkedImagePadding4
+    implements AutoCloseable, NakMessageSender, DriverManagedResourceProvider
 {
     public enum Status
     {
@@ -95,6 +95,7 @@ public class NetworkedImage extends NetworkedImagePadding4 implements
     }
 
     private final long correlationId;
+    private final long imageLivenessTimeoutNs;
     private final int sessionId;
     private final int streamId;
     private final int positionBitsToShift;
@@ -117,6 +118,7 @@ public class NetworkedImage extends NetworkedImagePadding4 implements
 
     public NetworkedImage(
         final long correlationId,
+        final long imageLivenessTimeoutNs,
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress controlAddress,
         final int sessionId,
@@ -134,6 +136,7 @@ public class NetworkedImage extends NetworkedImagePadding4 implements
         final InetSocketAddress sourceAddress)
     {
         this.correlationId = correlationId;
+        this.imageLivenessTimeoutNs = imageLivenessTimeoutNs;
         this.channelEndpoint = channelEndpoint;
         this.controlAddress = controlAddress;
         this.sessionId = sessionId;
@@ -442,15 +445,14 @@ public class NetworkedImage extends NetworkedImagePadding4 implements
     /**
      * To be called from the {@link Receiver} to see if a image should be garbage collected.
      *
-     * @param now                  current time to check against.
-     * @param imageLivenessTimeout timeout for inactivity test.
+     * @param now current time to check against.
      * @return true if still active otherwise false.
      */
-    public boolean checkForActivity(final long now, final long imageLivenessTimeout)
+    public boolean checkForActivity(final long now)
     {
         boolean activity = true;
 
-        if (now > (lastPacketTimestamp + imageLivenessTimeout))
+        if (now > (lastPacketTimestamp + imageLivenessTimeoutNs))
         {
             activity = false;
         }
@@ -610,7 +612,7 @@ public class NetworkedImage extends NetworkedImagePadding4 implements
             switch (status())
             {
                 case INACTIVE:
-                    if (isDrained() || time > (timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
+                    if (isDrained() || time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
                     {
                         status(NetworkedImage.Status.LINGER);
                         conductor.imageTransitionToLinger(NetworkedImage.this);
@@ -618,7 +620,7 @@ public class NetworkedImage extends NetworkedImagePadding4 implements
                     break;
 
                 case LINGER:
-                    if (time > (timeOfLastStatusChange() + IMAGE_LIVENESS_TIMEOUT_NS))
+                    if (time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
                     {
                         reachedEndOfLife = true;
                         conductor.cleanupImage(NetworkedImage.this);
@@ -634,7 +636,6 @@ public class NetworkedImage extends NetworkedImagePadding4 implements
 
         public void timeOfLastStateChange(long time)
         {
-
         }
 
         public long timeOfLastStateChange()

@@ -61,7 +61,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         for (int i = images.size() - 1; i >= 0; i--)
         {
             final NetworkedImage image = images.get(i);
-            if (!image.checkForActivity(now, Configuration.IMAGE_LIVENESS_TIMEOUT_NS))
+            if (!image.checkForActivity(now))
             {
                 image.removeFromDispatcher();
                 images.remove(i);

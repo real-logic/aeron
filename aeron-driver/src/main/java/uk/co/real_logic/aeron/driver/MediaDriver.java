@@ -400,6 +400,8 @@ public final class MediaDriver implements AutoCloseable
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
+        private long imageLivenessTimeoutNs = -1;
+
         private int publicationTermBufferLength;
         private int maxImageTermBufferLength;
         private int initialWindowLength;
@@ -468,6 +470,11 @@ public final class MediaDriver implements AutoCloseable
                     eventLogger = new EventLogger(eventByteBuffer);
                 }
 
+                if (-1 == imageLivenessTimeoutNs)
+                {
+                    imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
+                }
+
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
                 receiverTransportPoller(new DataTransportPoller());
@@ -480,7 +487,7 @@ public final class MediaDriver implements AutoCloseable
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
                         CONDUCTOR_BUFFER_LENGTH + TO_CLIENTS_BUFFER_LENGTH +
-                            COUNTER_LABELS_BUFFER_LENGTH + COUNTER_VALUES_BUFFER_LENGTH));
+                        COUNTER_LABELS_BUFFER_LENGTH + COUNTER_VALUES_BUFFER_LENGTH));
 
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 CncFileDescriptor.fillMetaData(
@@ -710,6 +717,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context imageLivenessTimeoutNs(final long timeout)
+        {
+            this.imageLivenessTimeoutNs = timeout;
+            return this;
+        }
+
         public Context eventBufferLength(final int length)
         {
             this.eventBufferLength = length;
@@ -889,6 +902,11 @@ public final class MediaDriver implements AutoCloseable
         public CountersManager countersManager()
         {
             return countersManager;
+        }
+
+        public long imageLivenessTimeoutNs()
+        {
+            return imageLivenessTimeoutNs;
         }
 
         public int termBufferLength()

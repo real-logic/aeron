@@ -189,7 +189,7 @@ public class Configuration
      * Multicast NAK delay is immediate initial with delayed subsequent delay
      */
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
-        Configuration.NAK_MAX_BACKOFF_DEFAULT, Configuration.NAK_GROUPSIZE_DEFAULT, Configuration.NAK_GRTT_DEFAULT);
+        NAK_MAX_BACKOFF_DEFAULT, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT);
 
     /**
      * Default Unicast NAK delay in nanoseconds
@@ -199,13 +199,12 @@ public class Configuration
      * Unicast NAK delay is immediate initial with delayed subsequent delay
      */
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
-        Configuration.NAK_UNICAST_DELAY_DEFAULT_NS, true);
+        NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     /**
      * NAKs are effectively disabled.
      */
-    public static final StaticDelayGenerator NO_NAK_DELAY_GENERATOR = new StaticDelayGenerator(
-            -1, false);
+    public static final StaticDelayGenerator NO_NAK_DELAY_GENERATOR = new StaticDelayGenerator(-1, false);
 
     /**
      * Default delay for retransmission of data for unicast
@@ -276,16 +275,6 @@ public class Configuration
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
     public static final long IMAGE_LIVENESS_TIMEOUT_NS = getLong(
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
-
-    /**
-     * ticksPerWheel for TimerWheel in conductor thread
-     */
-    public static final int CONDUCTOR_TICKS_PER_WHEEL = 1024;
-
-    /**
-     * tickDuration (in MICROSECONDS) for TimerWheel in conductor thread
-     */
-    public static final int CONDUCTOR_TICK_DURATION_US = 10 * 1000;
 
     /**
      * {@link IdleStrategy} to be employed by agents.

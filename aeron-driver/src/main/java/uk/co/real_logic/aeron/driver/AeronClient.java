@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
-
 /**
  * Aeron client library tracker.
  */

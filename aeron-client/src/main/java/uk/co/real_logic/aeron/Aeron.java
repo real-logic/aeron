@@ -79,6 +79,7 @@ public final class Aeron implements AutoCloseable
             ctx.errorHandler,
             ctx.newImageHandler,
             ctx.inactiveImageHandler,
+            ctx.keepAliveInterval(),
             ctx.mediaDriverTimeout());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
@@ -159,6 +160,7 @@ public final class Aeron implements AutoCloseable
         private ErrorHandler errorHandler;
         private NewImageHandler newImageHandler;
         private InactiveImageHandler inactiveImageHandler;
+        private long keepAliveInterval = TimeUnit.MILLISECONDS.toNanos(500);
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
@@ -363,6 +365,28 @@ public final class Aeron implements AutoCloseable
         {
             this.inactiveImageHandler = handler;
             return this;
+        }
+
+        /**
+         * Set the interval in nanoseconds for which the client will perform keep-alive operations.
+         *
+         * @param value the interval in nanoseconds for which the client will perform keep-alive operations.
+         * @return this Aeron.Context for method chaining.
+         */
+        public Context keepAliveInterval(final long value)
+        {
+            keepAliveInterval = value;
+            return this;
+        }
+
+        /**
+         * Get the interval in nanoseconds for which the client will perform keep-alive operations.
+         *
+         * @return the interval in nanoseconds for which the client will perform keep-alive operations.
+         */
+        public long keepAliveInterval()
+        {
+            return keepAliveInterval;
         }
 
         /**

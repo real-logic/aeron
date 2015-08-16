@@ -40,10 +40,10 @@ import static uk.co.real_logic.aeron.DriverListenerAdapter.MISSING_REGISTRATION_
 class ClientConductor implements Agent, DriverListener
 {
     private static final long NO_CORRELATION_ID = -1;
-    private static final long KEEPALIVE_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(500);
     private static final long RESOURCE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
     private static final long RESOURCE_LINGER_NS = TimeUnit.SECONDS.toNanos(5);
 
+    private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private long timeOfLastKeepalive;
@@ -75,6 +75,7 @@ class ClientConductor implements Agent, DriverListener
         final ErrorHandler errorHandler,
         final NewImageHandler newImageHandler,
         final InactiveImageHandler inactiveImageHandler,
+        final long keepAliveIntervalNs,
         final long driverTimeoutMs)
     {
         this.epochClock = epochClock;
@@ -87,6 +88,7 @@ class ClientConductor implements Agent, DriverListener
         this.logBuffersFactory = logBuffersFactory;
         this.newImageHandler = newImageHandler;
         this.inactiveImageHandler = inactiveImageHandler;
+        this.keepAliveIntervalNs = keepAliveIntervalNs;
         this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
 
@@ -320,7 +322,7 @@ class ClientConductor implements Agent, DriverListener
         final long now = nanoClock.nanoTime();
         int result = 0;
 
-        if (now > (timeOfLastKeepalive + KEEPALIVE_TIMEOUT_NS))
+        if (now > (timeOfLastKeepalive + keepAliveIntervalNs))
         {
             driverProxy.sendClientKeepalive();
             checkDriverHeartbeat();

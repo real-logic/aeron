@@ -32,6 +32,7 @@ import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +64,8 @@ public class ClientConductorTest
     private static final long CLOSE_CORRELATION_ID = 2001;
     private static final long UNKNOWN_CORRELATION_ID = 3000;
 
-    private static final int AWAIT_TIMEOUT = 100;
+    private static final long KEEP_ALIVE_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500);
+    private static final long AWAIT_TIMEOUT = 100;
 
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
@@ -111,6 +113,7 @@ public class ClientConductorTest
             mockClientErrorHandler,
             mockNewImageHandler,
             mockInactiveImageHandler,
+            KEEP_ALIVE_INTERVAL,
             AWAIT_TIMEOUT);
 
         publicationReady.wrap(publicationReadyBuffer, 0);

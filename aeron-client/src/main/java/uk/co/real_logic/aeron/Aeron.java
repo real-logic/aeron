@@ -57,7 +57,6 @@ public final class Aeron implements AutoCloseable
             }
         };
 
-
     private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
 
     private final ClientConductor conductor;

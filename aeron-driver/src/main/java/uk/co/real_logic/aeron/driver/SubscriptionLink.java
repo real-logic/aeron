@@ -33,8 +33,11 @@ public class SubscriptionLink implements DriverManagedResourceProvider
     private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
     private final Map<NetworkedImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
+    private final SharedLog sharedLog;
+    private final ReadablePosition sharedLogSubscriberPosition;
     private final DriverManagedResource driverManagedResource;
 
+    // NetworkedImage constructor
     public SubscriptionLink(
         final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
@@ -45,7 +48,27 @@ public class SubscriptionLink implements DriverManagedResourceProvider
         this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
         this.aeronClient = aeronClient;
+        this.sharedLog = null;
+        this.sharedLogSubscriberPosition = null;
         this.driverManagedResource = new SubscriptionLinkDriverManagedResource();
+    }
+
+    // SharedLog (IPC) constructor
+    public SubscriptionLink(
+        final long registrationId,
+        final int streamId,
+        final SharedLog sharedLog,
+        final ReadablePosition subscriberPosition,
+        final AeronClient aeronClient)
+    {
+        this.registrationId = registrationId;
+        this.channelEndpoint = null; // will prevent matches between NetworkedImages and SharedLogs
+        this.streamId = streamId;
+        this.aeronClient = aeronClient;
+        this.sharedLog = sharedLog;
+        sharedLog.incrRefCount();
+        this.sharedLogSubscriberPosition = subscriberPosition;
+        this.driverManagedResource = new SubscriptionLinkDriverManagedResource(); // TODO: could use a different lifetime...
     }
 
     public long registrationId()
@@ -86,6 +109,13 @@ public class SubscriptionLink implements DriverManagedResourceProvider
     public void close()
     {
         positionByImageMap.forEach(NetworkedImage::removeSubscriber);
+
+        if (null != sharedLog)
+        {
+            sharedLog.removeSubscription(sharedLogSubscriberPosition);
+            sharedLog.decrRefCount();
+            sharedLogSubscriberPosition.close();
+        }
     }
 
     public DriverManagedResource managedResource()

@@ -31,7 +31,7 @@ import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
  *
  * Writes messages into the client conductor buffer.
  */
-class DriverProxy
+public class DriverProxy
 {
     /** Maximum capacity of the write buffer */
     public static final int MSG_BUFFER_CAPACITY = 4096;

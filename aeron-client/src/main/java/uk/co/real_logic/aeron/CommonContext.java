@@ -42,6 +42,11 @@ public class CommonContext implements AutoCloseable
     /** The value of the top level Aeron directory unless overridden by {@link #dirName(String)} */
     public static final String AERON_DIR_PROP_DEFAULT;
 
+    /**
+     * URI used for IPC {@link Publication}s and {@link Subscription}s
+     */
+    public static final String IPC_CHANNEL = "aeron:ipc";
+
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
 
     private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;

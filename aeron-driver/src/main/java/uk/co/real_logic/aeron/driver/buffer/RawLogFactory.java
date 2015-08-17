@@ -35,6 +35,7 @@ public class RawLogFactory implements AutoCloseable
     private final FileChannel blankTemplate;
     private final File publicationsDir;
     private final File imagesDir;
+    private final File sharedDir;
     private final EventLogger logger;
 
     public RawLogFactory(
@@ -48,9 +49,11 @@ public class RawLogFactory implements AutoCloseable
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
         imagesDir = fileMappingConvention.imagesDir();
+        sharedDir = fileMappingConvention.sharedDir();
 
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
         IoUtil.ensureDirectoryExists(imagesDir, FileMappingConvention.IMAGES);
+        IoUtil.ensureDirectoryExists(sharedDir, FileMappingConvention.SHARED);
 
         this.publicationTermBufferLength = publicationTermBufferLength;
         this.imagesTermBufferMaxLength = imagesTermBufferMaxLength;
@@ -110,6 +113,19 @@ public class RawLogFactory implements AutoCloseable
         }
 
         return newInstance(imagesDir, channel, sessionId, streamId, correlationId, termBufferLength);
+    }
+
+    /**
+     * Create a new {@link RawLog} in the shared directory for the supplied parameters.
+     *
+     * @param sessionId     under which publications are made.
+     * @param streamId      within the IPC channel
+     * @param correlationId to use to distinguish this shared log
+     * @return the newly allocated {@link RawLog}
+     */
+    public RawLog newShared(final int sessionId, final int streamId, final long correlationId)
+    {
+        return newInstance(sharedDir, "ipc", sessionId, streamId, correlationId, publicationTermBufferLength);
     }
 
     private static FileChannel createTemplateFile(final String dataDir, final String name, final long length)

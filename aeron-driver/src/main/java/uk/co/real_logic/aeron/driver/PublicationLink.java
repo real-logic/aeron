@@ -22,6 +22,7 @@ public class PublicationLink implements DriverManagedResourceProvider
 {
     private final long registrationId;
     private final NetworkPublication publication;
+    private final SharedLog sharedLog;
     private final AeronClient client;
     private final DriverManagedResource driverManagedResource;
 
@@ -29,13 +30,32 @@ public class PublicationLink implements DriverManagedResourceProvider
     {
         this.registrationId = registrationId;
         this.publication = publication;
+        this.sharedLog = null;
         this.client = client;
         this.driverManagedResource = new PublicationLinkManagedResource();
     }
 
-    public void remove()
+    public PublicationLink(final long registrationId, final SharedLog sharedLog, final AeronClient client)
     {
-        publication.decRef();
+        this.registrationId = registrationId;
+        this.publication = null;
+        this.sharedLog = sharedLog;
+        sharedLog.incrRefCount();
+        this.client = client;
+        this.driverManagedResource = new PublicationLinkManagedResource();
+    }
+
+    public void close()
+    {
+        if (null != publication)
+        {
+            publication.decRef();
+        }
+
+        if (null != sharedLog)
+        {
+            sharedLog.decrRefCount();
+        }
     }
 
     public long registrationId()
@@ -77,7 +97,7 @@ public class PublicationLink implements DriverManagedResourceProvider
 
         public void delete()
         {
-            publication.decRef();
+            close();
         }
     }
 }

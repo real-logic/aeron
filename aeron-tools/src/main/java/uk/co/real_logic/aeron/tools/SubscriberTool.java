@@ -309,7 +309,7 @@ public class SubscriberTool
                             System.exit(-1);
                         }
                     })
-                .mediaDriverTimeout(10000); /* ten seconds */
+                .driverTimeoutMs(10000); /* ten seconds */
             aeron = Aeron.connect(ctx);
 
             /* Create the control publication and subscription. */

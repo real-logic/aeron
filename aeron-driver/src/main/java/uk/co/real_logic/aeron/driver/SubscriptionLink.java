@@ -34,7 +34,7 @@ public class SubscriptionLink implements DriverManagedResourceProvider
     private final AeronClient aeronClient;
     private final Map<NetworkedImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
     private final DirectLog directLog;
-    private final ReadablePosition sharedLogSubscriberPosition;
+    private final ReadablePosition directLogSubscriberPosition;
     private final DriverManagedResource driverManagedResource;
 
     // NetworkedImage constructor
@@ -49,11 +49,11 @@ public class SubscriptionLink implements DriverManagedResourceProvider
         this.streamId = streamId;
         this.aeronClient = aeronClient;
         this.directLog = null;
-        this.sharedLogSubscriberPosition = null;
+        this.directLogSubscriberPosition = null;
         this.driverManagedResource = new SubscriptionLinkDriverManagedResource();
     }
 
-    // SharedLog (IPC) constructor
+    // DirectLog (IPC) constructor
     public SubscriptionLink(
         final long registrationId,
         final int streamId,
@@ -62,12 +62,12 @@ public class SubscriptionLink implements DriverManagedResourceProvider
         final AeronClient aeronClient)
     {
         this.registrationId = registrationId;
-        this.channelEndpoint = null; // will prevent matches between NetworkedImages and SharedLogs
+        this.channelEndpoint = null; // will prevent matches between NetworkedImages and DirectLogs
         this.streamId = streamId;
         this.aeronClient = aeronClient;
         this.directLog = directLog;
         directLog.incRef();
-        this.sharedLogSubscriberPosition = subscriberPosition;
+        this.directLogSubscriberPosition = subscriberPosition;
         this.driverManagedResource = new SubscriptionLinkDriverManagedResource(); // TODO: could use a different lifetime...
     }
 
@@ -112,9 +112,9 @@ public class SubscriptionLink implements DriverManagedResourceProvider
 
         if (null != directLog)
         {
-            directLog.removeSubscription(sharedLogSubscriberPosition);
+            directLog.removeSubscription(directLogSubscriberPosition);
             directLog.decRef();
-            sharedLogSubscriberPosition.close();
+            directLogSubscriberPosition.close();
         }
     }
 

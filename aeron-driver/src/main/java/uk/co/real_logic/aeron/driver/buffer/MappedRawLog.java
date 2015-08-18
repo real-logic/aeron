@@ -139,9 +139,7 @@ class MappedRawLog implements RawLog
             final MappedByteBuffer buffer = mappedBuffers[0];
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
-                buffer.limit((termLength * i) + termLength)
-                      .position(termLength * i);
-
+                buffer.limit((termLength * i) + termLength).position(termLength * i);
                 terms[i] = buffer.slice();
             }
         }

@@ -177,8 +177,8 @@ public class NetworkedImage
     public void close()
     {
         hwmPosition.close();
-        rawLog.close();
         subscriberPositions.forEach(ReadablePosition::close);
+        rawLog.close();
     }
 
     public long correlationId()

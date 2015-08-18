@@ -23,17 +23,13 @@ public class AeronClient implements DriverManagedResourceProvider
     private final long clientId;
     private final long clientLivenessTimeoutNs;
     private long timeOfLastKeepalive;
-    private DriverManagedResource driverManagedResource;
+    private DriverManagedResource driverManagedResource = new AeronClientManagedResource();;
 
-    public AeronClient(
-        final long clientId,
-        final long clientLivenessTimeoutNs,
-        final long now)
+    public AeronClient(final long clientId, final long clientLivenessTimeoutNs, final long now)
     {
         this.clientId = clientId;
         this.clientLivenessTimeoutNs = clientLivenessTimeoutNs;
         this.timeOfLastKeepalive = now;
-        this.driverManagedResource = new AeronClientManagedResource();
     }
 
     public long clientId()

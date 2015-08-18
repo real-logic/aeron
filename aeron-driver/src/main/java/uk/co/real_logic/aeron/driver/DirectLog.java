@@ -42,7 +42,7 @@ public class DirectLog implements DriverManagedResourceProvider
     private final UnsafeBuffer logMetaDataBuffer;
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
     private final Position publisherLimit;
-    private final DriverManagedResource driverManagedResource;
+    private final DriverManagedResource driverManagedResource = new SharedLogDriverManagedResource();;
 
     private int refCount = 0;
 
@@ -70,8 +70,6 @@ public class DirectLog implements DriverManagedResourceProvider
         this.publisherLimit = publisherLimit;
 
         this.logMetaDataBuffer = rawLog.logMetaData();
-
-        this.driverManagedResource = new SharedLogDriverManagedResource();
 
         this.publisherLimit.setOrdered(0);
     }

@@ -35,7 +35,7 @@ public class SubscriptionLink implements DriverManagedResourceProvider
     private final Map<NetworkedImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
     private final DirectLog directLog;
     private final ReadablePosition directLogSubscriberPosition;
-    private final DriverManagedResource driverManagedResource;
+    private final DriverManagedResource driverManagedResource = new SubscriptionLinkDriverManagedResource();
 
     // NetworkedImage constructor
     public SubscriptionLink(
@@ -50,7 +50,6 @@ public class SubscriptionLink implements DriverManagedResourceProvider
         this.aeronClient = aeronClient;
         this.directLog = null;
         this.directLogSubscriberPosition = null;
-        this.driverManagedResource = new SubscriptionLinkDriverManagedResource();
     }
 
     // DirectLog (IPC) constructor
@@ -68,7 +67,6 @@ public class SubscriptionLink implements DriverManagedResourceProvider
         this.directLog = directLog;
         directLog.incRef();
         this.directLogSubscriberPosition = subscriberPosition;
-        this.driverManagedResource = new SubscriptionLinkDriverManagedResource(); // TODO: could use a different lifetime...
     }
 
     public long registrationId()

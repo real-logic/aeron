@@ -93,8 +93,8 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final FlowControl flowControl;
     private final RetransmitHandler retransmitHandler;
+    private final DriverManagedResource driverManagedResource = new NetworkPublicationDriverManagedResource();
     private final RawLog rawLog;
-    private final DriverManagedResource driverManagedResource;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -142,8 +142,6 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
 
         dataHeader.wrap(new UnsafeBuffer(heartbeatFrameBuffer), 0);
         initHeartBeatFrame(sessionId, streamId);
-
-        driverManagedResource = new NetworkPublicationDriverManagedResource();
     }
 
     public void close()
@@ -485,7 +483,6 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
 
         public void timeOfLastStateChange(long time)
         {
-
         }
 
         public long timeOfLastStateChange()

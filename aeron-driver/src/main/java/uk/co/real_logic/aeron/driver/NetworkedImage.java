@@ -114,7 +114,7 @@ public class NetworkedImage
     private final Position hwmPosition;
     private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
-    private final DriverManagedResource driverManagedResource;
+    private final DriverManagedResource driverManagedResource = new NetworkedImageDriverManagedResource();
 
     public NetworkedImage(
         final long correlationId,
@@ -169,8 +169,6 @@ public class NetworkedImage
         this.newStatusMessagePosition = this.lastStatusMessagePosition;
         this.rebuildPosition = initialPosition;
         this.hwmPosition.setOrdered(initialPosition);
-
-        this.driverManagedResource = new NetworkedImageDriverManagedResource();
     }
 
     /**

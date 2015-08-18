@@ -397,10 +397,10 @@ public class DriverConductor implements Agent
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
         onCheckManagedResources(clients, nanoTimeNow);
-        onCheckManagedResources(publications, nanoTimeNow);
         onCheckManagedResources(publicationLinks, nanoTimeNow);
-        onCheckManagedResources(images, nanoTimeNow);
+        onCheckManagedResources(publications, nanoTimeNow);
         onCheckManagedResources(subscriptionLinks, nanoTimeNow);
+        onCheckManagedResources(images, nanoTimeNow);
         onCheckManagedResources(directLogs, nanoTimeNow);
     }
 

@@ -111,7 +111,7 @@ public class ReceiverProxy
         }
     }
 
-    public void removeCooldown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
+    public void removeCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
         if (isSharedThread())
         {

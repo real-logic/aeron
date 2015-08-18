@@ -340,7 +340,7 @@ public class DriverConductor implements Agent
             image.rebuildPosition(),
             image.channelUriString());
 
-        receiverProxy.removeCooldown(image.channelEndpoint(), image.sessionId(), image.streamId());
+        receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
     }
 
     public void cleanupImage(final NetworkedImage image)

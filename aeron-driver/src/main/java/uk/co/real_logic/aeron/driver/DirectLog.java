@@ -28,9 +28,9 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
- * Encapsulation of a shared LogBuffer between publications and subscriptions
+ * Encapsulation of a LogBuffer used directly between publications and subscriptions
  */
-public class SharedLog implements DriverManagedResourceProvider
+public class DirectLog implements DriverManagedResourceProvider
 {
     private final long correlationId;
     private final int sessionId;
@@ -46,7 +46,7 @@ public class SharedLog implements DriverManagedResourceProvider
 
     private int refCount = 0;
 
-    public SharedLog(
+    public DirectLog(
         final long correlationId,
         final int sessionId,
         final int streamId,
@@ -96,17 +96,17 @@ public class SharedLog implements DriverManagedResourceProvider
         return rawLog;
     }
 
-    public int publisherLimiId()
+    public int publisherLimitId()
     {
         return publisherLimit.id();
     }
 
-    public void incrRefCount()
+    public void incRef()
     {
         refCount++;
     }
 
-    public void decrRefCount()
+    public void decRef()
     {
         refCount--;
     }

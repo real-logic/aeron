@@ -579,7 +579,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        assertNotNull(driverConductor.sharedLog(STREAM_ID_1));
+        assertNotNull(driverConductor.directLog(STREAM_ID_1));
         verify(mockClientProxy).onPublicationReady(eq(STREAM_ID_1), anyInt(), any(), eq(id), anyInt());
     }
 
@@ -590,14 +590,14 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        final DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(id));
         inOrder.verify(mockClientProxy).onImageReady(
-            eq(STREAM_ID_1), eq(sharedLog.sessionId()), eq(0L), eq(sharedLog.rawLog()),
-            eq(sharedLog.correlationId()), anyObject(), anyString());
+            eq(STREAM_ID_1), eq(directLog.sessionId()), eq(0L), eq(directLog.rawLog()),
+            eq(directLog.correlationId()), anyObject(), anyString());
     }
 
     @Test
@@ -608,15 +608,15 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        final DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).onPublicationReady(eq(STREAM_ID_1), anyInt(), any(), eq(idPub), anyInt());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onImageReady(
-            eq(STREAM_ID_1), eq(sharedLog.sessionId()), eq(0L), eq(sharedLog.rawLog()),
-            eq(sharedLog.correlationId()), anyObject(), anyString());
+            eq(STREAM_ID_1), eq(directLog.sessionId()), eq(0L), eq(directLog.rawLog()),
+            eq(directLog.correlationId()), anyObject(), anyString());
     }
 
     @Test
@@ -627,14 +627,14 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        final SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        final DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onImageReady(
-            eq(STREAM_ID_1), eq(sharedLog.sessionId()), eq(0L), eq(sharedLog.rawLog()),
-            eq(sharedLog.correlationId()), anyObject(), anyString());
+            eq(STREAM_ID_1), eq(directLog.sessionId()), eq(0L), eq(directLog.rawLog()),
+            eq(directLog.correlationId()), anyObject(), anyString());
         inOrder.verify(mockClientProxy).onPublicationReady(eq(STREAM_ID_1), anyInt(), any(), eq(idPub), anyInt());
     }
 
@@ -646,8 +646,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        final SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNull(sharedLog);
+        final DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNull(directLog);
     }
 
     @Test
@@ -658,8 +658,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        final SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNull(sharedLog);
+        final DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNull(directLog);
     }
 
     @Test
@@ -671,15 +671,15 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         driverProxy.removePublication(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNull(sharedLog);
+        directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNull(directLog);
     }
 
     @Test
@@ -691,15 +691,15 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         driverProxy.removeSubscription(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNull(sharedLog);
+        directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNull(directLog);
     }
 
     @Test
@@ -711,15 +711,15 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         driverProxy.removePublication(idAdd2);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNull(sharedLog);
+        directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNull(directLog);
     }
 
     @Test
@@ -729,13 +729,13 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNull(sharedLog);
+        directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNull(directLog);
     }
 
     @Test
@@ -745,8 +745,8 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
@@ -754,8 +754,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
     }
 
     @Test
@@ -765,13 +765,13 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNull(sharedLog);
+        directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNull(directLog);
     }
 
     @Test
@@ -781,8 +781,8 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        SharedLog sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        DirectLog directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
@@ -790,8 +790,8 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        sharedLog = driverConductor.sharedLog(STREAM_ID_1);
-        assertNotNull(sharedLog);
+        directLog = driverConductor.directLog(STREAM_ID_1);
+        assertNotNull(directLog);
     }
 
     private long doWorkUntil(final BooleanSupplier condition) throws Exception

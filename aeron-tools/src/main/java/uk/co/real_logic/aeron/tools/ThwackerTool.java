@@ -163,7 +163,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
         /* Set timeout to be very large so the images will not timeout when
            debugging or examining a hang.
          */
-        ctx.mediaDriverTimeout(9999999999L);
+        ctx.driverTimeoutMs(9999999999L);
         ctx.inactiveImageHandler(this);
         ctx.newImageHandler(this);
 

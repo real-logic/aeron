@@ -79,7 +79,7 @@ public final class Aeron implements AutoCloseable
             ctx.newImageHandler,
             ctx.inactiveImageHandler,
             ctx.keepAliveInterval(),
-            ctx.mediaDriverTimeout());
+                ctx.driverTimeoutMs());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
@@ -397,21 +397,10 @@ public final class Aeron implements AutoCloseable
          * @return this Aeron.Context for method chaining.
          * @see #errorHandler(ErrorHandler)
          */
-        public Context mediaDriverTimeout(final long value)
+        public Context driverTimeoutMs(final long value)
         {
-            driverTimeoutMs(value);
+            super.driverTimeoutMs(value);
             return this;
-        }
-
-        /**
-         * Get the amount of time, in milliseconds, that this client will wait until it determines the
-         * Media Driver is unavailable.
-         *
-         * @return Number of milliseconds.
-         */
-        public long mediaDriverTimeout()
-        {
-            return driverTimeoutMs();
         }
 
         /**

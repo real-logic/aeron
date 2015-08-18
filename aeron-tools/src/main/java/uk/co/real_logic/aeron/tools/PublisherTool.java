@@ -300,7 +300,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
                             System.exit(-1);
                         }
                     })
-                .mediaDriverTimeout(10000); /* ten seconds */
+                .driverTimeoutMs(10000); /* ten seconds */
 
             aeron = Aeron.connect(ctx);
             final ArrayList<Publication> publicationsList = new ArrayList<>();

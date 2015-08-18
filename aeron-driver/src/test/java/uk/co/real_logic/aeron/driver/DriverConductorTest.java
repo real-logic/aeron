@@ -100,6 +100,9 @@ public class DriverConductorTest
     @Before
     public void setUp() throws Exception
     {
+        // System GC required in order to ensure that the direct byte buffers get cleaned and avoid OOM.
+        System.gc();
+
         when(mockRawLogFactory.newPublication(anyObject(), anyInt(), anyInt(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
         when(mockRawLogFactory.newImage(anyObject(), anyInt(), anyInt(), anyInt(), eq(TERM_BUFFER_LENGTH)))

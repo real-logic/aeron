@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -23,11 +24,11 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -35,6 +36,7 @@ import java.nio.channels.FileChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static org.hamcrest.core.IsNot.not;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
@@ -53,6 +55,9 @@ public class PubAndSubTest
 
     @DataPoint
     public static final String MULTICAST_URI = "udp://localhost@224.20.30.39:54326";
+
+    @DataPoint
+    public static final String IPC_URI = "aeron:ipc";
 
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
@@ -95,9 +100,20 @@ public class PubAndSubTest
             subscription.close();
         }
 
-        subscribingClient.close();
-        publishingClient.close();
-        driver.close();
+        if (null != subscribingClient)
+        {
+            subscribingClient.close();
+        }
+
+        if (null != publishingClient)
+        {
+            publishingClient.close();
+        }
+
+        if (null != driver)
+        {
+            driver.close();
+        }
 
         context.deleteAeronDirectory();
     }
@@ -318,6 +334,8 @@ public class PubAndSubTest
 
         launch(channel);
 
+        Assume.assumeThat(channel, not(IPC_URI));
+
         for (int i = 0; i < numMessagesToSend; i++)
         {
             while (publication.offer(buffer, 0, messageLength) < 0L)
@@ -360,6 +378,8 @@ public class PubAndSubTest
         context.dataLossSeed(0xcafebabeL);         // predictable seed
 
         launch(channel);
+
+        Assume.assumeThat(channel, not(IPC_URI));
 
         for (int i = 0; i < numBatches; i++)
         {
@@ -692,6 +712,8 @@ public class PubAndSubTest
             .mtuLength(mtuLength);
 
         launch(channel);
+
+        Assume.assumeThat(channel, not(IPC_URI));
 
         for (int i = 0; i < numMessagesToSend; i++)
         {

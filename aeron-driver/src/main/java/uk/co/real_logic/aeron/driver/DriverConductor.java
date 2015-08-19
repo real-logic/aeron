@@ -762,6 +762,7 @@ public class DriverConductor implements Agent
         final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, streamId, directLog, position, client);
 
         subscriptionLinks.add(subscriptionLink);
+        directLog.addSubscription(position);
 
         clientProxy.operationSucceeded(registrationId);
 

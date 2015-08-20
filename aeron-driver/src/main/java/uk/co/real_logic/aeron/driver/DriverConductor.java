@@ -617,6 +617,7 @@ public class DriverConductor implements Agent
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
         LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
+        LogBufferDescriptor.activeTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
 
         return rawLog;
@@ -638,6 +639,7 @@ public class DriverConductor implements Agent
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
         LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
+        LogBufferDescriptor.activeTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, senderMtuLength);
 
         return rawLog;

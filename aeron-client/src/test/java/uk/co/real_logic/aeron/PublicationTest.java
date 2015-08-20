@@ -58,6 +58,7 @@ public class PublicationTest
         when(logBuffers.atomicBuffers()).thenReturn(buffers);
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
+        activeTermId(logMetaDataBuffer, TERM_ID_1);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {

@@ -73,7 +73,6 @@ public class Publication implements AutoCloseable
         final UnsafeBuffer logMetaDataBuffer = buffers[LOG_META_DATA_SECTION_INDEX];
         final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
         final int mtuLength = mtuLength(logMetaDataBuffer);
-        activeTermId(logMetaDataBuffer, initialTermId(logMetaDataBuffer));
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {

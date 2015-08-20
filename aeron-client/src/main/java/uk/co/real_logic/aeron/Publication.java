@@ -300,8 +300,10 @@ public class Publication implements AutoCloseable
 
                 LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
 
-                // Need to advance the term id in case a publication takes an interrupt between reading the active term
-                // and incrementing the tail. This covers the case of interrupt talking over one term in duration.
+                // Need to advance the term id in case a publication takes an interrupt
+                // between reading the active term and incrementing the tail.
+                // This covers the case of an interrupt talking longer than
+                // the time taken to complete the current term.
                 LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
 
                 termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);

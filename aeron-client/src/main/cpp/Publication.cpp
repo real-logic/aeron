@@ -55,7 +55,6 @@ Publication::Publication(
             mtuLength));
     }
 
-    LogBufferDescriptor::activeTermId(m_logMetaDataBuffer, LogBufferDescriptor::initialTermId(m_logMetaDataBuffer));
     m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(capacity);
 }
 

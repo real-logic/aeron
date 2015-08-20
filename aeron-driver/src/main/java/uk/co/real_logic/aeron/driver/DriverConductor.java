@@ -376,11 +376,11 @@ public class DriverConductor implements Agent
             .collect(toList());
     }
 
-    private <T extends DriverManagedResourceProvider> void onCheckManagedResources(final ArrayList<T> list, final long time)
+    private <T extends DriverManagedResource> void onCheckManagedResources(final ArrayList<T> list, final long time)
     {
         for (int i = list.size() - 1; i >= 0; i--)
         {
-            final DriverManagedResource resource = list.get(i).managedResource();
+            final DriverManagedResource resource = list.get(i);
 
             resource.onTimeEvent(time, this);
 
@@ -778,7 +778,7 @@ public class DriverConductor implements Agent
             directLog.rawLog(),
             directLog.correlationId(),
             subscriberPositions,
-            generateSourceIdentity(directLog));
+            CommonContext.IPC_CHANNEL);
     }
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)
@@ -976,10 +976,5 @@ public class DriverConductor implements Agent
     private static String generateSourceIdentity(final InetSocketAddress address)
     {
         return String.format("%s:%d", address.getHostString(), address.getPort());
-    }
-
-    private static String generateSourceIdentity(final DirectLog directLog)
-    {
-        return CommonContext.IPC_CHANNEL;
     }
 }

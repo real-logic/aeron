@@ -30,7 +30,7 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePositi
 /**
  * Encapsulation of a LogBuffer used directly between publications and subscriptions
  */
-public class DirectLog implements DriverManagedResourceProvider
+public class DirectLog implements DriverManagedResource
 {
     private final long correlationId;
     private final int sessionId;
@@ -42,9 +42,9 @@ public class DirectLog implements DriverManagedResourceProvider
     private final UnsafeBuffer logMetaDataBuffer;
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
     private final Position publisherLimit;
-    private final DriverManagedResource driverManagedResource = new DirectLogDriverManagedResource();
 
     private int refCount = 0;
+    private boolean reachedEndOfLife = false;
 
     public DirectLog(
         final long correlationId,
@@ -193,41 +193,31 @@ public class DirectLog implements DriverManagedResourceProvider
         return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
     }
 
-    public DriverManagedResource managedResource()
+    public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        return driverManagedResource;
+        if (0 == refCount)
+        {
+            reachedEndOfLife = true;
+        }
     }
 
-    private class DirectLogDriverManagedResource implements DriverManagedResource
+    public boolean hasReachedEndOfLife()
     {
-        private boolean reachedEndOfLife = false;
+        return reachedEndOfLife;
+    }
 
-        public void onTimeEvent(long time, DriverConductor conductor)
-        {
-            if (0 == refCount)
-            {
-                reachedEndOfLife = true;
-            }
-        }
+    public void timeOfLastStateChange(final long time)
+    {
+        throw new UnsupportedOperationException("not used");
+    }
 
-        public boolean hasReachedEndOfLife()
-        {
-            return reachedEndOfLife;
-        }
+    public long timeOfLastStateChange()
+    {
+        throw new UnsupportedOperationException("not used");
+    }
 
-        public void timeOfLastStateChange(long time)
-        {
-            throw new UnsupportedOperationException("not used");
-        }
-
-        public long timeOfLastStateChange()
-        {
-            throw new UnsupportedOperationException("not used");
-        }
-
-        public void delete()
-        {
-            close();
-        }
+    public void delete()
+    {
+        close();
     }
 }

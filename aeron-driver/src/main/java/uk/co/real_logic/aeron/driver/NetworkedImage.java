@@ -87,7 +87,7 @@ class NetworkedImagePadding4 extends NetworkedImageStatusFields
  */
 public class NetworkedImage
     extends NetworkedImagePadding4
-    implements AutoCloseable, NakMessageSender, DriverManagedResourceProvider
+    implements AutoCloseable, NakMessageSender, DriverManagedResource
 {
     public enum Status
     {
@@ -114,7 +114,8 @@ public class NetworkedImage
     private final Position hwmPosition;
     private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
-    private final DriverManagedResource driverManagedResource = new NetworkedImageDriverManagedResource();
+
+    private boolean reachedEndOfLife = false;
 
     public NetworkedImage(
         final long correlationId,
@@ -561,11 +562,6 @@ public class NetworkedImage
         return rebuildPosition;
     }
 
-    public DriverManagedResource managedResource()
-    {
-        return driverManagedResource;
-    }
-
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
     {
         return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(0) == 0;
@@ -601,49 +597,44 @@ public class NetworkedImage
         return isFlowControlOverRun;
     }
 
-    private class NetworkedImageDriverManagedResource implements DriverManagedResource
+    public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        private boolean reachedEndOfLife = false;
-
-        public void onTimeEvent(long time, DriverConductor conductor)
+        switch (status())
         {
-            switch (status())
-            {
-                case INACTIVE:
-                    if (isDrained() || time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
-                    {
-                        status(NetworkedImage.Status.LINGER);
-                        conductor.imageTransitionToLinger(NetworkedImage.this);
-                    }
-                    break;
+            case INACTIVE:
+                if (isDrained() || time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
+                {
+                    status(NetworkedImage.Status.LINGER);
+                    conductor.imageTransitionToLinger(NetworkedImage.this);
+                }
+                break;
 
-                case LINGER:
-                    if (time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
-                    {
-                        reachedEndOfLife = true;
-                        conductor.cleanupImage(NetworkedImage.this);
-                    }
-                    break;
-            }
+            case LINGER:
+                if (time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
+                {
+                    reachedEndOfLife = true;
+                    conductor.cleanupImage(NetworkedImage.this);
+                }
+                break;
         }
+    }
 
-        public boolean hasReachedEndOfLife()
-        {
-            return reachedEndOfLife;
-        }
+    public boolean hasReachedEndOfLife()
+    {
+        return reachedEndOfLife;
+    }
 
-        public void timeOfLastStateChange(long time)
-        {
-        }
+    public void timeOfLastStateChange(final long time)
+    {
+    }
 
-        public long timeOfLastStateChange()
-        {
-            return NetworkedImage.this.timeOfLastStatusChange();
-        }
+    public long timeOfLastStateChange()
+    {
+        return NetworkedImage.this.timeOfLastStatusChange();
+    }
 
-        public void delete()
-        {
-            close();
-        }
+    public void delete()
+    {
+        close();
     }
 }

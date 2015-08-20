@@ -18,12 +18,12 @@ package uk.co.real_logic.aeron.driver;
 /**
  * Aeron client library tracker.
  */
-public class AeronClient implements DriverManagedResourceProvider
+public class AeronClient implements DriverManagedResource
 {
     private final long clientId;
     private final long clientLivenessTimeoutNs;
     private long timeOfLastKeepalive;
-    private DriverManagedResource driverManagedResource = new AeronClientManagedResource();;
+    private boolean reachedEndOfLife = false;
 
     public AeronClient(final long clientId, final long clientLivenessTimeoutNs, final long now)
     {
@@ -52,41 +52,31 @@ public class AeronClient implements DriverManagedResourceProvider
         return now > (timeOfLastKeepalive + clientLivenessTimeoutNs);
     }
 
-    public DriverManagedResource managedResource()
+    public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        return driverManagedResource;
+        if (time > (timeOfLastKeepalive + clientLivenessTimeoutNs))
+        {
+            reachedEndOfLife = true;
+        }
     }
 
-    private class AeronClientManagedResource implements DriverManagedResource
+    public boolean hasReachedEndOfLife()
     {
-        private boolean reachedEndOfLife = false;
+        return reachedEndOfLife;
+    }
 
-        public void onTimeEvent(long time, DriverConductor conductor)
-        {
-            if (time > (timeOfLastKeepalive + clientLivenessTimeoutNs))
-            {
-                reachedEndOfLife = true;
-            }
-        }
+    public void timeOfLastStateChange(final long time)
+    {
+        timeOfLastKeepalive = time;
+    }
 
-        public boolean hasReachedEndOfLife()
-        {
-            return reachedEndOfLife;
-        }
+    public long timeOfLastStateChange()
+    {
+        return timeOfLastKeepalive;
+    }
 
-        public void timeOfLastStateChange(long time)
-        {
-            timeOfLastKeepalive = time;
-        }
-
-        public long timeOfLastStateChange()
-        {
-            return timeOfLastKeepalive;
-        }
-
-        public void delete()
-        {
-            // nothing to do
-        }
+    public void delete()
+    {
+        // nothing to do
     }
 }

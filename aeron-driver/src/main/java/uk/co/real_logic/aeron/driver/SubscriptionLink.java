@@ -26,7 +26,7 @@ import static uk.co.real_logic.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOU
 /**
  * Subscription registration from a client used for liveness tracking
  */
-public class SubscriptionLink implements DriverManagedResourceProvider
+public class SubscriptionLink implements DriverManagedResource
 {
     private final long registrationId;
     private final int streamId;
@@ -35,9 +35,9 @@ public class SubscriptionLink implements DriverManagedResourceProvider
     private final Map<NetworkedImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
     private final DirectLog directLog;
     private final ReadablePosition directLogSubscriberPosition;
-    private final DriverManagedResource driverManagedResource = new SubscriptionLinkDriverManagedResource();
 
-    // NetworkedImage constructor
+    private boolean reachedEndOfLife = false;
+
     public SubscriptionLink(
         final long registrationId,
         final ReceiveChannelEndpoint channelEndpoint,
@@ -52,7 +52,6 @@ public class SubscriptionLink implements DriverManagedResourceProvider
         this.directLogSubscriberPosition = null;
     }
 
-    // DirectLog (IPC) constructor
     public SubscriptionLink(
         final long registrationId,
         final int streamId,
@@ -116,42 +115,32 @@ public class SubscriptionLink implements DriverManagedResourceProvider
         }
     }
 
-    public DriverManagedResource managedResource()
+    public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        return driverManagedResource;
+        if (time > (timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
+        {
+            reachedEndOfLife = true;
+            conductor.cleanupSubscriptionLink(SubscriptionLink.this);
+        }
     }
 
-    private class SubscriptionLinkDriverManagedResource implements DriverManagedResource
+    public boolean hasReachedEndOfLife()
     {
-        private boolean reachedEndOfLife = false;
+        return reachedEndOfLife;
+    }
 
-        public void onTimeEvent(long time, DriverConductor conductor)
-        {
-            if (time > (timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
-            {
-                reachedEndOfLife = true;
-                conductor.cleanupSubscriptionLink(SubscriptionLink.this);
-            }
-        }
+    public void timeOfLastStateChange(final long time)
+    {
+        // not set this way
+    }
 
-        public boolean hasReachedEndOfLife()
-        {
-            return reachedEndOfLife;
-        }
+    public long timeOfLastStateChange()
+    {
+        return timeOfLastKeepaliveFromClient();
+    }
 
-        public void timeOfLastStateChange(long time)
-        {
-            // not set this way
-        }
-
-        public long timeOfLastStateChange()
-        {
-            return timeOfLastKeepaliveFromClient();
-        }
-
-        public void delete()
-        {
-            close();
-        }
+    public void delete()
+    {
+        close();
     }
 }

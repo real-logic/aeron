@@ -25,7 +25,7 @@ public interface DriverManagedResource extends ManagedResource
      * @param time      now in nanoseconds
      * @param conductor to inform of any state transitions
      */
-    void onTimeEvent(final long time, final DriverConductor conductor);
+    void onTimeEvent(long time, DriverConductor conductor);
 
     /**
      * Has resource reached end of its life and should be reclaimed?

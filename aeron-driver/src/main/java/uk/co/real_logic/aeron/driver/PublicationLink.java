@@ -18,13 +18,14 @@ package uk.co.real_logic.aeron.driver;
 /**
  * Tracks a aeron client interest registration in a {@link NetworkPublication}.
  */
-public class PublicationLink implements DriverManagedResourceProvider
+public class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
     private final NetworkPublication publication;
     private final DirectLog directLog;
     private final AeronClient client;
-    private final DriverManagedResource driverManagedResource = new PublicationLinkManagedResource();
+
+    private boolean reachedEndOfLife = false;
 
     public PublicationLink(final long registrationId, final NetworkPublication publication, final AeronClient client)
     {
@@ -61,41 +62,31 @@ public class PublicationLink implements DriverManagedResourceProvider
         return registrationId;
     }
 
-    public DriverManagedResource managedResource()
+    public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        return driverManagedResource;
+        if (client.hasTimedOut(time))
+        {
+            reachedEndOfLife = true;
+        }
     }
 
-    private class PublicationLinkManagedResource implements DriverManagedResource
+    public boolean hasReachedEndOfLife()
     {
-        private boolean reachedEndOfLife = false;
+        return reachedEndOfLife;
+    }
 
-        public void onTimeEvent(long time, DriverConductor conductor)
-        {
-            if (client.hasTimedOut(time))
-            {
-                reachedEndOfLife = true;
-            }
-        }
+    public void timeOfLastStateChange(final long time)
+    {
+        // not set this way
+    }
 
-        public boolean hasReachedEndOfLife()
-        {
-            return reachedEndOfLife;
-        }
+    public long timeOfLastStateChange()
+    {
+        return client.timeOfLastKeepalive();
+    }
 
-        public void timeOfLastStateChange(long time)
-        {
-            // not set this way
-        }
-
-        public long timeOfLastStateChange()
-        {
-            return client.timeOfLastKeepalive();
-        }
-
-        public void delete()
-        {
-            close();
-        }
+    public void delete()
+    {
+        close();
     }
 }

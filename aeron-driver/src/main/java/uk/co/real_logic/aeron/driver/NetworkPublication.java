@@ -71,7 +71,7 @@ class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
  * Publication to be sent to registered subscribers.
  */
 public class NetworkPublication extends NetworkPublicationPadding3 implements
-    RetransmitSender, AutoCloseable, DriverManagedResourceProvider
+    RetransmitSender, AutoCloseable, DriverManagedResource
 {
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -80,6 +80,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
     private final int termWindowLength;
 
     private volatile boolean hasStatusMessageBeenReceived = false;
+    private boolean reachedEndOfLife = false;
 
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
@@ -93,7 +94,6 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final FlowControl flowControl;
     private final RetransmitHandler retransmitHandler;
-    private final DriverManagedResource driverManagedResource = new NetworkPublicationDriverManagedResource();
     private final RawLog rawLog;
 
     public NetworkPublication(
@@ -350,11 +350,6 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         senderPositionLimit(position);
     }
 
-    public DriverManagedResource managedResource()
-    {
-        return driverManagedResource;
-    }
-
     private int sendData(final long now, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
@@ -463,36 +458,31 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
             .frameLength(0);
     }
 
-    private class NetworkPublicationDriverManagedResource implements DriverManagedResource
+    public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        private boolean reachedEndOfLife = false;
-
-        public void onTimeEvent(long time, DriverConductor conductor)
+        if (isUnreferencedAndFlushed(time) && time > (timeOfFlush() + PUBLICATION_LINGER_NS))
         {
-            if (isUnreferencedAndFlushed(time) && time > (timeOfFlush() + PUBLICATION_LINGER_NS))
-            {
-                reachedEndOfLife = true;
-                conductor.cleanupPublication(NetworkPublication.this);
-            }
+            reachedEndOfLife = true;
+            conductor.cleanupPublication(NetworkPublication.this);
         }
+    }
 
-        public boolean hasReachedEndOfLife()
-        {
-            return reachedEndOfLife;
-        }
+    public boolean hasReachedEndOfLife()
+    {
+        return reachedEndOfLife;
+    }
 
-        public void timeOfLastStateChange(long time)
-        {
-        }
+    public void timeOfLastStateChange(final long time)
+    {
+    }
 
-        public long timeOfLastStateChange()
-        {
-            return timeOfFlush();
-        }
+    public long timeOfLastStateChange()
+    {
+        return timeOfFlush();
+    }
 
-        public void delete()
-        {
-            // close is done once sender thread has removed
-        }
+    public void delete()
+    {
+        // close is done once sender thread has removed
     }
 }

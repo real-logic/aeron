@@ -80,11 +80,11 @@ public class DriverConductor implements Agent
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
     private final HashMap<String, ReceiveChannelEndpoint> receiveChannelEndpointByChannelMap = new HashMap<>();
     private final ArrayList<PublicationLink> publicationLinks = new ArrayList<>();
-    private final ArrayList<NetworkPublication> publications = new ArrayList<>();
+    private final ArrayList<NetworkPublication> networkPublications = new ArrayList<>();
     private final ArrayList<SubscriptionLink> subscriptionLinks = new ArrayList<>();
-    private final ArrayList<NetworkedImage> images = new ArrayList<>();
+    private final ArrayList<PublicationImage> publicationImages = new ArrayList<>();
     private final ArrayList<AeronClient> clients = new ArrayList<>();
-    private final ArrayList<DirectLog> directLogs = new ArrayList<>();
+    private final ArrayList<DirectPublication> directPublications = new ArrayList<>();
 
     private final PublicationMessageFlyweight publicationMsgFlyweight = new PublicationMessageFlyweight();
     private final SubscriptionMessageFlyweight subscriptionMsgFlyweight = new SubscriptionMessageFlyweight();
@@ -149,9 +149,9 @@ public class DriverConductor implements Agent
     public void onClose()
     {
         rawLogFactory.close();
-        publications.forEach(NetworkPublication::close);
-        images.forEach(NetworkedImage::close);
-        directLogs.forEach(DirectLog::close);
+        networkPublications.forEach(NetworkPublication::close);
+        publicationImages.forEach(PublicationImage::close);
+        directPublications.forEach(DirectPublication::close);
         sendChannelEndpointByChannelMap.values().forEach(SendChannelEndpoint::close);
         receiveChannelEndpointByChannelMap.values().forEach(ReceiveChannelEndpoint::close);
     }
@@ -171,9 +171,9 @@ public class DriverConductor implements Agent
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    public DirectLog directLog(final long streamId)
+    public DirectPublication getDirectPublication(final long streamId)
     {
-        return findDirectLog(directLogs, streamId);
+        return findDirectPublication(directPublications, streamId);
     }
 
     public int doWork() throws Exception
@@ -188,25 +188,25 @@ public class DriverConductor implements Agent
         final long now = nanoClock.nanoTime();
         workCount += processTimers(now);
 
-        final ArrayList<NetworkedImage> images = this.images;
-        for (int i = 0, size = images.size(); i < size; i++)
+        final ArrayList<PublicationImage> publicationImages = this.publicationImages;
+        for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            final NetworkedImage image = images.get(i);
+            final PublicationImage image = publicationImages.get(i);
             workCount += image.trackRebuild(now);
         }
 
-        final ArrayList<NetworkPublication> publications = this.publications;
-        for (int i = 0, size = publications.size(); i < size; i++)
+        final ArrayList<NetworkPublication> networkPublications = this.networkPublications;
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
         {
-            final NetworkPublication publication = publications.get(i);
+            final NetworkPublication publication = networkPublications.get(i);
             workCount += publication.updatePublishersLimit() + publication.cleanLogBuffer();
         }
 
-        final ArrayList<DirectLog> directLogs = this.directLogs;
-        for (int i = 0, size = directLogs.size(); i < size; i++)
+        final ArrayList<DirectPublication> directPublications = this.directPublications;
+        for (int i = 0, size = directPublications.size(); i < size; i++)
         {
-            final DirectLog directLog = directLogs.get(i);
-            workCount += directLog.updatePublishersLimit() + directLog.cleanLogBuffer();
+            final DirectPublication directPublication = directPublications.get(i);
+            workCount += directPublication.updatePublishersLimit() + directPublication.cleanLogBuffer();
         }
 
         return workCount;
@@ -239,10 +239,10 @@ public class DriverConductor implements Agent
 
         if (subscriberPositions.size() > 0)
         {
-            final RawLog rawLog = newImageLog(
+            final RawLog rawLog = newPublicationImageLog(
                 sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, imageCorrelationId);
 
-            final NetworkedImage image = new NetworkedImage(
+            final PublicationImage image = new PublicationImage(
                 imageCorrelationId,
                 imageLivenessTimeoutNs,
                 channelEndpoint,
@@ -265,7 +265,7 @@ public class DriverConductor implements Agent
             subscriberPositions.forEach(
                 (subscriberPosition) -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));
 
-            images.add(image);
+            publicationImages.add(image);
             receiverProxy.newImage(channelEndpoint, image);
 
             clientProxy.onImageReady(
@@ -331,7 +331,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    public void imageTransitionToLinger(final NetworkedImage image)
+    public void imageTransitionToLinger(final PublicationImage image)
     {
         clientProxy.onInactiveImage(
             image.correlationId(),
@@ -343,7 +343,7 @@ public class DriverConductor implements Agent
         receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
     }
 
-    public void cleanupImage(final NetworkedImage image)
+    public void cleanupImage(final PublicationImage image)
     {
         logger.logImageRemoval(
             image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
@@ -398,10 +398,10 @@ public class DriverConductor implements Agent
 
         onCheckManagedResources(clients, nanoTimeNow);
         onCheckManagedResources(publicationLinks, nanoTimeNow);
-        onCheckManagedResources(publications, nanoTimeNow);
+        onCheckManagedResources(networkPublications, nanoTimeNow);
         onCheckManagedResources(subscriptionLinks, nanoTimeNow);
-        onCheckManagedResources(images, nanoTimeNow);
-        onCheckManagedResources(directLogs, nanoTimeNow);
+        onCheckManagedResources(publicationImages, nanoTimeNow);
+        onCheckManagedResources(directPublications, nanoTimeNow);
     }
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
@@ -427,7 +427,7 @@ public class DriverConductor implements Agent
 
                     if (CommonContext.IPC_CHANNEL.equals(channel))
                     {
-                        onAddDirectLogPublication(streamId, correlationId, clientId);
+                        onAddDirectPublication(streamId, correlationId, clientId);
                     }
                     else
                     {
@@ -462,11 +462,11 @@ public class DriverConductor implements Agent
 
                     if (CommonContext.IPC_CHANNEL.equals(channel))
                     {
-                        onAddDirectLogSubscription(streamId, correlationId, clientId);
+                        onAddDirectPublicationSubscription(streamId, correlationId, clientId);
                     }
                     else
                     {
-                        onAddNetworkSubscription(channel, streamId, correlationId, clientId);
+                        onAddNetworkPublicationSubscription(channel, streamId, correlationId, clientId);
                     }
                     break;
                 }
@@ -546,7 +546,7 @@ public class DriverConductor implements Agent
             publication = new NetworkPublication(
                 channelEndpoint,
                 nanoClock,
-                newPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId),
+                newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId),
                 newPosition("sender pos", channel, sessionId, streamId, registrationId),
                 newPosition("publisher limit", channel, sessionId, streamId, registrationId),
                 sessionId,
@@ -558,7 +558,7 @@ public class DriverConductor implements Agent
                 retransmitHandler);
 
             channelEndpoint.addPublication(publication);
-            publications.add(publication);
+            networkPublications.add(publication);
             senderProxy.newPublication(publication);
         }
 
@@ -573,23 +573,20 @@ public class DriverConductor implements Agent
             publication.publisherLimitId());
     }
 
-    private void onAddDirectLogPublication(
-        final int streamId,
-        final long registrationId,
-        final long clientId)
+    private void onAddDirectPublication(final int streamId, final long registrationId, final long clientId)
     {
-        final DirectLog directLog = getOrAddDirectLog(streamId);
+        final DirectPublication directPublication = getOrAddDirectPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);
 
-        final PublicationLink publicationLink = new PublicationLink(registrationId, directLog, client);
+        final PublicationLink publicationLink = new PublicationLink(registrationId, directPublication, client);
         publicationLinks.add(publicationLink);
 
         clientProxy.onPublicationReady(
             streamId,
-            directLog.sessionId(),
-            directLog.rawLog(),
+            directPublication.sessionId(),
+            directPublication.rawLog(),
             registrationId,
-            directLog.publisherLimitId());
+            directPublication.publisherLimitId());
     }
 
     private int nextSessionId()
@@ -607,7 +604,7 @@ public class DriverConductor implements Agent
         publicationLinks.add(new PublicationLink(registrationId, publication, client));
     }
 
-    private RawLog newPublicationLog(
+    private RawLog newNetworkPublicationLog(
         final int sessionId, final int streamId, final int initialTermId, final UdpChannel udpChannel, final long registrationId)
     {
         final String canonicalForm = udpChannel.canonicalForm();
@@ -623,7 +620,7 @@ public class DriverConductor implements Agent
         return rawLog;
     }
 
-    private RawLog newImageLog(
+    private RawLog newPublicationImageLog(
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -645,7 +642,7 @@ public class DriverConductor implements Agent
         return rawLog;
     }
 
-    private RawLog newDirectRawLog(
+    private RawLog newDirectPublicationLog(
         final int sessionId, final int streamId, final int initialTermId, final long registrationId)
     {
         final RawLog rawLog = rawLogFactory.newShared(sessionId, streamId, registrationId);
@@ -707,7 +704,7 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onAddNetworkSubscription(
+    private void onAddNetworkPublicationSubscription(
         final String channel,
         final int streamId,
         final long registrationId,
@@ -727,7 +724,7 @@ public class DriverConductor implements Agent
         subscriptionLinks.add(subscription);
         clientProxy.operationSucceeded(registrationId);
 
-        images
+        publicationImages
             .stream()
             .filter((image) -> image.matches(channelEndpoint, streamId) && (image.subscriberCount() > 0))
             .forEach(
@@ -750,21 +747,22 @@ public class DriverConductor implements Agent
                 });
     }
 
-    private void onAddDirectLogSubscription(
+    private void onAddDirectPublicationSubscription(
         final int streamId,
         final long registrationId,
         final long clientId)
     {
-        final DirectLog directLog = getOrAddDirectLog(streamId);
+        final DirectPublication directPublication = getOrAddDirectPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);
 
         final Position position = newPosition(
-            "subscriber pos", CommonContext.IPC_CHANNEL, directLog.sessionId(), streamId, registrationId);
+            "subscriber pos", CommonContext.IPC_CHANNEL, directPublication.sessionId(), streamId, registrationId);
 
-        final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, streamId, directLog, position, client);
+        final SubscriptionLink subscriptionLink = new SubscriptionLink(
+            registrationId, streamId, directPublication, position, client);
 
         subscriptionLinks.add(subscriptionLink);
-        directLog.addSubscription(position);
+        directPublication.addSubscription(position);
 
         clientProxy.operationSucceeded(registrationId);
 
@@ -773,10 +771,10 @@ public class DriverConductor implements Agent
 
         clientProxy.onImageReady(
             streamId,
-            directLog.sessionId(),
-            directLog.joiningPosition(),
-            directLog.rawLog(),
-            directLog.correlationId(),
+            directPublication.sessionId(),
+            directPublication.joiningPosition(),
+            directPublication.rawLog(),
+            directPublication.correlationId(),
             subscriberPositions,
             CommonContext.IPC_CHANNEL);
     }
@@ -862,26 +860,26 @@ public class DriverConductor implements Agent
         return client;
     }
 
-    private DirectLog getOrAddDirectLog(final int streamId)
+    private DirectPublication getOrAddDirectPublication(final int streamId)
     {
-        DirectLog directLog = findDirectLog(directLogs, streamId);
+        DirectPublication directPublication = findDirectPublication(directPublications, streamId);
 
-        if (null == directLog)
+        if (null == directPublication)
         {
             final long imageCorrelationId = nextImageCorrelationId();
             final int sessionId = nextSessionId + nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newDirectRawLog(sessionId, streamId, initialTermId, imageCorrelationId);
+            final RawLog rawLog = newDirectPublicationLog(sessionId, streamId, initialTermId, imageCorrelationId);
 
             final Position publisherLimit =
                 newPosition("publisher limit", CommonContext.IPC_CHANNEL, sessionId, streamId, imageCorrelationId);
 
-            directLog = new DirectLog(imageCorrelationId, sessionId, streamId, publisherLimit, rawLog);
+            directPublication = new DirectPublication(imageCorrelationId, sessionId, streamId, publisherLimit, rawLog);
 
-            directLogs.add(directLog);
+            directPublications.add(directPublication);
         }
 
-        return directLog;
+        return directPublication;
     }
 
     private Position newPosition(
@@ -956,21 +954,22 @@ public class DriverConductor implements Agent
         return subscriptionLink;
     }
 
-    private static DirectLog findDirectLog(final ArrayList<DirectLog> directLogs, final long streamId)
+    private static DirectPublication findDirectPublication(
+        final ArrayList<DirectPublication> directPublications, final long streamId)
     {
-        DirectLog directLog = null;
+        DirectPublication directPublication = null;
 
-        for (int i = 0, size = directLogs.size(); i < size; i++)
+        for (int i = 0, size = directPublications.size(); i < size; i++)
         {
-            final DirectLog log = directLogs.get(i);
+            final DirectPublication log = directPublications.get(i);
             if (log.streamId() == streamId)
             {
-                directLog = log;
+                directPublication = log;
                 break;
             }
         }
 
-        return directLog;
+        return directPublication;
     }
 
     private static String generateSourceIdentity(final InetSocketAddress address)

@@ -178,7 +178,7 @@ public class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
-        final NetworkedImage image = new NetworkedImage(
+        final PublicationImage image = new PublicationImage(
             CORRELATION_ID,
             Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
             receiveChannelEndpoint,
@@ -250,7 +250,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
-                    new NetworkedImage(
+                    new PublicationImage(
                         CORRELATION_ID,
                         Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
                         receiveChannelEndpoint,
@@ -314,7 +314,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
-                    new NetworkedImage(
+                    new PublicationImage(
                         CORRELATION_ID,
                         Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
                         receiveChannelEndpoint,
@@ -381,7 +381,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
-                    new NetworkedImage(
+                    new PublicationImage(
                         CORRELATION_ID,
                         Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
                         receiveChannelEndpoint,
@@ -452,7 +452,7 @@ public class ReceiverTest
                 // pass in new term buffer from conductor, which should trigger SM
                 receiverProxy.newImage(
                     receiveChannelEndpoint,
-                    new NetworkedImage(
+                    new PublicationImage(
                         CORRELATION_ID,
                         Configuration.IMAGE_LIVENESS_TIMEOUT_NS,
                         receiveChannelEndpoint,
@@ -513,7 +513,7 @@ public class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
-        final NetworkedImage mockImage = mock(NetworkedImage.class);
+        final PublicationImage mockImage = mock(PublicationImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);
         when(mockImage.streamId()).thenReturn(STREAM_ID);
         when(mockImage.checkForActivity(anyLong())).thenReturn(false);
@@ -535,7 +535,7 @@ public class ReceiverTest
         fillSetupFrame(setupHeader);
         receiveChannelEndpoint.onSetupMessage(setupHeader, setupBuffer, senderAddress);
 
-        final NetworkedImage mockImage = mock(NetworkedImage.class);
+        final PublicationImage mockImage = mock(PublicationImage.class);
         when(mockImage.sessionId()).thenReturn(SESSION_ID);
         when(mockImage.streamId()).thenReturn(STREAM_ID);
         when(mockImage.checkForActivity(anyLong())).thenReturn(true);

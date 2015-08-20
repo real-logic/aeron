@@ -29,16 +29,16 @@ import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 import java.net.InetSocketAddress;
 import java.util.List;
 
-import static uk.co.real_logic.aeron.driver.NetworkedImage.Status.ACTIVE;
+import static uk.co.real_logic.aeron.driver.PublicationImage.Status.ACTIVE;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
-class NetworkedImagePadding1
+class PublicationImagePadding1
 {
     @SuppressWarnings("unused")
     protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
-class NetworkedImageConductorFields extends NetworkedImagePadding1
+class PublicationImageConductorFields extends PublicationImagePadding1
 {
     protected long timeOfLastStatusChange;
     protected long rebuildPosition;
@@ -50,13 +50,13 @@ class NetworkedImageConductorFields extends NetworkedImagePadding1
     protected int lossLength;
 }
 
-class NetworkedImagePadding2 extends NetworkedImageConductorFields
+class PublicationImagePadding2 extends PublicationImageConductorFields
 {
     @SuppressWarnings("unused")
     protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
-class NetworkedImageHotFields extends NetworkedImagePadding2
+class PublicationImageHotFields extends PublicationImagePadding2
 {
     protected long lastPacketTimestamp;
     protected long lastStatusMessageTimestamp;
@@ -64,19 +64,19 @@ class NetworkedImageHotFields extends NetworkedImagePadding2
     protected long lastChangeNumber = -1;
 }
 
-class NetworkedImagePadding3 extends NetworkedImageHotFields
+class PublicationImagePadding3 extends PublicationImageHotFields
 {
     @SuppressWarnings("unused")
     protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
-class NetworkedImageStatusFields extends NetworkedImagePadding3
+class PublicationImageStatusFields extends PublicationImagePadding3
 {
     protected volatile long newStatusMessagePosition;
-    protected volatile NetworkedImage.Status status = NetworkedImage.Status.INIT;
+    protected volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 }
 
-class NetworkedImagePadding4 extends NetworkedImageStatusFields
+class PublicationImagePadding4 extends PublicationImageStatusFields
 {
     @SuppressWarnings("unused")
     protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
@@ -85,8 +85,8 @@ class NetworkedImagePadding4 extends NetworkedImageStatusFields
 /**
  * State maintained for active sessionIds within a channel for receiver processing
  */
-public class NetworkedImage
-    extends NetworkedImagePadding4
+public class PublicationImage
+    extends PublicationImagePadding4
     implements AutoCloseable, NakMessageSender, DriverManagedResource
 {
     public enum Status
@@ -117,7 +117,7 @@ public class NetworkedImage
 
     private boolean reachedEndOfLife = false;
 
-    public NetworkedImage(
+    public PublicationImage(
         final long correlationId,
         final long imageLivenessTimeoutNs,
         final ReceiveChannelEndpoint channelEndpoint,
@@ -604,8 +604,8 @@ public class NetworkedImage
             case INACTIVE:
                 if (isDrained() || time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
                 {
-                    status(NetworkedImage.Status.LINGER);
-                    conductor.imageTransitionToLinger(NetworkedImage.this);
+                    status(PublicationImage.Status.LINGER);
+                    conductor.imageTransitionToLinger(PublicationImage.this);
                 }
                 break;
 
@@ -613,7 +613,7 @@ public class NetworkedImage
                 if (time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
                 {
                     reachedEndOfLife = true;
-                    conductor.cleanupImage(NetworkedImage.this);
+                    conductor.cleanupImage(PublicationImage.this);
                 }
                 break;
         }
@@ -630,7 +630,7 @@ public class NetworkedImage
 
     public long timeOfLastStateChange()
     {
-        return NetworkedImage.this.timeOfLastStatusChange();
+        return timeOfLastStatusChange;
     }
 
     public void delete()

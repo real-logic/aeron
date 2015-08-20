@@ -28,9 +28,9 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
- * Encapsulation of a LogBuffer used directly between publications and subscriptions
+ * Encapsulation of a LogBuffer used directly between publishers and subscribers.
  */
-public class DirectLog implements DriverManagedResource
+public class DirectPublication implements DriverManagedResource
 {
     private final long correlationId;
     private final int sessionId;
@@ -46,7 +46,7 @@ public class DirectLog implements DriverManagedResource
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
 
-    public DirectLog(
+    public DirectPublication(
         final long correlationId,
         final int sessionId,
         final int streamId,

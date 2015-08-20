@@ -35,7 +35,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     private final OneToOneConcurrentArrayQueue<ReceiverCmd> commandQueue;
     private final AtomicCounter totalBytesReceived;
     private final NanoClock clock;
-    private final ArrayList<NetworkedImage> images = new ArrayList<>();
+    private final ArrayList<PublicationImage> images = new ArrayList<>();
     private final ArrayList<PendingSetupMessageFromSource> pendingSetupMessages = new ArrayList<>();
 
     public Receiver(final MediaDriver.Context ctx)
@@ -60,7 +60,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         final long now = clock.nanoTime();
         for (int i = images.size() - 1; i >= 0; i--)
         {
-            final NetworkedImage image = images.get(i);
+            final PublicationImage image = images.get(i);
             if (!image.checkForActivity(now))
             {
                 image.removeFromDispatcher();
@@ -97,7 +97,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         channelEndpoint.dispatcher().removeSubscription(streamId);
     }
 
-    public void onNewImage(final ReceiveChannelEndpoint channelEndpoint, final NetworkedImage image)
+    public void onNewImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
         images.add(image);
         channelEndpoint.dispatcher().addImage(image);

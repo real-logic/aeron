@@ -15,23 +15,23 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
-import uk.co.real_logic.aeron.driver.NetworkedImage;
+import uk.co.real_logic.aeron.driver.PublicationImage;
 import uk.co.real_logic.aeron.driver.Receiver;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 
 public class NewImageCmd implements ReceiverCmd
 {
     private final ReceiveChannelEndpoint channelEndpoint;
-    private final NetworkedImage networkedImage;
+    private final PublicationImage publicationImage;
 
-    public NewImageCmd(final ReceiveChannelEndpoint channelEndpoint, final NetworkedImage networkedImage)
+    public NewImageCmd(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage publicationImage)
     {
         this.channelEndpoint = channelEndpoint;
-        this.networkedImage = networkedImage;
+        this.publicationImage = publicationImage;
     }
 
     public void execute(final Receiver receiver)
     {
-        receiver.onNewImage(channelEndpoint, networkedImage);
+        receiver.onNewImage(channelEndpoint, publicationImage);
     }
 }

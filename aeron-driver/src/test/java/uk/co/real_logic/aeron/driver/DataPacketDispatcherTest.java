@@ -47,7 +47,7 @@ public class DataPacketDispatcherTest
     private final DataHeaderFlyweight mockHeader = mock(DataHeaderFlyweight.class);
     private final SetupFlyweight mockSetupHeader = mock(SetupFlyweight.class);
     private final UnsafeBuffer mockBuffer = mock(UnsafeBuffer.class);
-    private final NetworkedImage mockImage = mock(NetworkedImage.class);
+    private final PublicationImage mockImage = mock(PublicationImage.class);
     private final ReceiveChannelEndpoint mockChannelEndpoint = mock(ReceiveChannelEndpoint.class);
 
     @Before
@@ -203,7 +203,7 @@ public class DataPacketDispatcherTest
         dispatcher.addImage(mockImage);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
 
-        verify(mockImage).status(NetworkedImage.Status.ACTIVE);
+        verify(mockImage).status(PublicationImage.Status.ACTIVE);
         verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
     }
 }

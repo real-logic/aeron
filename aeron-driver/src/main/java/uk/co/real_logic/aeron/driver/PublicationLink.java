@@ -22,7 +22,7 @@ public class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
     private final NetworkPublication publication;
-    private final DirectLog directLog;
+    private final DirectPublication directPublication;
     private final AeronClient client;
 
     private boolean reachedEndOfLife = false;
@@ -31,17 +31,17 @@ public class PublicationLink implements DriverManagedResource
     {
         this.registrationId = registrationId;
         this.publication = publication;
-        this.directLog = null;
+        this.directPublication = null;
         this.client = client;
     }
 
-    public PublicationLink(final long registrationId, final DirectLog directLog, final AeronClient client)
+    public PublicationLink(final long registrationId, final DirectPublication directPublication, final AeronClient client)
     {
         this.registrationId = registrationId;
         this.publication = null;
         this.client = client;
-        this.directLog = directLog;
-        directLog.incRef();
+        this.directPublication = directPublication;
+        directPublication.incRef();
     }
 
     public void close()
@@ -51,9 +51,9 @@ public class PublicationLink implements DriverManagedResource
             publication.decRef();
         }
 
-        if (null != directLog)
+        if (null != directPublication)
         {
-            directLog.decRef();
+            directPublication.decRef();
         }
     }
 

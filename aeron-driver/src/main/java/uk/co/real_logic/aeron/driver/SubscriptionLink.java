@@ -32,9 +32,9 @@ public class SubscriptionLink implements DriverManagedResource
     private final int streamId;
     private final ReceiveChannelEndpoint channelEndpoint;
     private final AeronClient aeronClient;
-    private final Map<NetworkedImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
-    private final DirectLog directLog;
-    private final ReadablePosition directLogSubscriberPosition;
+    private final Map<PublicationImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
+    private final DirectPublication directPublication;
+    private final ReadablePosition directPublicationSubscriberPosition;
 
     private boolean reachedEndOfLife = false;
 
@@ -48,24 +48,24 @@ public class SubscriptionLink implements DriverManagedResource
         this.channelEndpoint = channelEndpoint;
         this.streamId = streamId;
         this.aeronClient = aeronClient;
-        this.directLog = null;
-        this.directLogSubscriberPosition = null;
+        this.directPublication = null;
+        this.directPublicationSubscriberPosition = null;
     }
 
     public SubscriptionLink(
         final long registrationId,
         final int streamId,
-        final DirectLog directLog,
+        final DirectPublication directPublication,
         final ReadablePosition subscriberPosition,
         final AeronClient aeronClient)
     {
         this.registrationId = registrationId;
-        this.channelEndpoint = null; // will prevent matches between NetworkedImages and DirectLogs
+        this.channelEndpoint = null; // will prevent matches between PublicationImages and DirectPublications
         this.streamId = streamId;
         this.aeronClient = aeronClient;
-        this.directLog = directLog;
-        directLog.incRef();
-        this.directLogSubscriberPosition = subscriberPosition;
+        this.directPublication = directPublication;
+        directPublication.incRef();
+        this.directPublicationSubscriberPosition = subscriberPosition;
     }
 
     public long registrationId()
@@ -93,25 +93,25 @@ public class SubscriptionLink implements DriverManagedResource
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
     }
 
-    public void addImage(final NetworkedImage image, final ReadablePosition position)
+    public void addImage(final PublicationImage image, final ReadablePosition position)
     {
         positionByImageMap.put(image, position);
     }
 
-    public void removeImage(final NetworkedImage image)
+    public void removeImage(final PublicationImage image)
     {
         positionByImageMap.remove(image);
     }
 
     public void close()
     {
-        positionByImageMap.forEach(NetworkedImage::removeSubscriber);
+        positionByImageMap.forEach(PublicationImage::removeSubscriber);
 
-        if (null != directLog)
+        if (null != directPublication)
         {
-            directLog.removeSubscription(directLogSubscriberPosition);
-            directLog.decRef();
-            directLogSubscriberPosition.close();
+            directPublication.removeSubscription(directPublicationSubscriberPosition);
+            directPublication.decRef();
+            directPublicationSubscriberPosition.close();
         }
     }
 

@@ -39,14 +39,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
-public class DirectLogTest
+public class DirectPublicationTest
 {
     private static final int STREAM_ID = 10;
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int BUFFER_LENGTH = 1024 * 1024;
 
     private Position publisherLimit;
-    private DirectLog uutDirectLog;
+    private DirectPublication directPublication;
 
     private DriverProxy driverProxy;
     private DriverConductor driverConductor;
@@ -54,6 +54,7 @@ public class DirectLogTest
     private long currentTime = 0;
     private NanoClock nanoClock = () -> currentTime;
 
+    @SuppressWarnings("unchecked")
     @Before
     public void setUp() throws Exception
     {
@@ -90,9 +91,9 @@ public class DirectLogTest
         driverProxy.addPublication(CommonContext.IPC_CHANNEL, STREAM_ID);
         driverConductor.doWork();
 
-        uutDirectLog = driverConductor.directLog(STREAM_ID);
+        directPublication = driverConductor.getDirectPublication(STREAM_ID);
 
-        publisherLimit = new UnsafeBufferPosition(counterBuffer, uutDirectLog.publisherLimitId());
+        publisherLimit = new UnsafeBufferPosition(counterBuffer, directPublication.publisherLimitId());
     }
 
     @Test
@@ -104,21 +105,21 @@ public class DirectLogTest
     @Test
     public void shouldKeepPublisherLimitZeroOnNoSubscriptionUpdate()
     {
-        uutDirectLog.updatePublishersLimit();
+        directPublication.updatePublishersLimit();
         assertThat(publisherLimit.get(), is(0L));
     }
 
     @Test
     public void shouldHaveJoiningPositionZeroWhenNoSubscriptions()
     {
-        assertThat(uutDirectLog.joiningPosition(), is(0L));
+        assertThat(directPublication.joiningPosition(), is(0L));
     }
 
     @Test
     public void shouldStartWithActiveTermIdSetToInitialTermId()
     {
-        final int activeTermId = LogBufferDescriptor.activeTermId(uutDirectLog.rawLog().logMetaData());
-        final int initialTermId = LogBufferDescriptor.initialTermId(uutDirectLog.rawLog().logMetaData());
+        final int activeTermId = LogBufferDescriptor.activeTermId(directPublication.rawLog().logMetaData());
+        final int initialTermId = LogBufferDescriptor.initialTermId(directPublication.rawLog().logMetaData());
 
         assertThat(activeTermId, is(initialTermId));
     }
@@ -130,21 +131,5 @@ public class DirectLogTest
         driverConductor.doWork();
 
         assertThat(publisherLimit.get(), is(greaterThan(0L)));
-    }
-
-    public void simulateSending(final long position)
-    {
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH);
-        final int initialTermId = LogBufferDescriptor.initialTermId(uutDirectLog.rawLog().logMetaData());
-        final int activeTermId =
-            LogBufferDescriptor.computeTermIdFromPosition(position, positionBitsToShift, initialTermId);
-        final int termOffset =
-            LogBufferDescriptor.computeTermOffsetFromPosition(position, positionBitsToShift);
-
-        LogBufferDescriptor.activeTermId(uutDirectLog.rawLog().logMetaData(), activeTermId);
-        final int index = LogBufferDescriptor.indexByTerm(initialTermId, activeTermId);
-
-        uutDirectLog.rawLog().partitions()[index]
-            .metaDataBuffer().putInt(LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET, termOffset);
     }
 }

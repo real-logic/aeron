@@ -28,7 +28,7 @@ import java.net.InetSocketAddress;
 import static uk.co.real_logic.aeron.driver.DataPacketDispatcher.SessionStatus.*;
 
 /**
- * Handling of dispatching data packets to {@link NetworkedImage}s streams.
+ * Handling of dispatching data packets to {@link PublicationImage}s streams.
  *
  * All methods should be called via {@link Receiver} thread
  */
@@ -42,7 +42,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
     }
 
     private final BiInt2ObjectMap<SessionStatus> ignoredSessionsMap = new BiInt2ObjectMap<>();
-    private final Int2ObjectHashMap<Int2ObjectHashMap<NetworkedImage>> sessionsByStreamIdMap = new Int2ObjectHashMap<>();
+    private final Int2ObjectHashMap<Int2ObjectHashMap<PublicationImage>> sessionsByStreamIdMap = new Int2ObjectHashMap<>();
     private final DriverConductorProxy conductorProxy;
     private final Receiver receiver;
 
@@ -62,21 +62,21 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
     public void removeSubscription(final int streamId)
     {
-        final Int2ObjectHashMap<NetworkedImage> imageBySessionIdMap = sessionsByStreamIdMap.remove(streamId);
+        final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.remove(streamId);
         if (null == imageBySessionIdMap)
         {
             throw new UnknownSubscriptionException("No subscription registered on stream " + streamId);
         }
 
-        imageBySessionIdMap.values().forEach(NetworkedImage::ifActiveGoInactive);
+        imageBySessionIdMap.values().forEach(PublicationImage::ifActiveGoInactive);
     }
 
-    public void addImage(final NetworkedImage image)
+    public void addImage(final PublicationImage image)
     {
         final int sessionId = image.sessionId();
         final int streamId = image.streamId();
 
-        final Int2ObjectHashMap<NetworkedImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
         if (null == imageBySessionIdMap)
         {
             throw new IllegalStateException("No subscription registered on stream " + streamId);
@@ -85,15 +85,15 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         imageBySessionIdMap.put(sessionId, image);
         ignoredSessionsMap.remove(sessionId, streamId);
 
-        image.status(NetworkedImage.Status.ACTIVE);
+        image.status(PublicationImage.Status.ACTIVE);
     }
 
-    public void removeImage(final NetworkedImage image)
+    public void removeImage(final PublicationImage image)
     {
         final int sessionId = image.sessionId();
         final int streamId = image.streamId();
 
-        final Int2ObjectHashMap<NetworkedImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
         if (null != imageBySessionIdMap)
         {
             imageBySessionIdMap.remove(sessionId);
@@ -128,13 +128,13 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
-        final Int2ObjectHashMap<NetworkedImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
 
         if (null != imageBySessionIdMap)
         {
             final int sessionId = header.sessionId();
             final int termId = header.termId();
-            final NetworkedImage image = imageBySessionIdMap.get(sessionId);
+            final PublicationImage image = imageBySessionIdMap.get(sessionId);
 
             if (null != image)
             {
@@ -156,14 +156,14 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final InetSocketAddress srcAddress)
     {
         final int streamId = header.streamId();
-        final Int2ObjectHashMap<NetworkedImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
+        final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
 
         if (null != imageBySessionIdMap)
         {
             final int sessionId = header.sessionId();
             final int initialTermId = header.initialTermId();
             final int activeTermId = header.activeTermId();
-            final NetworkedImage image = imageBySessionIdMap.get(sessionId);
+            final PublicationImage image = imageBySessionIdMap.get(sessionId);
 
             if (null == image && isNotAlreadyInProgressOrOnCoolDown(streamId, sessionId))
             {

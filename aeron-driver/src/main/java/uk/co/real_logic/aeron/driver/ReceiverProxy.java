@@ -75,7 +75,7 @@ public class ReceiverProxy
         }
     }
 
-    public void newImage(final ReceiveChannelEndpoint channelEndpoint, final NetworkedImage image)
+    public void newImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
         if (isSharedThread())
         {

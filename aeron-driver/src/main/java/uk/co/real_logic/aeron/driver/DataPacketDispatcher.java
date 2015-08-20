@@ -71,7 +71,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         imageBySessionIdMap.values().forEach(PublicationImage::ifActiveGoInactive);
     }
 
-    public void addImage(final PublicationImage image)
+    public void addPublicationImage(final PublicationImage image)
     {
         final int sessionId = image.sessionId();
         final int streamId = image.streamId();
@@ -88,7 +88,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         image.status(PublicationImage.Status.ACTIVE);
     }
 
-    public void removeImage(final PublicationImage image)
+    public void removePublicationImage(final PublicationImage image)
     {
         final int sessionId = image.sessionId();
         final int streamId = image.streamId();
@@ -167,7 +167,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
 
             if (null == image && isNotAlreadyInProgressOrOnCoolDown(streamId, sessionId))
             {
-                createImage(
+                createPublicationImage(
                     channelEndpoint,
                     srcAddress,
                     streamId,
@@ -203,7 +203,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         receiver.addPendingSetupMessage(sessionId, streamId, channelEndpoint);
     }
 
-    private void createImage(
+    private void createPublicationImage(
         final ReceiveChannelEndpoint channelEndpoint,
         final InetSocketAddress srcAddress,
         final int streamId,
@@ -218,7 +218,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
         ignoredSessionsMap.put(sessionId, streamId, INIT_IN_PROGRESS);
-        conductorProxy.createImage(
+        conductorProxy.createPublicationImage(
             sessionId,
             streamId,
             initialTermId,

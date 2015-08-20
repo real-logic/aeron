@@ -165,7 +165,7 @@ public class DriverConductorTest
 
         verify(senderProxy).registerSendChannelEndpoint(any());
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture());
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
         assertThat(publication.streamId(), is(STREAM_ID_1));
@@ -208,7 +208,7 @@ public class DriverConductorTest
 
         driverConductor.doWork();
 
-        verify(senderProxy, times(4)).newPublication(any());
+        verify(senderProxy, times(4)).newNetworkPublication(any());
     }
 
     @Test
@@ -221,7 +221,7 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + PUBLICATION_LINGER_NS * 2);
 
-        verify(senderProxy).removePublication(any());
+        verify(senderProxy).removeNetworkPublication(any());
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
@@ -242,7 +242,7 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS * 2 + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verify(senderProxy, times(4)).removePublication(any());
+        verify(senderProxy, times(4)).removeNetworkPublication(any());
     }
 
     @Test
@@ -311,7 +311,7 @@ public class DriverConductorTest
 
         final InOrder inOrder = inOrder(senderProxy, mockClientProxy);
 
-        inOrder.verify(senderProxy).newPublication(any());
+        inOrder.verify(senderProxy).newNetworkPublication(any());
         inOrder.verify(mockClientProxy).onPublicationReady(eq(STREAM_ID_1), anyInt(), any(), eq(id), anyInt());
         inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any());
         inOrder.verifyNoMoreInteractions();
@@ -345,7 +345,7 @@ public class DriverConductorTest
         driverConductor.doWork();
         driverConductor.doWork();
 
-        verify(senderProxy, never()).newPublication(any());
+        verify(senderProxy, never()).newNetworkPublication(any());
 
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
@@ -360,13 +360,13 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture());
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
 
         doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verify(senderProxy).removePublication(eq(publication));
+        verify(senderProxy).removeNetworkPublication(eq(publication));
         assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
@@ -378,7 +378,7 @@ public class DriverConductorTest
         driverConductor.doWork();
 
         final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
-        verify(senderProxy, times(1)).newPublication(captor.capture());
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
 
         final NetworkPublication publication = captor.getValue();
 
@@ -392,7 +392,7 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        verify(senderProxy, never()).removePublication(eq(publication));
+        verify(senderProxy, never()).removeNetworkPublication(eq(publication));
     }
 
     @Test
@@ -460,12 +460,12 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateImage(
+        driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, initialTermId, activeTermId, termOffset, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
-        verify(receiverProxy).newImage(eq(receiveChannelEndpoint), captor.capture());
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
 
         final PublicationImage publicationImage = captor.getValue();
         assertThat(publicationImage.sessionId(), is(SESSION_ID));
@@ -492,11 +492,11 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateImage(
+        driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_2, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
-        verify(receiverProxy, never()).newImage(any(), any());
+        verify(receiverProxy, never()).newPublicationImage(any(), any());
         verify(mockClientProxy, never()).onImageReady(
             anyInt(), anyInt(), anyLong(), anyObject(), anyLong(), anyObject(), anyString());
     }
@@ -516,12 +516,12 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateImage(
+        driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
-        verify(receiverProxy).newImage(eq(receiveChannelEndpoint), captor.capture());
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
 
         final PublicationImage publicationImage = captor.getValue();
 
@@ -548,12 +548,12 @@ public class DriverConductorTest
 
         receiveChannelEndpoint.openChannel();
 
-        driverConductor.onCreateImage(
+        driverConductor.onCreatePublicationImage(
             SESSION_ID, STREAM_ID_1, 1, 1, 0, TERM_BUFFER_LENGTH, MTU_LENGTH,
             mock(InetSocketAddress.class), sourceAddress, receiveChannelEndpoint);
 
         final ArgumentCaptor<PublicationImage> captor = ArgumentCaptor.forClass(PublicationImage.class);
-        verify(receiverProxy).newImage(eq(receiveChannelEndpoint), captor.capture());
+        verify(receiverProxy).newPublicationImage(eq(receiveChannelEndpoint), captor.capture());
 
         final PublicationImage publicationImage = captor.getValue();
 

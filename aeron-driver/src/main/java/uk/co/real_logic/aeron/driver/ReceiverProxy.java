@@ -75,15 +75,15 @@ public class ReceiverProxy
         }
     }
 
-    public void newImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
+    public void newPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
         if (isSharedThread())
         {
-            receiver.onNewImage(channelEndpoint, image);
+            receiver.onNewPublicationImage(channelEndpoint, image);
         }
         else
         {
-            offer(new NewImageCmd(channelEndpoint, image));
+            offer(new NewPublicationImageCmd(channelEndpoint, image));
         }
     }
 
@@ -119,7 +119,7 @@ public class ReceiverProxy
         }
         else
         {
-            offer(new RemoveCooldownCmd(channelEndpoint, sessionId, streamId));
+            offer(new RemoveCoolDownCmd(channelEndpoint, sessionId, streamId));
         }
     }
 

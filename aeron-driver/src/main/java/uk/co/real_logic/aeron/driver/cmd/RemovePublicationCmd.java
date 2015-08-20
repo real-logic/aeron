@@ -29,6 +29,6 @@ public class RemovePublicationCmd implements SenderCmd
 
     public void execute(final Sender sender)
     {
-        sender.onRemovePublication(publication);
+        sender.onRemoveNetworkPublication(publication);
     }
 }

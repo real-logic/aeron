@@ -212,7 +212,7 @@ public class DriverConductor implements Agent
         return workCount;
     }
 
-    public void onCreateImage(
+    public void onCreatePublicationImage(
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -266,7 +266,7 @@ public class DriverConductor implements Agent
                 (subscriberPosition) -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));
 
             publicationImages.add(image);
-            receiverProxy.newImage(channelEndpoint, image);
+            receiverProxy.newPublicationImage(channelEndpoint, image);
 
             clientProxy.onImageReady(
                 streamId,
@@ -298,7 +298,7 @@ public class DriverConductor implements Agent
         logger.logPublicationRemoval(
             channelEndpoint.originalUriString(), publication.sessionId(), publication.streamId());
 
-        senderProxy.removePublication(publication);
+        senderProxy.removeNetworkPublication(publication);
 
         if (channelEndpoint.sessionCount() == 0)
         {
@@ -559,7 +559,7 @@ public class DriverConductor implements Agent
 
             channelEndpoint.addPublication(publication);
             networkPublications.add(publication);
-            senderProxy.newPublication(publication);
+            senderProxy.newNetworkPublication(publication);
         }
 
         linkPublication(registrationId, publication, getOrAddClient(clientId));

@@ -26,7 +26,7 @@ import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import java.util.function.Consumer;
 
 /**
- * Agent that iterates over publications for sending them to registered subscribers.
+ * Agent that iterates over networkPublications for sending them to registered subscribers.
  */
 public class Sender implements Agent, Consumer<SenderCmd>
 {
@@ -38,7 +38,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     private final AtomicCounter totalBytesSent;
     private final NanoClock nanoClock;
 
-    private NetworkPublication[] publications = EMPTY_PUBLICATIONS;
+    private NetworkPublication[] networkPublications = EMPTY_PUBLICATIONS;
     private int roundRobinIndex = 0;
 
     public Sender(final MediaDriver.Context ctx)
@@ -78,15 +78,15 @@ public class Sender implements Agent, Consumer<SenderCmd>
         controlTransportPoller.selectNowWithoutProcessing();
     }
 
-    public void onNewPublication(final NetworkPublication publication)
+    public void onNewNetworkPublication(final NetworkPublication publication)
     {
-        publications = ArrayUtil.add(publications, publication);
+        networkPublications = ArrayUtil.add(networkPublications, publication);
         publication.sendChannelEndpoint().registerForSend(publication);
     }
 
-    public void onRemovePublication(final NetworkPublication publication)
+    public void onRemoveNetworkPublication(final NetworkPublication publication)
     {
-        publications = ArrayUtil.remove(publications, publication);
+        networkPublications = ArrayUtil.remove(networkPublications, publication);
         publication.sendChannelEndpoint().unregisterForSend(publication);
         conductorProxy.closeResource(publication);
     }
@@ -99,7 +99,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     private int doSend(final long now)
     {
         int bytesSent = 0;
-        final NetworkPublication[] publications = this.publications;
+        final NetworkPublication[] publications = this.networkPublications;
         final int length = publications.length;
 
         int startingIndex = roundRobinIndex++;

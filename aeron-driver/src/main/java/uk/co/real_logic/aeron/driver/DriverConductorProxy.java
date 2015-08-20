@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.CloseResourceCmd;
-import uk.co.real_logic.aeron.driver.cmd.CreateImageCmd;
+import uk.co.real_logic.aeron.driver.cmd.CreatePublicationImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -50,7 +50,7 @@ public class DriverConductorProxy
         this.driverConductor = driverConductor;
     }
 
-    public void createImage(
+    public void createPublicationImage(
         final int sessionId,
         final int streamId,
         final int initialTermId,
@@ -64,7 +64,7 @@ public class DriverConductorProxy
     {
         if (isShared())
         {
-            driverConductor.onCreateImage(
+            driverConductor.onCreatePublicationImage(
                 sessionId,
                 streamId,
                 initialTermId,
@@ -78,7 +78,7 @@ public class DriverConductorProxy
         }
         else
         {
-            offer(new CreateImageCmd(
+            offer(new CreatePublicationImageCmd(
                 sessionId,
                 streamId,
                 initialTermId,

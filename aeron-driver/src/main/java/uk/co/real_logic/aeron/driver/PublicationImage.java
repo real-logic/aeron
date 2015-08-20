@@ -243,7 +243,7 @@ public class PublicationImage
      */
     public void removeFromDispatcher()
     {
-        channelEndpoint.dispatcher().removeImage(this);
+        channelEndpoint.dispatcher().removePublicationImage(this);
     }
 
     /**

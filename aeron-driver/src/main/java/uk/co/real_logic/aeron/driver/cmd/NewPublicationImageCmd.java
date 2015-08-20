@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Real Logic Ltd.
+ * Copyright 2014 - 2015 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,24 +15,23 @@
  */
 package uk.co.real_logic.aeron.driver.cmd;
 
+import uk.co.real_logic.aeron.driver.PublicationImage;
 import uk.co.real_logic.aeron.driver.Receiver;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 
-public class RemoveCooldownCmd implements ReceiverCmd
+public class NewPublicationImageCmd implements ReceiverCmd
 {
-    private final int sessionId;
-    private final int streamId;
     private final ReceiveChannelEndpoint channelEndpoint;
+    private final PublicationImage publicationImage;
 
-    public RemoveCooldownCmd(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
+    public NewPublicationImageCmd(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage publicationImage)
     {
-        this.sessionId = sessionId;
-        this.streamId = streamId;
         this.channelEndpoint = channelEndpoint;
+        this.publicationImage = publicationImage;
     }
 
-    public void execute(Receiver receiver)
+    public void execute(final Receiver receiver)
     {
-        receiver.onRemoveCoolDown(channelEndpoint, sessionId, streamId);
+        receiver.onNewPublicationImage(channelEndpoint, publicationImage);
     }
 }

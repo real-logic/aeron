@@ -115,7 +115,7 @@ public class DataPacketDispatcherTest
         dispatcher.addSubscription(STREAM_ID);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
-        verify(mockConductorProxy).createImage(
+        verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
             MTU_LENGTH, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
@@ -128,7 +128,7 @@ public class DataPacketDispatcherTest
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
-        verify(mockConductorProxy).createImage(
+        verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
             MTU_LENGTH, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
@@ -137,7 +137,7 @@ public class DataPacketDispatcherTest
     public void shouldNotRequestCreateImageOnceUponReceivingSetupAfterImageAdded()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.addImage(mockImage);
+        dispatcher.addPublicationImage(mockImage);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
         verifyZeroInteractions(mockConductorProxy);
@@ -147,7 +147,7 @@ public class DataPacketDispatcherTest
     public void shouldSetImageInactiveOnRemoveSubscription()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.addImage(mockImage);
+        dispatcher.addPublicationImage(mockImage);
         dispatcher.removeSubscription(STREAM_ID);
 
         verify(mockImage).ifActiveGoInactive();
@@ -157,8 +157,8 @@ public class DataPacketDispatcherTest
     public void shouldSetImageInactiveOnRemoveImage()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.addImage(mockImage);
-        dispatcher.removeImage(mockImage);
+        dispatcher.addPublicationImage(mockImage);
+        dispatcher.removePublicationImage(mockImage);
 
         verify(mockImage).ifActiveGoInactive();
     }
@@ -167,8 +167,8 @@ public class DataPacketDispatcherTest
     public void shouldIgnoreDataAndSetupAfterImageRemoved()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.addImage(mockImage);
-        dispatcher.removeImage(mockImage);
+        dispatcher.addPublicationImage(mockImage);
+        dispatcher.removePublicationImage(mockImage);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
 
@@ -180,8 +180,8 @@ public class DataPacketDispatcherTest
     public void shouldNotIgnoreDataAndSetupAfterImageRemovedAndCooldownRemoved()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.addImage(mockImage);
-        dispatcher.removeImage(mockImage);
+        dispatcher.addPublicationImage(mockImage);
+        dispatcher.removePublicationImage(mockImage);
         dispatcher.removeCoolDown(SESSION_ID, STREAM_ID);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
         dispatcher.onSetupMessage(mockChannelEndpoint, mockSetupHeader, mockBuffer, SRC_ADDRESS);
@@ -191,7 +191,7 @@ public class DataPacketDispatcherTest
         final InOrder inOrder = inOrder(mockChannelEndpoint, mockReceiver, mockConductorProxy);
         inOrder.verify(mockChannelEndpoint).sendSetupElicitingStatusMessage(SRC_ADDRESS, SESSION_ID, STREAM_ID);
         inOrder.verify(mockReceiver).addPendingSetupMessage(SESSION_ID, STREAM_ID, mockChannelEndpoint);
-        inOrder.verify(mockConductorProxy).createImage(
+        inOrder.verify(mockConductorProxy).createPublicationImage(
             SESSION_ID, STREAM_ID, INITIAL_TERM_ID, ACTIVE_TERM_ID, TERM_OFFSET, TERM_LENGTH,
             MTU_LENGTH, SRC_ADDRESS, SRC_ADDRESS, mockChannelEndpoint);
     }
@@ -200,7 +200,7 @@ public class DataPacketDispatcherTest
     public void shouldDispatchDataToCorrectImage()
     {
         dispatcher.addSubscription(STREAM_ID);
-        dispatcher.addImage(mockImage);
+        dispatcher.addPublicationImage(mockImage);
         dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
 
         verify(mockImage).status(PublicationImage.Status.ACTIVE);

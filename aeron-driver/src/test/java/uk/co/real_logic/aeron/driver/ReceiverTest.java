@@ -21,7 +21,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
-import uk.co.real_logic.aeron.driver.cmd.CreateImageCmd;
+import uk.co.real_logic.aeron.driver.cmd.CreatePublicationImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.*;
@@ -200,7 +200,7 @@ public class ReceiverTest
         final int messagesRead = toConductorQueue.drain(
             (e) ->
             {
-                final CreateImageCmd cmd = (CreateImageCmd)e;
+                final CreatePublicationImageCmd cmd = (CreatePublicationImageCmd)e;
 
                 assertThat(cmd.channelEndpoint().udpChannel(), is(UDP_CHANNEL));
                 assertThat(cmd.streamId(), is(STREAM_ID));
@@ -208,7 +208,7 @@ public class ReceiverTest
                 assertThat(cmd.termId(), is(ACTIVE_TERM_ID));
 
                 // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newImage(receiveChannelEndpoint, image);
+                receiverProxy.newPublicationImage(receiveChannelEndpoint, image);
             });
 
         assertThat(messagesRead, is(1));
@@ -246,9 +246,9 @@ public class ReceiverTest
         final int commandsRead = toConductorQueue.drain(
             (e) ->
             {
-                assertTrue(e instanceof CreateImageCmd);
+                assertTrue(e instanceof CreatePublicationImageCmd);
                 // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newImage(
+                receiverProxy.newPublicationImage(
                     receiveChannelEndpoint,
                     new PublicationImage(
                         CORRELATION_ID,
@@ -310,9 +310,9 @@ public class ReceiverTest
         final int commandsRead = toConductorQueue.drain(
             (e) ->
             {
-                assertTrue(e instanceof CreateImageCmd);
+                assertTrue(e instanceof CreatePublicationImageCmd);
                 // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newImage(
+                receiverProxy.newPublicationImage(
                     receiveChannelEndpoint,
                     new PublicationImage(
                         CORRELATION_ID,
@@ -377,9 +377,9 @@ public class ReceiverTest
         final int commandsRead = toConductorQueue.drain(
             (e) ->
             {
-                assertTrue(e instanceof CreateImageCmd);
+                assertTrue(e instanceof CreatePublicationImageCmd);
                 // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newImage(
+                receiverProxy.newPublicationImage(
                     receiveChannelEndpoint,
                     new PublicationImage(
                         CORRELATION_ID,
@@ -448,9 +448,9 @@ public class ReceiverTest
         final int commandsRead = toConductorQueue.drain(
             (e) ->
             {
-                assertTrue(e instanceof CreateImageCmd);
+                assertTrue(e instanceof CreatePublicationImageCmd);
                 // pass in new term buffer from conductor, which should trigger SM
-                receiverProxy.newImage(
+                receiverProxy.newPublicationImage(
                     receiveChannelEndpoint,
                     new PublicationImage(
                         CORRELATION_ID,
@@ -518,7 +518,7 @@ public class ReceiverTest
         when(mockImage.streamId()).thenReturn(STREAM_ID);
         when(mockImage.checkForActivity(anyLong())).thenReturn(false);
 
-        receiver.onNewImage(receiveChannelEndpoint, mockImage);
+        receiver.onNewPublicationImage(receiveChannelEndpoint, mockImage);
         receiver.doWork();
 
         verify(mockImage).removeFromDispatcher();
@@ -540,7 +540,7 @@ public class ReceiverTest
         when(mockImage.streamId()).thenReturn(STREAM_ID);
         when(mockImage.checkForActivity(anyLong())).thenReturn(true);
 
-        receiver.onNewImage(receiveChannelEndpoint, mockImage);
+        receiver.onNewPublicationImage(receiveChannelEndpoint, mockImage);
         receiver.onRemoveSubscription(receiveChannelEndpoint, STREAM_ID);
         receiver.doWork();
 

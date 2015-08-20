@@ -29,6 +29,6 @@ public class NewPublicationCmd implements SenderCmd
 
     public void execute(final Sender sender)
     {
-        sender.onNewPublication(publication);
+        sender.onNewNetworkPublication(publication);
     }
 }

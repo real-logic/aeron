@@ -69,11 +69,11 @@ public class SenderProxy
         }
     }
 
-    public void removePublication(final NetworkPublication publication)
+    public void removeNetworkPublication(final NetworkPublication publication)
     {
         if (isSharedThread())
         {
-            sender.onRemovePublication(publication);
+            sender.onRemoveNetworkPublication(publication);
         }
         else
         {
@@ -81,11 +81,11 @@ public class SenderProxy
         }
     }
 
-    public void newPublication(final NetworkPublication publication)
+    public void newNetworkPublication(final NetworkPublication publication)
     {
         if (isSharedThread())
         {
-            sender.onNewPublication(publication);
+            sender.onNewNetworkPublication(publication);
         }
         else
         {

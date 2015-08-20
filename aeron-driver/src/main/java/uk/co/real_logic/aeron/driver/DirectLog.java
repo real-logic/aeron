@@ -111,9 +111,9 @@ public class DirectLog implements DriverManagedResourceProvider
 
     public void close()
     {
-        rawLog.close();
         publisherLimit.close();
         subscriberPositions.forEach(ReadablePosition::close);
+        rawLog.close();
     }
 
     public void addSubscription(final ReadablePosition subscriberPosition)

@@ -50,9 +50,12 @@ class MappedRawLog implements RawLog
         this.logFile = location;
         partitions = new RawLogPartition[PARTITION_COUNT];
 
-        try (final FileChannel logChannel = new RandomAccessFile(logFile, "rw").getChannel())
+
+        try (final RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
+             final FileChannel logChannel = raf.getChannel())
         {
             final long logLength = computeLogLength(termLength);
+            raf.setLength(logLength);
             blankTemplate.transferTo(0, logLength, logChannel);
 
             if (logLength <= Integer.MAX_VALUE)

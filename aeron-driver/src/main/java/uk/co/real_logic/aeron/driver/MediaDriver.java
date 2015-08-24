@@ -289,35 +289,35 @@ public final class MediaDriver implements AutoCloseable
     {
         try (final DatagramChannel probe = DatagramChannel.open())
         {
-            final int defaultSoSndbuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
+            final int defaultSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
 
             probe.setOption(StandardSocketOptions.SO_SNDBUF, Integer.MAX_VALUE);
-            final int maxSoSndbuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
+            final int maxSoSndBuf = probe.getOption(StandardSocketOptions.SO_SNDBUF);
 
-            if (maxSoSndbuf < Configuration.SOCKET_SNDBUF_LENGTH)
+            if (maxSoSndBuf < Configuration.SOCKET_SNDBUF_LENGTH)
             {
                 System.err.format(
                     "WARNING: Could not get desired SO_SNDBUF: attempted=%d, actual=%d\n",
-                    Configuration.SOCKET_SNDBUF_LENGTH, maxSoSndbuf);
+                    Configuration.SOCKET_SNDBUF_LENGTH, maxSoSndBuf);
             }
 
             probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
-            final int maxSoRcvbuf = probe.getOption(StandardSocketOptions.SO_RCVBUF);
+            final int maxSoRcvBuf = probe.getOption(StandardSocketOptions.SO_RCVBUF);
 
-            if (maxSoRcvbuf < Configuration.SOCKET_RCVBUF_LENGTH)
+            if (maxSoRcvBuf < Configuration.SOCKET_RCVBUF_LENGTH)
             {
                 System.err.format(
                     "WARNING: Could not get desired SO_RCVBUF: attempted=%d, actual=%d\n",
-                    Configuration.SOCKET_RCVBUF_LENGTH, maxSoRcvbuf);
+                    Configuration.SOCKET_RCVBUF_LENGTH, maxSoRcvBuf);
             }
 
-            final int soSndbuf =
-                (0 == Configuration.SOCKET_SNDBUF_LENGTH) ? defaultSoSndbuf : Configuration.SOCKET_SNDBUF_LENGTH;
+            final int soSndBuf =
+                (0 == Configuration.SOCKET_SNDBUF_LENGTH) ? defaultSoSndBuf : Configuration.SOCKET_SNDBUF_LENGTH;
 
-            if (ctx.mtuLength() > soSndbuf)
+            if (ctx.mtuLength() > soSndBuf)
             {
                 throw new ConfigurationException(String.format(
-                    "MTU greater than socket SO_SNDBUF: mtuLength=%d, SO_SNDBUF=%d", ctx.mtuLength(), soSndbuf));
+                    "MTU greater than socket SO_SNDBUF: mtuLength=%d, SO_SNDBUF=%d", ctx.mtuLength(), soSndBuf));
             }
         }
         catch (final IOException ex)

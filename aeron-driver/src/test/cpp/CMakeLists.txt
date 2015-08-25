@@ -14,11 +14,20 @@
 # limitations under the License.
 #
 
+set(TEST_HEADERS)
+
+set(TEST_SOURCE
+    concurrent/OneToOneConcurrentArrayQueueTest.cpp)
+
+add_library(aeron_driver_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
+add_dependencies(aeron_driver_test gmock)
+
 function(aeron_driver_test name file)
     add_executable(${name} ${file})
-    target_link_libraries(${name} aeron_driver ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${name} aeron_client aeron_driver aeron_driver_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
 aeron_driver_test(mediaDriverTest MediaDriverTest.cpp)
+aeron_driver_test(oneToOneConcurrentArrayQueueTest concurrent/OneToOneConcurrentArrayQueueTest.cpp)

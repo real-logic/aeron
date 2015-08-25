@@ -110,10 +110,18 @@ inline std::int64_t getInt64Volatile(volatile std::int64_t* source)
     return sequence;
 }
 
+template<typename T>
+inline volatile T* getValueVolatile(volatile T** source)
+{
+    volatile T* t = *reinterpret_cast<volatile T**>(source);
+    thread_fence();
+    return t;
+}
+
 /**
 * Put a 64 bit int with volatile semantics.
 */
-inline void  putInt64Volatile(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Volatile(volatile std::int64_t*  address, std::int64_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
@@ -122,10 +130,17 @@ inline void  putInt64Volatile(volatile std::int64_t*  address, std::int64_t valu
 /**
 * Put a 64 bit int with ordered semantics.
 */
-inline void  putInt64Ordered(volatile std::int64_t*  address, std::int64_t value)
+inline void putInt64Ordered(volatile std::int64_t*  address, std::int64_t value)
 {
     thread_fence();
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
+}
+
+template<typename T>
+inline void putValueOrdered(volatile T** address, volatile T* value)
+{
+    thread_fence();
+    *reinterpret_cast<volatile T**>(address) = value;
 }
 
 /**

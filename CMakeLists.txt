@@ -121,6 +121,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
+set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
+set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
 
 set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
 set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
@@ -135,10 +137,13 @@ include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
 ##########################################################
 
 include_directories(${AERON_CLIENT_SOURCE_PATH})
+include_directories(${AERON_DRIVER_SOURCE_PATH})
 
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_TEST_PATH})
 add_subdirectory(${AERON_SAMPLES_PATH})
+add_subdirectory(${AERON_DRIVER_SOURCE_PATH})
+add_subdirectory(${AERON_DRIVER_TEST_PATH})
 
 if(BUILD_AERON_DRIVER)
     add_subdirectory(${AERON_DRIVER_SOURCE_PATH})

@@ -17,11 +17,27 @@
 #ifndef AERON_MEDIADRIVER_H
 #define AERON_MEDIADRIVER_H
 
+#include <map>
+#include <string>
+
+namespace aeron { namespace driver {
+
+
 class MediaDriver
 {
 public:
-    MediaDriver();
+    MediaDriver(std::map<std::string, std::string>& properties);
+    MediaDriver(std::string& propertiesFile);
+
+    ~MediaDriver();
+
 private:
+    std::map<std::string, std::string> m_properties;
 };
+
+
+}};
+
+
 
 #endif //AERON_MEDIADRIVER_H

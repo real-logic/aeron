@@ -45,13 +45,13 @@ struct ControlProtocolEvents
     /** Error Response */
     static const std::int32_t ON_ERROR = 0x0F01;
     /** New subscription Buffer Notification */
-    static const std::int32_t ON_IMAGE_READY = 0x0F02;
+    static const std::int32_t ON_AVAILABLE_IMAGE = 0x0F02;
     /** New publication Buffer Notification */
     static const std::int32_t ON_PUBLICATION_READY = 0x0F03;
     /** Operation Succeeded */
     static const std::int32_t ON_OPERATION_SUCCESS = 0x0F04;
     /** Inform client of timeout and removal of inactive image */
-    static const std::int32_t ON_INACTIVE_IMAGE = 0x0F05;
+    static const std::int32_t ON_UNAVAILABLE_IMAGE = 0x0F05;
 };
 
 }};

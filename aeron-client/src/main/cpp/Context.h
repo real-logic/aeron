@@ -34,11 +34,11 @@ using namespace aeron::concurrent::broadcast;
 class Image;
 
 /**
- * Function called by Aeron to deliver notification of a new image
+ * Function called by Aeron to deliver notification of an available image
  *
  * The Image passed may not be the image used internally, but may be copied or moved freely.
  *
- * @param image           that has been created.
+ * @param image           that has become available.
  * @param channel         The channel for the new session.
  * @param streamId        The scope within the channel for the new session.
  * @param sessionId       The publisher instance identifier for the new session.
@@ -51,14 +51,14 @@ typedef std::function<void(
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int64_t joiningPosition,
-    const std::string& sourceIdentity)> on_new_image_t;
+    const std::string& sourceIdentity)> on_available_image_t;
 
 /**
- * Function called by Aeron to deliver notification that a Publisher has gone inactive.
+ * Function called by Aeron to deliver notification that an Image has become unavailable.
  *
  * The Image passed is not guaranteed to be valid after the callback.
  *
- * @param image     that has gone inactive
+ * @param image     that has become unavailable
  * @param channel   The channel of the inactive Publisher.
  * @param streamId  The scope within the channel of the inactive Publisher.
  * @param sessionId The instance identifier of the inactive Publisher.
@@ -69,7 +69,7 @@ typedef std::function<void(
     const std::string& channel,
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int64_t position)> on_inactive_image_t;
+    std::int64_t position)> on_unavailable_image_t;
 
 /**
  * Function called by Aeron to deliver notification that the media driver has added a Publication successfully
@@ -131,7 +131,8 @@ inline void defaultOnNewPublicationHandler(const std::string&, std::int32_t, std
 {
 }
 
-inline void defaultOnNewImageHandler(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string &)
+inline void defaultOnAvailableImageHandler(
+    Image &, const std::string &, std::int32_t, std::int32_t, std::int64_t, const std::string &)
 {
 }
 
@@ -139,7 +140,7 @@ inline void defaultOnNewSubscriptionHandler(const std::string&, std::int32_t, st
 {
 }
 
-inline void defaultOnInactiveImageHandler(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t)
+inline void defaultOnUnavailableImageHandler(Image &, const std::string &, std::int32_t, std::int32_t, std::int64_t)
 {
 }
 
@@ -233,14 +234,14 @@ public:
     }
 
     /**
-     * Set the handler for new image notifications
+     * Set the handler for available image notifications
      *
      * @param handler called when event occurs
      * @return reference to this Context instance
      */
-    inline this_t& newImageHandler(const on_new_image_t &handler)
+    inline this_t&availableImageHandler(const on_available_image_t &handler)
     {
-        m_onNewImageHandler = handler;
+        m_onAvailableImageHandler = handler;
         return *this;
     }
 
@@ -250,9 +251,9 @@ public:
      * @param handler called when event occurs
      * @return reference to this Context instance
      */
-    inline this_t& inactiveImageHandler(const on_inactive_image_t &handler)
+    inline this_t&unavailableImageHandler(const on_unavailable_image_t &handler)
     {
-        m_onInactiveImageHandler = handler;
+        m_onUnavailableImageHandler = handler;
         return *this;
     }
 
@@ -345,8 +346,8 @@ private:
     exception_handler_t m_exceptionHandler = defaultErrorHandler;
     on_new_publication_t m_onNewPublicationHandler = defaultOnNewPublicationHandler;
     on_new_subscription_t m_onNewSubscriptionHandler = defaultOnNewSubscriptionHandler;
-    on_new_image_t m_onNewImageHandler = defaultOnNewImageHandler;
-    on_inactive_image_t m_onInactiveImageHandler = defaultOnInactiveImageHandler;
+    on_available_image_t m_onAvailableImageHandler = defaultOnAvailableImageHandler;
+    on_unavailable_image_t m_onUnavailableImageHandler = defaultOnUnavailableImageHandler;
     long m_mediaDriverTimeout = NULL_TIMEOUT;
     long m_resourceLingerTimeout = NULL_TIMEOUT;
 };

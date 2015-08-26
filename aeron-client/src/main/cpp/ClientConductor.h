@@ -52,8 +52,8 @@ public:
         AtomicBuffer& counterValuesBuffer,
         const on_new_publication_t& newPublicationHandler,
         const on_new_subscription_t& newSubscriptionHandler,
-        const on_new_image_t& newImageHandler,
-        const on_inactive_image_t& inactiveImageHandler,
+        const on_available_image_t & newImageHandler,
+        const on_unavailable_image_t & inactiveImageHandler,
         const exception_handler_t& errorHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs) :
@@ -62,8 +62,8 @@ public:
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
         m_onNewSubscpriptionHandler(newSubscriptionHandler),
-        m_onNewImageHandler(newImageHandler),
-        m_onInactiveImageHandler(inactiveImageHandler),
+        m_onAvailableImageHandler(newImageHandler),
+        m_onUnavailableImageHandler(inactiveImageHandler),
         m_errorHandler(errorHandler),
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
@@ -112,7 +112,7 @@ public:
         std::int32_t errorCode,
         const std::string& errorMessage);
 
-    void onNewImage(
+    void onAvailableImage(
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int64_t joiningPosition,
@@ -122,7 +122,7 @@ public:
         const ImageBuffersReadyDefn::SubscriberPosition *subscriberPositions,
         std::int64_t correlationId);
 
-    void onInactiveImage(
+    void onUnavailableImage(
         std::int32_t streamId,
         std::int32_t sessionId,
         std::int64_t position,
@@ -218,8 +218,8 @@ private:
 
     on_new_publication_t m_onNewPublicationHandler;
     on_new_subscription_t m_onNewSubscpriptionHandler;
-    on_new_image_t m_onNewImageHandler;
-    on_inactive_image_t m_onInactiveImageHandler;
+    on_available_image_t m_onAvailableImageHandler;
+    on_unavailable_image_t m_onUnavailableImageHandler;
     exception_handler_t m_errorHandler;
 
     epoch_clock_t m_epochClock;

@@ -295,7 +295,7 @@ void ClientConductor::onErrorResponse(
 }
 
 
-void ClientConductor::onNewImage(
+void ClientConductor::onAvailableImage(
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int64_t joiningPosition,
@@ -335,7 +335,7 @@ void ClientConductor::onNewImage(
                                 lingerResource(m_epochClock(), oldArray);
                             }
 
-                            m_onNewImageHandler(
+                            m_onAvailableImageHandler(
                                 image, subscription->channel(), streamId, sessionId, joiningPosition, sourceIdentity);
                             break;
                         }
@@ -345,7 +345,7 @@ void ClientConductor::onNewImage(
         });
 }
 
-void ClientConductor::onInactiveImage(
+void ClientConductor::onUnavailableImage(
     std::int32_t streamId,
     std::int32_t sessionId,
     std::int64_t position,
@@ -371,7 +371,7 @@ void ClientConductor::onInactiveImage(
                     {
                         lingerResource(now, oldArray[index].logBuffers());
                         lingerResource(now, oldArray);
-                        m_onInactiveImageHandler(oldArray[index], subscription->channel(), streamId, sessionId, position);
+                        m_onUnavailableImageHandler(oldArray[index], subscription->channel(), streamId, sessionId, position);
                     }
                 }
             }

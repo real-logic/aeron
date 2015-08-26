@@ -60,11 +60,11 @@ public:
                     }
                     break;
 
-                    case ControlProtocolEvents::ON_IMAGE_READY:
+                    case ControlProtocolEvents::ON_AVAILABLE_IMAGE:
                     {
                         const ImageBuffersReadyFlyweight imageReady(buffer, offset);
 
-                        m_driverListener.onNewImage(
+                        m_driverListener.onAvailableImage(
                             imageReady.streamId(),
                             imageReady.sessionId(),
                             imageReady.joiningPosition(),
@@ -84,11 +84,11 @@ public:
                     }
                     break;
 
-                    case ControlProtocolEvents::ON_INACTIVE_IMAGE:
+                    case ControlProtocolEvents::ON_UNAVAILABLE_IMAGE:
                     {
                         const ImageMessageFlyweight imageMessage(buffer, offset);
 
-                        m_driverListener.onInactiveImage(
+                        m_driverListener.onUnavailableImage(
                             imageMessage.streamId(),
                             imageMessage.sessionId(),
                             imageMessage.position(),

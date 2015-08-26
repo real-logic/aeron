@@ -155,15 +155,15 @@ int main(int argc, char **argv)
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
 
-        context.newImageHandler([&](
-            Image& image,
+        context.availableImageHandler([&](
+            Image &image,
             const std::string &channel,
             std::int32_t streamId,
             std::int32_t sessionId,
             std::int64_t joiningPosition,
             const std::string &sourceIdentity)
         {
-            std::cout << "New image on " << channel << " streamId=" << streamId << " sessionId=" << sessionId;
+            std::cout << "Available image on " << channel << " streamId=" << streamId << " sessionId=" << sessionId;
             std::cout << " at position=" << joiningPosition << " from " << sourceIdentity << std::endl;
 
             if (channel == settings.pongChannel && streamId == settings.pongStreamId)
@@ -172,10 +172,11 @@ int main(int argc, char **argv)
             }
         });
 
-        context.inactiveImageHandler(
-            [](Image& image, const std::string &channel, std::int32_t streamId, std::int32_t sessionId, std::int64_t position)
+        context.unavailableImageHandler(
+            [](Image &image, const std::string &channel, std::int32_t streamId, std::int32_t sessionId,
+                std::int64_t position)
             {
-                std::cout << "Inactive image on " << channel << "streamId=" << streamId << " sessionId=" << sessionId;
+                std::cout << "Unavailable image on " << channel << "streamId=" << streamId << " sessionId=" << sessionId;
                 std::cout << " at position=" << position << std::endl;
             });
 

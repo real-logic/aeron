@@ -32,7 +32,7 @@ static const std::size_t DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
  * buffer for reassembly before delegation.
  * <p>
  * Session based buffers will be allocated and grown as necessary based on the length of messages to be assembled.
- * When sessions go inactive see {@link on_inactive_image_t}, it is possible to free the buffer by calling
+ * When sessions go inactive see {@link on_unavailable_image_t}, it is possible to free the buffer by calling
  * {@link #deleteSessionBuffer(std::int32_t)}.
  */
 class FragmentAssembler

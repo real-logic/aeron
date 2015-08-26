@@ -32,7 +32,7 @@ import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 
 @SuppressWarnings("StatementWithEmptyBody")
-public class AeronPing implements NewImageHandler
+public class AeronPing implements AvailableImageHandler
 {
     private final int numMsgs = 1000000;
     private final int numWarmupMsgs = 50000;
@@ -60,7 +60,7 @@ public class AeronPing implements NewImageHandler
         parseArgs(args);
 
         final Aeron.Context ctx = new Aeron.Context()
-            .newImageHandler(this);
+            .availableImageHandler(this);
 
         aeron = Aeron.connect(ctx);
         pub = aeron.addPublication(pingChannel, pingStreamId);
@@ -250,7 +250,8 @@ public class AeronPing implements NewImageHandler
         }
     }
 
-    public void onNewImage(final Image image, final Subscription subscription, final long position, final String sourceIdentity)
+    public void onAvailableImage(
+        final Image image, final Subscription subscription, final long position, final String sourceIdentity)
     {
         if (subscription.channel().equals(pongChannel) && pongStreamId == subscription.streamId())
         {

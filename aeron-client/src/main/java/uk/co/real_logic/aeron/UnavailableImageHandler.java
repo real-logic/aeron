@@ -16,18 +16,17 @@
 package uk.co.real_logic.aeron;
 
 /**
- * Interface for delivery of new image events to a {@link Aeron} instance.
+ * Interface for delivery of inactive image events to a {@link uk.co.real_logic.aeron.Subscription}.
  */
 @FunctionalInterface
-public interface NewImageHandler
+public interface UnavailableImageHandler
 {
     /**
-     * Method called by Aeron to deliver notification of a new connected session.
+     * Method called by Aeron to deliver notification that an Image is no longer available for polling.
      *
-     * @param image           that has been created
-     * @param subscription    that the {@link Image} is associated with.
-     * @param joiningPosition at which the stream is being joined by the subscriber.
-     * @param sourceIdentity  a transport specific string with additional details about the publisher.
+     * @param image        the image that has become unavailable.
+     * @param subscription that the {@link Image} is associated with.
+     * @param position     at which the image went unavailable.
      */
-    void onNewImage(Image image, Subscription subscription, long joiningPosition, String sourceIdentity);
+    void onUnavailableImage(Image image, Subscription subscription, long position);
 }

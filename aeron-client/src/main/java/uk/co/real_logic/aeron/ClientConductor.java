@@ -60,8 +60,8 @@ class ClientConductor implements Agent, DriverListener
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
-    private final NewImageHandler newImageHandler;
-    private final InactiveImageHandler inactiveImageHandler;
+    private final AvailableImageHandler availableImageHandler;
+    private final UnavailableImageHandler unavailableImageHandler;
 
     private RegistrationException driverException;
 
@@ -73,8 +73,8 @@ class ClientConductor implements Agent, DriverListener
         final UnsafeBuffer counterValuesBuffer,
         final DriverProxy driverProxy,
         final ErrorHandler errorHandler,
-        final NewImageHandler newImageHandler,
-        final InactiveImageHandler inactiveImageHandler,
+        final AvailableImageHandler availableImageHandler,
+        final UnavailableImageHandler unavailableImageHandler,
         final long keepAliveIntervalNs,
         final long driverTimeoutMs)
     {
@@ -86,8 +86,8 @@ class ClientConductor implements Agent, DriverListener
         this.counterValuesBuffer = counterValuesBuffer;
         this.driverProxy = driverProxy;
         this.logBuffersFactory = logBuffersFactory;
-        this.newImageHandler = newImageHandler;
-        this.inactiveImageHandler = inactiveImageHandler;
+        this.availableImageHandler = availableImageHandler;
+        this.unavailableImageHandler = unavailableImageHandler;
         this.keepAliveIntervalNs = keepAliveIntervalNs;
         this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
@@ -190,7 +190,7 @@ class ClientConductor implements Agent, DriverListener
         activePublications.put(channel, streamId, publication);
     }
 
-    public void onNewImage(
+    public void onAvailableImage(
         final int streamId,
         final int sessionId,
         final long joiningPosition,
@@ -219,7 +219,7 @@ class ClientConductor implements Agent, DriverListener
 
                         subscription.addImage(image);
 
-                        newImageHandler.onNewImage(image, subscription, joiningPosition, sourceIdentity);
+                        availableImageHandler.onAvailableImage(image, subscription, joiningPosition, sourceIdentity);
                     }
                 }
             });
@@ -230,7 +230,7 @@ class ClientConductor implements Agent, DriverListener
         driverException = new RegistrationException(errorCode, message);
     }
 
-    public void onInactiveImage(final int streamId, final int sessionId, final long position, final long correlationId)
+    public void onUnavailableImage(final int streamId, final int sessionId, final long position, final long correlationId)
     {
         activeSubscriptions.forEach(
             streamId,
@@ -239,7 +239,7 @@ class ClientConductor implements Agent, DriverListener
                 final Image image = subscription.removeImage(correlationId);
                 if (null != image)
                 {
-                    inactiveImageHandler.onInactiveImage(image, subscription, position);
+                    unavailableImageHandler.onUnavailableImage(image, subscription, position);
                 }
             });
     }

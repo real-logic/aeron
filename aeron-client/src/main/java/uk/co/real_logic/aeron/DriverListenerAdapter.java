@@ -89,7 +89,7 @@ class DriverListenerAdapter implements MessageHandler
                 break;
             }
 
-            case ON_IMAGE_READY:
+            case ON_AVAILABLE_IMAGE:
             {
                 imageReady.wrap(buffer, index);
 
@@ -101,7 +101,7 @@ class DriverListenerAdapter implements MessageHandler
                     subscriberPositionMap.put(registrationId, positionId);
                 }
 
-                listener.onNewImage(
+                listener.onAvailableImage(
                     imageReady.streamId(),
                     imageReady.sessionId(),
                     imageReady.joiningPosition(),
@@ -126,11 +126,11 @@ class DriverListenerAdapter implements MessageHandler
                 break;
             }
 
-            case ON_INACTIVE_IMAGE:
+            case ON_UNAVAILABLE_IMAGE:
             {
                 imageMessage.wrap(buffer, index);
 
-                listener.onInactiveImage(
+                listener.onUnavailableImage(
                     imageMessage.streamId(),
                     imageMessage.sessionId(),
                     imageMessage.position(),

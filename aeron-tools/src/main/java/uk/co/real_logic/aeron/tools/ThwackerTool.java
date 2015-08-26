@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Logger;
 
-public class ThwackerTool implements InactiveImageHandler, NewImageHandler
+public class ThwackerTool implements UnavailableImageHandler, AvailableImageHandler
 {
     static
     {
@@ -164,8 +164,8 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
            debugging or examining a hang.
          */
         ctx.driverTimeoutMs(9999999999L);
-        ctx.inactiveImageHandler(this);
-        ctx.newImageHandler(this);
+        ctx.unavailableImageHandler(this);
+        ctx.availableImageHandler(this);
 
         aeron = Aeron.connect(ctx);
         active = true;
@@ -519,7 +519,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
         LOG.fine("RecSubs all done!");
     }
 
-    public void onInactiveImage(
+    public void onUnavailableImage(
         final Image image,
         final Subscription subscription,
         final long position)
@@ -527,7 +527,7 @@ public class ThwackerTool implements InactiveImageHandler, NewImageHandler
         LOG.fine("ON INACTIVE ::: " + channel + subscription.streamId() + image.sessionId() + position);
     }
 
-    public void onNewImage(
+    public void onAvailableImage(
         final Image image,
         final Subscription subscription,
         final long position,

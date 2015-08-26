@@ -59,8 +59,8 @@ public class EventConfiguration
         EventCode.REMOVE_PUBLICATION_CLEANUP,
         EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
         EventCode.CMD_OUT_PUBLICATION_READY,
-        EventCode.CMD_OUT_IMAGE_READY,
-        EventCode.CMD_OUT_ON_INACTIVE_IMAGE,
+        EventCode.CMD_OUT_AVAILABLE_IMAGE,
+        EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE,
         EventCode.CMD_OUT_ON_OPERATION_SUCCESS,
         EventCode.ERROR_DELETING_FILE,
         EventCode.CHANNEL_CREATION);

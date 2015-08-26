@@ -251,7 +251,7 @@ public class SubscriberTool
         }
     }
 
-    class SubscriberThread implements Runnable, InactiveImageHandler, NewImageHandler, RateController.Callback
+    class SubscriberThread implements Runnable, UnavailableImageHandler, AvailableImageHandler, RateController.Callback
     {
         final int threadId;
         private long nonVerifiableMessagesReceived;
@@ -297,8 +297,8 @@ public class SubscriberTool
             rateController = rc;
             /* Create a context and connect to the media driver. */
             ctx = new Aeron.Context()
-                .inactiveImageHandler(this)
-                .newImageHandler(this)
+                .unavailableImageHandler(this)
+                .availableImageHandler(this)
                 .errorHandler(
                     (throwable) ->
                     {
@@ -728,14 +728,14 @@ public class SubscriberTool
             }
         }
 
-        public void onInactiveImage(final Image image, final Subscription subscription, final long position)
+        public void onUnavailableImage(final Image image, final Subscription subscription, final long position)
         {
             /* Handle processing the inactive image notice on the subscriber thread. */
             enqueueControlMessage(
                 CONTROL_ACTION_INACTIVE_IMAGE, subscription.channel(), subscription.streamId(), image.sessionId());
         }
 
-        public void onNewImage(
+        public void onAvailableImage(
             final Image image, final Subscription subscription, final long position, final String sourceIdentity)
         {
             /* Handle processing the new image notice on the subscriber thread. */

@@ -27,7 +27,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_IMAGE_READY;
+import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_AVAILABLE_IMAGE;
 import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_PUBLICATION_READY;
 
 /**
@@ -72,7 +72,7 @@ public class ClientProxy
         transmitter.transmit(ON_ERROR, tmpBuffer, 0, errorResponse.length());
     }
 
-    public void onImageReady(
+    public void onAvailableImage(
         final int streamId,
         final int sessionId,
         final long joiningPosition,
@@ -101,8 +101,8 @@ public class ClientProxy
             .logFileName(rawLog.logFileName())
             .sourceIdentity(sourceIdentity);
 
-        logger.log(CMD_OUT_IMAGE_READY, tmpBuffer, 0, imageReady.length());
-        transmitter.transmit(ON_IMAGE_READY, tmpBuffer, 0, imageReady.length());
+        logger.log(CMD_OUT_AVAILABLE_IMAGE, tmpBuffer, 0, imageReady.length());
+        transmitter.transmit(ON_AVAILABLE_IMAGE, tmpBuffer, 0, imageReady.length());
     }
 
     public void onPublicationReady(
@@ -137,7 +137,7 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onInactiveImage(
+    public void onUnavailableImage(
         final long correlationId, final int sessionId, final int streamId, final long position, final String channel)
     {
         imageMessage.wrap(tmpBuffer, 0);
@@ -148,8 +148,8 @@ public class ClientProxy
             .position(position)
             .channel(channel);
 
-        logger.log(EventCode.CMD_OUT_ON_INACTIVE_IMAGE, tmpBuffer, 0, imageMessage.length());
+        logger.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, imageMessage.length());
 
-        transmitter.transmit(ON_INACTIVE_IMAGE, tmpBuffer, 0, imageMessage.length());
+        transmitter.transmit(ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, imageMessage.length());
     }
 }

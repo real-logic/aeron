@@ -57,7 +57,7 @@ public class Ping
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
-            .newImageHandler(Ping::newPongImageHandler);
+            .availableImageHandler(Ping::availablePongImageHandler);
         final FragmentHandler fragmentHandler = new FragmentAssembler(Ping::pongHandler);
 
         if (EMBEDDED_MEDIA_DRIVER)
@@ -145,11 +145,11 @@ public class Ping
         HISTOGRAM.recordValue(rttNs);
     }
 
-    private static void newPongImageHandler(
+    private static void availablePongImageHandler(
         final Image image, final Subscription subscription, final long joiningPosition, final String sourceIdentity)
     {
         System.out.format(
-            "New image: channel=%s streamId=%d session=%d\n",
+            "Available image: channel=%s streamId=%d session=%d\n",
             subscription.channel(), subscription.streamId(), image.sessionId());
 
         if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel()))

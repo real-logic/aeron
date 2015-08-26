@@ -268,7 +268,7 @@ public class DriverConductor implements Agent
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
 
-            clientProxy.onImageReady(
+            clientProxy.onAvailableImage(
                 streamId,
                 sessionId,
                 joiningPosition,
@@ -333,7 +333,7 @@ public class DriverConductor implements Agent
 
     public void imageTransitionToLinger(final PublicationImage image)
     {
-        clientProxy.onInactiveImage(
+        clientProxy.onUnavailableImage(
             image.correlationId(),
             image.sessionId(),
             image.streamId(),
@@ -736,7 +736,7 @@ public class DriverConductor implements Agent
                     image.addSubscriber(position);
                     subscription.addImage(image, position);
 
-                    clientProxy.onImageReady(
+                    clientProxy.onAvailableImage(
                         streamId,
                         image.sessionId(),
                         image.rebuildPosition(),
@@ -769,7 +769,7 @@ public class DriverConductor implements Agent
         final List<SubscriberPosition> subscriberPositions = new ArrayList<>();
         subscriberPositions.add(new SubscriberPosition(subscriptionLink, position));
 
-        clientProxy.onImageReady(
+        clientProxy.onAvailableImage(
             streamId,
             directPublication.sessionId(),
             directPublication.joiningPosition(),

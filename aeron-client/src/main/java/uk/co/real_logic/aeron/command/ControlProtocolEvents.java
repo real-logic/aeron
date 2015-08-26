@@ -39,11 +39,11 @@ public class ControlProtocolEvents
     /** Error Response */
     public static final int ON_ERROR = 0x0F01;
     /** New subscription Buffer Notification */
-    public static final int ON_IMAGE_READY = 0x0F02;
+    public static final int ON_AVAILABLE_IMAGE = 0x0F02;
     /** New publication Buffer Notification */
     public static final int ON_PUBLICATION_READY = 0x0F03;
     /** Operation Succeeded */
     public static final int ON_OPERATION_SUCCESS = 0x0F04;
     /** Inform client of timeout and removal of inactive image */
-    public static final int ON_INACTIVE_IMAGE = 0x0F05;
+    public static final int ON_UNAVAILABLE_IMAGE = 0x0F05;
 }

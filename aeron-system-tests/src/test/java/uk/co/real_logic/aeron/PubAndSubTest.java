@@ -634,7 +634,7 @@ public class PubAndSubTest
         final int stage[] = { 1 };
 
         context.termBufferLength(termBufferLength);
-        subscribingAeronContext.newImageHandler(
+        subscribingAeronContext.availableImageHandler(
             (image, subscription, position, info) ->
             {
                 if (2 == stage[0])

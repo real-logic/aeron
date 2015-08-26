@@ -50,8 +50,8 @@ public class BasicSubscriber
 
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final Aeron.Context ctx = new Aeron.Context()
-            .newImageHandler(SamplesUtil::printNewImage)
-            .inactiveImageHandler(SamplesUtil::printInactiveImage);
+            .availableImageHandler(SamplesUtil::printAvailableImage)
+            .unavailableImageHandler(SamplesUtil::printUnavailableImage);
 
         if (EMBEDDED_MEDIA_DRIVER)
         {

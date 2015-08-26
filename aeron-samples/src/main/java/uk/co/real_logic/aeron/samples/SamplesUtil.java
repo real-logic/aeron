@@ -148,32 +148,32 @@ public class SamplesUtil
     }
 
     /**
-     * Print the information for a new image to stdout.
+     * Print the information for an available image to stdout.
      *
      * @param image           that has been created
      * @param subscription    that the image is associated with
      * @param joiningPosition for the subscriber in the stream
      * @param sourceIdentity  that is transport specific
      */
-    public static void printNewImage(
+    public static void printAvailableImage(
         final Image image, final Subscription subscription, final long joiningPosition, final String sourceIdentity)
     {
         System.out.println(String.format(
-            "New image on %s streamId=%d sessionId=%d at position=%d from %s",
+            "Available image on %s streamId=%d sessionId=%d at position=%d from %s",
             subscription.channel(), subscription.streamId(), image.sessionId(), joiningPosition, sourceIdentity));
     }
 
     /**
-     * Print the information for an inactive image to stdout.
+     * Print the information for an unavailable image to stdout.
      *
      * @param image        that has gone inactive
      * @param subscription that the image is associated with
      * @param position     at which the image went inactive
      */
-    public static void printInactiveImage(final Image image, final Subscription subscription, final long position)
+    public static void printUnavailableImage(final Image image, final Subscription subscription, final long position)
     {
         System.out.println(String.format(
-            "Inactive image on %s streamId=%d sessionId=%d at position=%d",
+            "Unavailable image on %s streamId=%d sessionId=%d at position=%d",
             subscription.channel(), subscription.streamId(), image.sessionId(), position));
     }
 }

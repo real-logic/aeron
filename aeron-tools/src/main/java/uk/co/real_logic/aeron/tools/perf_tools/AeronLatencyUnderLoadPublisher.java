@@ -73,7 +73,7 @@ public class AeronLatencyUnderLoadPublisher implements RateController.Callback
             throw new RuntimeException(e);
         }
         final Aeron.Context ctx = new Aeron.Context()
-            .newImageHandler(this::imageHandler);
+            .availableImageHandler(this::imageHandler);
         fragmentHandler = new FragmentAssembler(this::msgHandler);
         final Aeron aeron = Aeron.connect(ctx);
         System.out.println("Reflect: " + reflectChannel + " Pub: " + pubChannel);

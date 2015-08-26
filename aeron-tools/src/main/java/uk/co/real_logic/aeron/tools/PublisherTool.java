@@ -249,7 +249,7 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
         return totalMessages;
     }
 
-    class PublisherThread implements Runnable, InactiveImageHandler, NewImageHandler, RateController.Callback
+    class PublisherThread implements Runnable, UnavailableImageHandler, AvailableImageHandler, RateController.Callback
     {
         final int threadId;
         private long nonVerifiableMessagesSent;
@@ -288,8 +288,8 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             /* Create a context and subscribe to what we're supposed to
              * according to our thread ID. */
             ctx = new Aeron.Context()
-                .inactiveImageHandler(this)
-                .newImageHandler(this)
+                .unavailableImageHandler(this)
+                .availableImageHandler(this)
                 .errorHandler(
                     (throwable) ->
                     {
@@ -401,13 +401,13 @@ public class PublisherTool implements SeedCallback, RateReporter.Stats, RateRepo
             ctx.close();
         }
 
-        public void onInactiveImage(final Image image, final Subscription subscription, final long position)
+        public void onUnavailableImage(final Image image, final Subscription subscription, final long position)
         {
             LOG.info(String.format("INACTIVE IMAGE: channel \"%s\", stream %d, session %d, position 0x%x",
                 subscription.channel(), subscription.streamId(), image.sessionId(), position));
         }
 
-        public void onNewImage(
+        public void onAvailableImage(
             final Image image, final Subscription subscription, final long position, final String sourceIdentity)
         {
             LOG.info(String.format("NEW IMAGE: channel \"%s\", stream %d, session %d, position 0x%x source \"%s\"",

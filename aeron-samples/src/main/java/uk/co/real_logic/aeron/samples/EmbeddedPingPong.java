@@ -78,7 +78,7 @@ public class EmbeddedPingPong
     private static void runPing(final String embeddedDirName) throws InterruptedException
     {
         final Aeron.Context ctx = new Aeron.Context()
-            .newImageHandler(EmbeddedPingPong::newPongImageHandler);
+            .availableImageHandler(EmbeddedPingPong::availablePongImageHandler);
         ctx.dirName(embeddedDirName);
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
@@ -181,7 +181,7 @@ public class EmbeddedPingPong
         HISTOGRAM.recordValue(rttNs);
     }
 
-    private static void newPongImageHandler(
+    private static void availablePongImageHandler(
         final Image image,
         final Subscription subscription,
         final long joiningPosition,

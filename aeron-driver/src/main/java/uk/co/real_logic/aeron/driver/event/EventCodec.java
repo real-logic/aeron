@@ -237,7 +237,7 @@ public class EventCodec
                 builder.append(dissect(newBuffer));
                 break;
 
-            case CMD_OUT_IMAGE_READY:
+            case CMD_OUT_AVAILABLE_IMAGE:
                 final ImageBuffersReadyFlyweight connectionReadyCommand = IMAGE_READY.get();
                 connectionReadyCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(connectionReadyCommand));
@@ -250,7 +250,7 @@ public class EventCodec
                 builder.append(dissect(correlatedCmd));
                 break;
 
-            case CMD_OUT_ON_INACTIVE_IMAGE:
+            case CMD_OUT_ON_UNAVAILABLE_IMAGE:
                 final ImageMessageFlyweight connectionCmd = IMAGE_MSG.get();
                 connectionCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(connectionCmd));

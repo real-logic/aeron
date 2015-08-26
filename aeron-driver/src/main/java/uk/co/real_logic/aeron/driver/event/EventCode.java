@@ -31,7 +31,7 @@ public enum EventCode
 
     CMD_IN_REMOVE_SUBSCRIPTION(6, EventCodec::dissectAsCommand),
     CMD_OUT_PUBLICATION_READY(7, EventCodec::dissectAsCommand),
-    CMD_OUT_IMAGE_READY(8, EventCodec::dissectAsCommand),
+    CMD_OUT_AVAILABLE_IMAGE(8, EventCodec::dissectAsCommand),
     INVOCATION(9, EventCodec::dissectAsInvocation),
     EXCEPTION(10, EventCodec::dissectAsException),
 
@@ -42,7 +42,7 @@ public enum EventCode
     REMOVE_SUBSCRIPTION_CLEANUP(15, EventCodec::dissectAsString),
 
     REMOVE_IMAGE_CLEANUP(16, EventCodec::dissectAsString),
-    CMD_OUT_ON_INACTIVE_IMAGE(17, EventCodec::dissectAsCommand),
+    CMD_OUT_ON_UNAVAILABLE_IMAGE(17, EventCodec::dissectAsCommand),
     FRAME_IN_DROPPED(18, EventCodec::dissectAsFrame),
     ERROR_DELETING_FILE(19, EventCodec::dissectAsString),
 

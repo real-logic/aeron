@@ -76,8 +76,8 @@ public final class Aeron implements AutoCloseable
             ctx.counterValuesBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
             ctx.errorHandler,
-            ctx.newImageHandler,
-            ctx.inactiveImageHandler,
+            ctx.availableImageHandler,
+            ctx.unavailableImageHandler,
             ctx.keepAliveInterval(),
                 ctx.driverTimeoutMs());
 
@@ -157,8 +157,8 @@ public final class Aeron implements AutoCloseable
         private DirectBuffer cncMetaDataBuffer;
         private LogBuffersFactory logBuffersFactory;
         private ErrorHandler errorHandler;
-        private NewImageHandler newImageHandler;
-        private InactiveImageHandler inactiveImageHandler;
+        private AvailableImageHandler availableImageHandler;
+        private UnavailableImageHandler unavailableImageHandler;
         private long keepAliveInterval = TimeUnit.MILLISECONDS.toNanos(500);
 
         /**
@@ -235,14 +235,14 @@ public final class Aeron implements AutoCloseable
                     errorHandler = DEFAULT_ERROR_HANDLER;
                 }
 
-                if (null == newImageHandler)
+                if (null == availableImageHandler)
                 {
-                    newImageHandler = (image, subscription, joiningPosition, sourceIdentity) -> { };
+                    availableImageHandler = (image, subscription, joiningPosition, sourceIdentity) -> { };
                 }
 
-                if (null == inactiveImageHandler)
+                if (null == unavailableImageHandler)
                 {
-                    inactiveImageHandler = (image, subscription, position) -> { };
+                    unavailableImageHandler = (image, subscription, position) -> { };
                 }
             }
             catch (final Exception ex)
@@ -343,26 +343,26 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
-         * Set up a callback for when a new {@link Image} is created.
+         * Set up a callback for when an {@link Image} is available.
          *
-         * @param handler Callback method for handling new connection notifications.
+         * @param handler Callback method for handling available image notifications.
          * @return this Aeron.Context for method chaining.
          */
-        public Context newImageHandler(final NewImageHandler handler)
+        public Context availableImageHandler(final AvailableImageHandler handler)
         {
-            this.newImageHandler = handler;
+            this.availableImageHandler = handler;
             return this;
         }
 
         /**
-         * Set up a callback for when a {@link Image} determined to be inactive.
+         * Set up a callback for when an {@link Image} is unavailable.
          *
-         * @param handler Callback method for handling inactive image notifications.
+         * @param handler Callback method for handling unavailable image notifications.
          * @return this Aeron.Context for method chaining.
          */
-        public Context inactiveImageHandler(final InactiveImageHandler handler)
+        public Context unavailableImageHandler(final UnavailableImageHandler handler)
         {
-            this.inactiveImageHandler = handler;
+            this.unavailableImageHandler = handler;
             return this;
         }
 

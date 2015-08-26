@@ -49,8 +49,8 @@ public class RateSubscriber
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
         final ExecutorService executor = Executors.newFixedThreadPool(1);
         final Aeron.Context ctx = new Aeron.Context()
-            .newImageHandler(SamplesUtil::printNewImage)
-            .inactiveImageHandler(SamplesUtil::printInactiveImage);
+            .availableImageHandler(SamplesUtil::printAvailableImage)
+            .unavailableImageHandler(SamplesUtil::printUnavailableImage);
 
         if (EMBEDDED_MEDIA_DRIVER)
         {

@@ -49,8 +49,8 @@ public class MultipleSubscribersWithFragmentAssembly
             CHANNEL, STREAM_ID_1, STREAM_ID_2);
 
         final Aeron.Context ctx = new Aeron.Context()
-            .newImageHandler(MultipleSubscribersWithFragmentAssembly::eventNewImage)
-            .inactiveImageHandler(MultipleSubscribersWithFragmentAssembly::eventInactiveImage);
+            .availableImageHandler(MultipleSubscribersWithFragmentAssembly::eventAvailableImage)
+            .unavailableImageHandler(MultipleSubscribersWithFragmentAssembly::eventUnavailableImage);
 
         // dataHandler method is called for every new message received
         // When a message is completely reassembled, the delegate method 'reassembledStringMessage' is called
@@ -91,14 +91,14 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * Print the information for a new image to stdout.
+     * Print the information for an available image to stdout.
      *
      * @param image          that has been created
      * @param subscription   that the image is associated with
      * @param position       in the stream
      * @param sourceIdentity that is transport specific
      */
-    public static void eventNewImage(
+    public static void eventAvailableImage(
         final Image image, final Subscription subscription, final long position, final String sourceIdentity)
     {
         System.out.format(
@@ -107,13 +107,13 @@ public class MultipleSubscribersWithFragmentAssembly
     }
 
     /**
-     * This handler is called when image goes inactive
+     * This handler is called when image is unavailable
      *
      * @param image     that has gone inactive
      * @param subscription   that the image is associated with
      * @param position  within the stream
      */
-    public static void eventInactiveImage(final Image image, final Subscription subscription, final long position)
+    public static void eventUnavailableImage(final Image image, final Subscription subscription, final long position)
     {
         System.out.format(
             "inactive image on %s streamId %d sessionId %x%n",

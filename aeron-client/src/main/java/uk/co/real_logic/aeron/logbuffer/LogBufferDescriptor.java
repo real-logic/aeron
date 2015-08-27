@@ -424,7 +424,7 @@ public class LogBufferDescriptor
     {
         final long metaDataSectionLength = (TERM_META_DATA_LENGTH * (long)PARTITION_COUNT) + LOG_META_DATA_LENGTH;
 
-        return (int)((logLength - metaDataSectionLength) / 3);
+        return (int)((logLength - metaDataSectionLength) / PARTITION_COUNT);
     }
 
     /**

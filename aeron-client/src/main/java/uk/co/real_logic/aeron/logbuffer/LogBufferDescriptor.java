@@ -152,7 +152,7 @@ public class LogBufferDescriptor
         offset += (CACHE_LINE_LENGTH * 2);
         LOG_DEFAULT_FRAME_HEADERS_OFFSET = offset;
 
-        LOG_META_DATA_LENGTH = offset + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
+        LOG_META_DATA_LENGTH = offset + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * PARTITION_COUNT);
     }
 
     /**

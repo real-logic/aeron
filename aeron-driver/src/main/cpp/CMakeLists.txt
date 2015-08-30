@@ -13,7 +13,10 @@
 # limitations under the License.
 
 SET(SOURCE
-    MediaDriver.cpp)
+    MediaDriver.cpp
+    Receiver.cpp
+    media/UdpChannel.cpp
+    uri/AeronUri.cpp)
 
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h)

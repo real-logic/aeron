@@ -16,7 +16,8 @@
 set(TEST_HEADERS)
 
 set(TEST_SOURCE
-    concurrent/OneToOneConcurrentArrayQueueTest.cpp)
+    concurrent/OneToOneConcurrentArrayQueueTest.cpp
+    uri/AeronUriTest.cpp)
 
 add_library(aeron_driver_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
 add_dependencies(aeron_driver_test gmock)
@@ -30,3 +31,4 @@ endfunction()
 
 aeron_driver_test(mediaDriverTest MediaDriverTest.cpp)
 aeron_driver_test(oneToOneConcurrentArrayQueueTest concurrent/OneToOneConcurrentArrayQueueTest.cpp)
+aeron_driver_test(aeronUriTest uri/AeronUriTest.cpp)

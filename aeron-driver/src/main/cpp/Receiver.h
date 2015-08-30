@@ -13,30 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <gtest/gtest.h>
 
-#include "concurrent/OneToOneConcurrentArrayQueue.h"
+#ifndef INCLUDED_AERON_DRIVER_RECEIVER_
+#define INCLUDED_AERON_DRIVER_RECEIVER_
 
-class OneToOneConcurrentArrayQueueTest : public testing::Test
+#include "MediaDriver.h"
+
+using namespace aeron::driver;
+
+class Receiver
 {
-
+public:
+    Receiver(MediaDriver::Context& ctx);
 };
 
-TEST_F(OneToOneConcurrentArrayQueueTest, pollFetchsAllValuesOffered)
-{
-    aeron::driver::concurrent::OneToOneConcurrentArrayQueue<int> q(1024);
 
-    const int iterations = 10;
-    int values[iterations];
-
-    for (int i = 0; i < iterations; i++)
-    {
-        values[i] = i;
-        q.offer(&values[i]);
-    }
-
-    for (int i = 0; i < iterations; i++)
-    {
-        EXPECT_EQ(values[i], *q.poll());
-    }
-}
+#endif //AERON_RECEIVER_H

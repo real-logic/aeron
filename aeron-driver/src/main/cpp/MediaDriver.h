@@ -26,6 +26,10 @@ namespace aeron { namespace driver {
 class MediaDriver
 {
 public:
+    class Context
+    {
+    };
+
     MediaDriver(std::map<std::string, std::string>& properties);
     MediaDriver(std::string& propertiesFile);
 

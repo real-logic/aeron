@@ -73,3 +73,11 @@ TEST_F(AeronUriTest, parseWithUriParams)
     EXPECT_EQ(true, aeronUri->hasParam(key1));
     EXPECT_EQ(true, aeronUri->hasParam(key2));
 }
+
+TEST_F(AeronUriTest, failWithInvalidUri)
+{
+    std::string uri = "aero:udp?foo=bar|fool=barl";
+    auto aeronUri = AeronUri::parse(uri);
+
+    EXPECT_EQ(nullptr, aeronUri);
+}

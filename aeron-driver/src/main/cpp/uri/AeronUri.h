@@ -15,9 +15,9 @@ class AeronUri
 {
 public:
     AeronUri(
-        const std::string media,
-        const std::unordered_map<std::string, std::string> params) :
-        m_media(media), m_params(params)
+        const std::string& media,
+        const std::unordered_map<std::string, std::string>& params) :
+        m_media(std::move(media)), m_params(std::move(params))
     {
     }
 

@@ -16,10 +16,13 @@ SET(SOURCE
     MediaDriver.cpp
     Receiver.cpp
     media/UdpChannel.cpp
-    uri/AeronUri.cpp)
+    uri/AeronUri.cpp
+    uri/NetUtil.cpp)
 
 SET(HEADERS
-    concurrent/OneToOneConcurrentArrayQueue.h)
+    concurrent/OneToOneConcurrentArrayQueue.h
+    uri/AeronUri.h
+    uri/NetUtil.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

@@ -34,7 +34,7 @@ using namespace aeron::driver::uri;
 
 uint32_t prefixLengthToIpV4Mask(uint32_t subnetPrefix)
 {
-    return UINT32_C(0) == subnetPrefix ? UINT32_C(0) : ~((UINT32_C(1) << (UINT32_C(32) - subnetPrefix)) - UINT32_C(1));
+    return 0 == subnetPrefix ? 0 : ~((1 << (32 - subnetPrefix)) - UINT32_C(1));
 }
 
 

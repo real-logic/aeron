@@ -36,14 +36,35 @@ void assertIPv4PatternMatch(bool isMatch, const char* addr, const char* pattern,
     EXPECT_EQ(isMatch, NetUtil::wildcardMatch(&addr_s, &pattern_s, subnetPrefix));
 }
 
-TEST_F(NetUtilTest, matchesWhereBitsInPrefixAreEqual)
+void assertIPv6PatternMatch(bool isMatch, const char* addr, const char* pattern, uint32_t subnetPrefix)
+{
+    struct in6_addr pattern_s;
+    struct in6_addr addr_s;
+
+    inet_pton(AF_INET6, addr, &addr_s);
+    inet_pton(AF_INET6, pattern, &pattern_s);
+
+    EXPECT_EQ(isMatch, NetUtil::wildcardMatch(&addr_s, &pattern_s, subnetPrefix));
+}
+
+TEST_F(NetUtilTest, matchesWhereBitsInPrefixAreEqual_IPv4)
 {
     assertIPv4PatternMatch(true, "127.0.0.1", "127.0.0.0", 8);
     assertIPv4PatternMatch(true, "192.168.10.5", "192.168.10.3", 24);
 }
 
-TEST_F(NetUtilTest, doesntMatchWhereBitInPrefixDiffer)
+TEST_F(NetUtilTest, doesntMatchWhereBitInPrefixDiffer_IPv4)
 {
     assertIPv4PatternMatch(false, "127.0.0.1", "126.0.0.0", 8);
     assertIPv4PatternMatch(false, "192.168.10.5", "192.168.11.3", 24);
+}
+
+TEST_F(NetUtilTest, matchesWhereBitsInPrefixAreEqual_IPv6)
+{
+    assertIPv6PatternMatch(true, "fe80:0:0:0002:0002:0:0:1", "fe80:0:0:0001:0002:0:0:0", 80);
+}
+
+TEST_F(NetUtilTest, doesntMatchWhereBitInPrefixDiffer_IPv6)
+{
+    assertIPv6PatternMatch(false, "fe80:0:0:0002:0003:0:0:1", "fe80:0:0:0001:0002:0:0:0", 80);
 }

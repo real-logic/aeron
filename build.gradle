@@ -283,33 +283,6 @@ project(':aeron-system-tests') {
     }
 }
 
-project(':aeron-tools') {
-    apply plugin: 'com.github.johnrengelman.shadow'
-
-    dependencies {
-        compile project(':aeron-client'), project(':aeron-driver'), project(':aeron-samples')
-        compile 'commons-cli:commons-cli:1.2'
-    }
-
-    shadowJar {
-        archiveName = 'tools.jar'
-    }
-
-    task sourcesJar(type: Jar) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar, javadocJar
-    }
-}
-
 project(':aeron-all') {
     apply plugin: 'com.github.johnrengelman.shadow'
 

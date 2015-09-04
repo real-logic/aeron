@@ -141,8 +141,7 @@ public final class MediaDriver implements AutoCloseable
 
         validateSufficientSocketBufferLengths(ctx);
 
-        ctx.unicastSenderFlowControl(Configuration::unicastFlowControlStrategy)
-            .multicastSenderFlowControl(Configuration::multicastFlowControlStrategy)
+        ctx
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
@@ -373,8 +372,8 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private DataTransportPoller receiverTransportPoller;
         private ControlTransportPoller senderTransportPoller;
-        private Supplier<FlowControl> unicastSenderFlowControl;
-        private Supplier<FlowControl> multicastSenderFlowControl;
+        private Supplier<FlowControl> unicastSenderFlowControlSupplier;
+        private Supplier<FlowControl> multicastSenderFlowControlSupplier;
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue;
@@ -469,6 +468,16 @@ public final class MediaDriver implements AutoCloseable
                 if (null == eventLogger)
                 {
                     eventLogger = new EventLogger(eventByteBuffer);
+                }
+
+                if (null == unicastSenderFlowControlSupplier)
+                {
+                    unicastSenderFlowControlSupplier = Configuration::unicastFlowControlStrategy;
+                }
+
+                if (null == multicastSenderFlowControlSupplier)
+                {
+                    multicastSenderFlowControlSupplier = Configuration::multicastFlowControlStrategy;
                 }
 
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
@@ -569,15 +578,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context unicastSenderFlowControl(final Supplier<FlowControl> senderFlowControl)
+        public Context unicastSenderFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
         {
-            this.unicastSenderFlowControl = senderFlowControl;
+            this.unicastSenderFlowControlSupplier = senderFlowControl;
             return this;
         }
 
-        public Context multicastSenderFlowControl(final Supplier<FlowControl> senderFlowControl)
+        public Context multicastSenderFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
         {
-            this.multicastSenderFlowControl = senderFlowControl;
+            this.multicastSenderFlowControlSupplier = senderFlowControl;
             return this;
         }
 
@@ -826,14 +835,14 @@ public final class MediaDriver implements AutoCloseable
             return senderTransportPoller;
         }
 
-        public Supplier<FlowControl> unicastSenderFlowControl()
+        public Supplier<FlowControl> unicastSenderFlowControlSupplier()
         {
-            return unicastSenderFlowControl;
+            return unicastSenderFlowControlSupplier;
         }
 
-        public Supplier<FlowControl> multicastSenderFlowControl()
+        public Supplier<FlowControl> multicastSenderFlowControlSupplier()
         {
-            return multicastSenderFlowControl;
+            return multicastSenderFlowControlSupplier;
         }
 
         public OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()

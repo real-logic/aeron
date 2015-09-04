@@ -117,8 +117,8 @@ public class DriverConductor implements Agent
         mtuLength = ctx.mtuLength();
         initialWindowLength = ctx.initialWindowLength();
         termBufferLength = ctx.termBufferLength();
-        unicastFlowControl = ctx.unicastSenderFlowControl();
-        multicastFlowControl = ctx.multicastSenderFlowControl();
+        unicastFlowControl = ctx.unicastSenderFlowControlSupplier();
+        multicastFlowControl = ctx.multicastSenderFlowControlSupplier();
         countersManager = ctx.countersManager();
         countersBuffer = ctx.counterValuesBuffer();
         epochClock = ctx.epochClock();

@@ -51,6 +51,8 @@ public class AeronThroughput
     public static void printRate(
         final double messagesPerSec, final double bytesPerSec, final long totalMessages, final long totalBytes)
     {
+        System.out.println("messages/s=" + messagesPerSec + " bytes/s=" + bytesPerSec +
+                " totalMessages= " + totalMessages + " totalBytes=" + totalBytes);
     }
 
     public static FragmentHandler rateReporterHandler(final RateReporter reporter)

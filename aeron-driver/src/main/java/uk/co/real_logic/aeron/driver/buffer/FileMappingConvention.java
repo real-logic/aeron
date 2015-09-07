@@ -20,21 +20,21 @@ import uk.co.real_logic.agrona.IoUtil;
 import java.io.File;
 
 /**
- * Encodes the file mapping convention used by the media driver for exchanging buffer files.
+ * Encodes the file mapping convention used by the media driver for log buffer backing files.
  *
  * Root directory is the "aeron.data.dir"
- * Senders are under "${aeron.data.dir}/publications"
- * Receivers are under "${aeron.data.dir}/images"
+ * Source publications are under "${aeron.data.dir}/publications"
+ * Rebuilt publications are under "${aeron.data.dir}/images"
  *
- * Both publications and subscriptions share the same structure of "sessionId/streamId/consumptionTermId".
+ * Both publications and images share the same structure of "sessionId/streamId/consumptionTermId".
  */
 class FileMappingConvention
 {
     public static final String PUBLICATIONS = "publications";
     public static final String IMAGES = "images";
 
-    private final File imagesDir;
     private final File publicationsDir;
+    private final File imagesDir;
 
     public FileMappingConvention(final String dataDirName)
     {
@@ -46,9 +46,9 @@ class FileMappingConvention
     }
 
     /**
-     * Get the directory used for sender files.
+     * Get the directory used for sending files.
      *
-     * @return the directory used for sender files
+     * @return the directory used for files to be sent.
      */
     public File publicationsDir()
     {
@@ -56,9 +56,9 @@ class FileMappingConvention
     }
 
     /**
-     * Get the directory used for receiver files.
+     * Get the directory used for receiver files. Images of publications that have been rebuilt across the network.
      *
-     * @return the directory used for receiver files
+     * @return the directory used for rebuilt files
      */
     public File imagesDir()
     {

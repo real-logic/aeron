@@ -34,7 +34,7 @@ public class EmbeddedIpcThroughput
 {
     public static final int BURST_SIZE = 1_000_000;
     public static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
-    public static final int MESSAGE_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    public static final int MESSAGE_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     public static final String CHANNEL = CommonContext.IPC_CHANNEL;
     public static final int STREAM_ID = SampleConfiguration.STREAM_ID;
     public static final long IDLE_SLEEP_PERIOD_NS = TimeUnit.MILLISECONDS.toNanos(16);
@@ -201,7 +201,7 @@ public class EmbeddedIpcThroughput
 
             while (true)
             {
-                final int fragmentsRead = image.poll(this, MESSAGE_LIMIT);
+                final int fragmentsRead = image.poll(this, MESSAGE_COUNT_LIMIT);
                 if (0 == fragmentsRead && !running.get())
                 {
                     break;

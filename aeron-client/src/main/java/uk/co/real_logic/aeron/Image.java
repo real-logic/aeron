@@ -113,6 +113,16 @@ public class Image
     }
 
     /**
+     * The position this {@link Image} has been consumed to by the subscriber.
+     *
+     * @return the position this {@link Image} has been consumed to by the subscriber.
+     */
+    public long position()
+    {
+        return subscriberPosition.get();
+    }
+
+    /**
      * The {@link FileChannel} to the raw log of the Image.
      *
      * @return the {@link FileChannel} to the raw log of the Image.

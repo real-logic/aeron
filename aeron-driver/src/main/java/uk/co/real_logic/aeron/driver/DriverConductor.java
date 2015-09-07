@@ -608,7 +608,7 @@ public class DriverConductor implements Agent
         final int sessionId, final int streamId, final int initialTermId, final UdpChannel udpChannel, final long registrationId)
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = rawLogFactory.newPublication(canonicalForm, sessionId, streamId, registrationId);
+        final RawLog rawLog = rawLogFactory.newNetworkPublication(canonicalForm, sessionId, streamId, registrationId);
 
         final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
@@ -630,7 +630,8 @@ public class DriverConductor implements Agent
         final long correlationId)
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = rawLogFactory.newImage(canonicalForm, sessionId, streamId, correlationId, termBufferLength);
+        final RawLog rawLog = rawLogFactory.newNetworkedImage(
+            canonicalForm, sessionId, streamId, correlationId, termBufferLength);
 
         final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
@@ -645,7 +646,7 @@ public class DriverConductor implements Agent
     private RawLog newDirectPublicationLog(
         final int sessionId, final int streamId, final int initialTermId, final long registrationId)
     {
-        final RawLog rawLog = rawLogFactory.newShared(sessionId, streamId, registrationId);
+        final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId);
 
         final MutableDirectBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();

@@ -24,7 +24,7 @@ import java.io.File;
  *
  * Root directory is the "aeron.data.dir"
  * Senders are under "${aeron.data.dir}/publications"
- * Receivers are under "${aeron.data.dir}/subscriptions"
+ * Receivers are under "${aeron.data.dir}/images"
  *
  * Both publications and subscriptions share the same structure of "sessionId/streamId/consumptionTermId".
  */
@@ -32,11 +32,9 @@ class FileMappingConvention
 {
     public static final String PUBLICATIONS = "publications";
     public static final String IMAGES = "images";
-    public static final String SHARED = "shared";
 
     private final File imagesDir;
     private final File publicationsDir;
-    private final File sharedDir;
 
     public FileMappingConvention(final String dataDirName)
     {
@@ -45,7 +43,6 @@ class FileMappingConvention
 
         publicationsDir = new File(dataDir, PUBLICATIONS);
         imagesDir = new File(dataDir, IMAGES);
-        sharedDir = new File(dataDir, SHARED);
     }
 
     /**
@@ -66,16 +63,6 @@ class FileMappingConvention
     public File imagesDir()
     {
         return imagesDir;
-    }
-
-    /**
-     * Get the directory used for shared files.
-     *
-     * @return the directory used for shared files
-     */
-    public File sharedDir()
-    {
-        return sharedDir;
     }
 
     public static File streamLocation(

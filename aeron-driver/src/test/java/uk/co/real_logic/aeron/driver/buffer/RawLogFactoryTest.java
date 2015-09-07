@@ -62,7 +62,7 @@ public class RawLogFactoryTest
     public void shouldCreateCorrectLengthAndZeroedFilesForPublication() throws Exception
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = rawLogFactory.newPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
+        final RawLog rawLog = rawLogFactory.newNetworkPublication(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID);
 
         rawLog.stream().forEach(
             (partition) ->
@@ -86,7 +86,7 @@ public class RawLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_BUFFER_LENGTH / 2;
-        final RawLog rawLog = rawLogFactory.newImage(
+        final RawLog rawLog = rawLogFactory.newNetworkedImage(
             canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
 
         rawLog.stream().forEach(
@@ -111,6 +111,6 @@ public class RawLogFactoryTest
     {
         final String canonicalForm = udpChannel.canonicalForm();
         final int imageTermBufferMaxLength = TERM_BUFFER_MAX_LENGTH * 2;
-        rawLogFactory.newImage(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
+        rawLogFactory.newNetworkedImage(canonicalForm, SESSION_ID, STREAM_ID, CREATION_ID, imageTermBufferMaxLength);
     }
 }

@@ -90,18 +90,16 @@ public final class MediaDriver implements AutoCloseable
         {
             properties.load(inputStream);
         }
-        catch (final Exception ex)
+        catch (final Exception ignore)
         {
-            // ignore
         }
 
         try (final FileInputStream inputStream = new FileInputStream(filename))
         {
             properties.load(inputStream);
         }
-        catch (final Exception ex)
+        catch (final Exception ignore)
         {
-            // ignore
         }
 
         System.setProperties(properties);

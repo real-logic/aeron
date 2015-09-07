@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include "media/InetAddress.h"
+#include "util/Exceptions.h"
 
 using namespace aeron::driver::media;
 
@@ -23,4 +24,9 @@ TEST_F(InetAddressTest, parsesIpv6Address)
     EXPECT_EQ(AF_INET6, address->domain());
     EXPECT_EQ(false, address->isEven());
     EXPECT_EQ(1234, address->port());
+}
+
+TEST_F(InetAddressTest, throwsWithInvalidAddress)
+{
+    EXPECT_THROW(InetAddress::parse("wibble"), aeron::util::IOException);
 }

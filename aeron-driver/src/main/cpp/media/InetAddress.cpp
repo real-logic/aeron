@@ -106,12 +106,13 @@ std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressStrin
     {
         return loadFromMatch(results);
     }
+
     if (std::regex_match(addressString, results, ipv6) && results.size() == 3)
     {
         return loadFromMatch(results);
     }
 
-    return std::unique_ptr<InetAddress>();
+    throw aeron::util::IOException("Address does not match IPv4 or IPv6 string", SOURCEINFO);
 }
 
 

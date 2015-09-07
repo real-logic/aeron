@@ -140,9 +140,9 @@ public class DirectPublication implements DriverManagedResource
         }
 
         int workCount = 0;
-        final long candidatePublisherLimit = subscriberPositions.isEmpty() ? 0L : minSubscriberPosition + termWindowLength;
+        final long proposedLimit = subscriberPositions.isEmpty() ? 0L : minSubscriberPosition + termWindowLength;
 
-        if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
+        if (publisherLimit.proposeMaxOrdered(proposedLimit))
         {
             workCount = 1;
         }

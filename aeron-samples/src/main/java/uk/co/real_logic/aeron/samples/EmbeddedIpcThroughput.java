@@ -199,9 +199,13 @@ public class EmbeddedIpcThroughput
 
             final Image image = subscription.images().get(0);
 
-            while (running.get())
+            while (true)
             {
-                image.poll(this, MESSAGE_LIMIT);
+                final int fragmentsRead = image.poll(this, MESSAGE_LIMIT);
+                if (0 == fragmentsRead && !running.get())
+                {
+                    break;
+                }
             }
         }
 

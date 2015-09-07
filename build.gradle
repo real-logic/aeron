@@ -175,6 +175,26 @@ subprojects {
     }
 }
 
+project(':aeron-client') {
+    dependencies {
+        compile 'uk.co.real-logic:Agrona:0.4.3'
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar, javadocJar
+    }
+}
+
 project(':aeron-driver') {
     apply plugin: 'application'
 
@@ -209,26 +229,6 @@ project(':aeron-driver') {
 
     build.doLast {
         tasks.distZip.execute()
-    }
-}
-
-project(':aeron-client') {
-    dependencies {
-        compile 'uk.co.real-logic:Agrona:0.4.3'
-    }
-
-    task sourcesJar(type: Jar) {
-        classifier = 'sources'
-        from sourceSets.main.allSource
-    }
-
-    task javadocJar(type: Jar, dependsOn: javadoc) {
-        classifier = 'javadoc'
-        from javadoc.destinationDir
-    }
-
-    artifacts {
-        archives sourcesJar, javadocJar
     }
 }
 

@@ -26,7 +26,7 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computeLogLen
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
- * Factory for creating new {@link RawLog} in the publications or subscriptions directories as appropriate.
+ * Factory for creating new {@link RawLog} in the source publications or rebuilt publication images directories as appropriate.
  */
 public class RawLogFactory implements AutoCloseable
 {
@@ -91,7 +91,7 @@ public class RawLogFactory implements AutoCloseable
     }
 
     /**
-     * Create new {@link RawLog} in the subscriptions directory for the supplied triplet.
+     * Create new {@link RawLog} in the rebuilt publication images directory for the supplied triplet.
      *
      * @param channel          address on the media to listened to.
      * @param sessionId        under which transmissions are made.

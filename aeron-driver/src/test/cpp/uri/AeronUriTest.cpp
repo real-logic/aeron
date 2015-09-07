@@ -16,6 +16,7 @@
 #include <gtest/gtest.h>
 
 #include "uri/AeronUri.h"
+#include "util/Exceptions.h"
 
 using namespace aeron::driver::uri;
 
@@ -77,7 +78,5 @@ TEST_F(AeronUriTest, parseWithUriParams)
 TEST_F(AeronUriTest, failWithInvalidUri)
 {
     std::string uri = "aero:udp?foo=bar|fool=barl";
-    auto aeronUri = AeronUri::parse(uri);
-
-    EXPECT_EQ(nullptr, aeronUri);
+    EXPECT_THROW(AeronUri::parse(uri), aeron::util::ParseException);
 }

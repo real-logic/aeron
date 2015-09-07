@@ -7,6 +7,7 @@
 #include <sstream>
 
 #include "AeronUri.h"
+#include "util/Exceptions.h"
 
 using namespace aeron::driver::uri;
 
@@ -27,8 +28,7 @@ AeronUri* AeronUri::parse(std::string &uriString)
 
     if (*result.first != '\0')
     {
-        // TODO: throw exception
-        return nullptr;
+        throw aeron::util::ParseException("Aeron URI does not start with 'aeron:'", SOURCEINFO);
     }
 
     auto iter = result.second;

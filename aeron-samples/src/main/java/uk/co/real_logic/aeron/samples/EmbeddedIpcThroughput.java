@@ -191,7 +191,7 @@ public class EmbeddedIpcThroughput
 
         public void run()
         {
-            while (subscription.images().isEmpty())
+            while (subscription.imageCount() == 0)
             {
                 // wait for an image to be ready
                 Thread.yield();

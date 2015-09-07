@@ -161,6 +161,16 @@ public class Subscription implements AutoCloseable
     }
 
     /**
+     * Count of images connected to this subscription.
+     *
+     * @return count of images connected to this subscription.
+     */
+    public int imageCount()
+    {
+        return images.length;
+    }
+
+    /**
      * Return the {@link Image} associated with the given sessionId.
      *
      * @param sessionId associated with the Image.

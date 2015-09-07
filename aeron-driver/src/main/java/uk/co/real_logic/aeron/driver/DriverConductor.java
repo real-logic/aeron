@@ -348,7 +348,8 @@ public class DriverConductor implements Agent
         logger.logImageRemoval(
             image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
 
-        subscriptionLinks.stream()
+        subscriptionLinks
+            .stream()
             .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))
             .forEach((subscriptionLink) -> subscriptionLink.removeImage(image));
     }
@@ -521,10 +522,7 @@ public class DriverConductor implements Agent
     }
 
     private void onAddNetworkPublication(
-        final String channel,
-        final int streamId,
-        final long registrationId,
-        final long clientId)
+        final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SendChannelEndpoint channelEndpoint = getOrCreateSendChannelEndpoint(udpChannel);
@@ -706,10 +704,7 @@ public class DriverConductor implements Agent
     }
 
     private void onAddNetworkPublicationSubscription(
-        final String channel,
-        final int streamId,
-        final long registrationId,
-        final long clientId)
+        final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(UdpChannel.parse(channel));
 
@@ -748,10 +743,7 @@ public class DriverConductor implements Agent
                 });
     }
 
-    private void onAddDirectPublicationSubscription(
-        final int streamId,
-        final long registrationId,
-        final long clientId)
+    private void onAddDirectPublicationSubscription(final int streamId, final long registrationId, final long clientId)
     {
         final DirectPublication directPublication = getOrAddDirectPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);

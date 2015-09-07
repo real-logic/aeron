@@ -29,7 +29,7 @@ using namespace aeron::driver::uri;
 
 static std::uint64_t prefixLengthToIpV6Mask(std::uint64_t subnetPrefix)
 {
-    return 0 == subnetPrefix ? 0 : ~((1L << 64 - subnetPrefix) - UINT64_C(1));
+    return 0 == subnetPrefix ? 0 : ~((1L << (64 - subnetPrefix)) - UINT64_C(1));
 }
 
 
@@ -60,4 +60,14 @@ bool NetUtil::wildcardMatch(in_addr* data, in_addr* pattern, std::uint32_t prefi
     std::uint32_t mask = htobe32(prefixLengthToIpV4Mask(prefixLength));
 
     return (*data_p & mask) == (*pattern_p & mask);
+}
+
+bool NetUtil::isEven(in_addr ipV4)
+{
+    return (be32toh(ipV4.s_addr) & 1) == 0;
+}
+
+bool NetUtil::isEven(in6_addr const & ipV6)
+{
+    return (ipV6.__u6_addr.__u6_addr8[15] & 1) == 0;
 }

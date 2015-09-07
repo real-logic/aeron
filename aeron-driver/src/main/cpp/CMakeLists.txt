@@ -16,6 +16,7 @@ SET(SOURCE
     MediaDriver.cpp
     Receiver.cpp
     media/UdpChannel.cpp
+    media/InetAddress.cpp
     uri/AeronUri.cpp
     uri/NetUtil.cpp)
 

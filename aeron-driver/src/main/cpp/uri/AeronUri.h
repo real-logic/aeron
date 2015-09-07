@@ -21,22 +21,34 @@ public:
     {
     }
 
-    const std::string& scheme()
+    const std::string& scheme() const
     {
         return m_scheme;
     }
 
-    const std::string& media()
+    const std::string& media() const
     {
         return m_media;
     }
 
-    const std::string& param(std::string& key)
+    const std::string& param(const char* key) const
+    {
+        std::string s{key};
+        return m_params.at(s);
+    }
+
+    const std::string& param(std::string const & key) const
     {
         return m_params.at(key);
     }
 
-    bool hasParam(std::string& key)
+    bool hasParam(const char* key) const
+    {
+        std::string s{key};
+        return hasParam(s);
+    }
+
+    bool hasParam(std::string& key) const
     {
         return m_params.find(key) != m_params.end();
     }

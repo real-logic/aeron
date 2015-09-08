@@ -71,8 +71,8 @@ public class EmbeddedIpcThroughput
             subscriberThread.start();
             publisherThread.start();
 
-            publisherThread.join();
             subscriberThread.join();
+            publisherThread.join();
             rateReporterThread.join();
         }
     }

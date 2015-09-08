@@ -126,8 +126,8 @@ public class EmbeddedIpcThroughput
 
         public void run()
         {
-            final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
             final Publication publication = this.publication;
+            final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(publication.maxMessageLength()));
             long backPressureCount = 0;
             long totalMessageCount = 0;
 

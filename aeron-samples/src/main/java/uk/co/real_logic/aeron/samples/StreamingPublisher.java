@@ -124,6 +124,7 @@ public class StreamingPublisher
             }
             while (barrier.await());
         }
+
         reporter.halt();
         executor.shutdown();
         CloseHelper.quietClose(driver);

@@ -54,11 +54,12 @@ public class SimplePublisher
              final Publication publication = aeron.addPublication(channel, streamId))
         {
             final String message = "Hello World! ";
-            buffer.putBytes(0, message.getBytes());
+            final byte[] messageBytes = message.getBytes();
+            buffer.putBytes(0, messageBytes);
 
             // Try to publish the buffer. 'offer' is a non-blocking call.
             // If it returns less than 0, the message was not sent, and the offer should be retried.
-            final long result = publication.offer(buffer, 0, message.getBytes().length);
+            final long result = publication.offer(buffer, 0, messageBytes.length);
 
             if (result < 0L)
             {
@@ -81,10 +82,6 @@ public class SimplePublisher
             }
 
             System.out.println("Done sending.");
-        }
-        finally
-        {
-            ctx.close();
         }
     }
 }

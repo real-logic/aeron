@@ -68,11 +68,12 @@ public class BasicPublisher
             for (int i = 0; i < NUMBER_OF_MESSAGES; i++)
             {
                 final String message = "Hello World! " + i;
-                BUFFER.putBytes(0, message.getBytes());
+                final byte[] messageBytes = message.getBytes();
+                BUFFER.putBytes(0, messageBytes);
 
                 System.out.print("offering " + i + "/" + NUMBER_OF_MESSAGES);
 
-                final long result = publication.offer(BUFFER, 0, message.getBytes().length);
+                final long result = publication.offer(BUFFER, 0, messageBytes.length);
 
                 if (result < 0L)
                 {

@@ -147,7 +147,8 @@ public class EmbeddedBufferClaimIpcThroughput
                         }
                     }
 
-                    bufferClaim.buffer().putInt(0, i); // Example field write
+                    final int offset = bufferClaim.offset();
+                    bufferClaim.buffer().putInt(offset, i); // Example field write
                     // Real app would write whatever fields are required via a flyweight like SBE
 
                     bufferClaim.commit();

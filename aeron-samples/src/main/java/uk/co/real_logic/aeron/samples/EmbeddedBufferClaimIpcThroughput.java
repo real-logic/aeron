@@ -18,19 +18,21 @@ package uk.co.real_logic.aeron.samples;
 import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.SigInt;
+import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
 import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
 
-public class EmbeddedIpcThroughput
+public class EmbeddedBufferClaimIpcThroughput
 {
     public static final int BURST_SIZE = 1_000_000;
     public static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
@@ -126,8 +128,8 @@ public class EmbeddedIpcThroughput
 
         public void run()
         {
-            final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(1024));
             final Publication publication = this.publication;
+            final BufferClaim bufferClaim = new BufferClaim();
             long backPressureCount = 0;
             long totalMessageCount = 0;
 
@@ -136,7 +138,7 @@ public class EmbeddedIpcThroughput
             {
                 for (int i = 0; i < BURST_SIZE; i++)
                 {
-                    while (publication.offer(buffer, 0, MESSAGE_LENGTH) <= 0)
+                    while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) <= 0)
                     {
                         ++backPressureCount;
                         if (!running.get())
@@ -144,6 +146,11 @@ public class EmbeddedIpcThroughput
                             break outputResults;
                         }
                     }
+
+                    bufferClaim.buffer().putInt(0, i); // Example field write
+                    // Real app would write whatever fields are required via a flyweight like SBE
+
+                    bufferClaim.commit();
 
                     ++totalMessageCount;
                 }

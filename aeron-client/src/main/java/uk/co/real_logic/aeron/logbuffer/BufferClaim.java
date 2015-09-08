@@ -16,9 +16,14 @@
 package uk.co.real_logic.aeron.logbuffer;
 
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteOrder;
+
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
  * Represents a claimed range in a buffer to be used for recording a message without copy semantics for later commit.
@@ -73,7 +78,13 @@ public class BufferClaim
      */
     public void commit()
     {
-        buffer.putIntOrdered(0, buffer.capacity());
+        int frameLength = buffer.capacity();
+        if (ByteOrder.nativeOrder() != LITTLE_ENDIAN)
+        {
+            frameLength = Integer.reverseBytes(frameLength);
+        }
+
+        buffer.putIntOrdered(HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET, frameLength);
     }
 }
 

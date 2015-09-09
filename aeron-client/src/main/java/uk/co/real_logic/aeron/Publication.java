@@ -139,7 +139,7 @@ public class Publication implements AutoCloseable
     {
         synchronized (clientConductor)
         {
-            if (!isClosed && --refCount == 0)
+            if (--refCount == 0)
             {
                 release();
             }
@@ -151,9 +151,12 @@ public class Publication implements AutoCloseable
      */
     void release()
     {
-        isClosed = true;
-        clientConductor.releasePublication(this);
-        logBuffers.close();
+        if (!isClosed)
+        {
+            isClosed = true;
+            clientConductor.releasePublication(this);
+            logBuffers.close();
+        }
     }
 
     /**

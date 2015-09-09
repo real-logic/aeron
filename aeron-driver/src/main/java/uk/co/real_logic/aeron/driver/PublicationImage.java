@@ -177,9 +177,9 @@ public class PublicationImage
      */
     public void close()
     {
+        rawLog.close();
         hwmPosition.close();
         subscriberPositions.forEach(ReadablePosition::close);
-        rawLog.close();
     }
 
     public long correlationId()

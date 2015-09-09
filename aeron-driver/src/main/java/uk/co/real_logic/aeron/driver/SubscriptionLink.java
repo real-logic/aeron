@@ -111,7 +111,6 @@ public class SubscriptionLink implements DriverManagedResource
         {
             directPublication.removeSubscription(directPublicationSubscriberPosition);
             directPublication.decRef();
-            directPublicationSubscriberPosition.close();
         }
     }
 

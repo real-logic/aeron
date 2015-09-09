@@ -6,8 +6,11 @@
 #define INCLUDED_AERON_DRIVER_UDP_CHANNEL_
 
 #include <memory>
+#include "util/Exceptions.h"
 
 namespace aeron { namespace driver { namespace media {
+
+DECLARE_SOURCED_EXCEPTION (InvalidChannelException);
 
 class UdpChannel
 {

@@ -234,7 +234,14 @@ public class Subscription implements AutoCloseable
 
     void addImage(final Image image)
     {
-        images = ArrayUtil.add(images, image);
+        if (isClosed)
+        {
+            clientConductor.lingerResource(image.managedResource());
+        }
+        else
+        {
+            images = ArrayUtil.add(images, image);
+        }
     }
 
     Image removeImage(final long correlationId)

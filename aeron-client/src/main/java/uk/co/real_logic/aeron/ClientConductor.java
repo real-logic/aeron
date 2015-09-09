@@ -95,7 +95,7 @@ class ClientConductor implements Agent, DriverListener
         this.driverListener = new DriverListenerAdapter(broadcastReceiver, this);
     }
 
-    public void onClose()
+    public synchronized void onClose()
     {
         activePublications.close();
         activeSubscriptions.close();

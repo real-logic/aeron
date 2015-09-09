@@ -79,7 +79,7 @@ public final class Aeron implements AutoCloseable
             ctx.availableImageHandler,
             ctx.unavailableImageHandler,
             ctx.keepAliveInterval(),
-                ctx.driverTimeoutMs());
+            ctx.driverTimeoutMs());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
@@ -109,8 +109,8 @@ public final class Aeron implements AutoCloseable
     /**
      * Add a {@link Publication} for publishing messages to subscribers.
      *
-     * @param channel   for receiving the messages known to the media layer.
-     * @param streamId  within the channel scope.
+     * @param channel  for receiving the messages known to the media layer.
+     * @param streamId within the channel scope.
      * @return the new Publication.
      */
     public Publication addPublication(final String channel, final int streamId)

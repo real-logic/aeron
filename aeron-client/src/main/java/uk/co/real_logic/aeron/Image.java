@@ -64,6 +64,7 @@ public class Image
         final ErrorHandler errorHandler,
         final long correlationId)
     {
+        System.out.println("Image.Image " + this);
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.subscriberPosition = subscriberPosition;
@@ -260,6 +261,7 @@ public class Image
 
         public void delete()
         {
+            System.out.println("ImageManagedResource.delete " + Image.this);
             logBuffers.close();
         }
     }

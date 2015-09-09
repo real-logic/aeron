@@ -114,7 +114,7 @@ public class LogBuffers implements AutoCloseable
 
     public void close()
     {
-        CloseHelper.quietClose(fileChannel);
+        CloseHelper.close(fileChannel);
 
         for (final MappedByteBuffer buffer : mappedByteBuffers)
         {

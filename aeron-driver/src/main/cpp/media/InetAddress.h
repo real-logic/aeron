@@ -36,8 +36,8 @@ public:
     virtual bool isEven() const = 0;
     virtual bool equals(const InetAddress& other) const = 0;
 
-    static std::unique_ptr<InetAddress> parse(const char* address);
-    static std::unique_ptr<InetAddress> parse(std::string const & address);
+    static std::unique_ptr<InetAddress> parse(const char* address, int familyHint = PF_INET);
+    static std::unique_ptr<InetAddress> parse(std::string const & address, int familyHint = PF_INET);
 
     static std::unique_ptr<InetAddress> fromIPv4(std::string &address, uint16_t port);
     static std::unique_ptr<InetAddress> fromIPv4(const char* address, uint16_t port)

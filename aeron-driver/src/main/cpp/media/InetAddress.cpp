@@ -52,13 +52,13 @@ std::unique_ptr<InetAddress> InetAddress::fromIPv6(std::string& address, uint16_
     return std::unique_ptr<InetAddress>{new Inet6Address{addr, port}};
 }
 
-std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port)
+std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port, int familyHint)
 {
     addrinfo hints;
     addrinfo* info;
 
     memset(&hints, sizeof(addrinfo), 0);
-    hints.ai_family = AF_INET;
+    hints.ai_family = familyHint;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
     hints.ai_flags = 0;
@@ -85,13 +85,13 @@ std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port)
     throw aeron::util::IOException{"Only IPv4 and IPv6 are supported", SOURCEINFO};
 }
 
-std::unique_ptr<InetAddress> InetAddress::parse(const char* addressString)
+std::unique_ptr<InetAddress> InetAddress::parse(const char* addressString, int familyHint)
 {
     std::string s{addressString};
-    return parse(s);
+    return parse(s, familyHint);
 }
 
-std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressString)
+std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressString, int familyHint)
 {
     std::regex ipV4{"([^:]+)(?::([0-9]+))?"};
     std::regex ipv6{"\\[([0-9A-Fa-f:]+)(?:%([a-zA-Z0-9_.~-]+))?\\](?::([0-9]+))?"};
@@ -119,7 +119,7 @@ std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressStrin
         }
         catch (aeron::util::IOException e)
         {
-            return fromHostname(inetAddressStr, port);
+            return fromHostname(inetAddressStr, port, familyHint);
         }
     }
 

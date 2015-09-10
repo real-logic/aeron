@@ -39,10 +39,22 @@ TEST_F(InetAddressTest, throwsWithInvalidAddress)
     EXPECT_THROW(InetAddress::parse("wibble"), aeron::util::IOException);
 }
 
+TEST_F(InetAddressTest, throwsWithInvalidIPv4Address)
+{
+    EXPECT_THROW(InetAddress::fromIPv4("wibble", 0), aeron::util::IOException);
+}
+
+TEST_F(InetAddressTest, throwsWithInvalidIPv6Address)
+{
+    EXPECT_THROW(InetAddress::fromIPv6("wibble", 0), aeron::util::IOException);
+}
+
+TEST_F(InetAddressTest, resolvesLocalHost)
+{
+    EXPECT_EQ(*InetAddress::fromIPv4("127.0.0.1", 0), *InetAddress::parse("localhost:0"));
+}
+
 TEST_F(InetAddressTest, comparesForEquality)
 {
-    auto a1 = InetAddress::fromIPv4("127.0.0.1", 0);
-    auto a2 = InetAddress::fromIPv4("127.0.0.1", 0);
-
-    EXPECT_EQ(*a1, *a2);
+    EXPECT_EQ(*InetAddress::fromIPv4("127.0.0.1", 0), *InetAddress::fromIPv4("127.0.0.1", 0));
 }

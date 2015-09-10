@@ -9,46 +9,32 @@
 #include <memory>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <arpa/inet.h>
 
 namespace aeron { namespace driver { namespace media {
 
 class InetAddress
 {
 public:
-    InetAddress(sockaddr* address, socklen_t length, int domain, int type, int protocol);
-    ~InetAddress();
-
-    sockaddr* address() const
-    {
-        return m_address;
-    }
-
-    socklen_t length() const
-    {
-        return m_length;
-    }
-
-    int domain() const
-    {
-        return m_domain;
-    }
+    virtual sockaddr* address() const = 0;
+    virtual socklen_t length() const = 0;
+    virtual int domain() const = 0;
 
     int type() const
     {
-        return m_type;
+        return SOCK_DGRAM;
     }
 
     int protocol() const
     {
-        return m_protocol;
+        return IPPROTO_UDP;
     }
 
-    uint16_t port() const;
+    virtual void output(std::ostream& os) const = 0;
 
-    bool isEven() const;
-
-    friend bool operator==(const InetAddress& a, const InetAddress& b);
-    friend bool operator!=(const InetAddress& a, const InetAddress& b);
+    virtual uint16_t port() const = 0;
+    virtual bool isEven() const = 0;
+    virtual bool equals(const InetAddress& other) const = 0;
 
     static std::unique_ptr<InetAddress> parse(const char* address);
     static std::unique_ptr<InetAddress> parse(std::string const & address);
@@ -66,24 +52,98 @@ public:
         std::string s{address};
         return fromIPv6(s, port);
     }
+};
+
+class Inet4Address : public InetAddress
+{
+public:
+    Inet4Address(in_addr address, uint16_t port)
+    {
+        m_socketAddress.sin_family = AF_INET;
+        m_socketAddress.sin_addr = address;
+        m_socketAddress.sin_port = htons(port);
+    }
+
+    sockaddr* address() const
+    {
+        return (sockaddr*) &m_socketAddress;
+    }
+
+    socklen_t length() const
+    {
+        return sizeof(sockaddr_in);
+    }
+
+    int domain() const
+    {
+        return PF_INET;
+    }
+
+    uint16_t port() const
+    {
+        return ntohs(m_socketAddress.sin_port);
+    }
+
+    bool isEven() const;
+    bool equals(const InetAddress& other) const;
+    void output(std::ostream& os) const;
 
 private:
-    sockaddr* m_address;
-    socklen_t m_length;
-    int m_domain;
-    int m_type;
-    int m_protocol;
+    sockaddr_in m_socketAddress;
+};
 
+class Inet6Address : public InetAddress
+{
+public:
+    Inet6Address(in6_addr address, uint16_t port)
+    {
+        m_socketAddress.sin6_family = AF_INET;
+        m_socketAddress.sin6_addr = address;
+        m_socketAddress.sin6_port = htons(port);
+    }
+
+    sockaddr* address() const
+    {
+        return (sockaddr*) &m_socketAddress;
+    }
+
+    socklen_t length() const
+    {
+        return sizeof(sockaddr_in);
+    }
+
+    int domain() const
+    {
+        return PF_INET6;
+    }
+
+    uint16_t port() const
+    {
+        return ntohs(m_socketAddress.sin6_port);
+    }
+
+    bool isEven() const;
+    bool equals(const InetAddress& other) const;
+    void output(std::ostream& os) const;
+
+private:
+    sockaddr_in6 m_socketAddress;
 };
 
 inline bool operator==(const InetAddress& a, const InetAddress& b)
 {
-    return a.m_length == b.m_length && memcmp(a.m_address, b.m_address, a.m_length) == 0;
+    return a.domain() == b.domain() && a.equals(b);
 }
 
 inline bool operator!=(const InetAddress& a, const InetAddress& b)
 {
-    return a.m_length == b.m_length && memcmp(a.m_address, b.m_address, a.m_length);
+    return !(a == b);
+}
+
+inline std::ostream& operator<<(std::ostream& os, const InetAddress& dt)
+{
+    dt.output(os);
+    return os;
 }
 
 }}};

@@ -16,17 +16,6 @@
 
 using namespace aeron::driver::media;
 
-InetAddress::InetAddress(sockaddr* address, socklen_t length, int domain, int type, int protocol) :
-    m_address(address), m_length(length), m_domain(domain), m_type(type), m_protocol(protocol)
-{
-}
-
-InetAddress::~InetAddress()
-{
-//    std::cout << "delete" << '\n';
-//    delete m_address;
-}
-
 struct InfoDeleter
 {
     InfoDeleter() {};
@@ -48,14 +37,7 @@ std::unique_ptr<InetAddress> InetAddress::fromIPv4(std::string& address, uint16_
         throw aeron::util::IOException("Failed to parse IPv4 address", SOURCEINFO);
     }
 
-    struct sockaddr_in* sockaddr_in = new struct sockaddr_in;
-    sockaddr_in->sin_addr = addr;
-    sockaddr_in->sin_port = htons(port);
-    sockaddr_in->sin_family = AF_INET;
-
-    sockaddr* sockaddr1 = (struct sockaddr*) sockaddr_in;
-
-    return std::unique_ptr<InetAddress>{new InetAddress{sockaddr1, sizeof(sockaddr_in), PF_INET, SOCK_DGRAM, 0}};
+    return std::unique_ptr<InetAddress>{new Inet4Address{addr, port}};
 }
 
 std::unique_ptr<InetAddress> InetAddress::fromIPv6(std::string& address, uint16_t port)
@@ -64,17 +46,43 @@ std::unique_ptr<InetAddress> InetAddress::fromIPv6(std::string& address, uint16_
 
     if (!inet_pton(AF_INET6, address.c_str(), &addr))
     {
-        throw aeron::util::IOException("Failed to parse IPv4 address", SOURCEINFO);
+        throw aeron::util::IOException("Failed to parse IPv6 address", SOURCEINFO);
     }
 
-    sockaddr_in6* socket_addr = new sockaddr_in6;
-    socket_addr->sin6_addr = addr;
-    socket_addr->sin6_port = htons(port);
-    socket_addr->sin6_family = AF_INET;
+    return std::unique_ptr<InetAddress>{new Inet6Address{addr, port}};
+}
 
-    sockaddr* sockaddr1 = (sockaddr*) socket_addr;
+std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port)
+{
+    addrinfo hints;
+    addrinfo* info;
 
-    return std::unique_ptr<InetAddress>{new InetAddress{sockaddr1, sizeof(sockaddr_in6), PF_INET6, SOCK_DGRAM, 0}};
+    memset(&hints, sizeof(addrinfo), 0);
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = IPPROTO_UDP;
+    hints.ai_flags = 0;
+
+    if (getaddrinfo(address.c_str(), NULL, &hints, &info) != 0)
+    {
+        throw aeron::util::IOException("Unable to lookup host", SOURCEINFO);
+    }
+
+    InfoDeleter d;
+    std::unique_ptr<addrinfo, InfoDeleter> ptr{info, d};
+
+    if (ptr->ai_family == AF_INET)
+    {
+        sockaddr_in* addr_in = (sockaddr_in*) ptr->ai_addr;
+        return std::__1::unique_ptr<InetAddress>{new Inet4Address{addr_in->sin_addr, port}};
+    }
+    else if (ptr->ai_family == AF_INET6)
+    {
+        sockaddr_in6* addr_in = (sockaddr_in6*) ptr->ai_addr;
+        return std::__1::unique_ptr<InetAddress>{new Inet6Address{addr_in->sin6_addr, port}};
+    }
+
+    throw aeron::util::IOException{"Only IPv4 and IPv6 are supported", SOURCEINFO};
 }
 
 std::unique_ptr<InetAddress> InetAddress::parse(const char* addressString)
@@ -103,9 +111,16 @@ std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressStrin
     {
         auto inetAddressStr = results[1].str();
         auto portStr = results[2].str();
-        auto port1 = atoi(portStr.c_str());
+        auto port = atoi(portStr.c_str());
 
-        return fromIPv4(inetAddressStr, port1);
+        try
+        {
+            return fromIPv4(inetAddressStr, port);
+        }
+        catch (aeron::util::IOException e)
+        {
+            return fromHostname(inetAddressStr, port);
+        }
     }
 
     throw aeron::util::IOException("Address does not match IPv4 or IPv6 string", SOURCEINFO);
@@ -128,18 +143,38 @@ bool InetAddress::isEven() const
     return false;
 }
 
-uint16_t InetAddress::port() const
+bool Inet4Address::isEven() const
 {
-    if (domain() == PF_INET)
-    {
-        sockaddr_in* ipv4_address = (sockaddr_in*) address();
-        return ntohs(ipv4_address->sin_port);
-    }
-    else if (domain() == PF_INET6)
-    {
-        sockaddr_in6* ipv6_address = (sockaddr_in6*) address();
-        return ntohs(ipv6_address->sin6_port);
-    }
+    return aeron::driver::uri::NetUtil::isEven(m_socketAddress.sin_addr);
+}
 
-    return 0;
+bool Inet4Address::equals(const InetAddress& other) const
+{
+    const Inet4Address& addr = dynamic_cast<const Inet4Address&>(other);
+    return m_socketAddress.sin_addr.s_addr == addr.m_socketAddress.sin_addr.s_addr;
+}
+
+void Inet4Address::output(std::ostream &os) const
+{
+    char addr[INET_ADDRSTRLEN];
+    inet_ntop(domain(), &m_socketAddress.sin_addr, addr, INET_ADDRSTRLEN);
+    os << addr;
+}
+
+bool Inet6Address::isEven() const
+{
+    return aeron::driver::uri::NetUtil::isEven(m_socketAddress.sin6_addr);
+}
+
+bool Inet6Address::equals(const InetAddress &other) const
+{
+    const Inet6Address& addr = dynamic_cast<const Inet6Address&>(other);
+    return memcmp(&m_socketAddress.sin6_addr, &addr.m_socketAddress.sin6_addr, sizeof(in6_addr)) == 0;
+}
+
+void Inet6Address::output(std::ostream &os) const
+{
+    char addr[INET6_ADDRSTRLEN];
+    inet_ntop(domain(), &m_socketAddress.sin6_addr, addr, INET6_ADDRSTRLEN);
+    os << addr;
 }

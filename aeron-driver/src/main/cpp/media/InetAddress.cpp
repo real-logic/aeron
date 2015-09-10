@@ -9,7 +9,6 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <iostream>
-#include <netinet/in.h>
 
 #include "InetAddress.h"
 #include "uri/NetUtil.h"

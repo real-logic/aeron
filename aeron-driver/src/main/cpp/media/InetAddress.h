@@ -47,10 +47,25 @@ public:
 
     bool isEven() const;
 
-    static std::unique_ptr<InetAddress> fromIpString(const char* address, uint16_t port = 0);
-    static std::unique_ptr<InetAddress> fromIpString(std::string& address, uint16_t port = 0);
+    friend bool operator==(const InetAddress& a, const InetAddress& b);
+    friend bool operator!=(const InetAddress& a, const InetAddress& b);
+
     static std::unique_ptr<InetAddress> parse(const char* address);
     static std::unique_ptr<InetAddress> parse(std::string const & address);
+
+    static std::unique_ptr<InetAddress> fromIPv4(std::string &address, uint16_t port);
+    static std::unique_ptr<InetAddress> fromIPv4(const char* address, uint16_t port)
+    {
+        std::string s{address};
+        return fromIPv4(s, port);
+    }
+
+    static std::unique_ptr<InetAddress> fromIPv6(std::string &address, uint16_t port);
+    static std::unique_ptr<InetAddress> fromIPv6(const char* address, uint16_t port)
+    {
+        std::string s{address};
+        return fromIPv6(s, port);
+    }
 
 private:
     sockaddr* m_address;
@@ -58,7 +73,18 @@ private:
     int m_domain;
     int m_type;
     int m_protocol;
+
 };
+
+inline bool operator==(const InetAddress& a, const InetAddress& b)
+{
+    return a.m_length == b.m_length && memcmp(a.m_address, b.m_address, a.m_length) == 0;
+}
+
+inline bool operator!=(const InetAddress& a, const InetAddress& b)
+{
+    return a.m_length == b.m_length && memcmp(a.m_address, b.m_address, a.m_length);
+}
 
 }}};
 

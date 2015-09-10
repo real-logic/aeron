@@ -8,6 +8,7 @@
 #include <regex>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <iostream>
 
 #include "InetAddress.h"
 #include "uri/NetUtil.h"
@@ -22,7 +23,8 @@ InetAddress::InetAddress(sockaddr* address, socklen_t length, int domain, int ty
 
 InetAddress::~InetAddress()
 {
-    delete m_address;
+//    std::cout << "delete" << '\n';
+//    delete m_address;
 }
 
 struct InfoDeleter
@@ -37,57 +39,42 @@ struct InfoDeleter
     }
 };
 
-std::unique_ptr<InetAddress> InetAddress::fromIpString(std::string& address, uint16_t port)
+std::unique_ptr<InetAddress> InetAddress::fromIPv4(std::string& address, uint16_t port)
 {
-    return fromIpString(address.c_str(), port);
+    struct in_addr addr;
+
+    if (!inet_pton(AF_INET, address.c_str(), &addr))
+    {
+        throw aeron::util::IOException("Failed to parse IPv4 address", SOURCEINFO);
+    }
+
+    struct sockaddr_in* sockaddr_in = new struct sockaddr_in;
+    sockaddr_in->sin_addr = addr;
+    sockaddr_in->sin_port = htons(port);
+    sockaddr_in->sin_family = AF_INET;
+
+    sockaddr* sockaddr1 = (struct sockaddr*) sockaddr_in;
+
+    return std::unique_ptr<InetAddress>{new InetAddress{sockaddr1, sizeof(sockaddr_in), PF_INET, SOCK_DGRAM, 0}};
 }
 
-std::unique_ptr<InetAddress> InetAddress::fromIpString(const char* address, uint16_t port)
+std::unique_ptr<InetAddress> InetAddress::fromIPv6(std::string& address, uint16_t port)
 {
-    addrinfo* info = NULL;
+    struct in6_addr addr;
 
-    if (getaddrinfo(address, NULL, NULL, &info))
+    if (!inet_pton(AF_INET6, address.c_str(), &addr))
     {
-        throw aeron::util::IOException("Failed to get address info", SOURCEINFO);
+        throw aeron::util::IOException("Failed to parse IPv4 address", SOURCEINFO);
     }
 
-    InfoDeleter d;
-    std::unique_ptr<addrinfo, InfoDeleter> ptr(info, d);
-    sockaddr* sockaddr;
-    socklen_t sockaddr_len;
+    sockaddr_in6* socket_addr = new sockaddr_in6;
+    socket_addr->sin6_addr = addr;
+    socket_addr->sin6_port = htons(port);
+    socket_addr->sin6_family = AF_INET;
 
-    if (info->ai_family == AF_INET6)
-    {
-        sockaddr_in6* addr = new sockaddr_in6;
-        sockaddr = (struct sockaddr*) (addr);
-        sockaddr_len = sizeof(sockaddr_in6);
-        memcpy(sockaddr, ptr->ai_addr, sockaddr_len);
-        addr->sin6_port = htons(port);
-    }
-    else if (info->ai_family == AF_INET)
-    {
-        sockaddr_in* addr = new sockaddr_in;
-        sockaddr = (struct sockaddr*) (addr);
-        sockaddr_len = sizeof(sockaddr_in6);
-        memcpy(sockaddr, ptr->ai_addr, sockaddr_len);
-        addr->sin_port = htons(port);
-    }
-    else
-    {
-        throw aeron::util::IOException("Only AF_INET and AF_INET6 addresses are supported", SOURCEINFO);
-    }
+    sockaddr* sockaddr1 = (sockaddr*) socket_addr;
 
-
-    return std::unique_ptr<InetAddress>{new InetAddress{sockaddr, sockaddr_len, ptr->ai_family, ptr->ai_protocol, 0}};
-}
-
-static std::unique_ptr<InetAddress> loadFromMatch(std::smatch const & matchResults)
-{
-    auto inetAddressStr = matchResults[1].str();
-    auto portStr = matchResults[2].str();
-    auto port = atoi(portStr.c_str());
-
-    return InetAddress::fromIpString(inetAddressStr, port);
+    return std::unique_ptr<InetAddress>{new InetAddress{sockaddr1, sizeof(sockaddr_in6), PF_INET6, SOCK_DGRAM, 0}};
 }
 
 std::unique_ptr<InetAddress> InetAddress::parse(const char* addressString)
@@ -99,17 +86,26 @@ std::unique_ptr<InetAddress> InetAddress::parse(const char* addressString)
 std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressString)
 {
     std::regex ipV4{"([^:]+)(?::([0-9]+))?"};
-    std::regex ipv6{"\\[([0-9A-Fa-f:]+)(?:%[a-zA-Z0-9_.~-]+)?\\](?::([0-9]+))?"};
+    std::regex ipv6{"\\[([0-9A-Fa-f:]+)(?:%([a-zA-Z0-9_.~-]+))?\\](?::([0-9]+))?"};
     std::smatch results;
+
+    if (std::regex_match(addressString, results, ipv6))
+    {
+        auto inetAddressStr = results[1].str();
+        auto scope = results[2].str();
+        auto portStr = results[3].str();
+        auto port = atoi(portStr.c_str());
+
+        return fromIPv6(inetAddressStr, port);
+    }
 
     if (std::regex_match(addressString, results, ipV4) && results.size() == 3)
     {
-        return loadFromMatch(results);
-    }
+        auto inetAddressStr = results[1].str();
+        auto portStr = results[2].str();
+        auto port1 = atoi(portStr.c_str());
 
-    if (std::regex_match(addressString, results, ipv6) && results.size() == 3)
-    {
-        return loadFromMatch(results);
+        return fromIPv4(inetAddressStr, port1);
     }
 
     throw aeron::util::IOException("Address does not match IPv4 or IPv6 string", SOURCEINFO);

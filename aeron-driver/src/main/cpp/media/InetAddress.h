@@ -35,6 +35,7 @@ public:
     virtual uint16_t port() const = 0;
     virtual bool isEven() const = 0;
     virtual bool equals(const InetAddress& other) const = 0;
+    virtual std::unique_ptr<InetAddress> nextAddress() const = 0;
 
     static std::unique_ptr<InetAddress> parse(const char* address, int familyHint = PF_INET);
     static std::unique_ptr<InetAddress> parse(std::string const & address, int familyHint = PF_INET);
@@ -87,6 +88,7 @@ public:
     bool isEven() const;
     bool equals(const InetAddress& other) const;
     void output(std::ostream& os) const;
+    std::unique_ptr<InetAddress> nextAddress() const;
 
 private:
     sockaddr_in m_socketAddress;
@@ -125,6 +127,7 @@ public:
     bool isEven() const;
     bool equals(const InetAddress& other) const;
     void output(std::ostream& os) const;
+    std::unique_ptr<InetAddress> nextAddress() const;
 
 private:
     sockaddr_in6 m_socketAddress;

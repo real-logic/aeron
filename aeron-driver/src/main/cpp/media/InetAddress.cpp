@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 #include <iostream>
+#include <netinet/in.h>
 
 #include "InetAddress.h"
 #include "uri/NetUtil.h"
@@ -74,12 +75,12 @@ std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port, i
     if (ptr->ai_family == AF_INET)
     {
         sockaddr_in* addr_in = (sockaddr_in*) ptr->ai_addr;
-        return std::__1::unique_ptr<InetAddress>{new Inet4Address{addr_in->sin_addr, port}};
+        return std::unique_ptr<InetAddress>{new Inet4Address{addr_in->sin_addr, port}};
     }
     else if (ptr->ai_family == AF_INET6)
     {
         sockaddr_in6* addr_in = (sockaddr_in6*) ptr->ai_addr;
-        return std::__1::unique_ptr<InetAddress>{new Inet6Address{addr_in->sin6_addr, port}};
+        return std::unique_ptr<InetAddress>{new Inet6Address{addr_in->sin6_addr, port}};
     }
 
     throw aeron::util::IOException{"Only IPv4 and IPv6 are supported", SOURCEINFO};
@@ -161,6 +162,21 @@ void Inet4Address::output(std::ostream &os) const
     os << addr;
 }
 
+std::unique_ptr<InetAddress> Inet4Address::nextAddress() const
+{
+    union _u
+    {
+        in_addr addr;
+        uint8_t parts[4];
+    };
+
+    union _u copy;
+    copy.addr = m_socketAddress.sin_addr;
+    copy.parts[3]++;
+
+    return std::unique_ptr<InetAddress>{new Inet4Address{copy.addr, port()}};
+}
+
 bool Inet6Address::isEven() const
 {
     return aeron::driver::uri::NetUtil::isEven(m_socketAddress.sin6_addr);
@@ -177,4 +193,12 @@ void Inet6Address::output(std::ostream &os) const
     char addr[INET6_ADDRSTRLEN];
     inet_ntop(domain(), &m_socketAddress.sin6_addr, addr, INET6_ADDRSTRLEN);
     os << addr;
+}
+
+std::unique_ptr<InetAddress> Inet6Address::nextAddress() const
+{
+    in6_addr addr = m_socketAddress.sin6_addr;
+    addr.__u6_addr.__u6_addr8[15]++;
+
+    return std::unique_ptr<InetAddress>{new Inet6Address{addr, port()}};
 }

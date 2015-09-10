@@ -58,3 +58,23 @@ TEST_F(InetAddressTest, comparesForEquality)
 {
     EXPECT_EQ(*InetAddress::fromIPv4("127.0.0.1", 0), *InetAddress::fromIPv4("127.0.0.1", 0));
 }
+
+TEST_F(InetAddressTest, incrementsNextIPv6)
+{
+    EXPECT_EQ(*InetAddress::fromIPv6("::1:FE", 0)->nextAddress(), *InetAddress::fromIPv6("::1:FF", 0));
+}
+
+TEST_F(InetAddressTest, incrementsNextIPv6WithWrap)
+{
+    EXPECT_EQ(*InetAddress::fromIPv6("::1:FF", 0)->nextAddress(), *InetAddress::fromIPv6("::1:00", 0));
+}
+
+TEST_F(InetAddressTest, incrementsNextIPv4)
+{
+    EXPECT_EQ(*InetAddress::fromIPv4("127.0.0.33", 0)->nextAddress(), *InetAddress::fromIPv4("127.0.0.34", 0));
+}
+
+TEST_F(InetAddressTest, incrementsNextIPv4WithWrap)
+{
+    EXPECT_EQ(*InetAddress::fromIPv4("127.0.2.255", 0)->nextAddress(), *InetAddress::fromIPv4("127.0.2.0", 0));
+}

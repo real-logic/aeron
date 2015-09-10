@@ -46,6 +46,7 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri)
     if (isMulticast(aeronUri))
     {
         auto dataAddress = InetAddress::parse(aeronUri->param("group"));
+//        dataAddress.nextAddress();
 
         if (dataAddress->isEven())
         {

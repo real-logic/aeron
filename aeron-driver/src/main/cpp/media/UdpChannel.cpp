@@ -46,12 +46,15 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri)
     if (isMulticast(aeronUri))
     {
         auto dataAddress = InetAddress::parse(aeronUri->param("group"));
-//        dataAddress.nextAddress();
 
         if (dataAddress->isEven())
         {
             throw InvalidChannelException("Multicast data addresses must be odd", SOURCEINFO);
         }
+
+        auto controlAddress = dataAddress->nextAddress();
+
+        return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress}};
     }
     else
     {

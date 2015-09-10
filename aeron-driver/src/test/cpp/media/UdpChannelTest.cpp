@@ -64,6 +64,6 @@ TEST_F(UdpChannelTest, createValidMulticastUdpChannel)
     auto remoteDataAddress = InetAddress::fromIPv4("224.10.9.9", 41024);
     auto remoteControlAddress = InetAddress::fromIPv4("224.10.9.10", 41024);
 
-    EXPECT_EQ(*remoteControlAddress, *channel.remoteControl());
-    EXPECT_EQ(*remoteDataAddress, *channel.remoteData());
+    EXPECT_EQ(*remoteControlAddress, channel->remoteControl());
+    EXPECT_EQ(*remoteDataAddress, channel->remoteData());
 }

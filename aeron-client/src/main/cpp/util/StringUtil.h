@@ -112,6 +112,16 @@ inline bool continuationBarrier(const std::string& label)
     return result;
 }
 
+template <typename T>
+static T fromString (const std::string &str)
+{
+    std::istringstream is(str);
+    T t;
+    is >> t;
+    return t;
+}
+
+
 }}
 
 #endif

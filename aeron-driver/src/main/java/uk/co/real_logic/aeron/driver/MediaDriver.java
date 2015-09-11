@@ -1064,27 +1064,27 @@ public final class MediaDriver implements AutoCloseable
         {
             if (null == conductorIdleStrategy)
             {
-                conductorIdleStrategy(Configuration.agentIdleStrategy());
+                conductorIdleStrategy(Configuration.conductorIdleStrategy());
             }
 
             if (null == senderIdleStrategy)
             {
-                senderIdleStrategy(Configuration.agentIdleStrategy());
+                senderIdleStrategy(Configuration.senderIdleStrategy());
             }
 
             if (null == receiverIdleStrategy)
             {
-                receiverIdleStrategy(Configuration.agentIdleStrategy());
+                receiverIdleStrategy(Configuration.receiverIdleStrategy());
             }
 
             if (null == sharedNetworkIdleStrategy)
             {
-                sharedNetworkIdleStrategy(Configuration.agentIdleStrategy());
+                sharedNetworkIdleStrategy(Configuration.sharedNetworkIdleStrategy());
             }
 
             if (null == sharedIdleStrategy)
             {
-                sharedIdleStrategy(Configuration.agentIdleStrategy());
+                sharedIdleStrategy(Configuration.sharedIdleStrategy());
             }
         }
 

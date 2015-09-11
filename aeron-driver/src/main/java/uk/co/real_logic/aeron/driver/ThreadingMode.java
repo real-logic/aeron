@@ -27,5 +27,5 @@ public enum ThreadingMode
     SHARED_NETWORK,
 
     /** One thread shared by all 3 agents. */
-    SHARED,
+    SHARED
 }

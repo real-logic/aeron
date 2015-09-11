@@ -276,17 +276,48 @@ public class Configuration
     public static final long IMAGE_LIVENESS_TIMEOUT_NS = getLong(
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
 
-    /**
-     * {@link IdleStrategy} to be employed by agents.
-     */
-    public static final String AGENT_IDLE_STRATEGY_PROP_NAME = "aeron.agent.idle.strategy";
-    public static final String AGENT_IDLE_STRATEGY = getProperty(
-        AGENT_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
-
     public static final long AGENT_IDLE_MAX_SPINS = 20;
     public static final long AGENT_IDLE_MAX_YIELDS = 50;
     public static final long AGENT_IDLE_MIN_PARK_NS = TimeUnit.NANOSECONDS.toNanos(1);
     public static final long AGENT_IDLE_MAX_PARK_NS = TimeUnit.MICROSECONDS.toNanos(100);
+
+    /**
+     * {@link IdleStrategy} to be employed by {@link Sender} for {@link ThreadingMode#DEDICATED}.
+     */
+    public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.sender.idle.strategy";
+    public static final String SENDER_IDLE_STRATEGY = getProperty(
+        SENDER_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+
+    /**
+     * {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
+     * and {@link ThreadingMode#SHARED_NETWORK}.
+     */
+    public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
+    public static final String CONDUCTOR_IDLE_STRATEGY = getProperty(
+        CONDUCTOR_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+
+    /**
+     * {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
+     */
+    public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
+    public static final String RECEIVER_IDLE_STRATEGY = getProperty(
+        RECEIVER_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+
+    /**
+     * {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
+     * {@link ThreadingMode#SHARED_NETWORK}.
+     */
+    public static final String SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME = "aeron.sharednetwork.idle.strategy";
+    public static final String SHARED_NETWORK_IDLE_STRATEGY = getProperty(
+        SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+
+    /**
+     * {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor}
+     * for {@link ThreadingMode#SHARED}.
+     */
+    public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
+    public static final String SHARED_IDLE_STRATEGY = getProperty(
+        SHARED_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
 
     /** Capacity for the command queues used between driver agents. */
     public static final int CMD_QUEUE_CAPACITY = 1024;
@@ -381,10 +412,10 @@ public class Configuration
         }
     }
 
-    public static IdleStrategy agentIdleStrategy()
+    public static IdleStrategy agentIdleStrategy(final String name)
     {
         IdleStrategy idleStrategy = null;
-        switch (AGENT_IDLE_STRATEGY)
+        switch (name)
         {
             case "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy":
                 idleStrategy = new BackoffIdleStrategy(
@@ -394,7 +425,7 @@ public class Configuration
             default:
                 try
                 {
-                    idleStrategy = (IdleStrategy)Class.forName(AGENT_IDLE_STRATEGY).newInstance();
+                    idleStrategy = (IdleStrategy)Class.forName(name).newInstance();
                 }
                 catch (final Exception ex)
                 {
@@ -404,6 +435,31 @@ public class Configuration
         }
 
         return idleStrategy;
+    }
+
+    public static IdleStrategy senderIdleStrategy()
+    {
+        return agentIdleStrategy(SENDER_IDLE_STRATEGY);
+    }
+
+    public static IdleStrategy conductorIdleStrategy()
+    {
+        return agentIdleStrategy(CONDUCTOR_IDLE_STRATEGY);
+    }
+
+    public static IdleStrategy receiverIdleStrategy()
+    {
+        return agentIdleStrategy(RECEIVER_IDLE_STRATEGY);
+    }
+
+    public static IdleStrategy sharedNetworkIdleStrategy()
+    {
+        return agentIdleStrategy(SHARED_NETWORK_IDLE_STRATEGY);
+    }
+
+    public static IdleStrategy sharedIdleStrategy()
+    {
+        return agentIdleStrategy(SHARED_IDLE_STRATEGY);
     }
 
     public static FlowControl unicastFlowControlStrategy()

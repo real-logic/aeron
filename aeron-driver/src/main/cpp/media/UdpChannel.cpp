@@ -54,6 +54,8 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri)
 
         auto controlAddress = dataAddress->nextAddress();
 
+//        auto interfaceSearchAddress =
+
         return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress}};
     }
     else

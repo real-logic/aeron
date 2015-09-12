@@ -49,5 +49,14 @@ std::unique_ptr<InterfaceSearchAddress> InterfaceSearchAddress::parse(std::strin
 
 bool InterfaceSearchAddress::matches(const InetAddress &candidate) const
 {
-    return m_inetAddress->domain() == candidate.domain() && m_inetAddress->matches(candidate, m_subnetPrefix);
+    return
+        m_subnetPrefix == 0 ||
+        (m_inetAddress->domain() == candidate.domain() && m_inetAddress->matches(candidate, m_subnetPrefix));
+}
+
+static const std::unique_ptr<InterfaceSearchAddress> WILDCARD = InterfaceSearchAddress::parse("0.0.0.0/0");
+
+const InterfaceSearchAddress* InterfaceSearchAddress::wildcard()
+{
+    return WILDCARD.get();
 }

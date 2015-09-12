@@ -69,3 +69,10 @@ TEST_F(InterfaceSearchAddressTest, doesNotMatchesIPv6AddressWithSubnetPrefix)
     expectIPv6Match("[fe80:0001:abcd:0:0:0:0:0]/48", "fe80:0001:abce:0:0:0:0:0", false);
     expectIPv6Match("[fe80:0001:abcd:0:0:0:0:0]", "fe80:0001:abcd:0:0:0:0:1", false);
 }
+
+TEST_F(InterfaceSearchAddressTest, wildcardMatchesAnything)
+{
+    auto a = InterfaceSearchAddress::wildcard();
+    EXPECT_TRUE(a->matches(*InetAddress::fromIPv4("127.0.0.1", 0)));
+    EXPECT_TRUE(a->matches(*InetAddress::fromIPv6("::1", 0)));
+}

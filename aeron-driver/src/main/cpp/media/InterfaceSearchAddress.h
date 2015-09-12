@@ -37,6 +37,8 @@ public:
 
     bool matches(const InetAddress& candidate) const;
 
+    static const InterfaceSearchAddress* wildcard();
+
 private:
     std::unique_ptr<InetAddress> m_inetAddress;
     std::uint32_t m_subnetPrefix;

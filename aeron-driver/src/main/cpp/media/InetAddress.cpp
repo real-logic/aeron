@@ -10,23 +10,13 @@
 #include <netdb.h>
 #include <iostream>
 
+#include "util/StringUtil.h"
+#include "util/ScopeUtils.h"
 #include "InetAddress.h"
 #include "uri/NetUtil.h"
 #include "util/Exceptions.h"
 
 using namespace aeron::driver::media;
-
-struct InfoDeleter
-{
-    InfoDeleter() {};
-    InfoDeleter(const InfoDeleter&) {}
-    InfoDeleter(InfoDeleter&) {}
-
-    void operator()(addrinfo* addr) const
-    {
-        freeaddrinfo(addr);
-    }
-};
 
 std::unique_ptr<InetAddress> InetAddress::fromIPv4(std::string& address, uint16_t port)
 {
@@ -61,24 +51,25 @@ std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port, i
     hints.ai_family = familyHint;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
-    hints.ai_flags = 0;
 
     if (getaddrinfo(address.c_str(), NULL, &hints, &info) != 0)
     {
         throw aeron::util::IOException("Unable to lookup host", SOURCEINFO);
     }
 
-    InfoDeleter d;
-    std::unique_ptr<addrinfo, InfoDeleter> ptr{info, d};
-
-    if (ptr->ai_family == AF_INET)
+    aeron::util::OnScopeExit tidy([&]()
     {
-        sockaddr_in* addr_in = (sockaddr_in*) ptr->ai_addr;
+        freeaddrinfo(info);
+    });
+
+    if (info->ai_family == AF_INET)
+    {
+        sockaddr_in* addr_in = (sockaddr_in*) info->ai_addr;
         return std::unique_ptr<InetAddress>{new Inet4Address{addr_in->sin_addr, port}};
     }
-    else if (ptr->ai_family == AF_INET6)
+    else if (info->ai_family == AF_INET6)
     {
-        sockaddr_in6* addr_in = (sockaddr_in6*) ptr->ai_addr;
+        sockaddr_in6* addr_in = (sockaddr_in6*) info->ai_addr;
         return std::unique_ptr<InetAddress>{new Inet6Address{addr_in->sin6_addr, port}};
     }
 
@@ -101,8 +92,7 @@ std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressStrin
     {
         auto inetAddressStr = results[1].str();
         auto scope = results[2].str();
-        auto portStr = results[3].str();
-        auto port = atoi(portStr.c_str());
+        auto port = aeron::util::fromString<uint16_t>(results[3].str());
 
         return fromIPv6(inetAddressStr, port);
     }
@@ -110,8 +100,7 @@ std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressStrin
     if (std::regex_match(addressString, results, ipV4) && results.size() == 3)
     {
         auto inetAddressStr = results[1].str();
-        auto portStr = results[2].str();
-        auto port = atoi(portStr.c_str());
+        auto port = aeron::util::fromString<uint16_t>(results[2].str());
 
         try
         {
@@ -176,6 +165,13 @@ std::unique_ptr<InetAddress> Inet4Address::nextAddress() const
     return std::unique_ptr<InetAddress>{new Inet4Address{copy.addr, port()}};
 }
 
+bool Inet4Address::matches(const InetAddress &candidate, std::uint32_t subnetPrefix) const
+{
+    const Inet4Address& addr = dynamic_cast<const Inet4Address&>(candidate);
+    return aeron::driver::uri::NetUtil::wildcardMatch(
+        &addr.m_socketAddress.sin_addr, &m_socketAddress.sin_addr, subnetPrefix);
+}
+
 bool Inet6Address::isEven() const
 {
     return aeron::driver::uri::NetUtil::isEven(m_socketAddress.sin6_addr);
@@ -200,4 +196,11 @@ std::unique_ptr<InetAddress> Inet6Address::nextAddress() const
     addr.__u6_addr.__u6_addr8[15]++;
 
     return std::unique_ptr<InetAddress>{new Inet6Address{addr, port()}};
+}
+
+bool Inet6Address::matches(const InetAddress &candidate, std::uint32_t subnetPrefix) const
+{
+    const Inet6Address& addr = dynamic_cast<const Inet6Address&>(candidate);
+    return aeron::driver::uri::NetUtil::wildcardMatch(
+        &addr.m_socketAddress.sin6_addr, &m_socketAddress.sin6_addr, subnetPrefix);
 }

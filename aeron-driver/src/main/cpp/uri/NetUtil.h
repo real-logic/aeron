@@ -13,8 +13,8 @@ namespace aeron { namespace driver { namespace uri {
 class NetUtil
 {
 public:
-    static bool wildcardMatch(struct in6_addr* data, struct in6_addr* pattern, std::uint32_t prefixLength);
-    static bool wildcardMatch(struct in_addr* data, struct in_addr* pattern, std::uint32_t prefixLength);
+    static bool wildcardMatch(const struct in6_addr* data, const struct in6_addr* pattern, std::uint32_t prefixLength);
+    static bool wildcardMatch(const struct in_addr* data, const struct in_addr* pattern, std::uint32_t prefixLength);
     static bool isEven(in_addr ipV4);
     static bool isEven(in6_addr const & ipV6);
 };

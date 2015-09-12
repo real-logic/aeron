@@ -35,6 +35,8 @@ public:
         return m_subnetPrefix;
     }
 
+    bool matches(const InetAddress& candidate) const;
+
 private:
     std::unique_ptr<InetAddress> m_inetAddress;
     std::uint32_t m_subnetPrefix;

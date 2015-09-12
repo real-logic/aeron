@@ -31,11 +31,11 @@ public:
     }
 
     virtual void output(std::ostream& os) const = 0;
-
     virtual uint16_t port() const = 0;
     virtual bool isEven() const = 0;
     virtual bool equals(const InetAddress& other) const = 0;
     virtual std::unique_ptr<InetAddress> nextAddress() const = 0;
+    virtual bool matches(const InetAddress& candidate, std::uint32_t subnetPrefix) const = 0;
 
     static std::unique_ptr<InetAddress> parse(const char* address, int familyHint = PF_INET);
     static std::unique_ptr<InetAddress> parse(std::string const & address, int familyHint = PF_INET);
@@ -89,6 +89,7 @@ public:
     bool equals(const InetAddress& other) const;
     void output(std::ostream& os) const;
     std::unique_ptr<InetAddress> nextAddress() const;
+    bool matches(const InetAddress& candidate, std::uint32_t subnetPrefix) const;
 
 private:
     sockaddr_in m_socketAddress;
@@ -99,7 +100,7 @@ class Inet6Address : public InetAddress
 public:
     Inet6Address(in6_addr address, uint16_t port)
     {
-        m_socketAddress.sin6_family = AF_INET;
+        m_socketAddress.sin6_family = AF_INET6;
         m_socketAddress.sin6_addr = address;
         m_socketAddress.sin6_port = htons(port);
     }
@@ -128,6 +129,7 @@ public:
     bool equals(const InetAddress& other) const;
     void output(std::ostream& os) const;
     std::unique_ptr<InetAddress> nextAddress() const;
+    bool matches(const InetAddress& candidate, std::uint32_t subnetPrefix) const;
 
 private:
     sockaddr_in6 m_socketAddress;

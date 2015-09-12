@@ -46,3 +46,8 @@ std::unique_ptr<InterfaceSearchAddress> InterfaceSearchAddress::parse(std::strin
 
     throw aeron::util::ParseException{"Must be valid address", SOURCEINFO};
 }
+
+bool InterfaceSearchAddress::matches(const InetAddress &candidate) const
+{
+    return m_inetAddress->domain() == candidate.domain() && m_inetAddress->matches(candidate, m_subnetPrefix);
+}

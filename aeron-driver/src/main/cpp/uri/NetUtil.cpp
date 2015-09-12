@@ -39,7 +39,7 @@ static std::uint32_t prefixLengthToIpV4Mask(std::uint32_t subnetPrefix)
 }
 
 
-bool NetUtil::wildcardMatch(struct in6_addr* data, struct in6_addr* pattern, std::uint32_t prefixLength)
+bool NetUtil::wildcardMatch(const struct in6_addr* data, const struct in6_addr* pattern, std::uint32_t prefixLength)
 {
     std::uint64_t dataUpper = *((std::uint64_t*) data->s6_addr);
     std::uint64_t dataLower = *((std::uint64_t*) &data->s6_addr[8]);
@@ -53,7 +53,7 @@ bool NetUtil::wildcardMatch(struct in6_addr* data, struct in6_addr* pattern, std
         (maskLower & dataLower) == (maskLower & patternLower);
 }
 
-bool NetUtil::wildcardMatch(in_addr* data, in_addr* pattern, std::uint32_t prefixLength)
+bool NetUtil::wildcardMatch(const in_addr* data, const in_addr* pattern, std::uint32_t prefixLength)
 {
     std::uint32_t* data_p = (std::uint32_t*) data;
     std::uint32_t* pattern_p = (std::uint32_t*) pattern;

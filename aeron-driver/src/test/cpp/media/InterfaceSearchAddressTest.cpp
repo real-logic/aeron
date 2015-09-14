@@ -72,7 +72,27 @@ TEST_F(InterfaceSearchAddressTest, doesNotMatchesIPv6AddressWithSubnetPrefix)
 
 TEST_F(InterfaceSearchAddressTest, wildcardMatchesAnything)
 {
-    auto a = InterfaceSearchAddress::wildcard();
+    auto a = InterfaceSearchAddress::parse("0.0.0.0/0");
     EXPECT_TRUE(a->matches(*InetAddress::fromIPv4("127.0.0.1", 0)));
     EXPECT_TRUE(a->matches(*InetAddress::fromIPv6("::1", 0)));
 }
+
+//TEST_F(InterfaceSearchAddressTest, searchForAddressIPv4)
+//{
+//    auto a = InterfaceSearchAddress::parse("192.168.0.0/16");
+//    auto b = a->findLocalAddress();
+//
+//    std::cout << *b << '\n';
+//}
+//
+//TEST_F(InterfaceSearchAddressTest, searchForAddressIPv6)
+//{
+//    auto a = InterfaceSearchAddress::parse("[fe80::60c:ceff:fee3:0]/64");
+//    auto b = a->findLocalAddress();
+//
+//    if (b != nullptr)
+//    {
+//        std::cout << *b << '\n';
+//    }
+//
+//}

@@ -5,6 +5,7 @@
 #include "UdpChannel.h"
 #include "uri/AeronUri.h"
 #include "media/InetAddress.h"
+#include "media/InterfaceSearchAddress.h"
 
 using namespace aeron::driver::media;
 using namespace aeron::driver::uri;
@@ -45,7 +46,7 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri)
 
     if (isMulticast(aeronUri))
     {
-        auto dataAddress = InetAddress::parse(aeronUri->param("group"));
+        auto dataAddress = InetAddress::parse(aeronUri->param(GROUP_KEY));
 
         if (dataAddress->isEven())
         {
@@ -53,8 +54,9 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri)
         }
 
         auto controlAddress = dataAddress->nextAddress();
-
-//        auto interfaceSearchAddress =
+        std::string wildcardAddress{"0.0.0.0/0"};
+        auto interfaceAddressString= aeronUri->param(INTERFACE_KEY, wildcardAddress);
+        auto interfaceSearchAddress = InterfaceSearchAddress::parse(interfaceAddressString);
 
         return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress}};
     }

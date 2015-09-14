@@ -37,7 +37,7 @@ public:
 
     bool matches(const InetAddress& candidate) const;
 
-    static const InterfaceSearchAddress* wildcard();
+    std::unique_ptr<InetAddress> findLocalAddress() const;
 
 private:
     std::unique_ptr<InetAddress> m_inetAddress;

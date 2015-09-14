@@ -37,6 +37,17 @@ public:
         return m_params.at(s);
     }
 
+    const std::string& param(const char* key, std::string& defaultVal) const
+    {
+        if (hasParam(key))
+        {
+            return defaultVal;
+        }
+
+        std::string s{key};
+        return m_params.at(s);
+    }
+
     const std::string& param(std::string const & key) const
     {
         return m_params.at(key);

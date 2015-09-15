@@ -5,7 +5,7 @@
 #ifndef INCLUDED_AERON_DRIVER_MEDIA_INTERFACESEARCHADDRESS_H_
 #define INCLUDED_AERON_DRIVER_MEDIA_INTERFACESEARCHADDRESS_H_
 
-
+#include "InterfaceLookup.h"
 #include "InetAddress.h"
 
 namespace aeron { namespace driver { namespace media {
@@ -37,7 +37,7 @@ public:
 
     bool matches(const InetAddress& candidate) const;
 
-    std::unique_ptr<InetAddress> findLocalAddress() const;
+    std::unique_ptr<InetAddress> findLocalAddress(InterfaceLookup& lookup) const;
 
 private:
     std::unique_ptr<InetAddress> m_inetAddress;

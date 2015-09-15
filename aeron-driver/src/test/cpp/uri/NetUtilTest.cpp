@@ -68,3 +68,8 @@ TEST_F(NetUtilTest, doesntMatchWhereBitInPrefixDiffer_IPv6)
 {
     assertIPv6PatternMatch(false, "fe80:0:0:0002:0003:0:0:1", "fe80:0:0:0001:0002:0:0:0", 80);
 }
+
+TEST_F(NetUtilTest, matchesWhereBitsInPrefixAreEqualWithSmallSubnetPrefix_IPv6)
+{
+    assertIPv6PatternMatch(true, "fe80::1", "fe80::60c:ceff:fee3:0", 16);
+}

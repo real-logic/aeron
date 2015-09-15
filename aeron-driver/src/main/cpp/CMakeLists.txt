@@ -23,7 +23,7 @@ SET(SOURCE
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h
     uri/AeronUri.h
-    uri/NetUtil.h media/InterfaceSearchAddress.cpp media/InterfaceSearchAddress.h)
+    uri/NetUtil.h media/InterfaceSearchAddress.cpp media/InterfaceSearchAddress.h media/InterfaceLookup.cpp media/InterfaceLookup.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

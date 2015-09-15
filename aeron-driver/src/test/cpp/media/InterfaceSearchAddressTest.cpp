@@ -4,6 +4,7 @@
 
 #include <gtest/gtest.h>
 
+#include "media/InterfaceLookup.h"
 #include "media/InterfaceSearchAddress.h"
 
 using namespace aeron::driver::media;
@@ -77,22 +78,55 @@ TEST_F(InterfaceSearchAddressTest, wildcardMatchesAnything)
     EXPECT_TRUE(a->matches(*InetAddress::fromIPv6("::1", 0)));
 }
 
-//TEST_F(InterfaceSearchAddressTest, searchForAddressIPv4)
+template<typename Func>
+void bar(Func f)
+{
+    f(1, 2, 4);
+}
+
+//TEST_F(InterfaceSearchAddressTest, lookup)
 //{
-//    auto a = InterfaceSearchAddress::parse("192.168.0.0/16");
-//    auto b = a->findLocalAddress();
+//    InterfaceLookup* l = new BsdInterfaceLookup{};
 //
-//    std::cout << *b << '\n';
-//}
-//
-//TEST_F(InterfaceSearchAddressTest, searchForAddressIPv6)
-//{
-//    auto a = InterfaceSearchAddress::parse("[fe80::60c:ceff:fee3:0]/64");
-//    auto b = a->findLocalAddress();
-//
-//    if (b != nullptr)
+//    auto f =
+//        [] (Inet4Address& address, std::uint32_t subnetPrefix, unsigned int flags)
 //    {
-//        std::cout << *b << '\n';
-//    }
+//        std::cout << address << '\n';
+//    };
 //
+//    l->lookupIPv4(f);
+//
+//    unsigned int i = 0;
+//
+//    auto f =
+//        [&] (int a, std::uint32_t b, unsigned int c) -> void
+//    {
+//        i = c;
+//
+//        std::cout << a << b << c << '\n';
+//        return;
+//    };
+//
+//    std::cout << i << '\n';
+//    bar(f);
+//    std::cout << i << '\n';
 //}
+
+TEST_F(InterfaceSearchAddressTest, searchForAddressIPv4)
+{
+    auto a = InterfaceSearchAddress::parse("127.0.0.0/16");
+    auto b = a->findLocalAddress(BsdInterfaceLookup::get());
+
+    std::cout << *b << '\n';
+}
+
+TEST_F(InterfaceSearchAddressTest, searchForAddressIPv6)
+{
+    auto a = InterfaceSearchAddress::parse("[fe80::60c:ceff:fee3:0]/16");
+    auto b = a->findLocalAddress(BsdInterfaceLookup::get());
+
+    if (b != nullptr)
+    {
+        std::cout << *b << '\n';
+    }
+}

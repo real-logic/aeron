@@ -81,110 +81,79 @@ bool InterfaceSearchAddress::matches(const InetAddress &candidate) const
         (m_inetAddress->domain() == candidate.domain() && m_inetAddress->matches(candidate, m_subnetPrefix));
 }
 
-static InetAddress* findIPv4Address(const InterfaceSearchAddress& search, ifaddrs* interfaces)
+static std::unique_ptr<InetAddress> findIPv4Address(const InterfaceSearchAddress& search, const InterfaceLookup& lookup)
 {
-    ifaddrs* cursor = interfaces;
     in_addr addr;
     bool found = false;
-    uint32_t longestSubnetPrefix = 0;
+    std::uint32_t longestSubnetPrefix = 0;
 
-    while (cursor)
+    auto f = [&] (Inet4Address address, std::uint32_t subnetPrefix, unsigned int flags)
     {
-        if (cursor->ifa_addr->sa_family == AF_INET)
+        if (search.matches(address))
         {
-            sockaddr_in* sockaddrIn = (sockaddr_in*) cursor->ifa_addr;
-            Inet4Address address{sockaddrIn->sin_addr, 0};
-
-            if (search.matches(address))
+            if (flags & IFF_LOOPBACK && !found)
             {
-                if (cursor->ifa_flags & IFF_LOOPBACK && !found)
+                addr = address.addr();
+                found = true;
+            }
+            else if (flags & IFF_MULTICAST)
+            {
+                if (subnetPrefix > longestSubnetPrefix)
                 {
-                    addr = sockaddrIn->sin_addr;
-                    found = true;
+                    addr = address.addr();
                 }
-                if (cursor->ifa_flags & IFF_MULTICAST)
-                {
-                    uint32_t subnetPrefix = maskToPrefixLength(sockaddrIn->sin_addr);
 
-                    if (subnetPrefix > longestSubnetPrefix)
-                    {
-                        addr = sockaddrIn->sin_addr;
-                    }
-
-                    found = true;
-                }
+                found = true;
             }
         }
+    };
 
-        cursor = cursor->ifa_next;
-    }
+    lookup.lookupIPv4(f);
 
-    return (found) ? new Inet4Address{addr, 0} : nullptr;
+    return (found) ? std::unique_ptr<InetAddress>{new Inet4Address{addr, 0}} : nullptr;
 }
 
-static InetAddress* findIPv6Address(const InterfaceSearchAddress& search, ifaddrs* interfaces)
+static std::unique_ptr<InetAddress> findIPv6Address(const InterfaceSearchAddress& search, const InterfaceLookup& lookup)
 {
-    ifaddrs* cursor = interfaces;
     in6_addr addr;
     bool found = false;
-    uint32_t longestSubnetPrefix = 0;
+    std::uint32_t longestSubnetPrefix = 0;
 
-    while (cursor)
+    auto f = [&] (Inet6Address address, std::uint32_t subnetPrefix, unsigned int flags)
     {
-        if (cursor->ifa_addr->sa_family == AF_INET6)
+        if (search.matches(address))
         {
-            sockaddr_in6* sockaddrIn = (sockaddr_in6*) cursor->ifa_addr;
-            Inet6Address address{sockaddrIn->sin6_addr, 0};
-
-            if (search.matches(address))
+            if (flags & IFF_LOOPBACK && !found)
             {
-                if (cursor->ifa_flags & IFF_LOOPBACK && !found)
-                {
-                    addr = sockaddrIn->sin6_addr;
-                    found = true;
-                }
-                else if (cursor->ifa_flags & IFF_MULTICAST)
-                {
-                    uint32_t subnetPrefix = maskToPrefixLength(sockaddrIn->sin6_addr);
-
-                    if (subnetPrefix > longestSubnetPrefix)
-                    {
-                        addr = sockaddrIn->sin6_addr;
-                    }
-
-                    found = true;
-                }
+                addr = address.addr();
+                found = true;
             }
+            else if (flags & IFF_MULTICAST)
+            {
+                if (subnetPrefix > longestSubnetPrefix)
+                {
+                    addr = address.addr();
+                }
 
+                found = true;
+            }
         }
+    };
 
-        cursor = cursor->ifa_next;
-    }
+    lookup.lookupIPv6(f);
 
-    return (found) ? new Inet6Address{addr, 0} : nullptr;
+    return (found) ? std::unique_ptr<InetAddress>{new Inet6Address{addr, 0}} : nullptr;
 }
 
-std::unique_ptr<InetAddress> InterfaceSearchAddress::findLocalAddress() const
+std::unique_ptr<InetAddress> InterfaceSearchAddress::findLocalAddress(InterfaceLookup& lookup) const
 {
-    ifaddrs* interfaces;
-
-    if (getifaddrs(&interfaces) != 0)
-    {
-        throw aeron::util::IOException{"Failed to get inteface addresses", SOURCEINFO};
-    }
-
-    aeron::util::OnScopeExit tidy([&]()
-    {
-        freeifaddrs(interfaces);
-    });
-
     if (m_inetAddress->domain() == PF_INET)
     {
-        return std::unique_ptr<InetAddress>{findIPv4Address(*this, interfaces)};
+        return findIPv4Address(*this, lookup);
     }
     else if (m_inetAddress->domain() == PF_INET6)
     {
-        return std::unique_ptr<InetAddress>{findIPv6Address(*this, interfaces)};
+        return findIPv6Address(*this, lookup);
     }
 
     return nullptr;

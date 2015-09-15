@@ -85,6 +85,11 @@ public:
         return ntohs(m_socketAddress.sin_port);
     }
 
+    in_addr addr()
+    {
+        return m_socketAddress.sin_addr;
+    }
+
     bool isEven() const;
     bool equals(const InetAddress& other) const;
     void output(std::ostream& os) const;
@@ -123,6 +128,11 @@ public:
     uint16_t port() const
     {
         return ntohs(m_socketAddress.sin6_port);
+    }
+
+    in6_addr addr()
+    {
+        return m_socketAddress.sin6_addr;
     }
 
     bool isEven() const;

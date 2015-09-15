@@ -46,7 +46,8 @@ bool NetUtil::wildcardMatch(const struct in6_addr* data, const struct in6_addr* 
     std::uint64_t patternUpper = *((std::uint64_t*) pattern->s6_addr);
     std::uint64_t patternLower = *((std::uint64_t*) &pattern->s6_addr[8]);
     std::uint64_t maskUpper = htobe64(prefixLengthToIpV6Mask(prefixLength));
-    std::uint64_t maskLower = htobe64(prefixLengthToIpV6Mask(prefixLength - 64));
+    std::uint64_t lowerPrefixLength = prefixLength > 64 ? prefixLength - 64 : 0;
+    std::uint64_t maskLower = htobe64(prefixLengthToIpV6Mask(lowerPrefixLength));
 
     return
         (maskUpper & dataUpper) == (maskUpper & patternUpper) &&

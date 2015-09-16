@@ -132,6 +132,19 @@ public class Configuration
     public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
 
     /**
+     * Property name for term buffer length (in bytes) for IPC logbuffers
+     */
+    public static final String IPC_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.ipc.term.buffer.length";
+    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, 0);
+
+    /**
+     * Property name for window limit for IPC publications
+     */
+    public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.ipc.publication.term.window.length";
+    public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getInteger(
+        IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
+
+    /**
      * Default byte buffer length for reads
      */
     public static final int RECEIVE_BYTE_BUFFER_LENGTH_DEFAULT = 4096;
@@ -550,5 +563,27 @@ public class Configuration
     public static boolean doNotSendNaks()
     {
         return Boolean.parseBoolean(getProperty(DO_NOT_SEND_NAK_PROP_NAME, "false"));
+    }
+
+    /**
+     * How large the term buffer should be for IPC only.
+     *
+     * @param termBufferLength to be used when {@link #IPC_TERM_BUFFER_LENGTH} is not set.
+     * @return the length to be used for the term buffer in bytes
+     */
+    public static int ipcTermBufferLength(final int termBufferLength)
+    {
+        return 0 != IPC_TERM_BUFFER_LENGTH ? IPC_TERM_BUFFER_LENGTH : termBufferLength;
+    }
+
+    /**
+     * How far ahead the publisher can get from the sender position for IPC only.
+     *
+     * @param termCapacity to be used when {@link #IPC_PUBLICATION_TERM_WINDOW_LENGTH} is not set.
+     * @return the length to be used for the publication window.
+     */
+    public static int ipcPublicationTermWindowLength(final int termCapacity)
+    {
+        return 0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH ? IPC_PUBLICATION_TERM_WINDOW_LENGTH : termCapacity / 2;
     }
 }

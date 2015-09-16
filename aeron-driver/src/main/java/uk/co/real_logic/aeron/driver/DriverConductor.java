@@ -63,6 +63,7 @@ public class DriverConductor implements Agent
     private final long clientLivenessTimeoutNs;
     private final int mtuLength;
     private final int termBufferLength;
+    private final int ipcTermBufferLength;
     private final int initialWindowLength;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
@@ -117,6 +118,7 @@ public class DriverConductor implements Agent
         mtuLength = ctx.mtuLength();
         initialWindowLength = ctx.initialWindowLength();
         termBufferLength = ctx.termBufferLength();
+        ipcTermBufferLength = ctx.ipcTermBufferLength();
         unicastFlowControl = ctx.unicastSenderFlowControlSupplier();
         multicastFlowControl = ctx.multicastSenderFlowControlSupplier();
         countersManager = ctx.countersManager();
@@ -652,7 +654,7 @@ public class DriverConductor implements Agent
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
         LogBufferDescriptor.activeTermId(logMetaData, initialTermId);
 
-        final int mtuLength = FrameDescriptor.computeMaxMessageLength(termBufferLength);
+        final int mtuLength = FrameDescriptor.computeMaxMessageLength(ipcTermBufferLength);
         LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
 
         return rawLog;

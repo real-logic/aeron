@@ -401,6 +401,7 @@ public final class MediaDriver implements AutoCloseable
         private long clientLivenessTimeoutNs = CLIENT_LIVENESS_TIMEOUT_NS;
 
         private int publicationTermBufferLength;
+        private int ipcPublicationTermBufferLength;
         private int maxImageTermBufferLength;
         private int initialWindowLength;
         private int eventBufferLength;
@@ -478,6 +479,11 @@ public final class MediaDriver implements AutoCloseable
                     multicastSenderFlowControlSupplier = Configuration::multicastFlowControlStrategy;
                 }
 
+                if (0 == ipcPublicationTermBufferLength)
+                {
+                    ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(termBufferLength());
+                }
+
                 toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
                 receiverTransportPoller(new DataTransportPoller());
@@ -519,7 +525,8 @@ public final class MediaDriver implements AutoCloseable
                     threadingMode, toConductorFromSenderCommandQueue, systemCounters.conductorProxyFails()));
 
                 rawLogBuffersFactory(new RawLogFactory(
-                    dirName(), publicationTermBufferLength, maxImageTermBufferLength, eventLogger));
+                    dirName(), publicationTermBufferLength, maxImageTermBufferLength, ipcPublicationTermBufferLength,
+                    eventLogger));
 
                 concludeIdleStrategies();
                 concludeLossGenerators();
@@ -681,6 +688,12 @@ public final class MediaDriver implements AutoCloseable
         public Context termBufferMaxLength(final int termBufferMaxLength)
         {
             this.maxImageTermBufferLength = termBufferMaxLength;
+            return this;
+        }
+
+        public Context ipcTermBufferLength(final int ipcTermBufferLength)
+        {
+            this.ipcPublicationTermBufferLength = ipcTermBufferLength;
             return this;
         }
 
@@ -931,6 +944,11 @@ public final class MediaDriver implements AutoCloseable
         public int termBufferMaxLength()
         {
             return maxImageTermBufferLength;
+        }
+
+        public int ipcTermBufferLength()
+        {
+            return ipcPublicationTermBufferLength;
         }
 
         public int initialWindowLength()

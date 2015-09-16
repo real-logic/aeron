@@ -32,6 +32,7 @@ public class RawLogFactory implements AutoCloseable
 {
     private final int publicationTermBufferLength;
     private final int imagesTermBufferMaxLength;
+    private final int ipcPublicationTermBufferLength;
     private final FileChannel blankTemplate;
     private final File publicationsDir;
     private final File imagesDir;
@@ -41,6 +42,7 @@ public class RawLogFactory implements AutoCloseable
         final String dataDirectoryName,
         final int publicationTermBufferLength,
         final int imagesTermBufferMaxLength,
+        final int ipcPublicationTermBufferLength,
         final EventLogger logger)
     {
         this.logger = logger;
@@ -54,8 +56,10 @@ public class RawLogFactory implements AutoCloseable
 
         this.publicationTermBufferLength = publicationTermBufferLength;
         this.imagesTermBufferMaxLength = imagesTermBufferMaxLength;
+        this.ipcPublicationTermBufferLength = ipcPublicationTermBufferLength;
 
-        final int maxTermLength = Math.max(publicationTermBufferLength, imagesTermBufferMaxLength);
+        int maxTermLength = Math.max(publicationTermBufferLength, ipcPublicationTermBufferLength);
+        maxTermLength = Math.max(maxTermLength, imagesTermBufferMaxLength);
         final long blankTemplateLength = computeLogLength(maxTermLength);
 
         blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
@@ -122,7 +126,7 @@ public class RawLogFactory implements AutoCloseable
      */
     public RawLog newDirectPublication(final int sessionId, final int streamId, final long correlationId)
     {
-        return newInstance(publicationsDir, "ipc", sessionId, streamId, correlationId, publicationTermBufferLength);
+        return newInstance(publicationsDir, "ipc", sessionId, streamId, correlationId, ipcPublicationTermBufferLength);
     }
 
     private static FileChannel createTemplateFile(final String dataDir, final String name, final long length)

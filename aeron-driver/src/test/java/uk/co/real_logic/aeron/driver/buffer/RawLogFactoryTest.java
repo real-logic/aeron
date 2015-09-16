@@ -49,7 +49,8 @@ public class RawLogFactoryTest
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
-        rawLogFactory = new RawLogFactory(DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, logger);
+        rawLogFactory = new RawLogFactory(
+            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, TERM_BUFFER_LENGTH, logger);
     }
 
     @After

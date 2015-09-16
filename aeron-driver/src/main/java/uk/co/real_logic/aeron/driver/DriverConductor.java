@@ -563,7 +563,6 @@ public class DriverConductor implements Agent
         }
 
         linkPublication(registrationId, publication, getOrAddClient(clientId));
-        publication.incRef();
 
         clientProxy.onPublicationReady(
             streamId,
@@ -578,8 +577,7 @@ public class DriverConductor implements Agent
         final DirectPublication directPublication = getOrAddDirectPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);
 
-        final PublicationLink publicationLink = new PublicationLink(registrationId, directPublication, client);
-        publicationLinks.add(publicationLink);
+        linkPublication(registrationId, directPublication, client);
 
         clientProxy.onPublicationReady(
             streamId,
@@ -594,7 +592,7 @@ public class DriverConductor implements Agent
         return ++nextSessionId;
     }
 
-    private void linkPublication(final long registrationId, final NetworkPublication publication, final AeronClient client)
+    private void linkPublication(final long registrationId, final DriverManagedResource publication, final AeronClient client)
     {
         if (null != findPublicationLink(publicationLinks, registrationId))
         {

@@ -272,23 +272,6 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         shouldSendSetupFrame = true;
     }
 
-    public int decRef()
-    {
-        final int count = --refCount;
-
-        if (0 == count)
-        {
-            channelEndpoint.removePublication(this);
-        }
-
-        return count;
-    }
-
-    public int incRef()
-    {
-        return ++refCount;
-    }
-
     public boolean isUnreferencedAndFlushed(final long now)
     {
         boolean isFlushed = false;
@@ -484,5 +467,22 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
     public void delete()
     {
         // close is done once sender thread has removed
+    }
+
+    public int decrRef()
+    {
+        final int count = --refCount;
+
+        if (0 == count)
+        {
+            channelEndpoint.removePublication(this);
+        }
+
+        return count;
+    }
+
+    public int incrRef()
+    {
+        return ++refCount;
     }
 }

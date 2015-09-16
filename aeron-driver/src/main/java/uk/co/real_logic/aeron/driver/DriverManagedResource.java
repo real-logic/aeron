@@ -33,4 +33,18 @@ public interface DriverManagedResource extends ManagedResource
      * @return whether resource has reached end of life or not
      */
     boolean hasReachedEndOfLife();
+
+    /**
+     * Increment reference count to this resource.
+     *
+     * @return new reference count value
+     */
+    int incrRef();
+
+    /**
+     * Decrement reference count to this resource.
+     *
+     * @return new reference count value
+     */
+    int decrRef();
 }

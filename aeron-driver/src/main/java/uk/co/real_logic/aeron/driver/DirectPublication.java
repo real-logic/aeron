@@ -99,16 +99,6 @@ public class DirectPublication implements DriverManagedResource
         return publisherLimit.id();
     }
 
-    public void incRef()
-    {
-        refCount++;
-    }
-
-    public void decRef()
-    {
-        refCount--;
-    }
-
     public void close()
     {
         rawLog.close();
@@ -217,5 +207,15 @@ public class DirectPublication implements DriverManagedResource
     public void delete()
     {
         close();
+    }
+
+    public int incrRef()
+    {
+        return ++refCount;
+    }
+
+    public int decrRef()
+    {
+        return --refCount;
     }
 }

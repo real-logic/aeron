@@ -637,4 +637,14 @@ public class PublicationImage
     {
         close();
     }
+
+    public int incrRef()
+    {
+        return 0;
+    }
+
+    public int decrRef()
+    {
+        return 0;
+    }
 }

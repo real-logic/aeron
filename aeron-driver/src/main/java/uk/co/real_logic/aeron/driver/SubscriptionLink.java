@@ -64,7 +64,7 @@ public class SubscriptionLink implements DriverManagedResource
         this.streamId = streamId;
         this.aeronClient = aeronClient;
         this.directPublication = directPublication;
-        directPublication.incRef();
+        directPublication.incrRef();
         this.directPublicationSubscriberPosition = subscriberPosition;
     }
 
@@ -110,7 +110,7 @@ public class SubscriptionLink implements DriverManagedResource
         if (null != directPublication)
         {
             directPublication.removeSubscription(directPublicationSubscriberPosition);
-            directPublication.decRef();
+            directPublication.decrRef();
         }
     }
 
@@ -141,5 +141,15 @@ public class SubscriptionLink implements DriverManagedResource
     public void delete()
     {
         close();
+    }
+
+    public int incrRef()
+    {
+        return 0;
+    }
+
+    public int decrRef()
+    {
+        return 0;
     }
 }

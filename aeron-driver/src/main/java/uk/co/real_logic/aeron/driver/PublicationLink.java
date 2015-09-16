@@ -21,40 +21,22 @@ package uk.co.real_logic.aeron.driver;
 public class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
-    private final NetworkPublication publication;
-    private final DirectPublication directPublication;
+    private final DriverManagedResource publication;
     private final AeronClient client;
 
     private boolean reachedEndOfLife = false;
 
-    public PublicationLink(final long registrationId, final NetworkPublication publication, final AeronClient client)
+    public PublicationLink(final long registrationId, final DriverManagedResource publication, final AeronClient client)
     {
         this.registrationId = registrationId;
         this.publication = publication;
-        this.directPublication = null;
         this.client = client;
-    }
-
-    public PublicationLink(final long registrationId, final DirectPublication directPublication, final AeronClient client)
-    {
-        this.registrationId = registrationId;
-        this.publication = null;
-        this.client = client;
-        this.directPublication = directPublication;
-        directPublication.incRef();
+        this.publication.incrRef();
     }
 
     public void close()
     {
-        if (null != publication)
-        {
-            publication.decRef();
-        }
-
-        if (null != directPublication)
-        {
-            directPublication.decRef();
-        }
+        publication.decrRef();
     }
 
     public long registrationId()
@@ -88,5 +70,15 @@ public class PublicationLink implements DriverManagedResource
     public void delete()
     {
         close();
+    }
+
+    public int incrRef()
+    {
+        return 0;
+    }
+
+    public int decrRef()
+    {
+        return 0;
     }
 }

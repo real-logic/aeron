@@ -79,14 +79,4 @@ public class AeronClient implements DriverManagedResource
     {
         // nothing to do
     }
-
-    public int incRef()
-    {
-        return 0;
-    }
-
-    public int decRef()
-    {
-        return 0;
-    }
 }

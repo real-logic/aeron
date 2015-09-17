@@ -24,7 +24,6 @@ import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
 
 import java.nio.ByteBuffer;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
@@ -37,7 +36,6 @@ public class EmbeddedIpcThroughput
     public static final int MESSAGE_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     public static final String CHANNEL = CommonContext.IPC_CHANNEL;
     public static final int STREAM_ID = SampleConfiguration.STREAM_ID;
-    public static final long IDLE_SLEEP_PERIOD_NS = TimeUnit.MILLISECONDS.toNanos(16);
 
     public static void main(final String[] args) throws Exception
     {
@@ -50,10 +48,8 @@ public class EmbeddedIpcThroughput
         SigInt.register(() -> running.set(false));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new NoOpIdleStrategy())
-            .receiverIdleStrategy(new SleepingIdleStrategy(IDLE_SLEEP_PERIOD_NS))
-            .senderIdleStrategy(new SleepingIdleStrategy(IDLE_SLEEP_PERIOD_NS));
+            .threadingMode(ThreadingMode.SHARED)
+            .sharedIdleStrategy(new NoOpIdleStrategy());
 
         final Aeron.Context context = new Aeron.Context();
 

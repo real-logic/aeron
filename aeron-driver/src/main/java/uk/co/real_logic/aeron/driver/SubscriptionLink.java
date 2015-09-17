@@ -64,7 +64,7 @@ public class SubscriptionLink implements DriverManagedResource
         this.streamId = streamId;
         this.aeronClient = aeronClient;
         this.directPublication = directPublication;
-        directPublication.incrRef();
+        directPublication.incRef();
         this.directPublicationSubscriberPosition = subscriberPosition;
     }
 
@@ -81,11 +81,6 @@ public class SubscriptionLink implements DriverManagedResource
     public int streamId()
     {
         return streamId;
-    }
-
-    public long timeOfLastKeepaliveFromClient()
-    {
-        return aeronClient.timeOfLastKeepalive();
     }
 
     public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
@@ -110,13 +105,13 @@ public class SubscriptionLink implements DriverManagedResource
         if (null != directPublication)
         {
             directPublication.removeSubscription(directPublicationSubscriberPosition);
-            directPublication.decrRef();
+            directPublication.decRef();
         }
     }
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        if (time > (timeOfLastKeepaliveFromClient() + CLIENT_LIVENESS_TIMEOUT_NS))
+        if (time > (aeronClient.timeOfLastKeepalive() + CLIENT_LIVENESS_TIMEOUT_NS))
         {
             reachedEndOfLife = true;
             conductor.cleanupSubscriptionLink(SubscriptionLink.this);
@@ -135,21 +130,11 @@ public class SubscriptionLink implements DriverManagedResource
 
     public long timeOfLastStateChange()
     {
-        return timeOfLastKeepaliveFromClient();
+        return aeronClient.timeOfLastKeepalive();
     }
 
     public void delete()
     {
         close();
-    }
-
-    public int incrRef()
-    {
-        return 0;
-    }
-
-    public int decrRef()
-    {
-        return 0;
     }
 }

@@ -209,12 +209,12 @@ public class DirectPublication implements DriverManagedResource
         close();
     }
 
-    public int incrRef()
+    public int incRef()
     {
         return ++refCount;
     }
 
-    public int decrRef()
+    public int decRef()
     {
         return --refCount;
     }

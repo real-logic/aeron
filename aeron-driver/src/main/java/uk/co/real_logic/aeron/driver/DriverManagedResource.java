@@ -39,12 +39,18 @@ public interface DriverManagedResource extends ManagedResource
      *
      * @return new reference count value
      */
-    int incrRef();
+    default int incRef()
+    {
+        return 0;
+    }
 
     /**
      * Decrement reference count to this resource.
      *
      * @return new reference count value
      */
-    int decrRef();
+    default int decRef()
+    {
+        return 0;
+    }
 }

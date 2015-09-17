@@ -31,12 +31,12 @@ public class PublicationLink implements DriverManagedResource
         this.registrationId = registrationId;
         this.publication = publication;
         this.client = client;
-        this.publication.incrRef();
+        this.publication.incRef();
     }
 
     public void close()
     {
-        publication.decrRef();
+        publication.decRef();
     }
 
     public long registrationId()
@@ -70,15 +70,5 @@ public class PublicationLink implements DriverManagedResource
     public void delete()
     {
         close();
-    }
-
-    public int incrRef()
-    {
-        return 0;
-    }
-
-    public int decrRef()
-    {
-        return 0;
     }
 }

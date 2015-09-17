@@ -469,7 +469,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         // close is done once sender thread has removed
     }
 
-    public int decrRef()
+    public int decRef()
     {
         final int count = --refCount;
 
@@ -481,7 +481,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         return count;
     }
 
-    public int incrRef()
+    public int incRef()
     {
         return ++refCount;
     }

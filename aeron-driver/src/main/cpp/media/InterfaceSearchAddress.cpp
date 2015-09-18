@@ -87,7 +87,7 @@ static std::unique_ptr<InetAddress> findIPv4Address(const InterfaceSearchAddress
     bool found = false;
     std::uint32_t longestSubnetPrefix = 0;
 
-    auto f = [&] (Inet4Address address, std::uint32_t subnetPrefix, unsigned int flags)
+    auto f = [&] (Inet4Address& address, std::uint32_t subnetPrefix, unsigned int flags)
     {
         if (search.matches(address))
         {

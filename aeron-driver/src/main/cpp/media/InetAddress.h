@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <util/Exceptions.h>
 
 namespace aeron { namespace driver { namespace media {
 
@@ -65,6 +66,17 @@ public:
         m_socketAddress.sin_port = htons(port);
     }
 
+    Inet4Address(const char* addrStr, uint16_t port)
+    {
+        if (!inet_pton(AF_INET, addrStr, &m_socketAddress.sin_addr))
+        {
+            throw aeron::util::IOException("Failed to parse IPv4 address", SOURCEINFO);
+        }
+
+        m_socketAddress.sin_family = AF_INET;
+        m_socketAddress.sin_port = htons(port);
+    }
+
     sockaddr* address() const
     {
         return (sockaddr*) &m_socketAddress;
@@ -107,6 +119,17 @@ public:
     {
         m_socketAddress.sin6_family = AF_INET6;
         m_socketAddress.sin6_addr = address;
+        m_socketAddress.sin6_port = htons(port);
+    }
+
+    Inet6Address(const char* address, uint16_t port)
+    {
+        if (!inet_pton(AF_INET6, address, &m_socketAddress.sin6_addr))
+        {
+            throw aeron::util::IOException("Failed to parse IPv6 address", SOURCEINFO);
+        }
+
+        m_socketAddress.sin6_family = AF_INET6;
         m_socketAddress.sin6_port = htons(port);
     }
 

@@ -2,6 +2,9 @@
 // Created by Michael Barker on 11/09/15.
 //
 
+#include <vector>
+#include <tuple>
+#include <net/if.h>
 #include <gtest/gtest.h>
 
 #include "media/InterfaceLookup.h"
@@ -78,55 +81,72 @@ TEST_F(InterfaceSearchAddressTest, wildcardMatchesAnything)
     EXPECT_TRUE(a->matches(*InetAddress::fromIPv6("::1", 0)));
 }
 
-template<typename Func>
-void bar(Func f)
+class StubInterfaceLookup : public InterfaceLookup
 {
-    f(1, 2, 4);
-}
+public:
+    StubInterfaceLookup()
+    {}
 
-//TEST_F(InterfaceSearchAddressTest, lookup)
-//{
-//    InterfaceLookup* l = new BsdInterfaceLookup{};
-//
-//    auto f =
-//        [] (Inet4Address& address, std::uint32_t subnetPrefix, unsigned int flags)
-//    {
-//        std::cout << address << '\n';
-//    };
-//
-//    l->lookupIPv4(f);
-//
-//    unsigned int i = 0;
-//
-//    auto f =
-//        [&] (int a, std::uint32_t b, unsigned int c) -> void
-//    {
-//        i = c;
-//
-//        std::cout << a << b << c << '\n';
-//        return;
-//    };
-//
-//    std::cout << i << '\n';
-//    bar(f);
-//    std::cout << i << '\n';
-//}
+    void lookupIPv4(std::function<void(Inet4Address &, std::uint32_t, unsigned int)> func) const
+    {
+        for (auto &t : m_ipv4Addresses)
+        {
+            func(*std::get<0>(t), std::get<1>(t), std::get<2>(t));
+        }
+    }
+
+    void lookupIPv6(std::function<void(Inet6Address &, std::uint32_t, unsigned int)> func) const
+    {
+        for (auto &t : m_ipv6Addresses)
+        {
+            func(*std::get<0>(t), std::get<1>(t), std::get<2>(t));
+        }
+    }
+
+    void addIPv4(const char* address, std::uint32_t prefixLength, unsigned int flags)
+    {
+        m_ipv4Addresses.push_back(std::make_tuple(
+            std::unique_ptr<Inet4Address>{new Inet4Address{address, 0}}, prefixLength, flags
+        ));
+    }
+
+    void addIPv6(const char* address, std::uint32_t prefixLength, unsigned int flags)
+    {
+        m_ipv6Addresses.push_back(std::make_tuple(
+            std::unique_ptr<Inet6Address>{new Inet6Address{address, 0}}, prefixLength, flags
+        ));
+    }
+
+private:
+    std::vector<std::tuple<std::unique_ptr<Inet4Address>, std::uint32_t, unsigned int>> m_ipv4Addresses;
+    std::vector<std::tuple<std::unique_ptr<Inet6Address>, std::uint32_t, unsigned int>> m_ipv6Addresses;
+};
 
 TEST_F(InterfaceSearchAddressTest, searchForAddressIPv4)
 {
-    auto a = InterfaceSearchAddress::parse("127.0.0.0/16");
-    auto b = a->findLocalAddress(BsdInterfaceLookup::get());
+    StubInterfaceLookup lookup{};
 
-    std::cout << *b << '\n';
+    lookup.addIPv4("127.0.0.1", 8, IFF_LOOPBACK | IFF_MULTICAST);
+    lookup.addIPv4("192.168.1.12", 16, IFF_MULTICAST);
+    lookup.addIPv4("10.30.30.10", 0, 0);
+
+    auto a = InterfaceSearchAddress::parse("127.0.0.0/16");
+    auto b = a->findLocalAddress(lookup);
+
+    EXPECT_EQ(*Inet4Address::fromIPv4("127.0.0.1", 0), *b);
 }
 
 TEST_F(InterfaceSearchAddressTest, searchForAddressIPv6)
 {
-    auto a = InterfaceSearchAddress::parse("[fe80::60c:ceff:fee3:0]/16");
-    auto b = a->findLocalAddress(BsdInterfaceLookup::get());
+    StubInterfaceLookup lookup{};
 
-    if (b != nullptr)
-    {
-        std::cout << *b << '\n';
-    }
+    lookup.addIPv6("ee80:0:0:0001:0:0:0:1", 64, IFF_MULTICAST);
+    lookup.addIPv6("fe80:0:0:0:0:0:0:1", 16, IFF_MULTICAST);
+    lookup.addIPv6("fe80:0001:0:0:0:0:0:1", 32, IFF_MULTICAST);
+    lookup.addIPv6("fe80:0001:abcd:0:0:0:0:1", 48, IFF_MULTICAST);
+
+    auto a = InterfaceSearchAddress::parse("[fe80:0:0:0:0:0:0:0]/16");
+    auto b = a->findLocalAddress(lookup);
+
+    EXPECT_EQ(*Inet6Address::fromIPv6("fe80:0001:abcd:0:0:0:0:1", 0), *b);
 }

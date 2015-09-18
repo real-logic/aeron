@@ -15,37 +15,12 @@
 
 using namespace aeron::driver::media;
 
-static std::uint32_t parseWildcard(std::string&& s, std::uint32_t defaultVal)
+static std::uint32_t parseSubnetPrefix(std::string &&s, std::uint32_t defaultVal)
 {
     return s.size() > 0 ? aeron::util::fromString<std::uint32_t>(s) : defaultVal;
 }
 
-static uint32_t maskToPrefixLength(in_addr addr)
-{
-    return __builtin_popcount(addr.s_addr);
-}
-
-static uint32_t maskToPrefixLength(in6_addr addr)
-{
-    union _u
-    {
-        in6_addr addr;
-        struct
-        {
-            uint64_t hi;
-            uint64_t lo;
-        } parts;
-    };
-
-    union _u cvt;
-
-    cvt.addr = addr;
-
-    return __builtin_popcountll(cvt.parts.hi) + __builtin_popcountll(cvt.parts.lo);
-}
-
-
-std::unique_ptr<InterfaceSearchAddress> InterfaceSearchAddress::parse(std::string &str)
+std::unique_ptr<InterfaceSearchAddress> InterfaceSearchAddress::parse(std::string &str, int familyHint)
 {
     std::regex ipV6{"\\[([0-9A-Fa-f:]+)(?:%([a-zA-Z0-9_.~-]+))?\\](?::([0-9]+))?(?:/([0-9]+))?"};
     std::regex ipV4{"([^:/]+)(?::([0-9]+))?(?:/([0-9]+))?"};
@@ -56,7 +31,7 @@ std::unique_ptr<InterfaceSearchAddress> InterfaceSearchAddress::parse(std::strin
         auto inetAddressStr = results[1].str();
         auto scope = results[2].str();
         auto port = aeron::util::fromString<std::uint16_t>(results[3].str());
-        auto wildcard = parseWildcard(results[4].str(), 128);
+        auto wildcard = parseSubnetPrefix(results[4].str(), 128);
         auto inetAddress = InetAddress::fromIPv6(inetAddressStr, port);
 
         return std::unique_ptr<InterfaceSearchAddress>{new InterfaceSearchAddress{inetAddress, wildcard}};
@@ -65,10 +40,18 @@ std::unique_ptr<InterfaceSearchAddress> InterfaceSearchAddress::parse(std::strin
     {
         auto inetAddressStr = results[1].str();
         auto port = aeron::util::fromString<std::uint16_t>(results[2].str());
-        auto wildcard = parseWildcard(results[3].str(), 32);
-        auto inetAddress = InetAddress::fromIPv4(inetAddressStr, port);
+        auto wildcard = parseSubnetPrefix(results[3].str(), 32);
 
-        return std::unique_ptr<InterfaceSearchAddress>{new InterfaceSearchAddress{inetAddress, wildcard}};
+        try
+        {
+            auto inetAddress = InetAddress::fromIPv4(inetAddressStr, port);
+            return std::unique_ptr<InterfaceSearchAddress>{new InterfaceSearchAddress{inetAddress, wildcard}};
+        }
+        catch (aeron::util::IOException e)
+        {
+            auto inetAddress = InetAddress::fromHostname(inetAddressStr, port, familyHint);
+            return std::unique_ptr<InterfaceSearchAddress>{new InterfaceSearchAddress{inetAddress, wildcard}};
+        }
     }
 
     throw aeron::util::ParseException{"Must be valid address", SOURCEINFO};

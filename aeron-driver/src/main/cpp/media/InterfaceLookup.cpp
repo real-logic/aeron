@@ -91,8 +91,8 @@ void BsdInterfaceLookup::lookupIPv6(std::function<void(Inet6Address&, std::uint3
             sockaddr_in6* sockaddrIn = (sockaddr_in6*) cursor->ifa_addr;
             Inet6Address inet6Address{sockaddrIn->sin6_addr, 0};
 
-            sockaddr_in* networkMask = (sockaddr_in*) cursor->ifa_netmask;
-            uint32_t subnetPrefix = (networkMask) ? maskToPrefixLength(networkMask->sin_addr) : 0;
+            sockaddr_in6* networkMask = (sockaddr_in6*) cursor->ifa_netmask;
+            uint32_t subnetPrefix = (networkMask) ? maskToPrefixLength(networkMask->sin6_addr) : 0;
 
             func(inet6Address, subnetPrefix, cursor->ifa_flags);
         }

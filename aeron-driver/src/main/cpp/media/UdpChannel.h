@@ -8,6 +8,7 @@
 #include <memory>
 #include "util/Exceptions.h"
 #include "InetAddress.h"
+#include "InterfaceLookup.h"
 
 namespace aeron { namespace driver { namespace media {
 
@@ -16,8 +17,15 @@ DECLARE_SOURCED_EXCEPTION (InvalidChannelException);
 class UdpChannel
 {
 public:
-    UdpChannel(std::unique_ptr<InetAddress>& remoteData, std::unique_ptr<InetAddress>& remoteControl)
-        : m_remoteControl(std::move(remoteControl)), m_remoteData(std::move(remoteData))
+    UdpChannel(
+        std::unique_ptr<InetAddress>& remoteData,
+        std::unique_ptr<InetAddress>& remoteControl,
+        std::unique_ptr<InetAddress>& localData,
+        std::unique_ptr<InetAddress>& interface)
+        : m_remoteControl(std::move(remoteControl)),
+          m_remoteData(std::move(remoteData)),
+          m_localData(std::move(localData)),
+          m_interface(std::move(interface))
     {
     }
 
@@ -33,11 +41,19 @@ public:
         return *m_remoteData;
     }
 
-    static std::unique_ptr<UdpChannel> parse(const char* uri);
+    InetAddress& localData() const
+    {
+        return *m_localData;
+    }
+
+    static std::unique_ptr<UdpChannel> parse(
+        const char* uri, int familyHint = PF_INET, InterfaceLookup& lookup = BsdInterfaceLookup::get());
 
 private:
     std::unique_ptr<InetAddress> m_remoteControl;
     std::unique_ptr<InetAddress> m_remoteData;
+    std::unique_ptr<InetAddress> m_localData;
+    std::unique_ptr<InetAddress> m_interface;
 };
 
 }}}

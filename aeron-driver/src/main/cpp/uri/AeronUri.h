@@ -39,7 +39,7 @@ public:
 
     const std::string& param(const char* key, std::string& defaultVal) const
     {
-        if (hasParam(key))
+        if (!hasParam(key))
         {
             return defaultVal;
         }

@@ -36,7 +36,7 @@ static void validateUri(const AeronUri* uri)
     }
 }
 
-std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri)
+std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, InterfaceLookup& lookup)
 {
     std::string uriStr{uri};
 
@@ -53,12 +53,14 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri)
             throw InvalidChannelException("Multicast data addresses must be odd", SOURCEINFO);
         }
 
-        auto controlAddress = dataAddress->nextAddress();
         std::string wildcardAddress{"0.0.0.0/0"};
-        auto interfaceAddressString= aeronUri->param(INTERFACE_KEY, wildcardAddress);
+        auto controlAddress = dataAddress->nextAddress();
+        auto interfaceAddressString = aeronUri->param(INTERFACE_KEY, wildcardAddress);
         auto interfaceSearchAddress = InterfaceSearchAddress::parse(interfaceAddressString);
+        auto localAddress = interfaceSearchAddress->findLocalAddress(lookup);
 
-        return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress}};
+        return std::unique_ptr<UdpChannel>{new UdpChannel{
+            dataAddress, controlAddress, localAddress, localAddress}};
     }
     else
     {

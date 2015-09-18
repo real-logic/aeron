@@ -42,7 +42,7 @@ std::unique_ptr<InetAddress> InetAddress::fromIPv6(std::string& address, uint16_
     return std::unique_ptr<InetAddress>{new Inet6Address{addr, port}};
 }
 
-std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port, int familyHint)
+std::unique_ptr<InetAddress> InetAddress::fromHostname(std::string& address, uint16_t port, int familyHint)
 {
     addrinfo hints;
     addrinfo* info;
@@ -100,7 +100,7 @@ std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressStrin
     if (std::regex_match(addressString, results, ipV4) && results.size() == 3)
     {
         auto inetAddressStr = results[1].str();
-        auto port = aeron::util::fromString<uint16_t>(results[2].str());
+        auto port = aeron::util::fromString<std::uint16_t>(results[2].str());
 
         try
         {

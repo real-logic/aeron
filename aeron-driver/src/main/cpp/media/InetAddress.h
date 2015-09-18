@@ -54,6 +54,8 @@ public:
         std::string s{address};
         return fromIPv6(s, port);
     }
+
+    static std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port, int familyHint);
 };
 
 class Inet4Address : public InetAddress

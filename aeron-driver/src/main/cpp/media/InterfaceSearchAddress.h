@@ -18,11 +18,11 @@ public:
     {
     }
 
-    static std::unique_ptr<InterfaceSearchAddress> parse(std::string& str);
-    static std::unique_ptr<InterfaceSearchAddress> parse(const char* str)
+    static std::unique_ptr<InterfaceSearchAddress> parse(std::string& str, int familyHint = PF_INET);
+    static std::unique_ptr<InterfaceSearchAddress> parse(const char* str, int familyHint = PF_INET)
     {
         std::string s{str};
-        return parse(s);
+        return parse(s, familyHint);
     }
 
     InetAddress& inetAddress() const

@@ -61,9 +61,8 @@ TEST_F(UdpChannelTest, throwsExceptionWithInvalidMedia)
 TEST_F(UdpChannelTest, createValidMulticastUdpChannel)
 {
     auto channel = UdpChannel::parse("aeron:udp?interface=localhost|group=224.10.9.9:40124");
-    auto remoteDataAddress = InetAddress::fromIPv4("224.10.9.9", 41024);
-    auto remoteControlAddress = InetAddress::fromIPv4("224.10.9.10", 41024);
 
-    EXPECT_EQ(*remoteControlAddress, channel->remoteControl());
-    EXPECT_EQ(*remoteDataAddress, channel->remoteData());
+    EXPECT_EQ(*InetAddress::fromIPv4("224.10.9.10", 41024), channel->remoteControl());
+    EXPECT_EQ(*InetAddress::fromIPv4("224.10.9.9", 41024), channel->remoteData());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localData());
 }

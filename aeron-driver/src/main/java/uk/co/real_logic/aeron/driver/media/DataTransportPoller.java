@@ -34,23 +34,20 @@ public class DataTransportPoller extends UdpTransportPoller
         int bytesReceived = 0;
         try
         {
-            final ReceiveChannelEndpoint[] transports = this.transports;
-            final int numTransports = transports.length;
-            if (numTransports <= ITERATION_THRESHOLD)
+            if (transports.length <= ITERATION_THRESHOLD)
             {
-                for (int i = numTransports - 1; i >= 0; i--)
+                for (final ReceiveChannelEndpoint transport : transports)
                 {
-                    bytesReceived += transports[i].pollForData();
+                    bytesReceived += transport.pollForData();
                 }
             }
             else
             {
                 selector.selectNow();
 
-                final SelectionKey[] keys = selectedKeySet.keys();
-                for (int i = selectedKeySet.size() - 1; i >= 0; i--)
+                for (final SelectionKey key : selectedKeySet.keys())
                 {
-                    bytesReceived += ((ReceiveChannelEndpoint)keys[i].attachment()).pollForData();
+                    bytesReceived += ((ReceiveChannelEndpoint)key.attachment()).pollForData();
                 }
 
                 selectedKeySet.reset();

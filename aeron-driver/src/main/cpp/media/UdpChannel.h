@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_DRIVER_UDP_CHANNEL_H_
-#define INCLUDED_AERON_DRIVER_UDP_CHANNEL_H_
+#ifndef INCLUDED_AERON_DRIVER_UDPCHANNEL_H_
+#define INCLUDED_AERON_DRIVER_UDPCHANNEL_H_
 
 #include <memory>
 #include "util/Exceptions.h"

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDE_AERON_DRIVER_MEDIA_INET_ADDRESS_
-#define INCLUDE_AERON_DRIVER_MEDIA_INET_ADDRESS_
+#ifndef INCLUDED_AERON_DRIVER_MEDIA_INETADDRESS_
+#define INCLUDED_AERON_DRIVER_MEDIA_INETADDRESS_
 
 #include <string>
 #include <memory>

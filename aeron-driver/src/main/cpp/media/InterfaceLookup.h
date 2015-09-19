@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDE_AERON_DRIVER_MEDIA_INTERFACE_LOOKUP_
-#define INCLUDE_AERON_DRIVER_MEDIA_INTERFACE_LOOKUP_
+#ifndef INCLUDED_AERON_DRIVER_MEDIA_INTERFACELOOKUP_
+#define INCLUDED_AERON_DRIVER_MEDIA_INTERFACELOOKUP_
 
 #include <functional>
 #include "InetAddress.h"

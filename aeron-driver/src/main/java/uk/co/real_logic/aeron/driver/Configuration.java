@@ -132,10 +132,15 @@ public class Configuration
     public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
 
     /**
+     * Default term buffer length.
+     */
+    public static final int TERM_BUFFER_IPC_LENGTH_DEFAULT = 64 * 1024 * 1024;
+
+    /**
      * Property name for term buffer length (in bytes) for IPC logbuffers
      */
     public static final String IPC_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.ipc.term.buffer.length";
-    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, 0);
+    public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
      * Property name for window limit for IPC publications
@@ -375,17 +380,6 @@ public class Configuration
      * how often to check liveness and cleanup
      */
     public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
-
-    /**
-     * How far ahead the receiver can get from the subscriber position.
-     *
-     * @param termCapacity to be used when {@link #SUBSCRIPTION_TERM_WINDOW_LENGTH} is not set.
-     * @return the length to be used for the subscription window.
-     */
-    public static int subscriptionTermWindowLength(final int termCapacity)
-    {
-        return 0 != SUBSCRIPTION_TERM_WINDOW_LENGTH ? SUBSCRIPTION_TERM_WINDOW_LENGTH : termCapacity / 2;
-    }
 
     /**
      * How far ahead the publisher can get from the sender position.

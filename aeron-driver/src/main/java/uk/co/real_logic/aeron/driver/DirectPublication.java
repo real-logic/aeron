@@ -34,6 +34,7 @@ public class DirectPublication implements DriverManagedResource
 {
     private final long correlationId;
     private final long tripGain;
+    private long tripLimit;
     private final int sessionId;
     private final int streamId;
     private final int termWindowLength;
@@ -42,9 +43,8 @@ public class DirectPublication implements DriverManagedResource
     private final LogBufferPartition[] logPartitions;
     private final UnsafeBuffer logMetaDataBuffer;
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
-    private final Position publisherLimit;
 
-    private long tripLimit;
+    private final Position publisherLimit;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
 
@@ -70,7 +70,7 @@ public class DirectPublication implements DriverManagedResource
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.rawLog = rawLog;
         this.publisherLimit = publisherLimit;
-        this.tripGain = this.termWindowLength / 4;
+        this.tripGain = this.termWindowLength / 8;
         this.tripLimit = 0;
 
         this.logMetaDataBuffer = rawLog.logMetaData();

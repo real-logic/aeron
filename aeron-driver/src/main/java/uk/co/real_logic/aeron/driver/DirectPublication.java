@@ -33,6 +33,7 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePositi
 public class DirectPublication implements DriverManagedResource
 {
     private final long correlationId;
+    private final long tripGain;
     private final int sessionId;
     private final int streamId;
     private final int termWindowLength;
@@ -43,6 +44,7 @@ public class DirectPublication implements DriverManagedResource
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
     private final Position publisherLimit;
 
+    private long tripLimit;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
 
@@ -68,6 +70,8 @@ public class DirectPublication implements DriverManagedResource
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.rawLog = rawLog;
         this.publisherLimit = publisherLimit;
+        this.tripGain = this.termWindowLength / 4;
+        this.tripLimit = 0;
 
         this.logMetaDataBuffer = rawLog.logMetaData();
 
@@ -132,8 +136,10 @@ public class DirectPublication implements DriverManagedResource
         int workCount = 0;
         final long proposedLimit = subscriberPositions.isEmpty() ? 0L : minSubscriberPosition + termWindowLength;
 
-        if (publisherLimit.proposeMaxOrdered(proposedLimit))
+        if (proposedLimit > tripLimit)
         {
+            publisherLimit.setOrdered(proposedLimit);
+            tripLimit = proposedLimit + tripGain;
             workCount = 1;
         }
 

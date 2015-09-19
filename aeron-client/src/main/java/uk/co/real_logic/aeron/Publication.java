@@ -292,34 +292,27 @@ public class Publication implements AutoCloseable
     private long newPosition(
         final int activeTermId, final int activeIndex, final int currentTail, final long position, final int nextOffset)
     {
-        final long newPosition;
-        switch (nextOffset)
+        long newPosition = BACK_PRESSURED;
+        if (nextOffset > 0)
         {
-            case TermAppender.TRIPPED:
-            {
-                final int newTermId = activeTermId + 1;
-                final int nextIndex = nextPartitionIndex(activeIndex);
-                final int nextNextIndex = nextPartitionIndex(nextIndex);
+            newPosition = (position - currentTail) + nextOffset;
+        }
+        else if (nextOffset == TermAppender.TRIPPED)
+        {
+            final int newTermId = activeTermId + 1;
+            final int nextIndex = nextPartitionIndex(activeIndex);
+            final int nextNextIndex = nextPartitionIndex(nextIndex);
 
-                LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
+            LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
 
-                // Need to advance the term id in case a publication takes an interrupt
-                // between reading the active term and incrementing the tail.
-                // This covers the case of an interrupt talking longer than
-                // the time taken to complete the current term.
-                LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
+            // Need to advance the term id in case a publication takes an interrupt
+            // between reading the active term and incrementing the tail.
+            // This covers the case of an interrupt talking longer than
+            // the time taken to complete the current term.
+            LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
 
-                termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);
-                LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
-            }
-
-                // fall through
-            case TermAppender.FAILED:
-                newPosition = BACK_PRESSURED;
-                break;
-
-            default:
-                newPosition = (position - currentTail) + nextOffset;
+            termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);
+            LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
         }
 
         return newPosition;

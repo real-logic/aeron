@@ -61,8 +61,11 @@ public class EmbeddedBufferClaimIpcThroughput
         {
             final Subscriber subscriber = new Subscriber(running, subscription);
             final Thread subscriberThread = new Thread(subscriber);
+            subscriberThread.setName("subscriber");
             final Thread publisherThread = new Thread(new Publisher(running, publication));
+            publisherThread.setName("publisher");
             final Thread rateReporterThread = new Thread(new RateReporter(running, subscriber));
+            rateReporterThread.setName("rate-reporter");
 
             rateReporterThread.start();
             subscriberThread.start();

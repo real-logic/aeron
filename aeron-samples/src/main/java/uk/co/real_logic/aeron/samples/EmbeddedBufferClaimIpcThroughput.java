@@ -198,14 +198,24 @@ public class EmbeddedBufferClaimIpcThroughput
 
             final Image image = subscription.images().get(0);
 
-            while (true)
+            long failedPolls = 0;
+            long successfulPolls = 0;
+
+            while (running.get())
             {
                 final int fragmentsRead = image.poll(this, MESSAGE_COUNT_LIMIT);
-                if (0 == fragmentsRead && !running.get())
+                if (0 == fragmentsRead)
                 {
-                    break;
+                    ++failedPolls;
+                }
+                else
+                {
+                    ++successfulPolls;
                 }
             }
+
+            final double failureRatio = failedPolls / (double)(successfulPolls + failedPolls);
+            System.out.format("Subscriber poll failure ratio: %f\n", failureRatio);
         }
 
         public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

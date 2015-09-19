@@ -20,12 +20,10 @@ public:
     UdpChannel(
         std::unique_ptr<InetAddress>& remoteData,
         std::unique_ptr<InetAddress>& remoteControl,
-        std::unique_ptr<InetAddress>& localData,
-        std::unique_ptr<InetAddress>& interface)
+        std::unique_ptr<InetAddress>& localData)
         : m_remoteControl(std::move(remoteControl)),
           m_remoteData(std::move(remoteData)),
-          m_localData(std::move(localData)),
-          m_interface(std::move(interface))
+          m_localData(std::move(localData))
     {
     }
 
@@ -33,6 +31,11 @@ public:
 
     InetAddress& remoteControl() const
     {
+        if (m_remoteControl == nullptr)
+        {
+            return remoteData();
+        }
+
         return *m_remoteControl;
     }
 
@@ -46,6 +49,16 @@ public:
         return *m_localData;
     }
 
+    InetAddress& localControl() const
+    {
+        return *m_localData;
+    }
+
+    InetAddress& localInterface() const
+    {
+        return localData();
+    }
+
     static std::unique_ptr<UdpChannel> parse(
         const char* uri, int familyHint = PF_INET, InterfaceLookup& lookup = BsdInterfaceLookup::get());
 
@@ -53,7 +66,6 @@ private:
     std::unique_ptr<InetAddress> m_remoteControl;
     std::unique_ptr<InetAddress> m_remoteData;
     std::unique_ptr<InetAddress> m_localData;
-    std::unique_ptr<InetAddress> m_interface;
 };
 
 }}}

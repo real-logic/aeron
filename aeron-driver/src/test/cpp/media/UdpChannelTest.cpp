@@ -51,13 +51,6 @@ TEST_F(UdpChannelTest, throwsExceptionWithInvalidMedia)
     EXPECT_THROW(UdpChannel::parse("aeron:ipc?group=224.10.9.9:40124"), InvalidChannelException);
 }
 
-//final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|group=224.10.9.9:40124");
-//
-//assertThat(udpChannel.localControl(), is(new InetSocketAddress("localhost", 0)));
-//assertThat(udpChannel.remoteControl(), isMulticastAddress("224.10.9.10", 40124));
-//assertThat(udpChannel.localData(), is(new InetSocketAddress("localhost", 0)));
-//assertThat(udpChannel.remoteData(), isMulticastAddress("224.10.9.9", 40124));
-//assertThat(udpChannel.localInterface(), is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
 TEST_F(UdpChannelTest, createValidMulticastUdpChannel)
 {
     auto channel = UdpChannel::parse("aeron:udp?interface=localhost|group=224.10.9.9:40124");
@@ -65,4 +58,17 @@ TEST_F(UdpChannelTest, createValidMulticastUdpChannel)
     EXPECT_EQ(*InetAddress::fromIPv4("224.10.9.10", 41024), channel->remoteControl());
     EXPECT_EQ(*InetAddress::fromIPv4("224.10.9.9", 41024), channel->remoteData());
     EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localData());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localControl());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localInterface());
+}
+
+TEST_F(UdpChannelTest, createValidUnicastUdpChannel)
+{
+    auto channel = UdpChannel::parse("aeron:udp?local=localhost|remote=localhost:40124");
+
+    EXPECT_EQ(*InetAddress::parse("localhost:40124", AF_INET), channel->remoteControl());
+    EXPECT_EQ(*InetAddress::parse("localhost:40124", AF_INET), channel->remoteData());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localData());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localControl());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localInterface());
 }

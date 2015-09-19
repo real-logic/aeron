@@ -10,7 +10,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
-#include <util/Exceptions.h>
+
+#include "util/Exceptions.h"
 
 namespace aeron { namespace driver { namespace media {
 
@@ -56,6 +57,7 @@ public:
     }
 
     static std::unique_ptr<InetAddress> fromHostname(std::string& address, uint16_t port, int familyHint);
+    static std::unique_ptr<InetAddress> any(int familyHint);
 };
 
 class Inet4Address : public InetAddress

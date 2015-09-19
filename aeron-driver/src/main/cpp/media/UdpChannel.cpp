@@ -59,12 +59,18 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, I
         auto interfaceSearchAddress = InterfaceSearchAddress::parse(interfaceAddressString);
         auto localAddress = interfaceSearchAddress->findLocalAddress(lookup);
 
-        return std::unique_ptr<UdpChannel>{new UdpChannel{
-            dataAddress, controlAddress, localAddress, localAddress}};
+        return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress, localAddress}};
     }
     else
     {
+        auto remoteAddress = InetAddress::parse(aeronUri->param(REMOTE_KEY));
+        auto localAddress = (aeronUri->hasParam(LOCAL_KEY))
+            ? InetAddress::parse(aeronUri->param(LOCAL_KEY))
+            : InetAddress::any(familyHint);
 
+        std::unique_ptr<InetAddress> empty{nullptr};
+
+        return std::unique_ptr<UdpChannel>(new UdpChannel{remoteAddress, empty, localAddress});
     }
 
     return std::unique_ptr<UdpChannel>(nullptr);

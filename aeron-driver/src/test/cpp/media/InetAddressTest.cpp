@@ -1,8 +1,8 @@
 
 #include <gtest/gtest.h>
 
-#include "media/InetAddress.h"
 #include "util/Exceptions.h"
+#include "media/InetAddress.h"
 
 using namespace aeron::driver::media;
 

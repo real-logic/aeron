@@ -52,9 +52,13 @@ std::unique_ptr<InetAddress> InetAddress::fromHostname(std::string& address, uin
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;
 
-    if (getaddrinfo(address.c_str(), NULL, &hints, &info) != 0)
+    int error;
+    if ((error = getaddrinfo(address.c_str(), NULL, &hints, &info)) != 0)
     {
-        throw aeron::util::IOException("Unable to lookup host", SOURCEINFO);
+        throw aeron::util::IOException(
+            aeron::util::strPrintf(
+                "Unable to lookup host (%s): %s (%d)", address.c_str(), gai_strerror(error), error),
+            SOURCEINFO);
     }
 
     aeron::util::OnScopeExit tidy([&]()
@@ -115,22 +119,19 @@ std::unique_ptr<InetAddress> InetAddress::parse(std::string const & addressStrin
     throw aeron::util::IOException("Address does not match IPv4 or IPv6 string", SOURCEINFO);
 }
 
-
-bool InetAddress::isEven() const
+std::unique_ptr<InetAddress> InetAddress::any(int familyHint)
 {
-    if (domain() == PF_INET)
+    if (familyHint == PF_INET)
     {
-        sockaddr_in* ipv4_address = (sockaddr_in*) address();
-        return aeron::driver::uri::NetUtil::isEven(ipv4_address->sin_addr);
+        in_addr addr{INADDR_ANY};
+        return std::unique_ptr<InetAddress>{new Inet4Address{addr, 0}};
     }
-    else if (domain() == PF_INET6)
+    else
     {
-        sockaddr_in6* ipv6_address = (sockaddr_in6*) address();
-        return aeron::driver::uri::NetUtil::isEven(ipv6_address->sin6_addr);
+        return std::unique_ptr<InetAddress>{new Inet6Address{in6addr_any, 0}};
     }
-
-    return false;
 }
+
 
 bool Inet4Address::isEven() const
 {

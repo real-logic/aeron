@@ -152,7 +152,8 @@ public class EmbeddedBufferClaimIpcThroughput
                 }
             }
 
-            System.out.format("Publisher back pressure ratio: %f\n", (totalMessageCount / (double)backPressureCount));
+            final double backPressureRatio = backPressureCount / (double)totalMessageCount;
+            System.out.format("Publisher back pressure ratio: %f\n", backPressureRatio);
         }
     }
 

@@ -20,11 +20,9 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.RateReporter;
-import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.console.ContinueBarrier;
 
@@ -52,16 +50,14 @@ public class EmbeddedThroughput
 
     public static void main(final String[] args) throws Exception
     {
-        if (1 == args.length)
+        if (1 != args.length)
         {
-            MediaDriver.loadPropertiesFile(args[0]);
+            throw new IllegalArgumentException("must specify properties file to use");
         }
 
-        final MediaDriver.Context ctx = new MediaDriver.Context()
-            .threadingMode(ThreadingMode.DEDICATED)
-            .conductorIdleStrategy(new NoOpIdleStrategy())
-            .receiverIdleStrategy(new NoOpIdleStrategy())
-            .senderIdleStrategy(new NoOpIdleStrategy());
+        MediaDriver.loadPropertiesFile(args[0]);
+
+        final MediaDriver.Context ctx = new MediaDriver.Context();
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);

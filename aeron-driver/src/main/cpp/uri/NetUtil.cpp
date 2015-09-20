@@ -70,5 +70,5 @@ bool NetUtil::isEven(in_addr ipV4)
 
 bool NetUtil::isEven(in6_addr const & ipV6)
 {
-    return (ipV6.__u6_addr.__u6_addr8[15] & 1) == 0;
+    return (ipV6.s6_addr[15] & 1) == 0;
 }

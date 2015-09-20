@@ -206,7 +206,7 @@ void Inet6Address::output(std::ostream &os) const
 std::unique_ptr<InetAddress> Inet6Address::nextAddress() const
 {
     in6_addr addr = m_socketAddress.sin6_addr;
-    addr.__u6_addr.__u6_addr8[15]++;
+    addr.s6_addr[15]++;
 
     return std::unique_ptr<InetAddress>{new Inet6Address{addr, port()}};
 }

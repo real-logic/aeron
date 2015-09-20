@@ -37,6 +37,12 @@ public:
     {
         m_mask = m_capacity - 1;
         m_buffer = new volatile std::atomic<T*>[m_capacity];
+
+        for (int i = 0; i < m_capacity - 1; i++)
+        {
+            m_buffer[i].store(nullptr, std::memory_order_relaxed);
+        }
+        m_buffer[m_capacity - 1].store(nullptr, std::memory_order_relaxed);
     }
 
     ~OneToOneConcurrentArrayQueue()

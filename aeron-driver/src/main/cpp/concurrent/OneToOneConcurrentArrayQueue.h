@@ -21,6 +21,7 @@
 #include <util/BitUtil.h>
 #include <concurrent/Atomic64.h>
 #include <array>
+#include <atomic>
 
 namespace aeron { namespace driver { namespace concurrent {
 

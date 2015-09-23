@@ -59,7 +59,7 @@ std::unique_ptr<InetAddress> InetAddress::fromHostname(std::string& address, uin
     addrinfo hints;
     addrinfo* info;
 
-    memset(&hints, sizeof(addrinfo), 0);
+    memset(&hints, 0, sizeof(addrinfo));
     hints.ai_family = familyHint;
     hints.ai_socktype = SOCK_DGRAM;
     hints.ai_protocol = IPPROTO_UDP;

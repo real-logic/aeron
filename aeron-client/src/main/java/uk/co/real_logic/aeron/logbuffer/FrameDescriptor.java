@@ -70,10 +70,10 @@ public class FrameDescriptor
     /**
      * End fragment of a frame.
      */
-    public static final byte UNFRAGMENTED = (byte)(BEGIN_FRAG | END_FRAG);
+    public static final byte UNFRAGMENTED = BEGIN_FRAG | END_FRAG;
 
     /**
-     * Offset within a frame at which the verion field begins
+     * Offset within a frame at which the version field begins
      */
     public static final int VERSION_OFFSET = DataHeaderFlyweight.VERSION_FIELD_OFFSET;
 

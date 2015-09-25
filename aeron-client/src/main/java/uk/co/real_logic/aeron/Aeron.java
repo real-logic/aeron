@@ -85,6 +85,18 @@ public final class Aeron implements AutoCloseable
     }
 
     /**
+     * Create an Aeron instance and connect to the media driver with a default {@link Context}.
+     * <p>
+     * Threads required for interacting with the media driver are created and managed within the Aeron instance.
+     *
+     * @return the new {@link Aeron} instance connected to the Media Driver.
+     */
+    public static Aeron connect()
+    {
+        return new Aeron(new Context()).start();
+    }
+
+    /**
      * Create an Aeron instance and connect to the media driver.
      * <p>
      * Threads required for interacting with the media driver are created and managed within the Aeron instance.

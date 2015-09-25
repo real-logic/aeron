@@ -51,10 +51,8 @@ public class EmbeddedIpcThroughput
             .threadingMode(ThreadingMode.SHARED)
             .sharedIdleStrategy(new NoOpIdleStrategy());
 
-        final Aeron.Context context = new Aeron.Context();
-
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron aeron = Aeron.connect(context);
+             final Aeron aeron = Aeron.connect();
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {

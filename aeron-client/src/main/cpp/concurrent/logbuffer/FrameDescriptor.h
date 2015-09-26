@@ -60,6 +60,18 @@ static const std::uint8_t BEGIN_FRAG = 0x80;
 static const std::uint8_t END_FRAG = 0x40;
 static const std::uint8_t UNFRAGMENTED = BEGIN_FRAG | END_FRAG;
 
+static const util::index_t HEADER_LENGTH = 24;
+
+static const util::index_t VERSION_OFFSET = 4;
+static const util::index_t FLAGS_OFFSET = 5;
+static const util::index_t TYPE_OFFSET = 6;
+static const util::index_t LENGTH_OFFSET = 0;
+static const util::index_t TERM_OFFSET = 8;
+
+// TODO: Can we include DataFrameHeader.h?
+static const std::int16_t PADDING_FRAME_TYPE = 0;
+
+>>>>>>> [C++]: Implement TermScanner.  Add {put,get}Int16 to AtomicBuffer and associated mock methods.  Use std::int16 for frame type.
 inline static void checkHeaderLength(util::index_t length)
 {
     if (length != DataFrameHeader::LENGTH)

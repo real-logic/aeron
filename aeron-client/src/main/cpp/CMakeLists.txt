@@ -91,7 +91,7 @@ SET(HEADERS
     util/ScopeUtils.h
     util/BitUtil.h
     util/Index.h
-    util/Platform.h)
+    util/Platform.h concurrent/logbuffer/TermScanner.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

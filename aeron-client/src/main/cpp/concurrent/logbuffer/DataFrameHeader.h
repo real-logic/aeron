@@ -31,7 +31,7 @@ struct DataFrameHeaderDefn
     std::int32_t frameLength;
     std::int8_t version;
     std::int8_t flags;
-    std::int16_t type;
+    std::uint16_t type;
     std::int32_t termOffset;
     std::int32_t sessionId;
     std::int32_t streamId;
@@ -51,8 +51,8 @@ static const util::index_t DATA_OFFSET = sizeof(DataFrameHeaderDefn);
 
 static const util::index_t LENGTH = DATA_OFFSET;
 
-static const std::int16_t HDR_TYPE_PAD = 0x00;
-static const std::int16_t HDR_TYPE_DATA = 0x01;
+static const std::uint16_t HDR_TYPE_PAD = 0x00;
+static const std::uint16_t HDR_TYPE_DATA = 0x01;
 
 static const std::int8_t CURRENT_VERSION = 0x0;
 

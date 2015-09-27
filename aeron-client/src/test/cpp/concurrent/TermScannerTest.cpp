@@ -76,7 +76,7 @@ TEST_F(TermScannerTest, shouldScanSingleMessage)
     EXPECT_CALL(m_termBuffer, getInt32Volatile(frameOffset))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(frameLength));
-    EXPECT_CALL(m_termBuffer, getInt16(FrameDescriptor::typeOffset(frameOffset)))
+    EXPECT_CALL(m_termBuffer, getUInt16(FrameDescriptor::typeOffset(frameOffset)))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
     EXPECT_CALL(m_termBuffer, getInt32Volatile(alignedFrameLength)).WillRepeatedly(testing::Return(0));
@@ -99,7 +99,7 @@ TEST_F(TermScannerTest, shouldFailToScanMessageLargerThanMaxLength)
     EXPECT_CALL(m_termBuffer, getInt32Volatile(frameOffset))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(frameLength));
-    EXPECT_CALL(m_termBuffer, getInt16(FrameDescriptor::typeOffset(frameOffset)))
+    EXPECT_CALL(m_termBuffer, getUInt16(FrameDescriptor::typeOffset(frameOffset)))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
 
@@ -123,14 +123,14 @@ static std::int32_t expectScanTwoMessages(
     EXPECT_CALL(buffer, getInt32Volatile(frameOffset))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(alignedLengthOne));
-    EXPECT_CALL(buffer, getInt16(FrameDescriptor::typeOffset(frameOffset)))
+    EXPECT_CALL(buffer, getUInt16(FrameDescriptor::typeOffset(frameOffset)))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(frameTypeOne));
 
     EXPECT_CALL(buffer, getInt32Volatile(frameOffset + alignedLengthOne))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(frameLengthTwo));
-    EXPECT_CALL(buffer, getInt16(FrameDescriptor::typeOffset(frameOffset + alignedLengthOne)))
+    EXPECT_CALL(buffer, getUInt16(FrameDescriptor::typeOffset(frameOffset + alignedLengthOne)))
         .InSequence(sequence)
         .WillRepeatedly(testing::Return(frameTypeTwo));
 
@@ -192,7 +192,7 @@ TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
 
     EXPECT_CALL(m_termBuffer, getInt32Volatile(frameOffset))
         .WillRepeatedly(testing::Return(alignedFrameLength));
-    EXPECT_CALL(m_termBuffer, getInt16(FrameDescriptor::typeOffset(frameOffset)))
+    EXPECT_CALL(m_termBuffer, getUInt16(FrameDescriptor::typeOffset(frameOffset)))
         .WillRepeatedly(testing::Return(DataFrameHeader::HDR_TYPE_DATA));
 
     const std::int64_t scanOutcome = TermScanner::scanForAvailability(m_termBuffer, frameOffset, MTU_LENGTH);

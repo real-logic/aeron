@@ -50,7 +50,7 @@ public:
         delete[] m_buffer;
     }
 
-    bool offer(T* t)
+    inline bool offer(T* t)
     {
         if (nullptr == t)
         {
@@ -72,9 +72,9 @@ public:
         return false;
     }
 
-    T* poll()
+    inline T* poll()
     {
-        std::int64_t currentHead = m_head.load(std::memory_order_seq_cst); //getInt64Volatile(&m_head);
+        std::int64_t currentHead = m_head.load(std::memory_order_seq_cst);
         int index = (int) (currentHead & m_mask);
         volatile std::atomic<T*>* source = &m_buffer[index];
         volatile T* t = source->load(std::memory_order_seq_cst);

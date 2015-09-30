@@ -39,8 +39,8 @@ TEST_F(AeronUriTest, createUri)
     EXPECT_EQ(scheme, uri.scheme());
     EXPECT_EQ(media, uri.media());
     EXPECT_EQ(value1, uri.param(key1));
-    EXPECT_EQ(true, uri.hasParam(key1));
-    EXPECT_EQ(false, uri.hasParam(media));
+    EXPECT_TRUE(uri.hasParam(key1));
+    EXPECT_FALSE(uri.hasParam(media));
 }
 
 static void parseWithMedia(const char* uri, const char* media)

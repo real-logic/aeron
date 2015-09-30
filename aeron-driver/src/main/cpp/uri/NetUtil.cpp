@@ -38,13 +38,28 @@ static std::uint32_t prefixLengthToIpV4Mask(std::uint32_t subnetPrefix)
     return 0 == subnetPrefix ? 0 : ~((1 << (32 - subnetPrefix)) - UINT32_C(1));
 }
 
-
 bool NetUtil::wildcardMatch(const struct in6_addr* data, const struct in6_addr* pattern, std::uint32_t prefixLength)
 {
-    std::uint64_t dataUpper = *((std::uint64_t*) data->s6_addr);
-    std::uint64_t dataLower = *((std::uint64_t*) &data->s6_addr[8]);
-    std::uint64_t patternUpper = *((std::uint64_t*) pattern->s6_addr);
-    std::uint64_t patternLower = *((std::uint64_t*) &pattern->s6_addr[8]);
+    union _u
+    {
+        const std::uint8_t* b;
+        std::uint64_t* l;
+    };
+
+    union _u cvt;
+
+    cvt.b = data->s6_addr;
+    std::uint64_t dataUpper = *(cvt.l);
+
+    cvt.b = &data->s6_addr[8];
+    std::uint64_t dataLower = *(cvt.l);
+
+    cvt.b = pattern->s6_addr;
+    std::uint64_t patternUpper = *(cvt.l);
+
+    cvt.b = &pattern->s6_addr[8];
+    std::uint64_t patternLower = *(cvt.l);
+
     std::uint64_t maskUpper = htobe64(prefixLengthToIpV6Mask(prefixLength));
     std::uint64_t lowerPrefixLength = prefixLength > 64 ? prefixLength - 64 : 0;
     std::uint64_t maskLower = htobe64(prefixLengthToIpV6Mask(lowerPrefixLength));

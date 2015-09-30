@@ -27,3 +27,11 @@ aeron_driver_test(netUtilTest uri/NetUtilTest.cpp)
 aeron_driver_test(inetAddressTest media/InetAddressTest.cpp)
 aeron_driver_test(udpChannelTest media/UdpChannelTest.cpp)
 aeron_driver_test(interfaceSearchAddressTest media/InterfaceSearchAddressTest.cpp)
+
+function(aeron_driver_benchmark name file)
+    add_executable(${name} ${file})
+    target_link_libraries(${name} aeron_client aeron_driver ${GOOGLE_BENCHMARK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    add_dependencies(${name} google_benchmark)
+endfunction()
+
+aeron_driver_benchmark(oneToOneConcurrentArrayQueueBenchmark concurrent/OneToOneConcurrentArrayQueueBenchmark.cpp)

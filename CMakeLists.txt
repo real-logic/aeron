@@ -78,6 +78,26 @@ set(HDRHISTOGRAM_LIBS
 )
 
 ##########################################################
+# Google benchmark
+
+ExternalProject_Add(
+    google_benchmark
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-0.1.0.tar.gz
+    URL_MD5 5a3ec4924f75f98cf01a8f1ff47d7a44
+    INSTALL_COMMAND ""
+)
+
+ExternalProject_Get_Property(google_benchmark source_dir)
+set(GOOGLE_BENCHMARK_SOURCE_DIR ${source_dir})
+ExternalProject_Get_Property(google_benchmark binary_dir)
+set(GOOGLE_BENCHMARK_BINARY_DIR ${binary_dir})
+
+set(
+    GOOGLE_BENCHMARK_LIBS
+    ${GOOGLE_BENCHMARK_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}
+)
+
+##########################################################
 # Platform flags, etc.
 
 find_package(Threads)
@@ -133,6 +153,9 @@ include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
 
 # hdr_histogram
 include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
+
+# google benchmark
+include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
 
 ##########################################################
 

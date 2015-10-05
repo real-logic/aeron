@@ -25,6 +25,7 @@ import java.nio.ByteOrder;
 import static java.lang.Integer.reverseBytes;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.*;
 
@@ -169,7 +170,7 @@ public class TermAppender extends LogBufferPartition
 
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = metaDataBuffer().getAndAddInt(LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = termBuffer().capacity();
 
@@ -191,7 +192,7 @@ public class TermAppender extends LogBufferPartition
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = metaDataBuffer().getAndAddInt(LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = termBuffer().capacity();
 
@@ -216,7 +217,7 @@ public class TermAppender extends LogBufferPartition
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = (remainingPayload > 0) ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * maxFrameLength) + lastFrameLength;
-        int frameOffset = metaDataBuffer().getAndAddInt(LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET, requiredLength);
+        int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
         final UnsafeBuffer termBuffer = termBuffer();
         final int capacity = termBuffer().capacity();
 

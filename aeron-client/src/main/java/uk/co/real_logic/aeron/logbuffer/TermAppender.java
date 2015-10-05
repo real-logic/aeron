@@ -172,7 +172,7 @@ public class TermAppender extends LogBufferPartition
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = termBuffer().capacity();
+        final int capacity = termBuffer.capacity();
 
         int resultingOffset = frameOffset + alignedLength;
         if (resultingOffset > (capacity - HEADER_LENGTH))
@@ -194,7 +194,7 @@ public class TermAppender extends LogBufferPartition
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = termBuffer().capacity();
+        final int capacity = termBuffer.capacity();
 
         int resultingOffset = frameOffset + alignedLength;
         if (resultingOffset > (capacity - HEADER_LENGTH))
@@ -219,7 +219,7 @@ public class TermAppender extends LogBufferPartition
         final int requiredLength = (numMaxPayloads * maxFrameLength) + lastFrameLength;
         int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
         final UnsafeBuffer termBuffer = termBuffer();
-        final int capacity = termBuffer().capacity();
+        final int capacity = termBuffer.capacity();
 
         int resultingOffset = frameOffset + requiredLength;
         if (resultingOffset > (capacity - HEADER_LENGTH))

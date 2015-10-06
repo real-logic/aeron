@@ -177,7 +177,7 @@ subprojects {
 
 project(':aeron-client') {
     dependencies {
-        compile 'uk.co.real-logic:Agrona:0.4.4'
+        compile 'uk.co.real-logic:Agrona:0.4.5-SNAPSHOT'
     }
 
     task sourcesJar(type: Jar) {

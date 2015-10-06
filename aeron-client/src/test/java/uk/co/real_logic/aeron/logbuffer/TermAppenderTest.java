@@ -130,7 +130,6 @@ public class TermAppenderTest
         when(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET)).thenReturn(tailValue);
 
         assertThat(termAppender.tailVolatile(), is(TERM_BUFFER_LENGTH));
-        assertThat(termAppender.tail(), is(TERM_BUFFER_LENGTH));
     }
 
     @Test(expected = IllegalArgumentException.class)

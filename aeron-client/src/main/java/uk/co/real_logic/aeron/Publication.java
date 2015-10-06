@@ -87,7 +87,7 @@ public class Publication implements AutoCloseable
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.publicationLimit = publicationLimit;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termAppenders[0].termBuffer().capacity());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(buffers[0].capacity());
     }
 
     /**

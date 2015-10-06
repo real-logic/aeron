@@ -21,7 +21,7 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 
 /**
- * Base log buffer implementation containing common functionality for dealing with fragment terms.
+ * Log buffer implementation containing common functionality for dealing with log partition terms.
  */
 public class LogBufferPartition
 {
@@ -81,16 +81,6 @@ public class LogBufferPartition
     }
 
     /**
-     * Set the status of the log buffer with StoreStore memory ordering semantics.
-     *
-     * @param status to be set for the log buffer.
-     */
-    public void statusOrdered(final int status)
-    {
-        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
-    }
-
-    /**
      * Get the current tail value in a volatile memory ordering fashion. If raw tail is greater than
      * {@link #termBuffer()}.{@link uk.co.real_logic.agrona.DirectBuffer#capacity()} then capacity will be returned.
      *
@@ -99,16 +89,6 @@ public class LogBufferPartition
     public int tailVolatile()
     {
         return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
-    }
-
-    /**
-     * Get the raw value current tail value in a volatile memory ordering fashion.
-     *
-     * @return the current tail value.
-     */
-    public int rawTailVolatile()
-    {
-        return metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
     }
 
     /**

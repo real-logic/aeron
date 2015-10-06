@@ -25,7 +25,7 @@ import java.nio.ByteOrder;
 import static java.lang.Integer.reverseBytes;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.*;
 
@@ -43,7 +43,7 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  * A message of type {@link FrameDescriptor#PADDING_FRAME_TYPE} is appended at the end of the buffer if claimed
  * space is not sufficiently large to accommodate the message about to be written.
  */
-public class TermAppender extends LogBufferPartition
+public class TermAppender
 {
     /**
      * The append operation tripped the end of the buffer and needs to rotate.
@@ -60,6 +60,8 @@ public class TermAppender extends LogBufferPartition
     private final int maxPayloadLength;
     private final int sessionId;
     private final int headerSecondWord;
+    private final UnsafeBuffer termBuffer;
+    private final UnsafeBuffer metaDataBuffer;
     private final MutableDirectBuffer defaultHeader;
 
     /**
@@ -76,7 +78,13 @@ public class TermAppender extends LogBufferPartition
         final MutableDirectBuffer defaultHeader,
         final int maxFrameLength)
     {
-        super(termBuffer, metaDataBuffer);
+        checkTermLength(termBuffer.capacity());
+        checkMetaDataBuffer(metaDataBuffer);
+        termBuffer.verifyAlignment();
+        metaDataBuffer.verifyAlignment();
+
+        this.termBuffer = termBuffer;
+        this.metaDataBuffer = metaDataBuffer;
 
         checkHeaderLength(defaultHeader.capacity());
         checkMaxFrameLength(maxFrameLength);
@@ -89,6 +97,47 @@ public class TermAppender extends LogBufferPartition
         this.maxPayloadLength = maxFrameLength - HEADER_LENGTH;
         this.headerSecondWord = defaultHeader.getInt(SIZE_OF_INT);
         this.sessionId = defaultHeader.getInt(DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET);
+    }
+
+    /**
+     * The log of messages for a term.
+     *
+     * @return the log of messages for a term.
+     */
+    public UnsafeBuffer termBuffer()
+    {
+        return termBuffer;
+    }
+
+    /**
+     * Get the raw value current tail value in a volatile memory ordering fashion.
+     *
+     * @return the current tail value.
+     */
+    public int rawTailVolatile()
+    {
+        return metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET);
+    }
+
+    /**
+     * Get the current tail value in a volatile memory ordering fashion. If raw tail is greater than
+     * {@link #termBuffer()}.{@link uk.co.real_logic.agrona.DirectBuffer#capacity()} then capacity will be returned.
+     *
+     * @return the current tail value.
+     */
+    public int tailVolatile()
+    {
+        return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
+    }
+
+    /**
+     * Set the status of the log buffer with StoreStore memory ordering semantics.
+     *
+     * @param status to be set for the log buffer.
+     */
+    public void statusOrdered(final int status)
+    {
+        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
     }
 
     /**
@@ -170,8 +219,8 @@ public class TermAppender extends LogBufferPartition
 
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
-        final UnsafeBuffer termBuffer = termBuffer();
+        final int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
 
         int resultingOffset = frameOffset + alignedLength;
@@ -192,8 +241,8 @@ public class TermAppender extends LogBufferPartition
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
-        final UnsafeBuffer termBuffer = termBuffer();
+        final int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
 
         int resultingOffset = frameOffset + alignedLength;
@@ -217,8 +266,8 @@ public class TermAppender extends LogBufferPartition
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = (remainingPayload > 0) ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * maxFrameLength) + lastFrameLength;
-        int frameOffset = metaDataBuffer().getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
-        final UnsafeBuffer termBuffer = termBuffer();
+        int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
+        final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
 
         int resultingOffset = frameOffset + requiredLength;

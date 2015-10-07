@@ -45,6 +45,7 @@ subprojects {
     apply plugin: 'checkstyle'
     apply plugin: 'signing'
     apply plugin: 'com.github.johnrengelman.shadow'
+	apply plugin: 'eclipse'
 
     group = aeronGroup
     version = aeronVersion

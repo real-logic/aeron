@@ -100,16 +100,6 @@ public class TermAppender
     }
 
     /**
-     * The log of messages for a term.
-     *
-     * @return the log of messages for a term.
-     */
-    public UnsafeBuffer termBuffer()
-    {
-        return termBuffer;
-    }
-
-    /**
      * Get the raw value current tail value in a volatile memory ordering fashion.
      *
      * @return the current tail value.
@@ -121,7 +111,7 @@ public class TermAppender
 
     /**
      * Get the current tail value in a volatile memory ordering fashion. If raw tail is greater than
-     * {@link #termBuffer()}.{@link uk.co.real_logic.agrona.DirectBuffer#capacity()} then capacity will be returned.
+     * term capacity then capacity will be returned.
      *
      * @return the current tail value.
      */

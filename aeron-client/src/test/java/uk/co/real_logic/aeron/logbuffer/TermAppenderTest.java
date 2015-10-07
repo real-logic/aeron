@@ -55,12 +55,6 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldReportCapacity()
-    {
-        assertThat(termAppender.termBuffer().capacity(), is(TERM_BUFFER_LENGTH));
-    }
-
-    @Test
     public void shouldReportMaxFrameLength()
     {
         assertThat(termAppender.maxFrameLength(), is(MAX_FRAME_LENGTH));
@@ -198,7 +192,7 @@ public class TermAppenderTest
         final int msgLength = 120;
         final int headerLength = DEFAULT_HEADER.capacity();
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
-        final int tailValue = termAppender.termBuffer().capacity() - align(msgLength, FRAME_ALIGNMENT);
+        final int tailValue = TERM_BUFFER_LENGTH - align(msgLength, FRAME_ALIGNMENT);
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int frameLength = TERM_BUFFER_LENGTH - tailValue;
 
@@ -220,7 +214,7 @@ public class TermAppenderTest
         final int headerLength = DEFAULT_HEADER.capacity();
         final int msgLength = 120;
         final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
-        final int tailValue = termAppender.termBuffer().capacity() - (requiredFrameSize + (headerLength - FRAME_ALIGNMENT));
+        final int tailValue = TERM_BUFFER_LENGTH - (requiredFrameSize + (headerLength - FRAME_ALIGNMENT));
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
         final int frameLength = TERM_BUFFER_LENGTH - tailValue;
 

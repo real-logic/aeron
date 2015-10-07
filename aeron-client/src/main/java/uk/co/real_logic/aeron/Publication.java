@@ -201,19 +201,22 @@ public class Publication implements AutoCloseable
         ensureOpen();
 
         final long limit = publicationLimit.getVolatile();
-        long newPosition = limit > 0 ? BACK_PRESSURED : NOT_CONNECTED;
-
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];
         final int currentTail = termAppender.rawTailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        long newPosition = BACK_PRESSURED;
 
         if (position < limit)
         {
             final int nextOffset = termAppender.append(buffer, offset, length);
             newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+        }
+        else if (0 == limit)
+        {
+            newPosition = NOT_CONNECTED;
         }
 
         return newPosition;
@@ -256,19 +259,22 @@ public class Publication implements AutoCloseable
         ensureOpen();
 
         final long limit = publicationLimit.getVolatile();
-        long newPosition = limit > 0 ? BACK_PRESSURED : NOT_CONNECTED;
-
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];
         final int currentTail = termAppender.rawTailVolatile();
         final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        long newPosition = BACK_PRESSURED;
 
         if (position < limit)
         {
             final int nextOffset = termAppender.claim(length, bufferClaim);
             newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+        }
+        else if (0 == limit)
+        {
+            newPosition = NOT_CONNECTED;
         }
 
         return newPosition;

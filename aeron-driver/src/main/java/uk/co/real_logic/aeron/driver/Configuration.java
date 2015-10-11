@@ -98,8 +98,8 @@ public class Configuration
     /**
      * Property name for window limit on subscription side
      */
-    public static final String SUBSCRIPTION_TERM_WINDOW_ENGTH_PROP_NAME = "aeron.subscription.term.window.length";
-    public static final int SUBSCRIPTION_TERM_WINDOW_LENGTH = getInteger(SUBSCRIPTION_TERM_WINDOW_ENGTH_PROP_NAME, 0);
+    public static final String SUBSCRIPTION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.subscription.term.window.length";
+    public static final int SUBSCRIPTION_TERM_WINDOW_LENGTH = getInteger(SUBSCRIPTION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
      * Property name for client liveness timeout

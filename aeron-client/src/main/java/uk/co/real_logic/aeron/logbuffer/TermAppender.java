@@ -80,16 +80,14 @@ public class TermAppender
     {
         checkTermLength(termBuffer.capacity());
         checkMetaDataBuffer(metaDataBuffer);
-        termBuffer.verifyAlignment();
-        metaDataBuffer.verifyAlignment();
-
-        this.termBuffer = termBuffer;
-        this.metaDataBuffer = metaDataBuffer;
 
         checkHeaderLength(defaultHeader.capacity());
         checkMaxFrameLength(maxFrameLength);
         termBuffer.verifyAlignment();
         metaDataBuffer.verifyAlignment();
+
+        this.termBuffer = termBuffer;
+        this.metaDataBuffer = metaDataBuffer;
 
         this.defaultHeader = defaultHeader;
         this.maxFrameLength = maxFrameLength;

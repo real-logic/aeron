@@ -22,7 +22,7 @@ plugins {
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
 def aeronGroup = 'uk.co.real-logic'
-def aeronVersion = '0.1.5'
+def aeronVersion = '0.1.6-SNAPSHOT'
 
 group = aeronGroup
 version = aeronVersion

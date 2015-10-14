@@ -45,6 +45,7 @@ public class Image
     private final Header header;
     private final ErrorHandler errorHandler;
     private final LogBuffers logBuffers;
+    private final String sourceIdentity;
 
     /**
      * Construct a new image over a log to represent a stream of messages from a {@link Publication}.
@@ -55,6 +56,7 @@ public class Image
      * @param logBuffers         containing the stream of messages.
      * @param errorHandler       to be called if an error occurs when polling for messages.
      * @param correlationId      of the request to the media driver.
+     * @param sourceIdentity     of the source sending the stream of messages.
      */
     public Image(
         final int sessionId,
@@ -62,13 +64,15 @@ public class Image
         final Position subscriberPosition,
         final LogBuffers logBuffers,
         final ErrorHandler errorHandler,
-        final long correlationId)
+        final long correlationId,
+        final String sourceIdentity)
     {
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
         this.errorHandler = errorHandler;
+        this.sourceIdentity = sourceIdentity;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         termBuffers = Arrays.copyOf(buffers, PARTITION_COUNT);
@@ -90,6 +94,16 @@ public class Image
     public int sessionId()
     {
         return sessionId;
+    }
+
+    /**
+     * The source identity of the sending publisher as an abstract concept appropriate for the media.
+     *
+     * @return source identity of the sending publisher as an abstract concept appropriate for the media.
+     */
+    public String sourceIdentity()
+    {
+        return sourceIdentity;
     }
 
     /**

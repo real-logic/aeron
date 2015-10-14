@@ -54,6 +54,7 @@ public class ImageTest
     private static final long CORRELATION_ID = 0xC044E1AL;
     private static final int SESSION_ID = 0x5E55101D;
     private static final int STREAM_ID = 0xC400E;
+    private static final String SOURCE_IDENTITY = "ipc";
     private static final int INITIAL_TERM_ID = 0xEE81D;
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
@@ -166,7 +167,7 @@ public class ImageTest
 
     public Image createImage(final long initialPosition)
     {
-        return new Image(SESSION_ID, initialPosition, position, logBuffers, errorHandler, CORRELATION_ID);
+        return new Image(SESSION_ID, initialPosition, position, logBuffers, errorHandler, CORRELATION_ID, SOURCE_IDENTITY);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

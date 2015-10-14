@@ -215,7 +215,8 @@ class ClientConductor implements Agent, DriverListener
                             new UnsafeBufferPosition(counterValuesBuffer, (int)positionId),
                             logBuffersFactory.map(logFileName),
                             errorHandler,
-                            correlationId);
+                            correlationId,
+                            sourceIdentity);
 
                         subscription.addImage(image);
 

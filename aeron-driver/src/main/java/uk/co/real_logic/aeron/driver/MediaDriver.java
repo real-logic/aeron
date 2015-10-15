@@ -164,7 +164,7 @@ public final class MediaDriver implements AutoCloseable
             case SHARED:
                 runners = Collections.singletonList(
                     new AgentRunner(ctx.sharedIdleStrategy, ctx.errorHandler(), driverExceptions,
-                        new CompositeAgent(sender, new CompositeAgent(receiver, driverConductor)))
+                        new CompositeAgent(sender, receiver, driverConductor))
                 );
                 break;
 

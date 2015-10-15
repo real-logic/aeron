@@ -227,7 +227,7 @@ public class Publication implements AutoCloseable
      * Once the message has been written then {@link BufferClaim#commit()} should be called thus making it available.
      * <p>
      * <b>Note:</b> This method can only be used for message lengths less than MTU length minus header.
-     *U
+     *
      * <pre>{@code
      *     final BufferClaim bufferClaim = new BufferClaim(); // Can be stored and reused to avoid allocation
      *
@@ -248,7 +248,7 @@ public class Publication implements AutoCloseable
      * }</pre>
      *
      * @param length      of the range to claim, in bytes..
-     * @param bufferClaim to be populate if the claim succeeds.
+     * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position on success, otherwise {@link #BACK_PRESSURED} or {@link #NOT_CONNECTED}.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
      * @throws IllegalStateException if the publication is closed.
@@ -285,6 +285,9 @@ public class Publication implements AutoCloseable
         return registrationId;
     }
 
+    /**
+     * @see Publication#close()
+     */
     void incRef()
     {
         synchronized (clientConductor)
@@ -311,7 +314,7 @@ public class Publication implements AutoCloseable
 
             // Need to advance the term id in case a publication takes an interrupt
             // between reading the active term and incrementing the tail.
-            // This covers the case of an interrupt talking longer than
+            // This covers the case of an interrupt taking longer than
             // the time taken to complete the current term.
             LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
 

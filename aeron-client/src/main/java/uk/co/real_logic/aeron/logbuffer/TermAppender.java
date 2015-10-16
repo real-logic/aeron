@@ -31,7 +31,6 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COU
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkMetaDataBuffer;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkTermLength;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 import java.nio.ByteOrder;
@@ -320,15 +319,17 @@ public class TermAppender
         long lengthVersionFlagsType;
         long termOffsetAndSessionId;
 
+        final long longExpandedVersionFlagsType = defaultHeaderVersionFlagsType & 0xFFFF_FFFFL;
+        final long longExpandedSessionId = defaultHeaderSessionId & 0xFFFF_FFFFL;
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
-            lengthVersionFlagsType = ((defaultHeaderVersionFlagsType & 0xFFFF_FFFFL) << 32) | ((-frameLength) & 0xFFFF_FFFFL);
-            termOffsetAndSessionId = ((defaultHeaderSessionId & 0xFFFF_FFFFL) << 32) | (frameOffset & 0xFFFF_FFFFL);
+            lengthVersionFlagsType = (longExpandedVersionFlagsType << 32) | ((-frameLength) & 0xFFFF_FFFFL);
+            termOffsetAndSessionId = (longExpandedSessionId << 32) | (frameOffset & 0xFFFF_FFFFL);
         }
         else
         {
-            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | (defaultHeaderVersionFlagsType & 0xFFFF_FFFFL);
-            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | (defaultHeaderSessionId & 0xFFFF_FFFFL);
+            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | longExpandedVersionFlagsType;
+            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | longExpandedSessionId;
         }
 
 

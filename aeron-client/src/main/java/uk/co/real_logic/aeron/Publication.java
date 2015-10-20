@@ -131,6 +131,16 @@ public class Publication implements AutoCloseable
     }
 
     /**
+     * Has this {@link Publication} been connected to a {@link Subscription}?
+     *
+     * @return true if this {@link Publication} been connected to a {@link Subscription} otherwise false.
+     */
+    public boolean hasBeenConnected()
+    {
+        return publicationLimit.getVolatile() > 0;
+    }
+
+    /**
      * Release resources used by this Publication when there are no more references.
      *
      * Publications are reference counted and are only truly closed when the ref count reaches zero.

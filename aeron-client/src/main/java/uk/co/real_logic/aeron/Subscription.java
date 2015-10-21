@@ -24,7 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Aeron Subscriber API for receiving {@link Image}s of messages from publishers on a given channel and streamId pair.
+ * Aeron Subscriber API for receiving a reconstructed {@link Image} for a stream of messages from publishers on
+ * a given channel and streamId pair.
+ * <p>
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
  * to the {@link FragmentHandler}.
  * <p>
@@ -121,6 +123,8 @@ public class Subscription implements AutoCloseable
     /**
      * Poll the {@link Image}s under the subscription for available message fragments in blocks.
      *
+     * This method is useful for operations like bulk archiving and messaging indexing.
+     *
      * @param blockHandler     to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
@@ -141,6 +145,8 @@ public class Subscription implements AutoCloseable
 
     /**
      * Poll the {@link Image}s under the subscription for available message fragments in blocks.
+     *
+     * This method is useful for operations like bulk archiving a stream to file.
      *
      * @param fileBlockHandler to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each individual block.

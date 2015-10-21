@@ -52,32 +52,32 @@ public class Image
     /**
      * Construct a new image over a log to represent a stream of messages from a {@link Publication}.
      *
+     * @param subscription       to which this {@link Image} belongs.
      * @param sessionId          of the stream of messages.
      * @param initialPosition    at which the subscriber is joining the stream.
      * @param subscriberPosition for indicating the position of the subscriber in the stream.
      * @param logBuffers         containing the stream of messages.
      * @param errorHandler       to be called if an error occurs when polling for messages.
-     * @param correlationId      of the request to the media driver.
      * @param sourceIdentity     of the source sending the stream of messages.
-     * @param subscription       to which this {@link Image} belongs.
+     * @param correlationId      of the request to the media driver.
      */
     public Image(
+        final Subscription subscription,
         final int sessionId,
         final long initialPosition,
         final Position subscriberPosition,
         final LogBuffers logBuffers,
         final ErrorHandler errorHandler,
-        final long correlationId,
         final String sourceIdentity,
-        final Subscription subscription)
+        final long correlationId)
     {
-        this.correlationId = correlationId;
+        this.subscription = subscription;
         this.sessionId = sessionId;
         this.subscriberPosition = subscriberPosition;
         this.logBuffers = logBuffers;
         this.errorHandler = errorHandler;
         this.sourceIdentity = sourceIdentity;
-        this.subscription = subscription;
+        this.correlationId = correlationId;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         termBuffers = Arrays.copyOf(buffers, PARTITION_COUNT);

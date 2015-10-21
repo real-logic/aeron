@@ -182,7 +182,7 @@ public class ImageTest
     public Image createImage(final long initialPosition)
     {
         return new Image(
-            SESSION_ID, initialPosition, position, logBuffers, errorHandler, CORRELATION_ID, SOURCE_IDENTITY, subscription);
+            subscription, SESSION_ID, initialPosition, position, logBuffers, errorHandler, SOURCE_IDENTITY, CORRELATION_ID);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

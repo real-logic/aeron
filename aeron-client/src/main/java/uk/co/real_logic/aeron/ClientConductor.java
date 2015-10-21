@@ -210,14 +210,15 @@ class ClientConductor implements Agent, DriverListener
                     if (MISSING_REGISTRATION_ID != positionId)
                     {
                         final Image image = new Image(
+                            subscription,
                             sessionId,
                             joiningPosition,
                             new UnsafeBufferPosition(counterValuesBuffer, (int)positionId),
                             logBuffersFactory.map(logFileName),
                             errorHandler,
-                            correlationId,
                             sourceIdentity,
-                            subscription);
+                            correlationId
+                        );
 
                         subscription.addImage(image);
 

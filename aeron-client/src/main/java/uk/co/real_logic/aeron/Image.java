@@ -39,6 +39,7 @@ public class Image
     private final int sessionId;
     private final int termLengthMask;
     private final int positionBitsToShift;
+    private volatile boolean isClosed;
 
     private final Position subscriberPosition;
     private final UnsafeBuffer[] termBuffers;
@@ -46,6 +47,7 @@ public class Image
     private final ErrorHandler errorHandler;
     private final LogBuffers logBuffers;
     private final String sourceIdentity;
+    private final Subscription subscription;
 
     /**
      * Construct a new image over a log to represent a stream of messages from a {@link Publication}.
@@ -57,6 +59,7 @@ public class Image
      * @param errorHandler       to be called if an error occurs when polling for messages.
      * @param correlationId      of the request to the media driver.
      * @param sourceIdentity     of the source sending the stream of messages.
+     * @param subscription       to which this {@link Image} belongs.
      */
     public Image(
         final int sessionId,
@@ -65,7 +68,8 @@ public class Image
         final LogBuffers logBuffers,
         final ErrorHandler errorHandler,
         final long correlationId,
-        final String sourceIdentity)
+        final String sourceIdentity,
+        final Subscription subscription)
     {
         this.correlationId = correlationId;
         this.sessionId = sessionId;
@@ -73,6 +77,7 @@ public class Image
         this.logBuffers = logBuffers;
         this.errorHandler = errorHandler;
         this.sourceIdentity = sourceIdentity;
+        this.subscription = subscription;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         termBuffers = Arrays.copyOf(buffers, PARTITION_COUNT);
@@ -127,12 +132,35 @@ public class Image
     }
 
     /**
+     * Get the {@link Subscription} to which this {@link Image} belongs.
+     *
+     * @return the {@link Subscription} to which this {@link Image} belongs.
+     */
+    public Subscription subscription()
+    {
+        return subscription;
+    }
+
+    /**
+     * Has this object been closed and should no longer be used?
+     *
+     * @return true if it has been closed otherwise false.
+     */
+    public boolean isClosed()
+    {
+        return isClosed;
+    }
+
+    /**
      * The position this {@link Image} has been consumed to by the subscriber.
      *
      * @return the position this {@link Image} has been consumed to by the subscriber.
+     * @throws IllegalStateException is the {@link Image} is closed.
      */
     public long position()
     {
+        ensureOpen();
+
         return subscriberPosition.get();
     }
 
@@ -153,9 +181,12 @@ public class Image
      * @param fragmentHandler to which messages are delivered.
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
+     * @throws IllegalStateException is the {@link Image} is closed.
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
+        ensureOpen();
+
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
         final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
@@ -178,9 +209,12 @@ public class Image
      * @param blockHandler     to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
-     */
+     * @throws IllegalStateException is the {@link Image} is closed.
+     * */
     public int blockPoll(final BlockHandler blockHandler, final int blockLengthLimit)
     {
+        ensureOpen();
+
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
         final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
@@ -215,9 +249,12 @@ public class Image
      * @param fileBlockHandler to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
+     * @throws IllegalStateException is the {@link Image} is closed.
      */
     public int filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
     {
+        ensureOpen();
+
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
         final int activeIndex = indexByPosition(position, positionBitsToShift);
@@ -250,7 +287,20 @@ public class Image
 
     ManagedResource managedResource()
     {
+        isClosed = true;
         return new ImageManagedResource();
+    }
+
+    private void ensureOpen()
+    {
+        if (isClosed)
+        {
+            throw new IllegalStateException(String.format(
+                "Image is closed: channel=%s streamId=%d sessionId=%d",
+                subscription.channel(),
+                subscription.streamId(),
+                sessionId));
+        }
     }
 
     private static int termId(final UnsafeBuffer buffer, final int frameOffset)

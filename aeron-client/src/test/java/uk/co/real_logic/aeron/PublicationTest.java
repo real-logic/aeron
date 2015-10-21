@@ -95,6 +95,7 @@ public class PublicationTest
     public void shouldEnsureThePublicationIsOpenBeforeOffer()
     {
         publication.close();
+        assertTrue(publication.isClosed());
         publication.offer(atomicSendBuffer);
     }
 

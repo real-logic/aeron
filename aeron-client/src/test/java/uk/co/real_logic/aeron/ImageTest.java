@@ -29,6 +29,7 @@ import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.ByteBuffer;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
@@ -65,6 +66,7 @@ public class ImageTest
     private final Position position = spy(new AtomicLongPosition());
     private final LogBuffers logBuffers = mock(LogBuffers.class);
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
+    private final Subscription subscription = mock(Subscription.class);
 
     private UnsafeBuffer[] atomicBuffers = new UnsafeBuffer[(PARTITION_COUNT * 2) + 1];
     private UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
@@ -88,6 +90,18 @@ public class ImageTest
         atomicBuffers[atomicBuffers.length - 1] = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
 
         when(logBuffers.atomicBuffers()).thenReturn(atomicBuffers);
+    }
+
+    @Test(expected = IllegalStateException.class)
+    public void shouldThrowExceptionWhenPollingOnClosed()
+    {
+        final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+        final Image image = createImage(initialPosition);
+
+        image.managedResource();
+
+        assertTrue(image.isClosed());
+        image.poll(mockFragmentHandler, Integer.MAX_VALUE);
     }
 
     @Test
@@ -167,7 +181,8 @@ public class ImageTest
 
     public Image createImage(final long initialPosition)
     {
-        return new Image(SESSION_ID, initialPosition, position, logBuffers, errorHandler, CORRELATION_ID, SOURCE_IDENTITY);
+        return new Image(
+            SESSION_ID, initialPosition, position, logBuffers, errorHandler, CORRELATION_ID, SOURCE_IDENTITY, subscription);
     }
 
     private void insertDataFrame(final int activeTermId, final int termOffset)

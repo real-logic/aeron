@@ -157,6 +157,16 @@ public class Publication implements AutoCloseable
     }
 
     /**
+     * Has this object been closed and should no longer be used?
+     *
+     * @return true if it has been closed otherwise false.
+     */
+    public boolean isClosed()
+    {
+        return isClosed;
+    }
+
+    /**
      * Release resources and forcibly close the Publication regardless of reference count.
      */
     void release()

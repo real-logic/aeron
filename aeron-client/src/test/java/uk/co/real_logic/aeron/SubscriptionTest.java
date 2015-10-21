@@ -25,6 +25,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
+import static junit.framework.TestCase.assertTrue;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
@@ -57,11 +58,11 @@ public class SubscriptionTest
         subscription = new Subscription(conductor, CHANNEL, STREAM_ID_1, SUBSCRIPTION_CORRELATION_ID);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldEnsureTheSubscriptionIsOpenWhenPolling()
     {
         subscription.close();
-        subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+        assertTrue(subscription.isClosed());
     }
 
     @Test

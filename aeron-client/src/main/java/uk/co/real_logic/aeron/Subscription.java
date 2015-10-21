@@ -90,13 +90,9 @@ public class Subscription implements AutoCloseable
      * @param fragmentHandler callback for handling each message fragment as it is read.
      * @param fragmentLimit   number of message fragments to limit for a single poll operation.
      * @return the number of fragments received
-     * @throws IllegalStateException if the subscription is closed.
-     * @see FragmentAssembler
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
-        ensureOpen();
-
         final Image[] images = this.images;
         final int length = images.length;
         int fragmentsRead = 0;
@@ -128,12 +124,9 @@ public class Subscription implements AutoCloseable
      * @param blockHandler     to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
-     * @throws IllegalStateException if the subscription is closed.
      */
     public long blockPoll(final BlockHandler blockHandler, final int blockLengthLimit)
     {
-        ensureOpen();
-
         long bytesConsumed = 0;
         for (final Image image : images)
         {
@@ -151,12 +144,9 @@ public class Subscription implements AutoCloseable
      * @param fileBlockHandler to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each individual block.
      * @return the number of bytes consumed.
-     * @throws IllegalStateException if the subscription is closed.
      */
     public long filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
     {
-        ensureOpen();
-
         long bytesConsumed = 0;
         for (final Image image : images)
         {
@@ -233,6 +223,16 @@ public class Subscription implements AutoCloseable
         }
     }
 
+    /**
+     * Has this object been closed and should no longer be used?
+     *
+     * @return true if it has been closed otherwise false.
+     */
+    public boolean isClosed()
+    {
+        return isClosed;
+    }
+
     long registrationId()
     {
         return registrationId;
@@ -292,14 +292,5 @@ public class Subscription implements AutoCloseable
     boolean hasNoImages()
     {
         return images.length == 0;
-    }
-
-    private void ensureOpen()
-    {
-        if (isClosed)
-        {
-            throw new IllegalStateException(String.format(
-                "Subscription is closed: channel=%s streamId=%d registrationId=%d", channel, streamId, registrationId));
-        }
     }
 }

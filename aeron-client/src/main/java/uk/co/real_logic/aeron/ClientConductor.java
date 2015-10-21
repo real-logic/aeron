@@ -216,7 +216,8 @@ class ClientConductor implements Agent, DriverListener
                             logBuffersFactory.map(logFileName),
                             errorHandler,
                             correlationId,
-                            sourceIdentity);
+                            sourceIdentity,
+                            subscription);
 
                         subscription.addImage(image);
 

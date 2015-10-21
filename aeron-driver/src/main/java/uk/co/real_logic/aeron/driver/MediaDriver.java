@@ -157,7 +157,7 @@ public final class MediaDriver implements AutoCloseable
         ctx.fromSenderDriverConductorProxy().driverConductor(conductor);
         ctx.toDriverCommands().consumerHeartbeatTime(ctx.epochClock().time());
 
-        final AtomicCounter errorCounter = ctx.systemCounters().driverExceptions();
+        final AtomicCounter errorCounter = ctx.systemCounters().errors();
         final ErrorHandler errorHandler = ctx.errorHandler();
 
         switch (ctx.threadingMode)

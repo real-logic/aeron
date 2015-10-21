@@ -35,7 +35,7 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter flowControlUnderRuns;
     private final AtomicCounter flowControlOverRuns;
     private final AtomicCounter invalidPackets;
-    private final AtomicCounter driverExceptions;
+    private final AtomicCounter errors;
     private final AtomicCounter dataPacketShortSends;
     private final AtomicCounter setupMessageShortSends;
     private final AtomicCounter statusMessageShortSends;
@@ -60,7 +60,7 @@ public class SystemCounters implements AutoCloseable
         flowControlUnderRuns = countersManager.newCounter("Flow control under runs");
         flowControlOverRuns = countersManager.newCounter("Flow control over runs");
         invalidPackets = countersManager.newCounter("Invalid packets");
-        driverExceptions = countersManager.newCounter("Driver Exceptions");
+        errors = countersManager.newCounter("Errors");
         dataPacketShortSends = countersManager.newCounter("Data Packet short sends");
         setupMessageShortSends = countersManager.newCounter("Setup Message short sends");
         statusMessageShortSends = countersManager.newCounter("Status Message short sends");
@@ -86,7 +86,7 @@ public class SystemCounters implements AutoCloseable
         flowControlUnderRuns.close();
         flowControlOverRuns.close();
         invalidPackets.close();
-        driverExceptions.close();
+        errors.close();
         dataPacketShortSends.close();
         setupMessageShortSends.close();
         statusMessageShortSends.close();
@@ -170,9 +170,9 @@ public class SystemCounters implements AutoCloseable
         return invalidPackets;
     }
 
-    public AtomicCounter driverExceptions()
+    public AtomicCounter errors()
     {
-        return driverExceptions;
+        return errors;
     }
 
     public AtomicCounter dataPacketShortSends()

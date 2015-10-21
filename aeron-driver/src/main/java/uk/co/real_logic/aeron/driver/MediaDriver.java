@@ -140,52 +140,58 @@ public final class MediaDriver implements AutoCloseable
         validateSufficientSocketBufferLengths(ctx);
 
         ctx
-            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-            .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
-            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(Configuration.CMD_QUEUE_CAPACITY))
+            .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
+            .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
+            .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
+            .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .conclude();
 
-        final AtomicCounter driverExceptions = ctx.systemCounters().driverExceptions();
 
         final Receiver receiver = new Receiver(ctx);
         final Sender sender = new Sender(ctx);
-        final DriverConductor driverConductor = new DriverConductor(ctx);
+        final DriverConductor conductor = new DriverConductor(ctx);
 
         ctx.receiverProxy().receiver(receiver);
         ctx.senderProxy().sender(sender);
-        ctx.fromReceiverDriverConductorProxy().driverConductor(driverConductor);
-        ctx.fromSenderDriverConductorProxy().driverConductor(driverConductor);
-
+        ctx.fromReceiverDriverConductorProxy().driverConductor(conductor);
+        ctx.fromSenderDriverConductorProxy().driverConductor(conductor);
         ctx.toDriverCommands().consumerHeartbeatTime(ctx.epochClock().time());
+
+        final AtomicCounter errorCounter = ctx.systemCounters().driverExceptions();
+        final ErrorHandler errorHandler = ctx.errorHandler();
 
         switch (ctx.threadingMode)
         {
             case SHARED:
                 runners = Collections.singletonList(
-                    new AgentRunner(ctx.sharedIdleStrategy, ctx.errorHandler(), driverExceptions,
-                        new CompositeAgent(sender, receiver, driverConductor))
+                    new AgentRunner(
+                        ctx.sharedIdleStrategy,
+                        errorHandler,
+                        errorCounter,
+                        new CompositeAgent(sender, receiver, conductor))
                 );
                 break;
 
             case SHARED_NETWORK:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.sharedNetworkIdleStrategy, ctx.errorHandler(), driverExceptions,
+                    new AgentRunner(
+                        ctx.sharedNetworkIdleStrategy,
+                        errorHandler,
+                        errorCounter,
                         new CompositeAgent(sender, receiver)),
-                    new AgentRunner(ctx.conductorIdleStrategy, ctx.errorHandler(), driverExceptions, driverConductor)
+                    new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor)
                 );
                 break;
 
             default:
             case DEDICATED:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.senderIdleStrategy, ctx.errorHandler(), driverExceptions, sender),
-                    new AgentRunner(ctx.receiverIdleStrategy, ctx.errorHandler(), driverExceptions, receiver),
-                    new AgentRunner(ctx.conductorIdleStrategy, ctx.errorHandler(), driverExceptions, driverConductor)
+                    new AgentRunner(ctx.senderIdleStrategy, errorHandler, errorCounter, sender),
+                    new AgentRunner(ctx.receiverIdleStrategy, errorHandler, errorCounter, receiver),
+                    new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor)
                 );
                 break;
         }
-
     }
 
     /**

@@ -69,7 +69,7 @@ public final class TermScanner
                 break;
             }
         }
-        while ((available + padding) < maxLength);
+        while (0 == padding && available < maxLength);
 
         return scanOutcome(padding, available);
     }

@@ -15,10 +15,17 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
+import java.nio.ByteOrder;
+
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
 import static java.lang.Integer.reverseBytes;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG;
-import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.END_FRAG;
+
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.checkHeaderLength;
@@ -30,16 +37,10 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_STATUS_O
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkMetaDataBuffer;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkTermLength;
-import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.*;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 import static uk.co.real_logic.agrona.BitUtil.align;
-
-import java.nio.ByteOrder;
-
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 /**
  * Term buffer appender which supports many producers concurrently writing an append-only log.
@@ -105,8 +106,8 @@ public class TermAppender
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBuffer.capacity());
         this.maxPayloadLength = maxFrameLength - HEADER_LENGTH;
-        this.defaultHeaderVersionFlagsType = defaultHeader.getInt(HeaderFlyweight.VERSION_FIELD_OFFSET);
-        this.defaultHeaderSessionId = defaultHeader.getInt(DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET);
+        this.defaultHeaderVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET);
+        this.defaultHeaderSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET);
     }
 
     /**
@@ -277,7 +278,7 @@ public class TermAppender
         }
         else
         {
-            byte flags = BEGIN_FRAG;
+            byte flags = BEGIN_FRAG_FLAG;
             int remaining = length;
             do
             {
@@ -294,7 +295,7 @@ public class TermAppender
 
                 if (remaining <= maxPayloadLength)
                 {
-                    flags |= END_FRAG;
+                    flags |= END_FRAG_FLAG;
                 }
 
                 frameFlags(termBuffer, frameOffset, flags);
@@ -311,10 +312,7 @@ public class TermAppender
     }
 
     private void applyDefaultHeader(
-        final UnsafeBuffer buffer,
-        final int frameOffset,
-        final int frameLength,
-        final MutableDirectBuffer defaultHeaderBuffer)
+        final UnsafeBuffer buffer, final int frameOffset, final int frameLength, final MutableDirectBuffer defaultHeaderBuffer)
     {
         long lengthVersionFlagsType;
         long termOffsetAndSessionId;
@@ -333,12 +331,12 @@ public class TermAppender
         }
 
 
-        buffer.putLongOrdered(frameOffset + HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
-        buffer.putLong(frameOffset + DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET, termOffsetAndSessionId);
+        buffer.putLongOrdered(frameOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
+        buffer.putLong(frameOffset + TERM_OFFSET_FIELD_OFFSET, termOffsetAndSessionId);
 
         // read the stream(int) and term(int), this is the mutable part of the default header
-        final long streamAndTermIds = defaultHeaderBuffer.getLong(DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET);
-        buffer.putLong(frameOffset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET, streamAndTermIds);
+        final long streamAndTermIds = defaultHeaderBuffer.getLong(STREAM_ID_FIELD_OFFSET);
+        buffer.putLong(frameOffset + STREAM_ID_FIELD_OFFSET, streamAndTermIds);
     }
 
     private int handleEndOfLogCondition(final UnsafeBuffer termBuffer, final int frameOffset, final int capacity)

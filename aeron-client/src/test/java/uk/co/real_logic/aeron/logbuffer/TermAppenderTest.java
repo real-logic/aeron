@@ -250,13 +250,13 @@ public class TermAppenderTest
 
         verifyDefaultHeader(inOrder, termBuffer, tail);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, 0, termAppender.maxPayloadLength());
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), BEGIN_FRAG);
+        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), BEGIN_FRAG_FLAG);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, termAppender.maxFrameLength());
 
         tail = termAppender.maxFrameLength();
         verifyDefaultHeader(inOrder, termBuffer, tail);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, termAppender.maxPayloadLength(), 1);
-        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), END_FRAG);
+        inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), END_FRAG_FLAG);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
 

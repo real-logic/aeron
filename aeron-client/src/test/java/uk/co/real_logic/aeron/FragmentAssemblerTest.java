@@ -65,8 +65,8 @@ public class FragmentAssemblerTest
     public void shouldAssembleTwoPartMessage()
     {
         when(header.flags())
-            .thenReturn(FrameDescriptor.BEGIN_FRAG)
-            .thenReturn(FrameDescriptor.END_FRAG);
+            .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
+            .thenReturn(FrameDescriptor.END_FRAG_FLAG);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
@@ -99,10 +99,10 @@ public class FragmentAssemblerTest
     public void shouldAssembleFourPartMessage()
     {
         when(header.flags())
-            .thenReturn(FrameDescriptor.BEGIN_FRAG)
+            .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
             .thenReturn((byte)0)
             .thenReturn((byte)0)
-            .thenReturn(FrameDescriptor.END_FRAG);
+            .thenReturn(FrameDescriptor.END_FRAG_FLAG);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
@@ -139,8 +139,8 @@ public class FragmentAssemblerTest
     public void shouldFreeSessionBuffer()
     {
         when(header.flags())
-            .thenReturn(FrameDescriptor.BEGIN_FRAG)
-            .thenReturn(FrameDescriptor.END_FRAG);
+            .thenReturn(FrameDescriptor.BEGIN_FRAG_FLAG)
+            .thenReturn(FrameDescriptor.END_FRAG_FLAG);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
@@ -161,7 +161,7 @@ public class FragmentAssemblerTest
     @Test
     public void shouldDoNotingIfEndArrivesWithoutBegin()
     {
-        when(header.flags()).thenReturn(FrameDescriptor.END_FRAG);
+        when(header.flags()).thenReturn(FrameDescriptor.END_FRAG_FLAG);
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;
         final int length = srcBuffer.capacity() / 2;
@@ -176,7 +176,7 @@ public class FragmentAssemblerTest
     {
         when(header.flags())
             .thenReturn((byte)0)
-            .thenReturn(FrameDescriptor.END_FRAG);
+            .thenReturn(FrameDescriptor.END_FRAG_FLAG);
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[1024]);
         final int offset = 0;

@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.logbuffer;
 
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
+import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
@@ -60,17 +61,17 @@ public class FrameDescriptor
     /**
      * Beginning fragment of a frame.
      */
-    public static final byte BEGIN_FRAG = (byte)0b1000_0000;
+    public static final byte BEGIN_FRAG_FLAG = (byte)0b1000_0000;
 
     /**
      * End fragment of a frame.
      */
-    public static final byte END_FRAG = (byte)0b0100_0000;
+    public static final byte END_FRAG_FLAG = (byte)0b0100_0000;
 
     /**
      * End fragment of a frame.
      */
-    public static final byte UNFRAGMENTED = BEGIN_FRAG | END_FRAG;
+    public static final byte UNFRAGMENTED = BEGIN_FRAG_FLAG | END_FRAG_FLAG;
 
     /**
      * Offset within a frame at which the version field begins
@@ -93,9 +94,9 @@ public class FrameDescriptor
     public static final int TERM_OFFSET = DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET;
 
     /**
-     * Padding frame type to indicate end of the log is not in use.
+     * Padding frame type to indicate the message should be ignored.
      */
-    public static final int PADDING_FRAME_TYPE = 0;
+    public static final int PADDING_FRAME_TYPE = HeaderFlyweight.HDR_TYPE_PAD;
 
     /**
      * Compute the maximum supported message length for a buffer of given capacity.

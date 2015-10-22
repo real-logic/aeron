@@ -83,7 +83,7 @@ public class FragmentAssembler implements FragmentHandler
         }
         else
         {
-            if ((flags & BEGIN_FRAG) == BEGIN_FRAG)
+            if ((flags & BEGIN_FRAG_FLAG) == BEGIN_FRAG_FLAG)
             {
                 final BufferBuilder builder = builderBySessionIdMap.computeIfAbsent(header.sessionId(), builderFunc);
                 builder.reset().append(buffer, offset, length);
@@ -95,7 +95,7 @@ public class FragmentAssembler implements FragmentHandler
                 {
                     builder.append(buffer, offset, length);
 
-                    if ((flags & END_FRAG) == END_FRAG)
+                    if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
                         final int msgLength = builder.limit();
                         delegate.onFragment(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));

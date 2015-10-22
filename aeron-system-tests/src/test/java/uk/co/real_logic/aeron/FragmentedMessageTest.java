@@ -42,9 +42,6 @@ public class FragmentedMessageTest
     @DataPoint
     public static final String MULTICAST_CHANNEL = "udp://localhost@224.20.30.39:54326";
 
-    //@DataPoint
-    //public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
-
     @DataPoint
     public static final ThreadingMode SHARED = ThreadingMode.SHARED;
 

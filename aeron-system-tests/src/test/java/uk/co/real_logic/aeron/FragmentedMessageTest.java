@@ -66,7 +66,7 @@ public class FragmentedMessageTest
         final FragmentAssembler adapter = new FragmentAssembler(mockFragmentHandler);
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
-             final Aeron client = Aeron.connect(new Aeron.Context());
+             final Aeron client = Aeron.connect();
              final Publication publication = client.addPublication(channel, STREAM_ID);
              final Subscription subscription = client.addSubscription(channel, STREAM_ID))
         {

@@ -405,6 +405,7 @@ public final class MediaDriver implements AutoCloseable
 
         private long imageLivenessTimeoutNs = IMAGE_LIVENESS_TIMEOUT_NS;
         private long clientLivenessTimeoutNs = CLIENT_LIVENESS_TIMEOUT_NS;
+        private long publicationUnblockTimeoutNs = PUBLICATION_UNBLOCK_TIMEOUT_NS;
 
         private int publicationTermBufferLength;
         private int ipcPublicationTermBufferLength;
@@ -751,6 +752,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context publicationUnblockTimeoutNs(final long timeout)
+        {
+            this.publicationUnblockTimeoutNs = timeout;
+            return this;
+        }
+
         public Context eventBufferLength(final int length)
         {
             this.eventBufferLength = length;
@@ -940,6 +947,11 @@ public final class MediaDriver implements AutoCloseable
         public long clientLivenessTimeoutNs()
         {
             return clientLivenessTimeoutNs;
+        }
+
+        public long publicationUnblockTimeoutNs()
+        {
+            return publicationUnblockTimeoutNs;
         }
 
         public int termBufferLength()

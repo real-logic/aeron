@@ -112,6 +112,11 @@ public class Configuration
     public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
+     * Property name for publication unblock timeout
+     */
+    public static final String PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME = "aeron.publication.unblock.timeout";
+
+    /**
      * Property name for data loss rate
      */
     public static final String DATA_LOSS_RATE_PROP_NAME = "aeron.debug.data.loss.rate";
@@ -293,6 +298,13 @@ public class Configuration
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
     public static final long IMAGE_LIVENESS_TIMEOUT_NS = getLong(
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
+
+    /**
+     * Timeout for publication unblock in nanoseconds
+     */
+    public static final long PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
+    public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
+        PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME, PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS);
 
     public static final long AGENT_IDLE_MAX_SPINS = 20;
     public static final long AGENT_IDLE_MAX_YIELDS = 50;

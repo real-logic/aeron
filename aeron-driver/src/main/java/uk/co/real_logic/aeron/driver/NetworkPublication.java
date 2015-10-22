@@ -485,4 +485,24 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
     {
         return ++refCount;
     }
+
+    public long producerPosition()
+    {
+        final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
+        final int initialTermId = initialTermId(logMetaDataBuffer);
+        final int activeTermId = activeTermId(logMetaDataBuffer);
+        final int currentTail = logPartitions[indexByTerm(initialTermId, activeTermId)].tailVolatile();
+
+        return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+    }
+
+    public long consumerPosition()
+    {
+        return senderPosition.getVolatile();
+    }
+
+    public boolean unblockAtConsumerPosition()
+    {
+        return false;
+    }
 }

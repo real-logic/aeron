@@ -21,17 +21,33 @@ package uk.co.real_logic.aeron.driver;
 public class PublicationLink implements DriverManagedResource
 {
     private final long registrationId;
+    private final long unblockTimeoutNs;
     private final DriverManagedResource publication;
     private final AeronClient client;
+    private final SystemCounters systemCounters;
 
     private boolean reachedEndOfLife = false;
+    private long previousConsumerPosition;
+    private long previousProducerPosition;
+    private long timeOfLastConsumerPositionChange;
 
-    public PublicationLink(final long registrationId, final DriverManagedResource publication, final AeronClient client)
+    public PublicationLink(
+        final long registrationId,
+        final DriverManagedResource publication,
+        final AeronClient client,
+        final long now,
+        final long unblockTimeoutNs,
+        final SystemCounters systemCounters)
     {
         this.registrationId = registrationId;
         this.publication = publication;
         this.client = client;
         this.publication.incRef();
+        this.previousConsumerPosition = publication.consumerPosition();
+        this.previousProducerPosition = publication.producerPosition();
+        this.timeOfLastConsumerPositionChange = now;
+        this.unblockTimeoutNs = unblockTimeoutNs;
+        this.systemCounters = systemCounters;
     }
 
     public void close()
@@ -50,6 +66,30 @@ public class PublicationLink implements DriverManagedResource
         {
             reachedEndOfLife = true;
         }
+
+        final long consumerPosition = publication.consumerPosition();
+        final long producerPosition = publication.producerPosition();
+
+        if (consumerPosition == previousConsumerPosition &&
+            producerPosition == previousProducerPosition &&
+            publication.producerPosition() > consumerPosition)
+        {
+            if (time > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+            {
+                if (publication.unblockAtConsumerPosition())
+                {
+                    systemCounters.unblocks().orderedIncrement();
+                }
+            }
+        }
+        else
+        {
+            // want movement of either consumer or producer to reset time?
+            timeOfLastConsumerPositionChange = time;
+        }
+
+        previousConsumerPosition = consumerPosition;
+        previousProducerPosition = producerPosition;
     }
 
     public boolean hasReachedEndOfLife()

@@ -61,6 +61,7 @@ public class DriverConductor implements Agent
 {
     private final long imageLivenessTimeoutNs;
     private final long clientLivenessTimeoutNs;
+    private final long publicationUnblockTimeoutNs;
     private final int mtuLength;
     private final int termBufferLength;
     private final int ipcTermBufferLength;
@@ -110,6 +111,7 @@ public class DriverConductor implements Agent
     {
         imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
+        publicationUnblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
         fromReceiverDriverConductorCmdQueue = ctx.toConductorFromReceiverCommandQueue();
         fromSenderDriverConductorCmdQueue = ctx.toConductorFromSenderCommandQueue();
         receiverProxy = ctx.receiverProxy();
@@ -599,7 +601,13 @@ public class DriverConductor implements Agent
             throw new ControlProtocolException(GENERIC_ERROR, "registration id already in use.");
         }
 
-        publicationLinks.add(new PublicationLink(registrationId, publication, client));
+        publicationLinks.add(new PublicationLink(
+            registrationId,
+            publication,
+            client,
+            nanoClock.nanoTime(),
+            publicationUnblockTimeoutNs,
+            systemCounters));
     }
 
     private RawLog newNetworkPublicationLog(

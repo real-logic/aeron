@@ -45,6 +45,7 @@ public class DirectPublication implements DriverManagedResource
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
 
     private final Position publisherLimit;
+    private long consumerPosition = 0;
     private int refCount = 0;
     private boolean reachedEndOfLife = false;
 
@@ -125,12 +126,14 @@ public class DirectPublication implements DriverManagedResource
     public int updatePublishersLimit()
     {
         long minSubscriberPosition = Long.MAX_VALUE;
+        long maxSubscriberPosition = 0;
 
         final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
             final long position = subscriberPositions.get(i).getVolatile();
             minSubscriberPosition = Math.min(minSubscriberPosition, position);
+            maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
         int workCount = 0;
@@ -142,6 +145,8 @@ public class DirectPublication implements DriverManagedResource
             tripLimit = proposedLimit + tripGain;
             workCount = 1;
         }
+
+        consumerPosition = maxSubscriberPosition;
 
         return workCount;
     }
@@ -223,5 +228,20 @@ public class DirectPublication implements DriverManagedResource
     public int decRef()
     {
         return --refCount;
+    }
+
+    public long producerPosition()
+    {
+        return publicationPosition();
+    }
+
+    public long consumerPosition()
+    {
+        return consumerPosition;
+    }
+
+    public boolean unblockAtConsumerPosition()
+    {
+        return false;
     }
 }

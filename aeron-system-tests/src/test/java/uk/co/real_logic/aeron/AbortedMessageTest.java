@@ -36,8 +36,8 @@ public class AbortedMessageTest
     @DataPoint
     public static final String UNICAST_CHANNEL = "udp://localhost:54325";
 
-    //@DataPoint
-    //public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
+    @DataPoint
+    public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;
 
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;

@@ -81,6 +81,16 @@ public class LogBufferPartition
     }
 
     /**
+     * Set the status of the log buffer with StoreStore memory ordering semantics.
+     *
+     * @param status to be set for the log buffer.
+     */
+    public void statusOrdered(final int status)
+    {
+        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
+    }
+
+    /**
      * Get the current tail value in a volatile memory ordering fashion. If raw tail is greater than
      * {@link #termBuffer()}.{@link uk.co.real_logic.agrona.DirectBuffer#capacity()} then capacity will be returned.
      *

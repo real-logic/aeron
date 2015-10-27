@@ -37,17 +37,16 @@ public class LogBufferUnblocker
         final UnsafeBuffer logMetaDataBuffer,
         final long blockedPosition)
     {
-        final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final int currentTail = logPartitions[activeIndex].tailVolatile();
-        final UnsafeBuffer termBuffer = logPartitions[activeIndex].termBuffer();
+        final int activeIndex = indexByTerm(initialTermId(logMetaDataBuffer), activeTermId);
+        final LogBufferPartition activePartition = logPartitions[activeIndex];
+        final UnsafeBuffer termBuffer = activePartition.termBuffer();
         final int positionBitsToShift = Integer.numberOfTrailingZeros(termBuffer.capacity());
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
 
         boolean result = false;
 
-        switch (TermPatcher.patch(termBuffer, blockedOffset, currentTail))
+        switch (TermPatcher.patch(termBuffer, blockedOffset, activePartition.tailVolatile()))
         {
             case PATCHED_TO_END:
                 final int newTermId = activeTermId + 1;

@@ -96,7 +96,7 @@ public class TermPatcherTest
     }
 
     @Test
-    public void shouldScanForwardForNextMessage()
+    public void shouldScanForwardForNextCompleteMessage()
     {
         final int messageLength = HEADER_LENGTH * 4;
         final int termOffset = 0;
@@ -109,5 +109,83 @@ public class TermPatcherTest
         final InOrder inOrder = inOrder(mockBuffer);
         inOrder.verify(mockBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
         inOrder.verify(mockBuffer).putIntOrdered(termOffset, messageLength);
+    }
+
+    @Test
+    public void shouldScanForwardForNextNonCommittedMessage()
+    {
+        final int messageLength = HEADER_LENGTH * 4;
+        final int termOffset = 0;
+        final int tailOffset = messageLength * 2;
+
+        when(mockBuffer.getIntVolatile(messageLength)).thenReturn(-messageLength);
+
+        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(PATCHED));
+
+        final InOrder inOrder = inOrder(mockBuffer);
+        inOrder.verify(mockBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
+        inOrder.verify(mockBuffer).putIntOrdered(termOffset, messageLength);
+    }
+
+    @Test
+    public void shouldTakeNoActionIfMessageCompleteAfterScan()
+    {
+        final int messageLength = HEADER_LENGTH * 4;
+        final int termOffset = 0;
+        final int tailOffset = messageLength * 2;
+
+        when(mockBuffer.getIntVolatile(termOffset))
+            .thenReturn(0)
+            .thenReturn(messageLength);
+
+        when(mockBuffer.getIntVolatile(messageLength))
+            .thenReturn(messageLength);
+
+        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+    }
+
+    @Test
+    public void shouldTakeNoActionIfMessageNonCommittedAfterScan()
+    {
+        final int messageLength = HEADER_LENGTH * 4;
+        final int termOffset = 0;
+        final int tailOffset = messageLength * 2;
+
+        when(mockBuffer.getIntVolatile(termOffset))
+            .thenReturn(0)
+            .thenReturn(-messageLength);
+
+        when(mockBuffer.getIntVolatile(messageLength))
+            .thenReturn(messageLength);
+
+        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+    }
+
+    @Test
+    public void shouldTakeNoActionToEndOfPartitionIfMessageCompleteAfterScan()
+    {
+        final int messageLength = HEADER_LENGTH * 4;
+        final int termOffset = TERM_BUFFER_CAPACITY - messageLength;
+        final int tailOffset = TERM_BUFFER_CAPACITY;
+
+        when(mockBuffer.getIntVolatile(termOffset))
+            .thenReturn(0)
+            .thenReturn(messageLength);
+
+        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+    }
+
+    @Test
+    public void shouldTakeNoActionToEndOfPartitionIfMessageNonCommittedAfterScan()
+    {
+        final int messageLength = HEADER_LENGTH * 4;
+        final int termOffset = TERM_BUFFER_CAPACITY - messageLength;
+        final int tailOffset = TERM_BUFFER_CAPACITY;
+
+        when(mockBuffer.getIntVolatile(termOffset))
+            .thenReturn(0)
+            .thenReturn(-messageLength);
+
+        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
 }

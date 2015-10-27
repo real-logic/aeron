@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.logbuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.indexByTerm;
 
 /**
  * Provides the functionality to unblock a log at a given position.

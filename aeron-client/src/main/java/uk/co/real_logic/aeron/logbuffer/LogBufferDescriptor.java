@@ -269,12 +269,12 @@ public class LogBufferDescriptor
     /**
      * Set the MTU length used for this log.
      *
-     * @param logMetaDaraBuffer containing the meta data.
+     * @param logMetaDataBuffer containing the meta data.
      * @param mtuLength         value to be set.
      */
-    public static void mtuLength(final UnsafeBuffer logMetaDaraBuffer, final int mtuLength)
+    public static void mtuLength(final UnsafeBuffer logMetaDataBuffer, final int mtuLength)
     {
-        logMetaDaraBuffer.putInt(LOG_MTU_LENGTH_OFFSET, mtuLength);
+        logMetaDataBuffer.putInt(LOG_MTU_LENGTH_OFFSET, mtuLength);
     }
 
     /**

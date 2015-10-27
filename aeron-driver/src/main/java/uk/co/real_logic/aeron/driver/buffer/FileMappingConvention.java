@@ -36,7 +36,7 @@ class FileMappingConvention
     private final File publicationsDir;
     private final File imagesDir;
 
-    public FileMappingConvention(final String dataDirName)
+    FileMappingConvention(final String dataDirName)
     {
         final File dataDir = new File(dataDirName);
         IoUtil.ensureDirectoryExists(dataDir, "data directory");

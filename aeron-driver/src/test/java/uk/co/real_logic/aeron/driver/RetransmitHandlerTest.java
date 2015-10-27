@@ -57,7 +57,7 @@ public class RetransmitHandlerTest
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(META_DATA_BUFFER_LENGTH));
 
     private final TermAppender termAppender = new TermAppender(
-        termBuffer, metaDataBuffer, DataHeaderFlyweight.createDefaultHeader(0, 0 , 0), 1024);
+        termBuffer, metaDataBuffer, DataHeaderFlyweight.createDefaultHeader(0, 0, 0), 1024);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();

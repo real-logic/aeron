@@ -183,13 +183,13 @@ public class NetworkUtil
         }
     }
 
-    private static class FilterResult implements Comparable<FilterResult>
+    static class FilterResult implements Comparable<FilterResult>
     {
         private final InterfaceAddress interfaceAddress;
         private final NetworkInterface ifc;
         private final boolean isLoopback;
 
-        public FilterResult(final InterfaceAddress interfaceAddress, final NetworkInterface ifc, final boolean isLoopback)
+        FilterResult(final InterfaceAddress interfaceAddress, final NetworkInterface ifc, final boolean isLoopback)
             throws SocketException
         {
             this.interfaceAddress = interfaceAddress;

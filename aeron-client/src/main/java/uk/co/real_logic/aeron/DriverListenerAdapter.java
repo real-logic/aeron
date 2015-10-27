@@ -44,7 +44,7 @@ class DriverListenerAdapter implements MessageHandler
     private long lastReceivedCorrelationId;
     private String expectedChannel;
 
-    public DriverListenerAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverListener listener)
+    DriverListenerAdapter(final CopyBroadcastReceiver broadcastReceiver, final DriverListener listener)
     {
         this.broadcastReceiver = broadcastReceiver;
         this.listener = listener;

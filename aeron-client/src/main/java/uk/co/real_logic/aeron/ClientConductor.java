@@ -65,7 +65,7 @@ class ClientConductor implements Agent, DriverListener
 
     private RegistrationException driverException;
 
-    public ClientConductor(
+    ClientConductor(
         final EpochClock epochClock,
         final NanoClock nanoClock,
         final CopyBroadcastReceiver broadcastReceiver,

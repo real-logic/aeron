@@ -42,7 +42,8 @@ public class SystemCounters implements AutoCloseable
     private final AtomicCounter nakMessageShortSends;
     private final AtomicCounter clientKeepAlives;
     private final AtomicCounter senderFlowControlLimits;
-    private final AtomicCounter unblocks;
+    private final AtomicCounter unblockedPublications;
+    private final AtomicCounter unblockedCommands;
 
     public SystemCounters(final CountersManager countersManager)
     {
@@ -68,7 +69,8 @@ public class SystemCounters implements AutoCloseable
         nakMessageShortSends = countersManager.newCounter("NAK Message short sends");
         clientKeepAlives = countersManager.newCounter("Client keep-alives");
         senderFlowControlLimits = countersManager.newCounter("Sender flow control limits applied");
-        unblocks = countersManager.newCounter("Publication unblocks");
+        unblockedPublications = countersManager.newCounter("Unblocked Publications");
+        unblockedCommands = countersManager.newCounter("Unblocked Commands");
     }
 
     public void close()
@@ -95,7 +97,8 @@ public class SystemCounters implements AutoCloseable
         nakMessageShortSends.close();
         clientKeepAlives.close();
         senderFlowControlLimits.close();
-        unblocks.close();
+        unblockedPublications.close();
+        unblockedCommands.close();
     }
 
     public AtomicCounter bytesSent()
@@ -208,8 +211,13 @@ public class SystemCounters implements AutoCloseable
         return senderFlowControlLimits;
     }
 
-    public AtomicCounter unblocks()
+    public AtomicCounter unblockedPublications()
     {
-        return unblocks;
+        return unblockedPublications;
+    }
+
+    public AtomicCounter unblockedCommands()
+    {
+        return unblockedCommands;
     }
 }

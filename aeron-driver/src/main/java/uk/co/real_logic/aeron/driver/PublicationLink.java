@@ -78,7 +78,7 @@ public class PublicationLink implements DriverManagedResource
             {
                 if (publication.unblockAtConsumerPosition())
                 {
-                    systemCounters.unblocks().orderedIncrement();
+                    systemCounters.unblockedPublications().orderedIncrement();
                 }
             }
         }

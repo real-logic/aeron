@@ -49,13 +49,13 @@ public class Publication implements AutoCloseable
     private final long registrationId;
     private final int streamId;
     private final int sessionId;
-    private final String channel;
-    private final ClientConductor clientConductor;
-    private final LogBuffers logBuffers;
+    private final int positionBitsToShift;
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final ReadablePosition publicationLimit;
     private final UnsafeBuffer logMetaDataBuffer;
-    private final int positionBitsToShift;
+    private final ClientConductor clientConductor;
+    private final String channel;
+    private final LogBuffers logBuffers;
 
     private int refCount = 0;
     private volatile boolean isClosed = false;
@@ -273,6 +273,7 @@ public class Publication implements AutoCloseable
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
      * @throws IllegalStateException if the publication is closed.
      * @see BufferClaim#commit()
+     * @see BufferClaim#abort()
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
@@ -330,13 +331,13 @@ public class Publication implements AutoCloseable
             final int nextIndex = nextPartitionIndex(activeIndex);
             final int nextNextIndex = nextPartitionIndex(nextIndex);
 
-            LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
+            defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
 
             // Need to advance the term id in case a publication takes an interrupt
             // between reading the active term and incrementing the tail.
             // This covers the case of an interrupt taking longer than
             // the time taken to complete the current term.
-            LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
+            defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
 
             termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);
             LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);

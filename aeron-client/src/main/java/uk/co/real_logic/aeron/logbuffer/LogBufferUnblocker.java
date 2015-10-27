@@ -21,16 +21,16 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.indexByTerm;
 
 /**
- * An unblocker for a logbuffer
+ * Provides the functionality to unblock a log at a given position.
  */
 public class LogBufferUnblocker
 {
     /**
-     * Attempt to unblock a logbuffer at given blockedOffset
+     * Attempt to unblock a log buffer at given position
      *
-     * @param logPartitions for current blockedOffset
-     * @param logMetaDataBuffer for logbuffer
-     * @param blockedPosition to attempt to unblock
+     * @param logPartitions     for current blockedOffset
+     * @param logMetaDataBuffer for log buffer
+     * @param blockedPosition   to attempt to unblock
      * @return whether unblocked or not
      */
     public static boolean unblock(
@@ -42,34 +42,20 @@ public class LogBufferUnblocker
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final int currentTail = logPartitions[activeIndex].tailVolatile();
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(logPartitions[0].termBuffer().capacity());
+        final UnsafeBuffer termBuffer = logPartitions[activeIndex].termBuffer();
+        final int positionBitsToShift = Integer.numberOfTrailingZeros(termBuffer.capacity());
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
 
-        final int patchResult = TermPatcher.patch(logPartitions[activeIndex].termBuffer(), blockedOffset, currentTail);
         boolean result = false;
 
-        if (TermPatcher.PATCHED == patchResult)
+        switch (TermPatcher.patch(termBuffer, blockedOffset, currentTail))
         {
-            result = true;
-        }
-        else if (TermPatcher.PATCHED_TO_END == patchResult)
-        {
-            final int newTermId = activeTermId + 1;
-            final int nextIndex = nextPartitionIndex(activeIndex);
-            final int nextNextIndex = nextPartitionIndex(nextIndex);
-
-            LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
-
-            // Need to advance the term id in case a publication takes an interrupt
-            // between reading the active term and incrementing the tail.
-            // This covers the case of an interrupt taking longer than
-            // the time taken to complete the current term.
-            LogBufferDescriptor.defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
-
-            logPartitions[nextNextIndex].statusOrdered(NEEDS_CLEANING);
-            LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
-
-            result = true;
+            case PATCHED_TO_END:
+                final int newTermId = activeTermId + 1;
+                rotateLog(logPartitions, logMetaDataBuffer, activeIndex, newTermId);
+                // fall through
+            case PATCHED:
+                result = true;
         }
 
         return result;

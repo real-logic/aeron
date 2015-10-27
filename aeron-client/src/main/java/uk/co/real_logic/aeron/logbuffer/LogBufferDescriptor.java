@@ -482,4 +482,33 @@ public class LogBufferDescriptor
         final int headerOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
         logMetaDataBuffer.putInt(headerOffset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
     }
+
+    /**
+     * Rotate the log and update the default headers for the new term.
+     *
+     * @param logPartitions     for the partitions of the log.
+     * @param logMetaDataBuffer for the meta data.
+     * @param activeIndex       current active index.
+     * @param newTermId         to be used in the default headers.
+     */
+    public static void rotateLog(
+        final LogBufferPartition[] logPartitions,
+        final UnsafeBuffer logMetaDataBuffer,
+        final int activeIndex,
+        final int newTermId)
+    {
+        final int nextIndex = nextPartitionIndex(activeIndex);
+        final int nextNextIndex = nextPartitionIndex(nextIndex);
+
+        defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
+
+        // Need to advance the term id in case a publication takes an interrupt
+        // between reading the active term and incrementing the tail.
+        // This covers the case of an interrupt taking longer than
+        // the time taken to complete the current term.
+        defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
+
+        logPartitions[nextNextIndex].statusOrdered(NEEDS_CLEANING);
+        activeTermId(logMetaDataBuffer, newTermId);
+    }
 }

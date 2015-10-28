@@ -46,13 +46,13 @@ public class LogBufferUnblocker
 
         boolean result = false;
 
-        switch (TermPatcher.patch(termBuffer, blockedOffset, activePartition.tailVolatile()))
+        switch (TermUnblocker.unblock(termBuffer, blockedOffset, activePartition.tailVolatile()))
         {
-            case PATCHED_TO_END:
+            case UNBLOCKED_TO_END:
                 final int newTermId = activeTermId + 1;
                 rotateLog(logPartitions, logMetaDataBuffer, activeIndex, newTermId);
                 // fall through
-            case PATCHED:
+            case UNBLOCKED:
                 result = true;
         }
 

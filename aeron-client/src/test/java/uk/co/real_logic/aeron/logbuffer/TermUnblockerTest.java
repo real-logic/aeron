@@ -26,13 +26,13 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.typeOffset;
-import static uk.co.real_logic.aeron.logbuffer.TermPatcher.PatchStatus.NO_ACTION;
-import static uk.co.real_logic.aeron.logbuffer.TermPatcher.PatchStatus.PATCHED;
-import static uk.co.real_logic.aeron.logbuffer.TermPatcher.PatchStatus.PATCHED_TO_END;
+import static uk.co.real_logic.aeron.logbuffer.TermUnblocker.Status.NO_ACTION;
+import static uk.co.real_logic.aeron.logbuffer.TermUnblocker.Status.UNBLOCKED;
+import static uk.co.real_logic.aeron.logbuffer.TermUnblocker.Status.UNBLOCKED_TO_END;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HEADER_LENGTH;
 
-public class TermPatcherTest
+public class TermUnblockerTest
 {
     private static final int TERM_BUFFER_CAPACITY = 64 * 1014;
 
@@ -51,7 +51,7 @@ public class TermPatcherTest
         final int tailOffset = TERM_BUFFER_CAPACITY;
         when(mockBuffer.getIntVolatile(termOffset)).thenReturn(HEADER_LENGTH);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
 
     @Test
@@ -60,7 +60,7 @@ public class TermPatcherTest
         final int termOffset = 0;
         final int tailOffset = TERM_BUFFER_CAPACITY / 2;
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
 
     @Test
@@ -72,7 +72,7 @@ public class TermPatcherTest
 
         when(mockBuffer.getIntVolatile(termOffset)).thenReturn(-messageLength);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(PATCHED));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(UNBLOCKED));
 
         final InOrder inOrder = inOrder(mockBuffer);
         inOrder.verify(mockBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
@@ -88,7 +88,7 @@ public class TermPatcherTest
 
         when(mockBuffer.getIntVolatile(termOffset)).thenReturn(0);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(PATCHED_TO_END));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(UNBLOCKED_TO_END));
 
         final InOrder inOrder = inOrder(mockBuffer);
         inOrder.verify(mockBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
@@ -104,7 +104,7 @@ public class TermPatcherTest
 
         when(mockBuffer.getIntVolatile(messageLength)).thenReturn(messageLength);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(PATCHED));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(UNBLOCKED));
 
         final InOrder inOrder = inOrder(mockBuffer);
         inOrder.verify(mockBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
@@ -120,7 +120,7 @@ public class TermPatcherTest
 
         when(mockBuffer.getIntVolatile(messageLength)).thenReturn(-messageLength);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(PATCHED));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(UNBLOCKED));
 
         final InOrder inOrder = inOrder(mockBuffer);
         inOrder.verify(mockBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
@@ -141,7 +141,7 @@ public class TermPatcherTest
         when(mockBuffer.getIntVolatile(messageLength))
             .thenReturn(messageLength);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
 
     @Test
@@ -158,7 +158,7 @@ public class TermPatcherTest
         when(mockBuffer.getIntVolatile(messageLength))
             .thenReturn(messageLength);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
 
     @Test
@@ -172,7 +172,7 @@ public class TermPatcherTest
             .thenReturn(0)
             .thenReturn(messageLength);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
 
     @Test
@@ -186,6 +186,6 @@ public class TermPatcherTest
             .thenReturn(0)
             .thenReturn(-messageLength);
 
-        assertThat(TermPatcher.patch(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
 }

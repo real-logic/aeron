@@ -113,7 +113,7 @@ public class TermUnblocker
         boolean allZeros = true;
         while (i >= limit)
         {
-            if (0 != buffer.getIntVolatile(i))
+            if (0 != frameLengthVolatile(buffer, i))
             {
                 allZeros = false;
                 break;

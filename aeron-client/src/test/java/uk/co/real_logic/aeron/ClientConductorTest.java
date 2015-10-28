@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.command.ControlProtocolEvents;
 import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.command.ErrorResponseFlyweight;
 import uk.co.real_logic.aeron.command.PublicationBuffersReadyFlyweight;
+import uk.co.real_logic.aeron.exceptions.ConductorServiceTimeoutException;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
@@ -66,6 +67,7 @@ public class ClientConductorTest
 
     private static final long KEEP_ALIVE_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500);
     private static final long AWAIT_TIMEOUT = 100;
+    private static final long INTER_SERVICE_TIMEOUT_MS = 100;
 
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
@@ -83,7 +85,7 @@ public class ClientConductorTest
 
     private final EpochClock epochClock = new SystemEpochClock();
     private final NanoClock nanoClock = new SystemNanoClock();
-    private final ErrorHandler mockClientErrorHandler = Throwable::printStackTrace;
+    private final ErrorHandler mockClientErrorHandler = spy(new PrintError());
 
     private DriverProxy driverProxy;
     private ClientConductor conductor;
@@ -91,6 +93,7 @@ public class ClientConductorTest
     private UnavailableImageHandler mockUnavailableImageHandler = mock(UnavailableImageHandler.class);
     private LogBuffersFactory logBuffersFactory = mock(LogBuffersFactory.class);
     private Long2LongHashMap subscriberPositionMap = new Long2LongHashMap(-1L);
+    private boolean suppressPrintError = false;
 
     @Before
     public void setUp() throws Exception
@@ -114,7 +117,8 @@ public class ClientConductorTest
             mockAvailableImageHandler,
             mockUnavailableImageHandler,
             KEEP_ALIVE_INTERVAL,
-            AWAIT_TIMEOUT);
+            AWAIT_TIMEOUT,
+            TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);
@@ -512,6 +516,18 @@ public class ClientConductorTest
         verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class), any(Subscription.class), anyLong());
     }
 
+    @Test
+    public void shouldTimeoutInterServiceIfTooLongBetweenDoWorkCalls() throws Exception
+    {
+        suppressPrintError = true;
+
+        conductor.doWork();
+        Thread.sleep(INTER_SERVICE_TIMEOUT_MS + 10);
+        conductor.doWork();
+
+        verify(mockClientErrorHandler).onError(any(ConductorServiceTimeoutException.class));
+    }
+
     private void whenReceiveBroadcastOnMessage(
         final int msgTypeId, final MutableDirectBuffer buffer, final Function<MutableDirectBuffer, Integer> filler)
     {
@@ -523,5 +539,16 @@ public class ClientConductorTest
 
                 return 1;
             }).when(mockToClientReceiver).receive(anyObject());
+    }
+
+    private class PrintError implements ErrorHandler
+    {
+        public void onError(Throwable throwable)
+        {
+            if (!suppressPrintError)
+            {
+                throwable.printStackTrace();
+            }
+        }
     }
 }

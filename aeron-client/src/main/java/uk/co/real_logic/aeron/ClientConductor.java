@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
+import uk.co.real_logic.aeron.exceptions.ConductorServiceTimeoutException;
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
 import uk.co.real_logic.aeron.exceptions.RegistrationException;
 import uk.co.real_logic.agrona.ErrorHandler;
@@ -46,8 +47,10 @@ class ClientConductor implements Agent, DriverListener
     private final long keepAliveIntervalNs;
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
+    private final long interServiceTimeoutNs;
     private long timeOfLastKeepalive;
     private long timeOfLastCheckResources;
+    private long timeOfLastDoWork;
     private volatile boolean driverActive = true;
 
     private final EpochClock epochClock;
@@ -76,12 +79,14 @@ class ClientConductor implements Agent, DriverListener
         final AvailableImageHandler availableImageHandler,
         final UnavailableImageHandler unavailableImageHandler,
         final long keepAliveIntervalNs,
-        final long driverTimeoutMs)
+        final long driverTimeoutMs,
+        final long interServiceTimeoutNs)
     {
         this.epochClock = epochClock;
         this.nanoClock = nanoClock;
         this.timeOfLastKeepalive = nanoClock.nanoTime();
         this.timeOfLastCheckResources = nanoClock.nanoTime();
+        this.timeOfLastDoWork = nanoClock.nanoTime();
         this.errorHandler = errorHandler;
         this.counterValuesBuffer = counterValuesBuffer;
         this.driverProxy = driverProxy;
@@ -91,6 +96,7 @@ class ClientConductor implements Agent, DriverListener
         this.keepAliveIntervalNs = keepAliveIntervalNs;
         this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
+        this.interServiceTimeoutNs = interServiceTimeoutNs;
 
         this.driverListener = new DriverListenerAdapter(broadcastReceiver, this);
     }
@@ -324,6 +330,16 @@ class ClientConductor implements Agent, DriverListener
     {
         final long now = nanoClock.nanoTime();
         int result = 0;
+
+        if (now > (timeOfLastDoWork + interServiceTimeoutNs))
+        {
+            activePublications.close();
+
+            throw new ConductorServiceTimeoutException(
+                String.format("Timeout between service calls over %dns", interServiceTimeoutNs));
+        }
+
+        timeOfLastDoWork = now;
 
         if (now > (timeOfLastKeepalive + keepAliveIntervalNs))
         {

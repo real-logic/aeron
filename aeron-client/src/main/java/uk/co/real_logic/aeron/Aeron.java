@@ -58,6 +58,8 @@ public final class Aeron implements AutoCloseable
         };
 
     private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
+    private static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
+    private static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
 
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -79,7 +81,8 @@ public final class Aeron implements AutoCloseable
             ctx.availableImageHandler,
             ctx.unavailableImageHandler,
             ctx.keepAliveInterval(),
-            ctx.driverTimeoutMs());
+            ctx.driverTimeoutMs(),
+            ctx.interServiceTimeout());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
@@ -171,7 +174,8 @@ public final class Aeron implements AutoCloseable
         private ErrorHandler errorHandler;
         private AvailableImageHandler availableImageHandler;
         private UnavailableImageHandler unavailableImageHandler;
-        private long keepAliveInterval = TimeUnit.MILLISECONDS.toNanos(500);
+        private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
+        private long interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
@@ -413,6 +417,30 @@ public final class Aeron implements AutoCloseable
         {
             super.driverTimeoutMs(value);
             return this;
+        }
+
+        /**
+         * Set the timeout between service calls for the client.
+         *
+         * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s closed.
+         *
+         * @param value the timeout between service calls.
+         * @return this Aeron.Context for method chaining.
+         */
+        public Context interServiceTimeout(final long value)
+        {
+            interServiceTimeout = value;
+            return this;
+        }
+
+        /**
+         * Return the timeout between service calls for the client.
+         *
+         * @return the timeout between service calls.
+         */
+        public long interServiceTimeout()
+        {
+            return interServiceTimeout;
         }
 
         /**

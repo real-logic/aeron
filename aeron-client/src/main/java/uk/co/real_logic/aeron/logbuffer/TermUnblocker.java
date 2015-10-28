@@ -38,7 +38,6 @@ public class TermUnblocker
         UNBLOCKED_TO_END,
     }
 
-
     /**
      * Attempt to unblock the current term at the current offset.
      *
@@ -81,7 +80,7 @@ public class TermUnblocker
 
                 if (frameLength != 0)
                 {
-                    if (0 == frameLengthVolatile(termBuffer, termOffset))
+                    if (scanBackToConfirmZeroed(termBuffer, currentOffset, termOffset))
                     {
                         frameType(termBuffer, termOffset, HDR_TYPE_PAD);
                         frameLengthOrdered(termBuffer, termOffset, currentOffset - termOffset);
@@ -106,5 +105,23 @@ public class TermUnblocker
         }
 
         return status;
+    }
+
+    public static boolean scanBackToConfirmZeroed(final UnsafeBuffer buffer, final int from, final int limit)
+    {
+        int i = from - FRAME_ALIGNMENT;
+        boolean allZeros = true;
+        while (i >= limit)
+        {
+            if (0 != buffer.getIntVolatile(i))
+            {
+                allZeros = false;
+                break;
+            }
+
+            i -= FRAME_ALIGNMENT;
+        }
+
+        return allZeros;
     }
 }

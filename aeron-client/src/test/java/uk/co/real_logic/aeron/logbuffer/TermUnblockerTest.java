@@ -188,4 +188,38 @@ public class TermUnblockerTest
 
         assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
     }
+
+    @Test
+    public void shouldNotUnblockGapWithMessageRaceOnSecondMessageIncreasingTailThenInterrupting()
+    {
+        final int messageLength = HEADER_LENGTH * 4;
+        final int termOffset = 0;
+        final int tailOffset = messageLength * 3;
+
+        when(mockBuffer.getIntVolatile(messageLength))
+            .thenReturn(0)
+            .thenReturn(messageLength);
+
+        when(mockBuffer.getIntVolatile(messageLength * 2))
+            .thenReturn(messageLength);
+
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+    }
+
+    @Test
+    public void shouldNotUnblockGapWithMessageRaceWhenScanForwardTakesAnInterrupt()
+    {
+        final int messageLength = HEADER_LENGTH * 4;
+        final int termOffset = 0;
+        final int tailOffset = messageLength * 3;
+
+        when(mockBuffer.getIntVolatile(messageLength))
+            .thenReturn(0)
+            .thenReturn(messageLength);
+
+        when(mockBuffer.getIntVolatile(messageLength + HEADER_LENGTH))
+            .thenReturn(7);
+
+        assertThat(TermUnblocker.unblock(mockBuffer, termOffset, tailOffset), is(NO_ACTION));
+    }
 }

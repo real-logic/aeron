@@ -106,6 +106,9 @@ public class DriverConductor implements Agent
     private final LossGenerator controlLossGenerator;
 
     private long timeOfLastTimeoutCheck;
+    private long timeOfLastToDriverCountChange;
+    private long previousProducerCount;
+    private long previousConsumerCount;
 
     public DriverConductor(final Context ctx)
     {
@@ -147,7 +150,13 @@ public class DriverConductor implements Agent
         removeMsgFlyweight.wrap(buffer, 0);
 
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
-        timeOfLastTimeoutCheck = nanoClock.nanoTime();
+
+        final long nowNano = nanoClock.nanoTime();
+
+        timeOfLastTimeoutCheck = nowNano;
+        timeOfLastToDriverCountChange = nowNano;
+        previousConsumerCount = toDriverCommands.consumerCount();
+        previousProducerCount = toDriverCommands.producerCount();
     }
 
     public void onClose()
@@ -409,6 +418,29 @@ public class DriverConductor implements Agent
         onCheckManagedResources(directPublications, nanoTimeNow);
     }
 
+    private void onCheckForBlockedToDriverCommands(final long nanoTimeNow)
+    {
+        final long producerCount = toDriverCommands.producerCount();
+        final long consumerCount = toDriverCommands.consumerCount();
+
+        if (consumerCount == previousConsumerCount &&
+            producerCount == previousProducerCount &&
+            producerCount > consumerCount)
+        {
+            if (nanoTimeNow > (timeOfLastToDriverCountChange + clientLivenessTimeoutNs))
+            {
+                if (toDriverCommands.unblock())
+                {
+                    systemCounters.unblockedCommands().orderedIncrement();
+                }
+            }
+        }
+        else
+        {
+            timeOfLastToDriverCountChange = nanoTimeNow;
+        }
+    }
+
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
         CorrelatedMessageFlyweight flyweight = null;
@@ -518,6 +550,7 @@ public class DriverConductor implements Agent
         if (now > (timeOfLastTimeoutCheck + HEARTBEAT_TIMEOUT_NS))
         {
             onHeartbeatCheckTimeouts(now);
+            onCheckForBlockedToDriverCommands(now);
             timeOfLastTimeoutCheck = now;
             workCount = 1;
         }

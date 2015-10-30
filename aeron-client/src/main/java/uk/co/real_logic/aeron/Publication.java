@@ -87,7 +87,17 @@ public class Publication implements AutoCloseable
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.publicationLimit = publicationLimit;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(buffers[0].capacity());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(logBuffers.termLength());
+    }
+
+    /**
+     * Get the length in bytes for each term partition in the log buffer.
+     *
+     * @return the length in bytes for each term partition in the log buffer.
+     */
+    public int termLength()
+    {
+        return logBuffers.termLength();
     }
 
     /**

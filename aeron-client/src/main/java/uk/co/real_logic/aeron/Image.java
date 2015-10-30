@@ -92,6 +92,16 @@ public class Image
     }
 
     /**
+     * Get the length in bytes for each term partition in the log buffer.
+     *
+     * @return the length in bytes for each term partition in the log buffer.
+     */
+    public int termLength()
+    {
+        return logBuffers.termLength();
+    }
+
+    /**
      * The sessionId for the steam of messages.
      *
      * @return the sessionId for the steam of messages.

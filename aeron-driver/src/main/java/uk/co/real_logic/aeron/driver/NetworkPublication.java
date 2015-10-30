@@ -18,6 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
+import uk.co.real_logic.aeron.logbuffer.LogBufferUnblocker;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
@@ -503,6 +504,6 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
 
     public boolean unblockAtConsumerPosition()
     {
-        return false;
+        return LogBufferUnblocker.unblock(logPartitions, rawLog.logMetaData(), consumerPosition());
     }
 }

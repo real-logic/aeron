@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
+import uk.co.real_logic.aeron.logbuffer.LogBufferUnblocker;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
@@ -242,6 +243,6 @@ public class DirectPublication implements DriverManagedResource
 
     public boolean unblockAtConsumerPosition()
     {
-        return false;
+        return LogBufferUnblocker.unblock(logPartitions, rawLog.logMetaData(), consumerPosition());
     }
 }

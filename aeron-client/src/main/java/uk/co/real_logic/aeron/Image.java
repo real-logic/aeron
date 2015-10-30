@@ -96,7 +96,7 @@ public class Image
      *
      * @return the length in bytes for each term partition in the log buffer.
      */
-    public int termLength()
+    public int termBufferLength()
     {
         return logBuffers.termLength();
     }

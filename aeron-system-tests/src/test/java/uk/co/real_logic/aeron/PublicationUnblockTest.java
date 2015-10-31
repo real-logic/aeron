@@ -21,7 +21,6 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -41,28 +40,16 @@ public class PublicationUnblockTest
     @DataPoint
     public static final String IPC_CHANNEL = "aeron:ipc";
 
-    @DataPoint
-    public static final ThreadingMode SHARED = ThreadingMode.SHARED;
-
-    @DataPoint
-    public static final ThreadingMode SHARED_NETWORK = ThreadingMode.SHARED_NETWORK;
-
-    @DataPoint
-    public static final ThreadingMode DEDICATED = ThreadingMode.DEDICATED;
-
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldUnblockNonCommittedMessage(final String channel, final ThreadingMode threadingMode) throws Exception
+    public void shouldUnblockNonCommittedMessage(final String channel) throws Exception
     {
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-
-        ctx.threadingMode(threadingMode);
-        ctx.publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(10));
-
         final FragmentHandler mockFragmentHandler = mock(FragmentHandler.class);
+        final MediaDriver.Context ctx = new MediaDriver.Context();
+        ctx.publicationUnblockTimeoutNs(TimeUnit.MILLISECONDS.toNanos(10));
 
         try (final MediaDriver ignore = MediaDriver.launch(ctx);
              final Aeron client = Aeron.connect(new Aeron.Context());

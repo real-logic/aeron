@@ -55,7 +55,7 @@ public class BasicSubscriber
 
         if (EMBEDDED_MEDIA_DRIVER)
         {
-            ctx.dirName(driver.contextDirName());
+            ctx.aeronDirectoryName(driver.aeronDirectoryName());
         }
 
         final FragmentHandler fragmentHandler = printStringMessage(STREAM_ID);

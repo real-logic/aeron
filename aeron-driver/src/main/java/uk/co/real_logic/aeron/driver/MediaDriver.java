@@ -127,45 +127,44 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Construct a media driver with the given ctx.
+     * Construct a media driver with the given context.
      *
-     * @param ctx for the media driver parameters
+     * @param context for the media driver parameters
      */
-    private MediaDriver(final Context ctx)
+    private MediaDriver(final Context context)
     {
-        this.ctx = ctx;
+        this.ctx = context;
 
-        ensureDirectoryIsRecreated(ctx);
+        ensureDirectoryIsRecreated(context);
 
-        validateSufficientSocketBufferLengths(ctx);
+        validateSufficientSocketBufferLengths(context);
 
-        ctx
+        context
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .senderCommandQueue(new OneToOneConcurrentArrayQueue<>(CMD_QUEUE_CAPACITY))
             .conclude();
 
+        final Receiver receiver = new Receiver(context);
+        final Sender sender = new Sender(context);
+        final DriverConductor conductor = new DriverConductor(context);
 
-        final Receiver receiver = new Receiver(ctx);
-        final Sender sender = new Sender(ctx);
-        final DriverConductor conductor = new DriverConductor(ctx);
+        context.receiverProxy().receiver(receiver);
+        context.senderProxy().sender(sender);
+        context.fromReceiverDriverConductorProxy().driverConductor(conductor);
+        context.fromSenderDriverConductorProxy().driverConductor(conductor);
+        context.toDriverCommands().consumerHeartbeatTime(context.epochClock().time());
 
-        ctx.receiverProxy().receiver(receiver);
-        ctx.senderProxy().sender(sender);
-        ctx.fromReceiverDriverConductorProxy().driverConductor(conductor);
-        ctx.fromSenderDriverConductorProxy().driverConductor(conductor);
-        ctx.toDriverCommands().consumerHeartbeatTime(ctx.epochClock().time());
+        final AtomicCounter errorCounter = context.systemCounters().errors();
+        final ErrorHandler errorHandler = context.errorHandler();
 
-        final AtomicCounter errorCounter = ctx.systemCounters().errors();
-        final ErrorHandler errorHandler = ctx.errorHandler();
-
-        switch (ctx.threadingMode)
+        switch (context.threadingMode)
         {
             case SHARED:
                 runners = Collections.singletonList(
                     new AgentRunner(
-                        ctx.sharedIdleStrategy,
+                        context.sharedIdleStrategy,
                         errorHandler,
                         errorCounter,
                         new CompositeAgent(sender, receiver, conductor))
@@ -175,28 +174,27 @@ public final class MediaDriver implements AutoCloseable
             case SHARED_NETWORK:
                 runners = Arrays.asList(
                     new AgentRunner(
-                        ctx.sharedNetworkIdleStrategy,
+                        context.sharedNetworkIdleStrategy,
                         errorHandler,
                         errorCounter,
                         new CompositeAgent(sender, receiver)),
-                    new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor)
+                    new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor)
                 );
                 break;
 
             default:
             case DEDICATED:
                 runners = Arrays.asList(
-                    new AgentRunner(ctx.senderIdleStrategy, errorHandler, errorCounter, sender),
-                    new AgentRunner(ctx.receiverIdleStrategy, errorHandler, errorCounter, receiver),
-                    new AgentRunner(ctx.conductorIdleStrategy, errorHandler, errorCounter, conductor)
+                    new AgentRunner(context.senderIdleStrategy, errorHandler, errorCounter, sender),
+                    new AgentRunner(context.receiverIdleStrategy, errorHandler, errorCounter, receiver),
+                    new AgentRunner(context.conductorIdleStrategy, errorHandler, errorCounter, conductor)
                 );
-                break;
         }
     }
 
     /**
-     * Launch an isolated MediaDriver embedded in the current process with a generated dirName that can be retrieved
-     * by calling contextDirName.
+     * Launch an isolated MediaDriver embedded in the current process with a generated aeronDirectoryName that can be retrieved
+     * by calling aeronDirectoryName.
      *
      * @return the newly started MediaDriver.
      */
@@ -207,16 +205,16 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Launch an isolated MediaDriver embedded in the current process with a provided configuration context and
-     * a generated dirName (overwrites configured dirName) that can be retrieved by calling contextDirName.
+     * Launch an isolated MediaDriver embedded in the current process with a provided configuration context and a generated
+     * aeronDirectoryName (overwrites configured aeronDirectoryName) that can be retrieved by calling aeronDirectoryName.
      *
-     * @param ctx containing the configuration options.
+     * @param context containing the configuration options.
      * @return the newly started MediaDriver.
      */
-    public static MediaDriver launchEmbedded(final Context ctx)
+    public static MediaDriver launchEmbedded(final Context context)
     {
-        ctx.dirName(CommonContext.generateRandomDirName());
-        return launch(ctx);
+        context.aeronDirectoryName(CommonContext.generateRandomDirName());
+        return launch(context);
     }
 
     /**
@@ -232,12 +230,12 @@ public final class MediaDriver implements AutoCloseable
     /**
      * Launch a MediaDriver embedded in the current process and provided a configuration context.
      *
-     * @param ctx containing the configuration options.
+     * @param context containing the configuration options.
      * @return the newly created MediaDriver.
      */
-    public static MediaDriver launch(final Context ctx)
+    public static MediaDriver launch(final Context context)
     {
-        return new MediaDriver(ctx).start();
+        return new MediaDriver(context).start();
     }
 
     /**
@@ -259,14 +257,14 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
-     * Used to access the configured dirName for this MediaDriver Context typically used after the
+     * Used to access the configured aeronDirectoryName for this MediaDriver, typically used after the
      * {@link #launchEmbedded()} method is used.
      *
-     * @return the context dirName
+     * @return the context aeronDirectoryName
      */
-    public String contextDirName()
+    public String aeronDirectoryName()
     {
-        return ctx.dirName();
+        return ctx.aeronDirectoryName();
     }
 
     private void freeSocketsForReuseOnWindows()
@@ -331,7 +329,7 @@ public final class MediaDriver implements AutoCloseable
 
     private void ensureDirectoryIsRecreated(final Context ctx)
     {
-        final File aeronDir = new File(ctx.dirName());
+        final File aeronDir = new File(ctx.aeronDirectoryName());
         Consumer<String> logProgress = (message) -> { };
 
         if (aeronDir.exists())
@@ -531,9 +529,8 @@ public final class MediaDriver implements AutoCloseable
                 fromSenderDriverConductorProxy(new DriverConductorProxy(
                     threadingMode, toConductorFromSenderCommandQueue, systemCounters.conductorProxyFails()));
 
-                rawLogBuffersFactory(new RawLogFactory(
-                    dirName(), publicationTermBufferLength, maxImageTermBufferLength, ipcPublicationTermBufferLength,
-                    eventLogger));
+                rawLogBuffersFactory(new RawLogFactory(aeronDirectoryName(),
+                    publicationTermBufferLength, maxImageTermBufferLength, ipcPublicationTermBufferLength, eventLogger));
 
                 concludeIdleStrategies();
                 concludeLossGenerators();

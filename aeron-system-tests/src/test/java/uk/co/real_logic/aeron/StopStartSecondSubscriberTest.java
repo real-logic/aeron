@@ -72,10 +72,10 @@ public class StopStartSecondSubscriberTest
         final Aeron.Context publishingAeronContext2 = new Aeron.Context();
         final Aeron.Context subscribingAeronContext2 = new Aeron.Context();
 
-        publishingAeronContext1.dirName(driver1.contextDirName());
-        publishingAeronContext2.dirName(driver1.contextDirName());
-        subscribingAeronContext1.dirName(driver2.contextDirName());
-        subscribingAeronContext2.dirName(driver2.contextDirName());
+        publishingAeronContext1.aeronDirectoryName(driver1.aeronDirectoryName());
+        publishingAeronContext2.aeronDirectoryName(driver1.aeronDirectoryName());
+        subscribingAeronContext1.aeronDirectoryName(driver2.aeronDirectoryName());
+        subscribingAeronContext2.aeronDirectoryName(driver2.aeronDirectoryName());
 
         publishingClient1 = Aeron.connect(publishingAeronContext1);
         subscribingClient1 = Aeron.connect(subscribingAeronContext1);

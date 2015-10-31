@@ -64,7 +64,7 @@ public class StreamingPublisher
 
         if (EMBEDDED_MEDIA_DRIVER)
         {
-            context.dirName(driver.contextDirName());
+            context.aeronDirectoryName(driver.aeronDirectoryName());
         }
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), StreamingPublisher::printRate);

@@ -55,7 +55,7 @@ public class BasicPublisher
         final Aeron.Context ctx = new Aeron.Context();
         if (EMBEDDED_MEDIA_DRIVER)
         {
-            ctx.dirName(driver.contextDirName());
+            ctx.aeronDirectoryName(driver.aeronDirectoryName());
         }
 
         // Connect a new Aeron instance to the media driver and create a publication on

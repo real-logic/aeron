@@ -52,7 +52,7 @@ public class Pong
         final Aeron.Context ctx = new Aeron.Context();
         if (EMBEDDED_MEDIA_DRIVER)
         {
-            ctx.dirName(driver.contextDirName());
+            ctx.aeronDirectoryName(driver.aeronDirectoryName());
         }
 
         final IdleStrategy idleStrategy = new NoOpIdleStrategy();

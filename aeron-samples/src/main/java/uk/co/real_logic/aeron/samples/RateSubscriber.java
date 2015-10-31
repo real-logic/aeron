@@ -54,7 +54,7 @@ public class RateSubscriber
 
         if (EMBEDDED_MEDIA_DRIVER)
         {
-            ctx.dirName(driver.contextDirName());
+            ctx.aeronDirectoryName(driver.aeronDirectoryName());
         }
 
         // Create a RateReporter instance to print, once per second, the current rate at which messages are

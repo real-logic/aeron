@@ -37,9 +37,14 @@ import static java.lang.System.getProperty;
  */
 public class CommonContext implements AutoCloseable
 {
-    /** The top level Aeron directory used for communication between a Media Driver and client.  */
+    /**
+     * The top level Aeron directory used for communication between a Media Driver and client.
+     */
     public static final String AERON_DIR_PROP_NAME = "aeron.dir";
-    /** The value of the top level Aeron directory unless overridden by {@link #dirName(String)} */
+
+    /**
+     * The value of the top level Aeron directory unless overridden by {@link #aeronDirectoryName(String)}
+     */
     public static final String AERON_DIR_PROP_DEFAULT;
 
     /**
@@ -47,10 +52,13 @@ public class CommonContext implements AutoCloseable
      */
     public static final String IPC_CHANNEL = "aeron:ipc";
 
+    /**
+     * Timeout in which the driver is expected to respond.
+     */
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;
 
     private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
-    private String dirName;
+    private String aeronDirectoryName;
     private File cncFile;
     private UnsafeBuffer counterLabelsBuffer;
     private UnsafeBuffer counterValuesBuffer;
@@ -90,7 +98,7 @@ public class CommonContext implements AutoCloseable
      */
     public CommonContext()
     {
-        dirName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
+        aeronDirectoryName = getProperty(AERON_DIR_PROP_NAME, AERON_DIR_PROP_DEFAULT);
     }
 
     /**
@@ -99,29 +107,31 @@ public class CommonContext implements AutoCloseable
      */
     public CommonContext conclude()
     {
-        cncFile = new File(dirName, CncFileDescriptor.CNC_FILE);
+        cncFile = new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
         return this;
     }
 
     /**
      * Get the top level Aeron directory used for communication between the client and Media Driver, and
      * the location of the data buffers.
+     *
      * @return The top level Aeron directory.
      */
-    public String dirName()
+    public String aeronDirectoryName()
     {
-        return dirName;
+        return aeronDirectoryName;
     }
 
     /**
      * Set the top level Aeron directory used for communication between the client and Media Driver, and the location
      * of the data buffers.
+     *
      * @param dirName New top level Aeron directory.
      * @return this Object for method chaining.
      */
-    public CommonContext dirName(final String dirName)
+    public CommonContext aeronDirectoryName(final String dirName)
     {
-        this.dirName = dirName;
+        this.aeronDirectoryName = dirName;
         return this;
     }
 
@@ -210,7 +220,7 @@ public class CommonContext implements AutoCloseable
      */
     public void deleteAeronDirectory()
     {
-        final File dirFile = new File(dirName);
+        final File dirFile = new File(aeronDirectoryName);
 
         IoUtil.delete(dirFile, false);
     }
@@ -224,11 +234,11 @@ public class CommonContext implements AutoCloseable
      */
     public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)
     {
-        final File dirFile = new File(dirName);
+        final File dirFile = new File(aeronDirectoryName);
 
         if (dirFile.exists() && dirFile.isDirectory())
         {
-            final File cncFile = new File(dirName, CncFileDescriptor.CNC_FILE);
+            final File cncFile = new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
 
             logHandler.accept(String.format("INFO: Aeron directory %s exists", dirFile));
 

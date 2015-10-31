@@ -64,10 +64,10 @@ public class EmbeddedPingPong
 
         try (final MediaDriver ignored = MediaDriver.launch(ctx))
         {
-            final Thread pongThread = startPong(ignored.contextDirName());
+            final Thread pongThread = startPong(ignored.aeronDirectoryName());
             pongThread.start();
 
-            runPing(ignored.contextDirName());
+            runPing(ignored.aeronDirectoryName());
             RUNNING.set(false);
             pongThread.join();
 
@@ -79,7 +79,7 @@ public class EmbeddedPingPong
     {
         final Aeron.Context ctx = new Aeron.Context()
             .availableImageHandler(EmbeddedPingPong::availablePongImageHandler);
-        ctx.dirName(embeddedDirName);
+        ctx.aeronDirectoryName(embeddedDirName);
 
         System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
@@ -129,7 +129,7 @@ public class EmbeddedPingPong
                 System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
 
                 final Aeron.Context ctx = new Aeron.Context();
-                ctx.dirName(embeddedDirName);
+                ctx.aeronDirectoryName(embeddedDirName);
 
                 try (final Aeron aeron = Aeron.connect(ctx);
                      final Publication pongPublication = aeron.addPublication(PONG_CHANNEL, PONG_STREAM_ID);

@@ -28,9 +28,9 @@ public class PublicationLink implements DriverManagedResource
     private final AeronClient client;
     private final AtomicCounter unblockedPublications;
 
-    private boolean reachedEndOfLife = false;
     private long lastConsumerPosition;
     private long timeOfLastConsumerPositionChange;
+    private boolean reachedEndOfLife = false;
 
     public PublicationLink(
         final long registrationId,

@@ -423,9 +423,9 @@ public class DriverConductor implements Agent
         final long producerPosition = toDriverCommands.producerPosition();
         final long consumerPosition = toDriverCommands.consumerPosition();
 
-        if (consumerPosition == lastConsumerCommandPosition &&
-            producerPosition == lastProducerCommandPosition &&
-            producerPosition > consumerPosition)
+        if (producerPosition > consumerPosition &&
+            consumerPosition == lastConsumerCommandPosition &&
+            producerPosition == lastProducerCommandPosition)
         {
             if (nanoTimeNow > (timeOfLastToDriverPositionChange + clientLivenessTimeoutNs))
             {

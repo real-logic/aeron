@@ -30,7 +30,6 @@ public class PublicationLink implements DriverManagedResource
 
     private boolean reachedEndOfLife = false;
     private long lastConsumerPosition;
-    private long lastProducerPosition;
     private long timeOfLastConsumerPositionChange;
 
     public PublicationLink(
@@ -46,7 +45,6 @@ public class PublicationLink implements DriverManagedResource
         this.client = client;
         this.publication.incRef();
         this.lastConsumerPosition = publication.consumerPosition();
-        this.lastProducerPosition = publication.producerPosition();
         this.timeOfLastConsumerPositionChange = now;
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.unblockedPublications = systemCounters.unblockedPublications();
@@ -69,14 +67,11 @@ public class PublicationLink implements DriverManagedResource
             reachedEndOfLife = true;
         }
 
-        final long producerPosition = publication.producerPosition();
         final long consumerPosition = publication.consumerPosition();
-
-        if (producerPosition > consumerPosition &&
-            producerPosition == lastProducerPosition &&
-            consumerPosition == lastConsumerPosition)
+        if (consumerPosition == lastConsumerPosition)
         {
-            if (time > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
+            if (publication.producerPosition() > consumerPosition &&
+                time > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
             {
                 if (publication.unblockAtConsumerPosition())
                 {
@@ -86,12 +81,9 @@ public class PublicationLink implements DriverManagedResource
         }
         else
         {
-            // want movement of either consumer or producer to reset time?
             timeOfLastConsumerPositionChange = time;
+            lastConsumerPosition = consumerPosition;
         }
-
-        lastConsumerPosition = consumerPosition;
-        lastProducerPosition = producerPosition;
     }
 
     public boolean hasReachedEndOfLife()

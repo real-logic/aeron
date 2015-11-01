@@ -106,9 +106,9 @@ public class DriverConductor implements Agent
     private final LossGenerator controlLossGenerator;
 
     private long timeOfLastTimeoutCheck;
-    private long timeOfLastToDriverCountChange;
-    private long previousProducerCount;
-    private long previousConsumerCount;
+    private long timeOfLastToDriverPositionChange;
+    private long lastProducerCommandPosition;
+    private long lastConsumerCommandPosition;
 
     public DriverConductor(final Context ctx)
     {
@@ -154,9 +154,9 @@ public class DriverConductor implements Agent
         final long nowNano = nanoClock.nanoTime();
 
         timeOfLastTimeoutCheck = nowNano;
-        timeOfLastToDriverCountChange = nowNano;
-        previousConsumerCount = toDriverCommands.consumerCount();
-        previousProducerCount = toDriverCommands.producerCount();
+        timeOfLastToDriverPositionChange = nowNano;
+        lastConsumerCommandPosition = toDriverCommands.consumerPosition();
+        lastProducerCommandPosition = toDriverCommands.producerPosition();
     }
 
     public void onClose()
@@ -420,14 +420,14 @@ public class DriverConductor implements Agent
 
     private void onCheckForBlockedToDriverCommands(final long nanoTimeNow)
     {
-        final long producerCount = toDriverCommands.producerCount();
-        final long consumerCount = toDriverCommands.consumerCount();
+        final long producerPosition = toDriverCommands.producerPosition();
+        final long consumerPosition = toDriverCommands.consumerPosition();
 
-        if (consumerCount == previousConsumerCount &&
-            producerCount == previousProducerCount &&
-            producerCount > consumerCount)
+        if (consumerPosition == lastConsumerCommandPosition &&
+            producerPosition == lastProducerCommandPosition &&
+            producerPosition > consumerPosition)
         {
-            if (nanoTimeNow > (timeOfLastToDriverCountChange + clientLivenessTimeoutNs))
+            if (nanoTimeNow > (timeOfLastToDriverPositionChange + clientLivenessTimeoutNs))
             {
                 if (toDriverCommands.unblock())
                 {
@@ -437,8 +437,11 @@ public class DriverConductor implements Agent
         }
         else
         {
-            timeOfLastToDriverCountChange = nanoTimeNow;
+            timeOfLastToDriverPositionChange = nanoTimeNow;
         }
+
+        lastProducerCommandPosition = producerPosition;
+        lastConsumerCommandPosition = consumerPosition;
     }
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)

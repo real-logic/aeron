@@ -67,12 +67,12 @@ public class PublicationLink implements DriverManagedResource
             reachedEndOfLife = true;
         }
 
-        final long consumerPosition = publication.consumerPosition();
         final long producerPosition = publication.producerPosition();
+        final long consumerPosition = publication.consumerPosition();
 
-        if (consumerPosition == previousConsumerPosition &&
-            producerPosition == previousProducerPosition &&
-            publication.producerPosition() > consumerPosition)
+        if (producerPosition > consumerPosition &&
+            consumerPosition == previousConsumerPosition &&
+            producerPosition == previousProducerPosition)
         {
             if (time > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
             {

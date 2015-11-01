@@ -27,8 +27,8 @@ public class PublicationLink implements DriverManagedResource
     private final SystemCounters systemCounters;
 
     private boolean reachedEndOfLife = false;
-    private long previousConsumerPosition;
-    private long previousProducerPosition;
+    private long lastConsumerPosition;
+    private long lastProducerPosition;
     private long timeOfLastConsumerPositionChange;
 
     public PublicationLink(
@@ -43,8 +43,8 @@ public class PublicationLink implements DriverManagedResource
         this.publication = publication;
         this.client = client;
         this.publication.incRef();
-        this.previousConsumerPosition = publication.consumerPosition();
-        this.previousProducerPosition = publication.producerPosition();
+        this.lastConsumerPosition = publication.consumerPosition();
+        this.lastProducerPosition = publication.producerPosition();
         this.timeOfLastConsumerPositionChange = now;
         this.unblockTimeoutNs = unblockTimeoutNs;
         this.systemCounters = systemCounters;
@@ -71,8 +71,8 @@ public class PublicationLink implements DriverManagedResource
         final long consumerPosition = publication.consumerPosition();
 
         if (producerPosition > consumerPosition &&
-            consumerPosition == previousConsumerPosition &&
-            producerPosition == previousProducerPosition)
+            consumerPosition == lastConsumerPosition &&
+            producerPosition == lastProducerPosition)
         {
             if (time > (timeOfLastConsumerPositionChange + unblockTimeoutNs))
             {
@@ -88,8 +88,8 @@ public class PublicationLink implements DriverManagedResource
             timeOfLastConsumerPositionChange = time;
         }
 
-        previousConsumerPosition = consumerPosition;
-        previousProducerPosition = producerPosition;
+        lastConsumerPosition = consumerPosition;
+        lastProducerPosition = producerPosition;
     }
 
     public boolean hasReachedEndOfLife()

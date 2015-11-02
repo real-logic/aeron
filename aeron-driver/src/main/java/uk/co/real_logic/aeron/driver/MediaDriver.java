@@ -39,6 +39,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.StandardSocketOptions;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
@@ -76,17 +77,17 @@ public final class MediaDriver implements AutoCloseable
     private final Context ctx;
 
     /**
-     * Load system properties from a given filename.
+     * Load system properties from a given filename or url.
      * <p>
-     * File is first searched in resources, then file system. Both are loaded if both found.
+     * File is first searched in resources, then file system, then URL. All are loaded if multiples found.
      *
-     * @param filename that holds properties
+     * @param filenameOrUrl that holds properties
      */
-    public static void loadPropertiesFile(final String filename)
+    public static void loadPropertiesFile(final String filenameOrUrl)
     {
         final Properties properties = new Properties(System.getProperties());
 
-        try (final InputStream inputStream = MediaDriver.class.getClassLoader().getResourceAsStream(filename))
+        try (final InputStream inputStream = MediaDriver.class.getClassLoader().getResourceAsStream(filenameOrUrl))
         {
             properties.load(inputStream);
         }
@@ -94,7 +95,15 @@ public final class MediaDriver implements AutoCloseable
         {
         }
 
-        try (final FileInputStream inputStream = new FileInputStream(filename))
+        try (final FileInputStream inputStream = new FileInputStream(filenameOrUrl))
+        {
+            properties.load(inputStream);
+        }
+        catch (final Exception ignore)
+        {
+        }
+
+        try (final InputStream inputStream = new URL(filenameOrUrl).openStream())
         {
             properties.load(inputStream);
         }

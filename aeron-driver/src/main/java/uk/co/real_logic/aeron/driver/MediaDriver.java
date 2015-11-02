@@ -200,20 +200,25 @@ public final class MediaDriver implements AutoCloseable
      */
     public static MediaDriver launchEmbedded()
     {
-        final Context ctx = new Context();
-        return launchEmbedded(ctx);
+        return launchEmbedded(new Context());
     }
 
     /**
      * Launch an isolated MediaDriver embedded in the current process with a provided configuration context and a generated
      * aeronDirectoryName (overwrites configured aeronDirectoryName) that can be retrieved by calling aeronDirectoryName.
      *
+     * If the aeronDirectoryName is configured then it will be used.
+     *
      * @param context containing the configuration options.
      * @return the newly started MediaDriver.
      */
     public static MediaDriver launchEmbedded(final Context context)
     {
-        context.aeronDirectoryName(CommonContext.generateRandomDirName());
+        if (CommonContext.AERON_DIR_PROP_DEFAULT.equals(context.aeronDirectoryName()))
+        {
+            context.aeronDirectoryName(CommonContext.generateRandomDirName());
+        }
+
         return launch(context);
     }
 

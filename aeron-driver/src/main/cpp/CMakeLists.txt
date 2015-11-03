@@ -18,12 +18,20 @@ SET(SOURCE
     media/UdpChannel.cpp
     media/InetAddress.cpp
     uri/AeronUri.cpp
-    uri/NetUtil.cpp)
+    uri/NetUtil.cpp
+    media/UdpChannelTransport.cpp
+    media/InterfaceLookup.cpp
+    media/InterfaceSearchAddress.cpp media/NetworkInterface.cpp)
 
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h
     uri/AeronUri.h
-    uri/NetUtil.h media/InterfaceSearchAddress.cpp media/InterfaceSearchAddress.h media/InterfaceLookup.cpp media/InterfaceLookup.h)
+    uri/NetUtil.h
+    media/InterfaceSearchAddress.h
+    media/InterfaceLookup.h
+    media/UdpChannel.h
+    media/UdpChannelTransport.h
+    media/NetworkInterface.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

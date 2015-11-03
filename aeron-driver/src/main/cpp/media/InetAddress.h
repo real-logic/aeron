@@ -50,6 +50,9 @@ public:
     virtual bool equals(const InetAddress& other) const = 0;
     virtual std::unique_ptr<InetAddress> nextAddress() const = 0;
     virtual bool matches(const InetAddress& candidate, std::uint32_t subnetPrefix) const = 0;
+    virtual sa_family_t family() const = 0;
+    virtual void* addrPtr() const = 0;
+    virtual socklen_t addrSize() const = 0;
 
     static std::unique_ptr<InetAddress> parse(const char* address, int familyHint = PF_INET);
     static std::unique_ptr<InetAddress> parse(std::string const & address, int familyHint = PF_INET);
@@ -93,6 +96,13 @@ public:
         m_socketAddress.sin_port = htons(port);
     }
 
+    Inet4Address(Inet4Address&& other)
+    {
+        m_socketAddress.sin_family = AF_INET;
+        m_socketAddress.sin_addr = other.m_socketAddress.sin_addr;
+        m_socketAddress.sin_port = other.m_socketAddress.sin_port;
+    }
+
     sockaddr* address() const
     {
         return (sockaddr*) &m_socketAddress;
@@ -116,6 +126,21 @@ public:
     in_addr addr()
     {
         return m_socketAddress.sin_addr;
+    }
+
+    sa_family_t family() const
+    {
+        return m_socketAddress.sin_family;
+    }
+
+    void* addrPtr() const
+    {
+        return (void*) &m_socketAddress.sin_addr;
+    }
+
+    socklen_t addrSize() const
+    {
+        return sizeof(struct in_addr);
     }
 
     bool isEven() const;
@@ -172,6 +197,21 @@ public:
     in6_addr addr()
     {
         return m_socketAddress.sin6_addr;
+    }
+
+    sa_family_t family() const
+    {
+        return m_socketAddress.sin6_family;
+    }
+
+    void* addrPtr() const
+    {
+        return (void*) &m_socketAddress.sin6_addr;
+    }
+
+    socklen_t addrSize() const
+    {
+        return sizeof(struct in6_addr);
     }
 
     bool isEven() const;

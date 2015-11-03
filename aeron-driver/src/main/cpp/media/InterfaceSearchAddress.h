@@ -19,6 +19,7 @@
 
 #include "InterfaceLookup.h"
 #include "InetAddress.h"
+#include "NetworkInterface.h"
 
 namespace aeron { namespace driver { namespace media {
 
@@ -49,7 +50,7 @@ public:
 
     bool matches(const InetAddress& candidate) const;
 
-    std::unique_ptr<InetAddress> findLocalAddress(InterfaceLookup& lookup) const;
+    std::unique_ptr<NetworkInterface> findLocalAddress(InterfaceLookup& lookup) const;
 
 private:
     std::unique_ptr<InetAddress> m_inetAddress;

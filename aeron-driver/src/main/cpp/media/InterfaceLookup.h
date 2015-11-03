@@ -18,15 +18,21 @@
 #define INCLUDED_AERON_DRIVER_MEDIA_INTERFACELOOKUP_
 
 #include <functional>
+#include <tuple>
 #include "InetAddress.h"
 
 namespace aeron { namespace driver { namespace media {
 
+using IPv4Result = std::tuple<Inet4Address&, const char*, unsigned int, std::uint32_t, unsigned int>;
+using IPv4LookupCallback = std::function<void(IPv4Result&)>;
+using IPv6Result = std::tuple<Inet6Address&, const char*, unsigned int, std::uint32_t, unsigned int>;
+using IPv6LookupCallback = std::function<void(IPv6Result&)>;
+
 class InterfaceLookup
 {
 public:
-    virtual void lookupIPv4(std::function<void(Inet4Address&, std::uint32_t, unsigned int)> func) const = 0;
-    virtual void lookupIPv6(std::function<void(Inet6Address&, std::uint32_t, unsigned int)> func) const = 0;
+    virtual void lookupIPv4(IPv4LookupCallback func) const = 0;
+    virtual void lookupIPv6(IPv6LookupCallback func) const = 0;
 };
 
 class BsdInterfaceLookup : public InterfaceLookup
@@ -34,17 +40,14 @@ class BsdInterfaceLookup : public InterfaceLookup
 public:
     BsdInterfaceLookup(){}
 
-    virtual void lookupIPv4(std::function<void(Inet4Address&, std::uint32_t, unsigned int)> func) const;
-    virtual void lookupIPv6(std::function<void(Inet6Address&, std::uint32_t, unsigned int)> func) const;
+    virtual void lookupIPv4(IPv4LookupCallback func) const;
+    virtual void lookupIPv6(IPv6LookupCallback func) const;
 
     static BsdInterfaceLookup& get()
     {
         static BsdInterfaceLookup instance;
         return instance;
     }
-
-//    template<typename Func>
-//    virtual void lookupIPv6(Func) const;
 };
 
 }}}

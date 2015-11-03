@@ -21,6 +21,7 @@
 #include "util/Exceptions.h"
 #include "InetAddress.h"
 #include "InterfaceLookup.h"
+#include "NetworkInterface.h"
 
 namespace aeron { namespace driver { namespace media {
 
@@ -32,16 +33,23 @@ public:
     UdpChannel(
         std::unique_ptr<InetAddress>& remoteData,
         std::unique_ptr<InetAddress>& remoteControl,
-        std::unique_ptr<InetAddress>& localData)
+        std::unique_ptr<NetworkInterface>& localData,
+        bool isMulticast)
         : m_remoteControl(std::move(remoteControl)),
           m_remoteData(std::move(remoteData)),
-          m_localData(std::move(localData))
+          m_localData(std::move(localData)),
+          m_isMulticast(isMulticast)
     {
     }
 
     const char* canonicalForm();
 
-    InetAddress& remoteControl() const
+    inline bool isMulticast() const
+    {
+        return m_isMulticast;
+    }
+
+    inline InetAddress& remoteControl() const
     {
         if (m_remoteControl == nullptr)
         {
@@ -51,24 +59,24 @@ public:
         return *m_remoteControl;
     }
 
-    InetAddress& remoteData() const
+    inline InetAddress& remoteData() const
     {
         return *m_remoteData;
     }
 
-    InetAddress& localData() const
+    inline InetAddress& localData() const
     {
-        return *m_localData;
+        return m_localData->address();
     }
 
-    InetAddress& localControl() const
+    inline InetAddress& localControl() const
     {
-        return *m_localData;
+        return m_localData->address();
     }
 
-    InetAddress& localInterface() const
+    inline NetworkInterface& localInterface() const
     {
-        return localData();
+        return *m_localData;
     }
 
     static std::unique_ptr<UdpChannel> parse(
@@ -77,9 +85,10 @@ public:
 private:
     std::unique_ptr<InetAddress> m_remoteControl;
     std::unique_ptr<InetAddress> m_remoteData;
-    std::unique_ptr<InetAddress> m_localData;
+    std::unique_ptr<NetworkInterface> m_localData;
+    bool m_isMulticast;
 };
 
 }}}
 
-#endif //AERON_UDPCHANNEL_H
+#endif // INCLUDED_AERON_DRIVER_UDPCHANNEL_H_

@@ -18,6 +18,7 @@
 #include <util/Exceptions.h>
 #include <util/ScopeUtils.h>
 #include <sys/socket.h>
+#include <net/if.h>
 #include "InterfaceLookup.h"
 #include "InetAddress.h"
 
@@ -47,13 +48,13 @@ static uint32_t maskToPrefixLength(in6_addr addr)
     return __builtin_popcountll(cvt.parts.hi) + __builtin_popcountll(cvt.parts.lo);
 }
 
-void BsdInterfaceLookup::lookupIPv4(std::function<void(Inet4Address&, std::uint32_t, unsigned int)> func) const
+void BsdInterfaceLookup::lookupIPv4(IPv4LookupCallback func) const
 {
     ifaddrs* interfaces;
 
     if (getifaddrs(&interfaces) != 0)
     {
-        throw aeron::util::IOException{"Failed to get inteface addresses", SOURCEINFO};
+        throw aeron::util::IOException{"Failed to get interface addresses", SOURCEINFO};
     }
 
     aeron::util::OnScopeExit tidy([&]()
@@ -71,16 +72,25 @@ void BsdInterfaceLookup::lookupIPv4(std::function<void(Inet4Address&, std::uint3
             Inet4Address inet4Address{sockaddrIn->sin_addr, 0};
 
             sockaddr_in* networkMask = (sockaddr_in*) cursor->ifa_netmask;
-            uint32_t subnetPrefix = (networkMask) ? maskToPrefixLength(networkMask->sin_addr) : 0;
+            std::uint32_t subnetPrefix = (networkMask) ? maskToPrefixLength(networkMask->sin_addr) : 0;
 
-            func(inet4Address, subnetPrefix, cursor->ifa_flags);
+            const char* name = cursor->ifa_name;
+            unsigned int ifIndex = if_nametoindex(name);
+
+            if (ifIndex == 0)
+            {
+                continue;
+            }
+
+            auto result = std::make_tuple(std::ref(inet4Address), name, ifIndex, subnetPrefix, cursor->ifa_flags);
+            func(result);
         }
 
         cursor = cursor->ifa_next;
     }
 }
 
-void BsdInterfaceLookup::lookupIPv6(std::function<void(Inet6Address&, std::uint32_t, unsigned int)> func) const
+void BsdInterfaceLookup::lookupIPv6(IPv6LookupCallback func) const
 {
     ifaddrs* interfaces;
 
@@ -104,9 +114,18 @@ void BsdInterfaceLookup::lookupIPv6(std::function<void(Inet6Address&, std::uint3
             Inet6Address inet6Address{sockaddrIn->sin6_addr, 0};
 
             sockaddr_in6* networkMask = (sockaddr_in6*) cursor->ifa_netmask;
-            uint32_t subnetPrefix = (networkMask) ? maskToPrefixLength(networkMask->sin6_addr) : 0;
+            std::uint32_t subnetPrefix = (networkMask) ? maskToPrefixLength(networkMask->sin6_addr) : 0;
 
-            func(inet6Address, subnetPrefix, cursor->ifa_flags);
+            const char* name = cursor->ifa_name;
+            unsigned int ifIndex = if_nametoindex(name);
+
+            if (ifIndex == 0)
+            {
+                continue;
+            }
+
+            auto result = std::make_tuple(std::ref(inet6Address), name, ifIndex, subnetPrefix, cursor->ifa_flags);
+            func(result);
         }
 
         cursor = cursor->ifa_next;

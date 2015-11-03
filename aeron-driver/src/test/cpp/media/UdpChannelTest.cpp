@@ -71,7 +71,8 @@ TEST_F(UdpChannelTest, createValidMulticastUdpChannel)
     EXPECT_EQ(*InetAddress::fromIPv4("224.10.9.9", 41024), channel->remoteData());
     EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localData());
     EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localControl());
-    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localInterface());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localInterface().address());
+    EXPECT_TRUE(channel->isMulticast());
 }
 
 TEST_F(UdpChannelTest, createValidUnicastUdpChannel)
@@ -82,5 +83,6 @@ TEST_F(UdpChannelTest, createValidUnicastUdpChannel)
     EXPECT_EQ(*InetAddress::parse("localhost:40124", AF_INET), channel->remoteData());
     EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localData());
     EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localControl());
-    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localInterface());
+    EXPECT_EQ(*InetAddress::parse("localhost", AF_INET), channel->localInterface().address());
+    EXPECT_FALSE(channel->isMulticast());
 }

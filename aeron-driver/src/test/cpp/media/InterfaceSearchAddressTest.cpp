@@ -99,39 +99,41 @@ public:
     StubInterfaceLookup()
     {}
 
-    void lookupIPv4(std::function<void(Inet4Address &, std::uint32_t, unsigned int)> func) const
+    void lookupIPv4(IPv4LookupCallback func) const
     {
         for (auto &t : m_ipv4Addresses)
         {
-            func(*std::get<0>(t), std::get<1>(t), std::get<2>(t));
+            auto r = std::make_tuple(std::ref(*std::get<0>(t)), std::get<1>(t), std::get<2>(t), std::get<3>(t), std::get<4>(t));
+            func(r);
         }
     }
 
-    void lookupIPv6(std::function<void(Inet6Address &, std::uint32_t, unsigned int)> func) const
+    void lookupIPv6(IPv6LookupCallback func) const
     {
         for (auto &t : m_ipv6Addresses)
         {
-            func(*std::get<0>(t), std::get<1>(t), std::get<2>(t));
+            auto r = std::make_tuple(std::ref(*std::get<0>(t)), std::get<1>(t), std::get<2>(t), std::get<3>(t), std::get<4>(t));
+            func(r);
         }
     }
 
     void addIPv4(const char* address, std::uint32_t prefixLength, unsigned int flags)
     {
         m_ipv4Addresses.push_back(std::make_tuple(
-            std::unique_ptr<Inet4Address>{new Inet4Address{address, 0}}, prefixLength, flags
+            std::unique_ptr<Inet4Address>{new Inet4Address{address, 0}}, nullptr, 0, prefixLength, flags
         ));
     }
 
     void addIPv6(const char* address, std::uint32_t prefixLength, unsigned int flags)
     {
         m_ipv6Addresses.push_back(std::make_tuple(
-            std::unique_ptr<Inet6Address>{new Inet6Address{address, 0}}, prefixLength, flags
+            std::unique_ptr<Inet6Address>{new Inet6Address{address, 0}}, nullptr, 0, prefixLength, flags
         ));
     }
 
 private:
-    std::vector<std::tuple<std::unique_ptr<Inet4Address>, std::uint32_t, unsigned int>> m_ipv4Addresses;
-    std::vector<std::tuple<std::unique_ptr<Inet6Address>, std::uint32_t, unsigned int>> m_ipv6Addresses;
+    std::vector<std::tuple<std::unique_ptr<Inet4Address>, const char*, unsigned int, std::uint32_t, unsigned int>> m_ipv4Addresses;
+    std::vector<std::tuple<std::unique_ptr<Inet6Address>, const char*, unsigned int, std::uint32_t, unsigned int>> m_ipv6Addresses;
 };
 
 TEST_F(InterfaceSearchAddressTest, searchForAddressIPv4)
@@ -145,7 +147,7 @@ TEST_F(InterfaceSearchAddressTest, searchForAddressIPv4)
     auto a = InterfaceSearchAddress::parse("127.0.0.0/16");
     auto b = a->findLocalAddress(lookup);
 
-    EXPECT_EQ(*Inet4Address::fromIPv4("127.0.0.1", 0), *b);
+    EXPECT_EQ(*Inet4Address::fromIPv4("127.0.0.1", 0), b->address());
 }
 
 TEST_F(InterfaceSearchAddressTest, searchForAddressIPv6)
@@ -160,5 +162,5 @@ TEST_F(InterfaceSearchAddressTest, searchForAddressIPv6)
     auto a = InterfaceSearchAddress::parse("[fe80:0:0:0:0:0:0:0]/16");
     auto b = a->findLocalAddress(lookup);
 
-    EXPECT_EQ(*Inet6Address::fromIPv6("fe80:0001:abcd:0:0:0:0:1", 0), *b);
+    EXPECT_EQ(*Inet6Address::fromIPv6("fe80:0001:abcd:0:0:0:0:1", 0), b->address());
 }

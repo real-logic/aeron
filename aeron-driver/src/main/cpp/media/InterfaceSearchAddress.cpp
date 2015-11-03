@@ -76,14 +76,19 @@ bool InterfaceSearchAddress::matches(const InetAddress &candidate) const
         (m_inetAddress->domain() == candidate.domain() && m_inetAddress->matches(candidate, m_subnetPrefix));
 }
 
-static std::unique_ptr<InetAddress> findIPv4Address(const InterfaceSearchAddress& search, const InterfaceLookup& lookup)
+static std::unique_ptr<NetworkInterface> findIPv4Address(const InterfaceSearchAddress& search, const InterfaceLookup& lookup)
 {
     in_addr addr;
     bool found = false;
     std::uint32_t longestSubnetPrefix = 0;
+    const char* name;
+    unsigned int ifIndex;
 
-    auto f = [&] (Inet4Address& address, std::uint32_t subnetPrefix, unsigned int flags)
+    auto f = [&](IPv4Result &result)
     {
+        Inet4Address &address = std::get<0>(result);
+        unsigned int flags = std::get<4>(result);
+
         if (search.matches(address))
         {
             if (flags & IFF_LOOPBACK && !found)
@@ -93,9 +98,11 @@ static std::unique_ptr<InetAddress> findIPv4Address(const InterfaceSearchAddress
             }
             else if (flags & IFF_MULTICAST)
             {
-                if (subnetPrefix > longestSubnetPrefix)
+                if (std::get<3>(result) > longestSubnetPrefix)
                 {
                     addr = address.addr();
+                    name = std::get<1>(result);
+                    ifIndex = std::get<2>(result);
                 }
 
                 found = true;
@@ -105,17 +112,29 @@ static std::unique_ptr<InetAddress> findIPv4Address(const InterfaceSearchAddress
 
     lookup.lookupIPv4(f);
 
-    return (found) ? std::unique_ptr<InetAddress>{new Inet4Address{addr, 0}} : nullptr;
+    if (!found)
+    {
+        return nullptr;
+    }
+
+    return std::unique_ptr<NetworkInterface>{
+        new NetworkInterface{std::unique_ptr<InetAddress>{new Inet4Address{addr, 0}}, name, ifIndex}
+    };
 }
 
-static std::unique_ptr<InetAddress> findIPv6Address(const InterfaceSearchAddress& search, const InterfaceLookup& lookup)
+static std::unique_ptr<NetworkInterface> findIPv6Address(const InterfaceSearchAddress& search, const InterfaceLookup& lookup)
 {
     in6_addr addr;
     bool found = false;
     std::uint32_t longestSubnetPrefix = 0;
+    const char* name;
+    unsigned int ifIndex;
 
-    auto f = [&] (Inet6Address address, std::uint32_t subnetPrefix, unsigned int flags)
+    auto f = [&] (IPv6Result& result)
     {
+        Inet6Address& address = std::get<0>(result);
+        unsigned int flags = std::get<4>(result);
+
         if (search.matches(address))
         {
             if (flags & IFF_LOOPBACK && !found)
@@ -125,9 +144,11 @@ static std::unique_ptr<InetAddress> findIPv6Address(const InterfaceSearchAddress
             }
             else if (flags & IFF_MULTICAST)
             {
-                if (subnetPrefix > longestSubnetPrefix)
+                if (std::get<3>(result) > longestSubnetPrefix)
                 {
                     addr = address.addr();
+                    name = std::get<1>(result);
+                    ifIndex = std::get<2>(result);
                 }
 
                 found = true;
@@ -137,10 +158,17 @@ static std::unique_ptr<InetAddress> findIPv6Address(const InterfaceSearchAddress
 
     lookup.lookupIPv6(f);
 
-    return (found) ? std::unique_ptr<InetAddress>{new Inet6Address{addr, 0}} : nullptr;
+    if (!found)
+    {
+        return nullptr;
+    }
+
+    return std::unique_ptr<NetworkInterface>{
+        new NetworkInterface{std::unique_ptr<InetAddress>{new Inet6Address{addr, 0}}, name, ifIndex}
+    };
 }
 
-std::unique_ptr<InetAddress> InterfaceSearchAddress::findLocalAddress(InterfaceLookup& lookup) const
+std::unique_ptr<NetworkInterface> InterfaceSearchAddress::findLocalAddress(InterfaceLookup& lookup) const
 {
     if (m_inetAddress->domain() == PF_INET)
     {

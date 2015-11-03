@@ -27,7 +27,7 @@ static const char* INTERFACE_KEY = "interface";
 static const char* LOCAL_KEY = "local";
 static const char* REMOTE_KEY = "remote";
 
-static bool isMulticast(const AeronUri* uri)
+static bool isMulticastUri(const AeronUri* uri)
 {
     return uri->hasParam("group");
 }
@@ -56,7 +56,7 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, I
 
     validateUri(aeronUri);
 
-    if (isMulticast(aeronUri))
+    if (isMulticastUri(aeronUri))
     {
         auto dataAddress = InetAddress::parse(aeronUri->param(GROUP_KEY));
 
@@ -71,21 +71,19 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, I
         auto interfaceSearchAddress = InterfaceSearchAddress::parse(interfaceAddressString);
         auto localAddress = interfaceSearchAddress->findLocalAddress(lookup);
 
-        return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress, localAddress}};
+        return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress, localAddress, true}};
     }
     else
     {
         auto remoteAddress = InetAddress::parse(aeronUri->param(REMOTE_KEY));
-        auto localAddress = (aeronUri->hasParam(LOCAL_KEY))
+        std::unique_ptr<InetAddress> localAddress = (aeronUri->hasParam(LOCAL_KEY))
             ? InetAddress::parse(aeronUri->param(LOCAL_KEY))
             : InetAddress::any(familyHint);
 
         std::unique_ptr<InetAddress> empty{nullptr};
-
-        return std::unique_ptr<UdpChannel>(new UdpChannel{remoteAddress, empty, localAddress});
+        auto localInterface = std::unique_ptr<NetworkInterface>{new NetworkInterface{std::move(localAddress), nullptr, 0}};
+        return std::unique_ptr<UdpChannel>(new UdpChannel{remoteAddress, empty, localInterface, false});
     }
-
-    return std::unique_ptr<UdpChannel>(nullptr);
 }
 
 const char* UdpChannel::canonicalForm()

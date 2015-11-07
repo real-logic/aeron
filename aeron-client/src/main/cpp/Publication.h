@@ -151,12 +151,11 @@ public:
         TermAppender* appender = m_appenders[activeIndex].get();
         const std::int32_t currentTail = appender->rawTailVolatile();
         const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
-        const std::int32_t capacity = appender->termBuffer().capacity();
 
         const std::int64_t limit = m_publicationLimit.getVolatile();
         std::int64_t newPosition = limit > 0 ? PUBLICATION_BACK_PRESSURE : PUBLICATION_NOT_CONNECTED;
 
-        if (currentTail < capacity && position < limit)
+        if (position < limit)
         {
             const std::int32_t nextOffset = appender->append(buffer, offset, length);
             newPosition = Publication::newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
@@ -215,12 +214,11 @@ public:
         TermAppender* appender = m_appenders[activeIndex].get();
         const std::int32_t currentTail = appender->rawTailVolatile();
         const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
-        const std::int32_t capacity = appender->termBuffer().capacity();
 
         const std::int64_t limit = m_publicationLimit.getVolatile();
         std::int64_t newPosition = limit > 0 ? PUBLICATION_BACK_PRESSURE : PUBLICATION_NOT_CONNECTED;
 
-        if (currentTail < capacity && position < limit)
+        if (position < limit)
         {
             const std::int32_t nextOffset = appender->claim(length, bufferClaim);
             newPosition = Publication::newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);

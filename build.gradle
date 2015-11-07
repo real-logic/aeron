@@ -134,7 +134,7 @@ subprojects {
                     name = 'Aeron'
                     packaging = 'pom'
                     // optionally artifactId can be defined here
-                    description = 'Efficient reliable unicast and multicast transport protocol.'
+                    description = 'Efficient reliable UDP unicast, multicast, and IPC transport protocol.'
                     url = 'https://github.com/real-logic/Aeron'
 
                     scm {

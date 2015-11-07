@@ -91,7 +91,14 @@ public:
         m_buffer.putInt32Ordered(0, m_buffer.capacity());
     }
 
-    // TODO: abort()
+    /**
+     * Abort a claim of the message space to the log buffer so that log can progress ignoring this claim.
+     */
+    inline void abort()
+    {
+        m_buffer.putUInt16(DataFrameHeader::TYPE_FIELD_OFFSET, DataFrameHeader::HDR_TYPE_PAD);
+        m_buffer.putInt32Ordered(0, m_buffer.capacity());
+    }
 
 private:
     AtomicBuffer m_buffer;

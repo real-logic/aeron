@@ -205,7 +205,7 @@ int main(int argc, char **argv)
         }
 
         hdr_histogram* histogram;
-        hdr_init(1, 10 * 1000 * 1000 * 1000, 3, &histogram);
+        hdr_init(1, 10 * 1000 * 1000 * 1000L, 3, &histogram);
 
         do
         {

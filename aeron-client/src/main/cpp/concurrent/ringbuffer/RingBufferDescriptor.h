@@ -28,13 +28,14 @@ using namespace aeron::util::BitUtil;
 
 namespace RingBufferDescriptor {
 
-    static const util::index_t TAIL_COUNTER_OFFSET = CACHE_LINE_LENGTH * 2;
-    static const util::index_t HEAD_COUNTER_OFFSET = CACHE_LINE_LENGTH * 4;
-    static const util::index_t CORRELATION_COUNTER_OFFSET = CACHE_LINE_LENGTH * 6;
-    static const util::index_t CONSUMER_HEARTBEAT_OFFSET = CACHE_LINE_LENGTH * 8;
+    static const util::index_t TAIL_POSITION_OFFSET = CACHE_LINE_LENGTH * 2;
+    static const util::index_t HEAD_CACHE_POSITION_OFFSET = CACHE_LINE_LENGTH * 4;
+    static const util::index_t HEAD_POSITION_OFFSET = CACHE_LINE_LENGTH * 6;
+    static const util::index_t CORRELATION_COUNTER_OFFSET = CACHE_LINE_LENGTH * 8;
+    static const util::index_t CONSUMER_HEARTBEAT_OFFSET = CACHE_LINE_LENGTH * 10;
 
     /** Total length of the trailer in bytes. */
-    static const util::index_t TRAILER_LENGTH = CACHE_LINE_LENGTH * 10;
+    static const util::index_t TRAILER_LENGTH = CACHE_LINE_LENGTH * 12;
 
     inline static void checkCapacity(util::index_t capacity)
     {

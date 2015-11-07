@@ -145,6 +145,15 @@ public:
 
     virtual ~Image() = default;
 
+    // TODO:
+    // termBufferLength
+    // - logic for back ptr to Subscription
+    // sourceIdentity
+    // - logic for ensureOpen
+    // isClosed()
+    // position()
+    // filepoll semantics (typedef fd or HANDLE per platform)
+
     /**
      * The sessionId for the steam of messages.
      *

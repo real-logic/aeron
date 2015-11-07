@@ -91,6 +91,8 @@ public:
         m_buffer.putInt32Ordered(0, m_buffer.capacity());
     }
 
+    // TODO: abort()
+
 private:
     AtomicBuffer m_buffer;
 };

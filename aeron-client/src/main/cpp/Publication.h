@@ -74,6 +74,12 @@ public:
         return m_channel;
     }
 
+    // TODO:
+    // termBufferLength
+    // hasBeenConnected
+    // - ensureOpen logic
+    // isClosed()
+
     /**
      * Stream identity for scoping within the channel media address.
      *

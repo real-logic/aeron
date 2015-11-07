@@ -45,8 +45,8 @@ public:
         m_mask = m_capacity - 1;
         m_maxMsgLength = m_capacity / 8;
 
-        m_tailCounterIndex = m_capacity + RingBufferDescriptor::TAIL_COUNTER_OFFSET;
-        m_headCounterIndex = m_capacity + RingBufferDescriptor::HEAD_COUNTER_OFFSET;
+        m_tailCounterIndex = m_capacity + RingBufferDescriptor::TAIL_POSITION_OFFSET;
+        m_headCounterIndex = m_capacity + RingBufferDescriptor::HEAD_POSITION_OFFSET;
         m_correlationIdCounterIndex = m_capacity + RingBufferDescriptor::CORRELATION_COUNTER_OFFSET;
         m_consumerHeartbeatIndex = m_capacity + RingBufferDescriptor::CONSUMER_HEARTBEAT_OFFSET;
     }

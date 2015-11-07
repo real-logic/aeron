@@ -334,6 +334,7 @@ class ClientConductor implements Agent, DriverListener
         if (now > (timeOfLastDoWork + interServiceTimeoutNs))
         {
             activePublications.close();
+            activeSubscriptions.close();
 
             throw new ConductorServiceTimeoutException(
                 String.format("Timeout between service calls over %dns", interServiceTimeoutNs));

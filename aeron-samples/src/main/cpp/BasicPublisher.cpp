@@ -140,7 +140,7 @@ int main(int argc, char** argv)
                 {
                     std::cout << " not connected yet." << std::endl;
                 }
-                else if (PUBLICATION_BACK_PRESSURE == result)
+                else if (PUBLICATION_BACK_PRESSURED == result)
                 {
                     std::cout << " back pressured." << std::endl;
                 }

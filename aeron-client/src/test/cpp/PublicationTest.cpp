@@ -120,7 +120,7 @@ TEST_F(PublicationTest, shouldFailToOfferWhenAppendFails)
     m_publicationLimit.set(LONG_MAX);
 
     EXPECT_EQ(m_publication->position(), initialPosition);
-    EXPECT_EQ(m_publication->offer(m_srcBuffer), PUBLICATION_BACK_PRESSURE);
+    EXPECT_EQ(m_publication->offer(m_srcBuffer), PUBLICATION_BACK_PRESSURED);
 }
 
 TEST_F(PublicationTest, shouldRotateWhenAppendTrips)
@@ -131,7 +131,7 @@ TEST_F(PublicationTest, shouldRotateWhenAppendTrips)
     m_publicationLimit.set(LONG_MAX);
 
     EXPECT_EQ(m_publication->position(), initialPosition);
-    EXPECT_EQ(m_publication->offer(m_srcBuffer), PUBLICATION_BACK_PRESSURE);
+    EXPECT_EQ(m_publication->offer(m_srcBuffer), PUBLICATION_BACK_PRESSURED);
     EXPECT_GT(m_publication->offer(m_srcBuffer), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
     EXPECT_GT(m_publication->position(), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
 
@@ -157,7 +157,7 @@ TEST_F(PublicationTest, shouldRotateWhenClaimTrips)
 
     BufferClaim bufferClaim;
     EXPECT_EQ(m_publication->position(), initialPosition);
-    EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), PUBLICATION_BACK_PRESSURE);
+    EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), PUBLICATION_BACK_PRESSURED);
     EXPECT_GT(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
     EXPECT_GT(m_publication->position(), initialPosition + DataFrameHeader::LENGTH + m_srcBuffer.capacity());
 

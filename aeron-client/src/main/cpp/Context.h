@@ -153,6 +153,7 @@ inline void defaultOnUnavailableImageHandler(Image &, const std::string &, std::
 class Context
 {
     friend class Aeron;
+
 public:
     using this_t = Context;
 
@@ -239,7 +240,7 @@ public:
      * @param handler called when event occurs
      * @return reference to this Context instance
      */
-    inline this_t&availableImageHandler(const on_available_image_t &handler)
+    inline this_t& availableImageHandler(const on_available_image_t &handler)
     {
         m_onAvailableImageHandler = handler;
         return *this;
@@ -251,7 +252,7 @@ public:
      * @param handler called when event occurs
      * @return reference to this Context instance
      */
-    inline this_t&unavailableImageHandler(const on_unavailable_image_t &handler)
+    inline this_t& unavailableImageHandler(const on_unavailable_image_t &handler)
     {
         m_onUnavailableImageHandler = handler;
         return *this;

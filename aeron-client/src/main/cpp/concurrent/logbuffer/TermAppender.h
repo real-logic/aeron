@@ -35,10 +35,12 @@ public:
     TermAppender(
         AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer, AtomicBuffer& defaultHdr, util::index_t maxFrameLength) :
         LogBufferPartition(termBuffer, metaDataBuffer),
-        m_defaultHdr(defaultHdr.buffer()),
+        m_defaultHdr(defaultHdr),
         m_maxMessageLength(FrameDescriptor::computeMaxMessageLength(termBuffer.capacity())),
         m_maxFrameLength(maxFrameLength),
-        m_maxPayloadLength(m_maxFrameLength - DataFrameHeader::LENGTH)
+        m_maxPayloadLength(m_maxFrameLength - DataFrameHeader::LENGTH),
+        m_defaultHdrSessionId(defaultHdr.getInt32(DataFrameHeader::SESSION_ID_FIELD_OFFSET)),
+        m_defaultHdrStreamId(defaultHdr.getInt32(DataFrameHeader::STREAM_ID_FIELD_OFFSET))
     {
         FrameDescriptor::checkHeaderLength(defaultHdr.capacity());
         FrameDescriptor::checkMaxFrameLength(maxFrameLength);
@@ -94,15 +96,17 @@ public:
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
         const util::index_t frameOffset = metaDataBuffer().getAndAddInt32(
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedLength);
-        AtomicBuffer&buffer = termBuffer();
+        AtomicBuffer& buffer = termBuffer();
+        const std::int32_t capacity = buffer.capacity();
 
-        const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, alignedLength,
-            buffer.capacity());
-        if (resultingOffset > 0)
+        std::int32_t resultingOffset = frameOffset + alignedLength;
+        if (resultingOffset > (capacity - DataFrameHeader::LENGTH))
         {
-            applyDefaultHeader(buffer, frameOffset, frameLength, m_defaultHdr);
-            FrameDescriptor::frameTermOffset(buffer, frameOffset, frameOffset);
-
+            resultingOffset = handleEndOfLogCondition(buffer, frameOffset, capacity);
+        }
+        else
+        {
+            applyDefaultHeader(buffer, frameOffset, frameLength);
             bufferClaim.wrap(buffer, frameOffset, frameLength);
         }
 
@@ -110,10 +114,12 @@ public:
     }
 
 private:
-    std::uint8_t *m_defaultHdr;
+    AtomicBuffer m_defaultHdr;
     const util::index_t m_maxMessageLength;
     const util::index_t m_maxFrameLength;
     const util::index_t m_maxPayloadLength;
+    const std::int32_t m_defaultHdrSessionId;
+    const std::int32_t m_defaultHdrStreamId;
 
     std::int32_t appendUnfragmentedMessage(AtomicBuffer& srcBuffer, util::index_t srcOffset, util::index_t length)
     {
@@ -122,15 +128,17 @@ private:
         const util::index_t frameOffset = metaDataBuffer().getAndAddInt32(
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, alignedLength);
         AtomicBuffer&buffer = termBuffer();
+        const std::int32_t capacity = buffer.capacity();
 
-        const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, alignedLength,
-            buffer.capacity());
-        if (resultingOffset > 0)
+        std::int32_t resultingOffset = frameOffset + alignedLength;
+        if (resultingOffset > (capacity - DataFrameHeader::LENGTH))
         {
-            applyDefaultHeader(buffer, frameOffset, frameLength, m_defaultHdr);
+            resultingOffset = handleEndOfLogCondition(buffer, frameOffset, capacity);
+        }
+        else
+        {
+            applyDefaultHeader(buffer, frameOffset, frameLength);
             buffer.putBytes(frameOffset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
-
-            FrameDescriptor::frameTermOffset(buffer, frameOffset, frameOffset);
             FrameDescriptor::frameLengthOrdered(buffer, frameOffset, frameLength);
         }
 
@@ -147,10 +155,14 @@ private:
         util::index_t frameOffset = metaDataBuffer().getAndAddInt32(
             LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredLength);
         AtomicBuffer& buffer = termBuffer();
+        const std::int32_t capacity = buffer.capacity();
 
-        const std::int32_t resultingOffset = computeResultingOffset(buffer, frameOffset, requiredLength,
-            buffer.capacity());
-        if (resultingOffset > 0)
+        std::int32_t resultingOffset = frameOffset + requiredLength;
+        if (resultingOffset > (capacity - DataFrameHeader::LENGTH))
+        {
+            resultingOffset = handleEndOfLogCondition(buffer, frameOffset, capacity);
+        }
+        else
         {
             std::uint8_t flags = FrameDescriptor::BEGIN_FRAG;
             util::index_t remaining = length;
@@ -161,7 +173,7 @@ private:
                 const util::index_t frameLength = bytesToWrite + DataFrameHeader::LENGTH;
                 const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
 
-                applyDefaultHeader(buffer, frameOffset, frameLength, m_defaultHdr);
+                applyDefaultHeader(buffer, frameOffset, frameLength);
                 buffer.putBytes(
                     frameOffset + DataFrameHeader::LENGTH,
                     srcBuffer,
@@ -174,7 +186,6 @@ private:
                 }
 
                 FrameDescriptor::frameFlags(buffer, frameOffset, flags);
-                FrameDescriptor::frameTermOffset(buffer, frameOffset, frameOffset);
                 FrameDescriptor::frameLengthOrdered(buffer, frameOffset, frameLength);
 
                 flags = 0;
@@ -187,40 +198,39 @@ private:
         return resultingOffset;
     }
 
-    std::int32_t computeResultingOffset(AtomicBuffer& termBuffer, util::index_t frameOffset, util::index_t length, util::index_t capacity)
+    std::int32_t handleEndOfLogCondition(AtomicBuffer& termBuffer, util::index_t frameOffset, util::index_t capacity)
     {
-        std::int32_t resultingOffset = frameOffset + length;
-        if (resultingOffset > (capacity - DataFrameHeader::LENGTH))
+        std::int32_t resultingOffset = TERM_APPENDER_FAILED;
+
+        if (frameOffset <= (capacity - DataFrameHeader::LENGTH))
         {
-            resultingOffset = TERM_APPENDER_FAILED;
+            const std::int32_t paddingLength = capacity - frameOffset;
+            applyDefaultHeader(termBuffer, frameOffset, paddingLength);
+            FrameDescriptor::frameType(termBuffer, frameOffset, FrameDescriptor::PADDING_FRAME_TYPE);
+            FrameDescriptor::frameLengthOrdered(termBuffer, frameOffset, paddingLength);
 
-            if (frameOffset <= (capacity - DataFrameHeader::LENGTH))
-            {
-                util::index_t frameLength = capacity - frameOffset;
-                applyDefaultHeader(termBuffer, frameOffset, frameLength, m_defaultHdr);
-
-                FrameDescriptor::frameType(termBuffer, frameOffset, FrameDescriptor::PADDING_FRAME_TYPE);
-                FrameDescriptor::frameTermOffset(termBuffer, frameOffset, frameOffset);
-                FrameDescriptor::frameLengthOrdered(termBuffer, frameOffset, frameLength);
-
-                resultingOffset = TERM_APPENDER_TRIPPED;
-            }
+            resultingOffset = TERM_APPENDER_TRIPPED;
         }
 
         return resultingOffset;
     }
 
-    static void applyDefaultHeader(
-        AtomicBuffer& buffer, util::index_t frameOffset, util::index_t frameLength, std::uint8_t *defaultHeaderBuffer)
+    void applyDefaultHeader(AtomicBuffer&termBuffer, util::index_t frameOffset, util::index_t frameLength)
     {
-        buffer.putInt32(frameOffset, -frameLength);
-        // store fence
-        atomic::thread_fence();
+        termBuffer.putInt32Ordered(frameOffset, -frameLength);
 
-        memcpy(
-            buffer.buffer() + sizeof(std::int32_t) + frameOffset,
-            defaultHeaderBuffer + sizeof(std::int32_t),
-            DataFrameHeader::LENGTH - sizeof(std::int32_t));
+        const std::int32_t termId = m_defaultHdr.getInt32(DataFrameHeader::TERM_ID_FIELD_OFFSET);
+
+        struct DataFrameHeader::DataFrameHeaderDefn* hdr =
+            (struct DataFrameHeader::DataFrameHeaderDefn *)(termBuffer.buffer() + frameOffset);
+
+        hdr->version = DataFrameHeader::CURRENT_VERSION;
+        hdr->flags = FrameDescriptor::BEGIN_FRAG | FrameDescriptor::END_FRAG;
+        hdr->type = DataFrameHeader::HDR_TYPE_DATA;
+        hdr->termOffset = frameOffset;
+        hdr->sessionId = m_defaultHdrSessionId;
+        hdr->streamId = m_defaultHdrStreamId;
+        hdr->termId = termId;
     }
 };
 

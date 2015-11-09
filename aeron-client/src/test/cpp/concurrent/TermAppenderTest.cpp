@@ -192,13 +192,10 @@ TEST_F(TermAppenderTest, shouldAppendFrameToEmptyLog)
         .InSequence(sequence)
         .WillOnce(testing::Return(0));
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tail), -frameLength))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), -frameLength))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putBytes(DataFrameHeader::LENGTH, testing::Ref(m_src), 0, msgLength))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
@@ -222,13 +219,10 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
         .WillOnce(testing::Return(0))
         .WillOnce(testing::Return(alignedFrameLength));
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tail), -frameLength))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), -frameLength))
         .Times(1)
         .InSequence(sequence1);
     EXPECT_CALL(m_log, putBytes(tail + DataFrameHeader::LENGTH, testing::Ref(m_src), 0, msgLength))
-        .Times(1)
-        .InSequence(sequence1);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
         .Times(1)
         .InSequence(sequence1);
     EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
@@ -239,13 +233,10 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
 
     tail = alignedFrameLength;
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tail), -frameLength))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), -frameLength))
         .Times(1)
         .InSequence(sequence2);
     EXPECT_CALL(m_log, putBytes(tail + DataFrameHeader::LENGTH, testing::Ref(m_src), 0, msgLength))
-        .Times(1)
-        .InSequence(sequence2);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
         .Times(1)
         .InSequence(sequence2);
     EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
@@ -267,13 +258,10 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tailValue), -frameLength))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), -frameLength))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putUInt16(FrameDescriptor::typeOffset(tailValue), FrameDescriptor::PADDING_FRAME_TYPE))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tailValue), tailValue))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), frameLength))
@@ -295,13 +283,10 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
         .Times(1)
         .WillOnce(testing::Return(tailValue));
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tailValue), -frameLength))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), -frameLength))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putUInt16(FrameDescriptor::typeOffset(tailValue), FrameDescriptor::PADDING_FRAME_TYPE))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tailValue), tailValue))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), frameLength))
@@ -324,7 +309,7 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tail), -m_logAppender.maxFrameLength()))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), -m_logAppender.maxFrameLength()))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putBytes(tail + DataFrameHeader::LENGTH, testing::Ref(m_src), 0, m_logAppender.maxPayloadLength()))
@@ -333,25 +318,19 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
     EXPECT_CALL(m_log, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::BEGIN_FRAG))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
-        .Times(1)
-        .InSequence(sequence);
     EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), m_logAppender.maxFrameLength()))
         .Times(1)
         .InSequence(sequence);
 
     tail = m_logAppender.maxFrameLength();
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tail), -frameLength))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), -frameLength))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putBytes(tail + DataFrameHeader::LENGTH, testing::Ref(m_src), m_logAppender.maxPayloadLength(), 1))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::END_FRAG))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
         .Times(1)
         .InSequence(sequence);
     EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
@@ -375,10 +354,7 @@ TEST_F(TermAppenderTest, shouldClaimRegionForZeroCopyEncoding)
         .InSequence(sequence)
         .WillOnce(testing::Return(tail));
 
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::lengthOffset(tail), -frameLength))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_log, putInt32(FrameDescriptor::termOffsetOffset(tail), tail))
+    EXPECT_CALL(m_log, putInt32Ordered(FrameDescriptor::lengthOffset(tail), -frameLength))
         .Times(1)
         .InSequence(sequence);
 

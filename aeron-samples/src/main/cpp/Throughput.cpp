@@ -250,6 +250,7 @@ int main(int argc, char **argv)
             printingActive = true;
 
             long backPressureCount = 0;
+            BufferClaim bufferClaim;
 
             if (nullptr == rateReporterThread)
             {
@@ -259,13 +260,15 @@ int main(int argc, char **argv)
             for (long i = 0; i < settings.numberOfMessages && running; i++)
             {
                 const int length = lengthGenerator();
-                srcBuffer.putInt64(0, i);
 
-                while (publication->offer(srcBuffer, 0, length) < 0L)
+                while (publication->tryClaim(length, bufferClaim) < 0L)
                 {
                     backPressureCount++;
                     offerIdleStrategy.idle(0);
                 }
+
+                bufferClaim.buffer().putInt64(bufferClaim.offset(), i);
+                bufferClaim.commit();
             }
 
             if (nullptr == rateReporterThread)

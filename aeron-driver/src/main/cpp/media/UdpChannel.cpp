@@ -68,7 +68,7 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, I
         std::string wildcardAddress{"0.0.0.0/0"};
         auto controlAddress = dataAddress->nextAddress();
         auto interfaceAddressString = aeronUri->param(INTERFACE_KEY, wildcardAddress);
-        auto interfaceSearchAddress = InterfaceSearchAddress::parse(interfaceAddressString);
+        auto interfaceSearchAddress = InterfaceSearchAddress::parse(interfaceAddressString, familyHint);
         auto localAddress = interfaceSearchAddress->findLocalAddress(lookup);
 
         return std::unique_ptr<UdpChannel>{new UdpChannel{dataAddress, controlAddress, localAddress, true}};

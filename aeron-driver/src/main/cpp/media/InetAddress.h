@@ -161,6 +161,15 @@ public:
         m_socketAddress.sin6_family = AF_INET6;
         m_socketAddress.sin6_addr = address;
         m_socketAddress.sin6_port = htons(port);
+        m_socketAddress.sin6_scope_id = 0;
+    }
+
+    Inet6Address(in6_addr address, uint16_t port, uint32_t scopeId)
+    {
+        m_socketAddress.sin6_family = AF_INET6;
+        m_socketAddress.sin6_addr = address;
+        m_socketAddress.sin6_port = htons(port);
+        m_socketAddress.sin6_scope_id = scopeId;
     }
 
     Inet6Address(const char* address, uint16_t port)
@@ -172,6 +181,7 @@ public:
 
         m_socketAddress.sin6_family = AF_INET6;
         m_socketAddress.sin6_port = htons(port);
+        m_socketAddress.sin6_scope_id = 0;
     }
 
     sockaddr* address() const
@@ -181,7 +191,7 @@ public:
 
     socklen_t length() const
     {
-        return sizeof(sockaddr_in);
+        return sizeof(sockaddr_in6);
     }
 
     int domain() const
@@ -212,6 +222,11 @@ public:
     socklen_t addrSize() const
     {
         return sizeof(struct in6_addr);
+    }
+
+    void scope(uint32_t scope)
+    {
+        m_socketAddress.sin6_scope_id = scope;
     }
 
     bool isEven() const;

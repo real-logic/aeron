@@ -18,6 +18,7 @@
 #define INCLUDED_AERON_DRIVER_UDPCHANNEL_H_
 
 #include <memory>
+#include <iostream>
 #include "util/Exceptions.h"
 #include "InetAddress.h"
 #include "InterfaceLookup.h"
@@ -88,6 +89,16 @@ private:
     std::unique_ptr<NetworkInterface> m_localData;
     bool m_isMulticast;
 };
+
+
+inline std::ostream& operator<<(std::ostream& os, const UdpChannel& dt)
+{
+    os << "LocalControl=" << dt.localControl()
+        << ",LocalData=" << dt.localData()
+        << ",RemoteControl=" << dt.remoteControl()
+        << ",RemoteData=" << dt.remoteData() << std::endl;
+    return os;
+}
 
 }}}
 

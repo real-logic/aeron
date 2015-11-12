@@ -26,25 +26,37 @@ class UdpChannelTransport
 {
 public:
     UdpChannelTransport(
-        std::unique_ptr<UdpChannel> channel,
+        std::unique_ptr<UdpChannel>& channel,
         InetAddress* endPointAddress,
         InetAddress* bindAddress,
         InetAddress* connectAddress)
         : m_channel(std::move(channel)),
           m_endPointAddress(endPointAddress),
           m_bindAddress(bindAddress),
-          m_connectAddress(connectAddress)
+          m_connectAddress(connectAddress),
+          m_socketFd(0)
     {
     }
 
+    ~UdpChannelTransport()
+    {
+        if (0 != m_socketFd)
+        {
+            close(m_socketFd);
+        }
+    }
+
     void openDatagramChannel();
+    void send(const char* data, const int32_t len);
+    std::int32_t recv(char* data, const int32_t len);
+    void setTimeout(timeval timeout);
 
 private:
     std::unique_ptr <UdpChannel> m_channel;
     InetAddress* m_endPointAddress;
     InetAddress* m_bindAddress;
     InetAddress* m_connectAddress;
-
+    int m_socketFd;
 };
 
 }}}

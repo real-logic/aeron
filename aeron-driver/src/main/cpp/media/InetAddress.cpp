@@ -200,7 +200,7 @@ void Inet6Address::output(std::ostream &os) const
 {
     char addr[INET6_ADDRSTRLEN];
     inet_ntop(domain(), &m_socketAddress.sin6_addr, addr, INET6_ADDRSTRLEN);
-    os << addr;
+    os << "[" << addr << "]:" << port() << "%" << m_socketAddress.sin6_scope_id;
 }
 
 std::unique_ptr<InetAddress> Inet6Address::nextAddress() const

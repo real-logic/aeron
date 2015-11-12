@@ -140,6 +140,9 @@ static std::unique_ptr<NetworkInterface> findIPv6Address(const InterfaceSearchAd
             if (flags & IFF_LOOPBACK && !found)
             {
                 addr = address.addr();
+                name = std::get<1>(result);
+                ifIndex = std::get<2>(result);
+
                 found = true;
             }
             else if (flags & IFF_MULTICAST)
@@ -164,7 +167,7 @@ static std::unique_ptr<NetworkInterface> findIPv6Address(const InterfaceSearchAd
     }
 
     return std::unique_ptr<NetworkInterface>{
-        new NetworkInterface{std::unique_ptr<InetAddress>{new Inet6Address{addr, 0}}, name, ifIndex}
+        new NetworkInterface{std::unique_ptr<InetAddress>{new Inet6Address{addr, 0, ifIndex}}, name, ifIndex}
     };
 }
 

@@ -17,6 +17,7 @@
 
 #include <sys/errno.h>
 #include <util/StringUtil.h>
+#include <iostream>
 #include "UdpChannelTransport.h"
 
 using namespace aeron::driver::media;
@@ -39,9 +40,8 @@ void UdpChannelTransport::openDatagramChannel()
     if (m_channel->isMulticast())
     {
         NetworkInterface& localInterface = m_channel->localInterface();
-        InetAddress &dataAddress = m_channel->localData();
 
-        int socketFd = socket(dataAddress.family(), dataAddress.type(), dataAddress.protocol());
+        int socketFd = socket(m_endPointAddress->family(), m_endPointAddress->type(), m_endPointAddress->protocol());
         if (socketFd < 0)
         {
             throw aeron::util::IOException{
@@ -56,25 +56,55 @@ void UdpChannelTransport::openDatagramChannel()
                 aeron::util::strPrintf("Failed to bind socket: %s", strerror(errno)), SOURCEINFO};
         }
 
-        if (dataAddress.family() == AF_INET)
+        if (m_endPointAddress->family() == AF_INET)
         {
             ip_mreq mreq;
-            memcpy(&mreq.imr_multiaddr.s_addr, dataAddress.addrPtr(), dataAddress.addrSize());
-            memcpy(&mreq.imr_interface.s_addr, localInterface.address().addrPtr(), localInterface.address().addrSize());
+            memcpy(&mreq.imr_multiaddr.s_addr, m_endPointAddress->addrPtr(), m_endPointAddress->addrSize());
+            memcpy(&mreq.imr_interface, localInterface.address().addrPtr(), localInterface.address().addrSize());
 
             setSocketOption(socketFd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
         }
-        else if (dataAddress.family() == AF_INET6)
+        else if (m_endPointAddress->family() == AF_INET6)
         {
             ipv6_mreq mreq6;
-            memcpy(&mreq6.ipv6mr_multiaddr, dataAddress.addrPtr(), dataAddress.addrSize());
+            memcpy(&mreq6.ipv6mr_multiaddr, m_endPointAddress->addrPtr(), m_endPointAddress->addrSize());
             mreq6.ipv6mr_interface = localInterface.index();
+
+            dynamic_cast<Inet6Address*>(m_endPointAddress)->scope(1);
 
             setSocketOption(socketFd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq6, sizeof(mreq6));
         }
+
+        m_socketFd = socketFd;
     }
     else
     {
-
+        throw aeron::util::IOException{"Only multicast supported", SOURCEINFO};
     }
+}
+
+void UdpChannelTransport::send(const char* data, const int32_t len)
+{
+    if (sendto(m_socketFd, data, (size_t) len, 0, m_endPointAddress->address(), m_endPointAddress->length()) < 0)
+    {
+        throw aeron::util::IOException{
+            aeron::util::strPrintf("Failed to send: %s", strerror(errno)), SOURCEINFO};
+    }
+}
+
+std::int32_t UdpChannelTransport::recv(char* data, const int32_t len)
+{
+    socklen_t socklen = m_connectAddress->length();
+    ssize_t size = 0;
+    if ((size = recvfrom(m_socketFd, data, len, 0, m_connectAddress->address(), &socklen)) < 0)
+    {
+        throw aeron::util::IOException{"Failed to recv", SOURCEINFO};
+    }
+
+    return (std::int32_t) size;
+}
+
+void UdpChannelTransport::setTimeout(timeval timeout)
+{
+    setSocketOption(m_socketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
 }

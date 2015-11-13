@@ -167,7 +167,7 @@ public class ReceiverTest
         receiver.onClose();
     }
 
-    @Test
+    @Test(timeout = 10000)
     public void shouldCreateRcvTermAndSendSmOnSetup() throws Exception
     {
         receiverProxy.registerReceiveChannelEndpoint(receiveChannelEndpoint);
@@ -219,7 +219,13 @@ public class ReceiverTest
         image.sendPendingStatusMessage(1000, STATUS_MESSAGE_TIMEOUT);
 
         final ByteBuffer rcvBuffer = ByteBuffer.allocateDirect(256);
-        final InetSocketAddress rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
+        InetSocketAddress rcvAddress;
+
+        do
+        {
+            rcvAddress = (InetSocketAddress)senderChannel.receive(rcvBuffer);
+        }
+        while (null == rcvAddress);
 
         statusHeader.wrap(rcvBuffer);
 

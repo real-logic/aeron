@@ -75,9 +75,9 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, I
     }
     else
     {
-        auto remoteAddress = InetAddress::parse(aeronUri->param(REMOTE_KEY));
+        auto remoteAddress = InetAddress::parse(aeronUri->param(REMOTE_KEY), familyHint);
         std::unique_ptr<InetAddress> localAddress = (aeronUri->hasParam(LOCAL_KEY))
-            ? InetAddress::parse(aeronUri->param(LOCAL_KEY))
+            ? InetAddress::parse(aeronUri->param(LOCAL_KEY), familyHint)
             : InetAddress::any(familyHint);
 
         std::unique_ptr<InetAddress> empty{nullptr};

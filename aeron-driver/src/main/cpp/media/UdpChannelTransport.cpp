@@ -37,24 +37,24 @@ void UdpChannelTransport::openDatagramChannel()
     const uint32_t yes = 1;
     const uint32_t no = 0;
 
+    int socketFd = socket(m_endPointAddress->family(), m_endPointAddress->type(), m_endPointAddress->protocol());
+    if (socketFd < 0)
+    {
+        throw aeron::util::IOException{
+            aeron::util::strPrintf("Failed to open socket: %s", strerror(errno)), SOURCEINFO};
+    }
+
+    if (bind(socketFd, m_bindAddress->address(), m_bindAddress->length()) < 0)
+    {
+        throw aeron::util::IOException{
+            aeron::util::strPrintf("Failed to bind socket: %s", strerror(errno)), SOURCEINFO};
+    }
+
     if (m_channel->isMulticast())
     {
         NetworkInterface& localInterface = m_channel->localInterface();
 
-        int socketFd = socket(m_endPointAddress->family(), m_endPointAddress->type(), m_endPointAddress->protocol());
-        if (socketFd < 0)
-        {
-            throw aeron::util::IOException{
-                aeron::util::strPrintf("Failed to open socket: %s", strerror(errno)), SOURCEINFO};
-        }
-
         setSocketOption(socketFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
-
-        if (bind(socketFd, m_bindAddress->address(), m_bindAddress->length()) < 0)
-        {
-            throw aeron::util::IOException{
-                aeron::util::strPrintf("Failed to bind socket: %s", strerror(errno)), SOURCEINFO};
-        }
 
         if (m_endPointAddress->family() == AF_INET)
         {
@@ -75,12 +75,13 @@ void UdpChannelTransport::openDatagramChannel()
             setSocketOption(socketFd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq6, sizeof(mreq6));
         }
 
-        m_socketFd = socketFd;
     }
     else
     {
-        throw aeron::util::IOException{"Only multicast supported", SOURCEINFO};
+//        throw aeron::util::IOException{"Only multicast supported", SOURCEINFO};
     }
+
+    m_socketFd = socketFd;
 }
 
 void UdpChannelTransport::send(const char* data, const int32_t len)

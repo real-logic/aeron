@@ -26,7 +26,7 @@ class UdpChannelTransportTest : public testing::Test
 {
 };
 
-TEST_F(UdpChannelTransportTest, sendAndReceivePacketIPv4)
+TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv4)
 {
     const char* message = "Hello World!";
     char receiveBuffer[512];
@@ -49,7 +49,7 @@ TEST_F(UdpChannelTransportTest, sendAndReceivePacketIPv4)
     EXPECT_STREQ(message, receiveBuffer);
 }
 
-TEST_F(UdpChannelTransportTest, sendAndReceivePacketIPv6)
+TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv6)
 {
     const char* message = "Hello World!";
     char receiveBuffer[512];
@@ -57,6 +57,52 @@ TEST_F(UdpChannelTransportTest, sendAndReceivePacketIPv6)
     timeval timeout{5, 0};
 
     std::unique_ptr<UdpChannel> channel = UdpChannel::parse("aeron:udp?group=[ff02::3]:9877|interface=localhost", PF_INET6);
+
+    Inet6Address* bindAddress = new Inet6Address{in6addr_any, channel->remoteData().port()};
+    UdpChannelTransport transport{channel, &channel->remoteData(), bindAddress, &channel->localData()};
+
+    transport.openDatagramChannel();
+    transport.setTimeout(timeout);
+
+    transport.send(message, (std::int32_t) strlen(message));
+    std::int32_t received = transport.recv(receiveBuffer, 512);
+
+    EXPECT_GT(received, 0);
+    EXPECT_STREQ(message, receiveBuffer);
+}
+
+TEST_F(UdpChannelTransportTest, sendAndReceiveUnicastIPv4)
+{
+    const char* message = "Hello World!";
+    char receiveBuffer[512];
+    memset(receiveBuffer, 0, sizeof(receiveBuffer));
+    in_addr any {INADDR_ANY};
+    timeval timeout{5, 0};
+
+    std::unique_ptr<UdpChannel> channel = UdpChannel::parse("aeron:udp?local=localhost:9009|remote=localhost:9010");
+
+    Inet4Address* bindAddress = new Inet4Address{any, channel->remoteData().port()};
+    UdpChannelTransport transport{channel, &channel->remoteData(), bindAddress, &channel->localData()};
+
+    transport.openDatagramChannel();
+    transport.setTimeout(timeout);
+
+    transport.send(message, (std::int32_t) strlen(message));
+    std::int32_t received = transport.recv(receiveBuffer, 512);
+
+    EXPECT_GT(received, 0);
+    EXPECT_STREQ(message, receiveBuffer);
+}
+
+TEST_F(UdpChannelTransportTest, sendAndReceiveUnicastIPv6)
+{
+    const char* message = "Hello World!";
+    char receiveBuffer[512];
+    memset(receiveBuffer, 0, sizeof(receiveBuffer));
+    timeval timeout{5, 0};
+
+    std::unique_ptr<UdpChannel> channel = UdpChannel::parse(
+        "aeron:udp?local=localhost:40123|remote=localhost:40124", PF_INET6);
 
     Inet6Address* bindAddress = new Inet6Address{in6addr_any, channel->remoteData().port()};
     UdpChannelTransport transport{channel, &channel->remoteData(), bindAddress, &channel->localData()};

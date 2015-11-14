@@ -68,11 +68,11 @@ public class TermAppender
      */
     public static final int FAILED = -2;
 
+    private final long defaultHeaderSessionId;
+    private final long defaultHeaderVersionFlagsType;
     private final int maxMessageLength;
     private final int maxFrameLength;
     private final int maxPayloadLength;
-    private final int defaultHeaderSessionId;
-    private final int defaultHeaderVersionFlagsType;
     private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer metaDataBuffer;
     private final MutableDirectBuffer defaultHeader;
@@ -106,8 +106,17 @@ public class TermAppender
         this.maxFrameLength = maxFrameLength;
         this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBuffer.capacity());
         this.maxPayloadLength = maxFrameLength - HEADER_LENGTH;
-        this.defaultHeaderVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET);
-        this.defaultHeaderSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET);
+
+        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        {
+            this.defaultHeaderVersionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+            this.defaultHeaderSessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+        }
+        else
+        {
+            this.defaultHeaderVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
+            this.defaultHeaderSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
+        }
     }
 
     /**
@@ -317,19 +326,16 @@ public class TermAppender
         long lengthVersionFlagsType;
         long termOffsetAndSessionId;
 
-        final long longExpandedVersionFlagsType = defaultHeaderVersionFlagsType & 0xFFFF_FFFFL;
-        final long longExpandedSessionId = defaultHeaderSessionId & 0xFFFF_FFFFL;
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
-            lengthVersionFlagsType = (longExpandedVersionFlagsType << 32) | ((-frameLength) & 0xFFFF_FFFFL);
-            termOffsetAndSessionId = (longExpandedSessionId << 32) | (frameOffset & 0xFFFF_FFFFL);
+            lengthVersionFlagsType = defaultHeaderVersionFlagsType | ((-frameLength) & 0xFFFF_FFFFL);
+            termOffsetAndSessionId = defaultHeaderSessionId | (frameOffset & 0xFFFF_FFFFL);
         }
         else
         {
-            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | longExpandedVersionFlagsType;
-            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | longExpandedSessionId;
+            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | defaultHeaderVersionFlagsType;
+            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | defaultHeaderSessionId;
         }
-
 
         buffer.putLongOrdered(frameOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
         buffer.putLong(frameOffset + TERM_OFFSET_FIELD_OFFSET, termOffsetAndSessionId);

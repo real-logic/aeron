@@ -19,6 +19,7 @@ import java.nio.ByteOrder;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.UnsafeAccess;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.lang.Integer.reverseBytes;
@@ -338,6 +339,8 @@ public class TermAppender
         }
 
         buffer.putLongOrdered(frameOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
+        UnsafeAccess.UNSAFE.storeFence();
+
         buffer.putLong(frameOffset + TERM_OFFSET_FIELD_OFFSET, termOffsetAndSessionId);
 
         // read the stream(int) and term(int), this is the mutable part of the default header

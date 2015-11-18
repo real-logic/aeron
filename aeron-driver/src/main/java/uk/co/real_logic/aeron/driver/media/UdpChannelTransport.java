@@ -15,18 +15,18 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
+import uk.co.real_logic.aeron.driver.Configuration;
+import uk.co.real_logic.aeron.driver.LossGenerator;
 import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
-import uk.co.real_logic.aeron.driver.Configuration;
-import uk.co.real_logic.aeron.driver.LossGenerator;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.net.*;
 import java.nio.ByteBuffer;
-import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
@@ -168,7 +168,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         {
             byteSent = sendDatagramChannel.write(buffer);
         }
-        catch (final PortUnreachableException ex)
+        catch (final PortUnreachableException | ClosedChannelException ex)
         {
             // ignore
         }
@@ -330,7 +330,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         {
             address = (InetSocketAddress)receiveDatagramChannel.receive(receiveByteBuffer);
         }
-        catch (final PortUnreachableException | ClosedByInterruptException ignored)
+        catch (final PortUnreachableException |  ClosedChannelException ignored)
         {
             // do nothing
         }

@@ -11,6 +11,8 @@ For those who prefer to watch a video then try [Aeron Messaging](https://www.you
 
 For the latest version information and changes see the [Change Log](https://github.com/real-logic/Aeron/wiki/Change-Log). 
 
+The latest release and **downloads** can be found in [Maven Central](http://search.maven.org/#search%7Cga%7C1%7CAeron).
+
 ### How do I use Aeron?
 
 1. [Java Programming Guide](https://github.com/real-logic/Aeron/wiki/Java-Programming-Guide)

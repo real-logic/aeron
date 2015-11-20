@@ -45,8 +45,9 @@ public:
         m_mask = m_capacity - 1;
         m_maxMsgLength = m_capacity / 8;
 
-        m_tailCounterIndex = m_capacity + RingBufferDescriptor::TAIL_POSITION_OFFSET;
-        m_headCounterIndex = m_capacity + RingBufferDescriptor::HEAD_POSITION_OFFSET;
+        m_tailPositionIndex = m_capacity + RingBufferDescriptor::TAIL_POSITION_OFFSET;
+        m_headCachePositionIndex = m_capacity + RingBufferDescriptor::HEAD_CACHE_POSITION_OFFSET;
+        m_headPositionIndex = m_capacity + RingBufferDescriptor::HEAD_POSITION_OFFSET;
         m_correlationIdCounterIndex = m_capacity + RingBufferDescriptor::CORRELATION_COUNTER_OFFSET;
         m_consumerHeartbeatIndex = m_capacity + RingBufferDescriptor::CONSUMER_HEARTBEAT_OFFSET;
     }
@@ -72,12 +73,8 @@ public:
 
         if (INSUFFICIENT_CAPACITY != recordIndex)
         {
-            m_buffer.putInt32(RecordDescriptor::lengthOffset(recordIndex), -recordLength);
-            atomic::thread_fence();
-
+            m_buffer.putInt64Ordered(recordIndex, RecordDescriptor::makeHeader(-recordLength, msgTypeId));
             m_buffer.putBytes(RecordDescriptor::encodedMsgOffset(recordIndex), srcBuffer, srcIndex, length);
-
-            m_buffer.putInt32(RecordDescriptor::typeOffset(recordIndex), msgTypeId);
             m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(recordIndex), recordLength);
 
             isSuccessful = true;
@@ -88,47 +85,45 @@ public:
 
     int read(const handler_t& handler, int messageCountLimit)
     {
-        const std::int64_t tail = m_buffer.getInt64Volatile(m_tailCounterIndex);
-        const std::int64_t head = m_buffer.getInt64Volatile(m_headCounterIndex);
-        const std::int32_t available = (std::int32_t)(tail - head);
+        const std::int64_t head = m_buffer.getInt64Volatile(m_headPositionIndex);
+        const std::int32_t headIndex = (std::int32_t)head & m_mask;
+        const std::int32_t contiguousBlockLength = m_capacity - headIndex;
         int messagesRead = 0;
+        int bytesRead = 0;
 
-        if (available > 0)
-        {
-            const std::int32_t headIndex = (std::int32_t)head & m_mask;
-            const std::int32_t contiguousBlockSize = std::min(available, m_capacity - headIndex);
-            int bytesRead = 0;
-
-            auto cleanup = util::InvokeOnScopeExit {
-                [&]()
+        auto cleanup = util::InvokeOnScopeExit {
+            [&]()
+            {
+                if (bytesRead != 0)
                 {
                     m_buffer.setMemory(headIndex, bytesRead, 0);
-                    m_buffer.putInt64Ordered(m_headCounterIndex, head + bytesRead);
-                }};
+                    m_buffer.putInt64Ordered(m_headPositionIndex, head + bytesRead);
+                }
+            }};
 
-            while ((bytesRead < contiguousBlockSize) && (messagesRead < messageCountLimit))
+        while ((bytesRead < contiguousBlockLength) && (messagesRead < messageCountLimit))
+        {
+            const std::int32_t recordIndex = headIndex + bytesRead;
+            const std::int64_t header = m_buffer.getInt64Volatile(recordIndex);
+            const std::int32_t recordLength = RecordDescriptor::recordLength(header);
+
+            if (recordLength <= 0)
             {
-                const std::int32_t recordIndex = headIndex + bytesRead;
-                const std::int32_t recordLength = m_buffer.getInt32Volatile(
-                    RecordDescriptor::lengthOffset(recordIndex));
-                if (recordLength <= 0)
-                {
-                    break;
-                }
-
-                bytesRead += util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
-
-                const std::int32_t msgTypeId = m_buffer.getInt32(RecordDescriptor::typeOffset(recordIndex));
-                if (RecordDescriptor::PADDING_MSG_TYPE_ID == msgTypeId)
-                {
-                    continue;
-                }
-
-                ++messagesRead;
-                handler(
-                    msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
-                    recordLength - RecordDescriptor::HEADER_LENGTH);
+                break;
             }
+
+            bytesRead += util::BitUtil::align(recordLength, RecordDescriptor::ALIGNMENT);
+
+            const std::int32_t msgTypeId = RecordDescriptor::messageTypeId(header);
+            if (RecordDescriptor::PADDING_MSG_TYPE_ID == msgTypeId)
+            {
+                continue;
+            }
+
+            ++messagesRead;
+            handler(
+                msgTypeId, m_buffer, RecordDescriptor::encodedMsgOffset(recordIndex),
+                recordLength - RecordDescriptor::HEADER_LENGTH);
         }
 
         return messagesRead;
@@ -159,6 +154,77 @@ public:
         return m_buffer.getInt64Volatile(m_consumerHeartbeatIndex);
     }
 
+    inline std::int64_t producerPosition() const
+    {
+        return m_buffer.getInt64Volatile(m_tailPositionIndex);
+    }
+
+    inline std::int64_t consumerPosition() const
+    {
+        return m_buffer.getInt64Volatile(m_headPositionIndex);
+    }
+
+    inline std::int32_t size() const
+    {
+        std::int64_t headBefore;
+        std::int64_t tail;
+        std::int64_t headAfter = m_buffer.getInt64Volatile(m_headPositionIndex);
+
+        do
+        {
+            headBefore = headAfter;
+            tail = m_buffer.getInt64Volatile(m_tailPositionIndex);
+            headAfter = m_buffer.getInt64Volatile(m_headPositionIndex);
+        }
+        while (headAfter != headBefore);
+
+        return (std::int32_t)(tail - headAfter);
+    }
+
+    bool unblock()
+    {
+        const std::int32_t consumerIndex = (std::int32_t)(m_buffer.getInt64Volatile(m_headPositionIndex) & m_mask);
+        const std::int32_t producerIndex = (std::int32_t)(m_buffer.getInt64Volatile(m_tailPositionIndex) & m_mask);
+
+        if (producerIndex == consumerIndex)
+        {
+            return false;
+        }
+
+        bool unblocked = false;
+        std::int32_t length = m_buffer.getInt32Volatile(consumerIndex);
+        if (length < 0)
+        {
+            m_buffer.putInt64Ordered(consumerIndex, RecordDescriptor::makeHeader(-length, RecordDescriptor::PADDING_MSG_TYPE_ID));
+            unblocked = true;
+        }
+        else if (0 == length)
+        {
+            const std::int32_t limit = producerIndex > consumerIndex ? producerIndex : m_buffer.capacity();
+            std::int32_t i = consumerIndex + RecordDescriptor::ALIGNMENT;
+
+            do
+            {
+                length = m_buffer.getInt32Volatile(i);
+                if (0 != length)
+                {
+                    if (scanBackToConfirmStillZeroed(m_buffer, i, consumerIndex))
+                    {
+                        m_buffer.putInt64Ordered(consumerIndex, RecordDescriptor::makeHeader(i - consumerIndex, RecordDescriptor::PADDING_MSG_TYPE_ID));
+                        unblocked = true;
+                    }
+
+                    break;
+                }
+
+                i += RecordDescriptor::ALIGNMENT;
+            }
+            while (i < limit);
+        }
+
+        return unblocked;
+    }
+
 private:
 
     static const util::index_t INSUFFICIENT_CAPACITY = -2;
@@ -167,53 +233,65 @@ private:
     util::index_t m_capacity;
     util::index_t m_mask;
     util::index_t m_maxMsgLength;
-    util::index_t m_headCounterIndex;
-    util::index_t m_tailCounterIndex;
+    util::index_t m_headPositionIndex;
+    util::index_t m_headCachePositionIndex;
+    util::index_t m_tailPositionIndex;
     util::index_t m_correlationIdCounterIndex;
     util::index_t m_consumerHeartbeatIndex;
 
     util::index_t claimCapacity(util::index_t requiredCapacity)
     {
-        const std::int64_t head = m_buffer.getInt64Volatile(m_headCounterIndex);
-        const util::index_t headIndex = (util::index_t)head & m_mask;
+        std::int64_t head = m_buffer.getInt64Volatile(m_headCachePositionIndex);
 
         std::int64_t tail;
         util::index_t tailIndex;
         util::index_t padding;
         do
         {
-            tail = m_buffer.getInt64Volatile(m_tailCounterIndex);
+            tail = m_buffer.getInt64Volatile(m_tailPositionIndex);
             const util::index_t availableCapacity = m_capacity - (util::index_t)(tail - head);
 
             if (requiredCapacity > availableCapacity)
             {
-                return INSUFFICIENT_CAPACITY;
-            }
+                head = m_buffer.getInt64Volatile(m_headPositionIndex);
 
-            padding = 0;
-            tailIndex = (util::index_t)tail & m_mask;
-            const util::index_t bufferEndLength = m_capacity - tailIndex;
-
-            if (requiredCapacity > bufferEndLength)
-            {
-                if (requiredCapacity > headIndex)
+                if (requiredCapacity > (m_capacity - (util::index_t)(tail - head)))
                 {
                     return INSUFFICIENT_CAPACITY;
                 }
 
-                padding = bufferEndLength;
+                m_buffer.putInt64Ordered(m_headCachePositionIndex, head);
+            }
+
+            padding = 0;
+            tailIndex = (util::index_t)tail & m_mask;
+            const util::index_t toBufferEndLength = m_capacity - tailIndex;
+
+            if (requiredCapacity > toBufferEndLength)
+            {
+                std::int32_t headIndex = (std::int32_t)head & m_mask;
+
+                if (requiredCapacity > headIndex)
+                {
+                    head = m_buffer.getInt64Volatile(m_headPositionIndex);
+                    headIndex = (std::int32_t)head & m_mask;
+
+                    if (requiredCapacity > headIndex)
+                    {
+                        return INSUFFICIENT_CAPACITY;
+                    }
+
+                    m_buffer.putInt64Ordered(m_headCachePositionIndex, head);
+                }
+
+                padding = toBufferEndLength;
             }
         }
-        while (!m_buffer.compareAndSetInt64(m_tailCounterIndex, tail, tail + requiredCapacity + padding));
+        while (!m_buffer.compareAndSetInt64(m_tailPositionIndex, tail, tail + requiredCapacity + padding));
 
         if (0 != padding)
         {
-            m_buffer.putInt32(RecordDescriptor::lengthOffset(tailIndex), -padding);
-            atomic::thread_fence();
-
-            m_buffer.putInt32(RecordDescriptor::typeOffset(tailIndex), RecordDescriptor::PADDING_MSG_TYPE_ID);
-            m_buffer.putInt32Ordered(RecordDescriptor::lengthOffset(tailIndex), padding);
-
+            m_buffer.putInt64Ordered(tailIndex, RecordDescriptor::makeHeader(padding, RecordDescriptor::PADDING_MSG_TYPE_ID));
             tailIndex = 0;
         }
 
@@ -227,6 +305,25 @@ private:
             throw util::IllegalArgumentException(
                 util::strPrintf("encoded message exceeds maxMsgLength of %d, length=%d", m_maxMsgLength, length), SOURCEINFO);
         }
+    }
+
+    inline static bool scanBackToConfirmStillZeroed(AtomicBuffer& buffer, std::int32_t from, std::int32_t limit)
+    {
+        std::int32_t i = from - RecordDescriptor::ALIGNMENT;
+        bool allZeroes = true;
+
+        while (i >= limit)
+        {
+            if (0 != buffer.getInt32Volatile(i))
+            {
+                allZeroes = false;
+                break;
+            }
+
+            i -= RecordDescriptor::ALIGNMENT;
+        }
+
+        return allZeroes;
     }
 };
 

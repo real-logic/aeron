@@ -61,6 +61,21 @@ namespace RecordDescriptor {
         return recordOffset + HEADER_LENGTH;
     }
 
+    inline static std::int64_t makeHeader(std::int32_t length, std::int32_t msgTypeId)
+    {
+        return (((std::int64_t)msgTypeId & 0xFFFFFFFF) << 32) | (length & 0xFFFFFFFF);
+    }
+
+    inline static std::int32_t recordLength(std::int64_t header)
+    {
+        return (std::int32_t)header;
+    }
+
+    inline static std::int32_t messageTypeId(std::int64_t header)
+    {
+        return (std::int32_t)(header >> 32);
+    }
+
     inline static void checkMsgTypeId(std::int32_t msgTypeId)
     {
         if (msgTypeId < 1)

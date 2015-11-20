@@ -46,6 +46,11 @@ public class Publication implements AutoCloseable
      */
     public static final long BACK_PRESSURED = -2;
 
+    /**
+     * The offer failed due to administration action and should be retried.
+     */
+    public static final long ADMIN_ACTION = -3;
+
     private final long registrationId;
     private final int streamId;
     private final int sessionId;
@@ -351,6 +356,8 @@ public class Publication implements AutoCloseable
 
             termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);
             LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
+
+            newPosition = ADMIN_ACTION;
         }
 
         return newPosition;

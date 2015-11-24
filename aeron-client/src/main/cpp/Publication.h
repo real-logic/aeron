@@ -30,8 +30,9 @@ using namespace aeron::concurrent::status;
 
 class ClientConductor;
 
-static const std::int64_t PUBLICATION_NOT_CONNECTED = -1;
-static const std::int64_t PUBLICATION_BACK_PRESSURED = -2;
+static const std::int64_t NOT_CONNECTED = -1;
+static const std::int64_t BACK_PRESSURED = -2;
+static const std::int64_t ADMIN_ACTION = -3;
 
 /**
  * @example BasicPublisher.cpp
@@ -141,7 +142,7 @@ public:
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return The new stream position on success, otherwise {@link PUBLICATION_BACK_PRESSURED} or {@link PUBLICATION_NOT_CONNECTED}.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
      */
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
@@ -153,7 +154,7 @@ public:
         const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
 
         const std::int64_t limit = m_publicationLimit.getVolatile();
-        std::int64_t newPosition = PUBLICATION_BACK_PRESSURED;
+        std::int64_t newPosition = BACK_PRESSURED;
 
         if (position < limit)
         {
@@ -162,7 +163,7 @@ public:
         }
         else if (0 == limit)
         {
-            newPosition = PUBLICATION_NOT_CONNECTED;
+            newPosition = NOT_CONNECTED;
         }
 
         return newPosition;
@@ -188,7 +189,7 @@ public:
      * @code
      *     BufferClaim bufferClaim; // Can be stored and reused to avoid allocation
      *
-     *     if (publication->tryClaim(messageLength, bufferClaim))
+     *     if (publication->tryClaim(messageLength, bufferClaim) > 0)
      *     {
      *         try
      *         {
@@ -206,7 +207,7 @@ public:
      *
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populate if the claim succeeds.
-     * @return The new stream position on success, otherwise {@link PUBLICATION_BACK_PRESSURED} or {@link PUBLICATION_NOT_CONNECTED}.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
      * @see BufferClaim::commit
      */
@@ -220,7 +221,7 @@ public:
         const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift, initialTermId);
 
         const std::int64_t limit = m_publicationLimit.getVolatile();
-        std::int64_t newPosition = PUBLICATION_BACK_PRESSURED;
+        std::int64_t newPosition = BACK_PRESSURED;
 
         if (position < limit)
         {
@@ -229,7 +230,7 @@ public:
         }
         else if (0 == limit)
         {
-            newPosition = PUBLICATION_NOT_CONNECTED;
+            newPosition = NOT_CONNECTED;
         }
 
         return newPosition;
@@ -265,11 +266,13 @@ private:
                 LogBufferDescriptor::defaultHeaderTermId(m_logMetaDataBuffer, nextNextIndex, newTermId + 1);
                 m_appenders[nextNextIndex]->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
                 LogBufferDescriptor::activeTermId(m_logMetaDataBuffer, newTermId);
+
+                newPosition = ADMIN_ACTION;
+                break;
             }
-            // fall through
 
             case TERM_APPENDER_FAILED:
-                newPosition = PUBLICATION_BACK_PRESSURED;
+                newPosition = BACK_PRESSURED;
                 break;
 
             default:

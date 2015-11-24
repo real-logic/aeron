@@ -136,11 +136,11 @@ int main(int argc, char** argv)
 
             if (result < 0)
             {
-                if (PUBLICATION_NOT_CONNECTED == result)
+                if (NOT_CONNECTED == result)
                 {
                     std::cout << " not connected yet." << std::endl;
                 }
-                else if (PUBLICATION_BACK_PRESSURED == result)
+                else if (BACK_PRESSURED == result)
                 {
                     std::cout << " back pressured." << std::endl;
                 }

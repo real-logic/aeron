@@ -120,7 +120,7 @@ by running `cpack` directly.
 Running Samples
 ---------------
 
-Start up a media driver which will create the data and conductor directories. On Linux, this will probably be at `/tmp/aeron`.
+Start up a media driver which will create the data and conductor directories. On Linux, this will probably be in `/dev/shm/aeron` or `/tmp/aeron`.
 
     $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.driver.MediaDriver
 

@@ -396,12 +396,12 @@ public class Configuration
     /**
      * How far ahead the publisher can get from the sender position.
      *
-     * @param termCapacity to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
+     * @param termBufferLength to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
      * @return the length to be used for the publication window.
      */
-    public static int publicationTermWindowLength(final int termCapacity)
+    public static int publicationTermWindowLength(final int termBufferLength)
     {
-        return 0 != PUBLICATION_TERM_WINDOW_LENGTH ? PUBLICATION_TERM_WINDOW_LENGTH : termCapacity / 2;
+        return 0 != PUBLICATION_TERM_WINDOW_LENGTH ? PUBLICATION_TERM_WINDOW_LENGTH : termBufferLength / 2;
     }
 
     /**
@@ -585,11 +585,11 @@ public class Configuration
     /**
      * How far ahead the publisher can get from the sender position for IPC only.
      *
-     * @param termCapacity to be used when {@link #IPC_PUBLICATION_TERM_WINDOW_LENGTH} is not set.
+     * @param termBufferLength to be used when {@link #IPC_PUBLICATION_TERM_WINDOW_LENGTH} is not set.
      * @return the length to be used for the publication window.
      */
-    public static int ipcPublicationTermWindowLength(final int termCapacity)
+    public static int ipcPublicationTermWindowLength(final int termBufferLength)
     {
-        return 0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH ? IPC_PUBLICATION_TERM_WINDOW_LENGTH : termCapacity / 2;
+        return 0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH ? IPC_PUBLICATION_TERM_WINDOW_LENGTH : termBufferLength / 2;
     }
 }

@@ -55,7 +55,8 @@ using namespace aeron::concurrent;
 *  +----------------------------+
 *  |    labels buffer length    |
 *  +----------------------------+
-*  |    values buffer length    |
+*  |   Client Liveness Timeout  |
+*  |                            |
 *  +----------------------------+
 * </pre>
 */
@@ -63,7 +64,7 @@ namespace CncFileDescriptor {
 
 static const std::string CNC_FILE = "cnc";
 
-static const std::int32_t CNC_VERSION = 2;
+static const std::int32_t CNC_VERSION = 3;
 
 #pragma pack(push)
 #pragma pack(4)
@@ -74,6 +75,7 @@ struct MetaDataDefn
     std::int32_t toClientsBufferLength;
     std::int32_t counterLabelsBufferLength;
     std::int32_t counterValuesBufferLength;
+    std::int64_t clientLivenessTimeout;
 };
 #pragma pack(pop)
 
@@ -135,6 +137,16 @@ inline static AtomicBuffer createCounterValuesBuffer(MemoryMappedFile::ptr_t cnc
 
     return AtomicBuffer(basePtr, metaData.counterValuesBufferLength);
 }
+
+inline static std::int64_t clientLivenessTimeout(MemoryMappedFile::ptr_t cncFile)
+{
+    AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), cncFile->getMemorySize());
+
+    const MetaDataDefn& metaData = metaDataBuffer.overlayStruct<MetaDataDefn>(0);
+
+    return metaData.clientLivenessTimeout;
+}
+
 }
 
 };

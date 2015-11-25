@@ -127,6 +127,11 @@ fragment_handler_t rateReporterHandler(RateReporter& rateReporter)
     return [&](AtomicBuffer&, util::index_t, util::index_t length, Header&) { rateReporter.onMessage(1, length); };
 }
 
+inline bool isRunning()
+{
+    return std::atomic_load_explicit(&running, std::memory_order_relaxed);
+}
+
 int main(int argc, char **argv)
 {
     CommandOptionParser cp;
@@ -237,7 +242,7 @@ int main(int argc, char **argv)
 
         std::thread pollThread([&]()
             {
-                while (running)
+                while (isRunning())
                 {
                     const int fragmentsRead = subscription->poll(handler, settings.fragmentCountLimit);
 
@@ -257,7 +262,7 @@ int main(int argc, char **argv)
                 rateReporter.reset();
             }
 
-            for (long i = 0; i < settings.numberOfMessages && running; i++)
+            for (long i = 0; i < settings.numberOfMessages && isRunning(); i++)
             {
                 const int length = lengthGenerator();
 
@@ -279,7 +284,7 @@ int main(int argc, char **argv)
             std::cout << "Done streaming. Back pressure ratio ";
             std::cout << ((double)backPressureCount / settings.numberOfMessages) << std::endl;
 
-            if (running && settings.lingerTimeoutMs > 0)
+            if (isRunning() && settings.lingerTimeoutMs > 0)
             {
                 std::cout << "Lingering for " << settings.lingerTimeoutMs << " milliseconds." << std::endl;
                 std::this_thread::sleep_for(std::chrono::milliseconds(settings.lingerTimeoutMs));
@@ -287,7 +292,7 @@ int main(int argc, char **argv)
 
             printingActive = false;
         }
-        while (running && continuationBarrier("Execute again?"));
+        while (isRunning() && continuationBarrier("Execute again?"));
 
         running = false;
         rateReporter.halt();

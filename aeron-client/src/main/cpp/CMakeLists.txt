@@ -82,6 +82,8 @@ SET(HEADERS
     concurrent/status/ReadablePosition.h
     concurrent/status/Position.h
     concurrent/status/UnsafeBufferPosition.h
+    protocol/HeaderFlyweight.h
+    protocol/NakFlyweight.h
     protocol/StatusMessageFlyweight.h
     util/MemoryMappedFile.h
     util/CommandOption.h
@@ -93,7 +95,7 @@ SET(HEADERS
     util/ScopeUtils.h
     util/BitUtil.h
     util/Index.h
-    util/Platform.h)
+    util/Platform.h protocol/SetupFlyweight.h protocol/DataHeaderFlyweight.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

@@ -9,8 +9,9 @@
 #include <string>
 #include <stddef.h>
 #include <command/Flyweight.h>
-#include "../concurrent/AtomicBuffer.h"
-#include "../util/Index.h"
+#include <concurrent/AtomicBuffer.h>
+#include <util/Index.h>
+#include "HeaderFlyweight.h"
 
 namespace aeron { namespace protocol {
 
@@ -45,10 +46,7 @@ namespace aeron { namespace protocol {
 #pragma pack(4)
 struct StatusMessageDefn
 {
-    std::int32_t frameLength;
-    std::int8_t version;
-    std::int8_t flags;
-    std::int16_t type;
+    HeaderDefn header;
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t consumptionTermId;
@@ -64,57 +62,13 @@ struct StatusMessageDefn
 };
 #pragma pack(pop)
 
-class StatusMessageFlyweight : command::Flyweight<StatusMessageDefn>
+class StatusMessageFlyweight : public HeaderFlyweight
 {
     typedef StatusMessageFlyweight this_t;
 
     inline StatusMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
-        : command::Flyweight<StatusMessageDefn>(buffer, offset)
+        : HeaderFlyweight(buffer, offset), m_struct(overlayStruct<StatusMessageDefn>(0))
     {
-    }
-
-    inline std::int32_t frameLength() const
-    {
-        return m_struct.frameLength;
-    }
-
-    inline this_t& frameLength(std::int32_t value)
-    {
-        m_struct.frameLength = value;
-        return *this;
-    }
-
-    inline std::int8_t version() const
-    {
-        return m_struct.version;
-    }
-
-    inline this_t& version(std::int8_t value)
-    {
-        m_struct.version = value;
-        return *this;
-    }
-
-    inline std::int8_t flags() const
-    {
-        return m_struct.flags;
-    }
-
-    inline this_t& flags(std::int8_t value)
-    {
-        m_struct.flags = value;
-        return *this;
-    }
-
-    inline std::int16_t type() const
-    {
-        return m_struct.type;
-    }
-
-    inline this_t& type(std::int16_t value)
-    {
-        m_struct.type = value;
-        return *this;
     }
 
     inline std::int32_t sessionId() const
@@ -172,10 +126,13 @@ class StatusMessageFlyweight : command::Flyweight<StatusMessageDefn>
         return *this;
     }
 
-    inline static std::int32_t length()
+    inline static std::int32_t headerLength()
     {
         return sizeof(StatusMessageDefn);
     }
+
+private:
+    StatusMessageDefn& m_struct;
 };
 
 }}

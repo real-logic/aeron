@@ -5,6 +5,10 @@
 #ifndef INCLUDED_AERON_DRIVER_MEDIA_RECEIVECHANNELENDPOINT__
 #define INCLUDED_AERON_DRIVER_MEDIA_RECEIVECHANNELENDPOINT__
 
+#include <protocol/DataHeaderFlyweight.h>
+#include <protocol/HeaderFlyweight.h>
+#include <protocol/NakFlyweight.h>
+#include <protocol/SetupFlyweight.h>
 #include <protocol/StatusMessageFlyweight.h>
 #include <media/UdpChannelTransport.h>
 

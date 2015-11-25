@@ -31,7 +31,7 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
  * <p>
  * The APIs used to send are all non-blocking.
  * <p>
- * Note: Publication instances are threadsafe and can be shared between publisher threads.
+ * Note: Publication instances are threadsafe and can be shared between publishing threads.
  * @see Aeron#addPublication(String, int)
  */
 public class Publication implements AutoCloseable
@@ -42,12 +42,12 @@ public class Publication implements AutoCloseable
     public static final long NOT_CONNECTED = -1;
 
     /**
-     * The offer failed due to back pressure preventing further transmission.
+     * The offer failed due to back pressure from the subscribers preventing further transmission.
      */
     public static final long BACK_PRESSURED = -2;
 
     /**
-     * The offer failed due to administration action and should be retried.
+     * The offer failed due to an administration action and should be retried.
      */
     public static final long ADMIN_ACTION = -3;
 

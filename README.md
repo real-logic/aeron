@@ -158,7 +158,7 @@ Troubleshooting
   
   To alleviate, check to make sure you have enough disk space.
 
-  In the samples, on Linux, this will probably be either at `/dev/shm` or `/tmp/aeron` (depending on your settings).
+  In the samples, on Linux, this will probably be either at `/dev/shm/aeron` or `/tmp/aeron` (depending on your settings).
 
   See this [thread](https://issues.apache.org/jira/browse/CASSANDRA-5737?focusedCommentId=14251018&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-14251018) for a similar problem.
   

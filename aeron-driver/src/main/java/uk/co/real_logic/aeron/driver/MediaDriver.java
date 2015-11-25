@@ -523,7 +523,8 @@ public final class MediaDriver implements AutoCloseable
                     CONDUCTOR_BUFFER_LENGTH,
                     TO_CLIENTS_BUFFER_LENGTH,
                     COUNTER_LABELS_BUFFER_LENGTH,
-                    COUNTER_VALUES_BUFFER_LENGTH);
+                    COUNTER_VALUES_BUFFER_LENGTH,
+                    clientLivenessTimeoutNs);
 
                 final BroadcastTransmitter transmitter =
                     new BroadcastTransmitter(CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));

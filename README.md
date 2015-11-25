@@ -126,7 +126,7 @@ Start up a media driver which will create the data and conductor directories. On
 
 Alternatively, specify the data and conductor directories. The following example uses the shared memory 'directory' on Linux, but you could just as easily point to the regular filesystem.
 
-    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir.conductor=/dev/shm/aeron/conductor -Daeron.dir.data=/dev/shm/aeron/data uk.co.real_logic.aeron.driver.MediaDriver
+    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir=/dev/shm/aeron uk.co.real_logic.aeron.driver.MediaDriver
 
 You can run the `BasicSubscriber` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 

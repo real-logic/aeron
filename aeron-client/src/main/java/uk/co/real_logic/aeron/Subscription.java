@@ -88,7 +88,7 @@ public class Subscription implements AutoCloseable
      * as a series of fragments ordered withing a session.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
-     * @param fragmentLimit   number of message fragments to limit for a single poll operation.
+     * @param fragmentLimit   number of message fragments to limit for the poll operation across multiple {@link Image}s.
      * @return the number of fragments received
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
@@ -105,12 +105,12 @@ public class Subscription implements AutoCloseable
 
         for (int i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
+            fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -122,7 +122,7 @@ public class Subscription implements AutoCloseable
      * This method is useful for operations like bulk archiving and messaging indexing.
      *
      * @param blockHandler     to receive a block of fragments from each {@link Image}.
-     * @param blockLengthLimit for each individual block.
+     * @param blockLengthLimit for each {@link Image} polled.
      * @return the number of bytes consumed.
      */
     public long blockPoll(final BlockHandler blockHandler, final int blockLengthLimit)
@@ -142,7 +142,7 @@ public class Subscription implements AutoCloseable
      * This method is useful for operations like bulk archiving a stream to file.
      *
      * @param fileBlockHandler to receive a block of fragments from each {@link Image}.
-     * @param blockLengthLimit for each individual block.
+     * @param blockLengthLimit for each {@link Image} polled.
      * @return the number of bytes consumed.
      */
     public long filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)

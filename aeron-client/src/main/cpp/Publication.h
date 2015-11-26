@@ -18,6 +18,7 @@
 #define INCLUDED_AERON_PUBLICATION__
 
 #include <iostream>
+#include <atomic>
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/BufferClaim.h>
 #include <concurrent/logbuffer/TermAppender.h>

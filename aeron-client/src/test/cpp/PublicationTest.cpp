@@ -96,6 +96,45 @@ TEST_F(PublicationTest, shouldReportMaxMessageLength)
     EXPECT_EQ(m_publication->maxMessageLength(), FrameDescriptor::computeMaxMessageLength(TERM_LENGTH));
 }
 
+TEST_F(PublicationTest, shouldReportCorrectTermBufferLength)
+{
+    EXPECT_EQ(m_publication->termBufferLength(), TERM_LENGTH);
+}
+
+TEST_F(PublicationTest, shouldReportThatPublicationHasNotBeenConnectedYet)
+{
+    m_publicationLimit.set(0);
+    EXPECT_FALSE(m_publication->hasBeenConnected());
+}
+
+TEST_F(PublicationTest, shouldReportThatPublicationHasBeenConnectedYet)
+{
+    m_publicationLimit.set(2 * m_srcBuffer.capacity());
+    EXPECT_TRUE(m_publication->hasBeenConnected());
+}
+
+TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeReadingPosition)
+{
+    m_publication->close();
+    EXPECT_EQ(m_publication->position(), CLOSED);
+}
+
+TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeOffer)
+{
+    m_publication->close();
+    EXPECT_TRUE(m_publication->isClosed());
+    EXPECT_EQ(m_publication->offer(m_srcBuffer), CLOSED);
+}
+
+TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeClaim)
+{
+    BufferClaim bufferClaim;
+
+    m_publication->close();
+    EXPECT_TRUE(m_publication->isClosed());
+    EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), CLOSED);
+}
+
 TEST_F(PublicationTest, shouldOfferAMessageUponConstruction)
 {
     const std::int64_t expectedPosition = m_srcBuffer.capacity() + DataFrameHeader::LENGTH;

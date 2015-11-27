@@ -145,14 +145,7 @@ public:
 
     virtual ~Image() = default;
 
-    // TODO:
-    // termBufferLength
-    // - logic for back ptr to Subscription
-    // sourceIdentity
-    // - logic for ensureOpen
-    // isClosed()
-    // position()
-    // filepoll semantics (typedef fd or HANDLE per platform)
+    // TODO: add termBufferLength
 
     /**
      * The sessionId for the steam of messages.
@@ -183,6 +176,12 @@ public:
     {
         return m_header.initialTermId();
     }
+
+    // TODO: add sourceIdentity()
+
+    // TODO: add isClosed()
+
+    // TODO: add position()
 
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
@@ -251,6 +250,8 @@ public:
 
         return bytesConsumed;
     }
+
+    // TODO: filePoll() with fd/HANDLE (or MemoryMappedFile) ptr access
 
     std::shared_ptr<LogBuffers> logBuffers()
     {

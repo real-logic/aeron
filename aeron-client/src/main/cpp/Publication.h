@@ -290,6 +290,13 @@ public:
         return newPosition;
     }
 
+    /// @cond HIDDEN_SYMBOLS
+    inline void close()
+    {
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_relaxed);
+    }
+    /// @endcond
+
 private:
     ClientConductor& m_conductor;
     const std::string m_channel;
@@ -335,11 +342,6 @@ private:
         }
 
         return newPosition;
-    }
-
-    inline void close()
-    {
-        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_relaxed);
     }
 
     inline bool isOpen() const

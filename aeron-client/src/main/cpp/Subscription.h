@@ -147,6 +147,10 @@ public:
         return bytesConsumed;
     }
 
+    // TODO: add filePoll to return MemoryMappedFile
+
+    // TODO: add imageCount
+
     /**
      * Return the {@link Image} associated with the given sessionId.
      *
@@ -189,6 +193,10 @@ public:
 
         return result;
     }
+
+    // TODO: add close()
+
+    // TODO: add isClosed()
 
     /// @cond HIDDEN_SYMBOLS
     bool hasImage(std::int32_t sessionId)

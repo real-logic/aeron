@@ -52,6 +52,7 @@ public class LogBuffers implements AutoCloseable
             checkTermLength(termLength);
             this.termLength = termLength;
 
+            // if log length exceeds MAX_INT we need multiple mapped buffers, (see FileChannel.map doc).
             if (logLength < Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = fileChannel.map(READ_WRITE, 0, logLength);

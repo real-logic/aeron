@@ -24,6 +24,7 @@
 #include <concurrent/logbuffer/TermBlockScanner.h>
 #include <concurrent/status/UnsafeBufferPosition.h>
 #include <algorithm>
+#include <atomic>
 #include "LogBuffers.h"
 
 namespace aeron {
@@ -33,6 +34,8 @@ using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::status;
 
 static UnsafeBufferPosition NULL_POSITION;
+
+static const int IMAGE_CLOSED = -1;
 
 /**
  * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
@@ -65,6 +68,7 @@ public:
         std::int32_t sessionId,
         std::int64_t initialPosition,
         std::int64_t correlationId,
+        const std::string& sourceIdentity,
         UnsafeBufferPosition& subscriberPosition,
         std::shared_ptr<LogBuffers> logBuffers,
         const exception_handler_t& exceptionHandler) :
@@ -73,6 +77,8 @@ public:
             logBuffers->atomicBuffer(0).capacity()),
         m_subscriberPosition(subscriberPosition),
         m_logBuffers(logBuffers),
+        m_sourceIdentity(sourceIdentity),
+        m_isClosed(false),
         m_exceptionHandler(exceptionHandler),
         m_correlationId(correlationId),
         m_sessionId(sessionId)
@@ -92,6 +98,8 @@ public:
     Image(Image& image) :
         m_header(image.m_header),
         m_subscriberPosition(image.m_subscriberPosition),
+        m_sourceIdentity(image.m_sourceIdentity),
+        m_isClosed(image.isClosed()),
         m_exceptionHandler(image.m_exceptionHandler)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
@@ -117,6 +125,8 @@ public:
         m_header = image.m_header;
         m_subscriberPosition.wrap(image.m_subscriberPosition);
         m_logBuffers = image.m_logBuffers;
+        m_sourceIdentity = image.m_sourceIdentity;
+        m_isClosed = image.isClosed();
         m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
         m_sessionId = image.m_sessionId;
@@ -135,6 +145,8 @@ public:
         m_header = image.m_header;
         m_subscriberPosition.wrap(image.m_subscriberPosition);
         m_logBuffers = std::move(image.m_logBuffers);
+        m_sourceIdentity = std::move(image.m_sourceIdentity);
+        m_isClosed = image.isClosed();
         m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
         m_sessionId = image.m_sessionId;
@@ -145,14 +157,22 @@ public:
 
     virtual ~Image() = default;
 
-    // TODO: add termBufferLength
+    /**
+     * Get the length in bytes for each term partition in the log buffer.
+     *
+     * @return the length in bytes for each term partition in the log buffer.
+     */
+    inline std::int32_t termBufferLength() const
+    {
+        return m_termBuffers[0].capacity();
+    }
 
     /**
      * The sessionId for the steam of messages.
      *
      * @return the sessionId for the steam of messages.
      */
-    inline std::int32_t sessionId()
+    inline std::int32_t sessionId() const
     {
         return m_sessionId;
     }
@@ -162,7 +182,7 @@ public:
      *
      * @return the correlationId for identification of the image with the media driver.
      */
-    inline std::int64_t correlationId()
+    inline std::int64_t correlationId() const
     {
         return m_correlationId;
     }
@@ -172,16 +192,47 @@ public:
      *
      * @return the initial term id.
      */
-    inline std::int32_t initialTermId()
+    inline std::int32_t initialTermId() const
     {
         return m_header.initialTermId();
     }
 
-    // TODO: add sourceIdentity()
+    /**
+     * The source identity of the sending publisher as an abstract concept appropriate for the media.
+     *
+     * @return source identity of the sending publisher as an abstract concept appropriate for the media.
+     */
+    inline std::string sourceIdentity() const
+    {
+        return m_sourceIdentity;
+    }
 
-    // TODO: add isClosed()
+    /**
+     * Has this object been closed and should no longer be used?
+     *
+     * @return true if it has been closed otherwise false.
+     */
+    inline bool isClosed() const
+    {
+        return std::atomic_load_explicit(&m_isClosed, std::memory_order_relaxed);
+    }
 
-    // TODO: add position()
+    /**
+     * The position this Image has been consumed to by the subscriber.
+     *
+     * @return the position this Image has been consumed to by the subscriber or CLOSED if closed
+     */
+    inline std::int64_t position()
+    {
+        std::int64_t result = IMAGE_CLOSED;
+
+        if (!isClosed())
+        {
+            result = m_subscriberPosition.get();
+        }
+
+        return result;
+    }
 
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
@@ -195,20 +246,28 @@ public:
      */
     int poll(const fragment_handler_t& fragmentHandler, int fragmentLimit)
     {
-        const std::int64_t position = m_subscriberPosition.get();
-        const std::int32_t termOffset = (std::int32_t)position & m_termLengthMask;
-        AtomicBuffer& termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift)];
+        int result = IMAGE_CLOSED;
 
-        const TermReader::ReadOutcome readOutcome =
-            TermReader::read(termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
-
-        const std::int64_t newPosition = position + (readOutcome.offset - termOffset);
-        if (newPosition > position)
+        if (!isClosed())
         {
-            m_subscriberPosition.setOrdered(newPosition);
+            const std::int64_t position = m_subscriberPosition.get();
+            const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position,
+                m_positionBitsToShift)];
+
+            const TermReader::ReadOutcome readOutcome =
+                TermReader::read(termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
+
+            const std::int64_t newPosition = position + (readOutcome.offset - termOffset);
+            if (newPosition > position)
+            {
+                m_subscriberPosition.setOrdered(newPosition);
+            }
+
+            result = readOutcome.fragmentsRead;
         }
 
-        return readOutcome.fragmentsRead;
+        return result;
     }
 
     /**
@@ -223,32 +282,40 @@ public:
      */
     int blockPoll(const block_handler_t& blockHandler, int blockLengthLimit)
     {
-        const std::int64_t position = m_subscriberPosition.get();
-        const std::int32_t termOffset = (std::int32_t)position & m_termLengthMask;
-        AtomicBuffer& termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position, m_positionBitsToShift)];
-        const std::int32_t limit = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
+        int result = IMAGE_CLOSED;
 
-        const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limit);
-
-        const std::int32_t bytesConsumed = resultingOffset - termOffset;
-
-        if (resultingOffset > termOffset)
+        if (!isClosed())
         {
-            try
-            {
-                const std::int32_t termId = termBuffer.getInt32(termOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
+            const std::int64_t position = m_subscriberPosition.get();
+            const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position,
+                m_positionBitsToShift)];
+            const std::int32_t limit = std::min(termOffset + blockLengthLimit, termBuffer.capacity());
 
-                blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
-            }
-            catch (std::exception ex)
+            const std::int32_t resultingOffset = TermBlockScanner::scan(termBuffer, termOffset, limit);
+
+            const std::int32_t bytesConsumed = resultingOffset - termOffset;
+
+            if (resultingOffset > termOffset)
             {
-                m_exceptionHandler(ex);
+                try
+                {
+                    const std::int32_t termId = termBuffer.getInt32(termOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET);
+
+                    blockHandler(termBuffer, termOffset, bytesConsumed, m_sessionId, termId);
+                }
+                catch (std::exception ex)
+                {
+                    m_exceptionHandler(ex);
+                }
+
+                m_subscriberPosition.setOrdered(position + bytesConsumed);
             }
 
-            m_subscriberPosition.setOrdered(position + bytesConsumed);
+            result = bytesConsumed;
         }
 
-        return bytesConsumed;
+        return result;
     }
 
     // TODO: filePoll() with fd/HANDLE (or MemoryMappedFile) ptr access
@@ -258,11 +325,20 @@ public:
         return m_logBuffers;
     }
 
+    /// @cond HIDDEN_SYMBOLS
+    inline void close()
+    {
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_relaxed);
+    }
+    /// @endcond
+
 private:
     AtomicBuffer m_termBuffers[LogBufferDescriptor::PARTITION_COUNT];
     Header m_header;
     Position<UnsafeBufferPosition> m_subscriberPosition;
     std::shared_ptr<LogBuffers> m_logBuffers;
+    std::string m_sourceIdentity;
+    std::atomic<bool> m_isClosed;
     exception_handler_t m_exceptionHandler;
 
     std::int64_t m_correlationId;

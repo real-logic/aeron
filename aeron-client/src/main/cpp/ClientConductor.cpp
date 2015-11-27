@@ -326,7 +326,7 @@ void ClientConductor::onAvailableImage(
                             UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositions[i].indicatorId);
 
                             Image image(
-                                sessionId, joiningPosition, correlationId, subscriberPosition, logBuffers, m_errorHandler);
+                                sessionId, joiningPosition, correlationId, sourceIdentity, subscriberPosition, logBuffers, m_errorHandler);
 
                             Image* oldArray = subscription->addImage(image);
 

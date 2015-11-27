@@ -34,7 +34,7 @@ class ClientConductor;
 static const std::int64_t NOT_CONNECTED = -1;
 static const std::int64_t BACK_PRESSURED = -2;
 static const std::int64_t ADMIN_ACTION = -3;
-static const std::int64_t CLOSED = -4;
+static const std::int64_t PUBLICATION_CLOSED = -4;
 
 /**
  * @example BasicPublisher.cpp
@@ -128,9 +128,9 @@ public:
     }
 
     /**
-     * Has this {@link Publication} been connected to a {@link Subscription}?
+     * Has this Publication been connected to a Subscription?
      *
-     * @return true if this {@link Publication} been connected to a {@link Subscription} otherwise false.
+     * @return true if this Publication been connected to a Subscription otherwise false.
      */
     inline bool hasBeenConnected()
     {
@@ -144,7 +144,7 @@ public:
      */
     inline bool isClosed() const
     {
-        return !isOpen();
+        return std::atomic_load_explicit(&m_isClosed, std::memory_order_relaxed);
     }
 
     /**
@@ -154,9 +154,9 @@ public:
      */
     inline std::int64_t position()
     {
-        std::int64_t result = CLOSED;
+        std::int64_t result = PUBLICATION_CLOSED;
 
-        if (isOpen())
+        if (!isClosed())
         {
             const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
             const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
@@ -183,7 +183,7 @@ public:
     {
         std::int64_t newPosition = BACK_PRESSURED;
 
-        if (isOpen())
+        if (!isClosed())
         {
             const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
             const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
@@ -207,7 +207,7 @@ public:
         }
         else
         {
-            newPosition = CLOSED;
+            newPosition = PUBLICATION_CLOSED;
         }
 
         return newPosition;
@@ -260,7 +260,7 @@ public:
     {
         std::int64_t newPosition = BACK_PRESSURED;
 
-        if (isOpen())
+        if (!isClosed())
         {
             const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
             const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
@@ -284,7 +284,7 @@ public:
         }
         else
         {
-            newPosition = CLOSED;
+            newPosition = PUBLICATION_CLOSED;
         }
 
         return newPosition;
@@ -342,18 +342,6 @@ private:
         }
 
         return newPosition;
-    }
-
-    inline bool isOpen() const
-    {
-        bool result = true;
-
-        if (std::atomic_load_explicit(&m_isClosed, std::memory_order_relaxed))
-        {
-            result = false;
-        }
-
-        return result;
     }
 };
 

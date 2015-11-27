@@ -116,14 +116,14 @@ TEST_F(PublicationTest, shouldReportThatPublicationHasBeenConnectedYet)
 TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeReadingPosition)
 {
     m_publication->close();
-    EXPECT_EQ(m_publication->position(), CLOSED);
+    EXPECT_EQ(m_publication->position(), PUBLICATION_CLOSED);
 }
 
 TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeOffer)
 {
     m_publication->close();
     EXPECT_TRUE(m_publication->isClosed());
-    EXPECT_EQ(m_publication->offer(m_srcBuffer), CLOSED);
+    EXPECT_EQ(m_publication->offer(m_srcBuffer), PUBLICATION_CLOSED);
 }
 
 TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeClaim)
@@ -132,7 +132,7 @@ TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeClaim)
 
     m_publication->close();
     EXPECT_TRUE(m_publication->isClosed());
-    EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), CLOSED);
+    EXPECT_EQ(m_publication->tryClaim(SRC_BUFFER_LENGTH, bufferClaim), PUBLICATION_CLOSED);
 }
 
 TEST_F(PublicationTest, shouldOfferAMessageUponConstruction)

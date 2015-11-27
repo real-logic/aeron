@@ -241,6 +241,8 @@ public final class Aeron implements AutoCloseable
                     counterValuesBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
+                interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);
+
                 if (null == logBuffersFactory)
                 {
                     logBuffersFactory = new MappedLogBuffersFactory();
@@ -422,11 +424,14 @@ public final class Aeron implements AutoCloseable
         /**
          * Set the timeout between service calls for the client.
          *
-         * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s closed.
+         * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
+         * closed.
          *
+         * @deprecated overriden by value in CnC file.
          * @param value the timeout between service calls.
          * @return this Aeron.Context for method chaining.
          */
+        @Deprecated
         public Context interServiceTimeout(final long value)
         {
             interServiceTimeout = value;
@@ -436,7 +441,12 @@ public final class Aeron implements AutoCloseable
         /**
          * Return the timeout between service calls for the client.
          *
-         * @return the timeout between service calls.
+         * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
+         * closed.
+         *
+         * This value is controlled by the driver and included in the CnC file.
+         *
+         * @return the timeout between service calls in nanoseconds.
          */
         public long interServiceTimeout()
         {

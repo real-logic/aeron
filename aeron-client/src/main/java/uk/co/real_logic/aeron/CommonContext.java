@@ -103,6 +103,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * This completes initialization of the CommonContext object. It is automatically called by subclasses.
+     *
      * @return this Object for method chaining.
      */
     public CommonContext conclude()
@@ -137,6 +138,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * Create a new command and control file in the administration directory.
+     *
      * @return The newly created File.
      */
     public static File newDefaultCncFile()
@@ -146,6 +148,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * Get the buffer containing the counter labels.
+     *
      * @return The buffer storing the counter labels.
      */
     public UnsafeBuffer counterLabelsBuffer()
@@ -155,6 +158,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * Set the buffer containing the counter labels.
+     *
      * @param counterLabelsBuffer The new counter labels buffer.
      * @return this Object for method chaining.
      */
@@ -166,6 +170,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * Get the buffer containing the counters.
+     *
      * @return The buffer storing the counters.
      */
     public UnsafeBuffer counterValuesBuffer()
@@ -175,6 +180,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * Set the buffer containing the counters
+     *
      * @param counterValuesBuffer The new counters buffer.
      * @return this Object for method chaining.
      */
@@ -186,6 +192,7 @@ public class CommonContext implements AutoCloseable
 
     /**
      * Get the command and control file.
+     *
      * @return The command and control file.
      */
     public File cncFile()
@@ -229,7 +236,7 @@ public class CommonContext implements AutoCloseable
      * Is a media driver active in the current Aeron directory?
      *
      * @param driverTimeoutMs for the driver liveness check
-     * @param logHandler for feedback as liveness checked
+     * @param logHandler      for feedback as liveness checked
      * @return true if a driver is active or false if not
      */
     public boolean isDriverActive(final long driverTimeoutMs, final Consumer<String> logHandler)

@@ -120,13 +120,13 @@ by running `cpack` directly.
 Running Samples
 ---------------
 
-Start up a media driver which will create the data and conductor directories. On Linux, this will probably be at `/tmp/aeron`.
+Start up a media driver which will create the data and conductor directories. On Linux, this will probably be in `/dev/shm/aeron` or `/tmp/aeron`.
 
     $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.driver.MediaDriver
 
 Alternatively, specify the data and conductor directories. The following example uses the shared memory 'directory' on Linux, but you could just as easily point to the regular filesystem.
 
-    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir.conductor=/dev/shm/aeron/conductor -Daeron.dir.data=/dev/shm/aeron/data uk.co.real_logic.aeron.driver.MediaDriver
+    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir=/dev/shm/aeron uk.co.real_logic.aeron.driver.MediaDriver
 
 You can run the `BasicSubscriber` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 
@@ -158,7 +158,7 @@ Troubleshooting
   
   To alleviate, check to make sure you have enough disk space.
 
-  In the samples, on Linux, this will probably be either at `/dev/shm` or `/tmp/aeron` (depending on your settings).
+  In the samples, on Linux, this will probably be either at `/dev/shm/aeron` or `/tmp/aeron` (depending on your settings).
 
   See this [thread](https://issues.apache.org/jira/browse/CASSANDRA-5737?focusedCommentId=14251018&page=com.atlassian.jira.plugin.system.issuetabpanels:comment-tabpanel#comment-14251018) for a similar problem.
   

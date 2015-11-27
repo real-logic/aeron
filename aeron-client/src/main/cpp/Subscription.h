@@ -90,7 +90,7 @@ public:
      * as a series of fragments ordered withing a session.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
-     * @param fragmentLimit   number of message fragments to limit for a single poll operation.
+     * @param fragmentLimit   number of message fragments to limit for the poll across multiple {@link Image}s.
      * @return the number of fragments received
      *
      * @see FragmentAssembler
@@ -113,7 +113,7 @@ public:
 
             do
             {
-                fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit);
+                fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
 
                 if (++i == length)
                 {

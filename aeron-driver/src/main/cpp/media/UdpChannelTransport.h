@@ -38,6 +38,7 @@ public:
           m_socketFd(0),
           m_receiveBuffer(m_receiveBufferBytes, m_receiveBufferLength)
     {
+        m_receiveBuffer.setMemory(0, m_receiveBuffer.capacity(), 0);
     }
 
     ~UdpChannelTransport()

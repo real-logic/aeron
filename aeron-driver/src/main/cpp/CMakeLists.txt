@@ -21,7 +21,7 @@ SET(SOURCE
     uri/NetUtil.cpp
     media/UdpChannelTransport.cpp
     media/InterfaceLookup.cpp
-    media/InterfaceSearchAddress.cpp media/NetworkInterface.cpp media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h)
+    media/InterfaceSearchAddress.cpp media/NetworkInterface.cpp media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h media/SendChannelEndpoint.cpp media/SendChannelEndpoint.h)
 
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h
@@ -31,7 +31,7 @@ SET(HEADERS
     media/InterfaceLookup.h
     media/UdpChannel.h
     media/UdpChannelTransport.h
-    media/NetworkInterface.h media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h)
+    media/NetworkInterface.h media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h media/SendChannelEndpoint.cpp media/SendChannelEndpoint.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

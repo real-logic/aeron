@@ -76,6 +76,7 @@ struct StatusMessageDefn
 
 class StatusMessageFlyweight : public HeaderFlyweight
 {
+public:
     typedef StatusMessageFlyweight this_t;
 
     inline StatusMessageFlyweight(concurrent::AtomicBuffer& buffer, util::index_t offset)
@@ -138,7 +139,7 @@ class StatusMessageFlyweight : public HeaderFlyweight
         return *this;
     }
 
-    inline static std::int32_t headerLength()
+    inline static constexpr std::int32_t headerLength()
     {
         return sizeof(StatusMessageDefn);
     }

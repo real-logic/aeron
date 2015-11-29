@@ -31,9 +31,27 @@ class ReceiveChannelEndpoint : public UdpChannelTransport
 public:
     inline ReceiveChannelEndpoint(
         std::unique_ptr<UdpChannel>& channel)
-        : UdpChannelTransport(channel, &channel->remoteData(), &channel->remoteData(), nullptr)
+        : UdpChannelTransport(channel, &channel->remoteData(), &channel->remoteData(), nullptr),
+          m_smBuffer(m_smBufferBytes, protocol::StatusMessageFlyweight::headerLength()),
+          m_nakBuffer(m_nakBufferBytes, protocol::NakFlyweight::headerLength()),
+          m_dataHeaderFlyweight(receiveBuffer(), 0),
+          m_setupFlyweight(receiveBuffer(), 0),
+          m_smFlyweight(m_smBuffer, 0),
+          m_nakFlyweight(m_nakBuffer, 0)
     {
     }
+
+private:
+    std::uint8_t m_smBufferBytes[protocol::StatusMessageFlyweight::headerLength()];
+    std::uint8_t m_nakBufferBytes[protocol::NakFlyweight::headerLength()];
+
+    concurrent::AtomicBuffer m_smBuffer;
+    concurrent::AtomicBuffer m_nakBuffer;
+
+    protocol::DataHeaderFlyweight m_dataHeaderFlyweight;
+    protocol::SetupFlyweight m_setupFlyweight;
+    protocol::StatusMessageFlyweight m_smFlyweight;
+    protocol::NakFlyweight m_nakFlyweight;
 };
 
 }}}

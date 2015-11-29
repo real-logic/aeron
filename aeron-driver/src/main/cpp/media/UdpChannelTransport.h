@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_DRIVER_UDPCHANNELTRANSPORT__
 #define INCLUDED_AERON_DRIVER_UDPCHANNELTRANSPORT__
 
+#include <concurrent/AtomicBuffer.h>
 #include "UdpChannel.h"
 
 namespace aeron { namespace driver { namespace media
@@ -34,7 +35,8 @@ public:
           m_endPointAddress(endPointAddress),
           m_bindAddress(bindAddress),
           m_connectAddress(connectAddress),
-          m_socketFd(0)
+          m_socketFd(0),
+          m_receiveBuffer(m_receiveBufferBytes, m_receiveBufferLength)
     {
     }
 
@@ -51,12 +53,22 @@ public:
     std::int32_t recv(char* data, const int32_t len);
     void setTimeout(timeval timeout);
 
+protected:
+    inline concurrent::AtomicBuffer& receiveBuffer()
+    {
+        return m_receiveBuffer;
+    }
+
 private:
+    static const int m_receiveBufferLength = 4096;
+
     std::unique_ptr <UdpChannel> m_channel;
     InetAddress* m_endPointAddress;
     InetAddress* m_bindAddress;
     InetAddress* m_connectAddress;
     int m_socketFd;
+    std::uint8_t m_receiveBufferBytes[m_receiveBufferLength];
+    concurrent::AtomicBuffer m_receiveBuffer;
 };
 
 }}}

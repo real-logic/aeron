@@ -30,7 +30,7 @@ namespace aeron { namespace driver { namespace media {
 class ReceiveChannelEndpoint : public UdpChannelTransport
 {
 public:
-    inline ReceiveChannelEndpoint(std::unique_ptr<UdpChannel>& channel)
+    inline ReceiveChannelEndpoint(std::unique_ptr<UdpChannel>&& channel)
         : UdpChannelTransport(channel, &channel->remoteData(), &channel->remoteData(), nullptr),
           m_smBuffer(m_smBufferBytes, protocol::StatusMessageFlyweight::headerLength()),
           m_nakBuffer(m_nakBufferBytes, protocol::NakFlyweight::headerLength()),

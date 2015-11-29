@@ -24,10 +24,10 @@
 
 namespace aeron { namespace driver { namespace media {
 
-class SendChannelEndpoint : UdpChannelTransport
+class SendChannelEndpoint : public UdpChannelTransport
 {
 public:
-    inline SendChannelEndpoint(std::unique_ptr<UdpChannel>& channel)
+    inline SendChannelEndpoint(std::unique_ptr<UdpChannel>&& channel)
         : UdpChannelTransport(channel, &channel->remoteControl(), &channel->localControl(), &channel->remoteData()),
           m_dataHeaderFlyweight(receiveBuffer(), 0),
           m_smFlyweight(receiveBuffer(), 0)

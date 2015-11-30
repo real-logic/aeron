@@ -149,10 +149,21 @@ public:
 
     // TODO: add filePoll to return MemoryMappedFile
 
-    // TODO: add imageCount
+    /**
+     * Count of images connected to this subscription.
+     *
+     * @return count of images connected to this subscription.
+     */
+    inline int imageCount() const
+    {
+        return std::atomic_load(&m_imagesLength);
+    }
 
     /**
      * Return the {@link Image} associated with the given sessionId.
+     *
+     * This method generates a new copy of the Image overlaying the logbuffer.
+     * It is up to the application to not use the Image if it becomes unavailable.
      *
      * @param sessionId associated with the Image.
      * @return Image associated with the given sessionId or nullptr if no Image exist.
@@ -194,9 +205,15 @@ public:
         return result;
     }
 
-    // TODO: add close()
-
-    // TODO: add isClosed()
+    /**
+     * Has this object been closed and should no longer be used?
+     *
+     * @return true if it has been closed otherwise false.
+     */
+    inline bool isClosed(void) const
+    {
+        return std::atomic_load_explicit(&m_isClosed, std::memory_order_relaxed);
+    }
 
     /// @cond HIDDEN_SYMBOLS
     bool hasImage(std::int32_t sessionId)
@@ -273,6 +290,25 @@ public:
             (-1 != index) ? oldArray : nullptr,
             index);
     }
+
+    std::pair<Image*, int> removeAndCloseAllImages(void)
+    {
+        Image * oldArray = std::atomic_load(&m_images);
+        int length = std::atomic_load(&m_imagesLength);
+
+        for (int i = 0; i < length; i++)
+        {
+            oldArray[i].close();
+        }
+
+        std::atomic_store(&m_imagesLength, 0);  // set length first. Don't go over end of new array on poll
+        std::atomic_store(&m_images, new Image[0]);
+
+        std::atomic_store_explicit(&m_isClosed, true, std::memory_order_relaxed);
+
+        // oldArray to linger and be deleted by caller (aka client conductor)
+        return std::pair<Image *, int>(oldArray, length);
+    }
     /// @endcond
 
 private:
@@ -284,6 +320,8 @@ private:
 
     std::atomic<Image*> m_images;
     std::atomic<int> m_imagesLength;
+
+    std::atomic<bool> m_isClosed;
 };
 
 }

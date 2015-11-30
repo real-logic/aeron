@@ -186,7 +186,7 @@ std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t reg
     return sub;
 }
 
-void ClientConductor::releaseSubscription(std::int64_t registrationId, Image * connections, int connectionsLength)
+void ClientConductor::releaseSubscription(std::int64_t registrationId, Image *images, int imagesLength)
 {
     verifyDriverIsActive();
 
@@ -203,7 +203,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image * c
         m_driverProxy.removeSubscription((*it).m_registrationId);
         m_subscriptions.erase(it);
 
-        lingerResources(m_epochClock(), connections, connectionsLength);
+        lingerResources(m_epochClock(), images, imagesLength);
     }
 }
 
@@ -378,6 +378,41 @@ void ClientConductor::onUnavailableImage(
         });
 }
 
+void ClientConductor::onInterServiceTimeout(long now)
+{
+    std::lock_guard<std::mutex> lock(m_adminLock);
+
+    std::for_each(m_publications.begin(), m_publications.end(),
+        [&](PublicationStateDefn& entry)
+        {
+            std::shared_ptr<Publication> pub = entry.m_publication.lock();
+
+            if (nullptr != pub)
+            {
+                pub->close();
+            }
+        });
+
+    m_publications.clear();
+
+    std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
+        [&](SubscriptionStateDefn& entry)
+        {
+            std::shared_ptr<Subscription> sub = entry.m_subscription.lock();
+
+            if (nullptr != sub)
+            {
+                std::pair<Image *, int> removeResult = sub->removeAndCloseAllImages();
+                Image* images = removeResult.first;
+                const int imagesLength = removeResult.second;
+
+                lingerResources(now, images, imagesLength);
+            }
+        });
+
+    m_subscriptions.clear();
+}
+
 void ClientConductor::onCheckManagedResources(long now)
 {
     std::lock_guard<std::mutex> lock(m_adminLock);
@@ -420,16 +455,16 @@ void ClientConductor::lingerResource(long now, std::shared_ptr<LogBuffers> logBu
     m_lingeringLogBuffers.emplace_back(now, logBuffers);
 }
 
-void ClientConductor::lingerResources(long now, Image* image, int connectionsLength)
+void ClientConductor::lingerResources(long now, Image* images, int imagesLength)
 {
-    for (int i = 0; i < connectionsLength; i++)
+    for (int i = 0; i < imagesLength; i++)
     {
-        lingerResource(now, image[i].logBuffers());
+        lingerResource(now, images[i].logBuffers());
     }
 
-    if (nullptr != image)
+    if (nullptr != images)
     {
-        lingerResource(now, image);
+        lingerResource(now, images);
     }
 }
 

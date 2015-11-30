@@ -351,6 +351,22 @@ TEST_F(ClientConductorTest, shouldExceptionOnFindWhenReceivingErrorResponseOnAdd
     }, util::RegistrationException);
 }
 
+TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenInterServiceTimeoutExceeded)
+{
+    bool called = false;
+
+    m_errorHandler =
+        [&](std::exception& exception)
+        {
+            EXPECT_EQ(typeid(ConductorServiceTimeoutException), typeid(exception));
+            called = true;
+        };
+
+    m_currentTime += INTER_SERVICE_TIMEOUT_MS + 1;
+    m_conductor.doWork();
+    EXPECT_TRUE(called);
+}
+
 TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenDriverInactiveOnIdle)
 {
     bool called = false;
@@ -362,8 +378,7 @@ TEST_F(ClientConductorTest, shouldCallErrorHandlerWhenDriverInactiveOnIdle)
             called = true;
         };
 
-    m_currentTime += DRIVER_TIMEOUT_MS + 1;
-    m_conductor.doWork();
+    doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
 }
 
@@ -372,8 +387,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddPublicationAfterDriverInactive
     bool called = false;
     m_errorHandler = [&](std::exception& exception) { called = true; };
 
-    m_currentTime += DRIVER_TIMEOUT_MS + 1;
-    m_conductor.doWork();
+    doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
 
     ASSERT_THROW(
@@ -387,8 +401,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleasePublicationAfterDriverInac
     bool called = false;
     m_errorHandler = [&](std::exception& exception) { called = true; };
 
-    m_currentTime += DRIVER_TIMEOUT_MS + 1;
-    m_conductor.doWork();
+    doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
 
     ASSERT_THROW(
@@ -402,8 +415,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenAddSubscriptionAfterDriverInactiv
     bool called = false;
     m_errorHandler = [&](std::exception& exception) { called = true; };
 
-    m_currentTime += DRIVER_TIMEOUT_MS + 1;
-    m_conductor.doWork();
+    doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
 
     ASSERT_THROW(
@@ -417,8 +429,7 @@ TEST_F(ClientConductorTest, shouldExceptionWhenReleaseSubscriptionAfterDriverIna
     bool called = false;
     m_errorHandler = [&](std::exception& exception) { called = true; };
 
-    m_currentTime += DRIVER_TIMEOUT_MS + 1;
-    m_conductor.doWork();
+    doWorkUntilDriverTimeout();
     EXPECT_TRUE(called);
 
     ASSERT_THROW(
@@ -577,4 +588,77 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnect
         STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
     m_conductor.onUnavailableImage(STREAM_ID, SESSION_ID, POSITION, connectionId + 1);
     EXPECT_TRUE(sub->hasImage(SESSION_ID));
+}
+
+TEST_F(ClientConductorTest, shouldClosePublicationOnInterServiceTimeout)
+{
+    std::int64_t id = m_conductor.addPublication(CHANNEL, STREAM_ID);
+
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, id);
+
+    std::shared_ptr<Publication> pub = m_conductor.findPublication(id);
+
+    ASSERT_TRUE(pub != nullptr);
+
+    m_conductor.onInterServiceTimeout(m_currentTime);
+    EXPECT_TRUE(pub->isClosed());
+}
+
+TEST_F(ClientConductorTest, shouldCloseSubscriptionOnInterServiceTimeout)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onOperationSuccess(id);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+
+    ASSERT_TRUE(sub != nullptr);
+
+    m_conductor.onInterServiceTimeout(m_currentTime);
+
+    EXPECT_TRUE(sub->isClosed());
+}
+
+TEST_F(ClientConductorTest, shouldCloseAllPublicationsAndSubscriptionsOnInterServiceTimeout)
+{
+    std::int64_t pubId = m_conductor.addPublication(CHANNEL, STREAM_ID);
+    std::int64_t subId = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onNewPublication(STREAM_ID, SESSION_ID, PUBLICATION_LIMIT_COUNTER_ID, m_logFileName, pubId);
+    m_conductor.onOperationSuccess(subId);
+
+    std::shared_ptr<Publication> pub = m_conductor.findPublication(pubId);
+
+    ASSERT_TRUE(pub != nullptr);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(subId);
+
+    ASSERT_TRUE(sub != nullptr);
+
+    m_conductor.onInterServiceTimeout(m_currentTime);
+    EXPECT_TRUE(pub->isClosed());
+    EXPECT_TRUE(sub->isClosed());
+}
+
+TEST_F(ClientConductorTest, shouldRemoveImageOnInterServiceTimeout)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+
+    m_conductor.onOperationSuccess(id);
+
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+
+    ASSERT_TRUE(sub != nullptr);
+
+    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
+
+    m_conductor.onAvailableImage(STREAM_ID, SESSION_ID, POSITION, m_logFileName, SOURCE_IDENTITY, 1, positions, id);
+    ASSERT_TRUE(sub->hasImage(SESSION_ID));
+
+    m_conductor.onInterServiceTimeout(m_currentTime);
+
+    std::shared_ptr<Image> image = sub->getImage(SESSION_ID);
+
+    EXPECT_TRUE(sub->isClosed());
+    EXPECT_TRUE(image == nullptr);
 }

@@ -41,8 +41,10 @@ using namespace std::placeholders;
 #define BROADCAST_BUFFER_LENGTH (CAPACITY + BroadcastBufferDescriptor::TRAILER_LENGTH)
 #define COUNTER_VALUES_BUFFER_LENGTH (1024 * 1024)
 
-static const long DRIVER_TIMEOUT_MS = 10 * 1000;
+static const long DRIVER_TIMEOUT_MS = 5 * 1000;
 static const long RESOURCE_LINGER_TIMEOUT_MS = 5 * 1000;
+static const long INTER_SERVICE_TIMEOUT_NS = 10 * 1000 * 1000 * 1000;
+static const long INTER_SERVICE_TIMEOUT_MS = INTER_SERVICE_TIMEOUT_NS / 1000000;
 
 typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_LENGTH> many_to_one_ring_buffer_t;
 typedef std::array<std::uint8_t, BROADCAST_BUFFER_LENGTH> broadcast_buffer_t;
@@ -83,11 +85,24 @@ public:
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1, _2, _3, _4, _5),
             [&](std::exception& exception) { m_errorHandler(exception); },
             DRIVER_TIMEOUT_MS,
-            RESOURCE_LINGER_TIMEOUT_MS),
+            RESOURCE_LINGER_TIMEOUT_MS,
+            INTER_SERVICE_TIMEOUT_NS),
         m_errorHandler(defaultErrorHandler)
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
+    }
+
+    // do this to not trip the interServiceTimeout
+    void doWorkUntilDriverTimeout()
+    {
+        const long startTime = m_currentTime;
+
+        while (m_currentTime <= (startTime + DRIVER_TIMEOUT_MS))
+        {
+            m_currentTime += 1000;
+            m_conductor.doWork();
+        }
     }
 
 protected:

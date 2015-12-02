@@ -220,6 +220,8 @@ public class Publication implements AutoCloseable
      */
     public long positionLimit()
     {
+        ensureOpen();
+
         return positionLimit.getVolatile();
     }
 

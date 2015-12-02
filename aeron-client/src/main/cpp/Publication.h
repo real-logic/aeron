@@ -163,11 +163,23 @@ public:
             const std::int32_t currentTail =
                 m_appenders[LogBufferDescriptor::indexByTerm(initialTermId, activeTermId)]->rawTailVolatile();
 
-            result = LogBufferDescriptor::computePosition(activeTermId, currentTail, m_positionBitsToShift,
-                initialTermId);
+            result = LogBufferDescriptor::computePosition(
+                activeTermId, currentTail, m_positionBitsToShift, initialTermId);
         }
 
         return result;
+    }
+
+    /**
+     * Get the position limit beyond which this {@link Publication} will be back pressured.
+     *
+     * This should only be used as a guide to determine when back pressure is likely to be applied.
+     *
+     * @return the position limit beyond which this {@link Publication} will be back pressured.
+     */
+    inline std::int64_t positionLimit()
+    {
+        return m_publicationLimit.getVolatile();
     }
 
     /**

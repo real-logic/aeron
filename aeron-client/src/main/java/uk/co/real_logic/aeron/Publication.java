@@ -152,6 +152,8 @@ public class Publication implements AutoCloseable
      */
     public boolean hasBeenConnected()
     {
+        ensureOpen();
+
         return positionLimit.getVolatile() > 0;
     }
 

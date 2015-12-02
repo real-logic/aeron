@@ -56,7 +56,7 @@ public class Publication implements AutoCloseable
     private final int sessionId;
     private final int positionBitsToShift;
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
-    private final ReadablePosition publicationLimit;
+    private final ReadablePosition positionLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final ClientConductor clientConductor;
     private final String channel;
@@ -70,7 +70,7 @@ public class Publication implements AutoCloseable
         final String channel,
         final int streamId,
         final int sessionId,
-        final ReadablePosition publicationLimit,
+        final ReadablePosition positionLimit,
         final LogBuffers logBuffers,
         final long registrationId)
     {
@@ -91,7 +91,7 @@ public class Publication implements AutoCloseable
         this.logBuffers = logBuffers;
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
-        this.publicationLimit = publicationLimit;
+        this.positionLimit = positionLimit;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(logBuffers.termLength());
     }
 
@@ -152,7 +152,7 @@ public class Publication implements AutoCloseable
      */
     public boolean hasBeenConnected()
     {
-        return publicationLimit.getVolatile() > 0;
+        return positionLimit.getVolatile() > 0;
     }
 
     /**
@@ -212,10 +212,22 @@ public class Publication implements AutoCloseable
     }
 
     /**
+     * Get the position limit beyond which this {@link Publication} will be back pressured.
+     *
+     * This should only be used as a guide to determine when back pressure is likely to be applied.
+     *
+     * @return the position limit beyond which this {@link Publication} will be back pressured.
+     */
+    public long positionLimit()
+    {
+        return positionLimit.getVolatile();
+    }
+
+    /**
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
-     * @return The new stream position on success, otherwise {@link #BACK_PRESSURED} or {@link #NOT_CONNECTED}.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -235,7 +247,7 @@ public class Publication implements AutoCloseable
     {
         ensureOpen();
 
-        final long limit = publicationLimit.getVolatile();
+        final long limit = positionLimit.getVolatile();
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
@@ -294,7 +306,7 @@ public class Publication implements AutoCloseable
     {
         ensureOpen();
 
-        final long limit = publicationLimit.getVolatile();
+        final long limit = positionLimit.getVolatile();
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);

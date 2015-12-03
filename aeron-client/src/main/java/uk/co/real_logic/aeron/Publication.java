@@ -54,6 +54,7 @@ public class Publication implements AutoCloseable
     private final long registrationId;
     private final int streamId;
     private final int sessionId;
+    private final int initialTermId;
     private final int positionBitsToShift;
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final ReadablePosition positionLimit;
@@ -88,6 +89,7 @@ public class Publication implements AutoCloseable
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
+        this.initialTermId = initialTermId(logMetaDataBuffer);
         this.logBuffers = logBuffers;
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
@@ -206,7 +208,6 @@ public class Publication implements AutoCloseable
     {
         ensureOpen();
 
-        final int initialTermId = initialTermId(logMetaDataBuffer);
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int currentTail = termAppenders[indexByTerm(initialTermId, activeTermId)].tailVolatile();
 
@@ -252,7 +253,7 @@ public class Publication implements AutoCloseable
         ensureOpen();
 
         final long limit = positionLimit.getVolatile();
-        final int initialTermId = initialTermId(logMetaDataBuffer);
+        final int initialTermId = this.initialTermId;
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];
@@ -311,7 +312,7 @@ public class Publication implements AutoCloseable
         ensureOpen();
 
         final long limit = positionLimit.getVolatile();
-        final int initialTermId = initialTermId(logMetaDataBuffer);
+        final int initialTermId = this.initialTermId;
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId, activeTermId);
         final TermAppender termAppender = termAppenders[activeIndex];

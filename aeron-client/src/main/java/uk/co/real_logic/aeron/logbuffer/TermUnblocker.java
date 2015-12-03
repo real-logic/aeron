@@ -74,10 +74,7 @@ public class TermUnblocker
 
         if (frameLength < 0)
         {
-            applyDefaultHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset);
-            frameType(termBuffer, termOffset, HDR_TYPE_PAD);
-            frameTermOffset(termBuffer, termOffset, termOffset);
-            frameLengthOrdered(termBuffer, termOffset, -frameLength);
+            resetHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset, -frameLength);
             status = UNBLOCKED;
         }
         else if (0 == frameLength)
@@ -92,10 +89,7 @@ public class TermUnblocker
                 {
                     if (scanBackToConfirmZeroed(termBuffer, currentOffset, termOffset))
                     {
-                        applyDefaultHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset);
-                        frameType(termBuffer, termOffset, HDR_TYPE_PAD);
-                        frameTermOffset(termBuffer, termOffset, termOffset);
-                        frameLengthOrdered(termBuffer, termOffset, currentOffset - termOffset);
+                        resetHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset, currentOffset - termOffset);
                         status = UNBLOCKED;
                     }
 
@@ -109,16 +103,26 @@ public class TermUnblocker
             {
                 if (0 == frameLengthVolatile(termBuffer, termOffset))
                 {
-                    applyDefaultHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset);
-                    frameType(termBuffer, termOffset, HDR_TYPE_PAD);
-                    frameTermOffset(termBuffer, termOffset, termOffset);
-                    frameLengthOrdered(termBuffer, termOffset, currentOffset - termOffset);
+                    resetHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset, currentOffset - termOffset);
                     status = UNBLOCKED_TO_END;
                 }
             }
         }
 
         return status;
+    }
+
+    private static void resetHeader(
+        final UnsafeBuffer logMetaDataBuffer,
+        final int activeIndex,
+        final UnsafeBuffer termBuffer,
+        final int termOffset,
+        final int frameLength)
+    {
+        applyDefaultHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset);
+        frameType(termBuffer, termOffset, HDR_TYPE_PAD);
+        frameTermOffset(termBuffer, termOffset, termOffset);
+        frameLengthOrdered(termBuffer, termOffset, frameLength);
     }
 
     public static boolean scanBackToConfirmZeroed(final UnsafeBuffer buffer, final int from, final int limit)

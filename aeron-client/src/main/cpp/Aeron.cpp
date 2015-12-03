@@ -53,7 +53,8 @@ Aeron::Aeron(Context &context) :
         context.m_onUnavailableImageHandler,
         context.m_exceptionHandler,
         context.m_mediaDriverTimeout,
-        context.m_resourceLingerTimeout),
+        context.m_resourceLingerTimeout,
+        CncFileDescriptor::clientLivenessTimeout(m_cncBuffer)),
     m_idleStrategy(IDLE_SLEEP_MS),
     m_conductorRunner(m_conductor, m_idleStrategy, m_context.m_exceptionHandler)
 {

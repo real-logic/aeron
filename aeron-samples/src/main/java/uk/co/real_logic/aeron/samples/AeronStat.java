@@ -44,6 +44,7 @@ public class AeronStat
         final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
         final DirectBuffer metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
         final int cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+        final long clientLiveness = metaDataBuffer.getLong(CncFileDescriptor.clientLivenessTimeoutOffset(0));
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
@@ -61,7 +62,8 @@ public class AeronStat
         while (running.get())
         {
             System.out.print("\033[H\033[2J");
-            System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
+            System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat", new Date());
+            System.out.format(" (CnC v%d), client liveness %,d ns\n", cncVersion, clientLiveness);
             System.out.println("=========================");
 
             countersManager.forEach(

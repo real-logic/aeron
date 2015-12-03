@@ -26,7 +26,8 @@ Subscription::Subscription(
     m_registrationId(registrationId),
     m_streamId(streamId),
     m_images(nullptr),
-    m_imagesLength(0)
+    m_imagesLength(0),
+    m_isClosed(false)
 {
 
 }

@@ -84,6 +84,9 @@ int main (int argc, char** argv)
         MemoryMappedFile::ptr_t cncFile =
             MemoryMappedFile::mapExisting((settings.basePath + "/" + CncFileDescriptor::CNC_FILE).c_str());
 
+        const std::int32_t cncVersion = CncFileDescriptor::cncVersion(cncFile);
+        const std::int64_t clientLivenessTimeoutNs = CncFileDescriptor::clientLivenessTimeout(cncFile);
+
         AtomicBuffer labelsBuffer = CncFileDescriptor::createCounterLabelsBuffer(cncFile);
         AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);
 
@@ -99,7 +102,9 @@ int main (int argc, char** argv)
 
             std::printf("\033[H\033[2J");
 
-            std::printf("%s - Aeron Stat\n", currentTime);
+            std::printf(
+                "%s - Aeron Stat (CnC v%" PRId32 "), client liveness %'" PRId64 " ns\n",
+                currentTime, cncVersion, clientLivenessTimeoutNs);
             std::printf("===========================\n");
 
             ::setlocale(LC_NUMERIC, "");

@@ -80,6 +80,7 @@ DECLARE_SOURCED_EXCEPTION (ElementNotFound);
 DECLARE_SOURCED_EXCEPTION (IllegalArgumentException);
 DECLARE_SOURCED_EXCEPTION (IllegalStateException);
 DECLARE_SOURCED_EXCEPTION (DriverTimeoutException);
+DECLARE_SOURCED_EXCEPTION (ConductorServiceTimeoutException);
 
 class RegistrationException : public SourcedException
 {

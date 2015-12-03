@@ -56,7 +56,8 @@ public:
         const on_unavailable_image_t & inactiveImageHandler,
         const exception_handler_t& errorHandler,
         long driverTimeoutMs,
-        long resourceLingerTimeoutMs) :
+        long resourceLingerTimeoutMs,
+        long interServiceTimeoutNs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_counterValuesBuffer(counterValuesBuffer),
@@ -68,8 +69,10 @@ public:
         m_epochClock(epochClock),
         m_timeOfLastKeepalive(epochClock()),
         m_timeOfLastCheckManagedResources(epochClock()),
+        m_timeOfLastDoWork(epochClock()),
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
+        m_interServiceTimeoutMs(interServiceTimeoutNs / 1000000),
         m_driverActive(true)
     {
     }
@@ -96,7 +99,7 @@ public:
 
     std::int64_t addSubscription(const std::string& channel, std::int32_t streamId);
     std::shared_ptr<Subscription> findSubscription(std::int64_t registrationId);
-    void releaseSubscription(std::int64_t registrationId, Image * connections, int connectionsLength);
+    void releaseSubscription(std::int64_t registrationId, Image *images, int imagesLength);
 
     void onNewPublication(
         std::int32_t streamId,
@@ -128,12 +131,14 @@ public:
         std::int64_t position,
         std::int64_t correlationId);
 
+    void onInterServiceTimeout(long now);
+
 protected:
     void onCheckManagedResources(long now);
 
     void lingerResource(long now, Image * array);
     void lingerResource(long now, std::shared_ptr<LogBuffers> logBuffers);
-    void lingerResources(long now, Image *image, int connectionsLength);
+    void lingerResources(long now, Image *images, int connectionsLength);
 
 private:
     enum class RegistrationStatus
@@ -225,8 +230,10 @@ private:
     epoch_clock_t m_epochClock;
     long m_timeOfLastKeepalive;
     long m_timeOfLastCheckManagedResources;
+    long m_timeOfLastDoWork;
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
+    long m_interServiceTimeoutMs;
 
     std::atomic<bool> m_driverActive;
 
@@ -236,6 +243,17 @@ private:
 
         const long now = m_epochClock();
         int result = 0;
+
+        if (now > (m_timeOfLastDoWork + m_interServiceTimeoutMs))
+        {
+            onInterServiceTimeout(now);
+
+            ConductorServiceTimeoutException exception(
+                strPrintf("Timeout between service calls over %d ms", m_interServiceTimeoutMs), SOURCEINFO);
+            m_errorHandler(exception);
+        }
+
+        m_timeOfLastDoWork = now;
 
         if (now > (m_timeOfLastKeepalive + KEEPALIVE_TIMEOUT_MS))
         {

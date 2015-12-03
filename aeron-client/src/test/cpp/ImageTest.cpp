@@ -38,7 +38,7 @@ static const std::int32_t SESSION_ID = 200;
 static const std::int32_t SUBSCRIBER_POSITION_ID = 0;
 
 static const std::int64_t CORRELATION_ID = 100;
-static const std::int32_t TERM_ID_1 = 1;
+static const std::string SOURCE_IDENTITY = "test";
 
 static const std::array<std::uint8_t, 17> DATA = { { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } };
 
@@ -83,8 +83,8 @@ public:
     {
         m_log.fill(0);
 
-        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1);
-        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_INITIAL_TERM_ID_OFFSET, TERM_ID_1);
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_ID_OFFSET, INITIAL_TERM_ID);
+        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_INITIAL_TERM_ID_OFFSET, INITIAL_TERM_ID);
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
     }
 
@@ -127,15 +127,40 @@ protected:
     fragment_handler_t m_handler;
 };
 
+TEST_F(ImageTest, shouldReportCorrectInitialTermId)
+{
+    const std::int32_t messageIndex = 0;
+    const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
+    const std::int64_t initialPosition =
+        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    EXPECT_EQ(image.initialTermId(), INITIAL_TERM_ID);
+}
+
+TEST_F(ImageTest, shouldReportCorrectTermBufferLength)
+{
+    const std::int32_t messageIndex = 0;
+    const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
+    const std::int64_t initialPosition =
+        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    EXPECT_EQ(image.termBufferLength(), TERM_LENGTH);
+}
+
 TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
 {
     const std::int32_t messageIndex = 0;
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
 
     insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex));
 
@@ -145,6 +170,7 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
     const int fragments = image.poll(m_handler, INT_MAX);
     EXPECT_EQ(fragments, 1);
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition + ALIGNED_FRAME_LENGTH);
+    EXPECT_EQ(image.position(), initialPosition + ALIGNED_FRAME_LENGTH);
 }
 
 TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInInitialTermId)
@@ -153,9 +179,10 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInIni
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
 
     insertDataFrame(INITIAL_TERM_ID, offsetOfFrame(messageIndex));
 
@@ -165,6 +192,7 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInIni
     const int fragments = image.poll(m_handler, INT_MAX);
     EXPECT_EQ(fragments, 1);
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition + ALIGNED_FRAME_LENGTH);
+    EXPECT_EQ(image.position(), initialPosition + ALIGNED_FRAME_LENGTH);
 }
 
 TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNonInitialTermId)
@@ -174,9 +202,10 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNon
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
+    EXPECT_EQ(image.position(), initialPosition);
 
     insertDataFrame(activeTermId, offsetOfFrame(messageIndex));
 
@@ -186,4 +215,31 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNon
     const int fragments = image.poll(m_handler, INT_MAX);
     EXPECT_EQ(fragments, 1);
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition + ALIGNED_FRAME_LENGTH);
+    EXPECT_EQ(image.position(), initialPosition + ALIGNED_FRAME_LENGTH);
+}
+
+TEST_F(ImageTest, shouldEnsureImageIsOpenBeforeReadingPosition)
+{
+    const std::int32_t messageIndex = 0;
+    const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
+    const std::int64_t initialPosition =
+        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    image.close();
+    EXPECT_EQ(image.position(), IMAGE_CLOSED);
+}
+
+TEST_F(ImageTest, shouldEnsureImageIsOpenBeforePoll)
+{
+    const std::int32_t messageIndex = 0;
+    const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
+    const std::int64_t initialPosition =
+        LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
+
+    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    image.close();
+    EXPECT_EQ(image.poll(m_handler, INT_MAX), IMAGE_CLOSED);
 }

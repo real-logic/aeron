@@ -158,13 +158,12 @@ public:
 
         if (!isClosed())
         {
-            const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
             const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
             const std::int32_t currentTail =
-                m_appenders[LogBufferDescriptor::indexByTerm(initialTermId, activeTermId)]->rawTailVolatile();
+                m_appenders[LogBufferDescriptor::indexByTerm(m_initialTermId, activeTermId)]->rawTailVolatile();
 
             result = LogBufferDescriptor::computePosition(
-                activeTermId, currentTail, m_positionBitsToShift, initialTermId);
+                activeTermId, currentTail, m_positionBitsToShift, m_initialTermId);
         }
 
         return result;
@@ -197,13 +196,12 @@ public:
 
         if (!isClosed())
         {
-            const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
             const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
-            const int activeIndex = LogBufferDescriptor::indexByTerm(initialTermId, activeTermId);
+            const int activeIndex = LogBufferDescriptor::indexByTerm(m_initialTermId, activeTermId);
             TermAppender *appender = m_appenders[activeIndex].get();
             const std::int32_t currentTail = appender->rawTailVolatile();
             const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail,
-                m_positionBitsToShift, initialTermId);
+                m_positionBitsToShift, m_initialTermId);
 
             const std::int64_t limit = m_publicationLimit.getVolatile();
 
@@ -274,13 +272,12 @@ public:
 
         if (!isClosed())
         {
-            const std::int32_t initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
             const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
-            const int activeIndex = LogBufferDescriptor::indexByTerm(initialTermId, activeTermId);
+            const int activeIndex = LogBufferDescriptor::indexByTerm(m_initialTermId, activeTermId);
             TermAppender *appender = m_appenders[activeIndex].get();
             const std::int32_t currentTail = appender->rawTailVolatile();
             const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail,
-                m_positionBitsToShift, initialTermId);
+                m_positionBitsToShift, m_initialTermId);
 
             const std::int64_t limit = m_publicationLimit.getVolatile();
 
@@ -315,6 +312,7 @@ private:
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
+    std::int32_t m_initialTermId;
     ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
     std::atomic<bool> m_isClosed = { false };
 

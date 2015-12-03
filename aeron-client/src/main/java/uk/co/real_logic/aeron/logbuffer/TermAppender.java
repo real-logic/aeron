@@ -335,7 +335,7 @@ public class TermAppender
         else
         {
             lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | defaultHeaderVersionFlagsType;
-            termOffsetAndSessionId = (((long)reverseBytes(frameOffset)) << 32) | defaultHeaderSessionId;
+            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | defaultHeaderSessionId;
         }
 
         buffer.putLongOrdered(frameOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);

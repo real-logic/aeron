@@ -330,12 +330,12 @@ public class TermAppender
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
             lengthVersionFlagsType = defaultHeaderVersionFlagsType | ((-frameLength) & 0xFFFF_FFFFL);
-            termOffsetAndSessionId = defaultHeaderSessionId | (frameOffset & 0xFFFF_FFFFL);
+            termOffsetAndSessionId = defaultHeaderSessionId | frameOffset;
         }
         else
         {
             lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | defaultHeaderVersionFlagsType;
-            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | defaultHeaderSessionId;
+            termOffsetAndSessionId = (((long)reverseBytes(frameOffset)) << 32) | defaultHeaderSessionId;
         }
 
         buffer.putLongOrdered(frameOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);

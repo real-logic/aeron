@@ -330,7 +330,7 @@ public class TermAppender
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
             lengthVersionFlagsType = defaultHeaderVersionFlagsType | ((-frameLength) & 0xFFFF_FFFFL);
-            termOffsetAndSessionId = defaultHeaderSessionId | (frameOffset & 0xFFFF_FFFFL);
+            termOffsetAndSessionId = defaultHeaderSessionId | frameOffset;
         }
         else
         {

@@ -471,6 +471,21 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Apply the default header for a message in a term.
+     *
+     * @param logMetaDataBuffer containing the default headers.
+     * @param activeIndex       for the current term.
+     * @param termBuffer        to which the default header should be applied.
+     * @param termOffset        at which the default should be applied.
+     */
+    public static void applyDefaultHeader(
+        final UnsafeBuffer logMetaDataBuffer, final int activeIndex, final UnsafeBuffer termBuffer, final int termOffset)
+    {
+        final int defaultHeaderOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (activeIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+        termBuffer.putBytes(termOffset, logMetaDataBuffer, defaultHeaderOffset, HEADER_LENGTH);
+    }
+
+    /**
      * Set the termId within a default header.
      *
      * @param logMetaDataBuffer containing the default headers.

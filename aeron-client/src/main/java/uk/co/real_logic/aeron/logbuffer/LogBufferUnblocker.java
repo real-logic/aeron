@@ -33,9 +33,7 @@ public class LogBufferUnblocker
      * @return whether unblocked or not
      */
     public static boolean unblock(
-        final LogBufferPartition[] logPartitions,
-        final UnsafeBuffer logMetaDataBuffer,
-        final long blockedPosition)
+        final LogBufferPartition[] logPartitions, final UnsafeBuffer logMetaDataBuffer, final long blockedPosition)
     {
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int activeIndex = indexByTerm(initialTermId(logMetaDataBuffer), activeTermId);
@@ -43,10 +41,11 @@ public class LogBufferUnblocker
         final UnsafeBuffer termBuffer = activePartition.termBuffer();
         final int positionBitsToShift = Integer.numberOfTrailingZeros(termBuffer.capacity());
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
+        final int tailOffset = activePartition.tailVolatile();
 
         boolean result = false;
 
-        switch (TermUnblocker.unblock(termBuffer, blockedOffset, activePartition.tailVolatile()))
+        switch (TermUnblocker.unblock(logMetaDataBuffer, activeIndex, termBuffer, blockedOffset, tailOffset))
         {
             case UNBLOCKED_TO_END:
                 final int newTermId = activeTermId + 1;

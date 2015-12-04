@@ -17,11 +17,13 @@
 #ifndef INCLUDED_AERON_DRIVER_UDPCHANNELTRANSPORT__
 #define INCLUDED_AERON_DRIVER_UDPCHANNELTRANSPORT__
 
+#include <protocol/HeaderFlyweight.h>
 #include <concurrent/AtomicBuffer.h>
+#include <concurrent/logbuffer/FrameDescriptor.h>
+
 #include "UdpChannel.h"
 
-namespace aeron { namespace driver { namespace media
-{
+namespace aeron { namespace driver { namespace media {
 
 class UdpChannelTransport
 {
@@ -35,7 +37,7 @@ public:
           m_endPointAddress(endPointAddress),
           m_bindAddress(bindAddress),
           m_connectAddress(connectAddress),
-          m_socketFd(0),
+          m_sendSocketFd(0),
           m_receiveBuffer(m_receiveBufferBytes, m_receiveBufferLength)
     {
         m_receiveBuffer.setMemory(0, m_receiveBuffer.capacity(), 0);
@@ -43,21 +45,54 @@ public:
 
     ~UdpChannelTransport()
     {
-        if (0 != m_socketFd)
+        if (0 != m_sendSocketFd)
         {
-            close(m_socketFd);
+            close(m_sendSocketFd);
+        }
+    }
+
+    inline void output(std::ostream& out) const
+    {
+        out << "Channel: " << *m_channel <<
+            ", endPoint: " << *m_endPointAddress <<
+            ", bind: " << *m_bindAddress <<
+            ", connect: ";
+        if (nullptr != m_connectAddress)
+        {
+            out << *m_connectAddress;
+        }
+        else
+        {
+            out << "N/A";
         }
     }
 
     void openDatagramChannel();
-    void send(const char* data, const int32_t len);
+    void send(const void* data, const int32_t len);
     std::int32_t recv(char* data, const int32_t len);
     void setTimeout(timeval timeout);
+    InetAddress* receive(int32_t* pInt);
 
 protected:
     inline concurrent::AtomicBuffer& receiveBuffer()
     {
         return m_receiveBuffer;
+    }
+
+    inline bool isValidFrame(concurrent::AtomicBuffer& buffer, std::int32_t length)
+    {
+        bool isValid = true;
+
+        if (concurrent::logbuffer::FrameDescriptor::frameVersion(buffer, 0) != protocol::HeaderFlyweight::CURRENT_VERSION)
+        {
+            isValid = false;
+        }
+        else if (length < protocol::HeaderFlyweight::headerLength())
+        {
+            isValid = false;
+        }
+
+        return isValid;
     }
 
 private:
@@ -67,10 +102,18 @@ private:
     InetAddress* m_endPointAddress;
     InetAddress* m_bindAddress;
     InetAddress* m_connectAddress;
-    int m_socketFd;
+    int m_sendSocketFd;
+    int m_recvSocketFd;
     std::uint8_t m_receiveBufferBytes[m_receiveBufferLength];
     concurrent::AtomicBuffer m_receiveBuffer;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const UdpChannelTransport& dt)
+{
+    dt.output(os);
+    return os;
+}
+
 
 }}}
 

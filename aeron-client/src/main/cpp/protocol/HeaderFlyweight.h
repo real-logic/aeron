@@ -95,6 +95,28 @@ public:
         m_struct.type = value;
         return *this;
     }
+
+    inline static constexpr std::int32_t headerLength()
+    {
+        return sizeof(HeaderDefn);
+    }
+
+    /** header type PAD */
+    static const std::int32_t HDR_TYPE_PAD = 0x00;
+    /** header type DATA */
+    static const std::int32_t HDR_TYPE_DATA = 0x01;
+    /** header type NAK */
+    static const std::int32_t HDR_TYPE_NAK = 0x02;
+    /** header type SM */
+    static const std::int32_t HDR_TYPE_SM = 0x03;
+    /** header type ERR */
+    static const std::int32_t HDR_TYPE_ERR = 0x04;
+    /** header type SETUP */
+    static const std::int32_t HDR_TYPE_SETUP = 0x05;
+    /** header type EXT */
+    static const std::int32_t HDR_TYPE_EXT = 0xFFFF;
+
+    static const std::int8_t CURRENT_VERSION = 0x0;
 };
 
 }}

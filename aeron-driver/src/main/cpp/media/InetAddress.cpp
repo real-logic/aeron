@@ -160,7 +160,7 @@ void Inet4Address::output(std::ostream &os) const
 {
     char addr[INET_ADDRSTRLEN];
     inet_ntop(domain(), &m_socketAddress.sin_addr, addr, INET_ADDRSTRLEN);
-    os << addr;
+    os << addr << ":" << port();
 }
 
 std::unique_ptr<InetAddress> Inet4Address::nextAddress() const

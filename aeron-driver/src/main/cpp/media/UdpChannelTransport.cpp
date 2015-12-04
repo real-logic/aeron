@@ -32,61 +32,107 @@ static void setSocketOption(
     }
 }
 
-void UdpChannelTransport::openDatagramChannel()
+static void applyBind(int socketFd, const sockaddr* address, socklen_t address_len)
 {
-    const uint32_t yes = 1;
-    const uint32_t no = 0;
+    if (bind(socketFd, address, address_len) < 0)
+    {
+        int reuse = 5;
+        socklen_t len = sizeof(reuse);
+        getsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, &reuse, &len);
 
-    int socketFd = socket(m_endPointAddress->family(), m_endPointAddress->type(), m_endPointAddress->protocol());
-    if (socketFd < 0)
+        std::cout << "reuse: " << reuse << std::endl;
+
+        throw aeron::util::IOException{
+            aeron::util::strPrintf("Failed to bind socket, error: %s", strerror(errno)), SOURCEINFO};
+    }
+}
+
+static int newSocket(int domain, int type, int protocol)
+{
+    int fd = socket(domain, type, protocol);
+    if (fd < 0)
     {
         throw aeron::util::IOException{
             aeron::util::strPrintf("Failed to open socket: %s", strerror(errno)), SOURCEINFO};
     }
 
-    if (bind(socketFd, m_bindAddress->address(), m_bindAddress->length()) < 0)
-    {
-        throw aeron::util::IOException{
-            aeron::util::strPrintf("Failed to bind socket: %s", strerror(errno)), SOURCEINFO};
-    }
+    return fd;
+}
+
+//static void dump(sockaddr_in& addr)
+//{
+//    char s[INET_ADDRSTRLEN];
+//    inet_ntop(AF_INET, &addr.sin_addr, s, INET_ADDRSTRLEN);
+//
+//    std::cout << "Addr{" << s << ":" << addr.sin_port << "}" << std::endl;
+//}
+
+void UdpChannelTransport::openDatagramChannel()
+{
+    const int yes = 1;
+
+    m_sendSocketFd = newSocket(m_endPointAddress->family(), m_endPointAddress->type(), m_endPointAddress->protocol());
+    m_recvSocketFd = m_sendSocketFd;
 
     if (m_channel->isMulticast())
     {
         NetworkInterface& localInterface = m_channel->localInterface();
 
-        setSocketOption(socketFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+        if (nullptr != m_connectAddress)
+        {
+            m_recvSocketFd = newSocket(m_endPointAddress->family(), m_endPointAddress->type(), m_endPointAddress->protocol());
+        }
+
+        setSocketOption(m_recvSocketFd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+#ifdef SO_REUSEPORT
+        setSocketOption(m_recvSocketFd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes));
+#endif
 
         if (m_endPointAddress->family() == AF_INET)
         {
+            sockaddr_in toBind;
+            toBind.sin_family = AF_INET;
+            toBind.sin_addr.s_addr = INADDR_ANY;
+            toBind.sin_port = htons(m_endPointAddress->port());
+
+            applyBind(m_recvSocketFd, (const sockaddr*) &toBind, sizeof(toBind));
+
             ip_mreq mreq;
             memcpy(&mreq.imr_multiaddr.s_addr, m_endPointAddress->addrPtr(), m_endPointAddress->addrSize());
             memcpy(&mreq.imr_interface, localInterface.address().addrPtr(), localInterface.address().addrSize());
 
-            setSocketOption(socketFd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+            setSocketOption(m_recvSocketFd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
+            setSocketOption(
+                m_sendSocketFd, IPPROTO_IP, IP_MULTICAST_IF,
+                localInterface.address().addrPtr(), localInterface.address().addrSize());
         }
         else if (m_endPointAddress->family() == AF_INET6)
         {
+            sockaddr_in6 toBind;
+            toBind.sin6_family = AF_INET6;
+            toBind.sin6_addr = in6addr_any;
+            toBind.sin6_port = htons(m_endPointAddress->port());
+
+            applyBind(m_recvSocketFd, (const sockaddr*) &toBind, sizeof(toBind));
+
             ipv6_mreq mreq6;
             memcpy(&mreq6.ipv6mr_multiaddr, m_endPointAddress->addrPtr(), m_endPointAddress->addrSize());
             mreq6.ipv6mr_interface = localInterface.index();
 
             dynamic_cast<Inet6Address*>(m_endPointAddress)->scope(1);
 
-            setSocketOption(socketFd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq6, sizeof(mreq6));
+            setSocketOption(m_recvSocketFd, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq6, sizeof(mreq6));
         }
-
     }
     else
     {
-//        throw aeron::util::IOException{"Only multicast supported", SOURCEINFO};
+        applyBind(m_sendSocketFd, m_bindAddress->address(), m_bindAddress->length());
     }
-
-    m_socketFd = socketFd;
 }
 
-void UdpChannelTransport::send(const char* data, const int32_t len)
+void UdpChannelTransport::send(const void* data, const int32_t len)
 {
-    if (sendto(m_socketFd, data, (size_t) len, 0, m_endPointAddress->address(), m_endPointAddress->length()) < 0)
+    if (sendto(m_sendSocketFd, data, (size_t) len, 0, m_endPointAddress->address(), m_endPointAddress->length()) < 0)
     {
         throw aeron::util::IOException{
             aeron::util::strPrintf("Failed to send: %s", strerror(errno)), SOURCEINFO};
@@ -97,7 +143,7 @@ std::int32_t UdpChannelTransport::recv(char* data, const int32_t len)
 {
     socklen_t socklen = m_connectAddress->length();
     ssize_t size = 0;
-    if ((size = recvfrom(m_socketFd, data, len, 0, m_connectAddress->address(), &socklen)) < 0)
+    if ((size = recvfrom(m_recvSocketFd, data, len, 0, m_connectAddress->address(), &socklen)) < 0)
     {
         throw aeron::util::IOException{"Failed to recv", SOURCEINFO};
     }
@@ -107,5 +153,11 @@ std::int32_t UdpChannelTransport::recv(char* data, const int32_t len)
 
 void UdpChannelTransport::setTimeout(timeval timeout)
 {
-    setSocketOption(m_socketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    setSocketOption(m_recvSocketFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+}
+
+InetAddress* UdpChannelTransport::receive(int32_t* bytesRead)
+{
+
+    return nullptr;
 }

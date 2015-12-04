@@ -147,6 +147,11 @@ inline static void frameLengthOrdered(AtomicBuffer& logBuffer, util::index_t fra
     logBuffer.putInt32Ordered(lengthOffset(frameOffset), frameLength);
 }
 
+inline static std::uint8_t frameVersion(AtomicBuffer& logBuffer, util::index_t frameOffset)
+{
+    return logBuffer.getUInt8(frameOffset);
+}
+
 };
 
 }}}

@@ -96,7 +96,7 @@ inline std::ostream& operator<<(std::ostream& os, const UdpChannel& dt)
     os << "LocalControl=" << dt.localControl()
         << ",LocalData=" << dt.localData()
         << ",RemoteControl=" << dt.remoteControl()
-        << ",RemoteData=" << dt.remoteData() << std::endl;
+        << ",RemoteData=" << dt.remoteData();
     return os;
 }
 

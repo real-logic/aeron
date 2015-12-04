@@ -34,10 +34,9 @@ TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv4)
     in_addr any {INADDR_ANY};
     timeval timeout{5, 0};
 
-    std::unique_ptr<UdpChannel> channel = UdpChannel::parse("aeron:udp?group=224.0.1.3:40124");
+    std::unique_ptr<UdpChannel> channel = UdpChannel::parse("aeron:udp?group=224.0.1.3:40124|interface=localhost");
 
-    Inet4Address* bindAddress = new Inet4Address{any, channel->remoteData().port()};
-    UdpChannelTransport transport{channel, &channel->remoteData(), bindAddress, &channel->localData()};
+    UdpChannelTransport transport{channel, &channel->remoteData(), &channel->remoteData(), &channel->localData()};
 
     transport.openDatagramChannel();
     transport.setTimeout(timeout);

@@ -15,3 +15,29 @@
  */
 
 #include "ReceiveChannelEndpoint.h"
+
+using namespace aeron::driver::media;
+
+std::int32_t ReceiveChannelEndpoint::pollForData()
+{
+    std::int32_t bytesReceived = 0;
+    std::int32_t bytesRead = 0;
+
+    InetAddress* srcAddress = receive(&bytesReceived);
+
+    if (nullptr != srcAddress)
+    {
+        if (isValidFrame(receiveBuffer(), bytesRead))
+        {
+            bytesReceived = dispatch(receiveBuffer(), bytesRead, *srcAddress);
+        }
+    }
+
+    return bytesReceived;
+}
+
+std::int32_t ReceiveChannelEndpoint::dispatch(
+    concurrent::AtomicBuffer &buffer, std::int32_t length, InetAddress& address)
+{
+    return 0;
+}

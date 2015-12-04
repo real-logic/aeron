@@ -1,2 +1,2 @@
-include 'aeron-client', 'aeron-driver', 'aeron-samples', 'aeron-system-tests', 'aeron-all', 'aeron-benchmarks'
+include 'aeron-client', 'aeron-driver', 'aeron-samples', 'aeron-system-tests', 'aeron-all'
 

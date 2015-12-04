@@ -92,8 +92,8 @@ public class ImageTest
         when(logBuffers.atomicBuffers()).thenReturn(atomicBuffers);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionWhenPollingOnClosed()
+    @Test
+    public void shouldHandleClosedImage()
     {
         final long initialPosition = computePosition(INITIAL_TERM_ID, 0, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
         final Image image = createImage(initialPosition);
@@ -101,7 +101,7 @@ public class ImageTest
         image.managedResource();
 
         assertTrue(image.isClosed());
-        image.poll(mockFragmentHandler, Integer.MAX_VALUE);
+        assertThat(image.poll(mockFragmentHandler, Integer.MAX_VALUE), is(0));
     }
 
     @Test

@@ -51,6 +51,11 @@ public class Publication implements AutoCloseable
      */
     public static final long ADMIN_ACTION = -3;
 
+    /**
+     * The {@link Publication} has been closed and should no longer be used.
+     */
+    public static final long CLOSED = -4;
+
     private final long registrationId;
     private final int streamId;
     private final int sessionId;
@@ -154,9 +159,7 @@ public class Publication implements AutoCloseable
      */
     public boolean hasBeenConnected()
     {
-        ensureOpen();
-
-        return positionLimit.getVolatile() > 0;
+        return !isClosed && positionLimit.getVolatile() > 0;
     }
 
     /**
@@ -206,7 +209,10 @@ public class Publication implements AutoCloseable
      */
     public long position()
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return CLOSED;
+        }
 
         final int activeTermId = activeTermId(logMetaDataBuffer);
         final int currentTail = termAppenders[indexByTerm(initialTermId, activeTermId)].tailVolatile();
@@ -223,7 +229,10 @@ public class Publication implements AutoCloseable
      */
     public long positionLimit()
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return CLOSED;
+        }
 
         return positionLimit.getVolatile();
     }
@@ -246,11 +255,13 @@ public class Publication implements AutoCloseable
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
-     * @throws IllegalStateException if the publication is closed.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return CLOSED;
+        }
 
         final long limit = positionLimit.getVolatile();
         final int initialTermId = this.initialTermId;
@@ -303,13 +314,15 @@ public class Publication implements AutoCloseable
      * @param bufferClaim to be populated if the claim succeeds.
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
-     * @throws IllegalStateException if the publication is closed.
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return CLOSED;
+        }
 
         final long limit = positionLimit.getVolatile();
         final int initialTermId = this.initialTermId;
@@ -378,15 +391,5 @@ public class Publication implements AutoCloseable
         }
 
         return newPosition;
-    }
-
-    private void ensureOpen()
-    {
-        if (isClosed)
-        {
-            throw new IllegalStateException(String.format(
-                "Publication is closed: channel=%s streamId=%d sessionId=%d registrationId=%d",
-                channel, streamId, sessionId, registrationId));
-        }
     }
 }

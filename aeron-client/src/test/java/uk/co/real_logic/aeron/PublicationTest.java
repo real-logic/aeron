@@ -84,27 +84,27 @@ public class PublicationTest
         publication.incRef();
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldEnsureThePublicationIsOpenBeforeReadingPosition()
     {
         publication.close();
-        publication.position();
+        assertThat(publication.position(), is(Publication.CLOSED));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldEnsureThePublicationIsOpenBeforeOffer()
     {
         publication.close();
         assertTrue(publication.isClosed());
-        publication.offer(atomicSendBuffer);
+        assertThat(publication.offer(atomicSendBuffer), is(Publication.CLOSED));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void shouldEnsureThePublicationIsOpenBeforeClaim()
     {
         publication.close();
         final BufferClaim bufferClaim = new BufferClaim();
-        publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim);
+        assertThat(publication.tryClaim(SEND_BUFFER_CAPACITY, bufferClaim), is(Publication.CLOSED));
     }
 
     @Test

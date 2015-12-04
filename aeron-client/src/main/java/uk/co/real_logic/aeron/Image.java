@@ -21,10 +21,10 @@ import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
-import java.nio.ByteOrder;
 import java.nio.channels.FileChannel;
 import java.util.Arrays;
 
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
@@ -165,11 +165,13 @@ public class Image
      * The position this {@link Image} has been consumed to by the subscriber.
      *
      * @return the position this {@link Image} has been consumed to by the subscriber.
-     * @throws IllegalStateException is the {@link Image} is closed.
      */
     public long position()
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return 0;
+        }
 
         return subscriberPosition.get();
     }
@@ -191,11 +193,13 @@ public class Image
      * @param fragmentHandler to which messages are delivered.
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
-     * @throws IllegalStateException is the {@link Image} is closed.
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return 0;
+        }
 
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
@@ -219,11 +223,13 @@ public class Image
      * @param blockHandler     to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
-     * @throws IllegalStateException is the {@link Image} is closed.
-     * */
+     */
     public int blockPoll(final BlockHandler blockHandler, final int blockLengthLimit)
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return 0;
+        }
 
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
@@ -237,7 +243,7 @@ public class Image
         {
             try
             {
-                final int termId = termId(termBuffer, termOffset);
+                final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
 
                 blockHandler.onBlock(termBuffer, termOffset, bytesConsumed, sessionId, termId);
             }
@@ -259,11 +265,13 @@ public class Image
      * @param fileBlockHandler to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
-     * @throws IllegalStateException is the {@link Image} is closed.
      */
     public int filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
     {
-        ensureOpen();
+        if (isClosed)
+        {
+            return 0;
+        }
 
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
@@ -280,7 +288,7 @@ public class Image
             try
             {
                 final long offset = ((long)capacity * activeIndex) + termOffset;
-                final int termId = termId(termBuffer, termOffset);
+                final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
 
                 fileBlockHandler.onBlock(logBuffers.fileChannel(), offset, bytesConsumed, sessionId, termId);
             }
@@ -299,23 +307,6 @@ public class Image
     {
         isClosed = true;
         return new ImageManagedResource();
-    }
-
-    private void ensureOpen()
-    {
-        if (isClosed)
-        {
-            throw new IllegalStateException(String.format(
-                "Image is closed: channel=%s streamId=%d sessionId=%d",
-                subscription.channel(),
-                subscription.streamId(),
-                sessionId));
-        }
-    }
-
-    private static int termId(final UnsafeBuffer buffer, final int frameOffset)
-    {
-        return buffer.getInt(frameOffset + TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     private class ImageManagedResource implements ManagedResource

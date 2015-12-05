@@ -18,6 +18,7 @@
 #include <sys/errno.h>
 #include <util/StringUtil.h>
 #include <iostream>
+#include <sys/fcntl.h>
 #include "UdpChannelTransport.h"
 
 using namespace aeron::driver::media;
@@ -57,6 +58,21 @@ static int newSocket(int domain, int type, int protocol)
     }
 
     return fd;
+}
+
+static void setNonBlocking(int socketFd)
+{
+    int flags = fcntl(socketFd, F_GETFL, 0);
+    if (flags == -1)
+    {
+        throw aeron::util::IOException{
+            aeron::util::strPrintf("Failed to get flags for file descriptor: %s", strerror(errno)), SOURCEINFO};
+    }
+    if (fcntl(socketFd, F_SETFL, flags | O_NONBLOCK) == -1)
+    {
+        throw aeron::util::IOException{
+            aeron::util::strPrintf("Failed to set flags for file descriptor: %s", strerror(errno)), SOURCEINFO};
+    }
 }
 
 //static void dump(sockaddr_in& addr)
@@ -128,11 +144,17 @@ void UdpChannelTransport::openDatagramChannel()
     {
         applyBind(m_sendSocketFd, m_bindAddress->address(), m_bindAddress->length());
     }
+
+    setNonBlocking(m_sendSocketFd);
+    setNonBlocking(m_recvSocketFd);
 }
 
 void UdpChannelTransport::send(const void* data, const int32_t len)
 {
-    if (sendto(m_sendSocketFd, data, (size_t) len, 0, m_endPointAddress->address(), m_endPointAddress->length()) < 0)
+    ssize_t bytesSent = sendto(
+        m_sendSocketFd, data, (size_t) len, 0, m_endPointAddress->address(), m_endPointAddress->length());
+
+    if (bytesSent < 0)
     {
         throw aeron::util::IOException{
             aeron::util::strPrintf("Failed to send: %s", strerror(errno)), SOURCEINFO};
@@ -145,7 +167,13 @@ std::int32_t UdpChannelTransport::recv(char* data, const int32_t len)
     ssize_t size = 0;
     if ((size = recvfrom(m_recvSocketFd, data, len, 0, m_connectAddress->address(), &socklen)) < 0)
     {
-        throw aeron::util::IOException{"Failed to recv", SOURCEINFO};
+        if (EAGAIN != errno)
+        {
+            throw aeron::util::IOException{
+                aeron::util::strPrintf("Failed to recv: %s", strerror(errno)), SOURCEINFO};
+        }
+
+        size = 0;
     }
 
     return (std::int32_t) size;

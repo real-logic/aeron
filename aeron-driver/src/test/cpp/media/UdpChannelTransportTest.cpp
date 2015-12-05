@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 #include <iostream>
+#include <sys/time.h>
 #include "media/InetAddress.h"
 #include "media/UdpChannel.h"
 #include "media/UdpChannelTransport.h"
@@ -25,6 +26,25 @@ using namespace aeron::driver::media;
 class UdpChannelTransportTest : public testing::Test
 {
 };
+
+std::int32_t recv(UdpChannelTransport &transport, char* buffer, std::int32_t len)
+{
+    timeval t0;
+    timeval t1;
+
+    gettimeofday(&t0, NULL);
+
+    std::int32_t received;
+    do
+    {
+        received = transport.recv(buffer, len);
+        usleep(1);
+        gettimeofday(&t1, NULL);
+    }
+    while (received == 0 && t1.tv_sec - t0.tv_sec < 5);
+
+    return received;
+}
 
 TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv4)
 {
@@ -39,10 +59,8 @@ TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv4)
     UdpChannelTransport transport{channel, &channel->remoteData(), &channel->remoteData(), &channel->localData()};
 
     transport.openDatagramChannel();
-    transport.setTimeout(timeout);
-
     transport.send(message, (std::int32_t) strlen(message));
-    std::int32_t received = transport.recv(receiveBuffer, 512);
+    std::int32_t received = recv(transport, receiveBuffer, 512);
 
     EXPECT_GT(received, 0);
     EXPECT_STREQ(message, receiveBuffer);
@@ -64,7 +82,7 @@ TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv6)
     transport.setTimeout(timeout);
 
     transport.send(message, (std::int32_t) strlen(message));
-    std::int32_t received = transport.recv(receiveBuffer, 512);
+    std::int32_t received = recv(transport, receiveBuffer, 512);
 
     EXPECT_GT(received, 0);
     EXPECT_STREQ(message, receiveBuffer);
@@ -87,7 +105,7 @@ TEST_F(UdpChannelTransportTest, sendAndReceiveUnicastIPv4)
     transport.setTimeout(timeout);
 
     transport.send(message, (std::int32_t) strlen(message));
-    std::int32_t received = transport.recv(receiveBuffer, 512);
+    std::int32_t received = recv(transport, receiveBuffer, 512);
 
     EXPECT_GT(received, 0);
     EXPECT_STREQ(message, receiveBuffer);
@@ -110,7 +128,7 @@ TEST_F(UdpChannelTransportTest, sendAndReceiveUnicastIPv6)
     transport.setTimeout(timeout);
 
     transport.send(message, (std::int32_t) strlen(message));
-    std::int32_t received = transport.recv(receiveBuffer, 512);
+    std::int32_t received = recv(transport, receiveBuffer, 512);
 
     EXPECT_GT(received, 0);
     EXPECT_STREQ(message, receiveBuffer);

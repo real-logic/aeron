@@ -62,5 +62,5 @@ TEST_F(ChannelEndpointTest, initialisesEndpoint)
         .frameLength(protocol::SetupFlyweight::headerLength());
 
     send.send(setupBuffer.buffer(), setupBuffer.capacity());
-//    receive.pollForData();
+    receive.pollForData();
 }

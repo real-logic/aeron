@@ -124,8 +124,8 @@ public class TermAppender
     }
 
     public int claim(
-        final long headerVersionFlagsType,
-        final long headerSessionId,
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
         final int length,
         final BufferClaim bufferClaim)
     {
@@ -139,12 +139,12 @@ public class TermAppender
         if (resultingOffset > (capacity - HEADER_LENGTH))
         {
             resultingOffset = handleEndOfLogCondition(
-                termBuffer, frameOffset, headerVersionFlagsType, headerSessionId, capacity);
+                termBuffer, frameOffset, defaultVersionFlagsType, defaultSessionId, capacity);
         }
         else
         {
             applyDefaultHeader(
-                termBuffer, frameOffset, frameLength, headerVersionFlagsType, headerSessionId, defaultHeader);
+                termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
             bufferClaim.wrap(termBuffer, frameOffset, frameLength);
         }
 
@@ -152,8 +152,8 @@ public class TermAppender
     }
 
     public int appendUnfragmentedMessage(
-        final long headerVersionFlagsType,
-        final long headerSessionId,
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
         final DirectBuffer srcBuffer,
         final int srcOffset,
         final int length)
@@ -168,12 +168,12 @@ public class TermAppender
         if (resultingOffset > (capacity - HEADER_LENGTH))
         {
             resultingOffset = handleEndOfLogCondition(
-                termBuffer, frameOffset, headerVersionFlagsType, headerSessionId, capacity);
+                termBuffer, frameOffset, defaultVersionFlagsType, defaultSessionId, capacity);
         }
         else
         {
             applyDefaultHeader(
-                termBuffer, frameOffset, frameLength, headerVersionFlagsType, headerSessionId, defaultHeader);
+                termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
             termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
             frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
@@ -182,8 +182,8 @@ public class TermAppender
     }
 
     public int appendFragmentedMessage(
-        final long headerVersionFlagsType,
-        final long headerSessionId,
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
         final DirectBuffer srcBuffer,
         final int srcOffset,
         final int length,
@@ -201,7 +201,7 @@ public class TermAppender
         if (resultingOffset > (capacity - HEADER_LENGTH))
         {
             resultingOffset = handleEndOfLogCondition(
-                termBuffer, frameOffset, headerVersionFlagsType, headerSessionId, capacity);
+                termBuffer, frameOffset, defaultVersionFlagsType, defaultSessionId, capacity);
         }
         else
         {
@@ -214,7 +214,7 @@ public class TermAppender
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
                 applyDefaultHeader(
-                    termBuffer, frameOffset, frameLength, headerVersionFlagsType, headerSessionId, defaultHeader);
+                    termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
                 termBuffer.putBytes(
                     frameOffset + HEADER_LENGTH,
                     srcBuffer,
@@ -243,8 +243,8 @@ public class TermAppender
         final UnsafeBuffer buffer,
         final int frameOffset,
         final int frameLength,
-        final long headerVersionFlagsType,
-        final long headerSessionId,
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
         final MutableDirectBuffer defaultHeaderBuffer)
     {
         long lengthVersionFlagsType;
@@ -252,13 +252,13 @@ public class TermAppender
 
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
-            lengthVersionFlagsType = headerVersionFlagsType | ((-frameLength) & 0xFFFF_FFFFL);
-            termOffsetAndSessionId = headerSessionId | frameOffset;
+            lengthVersionFlagsType = defaultVersionFlagsType | ((-frameLength) & 0xFFFF_FFFFL);
+            termOffsetAndSessionId = defaultSessionId | frameOffset;
         }
         else
         {
-            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | headerVersionFlagsType;
-            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | headerSessionId;
+            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | defaultVersionFlagsType;
+            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | defaultSessionId;
         }
 
         buffer.putLongOrdered(frameOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
@@ -274,8 +274,8 @@ public class TermAppender
     private int handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,
         final int frameOffset,
-        final long headerVersionFlagsType,
-        final long headerSessionId,
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
         final int capacity)
     {
         int resultingOffset = FAILED;
@@ -284,7 +284,7 @@ public class TermAppender
         {
             final int paddingLength = capacity - frameOffset;
             applyDefaultHeader(
-                termBuffer, frameOffset, paddingLength, headerVersionFlagsType, headerSessionId, defaultHeader);
+                termBuffer, frameOffset, paddingLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
             frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
             frameLengthOrdered(termBuffer, frameOffset, paddingLength);
 

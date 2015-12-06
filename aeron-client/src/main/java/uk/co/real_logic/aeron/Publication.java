@@ -64,8 +64,8 @@ public class Publication implements AutoCloseable
     public static final long CLOSED = -4;
 
     private final long registrationId;
-    private final long defaultHeaderSessionId;
-    private final long defaultHeaderVersionFlagsType;
+    private final long headerSessionId;
+    private final long headerVersionFlagsType;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
@@ -117,13 +117,13 @@ public class Publication implements AutoCloseable
         final UnsafeBuffer defaultHeader = defaultFrameHeaders[0];
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
-            this.defaultHeaderVersionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
-            this.defaultHeaderSessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+            this.headerVersionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+            this.headerSessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
         }
         else
         {
-            this.defaultHeaderVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
-            this.defaultHeaderSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
+            this.headerVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
+            this.headerSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
         }
     }
 
@@ -301,13 +301,13 @@ public class Publication implements AutoCloseable
                 if (length <= maxPayloadLength)
                 {
                     nextOffset = termAppender.appendUnfragmentedMessage(
-                        defaultHeaderVersionFlagsType, defaultHeaderSessionId, buffer, offset, length);
+                        headerVersionFlagsType, headerSessionId, buffer, offset, length);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
                     nextOffset = termAppender.appendFragmentedMessage(
-                        defaultHeaderVersionFlagsType, defaultHeaderSessionId, buffer, offset, length, maxPayloadLength);
+                        headerVersionFlagsType, headerSessionId, buffer, offset, length, maxPayloadLength);
                 }
 
                 newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
@@ -375,7 +375,7 @@ public class Publication implements AutoCloseable
             if (position < limit)
             {
                 final int nextOffset = termAppender.claim(
-                    defaultHeaderVersionFlagsType, defaultHeaderSessionId, length, bufferClaim);
+                    headerVersionFlagsType, headerSessionId, length, bufferClaim);
                 newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
             }
             else if (0 == limit)

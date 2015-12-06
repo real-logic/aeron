@@ -58,6 +58,7 @@ public class PublicationTest
     {
         when(publicationLimit.getVolatile()).thenReturn(2L * SEND_BUFFER_CAPACITY);
         when(logBuffers.atomicBuffers()).thenReturn(buffers);
+        when(logBuffers.termLength()).thenReturn(TERM_MIN_LENGTH);
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
         activeTermId(logMetaDataBuffer, TERM_ID_1);

@@ -30,7 +30,6 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.checkHeaderLength;
-import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.checkMaxFrameLength;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
@@ -49,7 +48,6 @@ import static uk.co.real_logic.agrona.BitUtil.align;
  * <b>Note:</b> This class is threadsafe.
  *
  * Messages are appended to a term using a framing protocol as described in {@link FrameDescriptor}.
- * If a message is larger than what will fit in a single frame will be fragmented up to {@link #maxMessageLength()}.
  *
  * A default message header is applied to each message with the fields filled in for fragment flags, type, term number,
  * as appropriate.
@@ -71,9 +69,7 @@ public class TermAppender
 
     private final long defaultHeaderSessionId;
     private final long defaultHeaderVersionFlagsType;
-    private final int maxMessageLength;
-    private final int maxFrameLength;
-    private final int maxPayloadLength;
+
     private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer metaDataBuffer;
     private final MutableDirectBuffer defaultHeader;
@@ -84,19 +80,14 @@ public class TermAppender
      * @param termBuffer     for where messages are stored.
      * @param metaDataBuffer for where the state of writers is stored manage concurrency.
      * @param defaultHeader  to be applied for each frame logged.
-     * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public TermAppender(
-        final UnsafeBuffer termBuffer,
-        final UnsafeBuffer metaDataBuffer,
-        final MutableDirectBuffer defaultHeader,
-        final int maxFrameLength)
+        final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer, final MutableDirectBuffer defaultHeader)
     {
         checkTermLength(termBuffer.capacity());
         checkMetaDataBuffer(metaDataBuffer);
 
         checkHeaderLength(defaultHeader.capacity());
-        checkMaxFrameLength(maxFrameLength);
         termBuffer.verifyAlignment();
         metaDataBuffer.verifyAlignment();
 
@@ -104,9 +95,6 @@ public class TermAppender
         this.metaDataBuffer = metaDataBuffer;
 
         this.defaultHeader = defaultHeader;
-        this.maxFrameLength = maxFrameLength;
-        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBuffer.capacity());
-        this.maxPayloadLength = maxFrameLength - HEADER_LENGTH;
 
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
@@ -152,67 +140,6 @@ public class TermAppender
     }
 
     /**
-     * The maximum length of a message that can be recorded in the term.
-     *
-     * @return the maximum length of a message that can be recorded in the term.
-     */
-    public int maxMessageLength()
-    {
-        return maxMessageLength;
-    }
-
-    /**
-     * The maximum length of a message payload within a frame before fragmentation takes place.
-     *
-     * @return the maximum length of a message that can be recorded in the term.
-     */
-    public int maxPayloadLength()
-    {
-        return maxPayloadLength;
-    }
-
-    /**
-     * The maximum length of a frame, including header, that can be recorded in the term.
-     *
-     * @return the maximum length of a frame, including header, that can be recorded in the term.
-     */
-    public int maxFrameLength()
-    {
-        return maxFrameLength;
-    }
-
-    /**
-     * Append a message to the term if sufficient capacity exists.
-     *
-     * @param srcBuffer containing the encoded message.
-     * @param srcOffset at which the encoded message begins.
-     * @param length    of the message in bytes.
-     * @return the resulting termOffset on success otherwise {@link #FAILED} if beyond end of the term, or
-     * {@link #TRIPPED} if first failure.
-     * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
-     */
-    public int append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
-    {
-        final int resultingOffset;
-        if (length <= maxPayloadLength)
-        {
-            resultingOffset = appendUnfragmentedMessage(srcBuffer, srcOffset, length);
-        }
-        else
-        {
-            if (length > maxMessageLength)
-            {
-                throw new IllegalArgumentException(String.format(
-                    "Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
-            }
-
-            resultingOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
-        }
-
-        return resultingOffset;
-    }
-
-    /**
      * Claim a range within the buffer for recording a message payload.
      *
      * @param length      of the message payload
@@ -222,12 +149,6 @@ public class TermAppender
      */
     public int claim(final int length, final BufferClaim bufferClaim)
     {
-        if (length > maxPayloadLength)
-        {
-            throw new IllegalArgumentException(String.format(
-                "Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
-        }
-
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
@@ -248,7 +169,7 @@ public class TermAppender
         return resultingOffset;
     }
 
-    private int appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    public int appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
@@ -271,12 +192,13 @@ public class TermAppender
         return resultingOffset;
     }
 
-    private int appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    public int appendFragmentedMessage(
+        final DirectBuffer srcBuffer, final int srcOffset, final int length, final int maxPayloadLength)
     {
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = (remainingPayload > 0) ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * maxFrameLength) + lastFrameLength;
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
         int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();

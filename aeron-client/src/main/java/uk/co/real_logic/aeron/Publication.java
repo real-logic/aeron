@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
+import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.TermAppender;
 import uk.co.real_logic.agrona.DirectBuffer;
@@ -23,6 +24,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 
 /**
  * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
@@ -60,9 +62,11 @@ public class Publication implements AutoCloseable
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
+    private final int maxPayloadLength;
+    private final int maxMessageLength;
     private final int positionBitsToShift;
-    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final ReadablePosition positionLimit;
+    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
     private final ClientConductor clientConductor;
     private final String channel;
@@ -83,13 +87,16 @@ public class Publication implements AutoCloseable
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         final UnsafeBuffer logMetaDataBuffer = buffers[LOG_META_DATA_SECTION_INDEX];
         final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
-        final int mtuLength = mtuLength(logMetaDataBuffer);
+
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
+            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i]);
         }
 
+        final int termLength = logBuffers.termLength();
+        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
+        this.maxPayloadLength = mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.clientConductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
@@ -99,7 +106,7 @@ public class Publication implements AutoCloseable
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(logBuffers.termLength());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
     }
 
     /**
@@ -149,7 +156,7 @@ public class Publication implements AutoCloseable
      */
     public int maxMessageLength()
     {
-        return termAppenders[0].maxMessageLength();
+        return maxMessageLength;
     }
 
     /**
@@ -274,7 +281,23 @@ public class Publication implements AutoCloseable
 
         if (position < limit)
         {
-            final int nextOffset = termAppender.append(buffer, offset, length);
+            final int maxPayloadLength = this.maxPayloadLength;
+            final int nextOffset;
+            if (length <= maxPayloadLength)
+            {
+                nextOffset = termAppender.appendUnfragmentedMessage(buffer, offset, length);
+            }
+            else
+            {
+                if (length > maxMessageLength)
+                {
+                    throw new IllegalArgumentException(String.format(
+                        "Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
+                }
+
+                nextOffset = termAppender.appendFragmentedMessage(buffer, offset, length, maxPayloadLength);
+            }
+
             newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
         }
         else if (0 == limit)
@@ -322,6 +345,12 @@ public class Publication implements AutoCloseable
         if (isClosed)
         {
             return CLOSED;
+        }
+
+        if (length > maxPayloadLength)
+        {
+            throw new IllegalArgumentException(String.format(
+                "Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
         }
 
         final long limit = positionLimit.getVolatile();

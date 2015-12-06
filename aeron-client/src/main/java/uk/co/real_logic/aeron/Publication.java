@@ -23,8 +23,13 @@ import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
+import java.nio.ByteOrder;
+
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 
 /**
  * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
@@ -59,6 +64,8 @@ public class Publication implements AutoCloseable
     public static final long CLOSED = -4;
 
     private final long registrationId;
+    private final long defaultHeaderSessionId;
+    private final long defaultHeaderVersionFlagsType;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
@@ -106,6 +113,18 @@ public class Publication implements AutoCloseable
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+
+        final UnsafeBuffer defaultHeader = defaultFrameHeaders[0];
+        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        {
+            this.defaultHeaderVersionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+            this.defaultHeaderSessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+        }
+        else
+        {
+            this.defaultHeaderVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
+            this.defaultHeaderSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
+        }
     }
 
     /**
@@ -281,12 +300,14 @@ public class Publication implements AutoCloseable
                 final int nextOffset;
                 if (length <= maxPayloadLength)
                 {
-                    nextOffset = termAppender.appendUnfragmentedMessage(buffer, offset, length);
+                    nextOffset = termAppender.appendUnfragmentedMessage(
+                        defaultHeaderVersionFlagsType, defaultHeaderSessionId, buffer, offset, length);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    nextOffset = termAppender.appendFragmentedMessage(buffer, offset, length, maxPayloadLength);
+                    nextOffset = termAppender.appendFragmentedMessage(
+                        defaultHeaderVersionFlagsType, defaultHeaderSessionId, buffer, offset, length, maxPayloadLength);
                 }
 
                 newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
@@ -353,7 +374,8 @@ public class Publication implements AutoCloseable
 
             if (position < limit)
             {
-                final int nextOffset = termAppender.claim(length, bufferClaim);
+                final int nextOffset = termAppender.claim(
+                    defaultHeaderVersionFlagsType, defaultHeaderSessionId, length, bufferClaim);
                 newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
             }
             else if (0 == limit)

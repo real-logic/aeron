@@ -44,6 +44,9 @@ public class TermAppenderTest
     private final UnsafeBuffer termBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
     private final UnsafeBuffer metaDataBuffer = mock(UnsafeBuffer.class);
 
+    private final long headerSessionId = 0L;
+    private final long headerVersionFlagsType = 0L;
+
     private TermAppender termAppender;
 
     @Before
@@ -126,7 +129,8 @@ public class TermAppenderTest
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0);
 
-        assertThat(termAppender.appendUnfragmentedMessage(buffer, 0, msgLength), is(alignedFrameLength));
+        assertThat(termAppender.appendUnfragmentedMessage(
+            headerVersionFlagsType, headerSessionId, buffer, 0, msgLength), is(alignedFrameLength));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
@@ -149,8 +153,10 @@ public class TermAppenderTest
             .thenReturn(0)
             .thenReturn(alignedFrameLength);
 
-        assertThat(termAppender.appendUnfragmentedMessage(buffer, 0, msgLength), is(alignedFrameLength));
-        assertThat(termAppender.appendUnfragmentedMessage(buffer, 0, msgLength), is(alignedFrameLength * 2));
+        assertThat(termAppender.appendUnfragmentedMessage(
+            headerVersionFlagsType, headerSessionId, buffer, 0, msgLength), is(alignedFrameLength));
+        assertThat(termAppender.appendUnfragmentedMessage(
+            headerVersionFlagsType, headerSessionId, buffer, 0, msgLength), is(alignedFrameLength * 2));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
@@ -178,7 +184,8 @@ public class TermAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
 
-        assertThat(termAppender.appendUnfragmentedMessage(buffer, 0, msgLength), is(TermAppender.TRIPPED));
+        assertThat(termAppender.appendUnfragmentedMessage(
+            headerVersionFlagsType, headerSessionId, buffer, 0, msgLength), is(TermAppender.TRIPPED));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
@@ -200,7 +207,8 @@ public class TermAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
             .thenReturn(tailValue);
 
-        assertThat(termAppender.appendUnfragmentedMessage(buffer, 0, msgLength), is(TermAppender.TRIPPED));
+        assertThat(termAppender.appendUnfragmentedMessage(
+            headerVersionFlagsType, headerSessionId, buffer, 0, msgLength), is(TermAppender.TRIPPED));
 
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
@@ -221,7 +229,8 @@ public class TermAppenderTest
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredCapacity))
             .thenReturn(0);
 
-        assertThat(termAppender.appendFragmentedMessage(buffer, 0, msgLength, MAX_PAYLOAD_LENGTH), is(requiredCapacity));
+        assertThat(termAppender.appendFragmentedMessage(
+            headerVersionFlagsType, headerSessionId, buffer, 0, msgLength, MAX_PAYLOAD_LENGTH), is(requiredCapacity));
 
         int tail  = 0;
         final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
@@ -251,7 +260,8 @@ public class TermAppenderTest
 
         when(metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0);
 
-        assertThat(termAppender.claim(msgLength, bufferClaim), is(alignedFrameLength));
+        assertThat(termAppender.claim(
+            headerVersionFlagsType, headerSessionId, msgLength, bufferClaim), is(alignedFrameLength));
 
         assertThat(bufferClaim.offset(), is(tail + headerLength));
         assertThat(bufferClaim.length(), is(msgLength));

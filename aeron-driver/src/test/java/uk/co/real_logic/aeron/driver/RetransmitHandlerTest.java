@@ -234,7 +234,7 @@ public class RetransmitHandlerTest
     private void addSentDataFrame()
     {
         rcvBuffer.putBytes(0, DATA);
-        termAppender.appendUnfragmentedMessage(rcvBuffer, 0, DATA.length);
+        termAppender.appendUnfragmentedMessage(0, 0, rcvBuffer, 0, DATA.length);
     }
 
     private void addReceivedDataFrame(final int msgNum)

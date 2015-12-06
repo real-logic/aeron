@@ -296,21 +296,20 @@ public class Publication implements AutoCloseable
 
             if (position < limit)
             {
-                final int maxPayloadLength = this.maxPayloadLength;
-                final int nextOffset;
+                final int newOffset;
                 if (length <= maxPayloadLength)
                 {
-                    nextOffset = termAppender.appendUnfragmentedMessage(
+                    newOffset = termAppender.appendUnfragmentedMessage(
                         headerVersionFlagsType, headerSessionId, buffer, offset, length);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    nextOffset = termAppender.appendFragmentedMessage(
+                    newOffset = termAppender.appendFragmentedMessage(
                         headerVersionFlagsType, headerSessionId, buffer, offset, length, maxPayloadLength);
                 }
 
-                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, newOffset);
             }
             else if (0 == limit)
             {
@@ -374,9 +373,8 @@ public class Publication implements AutoCloseable
 
             if (position < limit)
             {
-                final int nextOffset = termAppender.claim(
-                    headerVersionFlagsType, headerSessionId, length, bufferClaim);
-                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+                final int newOffset = termAppender.claim(headerVersionFlagsType, headerSessionId, length, bufferClaim);
+                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, newOffset);
             }
             else if (0 == limit)
             {
@@ -408,14 +406,14 @@ public class Publication implements AutoCloseable
     }
 
     private long newPosition(
-        final int activeTermId, final int activeIndex, final int currentTail, final long position, final int nextOffset)
+        final int activeTermId, final int activeIndex, final int currentTail, final long position, final int newOffset)
     {
         long newPosition = BACK_PRESSURED;
-        if (nextOffset > 0)
+        if (newOffset > 0)
         {
-            newPosition = (position - currentTail) + nextOffset;
+            newPosition = (position - currentTail) + newOffset;
         }
-        else if (nextOffset == TermAppender.TRIPPED)
+        else if (newOffset == TermAppender.TRIPPED)
         {
             final int newTermId = activeTermId + 1;
             final int nextIndex = nextPartitionIndex(activeIndex);

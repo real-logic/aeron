@@ -276,7 +276,7 @@ public class TermAppenderTest
 
     private void verifyDefaultHeader(final InOrder inOrder, final UnsafeBuffer termBuffer, final int frameOffset)
     {
-        int headerOffset = 0;
+        long headerOffset = 0;
         inOrder.verify(termBuffer, times(1)).putLongOrdered(eq(frameOffset + headerOffset), anyLong());
 
         headerOffset += SIZE_OF_LONG;

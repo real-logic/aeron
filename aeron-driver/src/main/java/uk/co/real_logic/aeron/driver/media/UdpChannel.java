@@ -146,7 +146,7 @@ public final class UdpChannel
         return uri.containsKey(GROUP_KEY);
     }
 
-    private static void validateConfiguration(AeronUri uri)
+    private static void validateConfiguration(final AeronUri uri)
     {
         validateMedia(uri);
         validateUnicastXorMulticast(uri);
@@ -173,7 +173,8 @@ public final class UdpChannel
         }
     }
 
-    private static AeronUri parseIntoAeronUri(final String uriStr) throws URISyntaxException, UnknownHostException
+    private static AeronUri parseIntoAeronUri(final String uriStr)
+        throws URISyntaxException, UnknownHostException
     {
         if (uriStr.startsWith("udp:"))
         {
@@ -187,7 +188,8 @@ public final class UdpChannel
         throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
 
-    private static AeronUri parseUdpUriToAeronUri(final String uriStr) throws URISyntaxException, UnknownHostException
+    private static AeronUri parseUdpUriToAeronUri(final String uriStr)
+        throws URISyntaxException, UnknownHostException
     {
         final URI uri = new URI(uriStr);
         final String userInfo = uri.getUserInfo();

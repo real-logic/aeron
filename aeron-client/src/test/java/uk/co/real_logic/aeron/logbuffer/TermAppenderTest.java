@@ -58,44 +58,6 @@ public class TermAppenderTest
         termAppender = new TermAppender(termBuffer, metaDataBuffer, DEFAULT_HEADER);
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnInsufficientCapacityForLog()
-    {
-        when(termBuffer.capacity()).thenReturn(LogBufferDescriptor.TERM_MIN_LENGTH - 1);
-
-        termAppender = new TermAppender(termBuffer, metaDataBuffer, DEFAULT_HEADER);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionWhenCapacityNotMultipleOfAlignment()
-    {
-        final int logBufferCapacity = LogBufferDescriptor.TERM_MIN_LENGTH + FRAME_ALIGNMENT + 1;
-        when(termBuffer.capacity()).thenReturn(logBufferCapacity);
-
-        termAppender = new TermAppender(termBuffer, metaDataBuffer, DEFAULT_HEADER);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnInsufficientMetaDataBufferCapacity()
-    {
-        when(metaDataBuffer.capacity()).thenReturn(LogBufferDescriptor.TERM_META_DATA_LENGTH - 1);
-
-        termAppender = new TermAppender(termBuffer, metaDataBuffer, DEFAULT_HEADER);
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnDefaultHeaderLengthLessThanBaseHeaderLength()
-    {
-        final int length = HEADER_LENGTH - 1;
-        termAppender = new TermAppender(termBuffer, metaDataBuffer, new UnsafeBuffer(new byte[length]));
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void shouldThrowExceptionOnDefaultHeaderLengthNotOnWordSizeBoundary()
-    {
-        termAppender = new TermAppender(termBuffer, metaDataBuffer, new UnsafeBuffer(new byte[31]));
-    }
-
     @Test
     public void shouldReportCurrentTail()
     {

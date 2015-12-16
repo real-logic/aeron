@@ -29,14 +29,11 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
-import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.checkHeaderLength;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_STATUS_OFFSET;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkMetaDataBuffer;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkTermLength;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.*;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
 import static uk.co.real_logic.agrona.BitUtil.align;
@@ -80,13 +77,6 @@ public class TermAppender
     public TermAppender(
         final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer, final MutableDirectBuffer defaultHeader)
     {
-        checkTermLength(termBuffer.capacity());
-        checkMetaDataBuffer(metaDataBuffer);
-
-        checkHeaderLength(defaultHeader.capacity());
-        termBuffer.verifyAlignment();
-        metaDataBuffer.verifyAlignment();
-
         this.termBuffer = termBuffer;
         this.metaDataBuffer = metaDataBuffer;
         this.defaultHeader = defaultHeader;

@@ -70,7 +70,6 @@ public class Publication implements AutoCloseable
     private final int sessionId;
     private final int initialTermId;
     private final int maxPayloadLength;
-    private final int maxMessageLength;
     private final int positionBitsToShift;
     private final ReadablePosition positionLimit;
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
@@ -101,7 +100,6 @@ public class Publication implements AutoCloseable
         }
 
         final int termLength = logBuffers.termLength();
-        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
         this.maxPayloadLength = mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.clientConductor = clientConductor;
         this.channel = channel;
@@ -174,7 +172,7 @@ public class Publication implements AutoCloseable
      */
     public int maxMessageLength()
     {
-        return maxMessageLength;
+        return FrameDescriptor.computeMaxMessageLength(logBuffers.termLength());
     }
 
     /**
@@ -447,6 +445,7 @@ public class Publication implements AutoCloseable
 
     private void checkForMaxMessageLength(final int length)
     {
+        final int maxMessageLength = maxMessageLength();
         if (length > maxMessageLength)
         {
             throw new IllegalArgumentException(String.format(

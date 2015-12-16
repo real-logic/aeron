@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.protocol;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
@@ -165,7 +164,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param termId    for the header
      * @return byte array containing the header
      */
-    public static MutableDirectBuffer createDefaultHeader(final int sessionId, final int streamId, final int termId)
+    public static UnsafeBuffer createDefaultHeader(final int sessionId, final int streamId, final int termId)
     {
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[HEADER_LENGTH]);
 

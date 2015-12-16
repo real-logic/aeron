@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -39,7 +38,7 @@ public class TermAppenderTest
     private static final int META_DATA_BUFFER_LENGTH = TERM_META_DATA_LENGTH;
     private static final int MAX_FRAME_LENGTH = 1024;
     private static final int MAX_PAYLOAD_LENGTH = MAX_FRAME_LENGTH - HEADER_LENGTH;
-    private static final MutableDirectBuffer DEFAULT_HEADER = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_LENGTH));
+    private static final UnsafeBuffer DEFAULT_HEADER = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_LENGTH));
 
     private final UnsafeBuffer termBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));
     private final UnsafeBuffer metaDataBuffer = mock(UnsafeBuffer.class);

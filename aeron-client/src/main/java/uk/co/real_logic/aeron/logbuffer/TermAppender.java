@@ -65,7 +65,7 @@ public class TermAppender
 
     private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer metaDataBuffer;
-    private final MutableDirectBuffer defaultHeader;
+    private final UnsafeBuffer defaultHeader;
 
     /**
      * Construct a view over a term buffer and state buffer for appending frames.
@@ -75,7 +75,7 @@ public class TermAppender
      * @param defaultHeader  to be applied for each frame logged.
      */
     public TermAppender(
-        final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer, final MutableDirectBuffer defaultHeader)
+        final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer, final UnsafeBuffer defaultHeader)
     {
         this.termBuffer = termBuffer;
         this.metaDataBuffer = metaDataBuffer;

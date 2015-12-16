@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.logbuffer;
 import java.nio.ByteOrder;
 
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.UnsafeAccess;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -133,8 +132,7 @@ public class TermAppender
         }
         else
         {
-            applyDefaultHeader(
-                termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
+            applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId);
             bufferClaim.wrap(termBuffer, frameOffset, frameLength);
         }
 
@@ -162,8 +160,7 @@ public class TermAppender
         }
         else
         {
-            applyDefaultHeader(
-                termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
+            applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId);
             termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
             frameLengthOrdered(termBuffer, frameOffset, frameLength);
         }
@@ -203,8 +200,7 @@ public class TermAppender
                 final int frameLength = bytesToWrite + HEADER_LENGTH;
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-                applyDefaultHeader(
-                    termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
+                applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultVersionFlagsType, defaultSessionId);
                 termBuffer.putBytes(
                     frameOffset + HEADER_LENGTH,
                     srcBuffer,
@@ -234,8 +230,7 @@ public class TermAppender
         final int frameOffset,
         final int frameLength,
         final long defaultVersionFlagsType,
-        final long defaultSessionId,
-        final MutableDirectBuffer defaultHeaderBuffer)
+        final long defaultSessionId)
     {
         long lengthVersionFlagsType;
         long termOffsetAndSessionId;
@@ -257,7 +252,7 @@ public class TermAppender
         buffer.putLong(frameOffset + TERM_OFFSET_FIELD_OFFSET, termOffsetAndSessionId);
 
         // read the stream(int) and term(int), this is the mutable part of the default header
-        final long streamAndTermIds = defaultHeaderBuffer.getLong(STREAM_ID_FIELD_OFFSET);
+        final long streamAndTermIds = defaultHeader.getLong(STREAM_ID_FIELD_OFFSET);
         buffer.putLong(frameOffset + STREAM_ID_FIELD_OFFSET, streamAndTermIds);
     }
 
@@ -273,8 +268,7 @@ public class TermAppender
         if (frameOffset <= (capacity - HEADER_LENGTH))
         {
             final int paddingLength = capacity - frameOffset;
-            applyDefaultHeader(
-                termBuffer, frameOffset, paddingLength, defaultVersionFlagsType, defaultSessionId, defaultHeader);
+            applyDefaultHeader(termBuffer, frameOffset, paddingLength, defaultVersionFlagsType, defaultSessionId);
             frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
             frameLengthOrdered(termBuffer, frameOffset, paddingLength);
 

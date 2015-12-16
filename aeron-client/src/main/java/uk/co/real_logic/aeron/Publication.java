@@ -16,13 +16,20 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
+import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.TermAppender;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
+import java.nio.ByteOrder;
+
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 
 /**
  * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
@@ -57,12 +64,15 @@ public class Publication implements AutoCloseable
     public static final long CLOSED = -4;
 
     private final long registrationId;
+    private final long headerSessionId;
+    private final long headerVersionFlagsType;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
+    private final int maxPayloadLength;
     private final int positionBitsToShift;
-    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final ReadablePosition positionLimit;
+    private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
     private final ClientConductor clientConductor;
     private final String channel;
@@ -83,13 +93,14 @@ public class Publication implements AutoCloseable
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         final UnsafeBuffer logMetaDataBuffer = buffers[LOG_META_DATA_SECTION_INDEX];
         final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
-        final int mtuLength = mtuLength(logMetaDataBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i], mtuLength);
+            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i]);
         }
 
+        final int termLength = logBuffers.termLength();
+        this.maxPayloadLength = mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.clientConductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
@@ -99,7 +110,19 @@ public class Publication implements AutoCloseable
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(logBuffers.termLength());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+
+        final UnsafeBuffer defaultHeader = defaultFrameHeaders[0];
+        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
+        {
+            this.headerVersionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+            this.headerSessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+        }
+        else
+        {
+            this.headerVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
+            this.headerSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
+        }
     }
 
     /**
@@ -149,7 +172,7 @@ public class Publication implements AutoCloseable
      */
     public int maxMessageLength()
     {
-        return termAppenders[0].maxMessageLength();
+        return FrameDescriptor.computeMaxMessageLength(logBuffers.termLength());
     }
 
     /**
@@ -259,28 +282,42 @@ public class Publication implements AutoCloseable
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
-        if (isClosed)
+        long newPosition = CLOSED;
+        if (!isClosed)
         {
-            return CLOSED;
-        }
+            final long limit = positionLimit.getVolatile();
+            final int initialTermId = this.initialTermId;
+            final int activeTermId = activeTermId(logMetaDataBuffer);
+            final int activeIndex = indexByTerm(initialTermId, activeTermId);
+            final TermAppender termAppender = termAppenders[activeIndex];
+            final int currentTail = termAppender.rawTailVolatile();
+            final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
 
-        final long limit = positionLimit.getVolatile();
-        final int initialTermId = this.initialTermId;
-        final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.rawTailVolatile();
-        final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
-        long newPosition = BACK_PRESSURED;
+            if (position < limit)
+            {
+                final int newOffset;
+                if (length <= maxPayloadLength)
+                {
+                    newOffset = termAppender.appendUnfragmentedMessage(
+                        headerVersionFlagsType, headerSessionId, buffer, offset, length);
+                }
+                else
+                {
+                    checkForMaxMessageLength(length);
+                    newOffset = termAppender.appendFragmentedMessage(
+                        headerVersionFlagsType, headerSessionId, buffer, offset, length, maxPayloadLength);
+                }
 
-        if (position < limit)
-        {
-            final int nextOffset = termAppender.append(buffer, offset, length);
-            newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
-        }
-        else if (0 == limit)
-        {
-            newPosition = NOT_CONNECTED;
+                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, newOffset);
+            }
+            else if (0 == limit)
+            {
+                newPosition = NOT_CONNECTED;
+            }
+            else
+            {
+                newPosition = BACK_PRESSURED;
+            }
         }
 
         return newPosition;
@@ -320,28 +357,32 @@ public class Publication implements AutoCloseable
      */
     public long tryClaim(final int length, final BufferClaim bufferClaim)
     {
-        if (isClosed)
+        long newPosition = CLOSED;
+        if (!isClosed)
         {
-            return CLOSED;
-        }
+            checkForMaxPayloadLength(length);
 
-        final long limit = positionLimit.getVolatile();
-        final int initialTermId = this.initialTermId;
-        final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int activeIndex = indexByTerm(initialTermId, activeTermId);
-        final TermAppender termAppender = termAppenders[activeIndex];
-        final int currentTail = termAppender.rawTailVolatile();
-        final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
-        long newPosition = BACK_PRESSURED;
+            final long limit = positionLimit.getVolatile();
+            final int initialTermId = this.initialTermId;
+            final int activeTermId = activeTermId(logMetaDataBuffer);
+            final int activeIndex = indexByTerm(initialTermId, activeTermId);
+            final TermAppender termAppender = termAppenders[activeIndex];
+            final int currentTail = termAppender.rawTailVolatile();
+            final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
 
-        if (position < limit)
-        {
-            final int nextOffset = termAppender.claim(length, bufferClaim);
-            newPosition = newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
-        }
-        else if (0 == limit)
-        {
-            newPosition = NOT_CONNECTED;
+            if (position < limit)
+            {
+                final int newOffset = termAppender.claim(headerVersionFlagsType, headerSessionId, length, bufferClaim);
+                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, newOffset);
+            }
+            else if (0 == limit)
+            {
+                newPosition = NOT_CONNECTED;
+            }
+            else
+            {
+                newPosition = BACK_PRESSURED;
+            }
         }
 
         return newPosition;
@@ -364,14 +405,14 @@ public class Publication implements AutoCloseable
     }
 
     private long newPosition(
-        final int activeTermId, final int activeIndex, final int currentTail, final long position, final int nextOffset)
+        final int activeTermId, final int activeIndex, final int currentTail, final long position, final int newOffset)
     {
         long newPosition = BACK_PRESSURED;
-        if (nextOffset > 0)
+        if (newOffset > 0)
         {
-            newPosition = (position - currentTail) + nextOffset;
+            newPosition = (position - currentTail) + newOffset;
         }
-        else if (nextOffset == TermAppender.TRIPPED)
+        else if (newOffset == TermAppender.TRIPPED)
         {
             final int newTermId = activeTermId + 1;
             final int nextIndex = nextPartitionIndex(activeIndex);
@@ -392,5 +433,24 @@ public class Publication implements AutoCloseable
         }
 
         return newPosition;
+    }
+
+    private void checkForMaxPayloadLength(final int length)
+    {
+        if (length > maxPayloadLength)
+        {
+            throw new IllegalArgumentException(String.format(
+                "Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
+        }
+    }
+
+    private void checkForMaxMessageLength(final int length)
+    {
+        final int maxMessageLength = maxMessageLength();
+        if (length > maxMessageLength)
+        {
+            throw new IllegalArgumentException(String.format(
+                "Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
+        }
     }
 }

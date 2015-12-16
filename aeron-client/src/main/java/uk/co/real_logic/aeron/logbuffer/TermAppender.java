@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.logbuffer;
 import java.nio.ByteOrder;
 
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.UnsafeAccess;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -29,18 +28,13 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.PADDING_FRAME_TYPE;
-import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.checkHeaderLength;
-import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.checkMaxFrameLength;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameFlags;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_STATUS_OFFSET;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkMetaDataBuffer;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.checkTermLength;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.*;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
-import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
 /**
@@ -49,7 +43,6 @@ import static uk.co.real_logic.agrona.BitUtil.align;
  * <b>Note:</b> This class is threadsafe.
  *
  * Messages are appended to a term using a framing protocol as described in {@link FrameDescriptor}.
- * If a message is larger than what will fit in a single frame will be fragmented up to {@link #maxMessageLength()}.
  *
  * A default message header is applied to each message with the fields filled in for fragment flags, type, term number,
  * as appropriate.
@@ -69,14 +62,9 @@ public class TermAppender
      */
     public static final int FAILED = -2;
 
-    private final long defaultHeaderSessionId;
-    private final long defaultHeaderVersionFlagsType;
-    private final int maxMessageLength;
-    private final int maxFrameLength;
-    private final int maxPayloadLength;
     private final UnsafeBuffer termBuffer;
     private final UnsafeBuffer metaDataBuffer;
-    private final MutableDirectBuffer defaultHeader;
+    private final UnsafeBuffer defaultHeader;
 
     /**
      * Construct a view over a term buffer and state buffer for appending frames.
@@ -84,40 +72,13 @@ public class TermAppender
      * @param termBuffer     for where messages are stored.
      * @param metaDataBuffer for where the state of writers is stored manage concurrency.
      * @param defaultHeader  to be applied for each frame logged.
-     * @param maxFrameLength maximum frame length supported by the underlying transport.
      */
     public TermAppender(
-        final UnsafeBuffer termBuffer,
-        final UnsafeBuffer metaDataBuffer,
-        final MutableDirectBuffer defaultHeader,
-        final int maxFrameLength)
+        final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer, final UnsafeBuffer defaultHeader)
     {
-        checkTermLength(termBuffer.capacity());
-        checkMetaDataBuffer(metaDataBuffer);
-
-        checkHeaderLength(defaultHeader.capacity());
-        checkMaxFrameLength(maxFrameLength);
-        termBuffer.verifyAlignment();
-        metaDataBuffer.verifyAlignment();
-
         this.termBuffer = termBuffer;
         this.metaDataBuffer = metaDataBuffer;
-
         this.defaultHeader = defaultHeader;
-        this.maxFrameLength = maxFrameLength;
-        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termBuffer.capacity());
-        this.maxPayloadLength = maxFrameLength - HEADER_LENGTH;
-
-        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
-        {
-            this.defaultHeaderVersionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
-            this.defaultHeaderSessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
-        }
-        else
-        {
-            this.defaultHeaderVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
-            this.defaultHeaderSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
-        }
     }
 
     /**
@@ -151,140 +112,83 @@ public class TermAppender
         metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
     }
 
-    /**
-     * The maximum length of a message that can be recorded in the term.
-     *
-     * @return the maximum length of a message that can be recorded in the term.
-     */
-    public int maxMessageLength()
-    {
-        return maxMessageLength;
-    }
-
-    /**
-     * The maximum length of a message payload within a frame before fragmentation takes place.
-     *
-     * @return the maximum length of a message that can be recorded in the term.
-     */
-    public int maxPayloadLength()
-    {
-        return maxPayloadLength;
-    }
-
-    /**
-     * The maximum length of a frame, including header, that can be recorded in the term.
-     *
-     * @return the maximum length of a frame, including header, that can be recorded in the term.
-     */
-    public int maxFrameLength()
-    {
-        return maxFrameLength;
-    }
-
-    /**
-     * Append a message to the term if sufficient capacity exists.
-     *
-     * @param srcBuffer containing the encoded message.
-     * @param srcOffset at which the encoded message begins.
-     * @param length    of the message in bytes.
-     * @return the resulting termOffset on success otherwise {@link #FAILED} if beyond end of the term, or
-     * {@link #TRIPPED} if first failure.
-     * @throws IllegalArgumentException if the length is greater than {@link #maxMessageLength()}
-     */
-    public int append(final DirectBuffer srcBuffer, final int srcOffset, final int length)
-    {
-        final int resultingOffset;
-        if (length <= maxPayloadLength)
-        {
-            resultingOffset = appendUnfragmentedMessage(srcBuffer, srcOffset, length);
-        }
-        else
-        {
-            if (length > maxMessageLength)
-            {
-                throw new IllegalArgumentException(String.format(
-                    "Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
-            }
-
-            resultingOffset = appendFragmentedMessage(srcBuffer, srcOffset, length);
-        }
-
-        return resultingOffset;
-    }
-
-    /**
-     * Claim a range within the buffer for recording a message payload.
-     *
-     * @param length      of the message payload
-     * @param bufferClaim to be completed for the claim if successful.
-     * @return the resulting termOffset on success otherwise {@link #FAILED} if beyond end of the term, or
-     * {@link #TRIPPED} if first failure.
-     */
-    public int claim(final int length, final BufferClaim bufferClaim)
-    {
-        if (length > maxPayloadLength)
-        {
-            throw new IllegalArgumentException(String.format(
-                "Claim exceeds maxPayloadLength of %d, length=%d", maxPayloadLength, length));
-        }
-
-        final int frameLength = length + HEADER_LENGTH;
-        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
-        final UnsafeBuffer termBuffer = this.termBuffer;
-        final int capacity = termBuffer.capacity();
-
-        int resultingOffset = frameOffset + alignedLength;
-        if (resultingOffset > (capacity - HEADER_LENGTH))
-        {
-            resultingOffset = handleEndOfLogCondition(termBuffer, frameOffset, capacity);
-        }
-        else
-        {
-            applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultHeader);
-            bufferClaim.wrap(termBuffer, frameOffset, frameLength);
-        }
-
-        return resultingOffset;
-    }
-
-    private int appendUnfragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    public int claim(
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
+        final int length,
+        final BufferClaim bufferClaim)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
-        final int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        final int termOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
 
-        int resultingOffset = frameOffset + alignedLength;
+        int resultingOffset = termOffset + alignedLength;
         if (resultingOffset > (capacity - HEADER_LENGTH))
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, frameOffset, capacity);
+            resultingOffset = handleEndOfLogCondition(
+                termBuffer, termOffset, defaultVersionFlagsType, defaultSessionId, capacity);
         }
         else
         {
-            applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultHeader);
-            termBuffer.putBytes(frameOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
-            frameLengthOrdered(termBuffer, frameOffset, frameLength);
+            applyDefaultHeader(termBuffer, termOffset, frameLength, defaultVersionFlagsType, defaultSessionId);
+            bufferClaim.wrap(termBuffer, termOffset, frameLength);
         }
 
         return resultingOffset;
     }
 
-    private int appendFragmentedMessage(final DirectBuffer srcBuffer, final int srcOffset, final int length)
+    public int appendUnfragmentedMessage(
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
+        final DirectBuffer srcBuffer,
+        final int srcOffset,
+        final int length)
+    {
+        final int frameLength = length + HEADER_LENGTH;
+        final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
+        final int termOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, alignedLength);
+        final UnsafeBuffer termBuffer = this.termBuffer;
+        final int capacity = termBuffer.capacity();
+
+        int resultingOffset = termOffset + alignedLength;
+        if (resultingOffset > (capacity - HEADER_LENGTH))
+        {
+            resultingOffset = handleEndOfLogCondition(
+                termBuffer, termOffset, defaultVersionFlagsType, defaultSessionId, capacity);
+        }
+        else
+        {
+            applyDefaultHeader(termBuffer, termOffset, frameLength, defaultVersionFlagsType, defaultSessionId);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+            frameLengthOrdered(termBuffer, termOffset, frameLength);
+        }
+
+        return resultingOffset;
+    }
+
+    public int appendFragmentedMessage(
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
+        final DirectBuffer srcBuffer,
+        final int srcOffset,
+        final int length,
+        final int maxPayloadLength)
     {
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
         final int lastFrameLength = (remainingPayload > 0) ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
-        final int requiredLength = (numMaxPayloads * maxFrameLength) + lastFrameLength;
-        int frameOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
+        final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
+        int termOffset = metaDataBuffer.getAndAddInt(TERM_TAIL_COUNTER_OFFSET, requiredLength);
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int capacity = termBuffer.capacity();
 
-        int resultingOffset = frameOffset + requiredLength;
+        int resultingOffset = termOffset + requiredLength;
         if (resultingOffset > (capacity - HEADER_LENGTH))
         {
-            resultingOffset = handleEndOfLogCondition(termBuffer, frameOffset, capacity);
+            resultingOffset = handleEndOfLogCondition(
+                termBuffer, termOffset, defaultVersionFlagsType, defaultSessionId, capacity);
         }
         else
         {
@@ -296,9 +200,9 @@ public class TermAppender
                 final int frameLength = bytesToWrite + HEADER_LENGTH;
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-                applyDefaultHeader(termBuffer, frameOffset, frameLength, defaultHeader);
+                applyDefaultHeader(termBuffer, termOffset, frameLength, defaultVersionFlagsType, defaultSessionId);
                 termBuffer.putBytes(
-                    frameOffset + HEADER_LENGTH,
+                    termOffset + HEADER_LENGTH,
                     srcBuffer,
                     srcOffset + (length - remaining),
                     bytesToWrite);
@@ -308,11 +212,11 @@ public class TermAppender
                     flags |= END_FRAG_FLAG;
                 }
 
-                frameFlags(termBuffer, frameOffset, flags);
-                frameLengthOrdered(termBuffer, frameOffset, frameLength);
+                frameFlags(termBuffer, termOffset, flags);
+                frameLengthOrdered(termBuffer, termOffset, frameLength);
 
                 flags = 0;
-                frameOffset += alignedLength;
+                termOffset += alignedLength;
                 remaining -= bytesToWrite;
             }
             while (remaining > 0);
@@ -322,42 +226,51 @@ public class TermAppender
     }
 
     private void applyDefaultHeader(
-        final UnsafeBuffer buffer, final int frameOffset, final int frameLength, final MutableDirectBuffer defaultHeaderBuffer)
+        final UnsafeBuffer buffer,
+        final int termOffset,
+        final int frameLength,
+        final long defaultVersionFlagsType,
+        final long defaultSessionId)
     {
         long lengthVersionFlagsType;
         long termOffsetAndSessionId;
 
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
-            lengthVersionFlagsType = defaultHeaderVersionFlagsType | ((-frameLength) & 0xFFFF_FFFFL);
-            termOffsetAndSessionId = defaultHeaderSessionId | frameOffset;
+            lengthVersionFlagsType = defaultVersionFlagsType | ((-frameLength) & 0xFFFF_FFFFL);
+            termOffsetAndSessionId = defaultSessionId | termOffset;
         }
         else
         {
-            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | defaultHeaderVersionFlagsType;
-            termOffsetAndSessionId = (((reverseBytes(frameOffset)) & 0xFFFF_FFFFL) << 32) | defaultHeaderSessionId;
+            lengthVersionFlagsType = (((reverseBytes(-frameLength)) & 0xFFFF_FFFFL) << 32) | defaultVersionFlagsType;
+            termOffsetAndSessionId = (((reverseBytes(termOffset)) & 0xFFFF_FFFFL) << 32) | defaultSessionId;
         }
 
-        buffer.putLongOrdered(frameOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
+        buffer.putLongOrdered(termOffset + FRAME_LENGTH_FIELD_OFFSET, lengthVersionFlagsType);
         UnsafeAccess.UNSAFE.storeFence();
 
-        buffer.putLong(frameOffset + TERM_OFFSET_FIELD_OFFSET, termOffsetAndSessionId);
+        buffer.putLong(termOffset + TERM_OFFSET_FIELD_OFFSET, termOffsetAndSessionId);
 
         // read the stream(int) and term(int), this is the mutable part of the default header
-        final long streamAndTermIds = defaultHeaderBuffer.getLong(STREAM_ID_FIELD_OFFSET);
-        buffer.putLong(frameOffset + STREAM_ID_FIELD_OFFSET, streamAndTermIds);
+        final long streamAndTermIds = defaultHeader.getLong(STREAM_ID_FIELD_OFFSET);
+        buffer.putLong(termOffset + STREAM_ID_FIELD_OFFSET, streamAndTermIds);
     }
 
-    private int handleEndOfLogCondition(final UnsafeBuffer termBuffer, final int frameOffset, final int capacity)
+    private int handleEndOfLogCondition(
+        final UnsafeBuffer termBuffer,
+        final int termOffset,
+        final long defaultVersionFlagsType,
+        final long defaultSessionId,
+        final int capacity)
     {
         int resultingOffset = FAILED;
 
-        if (frameOffset <= (capacity - HEADER_LENGTH))
+        if (termOffset <= (capacity - HEADER_LENGTH))
         {
-            final int paddingLength = capacity - frameOffset;
-            applyDefaultHeader(termBuffer, frameOffset, paddingLength, defaultHeader);
-            frameType(termBuffer, frameOffset, PADDING_FRAME_TYPE);
-            frameLengthOrdered(termBuffer, frameOffset, paddingLength);
+            final int paddingLength = capacity - termOffset;
+            applyDefaultHeader(termBuffer, termOffset, paddingLength, defaultVersionFlagsType, defaultSessionId);
+            frameType(termBuffer, termOffset, PADDING_FRAME_TYPE);
+            frameLengthOrdered(termBuffer, termOffset, paddingLength);
 
             resultingOffset = TRIPPED;
         }

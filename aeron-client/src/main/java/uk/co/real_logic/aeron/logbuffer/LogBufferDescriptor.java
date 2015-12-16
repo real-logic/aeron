@@ -76,12 +76,12 @@ public class LogBufferDescriptor
     /**
      * Offset within the term meta data where the tail value is stored.
      */
-    public static final int TERM_TAIL_COUNTER_OFFSET;
+    public static final long TERM_TAIL_COUNTER_OFFSET;
 
     /**
      * Offset within the term meta data where current status is stored
      */
-    public static final int TERM_STATUS_OFFSET;
+    public static final long TERM_STATUS_OFFSET;
 
     /**
      * Total length of the term meta data buffer in bytes.

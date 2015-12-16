@@ -51,8 +51,8 @@ public final class UdpChannel
     private static final String INTERFACE_KEY = "interface";
     private static final String GROUP_KEY = "group";
 
-    private static final String[] UNICAST_KEYS = { LOCAL_KEY, REMOTE_KEY };
-    private static final String[] MULTICAST_KEYS = { GROUP_KEY, INTERFACE_KEY };
+    private static final String[] UNICAST_KEYS = {LOCAL_KEY, REMOTE_KEY};
+    private static final String[] MULTICAST_KEYS = {GROUP_KEY, INTERFACE_KEY};
 
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -100,12 +100,12 @@ public final class UdpChannel
                 final ProtocolFamily protocolFamily = getProtocolFamily(dataAddress.getAddress());
 
                 context.localControlAddress(localAddress)
-                       .remoteControlAddress(controlAddress)
-                       .localDataAddress(localAddress)
-                       .remoteDataAddress(dataAddress)
-                       .localInterface(localInterface)
-                       .protocolFamily(protocolFamily)
-                       .canonicalForm(canonicalise(localAddress, dataAddress));
+                    .remoteControlAddress(controlAddress)
+                    .localDataAddress(localAddress)
+                    .remoteDataAddress(dataAddress)
+                    .localInterface(localInterface)
+                    .protocolFamily(protocolFamily)
+                    .canonicalForm(canonicalise(localAddress, dataAddress));
             }
             else
             {
@@ -113,16 +113,16 @@ public final class UdpChannel
                 final InetSocketAddress localAddress = uri.getSocketAddress(LOCAL_KEY, 0, new InetSocketAddress(0));
 
                 final ProtocolFamily protocolFamily =
-                        !uri.containsKey(LOCAL_KEY) && null != remoteAddress
-                                ? getProtocolFamily(remoteAddress.getAddress())
-                                : getProtocolFamily(localAddress.getAddress());
+                    !uri.containsKey(LOCAL_KEY) && null != remoteAddress
+                        ? getProtocolFamily(remoteAddress.getAddress())
+                        : getProtocolFamily(localAddress.getAddress());
 
                 context.remoteControlAddress(remoteAddress)
-                       .remoteDataAddress(remoteAddress)
-                       .localControlAddress(localAddress)
-                       .localDataAddress(localAddress)
-                       .protocolFamily(protocolFamily)
-                       .canonicalForm(canonicalise(localAddress, remoteAddress));
+                    .remoteDataAddress(remoteAddress)
+                    .localControlAddress(localAddress)
+                    .localDataAddress(localAddress)
+                    .protocolFamily(protocolFamily)
+                    .canonicalForm(canonicalise(localAddress, remoteAddress));
             }
 
             return new UdpChannel(context);
@@ -146,7 +146,7 @@ public final class UdpChannel
         return uri.containsKey(GROUP_KEY);
     }
 
-    private static void validateConfiguration(AeronUri uri)
+    private static void validateConfiguration(final AeronUri uri)
     {
         validateMedia(uri);
         validateUnicastXorMulticast(uri);
@@ -165,16 +165,16 @@ public final class UdpChannel
         final boolean hasMulticastKeys = uri.containsAnyKey(MULTICAST_KEYS);
         final boolean hasUnicastKeys = uri.containsAnyKey(UNICAST_KEYS);
 
-        if (!(hasMulticastKeys ^ hasUnicastKeys))
+        if (hasMulticastKeys == hasUnicastKeys)
         {
-            final String msg =
-                "URI must contain either a unicast configuration (%s) or a multicast configuration (%s) not both";
-            throw new IllegalArgumentException(
-                format(msg, Arrays.toString(UNICAST_KEYS), Arrays.toString(MULTICAST_KEYS)));
+            throw new IllegalArgumentException(format(
+                "URI must contain either a unicast configuration (%s) or a multicast configuration (%s) not both",
+                Arrays.toString(UNICAST_KEYS), Arrays.toString(MULTICAST_KEYS)));
         }
     }
 
-    private static AeronUri parseIntoAeronUri(final String uriStr) throws URISyntaxException, UnknownHostException
+    private static AeronUri parseIntoAeronUri(final String uriStr)
+        throws URISyntaxException, UnknownHostException
     {
         if (uriStr.startsWith("udp:"))
         {
@@ -188,7 +188,8 @@ public final class UdpChannel
         throw new IllegalArgumentException("malformed channel URI: " + uriStr);
     }
 
-    private static AeronUri parseUdpUriToAeronUri(final String uriStr) throws URISyntaxException, UnknownHostException
+    private static AeronUri parseUdpUriToAeronUri(final String uriStr)
+        throws URISyntaxException, UnknownHostException
     {
         final URI uri = new URI(uriStr);
         final String userInfo = uri.getUserInfo();
@@ -244,9 +245,8 @@ public final class UdpChannel
     private static InetSocketAddress resolveToAddressOfInterface(
         final NetworkInterface localInterface, final InterfaceSearchAddress searchAddress)
     {
-        final InetAddress interfaceAddress =
-            findAddressOnInterface(
-                localInterface, searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());
+        final InetAddress interfaceAddress = findAddressOnInterface(
+            localInterface, searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());
 
         if (null == interfaceAddress)
         {
@@ -259,8 +259,8 @@ public final class UdpChannel
     private static NetworkInterface findInterface(final InterfaceSearchAddress searchAddress)
         throws SocketException, UnknownHostException
     {
-        final Collection<NetworkInterface> filteredIfcs =
-            filterBySubnet(searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());
+        final Collection<NetworkInterface> filteredIfcs = filterBySubnet(
+            searchAddress.getInetAddress(), searchAddress.getSubnetPrefix());
 
         // Results are ordered by prefix length, with loopback at the end.
         for (final NetworkInterface ifc : filteredIfcs)
@@ -496,24 +496,24 @@ public final class UdpChannel
     {
         final StringBuilder builder = new StringBuilder();
         builder.append("Unable to find multicast interface matching criteria: ")
-               .append(address.getAddress())
-               .append("/")
-               .append(address.getSubnetPrefix());
+            .append(address.getAddress())
+            .append("/")
+            .append(address.getSubnetPrefix());
 
         if (filteredIfcs.size() > 0)
         {
             builder.append(lineSeparator())
-                   .append("  Candidates:");
+                .append("  Candidates:");
 
             for (final NetworkInterface ifc : filteredIfcs)
             {
                 builder.append(lineSeparator())
-                       .append("  - Name: ")
-                       .append(ifc.getDisplayName())
-                       .append(", addresses: ")
-                       .append(ifc.getInterfaceAddresses())
-                       .append(", multicast: ")
-                       .append(ifc.supportsMulticast());
+                    .append("  - Name: ")
+                    .append(ifc.getDisplayName())
+                    .append(", addresses: ")
+                    .append(ifc.getInterfaceAddresses())
+                    .append(", multicast: ")
+                    .append(ifc.supportsMulticast());
             }
         }
 
@@ -525,13 +525,15 @@ public final class UdpChannel
         final StringBuilder builder = new StringBuilder("UdpChannel - ");
         if (null != localInterface)
         {
-            builder.append("interface: ")
-                   .append(localInterface.getDisplayName())
-                   .append(", ");
+            builder
+                .append("interface: ")
+                .append(localInterface.getDisplayName())
+                .append(", ");
         }
 
-        builder.append("localData: ").append(localData)
-               .append(", remoteData: ").append(remoteData);
+        builder
+            .append("localData: ").append(localData)
+            .append(", remoteData: ").append(remoteData);
 
         return builder.toString();
     }

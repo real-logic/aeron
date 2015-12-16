@@ -254,7 +254,8 @@ public class Publication implements AutoCloseable
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
+     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or
+     * {@link #ADMIN_ACTION}.
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {

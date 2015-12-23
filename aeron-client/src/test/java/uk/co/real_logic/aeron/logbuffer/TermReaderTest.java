@@ -53,7 +53,7 @@ public class TermReaderTest
         final int offset = 77;
         final int fragmentsRead = 999;
 
-        final long scanOutcome = TermReader.readOutcome(offset, fragmentsRead);
+        final long scanOutcome = TermReader.pack(offset, fragmentsRead);
 
         assertThat(TermReader.offset(scanOutcome), is(offset));
         assertThat(TermReader.fragmentsRead(scanOutcome), is(fragmentsRead));

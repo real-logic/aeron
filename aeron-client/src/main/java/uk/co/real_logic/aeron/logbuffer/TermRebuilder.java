@@ -29,16 +29,16 @@ public class TermRebuilder
      * Insert a packet of frames into the log at the appropriate offset as indicated by the term offset header.
      *
      * @param termBuffer into which the packet should be inserted.
-     * @param termOffset offset in the term at which the packet should be inserted.
+     * @param offset     offset in the term at which the packet should be inserted.
      * @param packet     containing a sequence of frames.
      * @param length     of the sequence of frames in bytes.
      */
-    public static void insert(final UnsafeBuffer termBuffer, final int termOffset, final UnsafeBuffer packet, final int length)
+    public static void insert(final UnsafeBuffer termBuffer, final int offset, final UnsafeBuffer packet, final int length)
     {
         final int firstFrameLength = packet.getInt(0, LITTLE_ENDIAN);
         packet.putIntOrdered(0, 0);
 
-        termBuffer.putBytes(termOffset, packet, 0, length);
-        frameLengthOrdered(termBuffer, termOffset, firstFrameLength);
+        termBuffer.putBytes(offset, packet, 0, length);
+        frameLengthOrdered(termBuffer, offset, firstFrameLength);
     }
 }

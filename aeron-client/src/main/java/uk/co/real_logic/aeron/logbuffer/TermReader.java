@@ -78,9 +78,9 @@ public class TermReader
             }
             while (fragmentsRead < fragmentsLimit && offset < capacity);
         }
-        catch (final Exception ex)
+        catch (final Throwable t)
         {
-            errorHandler.onError(ex);
+            errorHandler.onError(t);
         }
 
         return pack(offset, fragmentsRead);

@@ -15,15 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.driver.RateReporter;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +24,14 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntSupplier;
 
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.RateReporter;
+import uk.co.real_logic.agrona.CloseHelper;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 /**
  * Publisher that sends as fast as possible a given number of messages at a given length.
@@ -47,7 +46,7 @@ public class StreamingPublisher
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final boolean RANDOM_MESSAGE_LENGTH = SampleConfiguration.RANDOM_MESSAGE_LENGTH;
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
-    private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
+    private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
     private static final IntSupplier LENGTH_GENERATOR = composeLengthGenerator(RANDOM_MESSAGE_LENGTH, MESSAGE_LENGTH);
 
     private static volatile boolean printingActive = true;
@@ -99,14 +98,14 @@ public class StreamingPublisher
                     final int length = LENGTH_GENERATOR.getAsInt();
 
                     ATOMIC_BUFFER.putLong(0, i);
-
+                    OFFER_IDLE_STRATEGY.reset();
                     while (publication.offer(ATOMIC_BUFFER, 0, length) < 0L)
                     {
                         // The offer failed, which is usually due to the publication
                         // being temporarily blocked.  Retry the offer after a short
                         // spin/yield/sleep, depending on the chosen IdleStrategy.
                         backPressureCount++;
-                        OFFER_IDLE_STRATEGY.idle(0);
+                        OFFER_IDLE_STRATEGY.idle();
                     }
 
                     reporter.onMessage(1, length);

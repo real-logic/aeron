@@ -130,9 +130,10 @@ public class Ping
             }
             while (publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
+            idleStrategy.reset();
             while (subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
-                idleStrategy.idle(0);
+                idleStrategy.idle();
             }
         }
     }

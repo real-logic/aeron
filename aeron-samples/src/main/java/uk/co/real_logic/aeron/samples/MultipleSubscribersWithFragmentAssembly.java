@@ -76,6 +76,7 @@ public class MultipleSubscribersWithFragmentAssembly
             final IdleStrategy idleStrategy = new BackoffIdleStrategy(
                 100, 10, TimeUnit.MICROSECONDS.toNanos(1), TimeUnit.MICROSECONDS.toNanos(100));
 
+            int idleCount = 0;
             // Try to read the data for both the subscribers
             while (running.get())
             {
@@ -83,7 +84,14 @@ public class MultipleSubscribersWithFragmentAssembly
                 final int fragmentsRead2 = subscription2.poll(dataHandler2, FRAGMENT_COUNT_LIMIT);
                 // Give the IdleStrategy a chance to spin/yield/sleep to reduce CPU
                 // use if no messages were received.
-                idleStrategy.idle(fragmentsRead1 + fragmentsRead2);
+                if ((fragmentsRead1 + fragmentsRead2) == 0)
+                {
+                    idleStrategy.idle(idleCount++);
+                }
+                else
+                {
+                    idleCount = 0;
+                }
             }
 
             System.out.println("Shutting down...");

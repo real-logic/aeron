@@ -15,20 +15,29 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import org.HdrHistogram.Histogram;
-import uk.co.real_logic.aeron.*;
-import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
-import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.ThreadingMode;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.*;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
-
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.HdrHistogram.Histogram;
+
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.FragmentAssembler;
+import uk.co.real_logic.aeron.Image;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 public class EmbeddedPingPong
 {
@@ -140,8 +149,7 @@ public class EmbeddedPingPong
 
                     while (RUNNING.get())
                     {
-                        final int fragmentsRead = pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT);
-                        PING_HANDLER_IDLE_STRATEGY.idle(fragmentsRead);
+                        PING_HANDLER_IDLE_STRATEGY.idle(pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT));
                     }
 
                     System.out.println("Shutting down...");
@@ -166,9 +174,10 @@ public class EmbeddedPingPong
             }
             while (pingPublication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
+            idleStrategy.reset();
             while (pongSubscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
-                idleStrategy.idle(0);
+                idleStrategy.idle();
             }
         }
     }
@@ -196,9 +205,14 @@ public class EmbeddedPingPong
     public static void pingHandler(
         final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
+        if (pongPublication.offer(buffer, offset, length) < 0L)
+        {
+            return;
+        }
+        PING_HANDLER_IDLE_STRATEGY.reset();
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
-            PING_HANDLER_IDLE_STRATEGY.idle(0);
+            PING_HANDLER_IDLE_STRATEGY.idle();
         }
     }
 }

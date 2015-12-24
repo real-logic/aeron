@@ -67,8 +67,7 @@ public class SamplesUtil
                 {
                     while (running.get())
                     {
-                        final int fragmentsRead = subscription.poll(fragmentHandler, limit);
-                        idleStrategy.idle(fragmentsRead);
+                        idleStrategy.idle(subscription.poll(fragmentHandler, limit));
                     }
                 }
                 catch (final Exception ex)

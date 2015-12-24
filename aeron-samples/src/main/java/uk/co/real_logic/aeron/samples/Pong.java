@@ -15,6 +15,8 @@
  */
 package uk.co.real_logic.aeron.samples;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.FragmentAssembler;
 import uk.co.real_logic.aeron.Publication;
@@ -26,8 +28,6 @@ import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;
-
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Pong component of Ping-Pong.
@@ -69,11 +69,9 @@ public class Pong
         {
             final FragmentAssembler dataHandler = new FragmentAssembler(
                 (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
-
             while (running.get())
             {
-                final int fragmentsRead = pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT);
-                idleStrategy.idle(fragmentsRead);
+                idleStrategy.idle(pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT));
             }
 
             System.out.println("Shutting down...");
@@ -82,12 +80,18 @@ public class Pong
         CloseHelper.quietClose(driver);
     }
 
-    private static void pingHandler(
-        final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
+
+    public static void pingHandler(
+            final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
+        if (pongPublication.offer(buffer, offset, length) < 0L)
+        {
+            return;
+        }
+        PING_HANDLER_IDLE_STRATEGY.reset();
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
-            PING_HANDLER_IDLE_STRATEGY.idle(0);
+            PING_HANDLER_IDLE_STRATEGY.idle();
         }
     }
 }

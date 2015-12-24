@@ -15,16 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import uk.co.real_logic.aeron.Aeron;
-import uk.co.real_logic.aeron.Publication;
-import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.RateReporter;
-import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
+import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +23,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.aeron.samples.SamplesUtil.rateReporterHandler;
+import uk.co.real_logic.aeron.Aeron;
+import uk.co.real_logic.aeron.Publication;
+import uk.co.real_logic.aeron.Subscription;
+import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.RateReporter;
+import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 public class EmbeddedThroughput
 {
@@ -44,7 +43,7 @@ public class EmbeddedThroughput
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
-    private static final IdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
+    private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     private static volatile boolean printingActive = true;
 
@@ -87,15 +86,15 @@ public class EmbeddedThroughput
                 printingActive = true;
 
                 long backPressureCount = 0;
-
+                OFFER_IDLE_STRATEGY.reset();
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
                     ATOMIC_BUFFER.putLong(0, i);
 
                     while (publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()) < 0)
                     {
+                        OFFER_IDLE_STRATEGY.idle();
                         backPressureCount++;
-                        OFFER_IDLE_STRATEGY.idle(0);
                     }
                 }
 

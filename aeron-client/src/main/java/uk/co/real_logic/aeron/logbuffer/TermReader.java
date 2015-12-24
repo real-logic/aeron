@@ -35,7 +35,7 @@ public class TermReader
      * If a fragmentsLimit of 0 or less is passed then at least one read will be attempted.
      *
      * @param termBuffer     to be read for fragments.
-     * @param termOffset     offset within the buffer that the read should begin.
+     * @param offset         offset within the buffer that the read should begin.
      * @param handler        the handler for data that has been read
      * @param fragmentsLimit limit the number of fragments read.
      * @param header         to be used for mapping over the header for a given fragment.
@@ -44,7 +44,7 @@ public class TermReader
      */
     public static long read(
         final UnsafeBuffer termBuffer,
-        int termOffset,
+        int offset,
         final FragmentHandler handler,
         final int fragmentsLimit,
         final Header header,
@@ -57,43 +57,43 @@ public class TermReader
         {
             do
             {
-                final int frameLength = frameLengthVolatile(termBuffer, termOffset);
+                final int frameLength = frameLengthVolatile(termBuffer, offset);
                 if (frameLength <= 0)
                 {
                     break;
                 }
 
-                final int fragmentOffset = termOffset;
-                termOffset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
+                final int termOffset = offset;
+                offset += BitUtil.align(frameLength, FRAME_ALIGNMENT);
 
-                if (!isPaddingFrame(termBuffer, fragmentOffset))
+                if (!isPaddingFrame(termBuffer, termOffset))
                 {
                     header.buffer(termBuffer);
-                    header.offset(fragmentOffset);
+                    header.offset(termOffset);
 
-                    handler.onFragment(termBuffer, fragmentOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
+                    handler.onFragment(termBuffer, termOffset + HEADER_LENGTH, frameLength - HEADER_LENGTH, header);
 
                     ++fragmentsRead;
                 }
             }
-            while (fragmentsRead < fragmentsLimit && termOffset < capacity);
+            while (fragmentsRead < fragmentsLimit && offset < capacity);
         }
-        catch (final Exception ex)
+        catch (final Throwable t)
         {
-            errorHandler.onError(ex);
+            errorHandler.onError(t);
         }
 
-        return readOutcome(termOffset, fragmentsRead);
+        return pack(offset, fragmentsRead);
     }
 
     /**
      * Pack the values for fragmentsRead and offset into a long for returning on the stack.
      *
-     * @param offset   value to be packed.
+     * @param offset        value to be packed.
      * @param fragmentsRead value to be packed.
      * @return a long with both ints packed into it.
      */
-    public static long readOutcome(final int offset, final int fragmentsRead)
+    public static long pack(final int offset, final int fragmentsRead)
     {
         return ((long)offset << 32) | fragmentsRead;
     }

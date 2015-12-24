@@ -58,7 +58,7 @@ public class TermUnblocker
      * @param logMetaDataBuffer containing the default headers
      * @param activeIndex       for the default header
      * @param termBuffer        to unblock
-     * @param termOffset        to unblock at
+     * @param blockedOffset     to unblock at
      * @param tailOffset        to unblock up to
      * @return whether unblocking was done, not done, or applied to end of term
      */
@@ -66,20 +66,20 @@ public class TermUnblocker
         final UnsafeBuffer logMetaDataBuffer,
         final int activeIndex,
         final UnsafeBuffer termBuffer,
-        final int termOffset,
+        final int blockedOffset,
         final int tailOffset)
     {
         Status status = NO_ACTION;
-        int frameLength = frameLengthVolatile(termBuffer, termOffset);
+        int frameLength = frameLengthVolatile(termBuffer, blockedOffset);
 
         if (frameLength < 0)
         {
-            resetHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset, -frameLength);
+            resetHeader(logMetaDataBuffer, activeIndex, termBuffer, blockedOffset, -frameLength);
             status = UNBLOCKED;
         }
         else if (0 == frameLength)
         {
-            int currentOffset = termOffset + FRAME_ALIGNMENT;
+            int currentOffset = blockedOffset + FRAME_ALIGNMENT;
 
             while (currentOffset < tailOffset)
             {
@@ -87,9 +87,9 @@ public class TermUnblocker
 
                 if (frameLength != 0)
                 {
-                    if (scanBackToConfirmZeroed(termBuffer, currentOffset, termOffset))
+                    if (scanBackToConfirmZeroed(termBuffer, currentOffset, blockedOffset))
                     {
-                        resetHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset, currentOffset - termOffset);
+                        resetHeader(logMetaDataBuffer, activeIndex, termBuffer, blockedOffset, currentOffset - blockedOffset);
                         status = UNBLOCKED;
                     }
 
@@ -101,9 +101,9 @@ public class TermUnblocker
 
             if (currentOffset == termBuffer.capacity())
             {
-                if (0 == frameLengthVolatile(termBuffer, termOffset))
+                if (0 == frameLengthVolatile(termBuffer, blockedOffset))
                 {
-                    resetHeader(logMetaDataBuffer, activeIndex, termBuffer, termOffset, currentOffset - termOffset);
+                    resetHeader(logMetaDataBuffer, activeIndex, termBuffer, blockedOffset, currentOffset - blockedOffset);
                     status = UNBLOCKED_TO_END;
                 }
             }

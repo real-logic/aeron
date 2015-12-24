@@ -34,7 +34,7 @@ public class TermScannerTest
         final int padding = 77;
         final int available = 65000;
 
-        final long scanOutcome = TermScanner.scanOutcome(padding, available);
+        final long scanOutcome = TermScanner.pack(padding, available);
 
         assertThat(TermScanner.padding(scanOutcome), is(padding));
         assertThat(TermScanner.available(scanOutcome), is(available));

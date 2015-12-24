@@ -46,15 +46,15 @@ public final class TermScanner
 
         do
         {
-            final int frameOffset = offset + available;
-            final int frameLength = frameLengthVolatile(termBuffer, frameOffset);
+            final int termOffset = offset + available;
+            final int frameLength = frameLengthVolatile(termBuffer, termOffset);
             if (frameLength <= 0)
             {
                 break;
             }
 
             int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
-            if (isPaddingFrame(termBuffer, frameOffset))
+            if (isPaddingFrame(termBuffer, termOffset))
             {
                 padding = alignedFrameLength - HEADER_LENGTH;
                 alignedFrameLength = HEADER_LENGTH;
@@ -71,7 +71,7 @@ public final class TermScanner
         }
         while (0 == padding && available < maxLength);
 
-        return scanOutcome(padding, available);
+        return pack(padding, available);
     }
 
     /**
@@ -81,7 +81,7 @@ public final class TermScanner
      * @param available value to be packed.
      * @return a long with both ints packed into it.
      */
-    public static long scanOutcome(final int padding, final int available)
+    public static long pack(final int padding, final int available)
     {
         return ((long)padding << 32) | available;
     }

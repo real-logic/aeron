@@ -131,7 +131,6 @@ class DriverListenerAdapter implements MessageHandler
 
                 listener.onUnavailableImage(
                     imageMessage.streamId(),
-                    imageMessage.sessionId(),
                     imageMessage.correlationId());
                 break;
             }

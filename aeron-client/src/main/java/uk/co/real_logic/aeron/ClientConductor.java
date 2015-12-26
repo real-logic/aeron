@@ -237,7 +237,7 @@ class ClientConductor implements Agent, DriverListener
         driverException = new RegistrationException(errorCode, message);
     }
 
-    public void onUnavailableImage(final int streamId, final int sessionId, final long correlationId)
+    public void onUnavailableImage(final int streamId, final long correlationId)
     {
         activeSubscriptions.forEach(
             streamId,

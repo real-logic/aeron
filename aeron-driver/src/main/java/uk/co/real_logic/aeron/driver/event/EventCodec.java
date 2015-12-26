@@ -553,9 +553,8 @@ public class EventCodec
     private static String dissect(final ImageMessageFlyweight command)
     {
         return String.format(
-            "%s %d:%d [%d]",
+            "%s %d [%d]",
             command.channel(),
-            command.sessionId(),
             command.streamId(),
             command.correlationId());
     }

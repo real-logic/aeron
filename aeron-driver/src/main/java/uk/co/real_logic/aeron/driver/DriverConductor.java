@@ -345,7 +345,6 @@ public class DriverConductor implements Agent
     {
         clientProxy.onUnavailableImage(
             image.correlationId(),
-            image.sessionId(),
             image.streamId(),
             image.channelUriString());
 

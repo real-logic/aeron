@@ -135,12 +135,11 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onUnavailableImage(final long correlationId, final int sessionId, final int streamId, final String channel)
+    public void onUnavailableImage(final long correlationId, final int streamId, final String channel)
     {
         imageMessage.wrap(tmpBuffer, 0);
         imageMessage
             .correlationId(correlationId)
-            .sessionId(sessionId)
             .streamId(streamId)
             .channel(channel);
 

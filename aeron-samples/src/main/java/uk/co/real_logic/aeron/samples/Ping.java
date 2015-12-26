@@ -146,9 +146,9 @@ public class Ping
         HISTOGRAM.recordValue(rttNs);
     }
 
-    private static void availablePongImageHandler(
-        final Image image, final Subscription subscription, final long joiningPosition, final String sourceIdentity)
+    private static void availablePongImageHandler(final Image image)
     {
+        final Subscription subscription = image.subscription();
         System.out.format(
             "Available image: channel=%s streamId=%d session=%d\n",
             subscription.channel(), subscription.streamId(), image.sessionId());

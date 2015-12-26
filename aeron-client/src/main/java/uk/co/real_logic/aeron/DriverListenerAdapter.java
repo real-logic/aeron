@@ -104,7 +104,6 @@ class DriverListenerAdapter implements MessageHandler
                 listener.onAvailableImage(
                     imageReady.streamId(),
                     imageReady.sessionId(),
-                    imageReady.joiningPosition(),
                     subscriberPositionMap,
                     imageReady.logFileName(),
                     imageReady.sourceIdentity(),
@@ -133,7 +132,6 @@ class DriverListenerAdapter implements MessageHandler
                 listener.onUnavailableImage(
                     imageMessage.streamId(),
                     imageMessage.sessionId(),
-                    imageMessage.position(),
                     imageMessage.correlationId());
                 break;
             }

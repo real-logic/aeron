@@ -149,30 +149,26 @@ public class SamplesUtil
     /**
      * Print the information for an available image to stdout.
      *
-     * @param image           that has been created
-     * @param subscription    that the image is associated with
-     * @param joiningPosition for the subscriber in the stream
-     * @param sourceIdentity  that is transport specific
+     * @param image that has been createdic
      */
-    public static void printAvailableImage(
-        final Image image, final Subscription subscription, final long joiningPosition, final String sourceIdentity)
+    public static void printAvailableImage(final Image image)
     {
+        final Subscription subscription = image.subscription();
         System.out.println(String.format(
-            "Available image on %s streamId=%d sessionId=%d at position=%d from %s",
-            subscription.channel(), subscription.streamId(), image.sessionId(), joiningPosition, sourceIdentity));
+            "Available image on %s streamId=%d sessionId=%d from %s",
+            subscription.channel(), subscription.streamId(), image.sessionId(), image.sourceIdentity()));
     }
 
     /**
      * Print the information for an unavailable image to stdout.
      *
-     * @param image        that has gone inactive
-     * @param subscription that the image is associated with
-     * @param position     at which the image went inactive
+     * @param image that has gone inactive
      */
-    public static void printUnavailableImage(final Image image, final Subscription subscription, final long position)
+    public static void printUnavailableImage(final Image image)
     {
+        final Subscription subscription = image.subscription();
         System.out.println(String.format(
-            "Unavailable image on %s streamId=%d sessionId=%d at position=%d",
-            subscription.channel(), subscription.streamId(), image.sessionId(), position));
+            "Unavailable image on %s streamId=%d sessionId=%d",
+            subscription.channel(), subscription.streamId(), image.sessionId()));
     }
 }

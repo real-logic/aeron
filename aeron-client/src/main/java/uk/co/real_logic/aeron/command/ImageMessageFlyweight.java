@@ -35,9 +35,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
  * +---------------------------------------------------------------+
  * |                          Stream ID                            |
  * +---------------------------------------------------------------+
- * |                          Position                             |
- * |                                                               |
- * +---------------------------------------------------------------+
  * |                        Channel Length                         |
  * +---------------------------------------------------------------+
  * |                           Channel                           ...
@@ -49,8 +46,7 @@ public class ImageMessageFlyweight extends Flyweight
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = 8;
     private static final int STREAM_ID_FIELD_OFFSET = 12;
-    private static final int POSITION_FIELD_OFFSET =  16;
-    private static final int CHANNEL_OFFSET = 24;
+    private static final int CHANNEL_OFFSET = 16;
 
     private int lengthOfChannel;
 
@@ -115,29 +111,6 @@ public class ImageMessageFlyweight extends Flyweight
     public ImageMessageFlyweight streamId(final int streamId)
     {
         buffer().putInt(offset() + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * The position at which this image when inactive.
-     *
-     * @return position at which this image when inactive.
-     */
-    public long position()
-    {
-        return buffer().getLong(offset() + POSITION_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * The position at which this image when inactive.
-     *
-     * @param position at which this image when inactive.
-     * @return flyweight
-     */
-    public ImageMessageFlyweight position(final long position)
-    {
-        buffer().putLong(offset() + POSITION_FIELD_OFFSET, position, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }

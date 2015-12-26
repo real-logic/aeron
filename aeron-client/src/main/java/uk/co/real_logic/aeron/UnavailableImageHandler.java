@@ -24,9 +24,7 @@ public interface UnavailableImageHandler
     /**
      * Method called by Aeron to deliver notification that an Image is no longer available for polling.
      *
-     * @param image        the image that has become unavailable.
-     * @param subscription that the {@link Image} is associated with.
-     * @param position     at which the image went unavailable.
+     * @param image the image that has become unavailable.
      */
-    void onUnavailableImage(Image image, Subscription subscription, long position);
+    void onUnavailableImage(Image image);
 }

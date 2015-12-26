@@ -16,17 +16,23 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.*;
+import uk.co.real_logic.aeron.logbuffer.ControlledFragmentHandler.Action;
+import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
 import java.nio.channels.FileChannel;
-import java.util.Arrays;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.logbuffer.ControlledFragmentHandler.Action.*;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthVolatile;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.isPaddingFrame;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermReader.*;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 
 /**
@@ -42,7 +48,7 @@ public class Image
     private volatile boolean isClosed;
 
     private final Position subscriberPosition;
-    private final UnsafeBuffer[] termBuffers;
+    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final Header header;
     private final ErrorHandler errorHandler;
     private final LogBuffers logBuffers;
@@ -54,7 +60,6 @@ public class Image
      *
      * @param subscription       to which this {@link Image} belongs.
      * @param sessionId          of the stream of messages.
-     * @param initialPosition    at which the subscriber is joining the stream.
      * @param subscriberPosition for indicating the position of the subscriber in the stream.
      * @param logBuffers         containing the stream of messages.
      * @param errorHandler       to be called if an error occurs when polling for messages.
@@ -64,7 +69,6 @@ public class Image
     public Image(
         final Subscription subscription,
         final int sessionId,
-        final long initialPosition,
         final Position subscriberPosition,
         final LogBuffers logBuffers,
         final ErrorHandler errorHandler,
@@ -80,15 +84,12 @@ public class Image
         this.correlationId = correlationId;
 
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
-        termBuffers = Arrays.copyOf(buffers, PARTITION_COUNT);
+        System.arraycopy(buffers, 0, termBuffers, 0, PARTITION_COUNT);
 
-        final int capacity = termBuffers[0].capacity();
-        this.termLengthMask = capacity - 1;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
-        final int initialTermId = LogBufferDescriptor.initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]);
-        header = new Header(initialTermId, capacity);
-
-        subscriberPosition.setOrdered(initialPosition);
+        final int termLength = logBuffers.termLength();
+        this.termLengthMask = termLength - 1;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
+        header = new Header(LogBufferDescriptor.initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]), termLength);
     }
 
     /**
@@ -188,11 +189,14 @@ public class Image
 
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
-     * will be delivered via the {@link FragmentHandler} up to a limited number of fragments as specified.
+     * will be delivered to the {@link FragmentHandler} up to a limited number of fragments as specified.
      *
-     * @param fragmentHandler to which messages are delivered.
+     * To assemble messages that span multiple fragments then use {@link FragmentAssembler}.
+     *
+     * @param fragmentHandler to which message fragments are delivered.
      * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
      * @return the number of fragments that have been consumed.
+     * @see FragmentAssembler
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
@@ -203,22 +207,97 @@ public class Image
 
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
-        final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
+        final UnsafeBuffer termBuffer = activeTermBuffer(position);
 
-        final long readOutcome = read(termBuffer, termOffset, fragmentHandler, fragmentLimit, header, errorHandler);
+        final long outcome = read(termBuffer, termOffset, fragmentHandler, fragmentLimit, header, errorHandler);
 
-        final long newPosition = position + (offset(readOutcome) - termOffset);
-        if (newPosition > position)
-        {
-            subscriberPosition.setOrdered(newPosition);
-        }
+        updatePosition(position, termOffset, offset(outcome));
 
-        return fragmentsRead(readOutcome);
+        return fragmentsRead(outcome);
     }
 
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
-     * will be delivered via the {@link BlockHandler} up to a limited number of bytes.
+     * will be delivered to the {@link ControlledFragmentHandler} up to a limited number of fragments as specified.
+     *
+     * To assemble messages that span multiple fragments then use {@link ControlledFragmentAssembler}.
+     *
+     * @param fragmentHandler to which message fragments are delivered.
+     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
+     * @return the number of fragments that have been consumed.
+     * @see ControlledFragmentAssembler
+     */
+    public int controlledPoll(final ControlledFragmentHandler fragmentHandler, final int fragmentLimit)
+    {
+        if (isClosed)
+        {
+            return 0;
+        }
+
+        long position = subscriberPosition.get();
+        int termOffset = (int)position & termLengthMask;
+        int offset = termOffset;
+        int fragmentsRead = 0;
+        final UnsafeBuffer termBuffer = activeTermBuffer(position);
+
+        try
+        {
+            final int capacity = termBuffer.capacity();
+            do
+            {
+                final int length = frameLengthVolatile(termBuffer, offset);
+                if (length <= 0)
+                {
+                    break;
+                }
+
+                final int frameOffset = offset;
+                final int alignedLength = BitUtil.align(length, FRAME_ALIGNMENT);
+                offset += alignedLength;
+
+                if (!isPaddingFrame(termBuffer, frameOffset))
+                {
+                    header.buffer(termBuffer);
+                    header.offset(frameOffset);
+
+                    final Action action = fragmentHandler.onFragment(
+                        termBuffer, frameOffset + HEADER_LENGTH, length - HEADER_LENGTH, header);
+
+                    ++fragmentsRead;
+
+                    if (action == BREAK)
+                    {
+                        break;
+                    }
+                    else if (action == ABORT)
+                    {
+                        --fragmentsRead;
+                        offset = frameOffset;
+                        break;
+                    }
+                    else if (action == COMMIT)
+                    {
+                        position += alignedLength;
+                        termOffset = offset;
+                        subscriberPosition.setOrdered(position);
+                    }
+                }
+            }
+            while (fragmentsRead < fragmentLimit && offset < capacity);
+        }
+        catch (final Throwable t)
+        {
+            errorHandler.onError(t);
+        }
+
+        updatePosition(position, termOffset, offset);
+
+        return fragmentsRead;
+    }
+
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered to the {@link BlockHandler} up to a limited number of bytes.
      *
      * @param blockHandler     to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
@@ -233,7 +312,7 @@ public class Image
 
         final long position = subscriberPosition.get();
         final int termOffset = (int)position & termLengthMask;
-        final UnsafeBuffer termBuffer = termBuffers[indexByPosition(position, positionBitsToShift)];
+        final UnsafeBuffer termBuffer = activeTermBuffer(position);
         final int limit = Math.min(termOffset + blockLengthLimit, termBuffer.capacity());
 
         final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limit);
@@ -260,7 +339,7 @@ public class Image
 
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
-     * will be delivered via the {@link FileBlockHandler} up to a limited number of bytes.
+     * will be delivered to the {@link FileBlockHandler} up to a limited number of bytes.
      *
      * @param fileBlockHandler to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
@@ -301,6 +380,20 @@ public class Image
         }
 
         return bytesConsumed;
+    }
+
+    private void updatePosition(final long positionBefore, final int offsetBefore, final int offsetAfter)
+    {
+        final long position = positionBefore + (offsetAfter - offsetBefore);
+        if (position > positionBefore)
+        {
+            subscriberPosition.setOrdered(position);
+        }
+    }
+
+    private UnsafeBuffer activeTermBuffer(final long position)
+    {
+        return termBuffers[indexByPosition(position, positionBitsToShift)];
     }
 
     ManagedResource managedResource()

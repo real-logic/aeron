@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.ControlledFragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
@@ -25,7 +25,7 @@ import java.util.function.IntFunction;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
 
 /**
- * A {@link FragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
+ * A {@link ControlledFragmentHandler} that sits in a chain-of-responsibility pattern that reassembles fragmented messages
  * so that the next handler in the chain only sees whole messages.
  * <p>
  * Unfragmented messages are delegated without copy. Fragmented messages are copied to a temporary
@@ -35,9 +35,9 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
  * When sessions go inactive see {@link UnavailableImageHandler}, it is possible to free the buffer by calling
  * {@link #freeSessionBuffer(int)}.
  */
-public class FragmentAssembler implements FragmentHandler
+public class ControlledFragmentAssembler implements ControlledFragmentHandler
 {
-    private final FragmentHandler delegate;
+    private final ControlledFragmentHandler delegate;
     private final AssemblyHeader assemblyHeader = new AssemblyHeader();
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
     private final IntFunction<BufferBuilder> builderFunc;
@@ -47,7 +47,7 @@ public class FragmentAssembler implements FragmentHandler
      *
      * @param delegate onto which whole messages are forwarded.
      */
-    public FragmentAssembler(final FragmentHandler delegate)
+    public ControlledFragmentAssembler(final ControlledFragmentHandler delegate)
     {
         this(delegate, BufferBuilder.INITIAL_CAPACITY);
     }
@@ -58,27 +58,29 @@ public class FragmentAssembler implements FragmentHandler
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.
      */
-    public FragmentAssembler(final FragmentHandler delegate, final int initialBufferLength)
+    public ControlledFragmentAssembler(final ControlledFragmentHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
         builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
     }
 
     /**
-     * The implementation of {@link FragmentHandler} that reassembles and forwards whole messages.
+     * The implementation of {@link ControlledFragmentHandler} that reassembles and forwards whole messages.
      *
      * @param buffer containing the data.
      * @param offset at which the data begins.
      * @param length of the data in bytes.
      * @param header representing the meta data for the data.
      */
-    public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         final byte flags = header.flags();
 
+        Action action = Action.CONTINUE;
+
         if ((flags & UNFRAGMENTED) == UNFRAGMENTED)
         {
-            delegate.onFragment(buffer, offset, length, header);
+            action = delegate.onFragment(buffer, offset, length, header);
         }
         else
         {
@@ -92,17 +94,28 @@ public class FragmentAssembler implements FragmentHandler
                 final BufferBuilder builder = builderBySessionIdMap.get(header.sessionId());
                 if (null != builder && builder.limit() != 0)
                 {
+                    final int limit = builder.limit();
                     builder.append(buffer, offset, length);
 
                     if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
                         final int msgLength = builder.limit();
-                        delegate.onFragment(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
-                        builder.reset();
+                        action = delegate.onFragment(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
+
+                        if (Action.ABORT == action)
+                        {
+                            builder.limit(limit);
+                        }
+                        else
+                        {
+                            builder.reset();
+                        }
                     }
                 }
             }
         }
+
+        return action;
     }
 
     /**

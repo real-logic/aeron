@@ -23,7 +23,7 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import java.util.Arrays;
 
 /**
- * Builder for appending buffers that grows capacity as necessary.
+ * Builder for appending buffers that grows capacity as needed.
  */
 public class BufferBuilder
 {
@@ -73,6 +73,22 @@ public class BufferBuilder
     public int limit()
     {
         return limit;
+    }
+
+    /**
+     * Set this limit for this buffer as the position at which the next append operation will occur.
+     *
+     * @param limit to be the new value.
+     */
+    public void limit(final int limit)
+    {
+        if (limit < 0 || limit >= capacity)
+        {
+            throw new IllegalArgumentException(String.format(
+                "Limit outside range: capacity=%d limit=%d", capacity, limit));
+        }
+
+        this.limit = limit;
     }
 
     /**

@@ -461,7 +461,7 @@ public class ClientConductorTest
         conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onAvailableImage(
-            STREAM_ID_1, SESSION_ID_1, 0L, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
+            STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
 
         verify(logBuffersFactory).map(SESSION_ID_1 + "-log");
     }
@@ -481,17 +481,14 @@ public class ClientConductorTest
         final Subscription subscription = conductor.addSubscription(CHANNEL, STREAM_ID_1);
 
         conductor.onAvailableImage(
-            STREAM_ID_1, SESSION_ID_1, 0L, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
+            STREAM_ID_1, SESSION_ID_1, subscriberPositionMap, SESSION_ID_1 + "-log", SOURCE_INFO, CORRELATION_ID);
 
         assertFalse(subscription.hasNoImages());
-        verify(mockAvailableImageHandler)
-            .onAvailableImage(any(Image.class), eq(subscription), eq(0L), eq(SOURCE_INFO));
+        verify(mockAvailableImageHandler).onAvailableImage(any(Image.class));
 
-        final long position = 0L;
-        conductor.onUnavailableImage(STREAM_ID_1, SESSION_ID_1, position, CORRELATION_ID);
+        conductor.onUnavailableImage(STREAM_ID_1, SESSION_ID_1, CORRELATION_ID);
 
-        verify(mockUnavailableImageHandler)
-            .onUnavailableImage(any(Image.class), eq(subscription), eq(position));
+        verify(mockUnavailableImageHandler).onUnavailableImage(any(Image.class));
         assertTrue(subscription.hasNoImages());
         assertFalse(subscription.hasImage(SESSION_ID_1));
     }
@@ -500,20 +497,19 @@ public class ClientConductorTest
     public void shouldIgnoreUnknownNewImage()
     {
         conductor.onAvailableImage(
-            STREAM_ID_2, SESSION_ID_2, 0L, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO, CORRELATION_ID_2);
+            STREAM_ID_2, SESSION_ID_2, subscriberPositionMap, SESSION_ID_2 + "-log", SOURCE_INFO, CORRELATION_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
-        verify(mockAvailableImageHandler, never())
-            .onAvailableImage(any(Image.class), any(Subscription.class), anyLong(), anyString());
+        verify(mockAvailableImageHandler, never()).onAvailableImage(any(Image.class));
     }
 
     @Test
     public void shouldIgnoreUnknownInactiveImage()
     {
-        conductor.onUnavailableImage(STREAM_ID_2, SESSION_ID_2, 0L, CORRELATION_ID_2);
+        conductor.onUnavailableImage(STREAM_ID_2, SESSION_ID_2, CORRELATION_ID_2);
 
         verify(logBuffersFactory, never()).map(anyString());
-        verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class), any(Subscription.class), anyLong());
+        verify(mockUnavailableImageHandler, never()).onUnavailableImage(any(Image.class));
     }
 
     @Test

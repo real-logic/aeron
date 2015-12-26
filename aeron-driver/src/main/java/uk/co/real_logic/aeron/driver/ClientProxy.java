@@ -75,7 +75,6 @@ public class ClientProxy
     public void onAvailableImage(
         final int streamId,
         final int sessionId,
-        final long joiningPosition,
         final RawLog rawLog,
         final long correlationId,
         final List<SubscriberPosition> subscriberPositions,
@@ -85,7 +84,6 @@ public class ClientProxy
         imageReady
             .sessionId(sessionId)
             .streamId(streamId)
-            .joiningPosition(joiningPosition)
             .correlationId(correlationId);
 
         final int size = subscriberPositions.size();
@@ -137,15 +135,13 @@ public class ClientProxy
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
-    public void onUnavailableImage(
-        final long correlationId, final int sessionId, final int streamId, final long position, final String channel)
+    public void onUnavailableImage(final long correlationId, final int sessionId, final int streamId, final String channel)
     {
         imageMessage.wrap(tmpBuffer, 0);
         imageMessage
             .correlationId(correlationId)
             .sessionId(sessionId)
             .streamId(streamId)
-            .position(position)
             .channel(channel);
 
         logger.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, imageMessage.length());

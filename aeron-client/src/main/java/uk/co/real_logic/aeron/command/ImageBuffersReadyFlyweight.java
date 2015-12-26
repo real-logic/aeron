@@ -36,9 +36,6 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                         Correlation ID                        |
  * |                                                               |
  * +---------------------------------------------------------------+
- * |                        Joining Position                       |
- * |                                                               |
- * +---------------------------------------------------------------+
  * |                          Session ID                           |
  * +---------------------------------------------------------------+
  * |                           Stream ID                           |
@@ -74,8 +71,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 public class ImageBuffersReadyFlyweight extends Flyweight
 {
     private static final int CORRELATION_ID_OFFSET = 0;
-    private static final int JOINING_POSITION_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
-    private static final int SESSION_ID_OFFSET = JOINING_POSITION_OFFSET + SIZE_OF_LONG;
+    private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int SUBSCRIBER_POSITION_COUNT_OFFSET = SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET + SIZE_OF_INT;
@@ -102,29 +98,6 @@ public class ImageBuffersReadyFlyweight extends Flyweight
     public ImageBuffersReadyFlyweight correlationId(final long correlationId)
     {
         buffer().putLong(offset() + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
-
-        return this;
-    }
-
-    /**
-     * The joining position value
-     *
-     * @return joining position value
-     */
-    public long joiningPosition()
-    {
-        return buffer().getLong(offset() + JOINING_POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    /**
-     * set joining position field
-     *
-     * @param joiningPosition field value
-     * @return flyweight
-     */
-    public ImageBuffersReadyFlyweight joiningPosition(final long joiningPosition)
-    {
-        buffer().putLong(offset() + JOINING_POSITION_OFFSET, joiningPosition, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }

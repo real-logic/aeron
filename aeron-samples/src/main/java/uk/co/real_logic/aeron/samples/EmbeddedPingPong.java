@@ -190,12 +190,9 @@ public class EmbeddedPingPong
         HISTOGRAM.recordValue(rttNs);
     }
 
-    private static void availablePongImageHandler(
-        final Image image,
-        final Subscription subscription,
-        final long joiningPosition,
-        final String sourceIdentity)
+    private static void availablePongImageHandler(final Image image)
     {
+        final Subscription subscription = image.subscription();
         if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel()))
         {
             PONG_IMAGE_LATCH.countDown();

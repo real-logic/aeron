@@ -24,10 +24,7 @@ public interface AvailableImageHandler
     /**
      * Method called by Aeron to deliver notification of a new {@link Image} being available for polling.
      *
-     * @param image           that is now available
-     * @param subscription    that the {@link Image} is associated with.
-     * @param joiningPosition at which the stream is being joined by the subscriber.
-     * @param sourceIdentity  a transport specific string with additional details about the publisher.
+     * @param image that is now available
      */
-    void onAvailableImage(Image image, Subscription subscription, long joiningPosition, String sourceIdentity);
+    void onAvailableImage(Image image);
 }

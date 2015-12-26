@@ -282,7 +282,6 @@ public class DriverConductor implements Agent
             clientProxy.onAvailableImage(
                 streamId,
                 sessionId,
-                joiningPosition,
                 rawLog,
                 imageCorrelationId,
                 subscriberPositions,
@@ -348,7 +347,6 @@ public class DriverConductor implements Agent
             image.correlationId(),
             image.sessionId(),
             image.streamId(),
-            image.rebuildPosition(),
             image.channelUriString());
 
         receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
@@ -766,6 +764,7 @@ public class DriverConductor implements Agent
                 {
                     final Position position = newPosition(
                         "subscriber pos", channel, image.sessionId(), streamId, registrationId);
+                    position.setOrdered(image.rebuildPosition());
 
                     image.addSubscriber(position);
                     subscription.addImage(image, position);
@@ -773,7 +772,6 @@ public class DriverConductor implements Agent
                     clientProxy.onAvailableImage(
                         streamId,
                         image.sessionId(),
-                        image.rebuildPosition(),
                         image.rawLog(),
                         image.correlationId(),
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
@@ -788,6 +786,7 @@ public class DriverConductor implements Agent
 
         final Position position = newPosition(
             "subscriber pos", CommonContext.IPC_CHANNEL, directPublication.sessionId(), streamId, registrationId);
+        position.setOrdered(directPublication.joiningPosition());
 
         final SubscriptionLink subscriptionLink = new SubscriptionLink(
             registrationId, streamId, directPublication, position, client);
@@ -803,7 +802,6 @@ public class DriverConductor implements Agent
         clientProxy.onAvailableImage(
             streamId,
             directPublication.sessionId(),
-            directPublication.joiningPosition(),
             directPublication.rawLog(),
             directPublication.correlationId(),
             subscriberPositions,

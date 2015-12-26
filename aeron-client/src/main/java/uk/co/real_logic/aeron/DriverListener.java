@@ -33,7 +33,6 @@ interface DriverListener
     void onAvailableImage(
         int streamId,
         int sessionId,
-        long initialPosition,
         Long2LongHashMap subscriberPositionMap,
         String logFileName,
         String sourceIdentity,
@@ -42,7 +41,6 @@ interface DriverListener
     void onUnavailableImage(
         int streamId,
         int sessionId,
-        long position,
         long correlationId);
 
     void onError(

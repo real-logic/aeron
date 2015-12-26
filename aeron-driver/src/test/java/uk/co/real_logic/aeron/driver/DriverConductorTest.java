@@ -44,7 +44,6 @@ import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.ErrorCode.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 public class DriverConductorTest
 {
@@ -471,10 +470,8 @@ public class DriverConductorTest
         assertThat(publicationImage.sessionId(), is(SESSION_ID));
         assertThat(publicationImage.streamId(), is(STREAM_ID_1));
 
-        final long position =
-            computePosition(activeTermId, termOffset, Integer.numberOfTrailingZeros(TERM_BUFFER_LENGTH), initialTermId);
         verify(mockClientProxy).onAvailableImage(
-            eq(STREAM_ID_1), eq(SESSION_ID), eq(position), anyObject(), anyLong(), anyObject(), anyString());
+            eq(STREAM_ID_1), eq(SESSION_ID), anyObject(), anyLong(), anyObject(), anyString());
     }
 
     @Test
@@ -498,7 +495,7 @@ public class DriverConductorTest
 
         verify(receiverProxy, never()).newPublicationImage(any(), any());
         verify(mockClientProxy, never()).onAvailableImage(
-            anyInt(), anyInt(), anyLong(), anyObject(), anyLong(), anyObject(), anyString());
+            anyInt(), anyInt(), anyObject(), anyLong(), anyObject(), anyString());
     }
 
     @Test
@@ -530,7 +527,7 @@ public class DriverConductorTest
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
         verify(mockClientProxy).onUnavailableImage(
-            eq(publicationImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
+            eq(publicationImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), anyString());
     }
 
     @Test
@@ -569,10 +566,10 @@ public class DriverConductorTest
 
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy, times(2)).onAvailableImage(
-            eq(STREAM_ID_1), eq(SESSION_ID), eq(0L), anyObject(),
+            eq(STREAM_ID_1), eq(SESSION_ID), anyObject(),
             eq(publicationImage.correlationId()), anyObject(), anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
-            eq(publicationImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), eq(0L), anyString());
+            eq(publicationImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), anyString());
     }
 
     @Test
@@ -599,7 +596,7 @@ public class DriverConductorTest
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(id));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(STREAM_ID_1), eq(directPublication.sessionId()), eq(0L), eq(directPublication.rawLog()),
+            eq(STREAM_ID_1), eq(directPublication.sessionId()), eq(directPublication.rawLog()),
             eq(directPublication.correlationId()), anyObject(), anyString());
     }
 
@@ -618,7 +615,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onPublicationReady(eq(STREAM_ID_1), anyInt(), any(), eq(idPub), anyInt());
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(STREAM_ID_1), eq(directPublication.sessionId()), eq(0L), eq(directPublication.rawLog()),
+            eq(STREAM_ID_1), eq(directPublication.sessionId()), eq(directPublication.rawLog()),
             eq(directPublication.correlationId()), anyObject(), anyString());
     }
 
@@ -636,7 +633,7 @@ public class DriverConductorTest
         final InOrder inOrder = inOrder(mockClientProxy);
         inOrder.verify(mockClientProxy).operationSucceeded(eq(idSub));
         inOrder.verify(mockClientProxy).onAvailableImage(
-            eq(STREAM_ID_1), eq(directPublication.sessionId()), eq(0L), eq(directPublication.rawLog()),
+            eq(STREAM_ID_1), eq(directPublication.sessionId()), eq(directPublication.rawLog()),
             eq(directPublication.correlationId()), anyObject(), anyString());
         inOrder.verify(mockClientProxy).onPublicationReady(eq(STREAM_ID_1), anyInt(), any(), eq(idPub), anyInt());
     }

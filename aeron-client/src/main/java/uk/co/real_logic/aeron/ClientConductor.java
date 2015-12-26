@@ -199,7 +199,6 @@ class ClientConductor implements Agent, DriverListener
     public void onAvailableImage(
         final int streamId,
         final int sessionId,
-        final long joiningPosition,
         final Long2LongHashMap subscriberPositionMap,
         final String logFileName,
         final String sourceIdentity,
@@ -218,7 +217,6 @@ class ClientConductor implements Agent, DriverListener
                         final Image image = new Image(
                             subscription,
                             sessionId,
-                            joiningPosition,
                             new UnsafeBufferPosition(counterValuesBuffer, (int)positionId),
                             logBuffersFactory.map(logFileName),
                             errorHandler,
@@ -228,7 +226,7 @@ class ClientConductor implements Agent, DriverListener
 
                         subscription.addImage(image);
 
-                        availableImageHandler.onAvailableImage(image, subscription, joiningPosition, sourceIdentity);
+                        availableImageHandler.onAvailableImage(image);
                     }
                 }
             });
@@ -239,7 +237,7 @@ class ClientConductor implements Agent, DriverListener
         driverException = new RegistrationException(errorCode, message);
     }
 
-    public void onUnavailableImage(final int streamId, final int sessionId, final long position, final long correlationId)
+    public void onUnavailableImage(final int streamId, final int sessionId, final long correlationId)
     {
         activeSubscriptions.forEach(
             streamId,
@@ -248,7 +246,7 @@ class ClientConductor implements Agent, DriverListener
                 final Image image = subscription.removeImage(correlationId);
                 if (null != image)
                 {
-                    unavailableImageHandler.onUnavailableImage(image, subscription, position);
+                    unavailableImageHandler.onUnavailableImage(image);
                 }
             });
     }

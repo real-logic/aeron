@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.logbuffer.BlockHandler;
-import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
-import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
+import uk.co.real_logic.aeron.logbuffer.*;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
@@ -87,6 +85,8 @@ public class Subscription implements AutoCloseable
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered withing a session.
      *
+     * To assemble messages that span multiple fragments then use {@link FragmentAssembler}.
+     *
      * @param fragmentHandler callback for handling each message fragment as it is read.
      * @param fragmentLimit   number of message fragments to limit for the poll operation across multiple {@link Image}s.
      * @return the number of fragments received
@@ -111,6 +111,46 @@ public class Subscription implements AutoCloseable
         for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
             fragmentsRead += images[i].poll(fragmentHandler, fragmentLimit - fragmentsRead);
+        }
+
+        return fragmentsRead;
+    }
+
+    /**
+     * Poll in a controlled manner the {@link Image}s under the subscription for available message fragments.
+     * Control is applied to fragments in the stream. If more fragments can be read on another stream
+     * they will even if BREAK or ABORT is returned from the fragment handler.
+     * <p>
+     * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
+     * as a series of fragments ordered withing a session.
+     *
+     * To assemble messages that span multiple fragments then use {@link ControlledFragmentAssembler}.
+     *
+     * @param fragmentHandler callback for handling each message fragment as it is read.
+     * @param fragmentLimit   number of message fragments to limit for the poll operation across multiple {@link Image}s.
+     * @return the number of fragments received
+     * @see ControlledFragmentHandler
+     */
+    public int controlledPoll(final ControlledFragmentHandler fragmentHandler, final int fragmentLimit)
+    {
+        final Image[] images = this.images;
+        final int length = images.length;
+        int fragmentsRead = 0;
+
+        int startingIndex = roundRobinIndex++;
+        if (startingIndex >= length)
+        {
+            roundRobinIndex = startingIndex = 0;
+        }
+
+        for (int i = startingIndex; i < length && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+        }
+
+        for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
+        {
+            fragmentsRead += images[i]. controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;

@@ -67,7 +67,6 @@ public:
                         m_driverListener.onAvailableImage(
                             imageReady.streamId(),
                             imageReady.sessionId(),
-                            imageReady.joiningPosition(),
                             imageReady.logFileName(),
                             imageReady.sourceIdentity(),
                             imageReady.subscriberPositionCount(),
@@ -90,8 +89,6 @@ public:
 
                         m_driverListener.onUnavailableImage(
                             imageMessage.streamId(),
-                            imageMessage.sessionId(),
-                            imageMessage.position(),
                             imageMessage.correlationId());
                     }
                     break;

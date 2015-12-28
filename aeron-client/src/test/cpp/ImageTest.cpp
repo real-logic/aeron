@@ -134,7 +134,8 @@ TEST_F(ImageTest, shouldReportCorrectInitialTermId)
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    m_subscriberPosition.set(initialPosition);
+    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(image.initialTermId(), INITIAL_TERM_ID);
 }
@@ -146,7 +147,8 @@ TEST_F(ImageTest, shouldReportCorrectTermBufferLength)
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    m_subscriberPosition.set(initialPosition);
+    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(image.termBufferLength(), TERM_LENGTH);
 }
@@ -157,7 +159,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
     EXPECT_EQ(image.position(), initialPosition);
@@ -179,7 +183,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInIni
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
     EXPECT_EQ(image.position(), initialPosition);
@@ -202,7 +208,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNon
     const std::int32_t initialTermOffset = offsetOfFrame(messageIndex);
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+
+    m_subscriberPosition.set(initialPosition);
+    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
     EXPECT_EQ(image.position(), initialPosition);
@@ -225,7 +233,8 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforeReadingPosition)
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    m_subscriberPosition.set(initialPosition);
+    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     image.close();
     EXPECT_EQ(image.position(), IMAGE_CLOSED);
@@ -238,7 +247,8 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforePoll)
     const std::int64_t initialPosition =
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
-    Image image(SESSION_ID, initialPosition, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    m_subscriberPosition.set(initialPosition);
+    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     image.close();
     EXPECT_EQ(image.poll(m_handler, INT_MAX), IMAGE_CLOSED);

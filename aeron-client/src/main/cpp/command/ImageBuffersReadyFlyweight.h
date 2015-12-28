@@ -37,9 +37,6 @@ namespace aeron { namespace command {
 * |                         Correlation ID                        |
 * |                                                               |
 * +---------------------------------------------------------------+
-* |                        Joining Position                       |
-* |                                                               |
-* +---------------------------------------------------------------+
 * |                          Session ID                           |
 * +---------------------------------------------------------------+
 * |                           Stream ID                           |
@@ -78,7 +75,6 @@ namespace aeron { namespace command {
 struct ImageBuffersReadyDefn
 {
     std::int64_t correlationId;
-    std::int64_t joiningPosition;
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t subscriberPositionBlockLength;
@@ -110,17 +106,6 @@ public:
     inline this_t& correlationId(std::int64_t value)
     {
         m_struct.correlationId = value;
-        return *this;
-    }
-
-    inline std::int64_t joiningPosition() const
-    {
-        return m_struct.joiningPosition;
-    }
-
-    inline this_t& joiningPosition(std::int64_t value)
-    {
-        m_struct.joiningPosition = value;
         return *this;
     }
 

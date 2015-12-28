@@ -298,7 +298,6 @@ void ClientConductor::onErrorResponse(
 void ClientConductor::onAvailableImage(
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int64_t joiningPosition,
     const std::string &logFilename,
     const std::string &sourceIdentity,
     std::int32_t subscriberPositionCount,
@@ -326,7 +325,7 @@ void ClientConductor::onAvailableImage(
                             UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositions[i].indicatorId);
 
                             Image image(
-                                sessionId, joiningPosition, correlationId, sourceIdentity, subscriberPosition, logBuffers, m_errorHandler);
+                                sessionId, correlationId, sourceIdentity, subscriberPosition, logBuffers, m_errorHandler);
 
                             Image* oldArray = subscription->addImage(image);
 
@@ -346,8 +345,6 @@ void ClientConductor::onAvailableImage(
 
 void ClientConductor::onUnavailableImage(
     std::int32_t streamId,
-    std::int32_t sessionId,
-    std::int64_t position,
     std::int64_t correlationId)
 {
     const long now = m_epochClock();

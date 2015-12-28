@@ -58,8 +58,8 @@ public:
 
     MOCK_METHOD4(onNewPub, void(const std::string&, std::int32_t, std::int32_t, std::int64_t));
     MOCK_METHOD3(onNewSub, void(const std::string&, std::int32_t, std::int64_t));
-    MOCK_METHOD6(onNewImage, void(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t, const std::string&));
-    MOCK_METHOD5(onInactive, void(Image&, const std::string&, std::int32_t, std::int32_t, std::int64_t));
+    MOCK_METHOD1(onNewImage, void(Image&));
+    MOCK_METHOD1(onInactive, void(Image&));
 };
 
 class ClientConductorFixture
@@ -81,8 +81,8 @@ public:
             m_counterValuesBuffer,
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewPub, &m_handlers, _1, _2, _3, _4),
             std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewSub, &m_handlers, _1, _2, _3),
-            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewImage, &m_handlers, _1, _2, _3, _4, _5, _6),
-            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1, _2, _3, _4, _5),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onNewImage, &m_handlers, _1),
+            std::bind(&testing::NiceMock<MockClientConductorHandlers>::onInactive, &m_handlers, _1),
             [&](std::exception& exception) { m_errorHandler(exception); },
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS,

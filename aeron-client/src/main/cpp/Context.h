@@ -39,37 +39,17 @@ class Image;
  * The Image passed may not be the image used internally, but may be copied or moved freely.
  *
  * @param image           that has become available.
- * @param channel         The channel for the new session.
- * @param streamId        The scope within the channel for the new session.
- * @param sessionId       The publisher instance identifier for the new session.
- * @param joiningPosition At which the stream is being joined by the subscriber.
- * @param sourceIdentity  A transport specific string with additional details about the publisher.
  */
-typedef std::function<void(
-    Image& image,
-    const std::string& channel,
-    std::int32_t streamId,
-    std::int32_t sessionId,
-    std::int64_t joiningPosition,
-    const std::string& sourceIdentity)> on_available_image_t;
+typedef std::function<void(Image& image)> on_available_image_t;
 
 /**
- * Function called by Aeron to deliver notification that an Image has become unavailable.
+ * Function called by Aeron to deliver notification that an Image has become unavailable for polling.
  *
  * The Image passed is not guaranteed to be valid after the callback.
  *
  * @param image     that has become unavailable
- * @param channel   The channel of the inactive Publisher.
- * @param streamId  The scope within the channel of the inactive Publisher.
- * @param sessionId The instance identifier of the inactive Publisher.
- * @param position  at which the image went inactive.
  */
-typedef std::function<void(
-    Image& image,
-    const std::string& channel,
-    std::int32_t streamId,
-    std::int32_t sessionId,
-    std::int64_t position)> on_unavailable_image_t;
+typedef std::function<void(Image& image)> on_unavailable_image_t;
 
 /**
  * Function called by Aeron to deliver notification that the media driver has added a Publication successfully
@@ -131,8 +111,7 @@ inline void defaultOnNewPublicationHandler(const std::string&, std::int32_t, std
 {
 }
 
-inline void defaultOnAvailableImageHandler(
-    Image &, const std::string &, std::int32_t, std::int32_t, std::int64_t, const std::string &)
+inline void defaultOnAvailableImageHandler(Image &)
 {
 }
 
@@ -140,7 +119,7 @@ inline void defaultOnNewSubscriptionHandler(const std::string&, std::int32_t, st
 {
 }
 
-inline void defaultOnUnavailableImageHandler(Image &, const std::string &, std::int32_t, std::int32_t, std::int64_t)
+inline void defaultOnUnavailableImageHandler(Image &)
 {
 }
 

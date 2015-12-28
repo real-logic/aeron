@@ -335,8 +335,7 @@ void ClientConductor::onAvailableImage(
                                 lingerResource(m_epochClock(), oldArray);
                             }
 
-                            m_onAvailableImageHandler(
-                                image, subscription->channel(), streamId, sessionId, joiningPosition, sourceIdentity);
+                            m_onAvailableImageHandler(image);
                             break;
                         }
                     }
@@ -371,7 +370,7 @@ void ClientConductor::onUnavailableImage(
                     {
                         lingerResource(now, oldArray[index].logBuffers());
                         lingerResource(now, oldArray);
-                        m_onUnavailableImageHandler(oldArray[index], subscription->channel(), streamId, sessionId, position);
+                        m_onUnavailableImageHandler(oldArray[index]);
                     }
                 }
             }

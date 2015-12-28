@@ -112,24 +112,16 @@ int main(int argc, char **argv)
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
 
-        context.availableImageHandler([](
-            Image &image,
-            const std::string &channel,
-            std::int32_t streamId,
-            std::int32_t sessionId,
-            std::int64_t joiningPosition,
-            const std::string &sourceIdentity)
-        {
-            std::cout << "Available image on " << channel << " streamId=" << streamId << " sessionId=" << sessionId;
-            std::cout << " at position=" << joiningPosition << " from " << sourceIdentity << std::endl;
-        });
-
-        context.unavailableImageHandler(
-            [](Image &image, const std::string &channel, std::int32_t streamId, std::int32_t sessionId,
-                std::int64_t position)
+        context.availableImageHandler([](Image &image)
             {
-                std::cout << "Unavailable image on " << channel << "streamId=" << streamId << " sessionId=" << sessionId;
-                std::cout << " at position=" << position << std::endl;
+                std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
+                std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
+            });
+
+        context.unavailableImageHandler([](Image &image)
+            {
+                std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
+                std::cout << " at position=" << image.position() << std::endl;
             });
 
         Aeron aeron(context);

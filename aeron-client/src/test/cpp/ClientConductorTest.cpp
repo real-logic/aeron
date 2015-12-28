@@ -466,7 +466,7 @@ TEST_F(ClientConductorTest, shouldCallNewConnectionAfterOnNewConnection)
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_handlers, onNewImage(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+    EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(1)
         .InSequence(sequence);
 
@@ -487,7 +487,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfNoOperationSuccess)
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(0);
-    EXPECT_CALL(m_handlers, onNewImage(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+    EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(0);
 
     ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
@@ -505,7 +505,7 @@ TEST_F(ClientConductorTest, shouldNotCallNewConnectionIfUninterestingRegistratio
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(1);
-    EXPECT_CALL(m_handlers, onNewImage(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+    EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(0);
 
     ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id + 1 } };
@@ -528,10 +528,10 @@ TEST_F(ClientConductorTest, shouldCallInactiveConnecitonAfterInactiveConnection)
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_handlers, onNewImage(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+    EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_handlers, onInactive(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION))
+    EXPECT_CALL(m_handlers, onInactive(testing::_))
         .Times(1)
         .InSequence(sequence);
 
@@ -552,9 +552,9 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfNoOperationSuccess)
 
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(0);
-    EXPECT_CALL(m_handlers, onNewImage(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+    EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(0);
-    EXPECT_CALL(m_handlers, onInactive(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION))
+    EXPECT_CALL(m_handlers, onInactive(testing::_))
         .Times(0);
 
     ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
@@ -574,10 +574,10 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnect
     EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_handlers, onNewImage(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION, SOURCE_IDENTITY))
+    EXPECT_CALL(m_handlers, onNewImage(testing::_))
         .Times(1)
         .InSequence(sequence);
-    EXPECT_CALL(m_handlers, onInactive(testing::_, CHANNEL, STREAM_ID, SESSION_ID, POSITION))
+    EXPECT_CALL(m_handlers, onInactive(testing::_))
         .Times(0);
 
     ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };

@@ -205,7 +205,7 @@ private:
         }
     };
 
-    std::mutex m_adminLock;
+    std::recursive_mutex m_adminLock;
 
     std::vector<PublicationStateDefn> m_publications;
     std::vector<SubscriptionStateDefn> m_subscriptions;

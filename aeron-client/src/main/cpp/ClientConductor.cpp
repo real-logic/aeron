@@ -41,7 +41,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
 {
     verifyDriverIsActive();
 
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
     std::int64_t id;
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
@@ -67,7 +67,7 @@ std::int64_t ClientConductor::addPublication(const std::string &channel, std::in
 
 std::shared_ptr<Publication> ClientConductor::findPublication(std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
@@ -118,7 +118,7 @@ void ClientConductor::releasePublication(std::int64_t registrationId)
 {
     verifyDriverIsActive();
 
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
@@ -137,7 +137,7 @@ std::int64_t ClientConductor::addSubscription(const std::string &channel, std::i
 {
     verifyDriverIsActive();
 
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     std::int64_t registrationId = m_driverProxy.addSubscription(channel, streamId);
 
@@ -148,7 +148,7 @@ std::int64_t ClientConductor::addSubscription(const std::string &channel, std::i
 
 std::shared_ptr<Subscription> ClientConductor::findSubscription(std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
@@ -190,7 +190,7 @@ void ClientConductor::releaseSubscription(std::int64_t registrationId, Image *im
 {
     verifyDriverIsActive();
 
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto it = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [registrationId](const SubscriptionStateDefn &entry)
@@ -214,7 +214,7 @@ void ClientConductor::onNewPublication(
     const std::string &logFileName,
     std::int64_t registrationId)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto it = std::find_if(m_publications.begin(), m_publications.end(),
         [registrationId](const PublicationStateDefn &entry)
@@ -237,7 +237,7 @@ void ClientConductor::onNewPublication(
 
 void ClientConductor::onOperationSuccess(std::int64_t correlationId)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto subIt = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [correlationId](const SubscriptionStateDefn &entry)
@@ -263,7 +263,7 @@ void ClientConductor::onErrorResponse(
     std::int32_t errorCode,
     const std::string& errorMessage)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     auto subIt = std::find_if(m_subscriptions.begin(), m_subscriptions.end(),
         [offendingCommandCorrelationId](const SubscriptionStateDefn &entry)
@@ -304,7 +304,7 @@ void ClientConductor::onAvailableImage(
     const ImageBuffersReadyDefn::SubscriberPosition *subscriberPositions,
     std::int64_t correlationId)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
@@ -354,7 +354,7 @@ void ClientConductor::onUnavailableImage(
     std::int64_t correlationId)
 {
     const long now = m_epochClock();
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     std::for_each(m_subscriptions.begin(), m_subscriptions.end(),
         [&](const SubscriptionStateDefn &entry)
@@ -382,7 +382,7 @@ void ClientConductor::onUnavailableImage(
 
 void ClientConductor::onInterServiceTimeout(long now)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     std::for_each(m_publications.begin(), m_publications.end(),
         [&](PublicationStateDefn& entry)
@@ -417,7 +417,7 @@ void ClientConductor::onInterServiceTimeout(long now)
 
 void ClientConductor::onCheckManagedResources(long now)
 {
-    std::lock_guard<std::mutex> lock(m_adminLock);
+    std::lock_guard<std::recursive_mutex> lock(m_adminLock);
 
     // erase-remove idiom
 

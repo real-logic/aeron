@@ -253,7 +253,7 @@ void ClientConductor::onOperationSuccess(std::int64_t correlationId)
         state.m_subscriptionCache =
             std::make_shared<Subscription>(*this, state.m_registrationId, state.m_channel, state.m_streamId);
         state.m_subscription = std::weak_ptr<Subscription>(state.m_subscriptionCache);
-        m_onNewSubscpriptionHandler(state.m_channel, state.m_streamId, correlationId);
+        m_onNewSubscriptionHandler(state.m_channel, state.m_streamId, correlationId);
         return;
     }
 }

@@ -62,7 +62,7 @@ public:
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_counterValuesBuffer(counterValuesBuffer),
         m_onNewPublicationHandler(newPublicationHandler),
-        m_onNewSubscpriptionHandler(newSubscriptionHandler),
+        m_onNewSubscriptionHandler(newSubscriptionHandler),
         m_onAvailableImageHandler(newImageHandler),
         m_onUnavailableImageHandler(inactiveImageHandler),
         m_errorHandler(errorHandler),
@@ -222,7 +222,7 @@ private:
     AtomicBuffer& m_counterValuesBuffer;
 
     on_new_publication_t m_onNewPublicationHandler;
-    on_new_subscription_t m_onNewSubscpriptionHandler;
+    on_new_subscription_t m_onNewSubscriptionHandler;
     on_available_image_t m_onAvailableImageHandler;
     on_unavailable_image_t m_onUnavailableImageHandler;
     exception_handler_t m_errorHandler;

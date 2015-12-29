@@ -149,7 +149,7 @@ public class SamplesUtil
     /**
      * Print the information for an available image to stdout.
      *
-     * @param image that has been createdic
+     * @param image that has been created
      */
     public static void printAvailableImage(final Image image)
     {

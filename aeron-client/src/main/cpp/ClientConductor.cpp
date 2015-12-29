@@ -298,7 +298,6 @@ void ClientConductor::onErrorResponse(
 void ClientConductor::onAvailableImage(
     std::int32_t streamId,
     std::int32_t sessionId,
-    std::int64_t joiningPosition,
     const std::string &logFilename,
     const std::string &sourceIdentity,
     std::int32_t subscriberPositionCount,
@@ -326,7 +325,7 @@ void ClientConductor::onAvailableImage(
                             UnsafeBufferPosition subscriberPosition(m_counterValuesBuffer, subscriberPositions[i].indicatorId);
 
                             Image image(
-                                sessionId, joiningPosition, correlationId, sourceIdentity, subscriberPosition, logBuffers, m_errorHandler);
+                                sessionId, correlationId, sourceIdentity, subscriberPosition, logBuffers, m_errorHandler);
 
                             Image* oldArray = subscription->addImage(image);
 
@@ -335,8 +334,7 @@ void ClientConductor::onAvailableImage(
                                 lingerResource(m_epochClock(), oldArray);
                             }
 
-                            m_onAvailableImageHandler(
-                                image, subscription->channel(), streamId, sessionId, joiningPosition, sourceIdentity);
+                            m_onAvailableImageHandler(image);
                             break;
                         }
                     }
@@ -347,8 +345,6 @@ void ClientConductor::onAvailableImage(
 
 void ClientConductor::onUnavailableImage(
     std::int32_t streamId,
-    std::int32_t sessionId,
-    std::int64_t position,
     std::int64_t correlationId)
 {
     const long now = m_epochClock();
@@ -371,7 +367,7 @@ void ClientConductor::onUnavailableImage(
                     {
                         lingerResource(now, oldArray[index].logBuffers());
                         lingerResource(now, oldArray);
-                        m_onUnavailableImageHandler(oldArray[index], subscription->channel(), streamId, sessionId, position);
+                        m_onUnavailableImageHandler(oldArray[index]);
                     }
                 }
             }

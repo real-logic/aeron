@@ -527,7 +527,7 @@ public class DriverConductorTest
         doWorkUntil(() -> nanoClock.nanoTime() >= IMAGE_LIVENESS_TIMEOUT_NS + 1000);
 
         verify(mockClientProxy).onUnavailableImage(
-            eq(publicationImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), anyString());
+            eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
     }
 
     @Test
@@ -569,7 +569,7 @@ public class DriverConductorTest
             eq(STREAM_ID_1), eq(SESSION_ID), anyObject(),
             eq(publicationImage.correlationId()), anyObject(), anyString());
         inOrder.verify(mockClientProxy, times(1)).onUnavailableImage(
-            eq(publicationImage.correlationId()), eq(SESSION_ID), eq(STREAM_ID_1), anyString());
+            eq(publicationImage.correlationId()), eq(STREAM_ID_1), anyString());
     }
 
     @Test

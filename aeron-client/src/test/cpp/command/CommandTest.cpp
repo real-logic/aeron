@@ -70,7 +70,7 @@ TEST (commandTests, testInstantiateFlyweights)
     });
 }
 
-TEST (commandTests, testConnectionMessageFlyweight)
+TEST (commandTests, testImageMessageFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab (&testBuffer[0], testBuffer.size());
@@ -80,21 +80,17 @@ TEST (commandTests, testConnectionMessageFlyweight)
 
     ASSERT_NO_THROW({
         ImageMessageFlyweight cmd (ab, BASEOFFSET);
-        cmd.correlationId(1).sessionId(2).streamId(3).position(64).channel(channelData);
+        cmd.correlationId(1).streamId(3).channel(channelData);
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), 1);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 2);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 3);
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 16), 64);
-        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 24), channelData);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 3);
+        ASSERT_EQ(ab.getStringUtf8(BASEOFFSET + 12), channelData);
 
         ASSERT_EQ(cmd.correlationId(), 1);
-        ASSERT_EQ(cmd.sessionId(), 2);
         ASSERT_EQ(cmd.streamId(), 3);
-        ASSERT_EQ(cmd.position(), 64);
         ASSERT_EQ(cmd.channel(), channelData);
 
-        ASSERT_EQ(cmd.length(), static_cast<int>(24 + sizeof(std::int32_t) + channelData.length()));
+        ASSERT_EQ(cmd.length(), static_cast<int>(12 + sizeof(std::int32_t) + channelData.length()));
     });
 }
 
@@ -130,7 +126,7 @@ TEST (commandTests, testPublicationReadyFlyweight)
     });
 }
 
-TEST (commandTests, testConnectionReadyFlyweight)
+TEST (commandTests, testImageBuffersReadyFlyweight)
 {
     clearBuffer();
     AtomicBuffer ab(&testBuffer[0], testBuffer.size());
@@ -143,7 +139,7 @@ TEST (commandTests, testConnectionReadyFlyweight)
     {
         ImageBuffersReadyFlyweight cmd(ab, BASEOFFSET);
 
-        cmd.correlationId(-1).joiningPosition(64).streamId(0x01010101).sessionId(0x02020202).subscriberPositionCount(4);
+        cmd.correlationId(-1).streamId(0x01010101).sessionId(0x02020202).subscriberPositionCount(4);
         cmd.logFileName(logFileNameData).sourceIdentity(sourceInfoData);
         for (int n = 0; n < 4; n++)
         {
@@ -151,13 +147,12 @@ TEST (commandTests, testConnectionReadyFlyweight)
         }
 
         ASSERT_EQ(ab.getInt64(BASEOFFSET + 0), -1);
-        ASSERT_EQ(ab.getInt64(BASEOFFSET + 8), 64);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 0x02020202);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 0x01010101);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 24), 12);
-        ASSERT_EQ(ab.getInt32(BASEOFFSET + 28), 4);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 8), 0x02020202);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 12), 0x01010101);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 16), 12);
+        ASSERT_EQ(ab.getInt32(BASEOFFSET + 20), 4);
 
-        const index_t startOfSubscriberPositions = BASEOFFSET + 32;
+        const index_t startOfSubscriberPositions = BASEOFFSET + 24;
         for (int n = 0; n < 4; n++)
         {
             ASSERT_EQ(
@@ -166,7 +161,7 @@ TEST (commandTests, testConnectionReadyFlyweight)
                 ab.getInt32(startOfSubscriberPositions + (n * sizeof(ImageBuffersReadyDefn::SubscriberPosition)) + 4), n);
         }
 
-        const index_t startOfLogFileName = BASEOFFSET + 32 + (4 * sizeof(ImageBuffersReadyDefn::SubscriberPosition));
+        const index_t startOfLogFileName = BASEOFFSET + 24 + (4 * sizeof(ImageBuffersReadyDefn::SubscriberPosition));
         ASSERT_EQ(ab.getInt32(startOfLogFileName), static_cast<int>(logFileNameData.length()));
         ASSERT_EQ(ab.getStringUtf8(startOfLogFileName), logFileNameData);
 
@@ -175,7 +170,6 @@ TEST (commandTests, testConnectionReadyFlyweight)
         ASSERT_EQ(ab.getStringUtf8(startOfSourceIdentity), sourceInfoData);
 
         ASSERT_EQ(cmd.correlationId(), -1);
-        ASSERT_EQ(cmd.joiningPosition(), 64);
         ASSERT_EQ(cmd.streamId(), 0x01010101);
         ASSERT_EQ(cmd.sessionId(), 0x02020202);
         ASSERT_EQ(cmd.subscriberPositionCount(), 4);

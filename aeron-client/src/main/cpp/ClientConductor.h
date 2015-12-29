@@ -118,7 +118,6 @@ public:
     void onAvailableImage(
         std::int32_t streamId,
         std::int32_t sessionId,
-        std::int64_t joiningPosition,
         const std::string &logFilename,
         const std::string &sourceIdentity,
         std::int32_t subscriberPositionCount,
@@ -127,8 +126,6 @@ public:
 
     void onUnavailableImage(
         std::int32_t streamId,
-        std::int32_t sessionId,
-        std::int64_t position,
         std::int64_t correlationId);
 
     void onInterServiceTimeout(long now);

@@ -66,7 +66,6 @@ public:
      */
     Image(
         std::int32_t sessionId,
-        std::int64_t initialPosition,
         std::int64_t correlationId,
         const std::string& sourceIdentity,
         UnsafeBufferPosition& subscriberPosition,
@@ -92,7 +91,6 @@ public:
 
         m_termLengthMask = capacity - 1;
         m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(capacity);
-        m_subscriberPosition.setOrdered(initialPosition);
     }
 
     Image(Image& image) :

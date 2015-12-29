@@ -38,13 +38,7 @@ interface DriverListener
         String sourceIdentity,
         long correlationId);
 
-    void onUnavailableImage(
-        int streamId,
-        int sessionId,
-        long correlationId);
+    void onUnavailableImage(int streamId, long correlationId);
 
-    void onError(
-        ErrorCode errorCode,
-        String message,
-        long correlationId);
+    void onError(ErrorCode errorCode, String message, long correlationId);
 }

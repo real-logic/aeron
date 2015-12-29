@@ -61,12 +61,14 @@ public:
      * @param initialPosition    at which the subscriber is joining the stream.
      * @param subscriberPosition for indicating the position of the subscriber in the stream.
      * @param logBuffers         containing the stream of messages.
-     * @param correlationId      of the request to the media driver.
+     * @param correlationId      of the image with the media driver.
+     * @param subscriptionRegistrationId of the Subscription.
      * @param exceptionHandler   to call if an exception is encountered on polling.
      */
     Image(
         std::int32_t sessionId,
         std::int64_t correlationId,
+        std::int64_t subscriptionRegistrationId,
         const std::string& sourceIdentity,
         UnsafeBufferPosition& subscriberPosition,
         std::shared_ptr<LogBuffers> logBuffers,
@@ -80,6 +82,7 @@ public:
         m_isClosed(false),
         m_exceptionHandler(exceptionHandler),
         m_correlationId(correlationId),
+        m_subscriptionRegistrationId(subscriptionRegistrationId),
         m_sessionId(sessionId)
     {
         for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
@@ -108,6 +111,7 @@ public:
         m_subscriberPosition.wrap(image.m_subscriberPosition);
         m_logBuffers = image.m_logBuffers;
         m_correlationId = image.m_correlationId;
+        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
@@ -127,6 +131,7 @@ public:
         m_isClosed = image.isClosed();
         m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
+        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
@@ -147,6 +152,7 @@ public:
         m_isClosed = image.isClosed();
         m_exceptionHandler = image.m_exceptionHandler;
         m_correlationId = image.m_correlationId;
+        m_subscriptionRegistrationId = image.m_subscriptionRegistrationId;
         m_sessionId = image.m_sessionId;
         m_termLengthMask = image.m_termLengthMask;
         m_positionBitsToShift = image.m_positionBitsToShift;
@@ -183,6 +189,16 @@ public:
     inline std::int64_t correlationId() const
     {
         return m_correlationId;
+    }
+
+    /**
+     * The registrationId for the Subscription of the Image.
+     *
+     * @return the registrationId for the Subscription of the Image.
+     */
+    inline std::int64_t subscriptionRegistrationId() const
+    {
+        return m_subscriptionRegistrationId;
     }
 
     /**
@@ -340,6 +356,7 @@ private:
     exception_handler_t m_exceptionHandler;
 
     std::int64_t m_correlationId;
+    std::int64_t m_subscriptionRegistrationId;
     std::int32_t m_sessionId;
     std::int32_t m_termLengthMask;
     std::int32_t m_positionBitsToShift;

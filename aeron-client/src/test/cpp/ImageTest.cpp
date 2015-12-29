@@ -38,6 +38,7 @@ static const std::int32_t SESSION_ID = 200;
 static const std::int32_t SUBSCRIBER_POSITION_ID = 0;
 
 static const std::int64_t CORRELATION_ID = 100;
+static const std::int64_t SUBSCRIPTION_REGISTRATION_ID = 99;
 static const std::string SOURCE_IDENTITY = "test";
 
 static const std::array<std::uint8_t, 17> DATA = { { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 } };
@@ -135,7 +136,9 @@ TEST_F(ImageTest, shouldReportCorrectInitialTermId)
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
-    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(image.initialTermId(), INITIAL_TERM_ID);
 }
@@ -148,7 +151,9 @@ TEST_F(ImageTest, shouldReportCorrectTermBufferLength)
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
-    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(image.termBufferLength(), TERM_LENGTH);
 }
@@ -161,7 +166,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReception)
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
-    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
     EXPECT_EQ(image.position(), initialPosition);
@@ -185,7 +192,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInIni
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
-    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
     EXPECT_EQ(image.position(), initialPosition);
@@ -210,7 +219,9 @@ TEST_F(ImageTest, shouldReportCorrectPositionOnReceptionWithNonZeroPositionInNon
         LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
-    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     EXPECT_EQ(m_subscriberPosition.get(), initialPosition);
     EXPECT_EQ(image.position(), initialPosition);
@@ -234,7 +245,9 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforeReadingPosition)
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
-    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     image.close();
     EXPECT_EQ(image.position(), IMAGE_CLOSED);
@@ -248,7 +261,9 @@ TEST_F(ImageTest, shouldEnsureImageIsOpenBeforePoll)
         LogBufferDescriptor::computePosition(INITIAL_TERM_ID, initialTermOffset, POSITION_BITS_TO_SHIFT, INITIAL_TERM_ID);
 
     m_subscriberPosition.set(initialPosition);
-    Image image(SESSION_ID, CORRELATION_ID, SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
+    Image image(
+        SESSION_ID, CORRELATION_ID, SUBSCRIPTION_REGISTRATION_ID,
+        SOURCE_IDENTITY, m_subscriberPosition, m_logBuffers, exceptionHandler);
 
     image.close();
     EXPECT_EQ(image.poll(m_handler, INT_MAX), IMAGE_CLOSED);

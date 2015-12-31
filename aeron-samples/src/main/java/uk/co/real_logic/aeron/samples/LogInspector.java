@@ -36,7 +36,7 @@ public class LogInspector
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
 
     private static final String DATA_FORMAT = System.getProperty("aeron.log.inspector.data.format", "hex").toLowerCase();
-    private static final boolean SKIP_DEFAULT_HEADERS = Boolean.getBoolean("aeron.log.inspector.skipDefaultHeaders");
+    private static final boolean SKIP_DEFAULT_HEADER = Boolean.getBoolean("aeron.log.inspector.skipDefaultHeader");
 
     public static void main(final String[] args) throws Exception
     {
@@ -58,24 +58,19 @@ public class LogInspector
 
             final UnsafeBuffer[] atomicBuffers = logBuffers.atomicBuffers();
             final DataHeaderFlyweight dataHeaderFlyweight = new DataHeaderFlyweight();
-            final int termLength = atomicBuffers[0].capacity();
+            final int termLength = logBuffers.termLength();
 
-            final UnsafeBuffer logMetaDataBuffer = atomicBuffers[PARTITION_COUNT * 2];
+            final UnsafeBuffer logMetaDataBuffer = atomicBuffers[LOG_META_DATA_SECTION_INDEX];
 
             out.format("Initial term id: %d\n", initialTermId(logMetaDataBuffer));
-            out.format(" Active term id: %d\n", activeTermId(logMetaDataBuffer));
-            out.format("   Active index: %d\n", indexByTerm(initialTermId(logMetaDataBuffer), activeTermId(logMetaDataBuffer)));
+            out.format("   Active index: %d\n", activePartitionIndex(logMetaDataBuffer));
             out.format("    Term length: %d\n", termLength);
             out.format("     MTU length: %d\n\n", mtuLength(logMetaDataBuffer));
 
-            if (!SKIP_DEFAULT_HEADERS)
+            if (!SKIP_DEFAULT_HEADER)
             {
-                final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
-                for (int i = 0; i < defaultFrameHeaders.length; i++)
-                {
-                    dataHeaderFlyweight.wrap(defaultFrameHeaders[i]);
-                    out.format("Index %d default %s\n", i, dataHeaderFlyweight);
-                }
+                dataHeaderFlyweight.wrap(defaultFrameHeader(logMetaDataBuffer));
+                out.format("default %s\n", dataHeaderFlyweight);
             }
 
             out.println();
@@ -83,10 +78,11 @@ public class LogInspector
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
                 final UnsafeBuffer metaDataBuffer = atomicBuffers[i + PARTITION_COUNT];
-                out.format("Index %d Term Meta Data status=%s tail=%d\n",
+                out.format(
+                    "Index %d Term Meta Data status=%s tail=%d\n",
                     i,
                     termStatus(metaDataBuffer),
-                    metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET));
+                    metaDataBuffer.getLong(TERM_TAIL_COUNTER_OFFSET) & 0xFFFF_FFFFL);
             }
 
             for (int i = 0; i < PARTITION_COUNT; i++)

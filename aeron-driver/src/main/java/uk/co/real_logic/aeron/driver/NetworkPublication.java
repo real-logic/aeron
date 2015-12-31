@@ -491,10 +491,10 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
     {
         final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
         final int initialTermId = initialTermId(logMetaDataBuffer);
-        final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int currentTail = logPartitions[indexByTerm(initialTermId, activeTermId)].tailVolatile();
+        final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
+        final int termOffset = termOffset(rawTail, termWindowLength);
 
-        return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }
 
     public long consumerPosition()

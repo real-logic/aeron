@@ -20,6 +20,7 @@ import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.logbuffer.HeaderWriter;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.TermAppender;
@@ -56,8 +57,7 @@ public class RetransmitHandlerTest
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(META_DATA_BUFFER_LENGTH));
 
-    private final TermAppender termAppender = new TermAppender(
-        termBuffer, metaDataBuffer, DataHeaderFlyweight.createDefaultHeader(0, 0, 0));
+    private final TermAppender termAppender = new TermAppender(termBuffer, metaDataBuffer);
 
     private final UnsafeBuffer rcvBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
     private DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
@@ -66,6 +66,9 @@ public class RetransmitHandlerTest
 
     private final RetransmitSender retransmitSender = mock(RetransmitSender.class);
     private final SystemCounters systemCounters = mock(SystemCounters.class);
+
+    private final HeaderWriter headerWriter =
+        new HeaderWriter(DataHeaderFlyweight.createDefaultHeader(0, 0, 0));
 
     private RetransmitHandler handler = new RetransmitHandler(
         () -> currentTime, systemCounters, DELAY_GENERATOR, LINGER_GENERATOR, TERM_ID, TERM_BUFFER_LENGTH);
@@ -234,7 +237,7 @@ public class RetransmitHandlerTest
     private void addSentDataFrame()
     {
         rcvBuffer.putBytes(0, DATA);
-        termAppender.appendUnfragmentedMessage(0, 0, rcvBuffer, 0, DATA.length);
+        termAppender.appendUnfragmentedMessage(headerWriter, rcvBuffer, 0, DATA.length);
     }
 
     private void addReceivedDataFrame(final int msgNum)

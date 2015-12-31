@@ -155,8 +155,8 @@ public class ClientConductorTest
         final MutableDirectBuffer header1 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_1, STREAM_ID_1, 0);
         final MutableDirectBuffer header2 = DataHeaderFlyweight.createDefaultHeader(SESSION_ID_2, STREAM_ID_2, 0);
 
-        LogBufferDescriptor.storeDefaultFrameHeaders(atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX], header1);
-        LogBufferDescriptor.storeDefaultFrameHeaders(atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX], header2);
+        LogBufferDescriptor.storeDefaultFrameHeader(atomicBuffersSession1[LOG_META_DATA_SECTION_INDEX], header1);
+        LogBufferDescriptor.storeDefaultFrameHeader(atomicBuffersSession2[LOG_META_DATA_SECTION_INDEX], header2);
 
         final LogBuffers logBuffersSession1 = mock(LogBuffers.class);
         final LogBuffers logBuffersSession2 = mock(LogBuffers.class);

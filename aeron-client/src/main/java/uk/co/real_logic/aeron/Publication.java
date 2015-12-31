@@ -15,21 +15,13 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.aeron.logbuffer.BufferClaim;
-import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.logbuffer.TermAppender;
+import uk.co.real_logic.aeron.logbuffer.*;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
-import java.nio.ByteOrder;
-
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
-import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.VERSION_FIELD_OFFSET;
 
 /**
  * Aeron Publisher API for sending messages to subscribers of a given channel and streamId pair. Publishers
@@ -64,8 +56,6 @@ public class Publication implements AutoCloseable
     public static final long CLOSED = -4;
 
     private final long registrationId;
-    private final long headerSessionId;
-    private final long headerVersionFlagsType;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
@@ -74,12 +64,13 @@ public class Publication implements AutoCloseable
     private final ReadablePosition positionLimit;
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
+    private final HeaderWriter headerWriter;
+    private final LogBuffers logBuffers;
     private final ClientConductor clientConductor;
     private final String channel;
-    private final LogBuffers logBuffers;
 
-    private int refCount = 0;
     private volatile boolean isClosed = false;
+    private int refCount = 0;
 
     Publication(
         final ClientConductor clientConductor,
@@ -92,37 +83,24 @@ public class Publication implements AutoCloseable
     {
         final UnsafeBuffer[] buffers = logBuffers.atomicBuffers();
         final UnsafeBuffer logMetaDataBuffer = buffers[LOG_META_DATA_SECTION_INDEX];
-        final UnsafeBuffer[] defaultFrameHeaders = defaultFrameHeaders(logMetaDataBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
-            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT], defaultFrameHeaders[i]);
+            termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT]);
         }
 
-        final int termLength = logBuffers.termLength();
         this.maxPayloadLength = mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
         this.clientConductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
         this.initialTermId = initialTermId(logMetaDataBuffer);
-        this.logBuffers = logBuffers;
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-
-        final UnsafeBuffer defaultHeader = defaultFrameHeaders[0];
-        if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
-        {
-            this.headerVersionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
-            this.headerSessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
-        }
-        else
-        {
-            this.headerVersionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
-            this.headerSessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
-        }
+        this.logBuffers = logBuffers;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(logBuffers.termLength());
+        this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
     }
 
     /**
@@ -237,10 +215,10 @@ public class Publication implements AutoCloseable
             return CLOSED;
         }
 
-        final int activeTermId = activeTermId(logMetaDataBuffer);
-        final int currentTail = termAppenders[indexByTerm(initialTermId, activeTermId)].tailVolatile();
+        final long rawTail = termAppenders[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
+        final int termOffset = termOffset(rawTail, logBuffers.termLength());
 
-        return computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+        return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }
 
     /**
@@ -286,29 +264,27 @@ public class Publication implements AutoCloseable
         if (!isClosed)
         {
             final long limit = positionLimit.getVolatile();
-            final int initialTermId = this.initialTermId;
-            final int activeTermId = activeTermId(logMetaDataBuffer);
-            final int activeIndex = indexByTerm(initialTermId, activeTermId);
-            final TermAppender termAppender = termAppenders[activeIndex];
-            final int currentTail = termAppender.rawTailVolatile();
-            final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+            final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
+            final TermAppender termAppender = termAppenders[partitionIndex];
+            final long rawTail = termAppender.rawTailVolatile();
+            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
             if (position < limit)
             {
                 final int newOffset;
                 if (length <= maxPayloadLength)
                 {
-                    newOffset = termAppender.appendUnfragmentedMessage(
-                        headerVersionFlagsType, headerSessionId, buffer, offset, length);
+                    newOffset = termAppender.appendUnfragmentedMessage(headerWriter, buffer, offset, length);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    newOffset = termAppender.appendFragmentedMessage(
-                        headerVersionFlagsType, headerSessionId, buffer, offset, length, maxPayloadLength);
+                    newOffset = termAppender.appendFragmentedMessage(headerWriter, buffer, offset, length, maxPayloadLength);
                 }
 
-                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, newOffset);
+                newPosition = newPosition(termId, partitionIndex, (int)termOffset, position, newOffset);
             }
             else if (0 == limit)
             {
@@ -363,17 +339,17 @@ public class Publication implements AutoCloseable
             checkForMaxPayloadLength(length);
 
             final long limit = positionLimit.getVolatile();
-            final int initialTermId = this.initialTermId;
-            final int activeTermId = activeTermId(logMetaDataBuffer);
-            final int activeIndex = indexByTerm(initialTermId, activeTermId);
-            final TermAppender termAppender = termAppenders[activeIndex];
-            final int currentTail = termAppender.rawTailVolatile();
-            final long position = computePosition(activeTermId, currentTail, positionBitsToShift, initialTermId);
+            final int partitionIndex = activePartitionIndex(logMetaDataBuffer);
+            final TermAppender termAppender = termAppenders[partitionIndex];
+            final long rawTail = termAppender.rawTailVolatile();
+            final long termOffset = rawTail & 0xFFFF_FFFFL;
+            final int termId = termId(rawTail);
+            final long position = computeTermBeginPosition(termId, positionBitsToShift, initialTermId) + termOffset;
 
-            if (position < limit)
+            if (position  < limit)
             {
-                final int newOffset = termAppender.claim(headerVersionFlagsType, headerSessionId, length, bufferClaim);
-                newPosition = newPosition(activeTermId, activeIndex, currentTail, position, newOffset);
+                final int newOffset = termAppender.claim(headerWriter, length, bufferClaim);
+                newPosition = newPosition(termId, partitionIndex, (int)termOffset, position, newOffset);
             }
             else if (0 == limit)
             {
@@ -405,7 +381,7 @@ public class Publication implements AutoCloseable
     }
 
     private long newPosition(
-        final int activeTermId, final int activeIndex, final int currentTail, final long position, final int newOffset)
+        final int termId, final int index, final int currentTail, final long position, final int newOffset)
     {
         long newPosition = BACK_PRESSURED;
         if (newOffset > 0)
@@ -414,20 +390,12 @@ public class Publication implements AutoCloseable
         }
         else if (newOffset == TermAppender.TRIPPED)
         {
-            final int newTermId = activeTermId + 1;
-            final int nextIndex = nextPartitionIndex(activeIndex);
+            final int nextIndex = nextPartitionIndex(index);
             final int nextNextIndex = nextPartitionIndex(nextIndex);
 
-            defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
-
-            // Need to advance the term id in case a publication takes an interrupt
-            // between reading the active term and incrementing the tail.
-            // This covers the case of an interrupt taking longer than
-            // the time taken to complete the current term.
-            defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
-
+            termAppenders[nextIndex].tailTermId(termId + 1);
             termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);
-            LogBufferDescriptor.activeTermId(logMetaDataBuffer, newTermId);
+            LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
 
             newPosition = ADMIN_ACTION;
         }

@@ -61,7 +61,6 @@ public class PublicationTest
         when(logBuffers.termLength()).thenReturn(TERM_MIN_LENGTH);
 
         initialTermId(logMetaDataBuffer, TERM_ID_1);
-        activeTermId(logMetaDataBuffer, TERM_ID_1);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
@@ -83,6 +82,8 @@ public class PublicationTest
             CORRELATION_ID);
 
         publication.incRef();
+
+        initialiseTailWithTermId(termMetaDataBuffers[0], TERM_ID_1);
     }
 
     @Test

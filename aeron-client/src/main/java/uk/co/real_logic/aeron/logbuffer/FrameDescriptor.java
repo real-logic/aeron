@@ -94,6 +94,11 @@ public class FrameDescriptor
     public static final int TERM_OFFSET = DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET;
 
     /**
+     * Offset within a frame at which the term id field begins
+     */
+    public static final int TERM_ID_OFFSET = DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
+
+    /**
      * Padding frame type to indicate the message should be ignored.
      */
     public static final int PADDING_FRAME_TYPE = HeaderFlyweight.HDR_TYPE_PAD;
@@ -197,6 +202,17 @@ public class FrameDescriptor
     public static int termOffsetOffset(final int frameOffset)
     {
         return frameOffset + TERM_OFFSET;
+    }
+
+    /**
+     * The buffer offset at which the term id field begins.
+     *
+     * @param frameOffset at which the frame begins.
+     * @return the offset at which the term id field begins.
+     */
+    public static int termIdOffset(final int frameOffset)
+    {
+        return frameOffset + TERM_ID_OFFSET;
     }
 
     /**
@@ -317,5 +333,17 @@ public class FrameDescriptor
     public static void frameTermOffset(final UnsafeBuffer buffer, final int frameOffset, final int termOffset)
     {
         buffer.putInt(termOffsetOffset(frameOffset), termOffset, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Write the term id field for a frame.
+     *
+     * @param buffer      containing the frame.
+     * @param frameOffset at which a frame begins.
+     * @param termId      value for the frame.
+     */
+    public static void frameTermId(final UnsafeBuffer buffer, final int frameOffset, final int termId)
+    {
+        buffer.putInt(termIdOffset(frameOffset), termId, LITTLE_ENDIAN);
     }
 }

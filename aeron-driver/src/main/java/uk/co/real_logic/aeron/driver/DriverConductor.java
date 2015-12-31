@@ -645,9 +645,12 @@ public class DriverConductor implements Agent
 
         final UnsafeBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
+        LogBufferDescriptor.storeDefaultFrameHeader(logMetaData, header);
+
+        final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();
+        LogBufferDescriptor.initialiseTailWithTermId(termMetaData, initialTermId);
+
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
-        LogBufferDescriptor.activeTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
 
         return rawLog;
@@ -668,9 +671,8 @@ public class DriverConductor implements Agent
 
         final UnsafeBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
+        LogBufferDescriptor.storeDefaultFrameHeader(logMetaData, header);
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
-        LogBufferDescriptor.activeTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, senderMtuLength);
 
         return rawLog;
@@ -683,9 +685,12 @@ public class DriverConductor implements Agent
 
         final UnsafeBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        LogBufferDescriptor.storeDefaultFrameHeaders(logMetaData, header);
+        LogBufferDescriptor.storeDefaultFrameHeader(logMetaData, header);
+
+        final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();
+        LogBufferDescriptor.initialiseTailWithTermId(termMetaData, initialTermId);
+
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
-        LogBufferDescriptor.activeTermId(logMetaData, initialTermId);
 
         final int mtuLength = FrameDescriptor.computeMaxMessageLength(ipcTermBufferLength);
         LogBufferDescriptor.mtuLength(logMetaData, mtuLength);

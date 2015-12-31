@@ -18,10 +18,8 @@ package uk.co.real_logic.aeron.logbuffer;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 
@@ -110,9 +108,9 @@ public class LogBufferDescriptor
     public static final int LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
 
     /**
-     * Offset within the log meta data where the active term id is stored.
+     * Offset within the log meta data where the active partition index is stored.
      */
-    public static final int LOG_ACTIVE_TERM_ID_OFFSET;
+    public static final int LOG_ACTIVE_PARTITION_INDEX_OFFSET;
 
     /**
      * Offset within the log meta data where the active term id is stored.
@@ -132,7 +130,7 @@ public class LogBufferDescriptor
     /**
      * Offset at which the default frame headers begin.
      */
-    public static final int LOG_DEFAULT_FRAME_HEADERS_OFFSET;
+    public static final int LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
     /**
      * Offset at which the default frame headers begin.
@@ -142,17 +140,17 @@ public class LogBufferDescriptor
     static
     {
         int offset = 0;
-        LOG_ACTIVE_TERM_ID_OFFSET = offset;
+        LOG_ACTIVE_PARTITION_INDEX_OFFSET = offset;
 
         offset += (CACHE_LINE_LENGTH * 2);
         LOG_INITIAL_TERM_ID_OFFSET = offset;
         LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
 
-        offset += (CACHE_LINE_LENGTH * 2);
-        LOG_DEFAULT_FRAME_HEADERS_OFFSET = offset;
+        offset += CACHE_LINE_LENGTH;
+        LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
-        LOG_META_DATA_LENGTH = offset + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * PARTITION_COUNT);
+        LOG_META_DATA_LENGTH = offset + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
     }
 
     /**
@@ -162,7 +160,7 @@ public class LogBufferDescriptor
      *   0                   1                   2                   3
      *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
      *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-     *  |                        Active Term Id                         |
+     *  |                   Active Partition Index                      |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
@@ -176,13 +174,7 @@ public class LogBufferDescriptor
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
-     *  |                    Default Frame Header 0                    ...
-     * ...                                                              |
-     *  +---------------------------------------------------------------+
-     *  |                    Default Frame Header 1                    ...
-     * ...                                                              |
-     *  +---------------------------------------------------------------+
-     *  |                    Default Frame Header 2                    ...
+     *  |                    Default Frame Header                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
      * </pre>
@@ -278,26 +270,26 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get the value of the active Term id used by the producer of this log. Consumers may have a different active term if
-     * they are running behind. The read is done with volatile semantics.
+     * Get the value of the active partition index used by the producer of this log. Consumers may have a different active
+     * index if they are running behind. The read is done with volatile semantics.
      *
      * @param logMetaDataBuffer containing the meta data.
-     * @return the value of the active Term id used by the producer of this log.
+     * @return the value of the active partition index used by the producer of this log.
      */
-    public static int activeTermId(final UnsafeBuffer logMetaDataBuffer)
+    public static int activePartitionIndex(final UnsafeBuffer logMetaDataBuffer)
     {
-        return logMetaDataBuffer.getIntVolatile(LOG_ACTIVE_TERM_ID_OFFSET);
+        return logMetaDataBuffer.getIntVolatile(LOG_ACTIVE_PARTITION_INDEX_OFFSET);
     }
 
     /**
-     * Set the value of the current active term id for the producer using memory ordered semantics.
+     * Set the value of the current active partition index for the producer using memory ordered semantics.
      *
-     * @param logMetaDataBuffer containing the meta data.
-     * @param activeTermId      value of the active Term id used by the producer of this log.
+     * @param logMetaDataBuffer    containing the meta data.
+     * @param activePartitionIndex value of the active partition index used by the producer of this log.
      */
-    public static void activeTermId(final UnsafeBuffer logMetaDataBuffer, final int activeTermId)
+    public static void activePartitionIndex(final UnsafeBuffer logMetaDataBuffer, final int activePartitionIndex)
     {
-        logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, activeTermId);
+        logMetaDataBuffer.putIntOrdered(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activePartitionIndex);
     }
 
     /**
@@ -375,6 +367,22 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Compute the current position in absolute number of bytes for the beginning of a term.
+     *
+     * @param activeTermId        active term id.
+     * @param positionBitsToShift number of times to left shift the term count
+     * @param initialTermId       the initial term id that this stream started on
+     * @return the absolute position in bytes
+     */
+    public static long computeTermBeginPosition(
+        final int activeTermId, final int positionBitsToShift, final int initialTermId)
+    {
+        final long termCount = activeTermId - initialTermId; // copes with negative activeTermId on rollover
+
+        return termCount << positionBitsToShift;
+    }
+
+    /**
      * Compute the term id from a position.
      *
      * @param position            to calculate from
@@ -428,13 +436,13 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Store the default frame headers to the log meta data buffer.
+     * Store the default frame header to the log meta data buffer.
      *
      * @param logMetaDataBuffer into which the default headers should be stored.
      * @param defaultHeader     to be stored.
      * @throws IllegalArgumentException if the default header is larger than {@link #LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH}
      */
-    public static void storeDefaultFrameHeaders(final UnsafeBuffer logMetaDataBuffer, final DirectBuffer defaultHeader)
+    public static void storeDefaultFrameHeader(final UnsafeBuffer logMetaDataBuffer, final DirectBuffer defaultHeader)
     {
         if (defaultHeader.capacity() != HEADER_LENGTH)
         {
@@ -443,59 +451,31 @@ public class LogBufferDescriptor
         }
 
         logMetaDataBuffer.putInt(LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET, HEADER_LENGTH);
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            final int offset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (i * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-            logMetaDataBuffer.putBytes(offset, defaultHeader, 0, HEADER_LENGTH);
-        }
+        logMetaDataBuffer.putBytes(LOG_DEFAULT_FRAME_HEADER_OFFSET, defaultHeader, 0, HEADER_LENGTH);
     }
 
     /**
-     * Get the default frame headers from the log meta data. There is one default header per partition.
+     * Get a wrapper around the default frame header from the log meta data.
      *
-     * @param logMetaDataBuffer containing the raw bytes for the default frame headers.
-     * @return and array of buffers wrapping the raw bytes.
+     * @param logMetaDataBuffer containing the raw bytes for the default frame header.
+     * @return a buffer wrapping the raw bytes.
      */
-    public static UnsafeBuffer[] defaultFrameHeaders(final UnsafeBuffer logMetaDataBuffer)
+    public static UnsafeBuffer defaultFrameHeader(final UnsafeBuffer logMetaDataBuffer)
     {
-        final UnsafeBuffer[] defaultFrameHeaders = new UnsafeBuffer[PARTITION_COUNT];
-
-        for (int i = 0; i < PARTITION_COUNT; i++)
-        {
-            final int offset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (i * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-            defaultFrameHeaders[i] = new UnsafeBuffer(logMetaDataBuffer, offset, HEADER_LENGTH);
-        }
-
-        return defaultFrameHeaders;
+        return new UnsafeBuffer(logMetaDataBuffer, LOG_DEFAULT_FRAME_HEADER_OFFSET, HEADER_LENGTH);
     }
 
     /**
      * Apply the default header for a message in a term.
      *
      * @param logMetaDataBuffer containing the default headers.
-     * @param activeIndex       for the current term.
      * @param termBuffer        to which the default header should be applied.
      * @param termOffset        at which the default should be applied.
      */
     public static void applyDefaultHeader(
-        final UnsafeBuffer logMetaDataBuffer, final int activeIndex, final UnsafeBuffer termBuffer, final int termOffset)
+        final UnsafeBuffer logMetaDataBuffer, final UnsafeBuffer termBuffer, final int termOffset)
     {
-        final int defaultHeaderOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (activeIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-        termBuffer.putBytes(termOffset, logMetaDataBuffer, defaultHeaderOffset, HEADER_LENGTH);
-    }
-
-    /**
-     * Set the termId within a default header.
-     *
-     * @param logMetaDataBuffer containing the default headers.
-     * @param partitionIndex    of the default header.
-     * @param termId            to be set.
-     */
-    public static void defaultHeaderTermId(final UnsafeBuffer logMetaDataBuffer, final int partitionIndex, final int termId)
-    {
-        final int headerOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-        logMetaDataBuffer.putInt(headerOffset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        termBuffer.putBytes(termOffset, logMetaDataBuffer, LOG_DEFAULT_FRAME_HEADER_OFFSET, HEADER_LENGTH);
     }
 
     /**
@@ -515,15 +495,44 @@ public class LogBufferDescriptor
         final int nextIndex = nextPartitionIndex(activeIndex);
         final int nextNextIndex = nextPartitionIndex(nextIndex);
 
-        defaultHeaderTermId(logMetaDataBuffer, nextIndex, newTermId);
-
-        // Need to advance the term id in case a publication takes an interrupt
-        // between reading the active term and incrementing the tail.
-        // This covers the case of an interrupt taking longer than
-        // the time taken to complete the current term.
-        defaultHeaderTermId(logMetaDataBuffer, nextNextIndex, newTermId + 1);
-
+        logPartitions[nextIndex].termId(newTermId);
         logPartitions[nextNextIndex].statusOrdered(NEEDS_CLEANING);
-        activeTermId(logMetaDataBuffer, newTermId);
+        activePartitionIndex(logMetaDataBuffer, nextIndex);
+    }
+
+    /**
+     * Set the initial value for the termId in the upper bits of the tail counter.
+     *
+     * @param termMetaData  contain the tail counter.
+     * @param initialTermId to be set.
+     */
+    public static void initialiseTailWithTermId(final UnsafeBuffer termMetaData, final int initialTermId)
+    {
+        termMetaData.putLong(TERM_TAIL_COUNTER_OFFSET, ((long)initialTermId) << 32);
+    }
+
+    /**
+     * Get the termId from a packed raw tail value.
+     *
+     * @param rawTail containing the termId
+     * @return the termId from a packed raw tail value.
+     */
+    public static int termId(final long rawTail)
+    {
+        return (int)(rawTail >>> 32);
+    }
+
+    /**
+     * Read the termOffset from a packed raw tail value.
+     *
+     * @param rawTail    containing the termOffset.
+     * @param termLength that the offset cannot exceed.
+     * @return the termOffset value.
+     */
+    public static int termOffset(final long rawTail, final long termLength)
+    {
+        final long tail = rawTail & 0xFFFF_FFFFL;
+
+        return (int)Math.min(tail, termLength);
     }
 }

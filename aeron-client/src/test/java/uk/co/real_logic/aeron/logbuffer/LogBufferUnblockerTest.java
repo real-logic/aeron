@@ -37,14 +37,12 @@ public class LogBufferUnblockerTest
     private final UnsafeBuffer[] termMetaDataBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final LogBufferPartition[] partitions = new LogBufferPartition[PARTITION_COUNT];
 
-    private final int activeIndex = indexByTerm(TERM_ID_1, TERM_ID_1);
     private final int positionBitsToShift = Integer.numberOfTrailingZeros(TERM_LENGTH);
 
     @Before
     public void setUp()
     {
         initialTermId(logMetaDataBuffer, TERM_ID_1);
-        activeTermId(logMetaDataBuffer, TERM_ID_1);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
@@ -53,6 +51,8 @@ public class LogBufferUnblockerTest
 
             partitions[i] = spy(new LogBufferPartition(termBuffers[i], termMetaDataBuffers[i]));
         }
+
+        initialiseTailWithTermId(partitions[0].metaDataBuffer(), TERM_ID_1);
     }
 
     @Test
@@ -60,13 +60,14 @@ public class LogBufferUnblockerTest
     {
         final int blockedOffset = HEADER_LENGTH * 4;
         final long blockedPosition = computePosition(TERM_ID_1, blockedOffset, positionBitsToShift, TERM_ID_1);
+        final int activeIndex = indexByPosition(blockedPosition, positionBitsToShift);
 
         when(termBuffers[activeIndex].getIntVolatile(blockedOffset)).thenReturn(HEADER_LENGTH);
 
         assertFalse(LogBufferUnblocker.unblock(partitions, logMetaDataBuffer, blockedPosition));
 
-        assertThat(computePosition(
-            activeTermId(logMetaDataBuffer), blockedOffset, positionBitsToShift, TERM_ID_1),
+        assertThat(
+            computePosition(partitions[activeIndex].termId(), blockedOffset, positionBitsToShift, TERM_ID_1),
             is(blockedPosition));
     }
 
@@ -76,13 +77,14 @@ public class LogBufferUnblockerTest
         final int blockedOffset = HEADER_LENGTH * 4;
         final int messageLength = HEADER_LENGTH * 4;
         final long blockedPosition = computePosition(TERM_ID_1, blockedOffset, positionBitsToShift, TERM_ID_1);
+        final int activeIndex = indexByPosition(blockedPosition, positionBitsToShift);
 
         when(termBuffers[activeIndex].getIntVolatile(blockedOffset)).thenReturn(-messageLength);
 
         assertTrue(LogBufferUnblocker.unblock(partitions, logMetaDataBuffer, blockedPosition));
 
-        assertThat(computePosition(
-                activeTermId(logMetaDataBuffer), blockedOffset + messageLength, positionBitsToShift, TERM_ID_1),
+        assertThat(
+            computePosition(partitions[activeIndex].termId(), blockedOffset + messageLength, positionBitsToShift, TERM_ID_1),
             is(blockedPosition + messageLength));
     }
 
@@ -92,16 +94,18 @@ public class LogBufferUnblockerTest
         final int messageLength = HEADER_LENGTH * 4;
         final int blockedOffset = TERM_LENGTH - messageLength;
         final long blockedPosition = computePosition(TERM_ID_1, blockedOffset, positionBitsToShift, TERM_ID_1);
+        final int activeIndex = indexByPosition(blockedPosition, positionBitsToShift);
 
         when(termBuffers[activeIndex].getIntVolatile(blockedOffset)).thenReturn(0);
-        when(termMetaDataBuffers[activeIndex].getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(TERM_LENGTH);
+        when(termMetaDataBuffers[activeIndex].getLongVolatile(TERM_TAIL_COUNTER_OFFSET))
+            .thenReturn(pack(TERM_ID_1, TERM_LENGTH));
 
         assertTrue(LogBufferUnblocker.unblock(partitions, logMetaDataBuffer, blockedPosition));
 
-        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1 + 1);
+        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activeIndex + 1);
 
-        assertThat(computePosition(
-                activeTermId(logMetaDataBuffer), 0, positionBitsToShift, TERM_ID_1),
+        assertThat(
+            computePosition(partitions[activeIndex + 1].termId(), 0, positionBitsToShift, TERM_ID_1),
             is(blockedPosition + messageLength));
     }
 
@@ -111,16 +115,23 @@ public class LogBufferUnblockerTest
         final int messageLength = HEADER_LENGTH * 4;
         final int blockedOffset = TERM_LENGTH - messageLength;
         final long blockedPosition = computePosition(TERM_ID_1, blockedOffset, positionBitsToShift, TERM_ID_1);
+        final int activeIndex = indexByPosition(blockedPosition, positionBitsToShift);
 
         when(termBuffers[activeIndex].getIntVolatile(blockedOffset)).thenReturn(0);
-        when(termMetaDataBuffers[activeIndex].getIntVolatile(TERM_TAIL_COUNTER_OFFSET)).thenReturn(TERM_LENGTH + HEADER_LENGTH);
+        when(termMetaDataBuffers[activeIndex].getLongVolatile(TERM_TAIL_COUNTER_OFFSET))
+            .thenReturn(pack(TERM_ID_1, TERM_LENGTH + HEADER_LENGTH));
 
         assertTrue(LogBufferUnblocker.unblock(partitions, logMetaDataBuffer, blockedPosition));
 
-        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_TERM_ID_OFFSET, TERM_ID_1 + 1);
+        verify(logMetaDataBuffer).putIntOrdered(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activeIndex + 1);
 
-        assertThat(computePosition(
-                activeTermId(logMetaDataBuffer), 0, positionBitsToShift, TERM_ID_1),
+        assertThat(
+            computePosition(partitions[activeIndex + 1].termId(), 0, positionBitsToShift, TERM_ID_1),
             is(blockedPosition + messageLength));
+    }
+
+    private static long pack(final int termId, final int offset)
+    {
+        return (((long)termId) << 32) | offset;
     }
 }

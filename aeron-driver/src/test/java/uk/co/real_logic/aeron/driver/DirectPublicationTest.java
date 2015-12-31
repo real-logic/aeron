@@ -21,7 +21,6 @@ import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.aeron.DriverProxy;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
@@ -113,15 +112,6 @@ public class DirectPublicationTest
     public void shouldHaveJoiningPositionZeroWhenNoSubscriptions()
     {
         assertThat(directPublication.joiningPosition(), is(0L));
-    }
-
-    @Test
-    public void shouldStartWithActiveTermIdSetToInitialTermId()
-    {
-        final int activeTermId = LogBufferDescriptor.activeTermId(directPublication.rawLog().logMetaData());
-        final int initialTermId = LogBufferDescriptor.initialTermId(directPublication.rawLog().logMetaData());
-
-        assertThat(activeTermId, is(initialTermId));
     }
 
     @Test

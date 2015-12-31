@@ -30,11 +30,6 @@ public class LogBufferPartition
 
     public LogBufferPartition(final UnsafeBuffer termBuffer, final UnsafeBuffer metaDataBuffer)
     {
-        checkTermLength(termBuffer.capacity());
-        checkMetaDataBuffer(metaDataBuffer);
-        termBuffer.verifyAlignment();
-        metaDataBuffer.verifyAlignment();
-
         this.termBuffer = termBuffer;
         this.metaDataBuffer = metaDataBuffer;
     }
@@ -65,8 +60,6 @@ public class LogBufferPartition
     public void clean()
     {
         termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
-
-        metaDataBuffer.putInt(TERM_TAIL_COUNTER_OFFSET, 0);
         metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, CLEAN);
     }
 
@@ -98,7 +91,19 @@ public class LogBufferPartition
      */
     public int tailVolatile()
     {
-        return Math.min(metaDataBuffer.getIntVolatile(TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
+        final long tail = metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET) & 0xFFFF_FFFFL;
+
+        return (int)Math.min(tail, (long)termBuffer.capacity());
+    }
+
+    /**
+     * Get the raw value for the tail containing both termId and offset.
+     *
+     * @return the raw value for the tail containing both termId and offset.
+     */
+    public long rawTailVolatile()
+    {
+        return metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET);
     }
 
     /**
@@ -108,6 +113,30 @@ public class LogBufferPartition
      */
     public int tail()
     {
-        return Math.min(metaDataBuffer.getInt(TERM_TAIL_COUNTER_OFFSET), termBuffer.capacity());
+        final long tail = metaDataBuffer.getLong(TERM_TAIL_COUNTER_OFFSET) & 0xFFFF_FFFFL;
+
+        return (int)Math.min(tail, (long)termBuffer.capacity());
+    }
+
+    /**
+     * Set the value of the term id into the tail counter.
+     *
+     * @param termId for the tail counter
+     */
+    public void termId(final int termId)
+    {
+        metaDataBuffer.putLong(TERM_TAIL_COUNTER_OFFSET, ((long)termId) << 32);
+    }
+
+    /**
+     * Get the value of the term id into the tail counter.
+     *
+     * @return the current term id.
+     */
+    public int termId()
+    {
+        final long rawTail = metaDataBuffer.getLong(TERM_TAIL_COUNTER_OFFSET);
+
+        return (int)(rawTail >>> 32);
     }
 }

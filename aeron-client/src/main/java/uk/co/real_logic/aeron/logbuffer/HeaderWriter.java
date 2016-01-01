@@ -44,15 +44,15 @@ public class HeaderWriter
     {
         if (ByteOrder.nativeOrder() == LITTLE_ENDIAN)
         {
-            versionFlagsType = (defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
-            sessionId = (defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+            versionFlagsType = ((long)defaultHeader.getInt(VERSION_FIELD_OFFSET)) << 32;
+            sessionId = ((long)defaultHeader.getInt(SESSION_ID_FIELD_OFFSET)) << 32;
             streamId = defaultHeader.getInt(STREAM_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
         }
         else
         {
             versionFlagsType = defaultHeader.getInt(VERSION_FIELD_OFFSET) & 0xFFFF_FFFFL;
             sessionId = defaultHeader.getInt(SESSION_ID_FIELD_OFFSET) & 0xFFFF_FFFFL;
-            streamId = (defaultHeader.getInt(STREAM_ID_FIELD_OFFSET) & 0xFFFF_FFFFL) << 32;
+            streamId = ((long)defaultHeader.getInt(STREAM_ID_FIELD_OFFSET)) << 32;
         }
     }
 
@@ -64,7 +64,7 @@ public class HeaderWriter
      * @param length     of the fragment including the header.
      * @param termId     of the current term buffer.
      */
-    public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
+    public void write(final UnsafeBuffer termBuffer, final long offset, final int length, final int termId)
     {
         final long lengthVersionFlagsType;
         final long termOffsetSessionId;
@@ -74,12 +74,12 @@ public class HeaderWriter
         {
             lengthVersionFlagsType = versionFlagsType | ((-length) & 0xFFFF_FFFFL);
             termOffsetSessionId = sessionId | offset;
-            streamAndTermIds = streamId | ((termId & 0xFFFF_FFFFL) << 32);
+            streamAndTermIds = streamId | (((long)termId) << 32);
         }
         else
         {
-            lengthVersionFlagsType = versionFlagsType | (((reverseBytes(-length)) & 0xFFFF_FFFFL) << 32);
-            termOffsetSessionId = sessionId | (((reverseBytes(offset)) & 0xFFFF_FFFFL) << 32);
+            lengthVersionFlagsType = versionFlagsType | ((((long)reverseBytes(-length))) << 32);
+            termOffsetSessionId = sessionId | ((((long)reverseBytes((int)offset))) << 32);
             streamAndTermIds = streamId | (reverseBytes(termId) & 0xFFFF_FFFFL);
         }
 

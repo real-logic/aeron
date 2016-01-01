@@ -140,9 +140,8 @@ public class TermAppender
         }
         else
         {
-            final int offset = (int)termOffset;
-            header.write(termBuffer, offset, frameLength, termId);
-            bufferClaim.wrap(termBuffer, offset, frameLength);
+            header.write(termBuffer, termOffset, frameLength, termId);
+            bufferClaim.wrap(termBuffer, (int)termOffset, frameLength);
             returnOffset = (int)resultingOffset;
         }
 
@@ -169,10 +168,9 @@ public class TermAppender
         }
         else
         {
-            final int offset = (int)termOffset;
-            header.write(termBuffer, offset, frameLength, termId);
-            termBuffer.putBytes(offset + HEADER_LENGTH, srcBuffer, srcOffset, length);
-            frameLengthOrdered(termBuffer, offset, frameLength);
+            header.write(termBuffer, termOffset, frameLength, termId);
+            termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+            frameLengthOrdered(termBuffer, (int)termOffset, frameLength);
             returnOffset = (int)resultingOffset;
         }
 
@@ -191,8 +189,8 @@ public class TermAppender
         final int lastFrameLength = remainingPayload > 0 ? align(remainingPayload + HEADER_LENGTH, FRAME_ALIGNMENT) : 0;
         final int requiredLength = (numMaxPayloads * (maxPayloadLength + HEADER_LENGTH)) + lastFrameLength;
         final long rawTail = getAndAddRawTail(requiredLength);
-        final long termOffset = rawTail & 0xFFFF_FFFFL;
         final int termId = termId(rawTail);
+        long termOffset = rawTail & 0xFFFF_FFFFL;
 
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
@@ -207,16 +205,15 @@ public class TermAppender
         {
             byte flags = BEGIN_FRAG_FLAG;
             int remaining = length;
-            int offset = (int)termOffset;
             do
             {
                 final int bytesToWrite = Math.min(remaining, maxPayloadLength);
                 final int frameLength = bytesToWrite + HEADER_LENGTH;
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-                header.write(termBuffer, offset, frameLength, termId);
+                header.write(termBuffer, termOffset, frameLength, termId);
                 termBuffer.putBytes(
-                    offset + HEADER_LENGTH,
+                    termOffset + HEADER_LENGTH,
                     srcBuffer,
                     srcOffset + (length - remaining),
                     bytesToWrite);
@@ -226,11 +223,11 @@ public class TermAppender
                     flags |= END_FRAG_FLAG;
                 }
 
-                frameFlags(termBuffer, offset, flags);
-                frameLengthOrdered(termBuffer, offset, frameLength);
+                frameFlags(termBuffer, (int)termOffset, flags);
+                frameLengthOrdered(termBuffer, (int)termOffset, frameLength);
 
                 flags = 0;
-                offset += alignedLength;
+                termOffset += alignedLength;
                 remaining -= bytesToWrite;
             }
             while (remaining > 0);

@@ -123,7 +123,7 @@ public class TermUnblocker
     {
         applyDefaultHeader(logMetaDataBuffer, termBuffer, termOffset);
         frameType(termBuffer, termOffset, HDR_TYPE_PAD);
-        frameTermOffset(termBuffer, termOffset, termOffset);
+        frameTermOffset(termBuffer, termOffset);
         frameTermId(termBuffer, termOffset, termId);
         frameLengthOrdered(termBuffer, termOffset, frameLength);
     }

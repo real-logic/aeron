@@ -57,16 +57,12 @@ public class RateSubscriber
             ctx.aeronDirectoryName(driver.aeronDirectoryName());
         }
 
-        // Create a RateReporter instance to print, once per second, the current rate at which messages are
-        // being received
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
 
-        // Create a data handler to be called when a message is received
         final FragmentHandler rateReporterHandler = new FragmentAssembler(rateReporterHandler(reporter));
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        // Register an SIGINT handler for graceful shutdown
         SigInt.register(
             () ->
             {
@@ -74,13 +70,9 @@ public class RateSubscriber
                 running.set(false);
             });
 
-        // Add a subscriber to receive data from the configured channel and stream ID
-        // The Aeron and Subscription classes implement "AutoCloseable", so their
-        // resources will be automatically cleaned up at the end of this try block.
         try (final Aeron aeron = Aeron.connect(ctx);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))
         {
-            // Receive data on subscription in a separate thread
             final Future future = executor.submit(
                 () -> SamplesUtil.subscriberLoop(rateReporterHandler, FRAGMENT_COUNT_LIMIT, running).accept(subscription));
 

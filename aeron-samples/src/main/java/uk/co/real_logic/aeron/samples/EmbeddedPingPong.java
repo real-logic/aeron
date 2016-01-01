@@ -206,7 +206,9 @@ public class EmbeddedPingPong
         {
             return;
         }
+
         PING_HANDLER_IDLE_STRATEGY.reset();
+
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
             PING_HANDLER_IDLE_STRATEGY.idle();

@@ -43,7 +43,7 @@ public class Pong
     private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
 
-    private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
+    private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = new NoOpIdleStrategy();
 
     public static void main(final String[] args) throws Exception
     {
@@ -69,6 +69,7 @@ public class Pong
         {
             final FragmentAssembler dataHandler = new FragmentAssembler(
                 (buffer, offset, length, header) -> pingHandler(pongPublication, buffer, offset, length));
+
             while (running.get())
             {
                 idleStrategy.idle(pingSubscription.poll(dataHandler, FRAME_COUNT_LIMIT));
@@ -82,13 +83,15 @@ public class Pong
 
 
     public static void pingHandler(
-            final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
+        final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {
         if (pongPublication.offer(buffer, offset, length) < 0L)
         {
             return;
         }
+
         PING_HANDLER_IDLE_STRATEGY.reset();
+
         while (pongPublication.offer(buffer, offset, length) < 0L)
         {
             PING_HANDLER_IDLE_STRATEGY.idle();

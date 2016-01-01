@@ -58,9 +58,7 @@ public class RateSubscriber
         }
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), SamplesUtil::printRate);
-
         final FragmentHandler rateReporterHandler = new FragmentAssembler(rateReporterHandler(reporter));
-
         final AtomicBoolean running = new AtomicBoolean(true);
 
         SigInt.register(

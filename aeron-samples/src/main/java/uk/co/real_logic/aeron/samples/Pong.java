@@ -80,7 +80,6 @@ public class Pong
         CloseHelper.quietClose(driver);
     }
 
-
     public static void pingHandler(
         final Publication pongPublication, final DirectBuffer buffer, final int offset, final int length)
     {

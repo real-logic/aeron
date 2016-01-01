@@ -85,6 +85,15 @@ public class BasicPublisher
                     {
                         System.out.println("Offer failed because publisher is not yet connected to subscriber");
                     }
+                    else if (result == Publication.ADMIN_ACTION)
+                    {
+                        System.out.println("Offer failed because of an administration action in the system");
+                    }
+                    else if (result == Publication.CLOSED)
+                    {
+                        System.out.println("Offer failed publication is closed");
+                        break;
+                    }
                     else
                     {
                         System.out.println("Offer failed due to unknown reason");

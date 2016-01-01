@@ -51,13 +51,13 @@ public class Ping
 
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
-    private static volatile CountDownLatch pongConnectionLatch;
+    private static final CountDownLatch LATCH = new CountDownLatch(1);
+    private static final IdleStrategy POLLING_IDLE_STRATEGY = new NoOpIdleStrategy();
 
     public static void main(final String[] args) throws Exception
     {
         final MediaDriver driver = EMBEDDED_MEDIA_DRIVER ? MediaDriver.launchEmbedded() : null;
-        final Aeron.Context ctx = new Aeron.Context()
-            .availableImageHandler(Ping::availablePongImageHandler);
+        final Aeron.Context ctx = new Aeron.Context().availableImageHandler(Ping::availablePongImageHandler);
         final FragmentHandler fragmentHandler = new FragmentAssembler(Ping::pongHandler);
 
         if (EMBEDDED_MEDIA_DRIVER)
@@ -74,38 +74,29 @@ public class Ping
             System.out.println(
                 "Warming up... " + WARMUP_NUMBER_OF_ITERATIONS + " iterations of " + WARMUP_NUMBER_OF_MESSAGES + " messages");
 
-            pongConnectionLatch = new CountDownLatch(1);
-
             try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
                  final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
             {
-                pongConnectionLatch.await();
+                LATCH.await();
 
                 for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
                 {
-                    sendPingAndReceivePong(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
+                    roundTripMessages(fragmentHandler, publication, subscription, WARMUP_NUMBER_OF_MESSAGES);
                 }
-            }
 
-            final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
-            pongConnectionLatch = new CountDownLatch(1);
-
-            try (final Publication publication = aeron.addPublication(PING_CHANNEL, PING_STREAM_ID);
-                 final Subscription subscription = aeron.addSubscription(PONG_CHANNEL, PONG_STREAM_ID))
-            {
-                pongConnectionLatch.await();
-                Thread.sleep(1000);
+                Thread.sleep(100);
+                final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
+                HISTOGRAM.reset();
 
                 do
                 {
                     System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
-                    HISTOGRAM.reset();
-                    System.gc();
 
-                    sendPingAndReceivePong(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
+                    roundTripMessages(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
                     System.out.println("Histogram of RTT latencies in microseconds.");
 
                     HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
+                    HISTOGRAM.reset();
                 }
                 while (barrier.await());
             }
@@ -114,15 +105,10 @@ public class Ping
         CloseHelper.quietClose(driver);
     }
 
-    private static void sendPingAndReceivePong(
-        final FragmentHandler fragmentHandler,
-        final Publication publication,
-        final Subscription subscription,
-        final int numMessages)
+    private static void roundTripMessages(
+        final FragmentHandler fragmentHandler, final Publication publication, final Subscription subscription, final int count)
     {
-        final IdleStrategy idleStrategy = new NoOpIdleStrategy();
-
-        for (int i = 0; i < numMessages; i++)
+        for (int i = 0; i < count; i++)
         {
             do
             {
@@ -130,10 +116,10 @@ public class Ping
             }
             while (publication.offer(ATOMIC_BUFFER, 0, MESSAGE_LENGTH) < 0L);
 
-            idleStrategy.reset();
+            POLLING_IDLE_STRATEGY.reset();
             while (subscription.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) <= 0)
             {
-                idleStrategy.idle();
+                POLLING_IDLE_STRATEGY.idle();
             }
         }
     }
@@ -155,7 +141,7 @@ public class Ping
 
         if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel()))
         {
-            pongConnectionLatch.countDown();
+            LATCH.countDown();
         }
     }
 }

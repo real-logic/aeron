@@ -109,9 +109,10 @@ public class EmbeddedPingPong
 
             for (int i = 0; i < WARMUP_NUMBER_OF_ITERATIONS; i++)
             {
-                sendPingAndReceivePong(dataHandler, pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
+                roundTripMessages(dataHandler, pingPublication, pongSubscription, WARMUP_NUMBER_OF_MESSAGES);
             }
 
+            Thread.sleep(100);
             final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
 
             do
@@ -119,7 +120,7 @@ public class EmbeddedPingPong
                 HISTOGRAM.reset();
                 System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
-                sendPingAndReceivePong(dataHandler, pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
+                roundTripMessages(dataHandler, pingPublication, pongSubscription, NUMBER_OF_MESSAGES);
 
                 System.out.println("Histogram of RTT latencies in microseconds.");
                 HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
@@ -158,7 +159,7 @@ public class EmbeddedPingPong
         };
     }
 
-    private static void sendPingAndReceivePong(
+    private static void roundTripMessages(
         final FragmentHandler fragmentHandler,
         final Publication pingPublication,
         final Subscription pongSubscription,

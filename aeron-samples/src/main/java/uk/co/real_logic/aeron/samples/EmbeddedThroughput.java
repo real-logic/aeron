@@ -86,11 +86,11 @@ public class EmbeddedThroughput
                 printingActive = true;
 
                 long backPressureCount = 0;
-                OFFER_IDLE_STRATEGY.reset();
                 for (long i = 0; i < NUMBER_OF_MESSAGES; i++)
                 {
                     ATOMIC_BUFFER.putLong(0, i);
 
+                    OFFER_IDLE_STRATEGY.reset();
                     while (publication.offer(ATOMIC_BUFFER, 0, ATOMIC_BUFFER.capacity()) < 0)
                     {
                         OFFER_IDLE_STRATEGY.idle();

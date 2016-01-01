@@ -24,7 +24,6 @@ import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.CloseHelper;
 import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
 import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.SigInt;

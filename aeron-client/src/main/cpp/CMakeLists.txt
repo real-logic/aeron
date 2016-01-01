@@ -65,6 +65,7 @@ SET(HEADERS
     concurrent/logbuffer/DataFrameHeader.h
     concurrent/logbuffer/FrameDescriptor.h
     concurrent/logbuffer/Header.h
+    concurrent/logbuffer/HeaderWriter.h
     concurrent/logbuffer/TermAppender.h
     concurrent/logbuffer/LogBufferPartition.h
     concurrent/logbuffer/LogBufferDescriptor.h

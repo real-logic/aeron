@@ -29,20 +29,19 @@ Publication::Publication(
     LogBuffers &buffers)
     :
     m_conductor(conductor),
+    m_logMetaDataBuffer(buffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX)),
     m_channel(channel),
     m_registrationId(registrationId),
     m_streamId(streamId),
     m_sessionId(sessionId),
+    m_initialTermId(LogBufferDescriptor::initialTermId(m_logMetaDataBuffer)),
+    m_maxPayloadLength(LogBufferDescriptor::mtuLength(m_logMetaDataBuffer) - DataFrameHeader::LENGTH),
+    m_positionBitsToShift(util::BitUtil::numberOfTrailingZeroes(buffers.atomicBuffer(0).capacity())),
     m_publicationLimit(publicationLimit),
-    m_logMetaDataBuffer(buffers.atomicBuffer(LogBufferDescriptor::LOG_META_DATA_SECTION_INDEX))
+    m_headerWriter(LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer))
 {
-    const std::int32_t mtuLength = LogBufferDescriptor::mtuLength(m_logMetaDataBuffer);
-    std::int32_t capacity = buffers.atomicBuffer(0).capacity();
-
     for (int i = 0; i < LogBufferDescriptor::PARTITION_COUNT; i++)
     {
-        AtomicBuffer defaultFrameHeader = LogBufferDescriptor::defaultFrameHeader(m_logMetaDataBuffer, i);
-
         /*
          * TODO:
          * perhaps allow copy-construction and be able to move appenders and AtomicBuffers directly into Publication for
@@ -50,13 +49,8 @@ Publication::Publication(
          */
         m_appenders[i] = std::unique_ptr<TermAppender>(new TermAppender(
             buffers.atomicBuffer(i),
-            buffers.atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT),
-            defaultFrameHeader,
-            mtuLength));
+            buffers.atomicBuffer(i + LogBufferDescriptor::PARTITION_COUNT)));
     }
-
-    m_positionBitsToShift = util::BitUtil::numberOfTrailingZeroes(capacity);
-    m_initialTermId = LogBufferDescriptor::initialTermId(m_logMetaDataBuffer);
 }
 
 Publication::~Publication()

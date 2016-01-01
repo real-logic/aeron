@@ -114,7 +114,7 @@ public:
      */
     inline util::index_t maxMessageLength() const
     {
-        return m_appenders[0]->maxMessageLength();
+        return FrameDescriptor::computeMaxMessageLength(termBufferLength());
     }
 
     /**
@@ -158,12 +158,13 @@ public:
 
         if (!isClosed())
         {
-            const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
-            const std::int32_t currentTail =
-                m_appenders[LogBufferDescriptor::indexByTerm(m_initialTermId, activeTermId)]->rawTailVolatile();
+            const std::int64_t rawTail =
+                m_appenders[LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer)]->rawTailVolatile();
+
+            const std::int32_t termOffset = LogBufferDescriptor::termOffset(rawTail, termBufferLength());
 
             result = LogBufferDescriptor::computePosition(
-                activeTermId, currentTail, m_positionBitsToShift, m_initialTermId);
+                LogBufferDescriptor::termId(rawTail), termOffset, m_positionBitsToShift, m_initialTermId);
         }
 
         return result;
@@ -178,7 +179,14 @@ public:
      */
     inline std::int64_t positionLimit()
     {
-        return m_publicationLimit.getVolatile();
+        std::int64_t result = PUBLICATION_CLOSED;
+
+        if (!isClosed())
+        {
+            result = m_publicationLimit.getVolatile();
+        }
+
+        return result;
     }
 
     /**
@@ -192,32 +200,42 @@ public:
      */
     inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
     {
-        std::int64_t newPosition = BACK_PRESSURED;
+        std::int64_t newPosition = PUBLICATION_CLOSED;
 
         if (!isClosed())
         {
-            const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
-            const int activeIndex = LogBufferDescriptor::indexByTerm(m_initialTermId, activeTermId);
-            TermAppender *appender = m_appenders[activeIndex].get();
-            const std::int32_t currentTail = appender->rawTailVolatile();
-            const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail,
-                m_positionBitsToShift, m_initialTermId);
-
             const std::int64_t limit = m_publicationLimit.getVolatile();
+            const std::int32_t partitionIndex = LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer);
+            TermAppender *termAppender = m_appenders[partitionIndex].get();
+            const std::int64_t rawTail = termAppender->rawTailVolatile();
+            const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
+            const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
+            const std::int64_t position =
+                LogBufferDescriptor::computeTermBeginPosition(termId, m_positionBitsToShift, m_initialTermId) + termOffset;
 
             if (position < limit)
             {
-                const std::int32_t nextOffset = appender->append(buffer, offset, length);
-                newPosition = Publication::newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+                std::int32_t newOffset;
+                if (length <= m_maxPayloadLength)
+                {
+                    newOffset = termAppender->appendUnfragmentedMessage(m_headerWriter, buffer, offset, length);
+                }
+                else
+                {
+                    checkForMaxMessageLength(length);
+                    newOffset = termAppender->appendFragmentedMessage(m_headerWriter, buffer, offset, length, m_maxPayloadLength);
+                }
+
+                newPosition = Publication::newPosition(termId, partitionIndex, termOffset, position, newOffset);
             }
             else if (0 == limit)
             {
                 newPosition = NOT_CONNECTED;
             }
-        }
-        else
-        {
-            newPosition = PUBLICATION_CLOSED;
+            else
+            {
+                newPosition = BACK_PRESSURED;
+            }
         }
 
         return newPosition;
@@ -268,32 +286,35 @@ public:
      */
     inline std::int64_t tryClaim(util::index_t length, concurrent::logbuffer::BufferClaim& bufferClaim)
     {
-        std::int64_t newPosition = BACK_PRESSURED;
+        std::int64_t newPosition = PUBLICATION_CLOSED;
 
         if (!isClosed())
         {
-            const std::int32_t activeTermId = LogBufferDescriptor::activeTermId(m_logMetaDataBuffer);
-            const int activeIndex = LogBufferDescriptor::indexByTerm(m_initialTermId, activeTermId);
-            TermAppender *appender = m_appenders[activeIndex].get();
-            const std::int32_t currentTail = appender->rawTailVolatile();
-            const std::int64_t position = LogBufferDescriptor::computePosition(activeTermId, currentTail,
-                m_positionBitsToShift, m_initialTermId);
+            checkForMaxMessageLength(length);
 
             const std::int64_t limit = m_publicationLimit.getVolatile();
+            const std::int32_t partitionIndex = LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer);
+            TermAppender *termAppender = m_appenders[partitionIndex].get();
+            const std::int64_t rawTail = termAppender->rawTailVolatile();
+            const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
+            const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
+            const std::int64_t position =
+                LogBufferDescriptor::computeTermBeginPosition(termId, m_positionBitsToShift, m_initialTermId) + termOffset;
 
             if (position < limit)
             {
-                const std::int32_t nextOffset = appender->claim(length, bufferClaim);
-                newPosition = Publication::newPosition(activeTermId, activeIndex, currentTail, position, nextOffset);
+                const std::int32_t newOffset =
+                    termAppender->claim(m_headerWriter, length, bufferClaim);
+                newPosition = Publication::newPosition(termId, partitionIndex, termOffset, position, newOffset);
             }
             else if (0 == limit)
             {
                 newPosition = NOT_CONNECTED;
             }
-        }
-        else
-        {
-            newPosition = PUBLICATION_CLOSED;
+            else
+            {
+                newPosition = BACK_PRESSURED;
+            }
         }
 
         return newPosition;
@@ -308,50 +329,53 @@ public:
 
 private:
     ClientConductor& m_conductor;
+    AtomicBuffer& m_logMetaDataBuffer;
     const std::string m_channel;
     std::int64_t m_registrationId;
     std::int32_t m_streamId;
     std::int32_t m_sessionId;
     std::int32_t m_initialTermId;
+    std::int32_t m_maxPayloadLength;
+    std::int32_t m_positionBitsToShift;
     ReadablePosition<UnsafeBufferPosition> m_publicationLimit;
     std::atomic<bool> m_isClosed = { false };
 
-    AtomicBuffer& m_logMetaDataBuffer;
     std::unique_ptr<TermAppender> m_appenders[3];
-    std::int32_t m_positionBitsToShift;
+    HeaderWriter m_headerWriter;
 
     std::int64_t newPosition(
-        std::int32_t activeTermId, int activeIndex, std::int32_t currentTail, std::int64_t position, std::int32_t nextOffset)
+        std::int32_t termId, int index, std::int32_t currentTail, std::int64_t position, std::int32_t newOffset)
     {
-        std::int64_t newPosition;
+        std::int64_t newPosition = BACK_PRESSURED;
 
-        switch (nextOffset)
+        if (newOffset > 0)
         {
-            case TERM_APPENDER_TRIPPED:
-            {
-                const std::int32_t newTermId = activeTermId + 1;
-                const int nextIndex = LogBufferDescriptor::nextPartitionIndex(activeIndex);
-                const int nextNextIndex = LogBufferDescriptor::nextPartitionIndex(nextIndex);
+            newPosition = (position - currentTail) + newOffset;
 
-                LogBufferDescriptor::defaultHeaderTermId(m_logMetaDataBuffer, nextIndex, newTermId);
+        }
+        else if (newOffset == TERM_APPENDER_TRIPPED)
+        {
+            const int nextIndex = LogBufferDescriptor::nextPartitionIndex(index);
+            const int nextNextIndex = LogBufferDescriptor::nextPartitionIndex(nextIndex);
 
-                LogBufferDescriptor::defaultHeaderTermId(m_logMetaDataBuffer, nextNextIndex, newTermId + 1);
-                m_appenders[nextNextIndex]->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
-                LogBufferDescriptor::activeTermId(m_logMetaDataBuffer, newTermId);
+            m_appenders[nextIndex]->tailTermId(termId + 1);
+            m_appenders[nextNextIndex]->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
+            LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer, nextIndex);
 
-                newPosition = ADMIN_ACTION;
-                break;
-            }
-
-            case TERM_APPENDER_FAILED:
-                newPosition = BACK_PRESSURED;
-                break;
-
-            default:
-                newPosition = (position - currentTail) + nextOffset;
+            newPosition = ADMIN_ACTION;
         }
 
         return newPosition;
+    }
+
+    void checkForMaxMessageLength(const util::index_t length)
+    {
+        if (length > m_maxPayloadLength)
+        {
+            throw util::IllegalStateException(
+                util::strPrintf("Encoded message exceeds maxMessageLength of %d, length=%d",
+                    m_maxPayloadLength, length), SOURCEINFO);
+        }
     }
 };
 

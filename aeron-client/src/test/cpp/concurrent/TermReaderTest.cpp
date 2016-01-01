@@ -33,8 +33,8 @@ using namespace aeron;
 #define TERM_BUFFER_UNALIGNED_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH + FrameDescriptor::FRAME_ALIGNMENT - 1)
 #define INITIAL_TERM_ID 7
 
-typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> log_buffer_t;
-typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> state_buffer_t;
+typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> term_buffer_t;
+typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> meta_data_buffer_t;
 typedef std::array<std::uint8_t, HDR_LENGTH> hdr_t;
 typedef std::array<std::uint8_t, TERM_BUFFER_UNALIGNED_CAPACITY> log_buffer_unaligned_t;
 
@@ -68,7 +68,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
+    AERON_DECL_ALIGNED(term_buffer_t m_logBuffer, 16);
     MockAtomicBuffer m_log;
     Header m_fragmentHeader;
     MockDataHandler m_handler;
@@ -238,7 +238,7 @@ TEST_F(TermReaderTest, shouldNotReadLastMessageWhenPadding)
     EXPECT_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(startOfMessage)))
         .Times(1)
         .InSequence(sequence)
-        .WillOnce(testing::Return(FrameDescriptor::PADDING_FRAME_TYPE));
+        .WillOnce(testing::Return(DataFrameHeader::HDR_TYPE_PAD));
     EXPECT_CALL(m_handler, onData(testing::Ref(m_log), startOfMessage + DataFrameHeader::LENGTH, msgLength, testing::_))
         .Times(0);
 

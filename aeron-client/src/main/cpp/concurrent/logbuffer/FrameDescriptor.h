@@ -20,6 +20,7 @@
 #include <util/Index.h>
 #include <util/StringUtil.h>
 #include <concurrent/AtomicBuffer.h>
+#include "DataFrameHeader.h"
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
@@ -54,28 +55,17 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 namespace FrameDescriptor {
 
 static const util::index_t FRAME_ALIGNMENT = 8;
-static const util::index_t WORD_ALIGNMENT = sizeof(std::int64_t);
 
 static const std::uint8_t BEGIN_FRAG = 0x80;
 static const std::uint8_t END_FRAG = 0x40;
 static const std::uint8_t UNFRAGMENTED = BEGIN_FRAG | END_FRAG;
 
-static const util::index_t HEADER_LENGTH = 24;
-
-static const util::index_t VERSION_OFFSET = 4;
-static const util::index_t FLAGS_OFFSET = 5;
-static const util::index_t TYPE_OFFSET = 6;
-static const util::index_t LENGTH_OFFSET = 0;
-static const util::index_t TERM_OFFSET = 8;
-
-static const std::uint16_t PADDING_FRAME_TYPE = 0;
-
 inline static void checkHeaderLength(util::index_t length)
 {
-    if (length != HEADER_LENGTH)
+    if (length != DataFrameHeader::LENGTH)
     {
         throw util::IllegalStateException(
-            util::strPrintf("Frame header length %d must be equal to %d", length, HEADER_LENGTH), SOURCEINFO);
+            util::strPrintf("Frame header length %d must be equal to %d", length, DataFrameHeader::LENGTH), SOURCEINFO);
     }
 }
 
@@ -95,22 +85,22 @@ inline static util::index_t computeMaxMessageLength(util::index_t capacity)
 
 inline static util::index_t typeOffset(util::index_t frameOffset)
 {
-    return frameOffset + TYPE_OFFSET;
+    return frameOffset + DataFrameHeader::TYPE_FIELD_OFFSET;
 }
 
 inline static util::index_t flagsOffset(util::index_t frameOffset)
 {
-    return frameOffset + FLAGS_OFFSET;
+    return frameOffset + DataFrameHeader::FLAGS_FIELD_OFFSET;
 }
 
 inline static util::index_t lengthOffset(util::index_t frameOffset)
 {
-    return frameOffset + LENGTH_OFFSET;
+    return frameOffset + DataFrameHeader::FRAME_LENGTH_FIELD_OFFSET;
 }
 
 inline static util::index_t termOffsetOffset(util::index_t frameOffset)
 {
-    return frameOffset + TERM_OFFSET;
+    return frameOffset + DataFrameHeader::TERM_OFFSET_FIELD_OFFSET;
 }
 
 inline static void frameType(AtomicBuffer& logBuffer, util::index_t frameOffset, std::uint16_t type)
@@ -130,7 +120,7 @@ inline static void frameTermOffset(AtomicBuffer& logBuffer, util::index_t frameO
 
 inline static bool isPaddingFrame(AtomicBuffer& logBuffer, util::index_t frameOffset)
 {
-    return logBuffer.getUInt16(typeOffset(frameOffset)) == PADDING_FRAME_TYPE;
+    return logBuffer.getUInt16(typeOffset(frameOffset)) == DataFrameHeader::HDR_TYPE_PAD;
 }
 
 inline static std::int32_t frameLengthVolatile(AtomicBuffer& logBuffer, util::index_t frameOffset)

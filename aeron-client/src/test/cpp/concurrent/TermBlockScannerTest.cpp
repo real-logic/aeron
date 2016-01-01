@@ -29,7 +29,7 @@ using namespace aeron;
 
 #define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
 
-typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> log_buffer_t;
+typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> term_buffer_t;
 
 class TermBlockScannerTest : public testing::Test
 {
@@ -46,7 +46,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(log_buffer_t m_logBuffer, 16);
+    AERON_DECL_ALIGNED(term_buffer_t m_logBuffer, 16);
     MockAtomicBuffer m_log;
 };
 

@@ -39,7 +39,7 @@ struct DataFrameHeaderDefn
 };
 #pragma pack(pop)
 
-static const util::index_t FRAME_LENGTH_OFFSET = offsetof(DataFrameHeaderDefn, frameLength);
+static const util::index_t FRAME_LENGTH_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, frameLength);
 static const util::index_t VERSION_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, version);
 static const util::index_t FLAGS_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, flags);
 static const util::index_t TYPE_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, type);

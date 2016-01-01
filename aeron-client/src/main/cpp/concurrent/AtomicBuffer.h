@@ -232,7 +232,7 @@ public:
     }
 
     // increment from multiple threads
-    inline std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta)
+    inline COND_MOCK_VIRTUAL std::int64_t getAndAddInt64(util::index_t offset, std::int64_t delta)
     {
         boundsCheck(offset, sizeof(std::int64_t));
         return atomic::getAndAddInt64((volatile std::int64_t*)(m_buffer + offset), delta);

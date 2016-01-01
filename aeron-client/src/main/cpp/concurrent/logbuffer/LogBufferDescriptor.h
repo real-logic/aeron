@@ -77,7 +77,7 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *  +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
- *  |                        Active Term Id                         |
+ *  |                   Active Partition Index                      |
  *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
@@ -91,13 +91,7 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
- *  |                    Default Frame Header 0                    ...
- * ...                                                              |
- *  +---------------------------------------------------------------+
- *  |                    Default Frame Header 1                    ...
- * ...                                                              |
- *  +---------------------------------------------------------------+
- *  |                    Default Frame Header 2                    ...
+ *  |                    Default Frame Header                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
@@ -109,20 +103,21 @@ static const util::index_t LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = util::BitUtil::
 #pragma pack(4)
 struct LogMetaDataDefn
 {
-    std::int32_t activeTermId;
+    std::int32_t activePartitionIndex;
     std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
     std::int32_t initialTermId;
     std::int32_t defaultFrameHeaderLength;
     std::int32_t mtuLength;
-    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - (3 * sizeof(std::int32_t))];
+    std::int8_t pad2[(util::BitUtil::CACHE_LINE_LENGTH) - (3 * sizeof(std::int32_t))];
 };
 #pragma pack(pop)
 
-static const util::index_t LOG_ACTIVE_TERM_ID_OFFSET = offsetof(LogMetaDataDefn, activeTermId);
+static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = offsetof(LogMetaDataDefn, activePartitionIndex);
 static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = offsetof(LogMetaDataDefn, initialTermId);
+static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
 static const util::index_t LOG_MTU_LENGTH_OFFSET = offsetof(LogMetaDataDefn, mtuLength);
-static const util::index_t LOG_DEFAULT_FRAME_HEADERS_OFFSET = sizeof(LogMetaDataDefn);
-static const util::index_t LOG_META_DATA_LENGTH = sizeof(LogMetaDataDefn) + (LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH * 3);
+static const util::index_t LOG_DEFAULT_FRAME_HEADER_OFFSET = sizeof(LogMetaDataDefn);
+static const util::index_t LOG_META_DATA_LENGTH = sizeof(LogMetaDataDefn) + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
 
 inline static void checkTermLength(std::int64_t termLength)
 {
@@ -157,19 +152,19 @@ inline static std::int32_t initialTermId(AtomicBuffer& logMetaDataBuffer)
     return logMetaDataBuffer.getInt32(LOG_INITIAL_TERM_ID_OFFSET);
 }
 
-inline static std::int32_t activeTermId(AtomicBuffer& logMetaDataBuffer)
-{
-    return logMetaDataBuffer.getInt32(LOG_ACTIVE_TERM_ID_OFFSET);
-}
-
-inline static void activeTermId(AtomicBuffer& logMetaDataBuffer, std::int32_t activeTermId)
-{
-    logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_TERM_ID_OFFSET, activeTermId);
-}
-
 inline static std::int32_t mtuLength(AtomicBuffer& logMetaDataBuffer)
 {
     return logMetaDataBuffer.getInt32(LOG_MTU_LENGTH_OFFSET);
+}
+
+inline static std::int32_t activePartitionIndex(AtomicBuffer& logMetaDataBuffer)
+{
+    return logMetaDataBuffer.getInt32Volatile(LOG_ACTIVE_PARTITION_INDEX_OFFSET);
+}
+
+inline static void activePartitionIndex(AtomicBuffer& logMetaDataBuffer, std::int32_t activeTermId)
+{
+    logMetaDataBuffer.putInt32Ordered(LOG_ACTIVE_PARTITION_INDEX_OFFSET, activeTermId);
 }
 
 inline static int nextPartitionIndex(int currentIndex) AERON_NOEXCEPT
@@ -204,6 +199,14 @@ inline static std::int64_t computePosition(
     return (termCount << positionBitsToShift) + termOffset;
 }
 
+inline static std::int64_t computeTermBeginPosition(
+    std::int32_t activeTermId, std::int32_t positionBitsToShift, std::int32_t initialTermId) AERON_NOEXCEPT
+{
+    const std::int64_t termCount = activeTermId - initialTermId;
+
+    return termCount << positionBitsToShift;
+}
+
 inline static std::int64_t computeLogLength(std::int64_t termLength)
 {
     return (termLength * PARTITION_COUNT) + (TERM_META_DATA_LENGTH * PARTITION_COUNT) + LOG_META_DATA_LENGTH;
@@ -215,18 +218,24 @@ inline static std::int64_t computeTermLength(std::int64_t logLength)
     return (logLength - metaDataSectionLength) / 3;
 }
 
-inline static AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer, int partitionIndex)
+inline static AtomicBuffer defaultFrameHeader(AtomicBuffer& logMetaDataBuffer)
 {
     std::uint8_t *header =
-        logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+        logMetaDataBuffer.buffer() + LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
     return AtomicBuffer(header, DataFrameHeader::LENGTH);
 }
 
-inline static void defaultHeaderTermId(AtomicBuffer& logMetaDataBuffer, int partitionIndex, std::int32_t termId)
+inline static std::int32_t termId(const std::int64_t rawTail)
 {
-    const util::index_t headerOffset = LOG_DEFAULT_FRAME_HEADERS_OFFSET + (partitionIndex * LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-    logMetaDataBuffer.putInt32(headerOffset + DataFrameHeader::TERM_ID_FIELD_OFFSET, termId);
+    return static_cast<std::int32_t>(rawTail >> 32);
+}
+
+inline static std::int32_t termOffset(const std::int64_t rawTail, const std::int64_t termLength)
+{
+    const std::int64_t tail = rawTail & 0xFFFFFFFFl;
+
+    return static_cast<std::int32_t>(std::min(tail, termLength));
 }
 
 };

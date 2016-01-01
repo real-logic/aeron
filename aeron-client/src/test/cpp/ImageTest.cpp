@@ -30,7 +30,7 @@ using namespace std::placeholders;
 
 static_assert(LogBufferDescriptor::PARTITION_COUNT==3, "partition count assumed to be 3 for these test");
 
-typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH)> log_buffer_t;
+typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH)> term_buffer_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_LENGTH> src_buffer_t;
 
 static const std::int32_t STREAM_ID = 10;
@@ -84,7 +84,6 @@ public:
     {
         m_log.fill(0);
 
-        m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_ACTIVE_TERM_ID_OFFSET, INITIAL_TERM_ID);
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_INITIAL_TERM_ID_OFFSET, INITIAL_TERM_ID);
         m_logMetaDataBuffer.putInt32(LogBufferDescriptor::LOG_MTU_LENGTH_OFFSET, (3 * m_srcBuffer.capacity()));
     }
@@ -113,7 +112,7 @@ public:
     }
 
 protected:
-    AERON_DECL_ALIGNED(log_buffer_t m_log, 16);
+    AERON_DECL_ALIGNED(term_buffer_t m_log, 16);
     AERON_DECL_ALIGNED(src_buffer_t m_src, 16);
 
     AtomicBuffer m_termBuffers[3];

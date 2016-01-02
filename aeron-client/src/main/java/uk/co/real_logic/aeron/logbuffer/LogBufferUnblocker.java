@@ -48,8 +48,7 @@ public class LogBufferUnblocker
         switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
         {
             case UNBLOCKED_TO_END:
-                final int newTermId = termId + 1;
-                rotateLog(logPartitions, logMetaDataBuffer, activeIndex, newTermId);
+                rotateLog(logPartitions, logMetaDataBuffer, activeIndex, termId + 1);
                 // fall through
             case UNBLOCKED:
                 result = true;

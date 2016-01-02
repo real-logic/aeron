@@ -18,7 +18,8 @@ package uk.co.real_logic.aeron.logbuffer;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import java.nio.ByteOrder;
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Represents the header of the data frame for accessing meta data fields.
@@ -56,7 +57,7 @@ public class Header
      */
     public final long position()
     {
-        return LogBufferDescriptor.computePosition(termId(), termOffset() + frameLength(), positionBitsToShift, initialTermId);
+        return computePosition(termId(), termOffset() + frameLength(), positionBitsToShift, initialTermId);
     }
 
     /**
@@ -146,7 +147,7 @@ public class Header
      */
     public int frameLength()
     {
-        return buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset, LITTLE_ENDIAN);
     }
 
     /**
@@ -156,7 +157,7 @@ public class Header
      */
     public final int sessionId()
     {
-        return buffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -166,7 +167,7 @@ public class Header
      */
     public final int streamId()
     {
-        return buffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -176,7 +177,7 @@ public class Header
      */
     public final int termId()
     {
-        return buffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -196,7 +197,7 @@ public class Header
      */
     public final int type()
     {
-        return buffer.getShort(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN) & 0xFFFF;
+        return buffer.getShort(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
     }
 
     /**

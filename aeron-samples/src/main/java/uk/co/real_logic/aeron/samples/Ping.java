@@ -86,17 +86,16 @@ public class Ping
 
                 Thread.sleep(100);
                 final ContinueBarrier barrier = new ContinueBarrier("Execute again?");
-                HISTOGRAM.reset();
 
                 do
                 {
+                    HISTOGRAM.reset();
                     System.out.println("Pinging " + NUMBER_OF_MESSAGES + " messages");
 
                     roundTripMessages(fragmentHandler, publication, subscription, NUMBER_OF_MESSAGES);
                     System.out.println("Histogram of RTT latencies in microseconds.");
 
                     HISTOGRAM.outputPercentileDistribution(System.out, 1000.0);
-                    HISTOGRAM.reset();
                 }
                 while (barrier.await());
             }

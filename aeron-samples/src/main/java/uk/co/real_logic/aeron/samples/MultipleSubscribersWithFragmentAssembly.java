@@ -55,7 +55,6 @@ public class MultipleSubscribersWithFragmentAssembly
         final FragmentAssembler dataHandler2 = new FragmentAssembler(reassembledStringMessage2(STREAM_ID_2));
 
         final AtomicBoolean running = new AtomicBoolean(true);
-
         SigInt.register(() -> running.set(false));
 
         try (final Aeron aeron = Aeron.connect(ctx);

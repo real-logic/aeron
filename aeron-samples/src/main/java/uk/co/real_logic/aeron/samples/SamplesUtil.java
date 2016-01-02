@@ -21,8 +21,8 @@ import uk.co.real_logic.aeron.driver.RateReporter;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
 import uk.co.real_logic.agrona.concurrent.IdleStrategy;
+import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -43,7 +43,7 @@ public class SamplesUtil
     public static Consumer<Subscription> subscriberLoop(
         final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running)
     {
-        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
+        final IdleStrategy idleStrategy = new NoOpIdleStrategy();
 
         return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
     }

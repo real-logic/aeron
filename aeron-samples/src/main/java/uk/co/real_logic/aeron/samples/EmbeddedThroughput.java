@@ -56,8 +56,6 @@ public class EmbeddedThroughput
 
         MediaDriver.loadPropertiesFile(args[0]);
 
-        final MediaDriver.Context ctx = new MediaDriver.Context();
-
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);
         final ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -66,7 +64,7 @@ public class EmbeddedThroughput
 
         final AtomicBoolean running = new AtomicBoolean(true);
 
-        try (final MediaDriver ignore = MediaDriver.launch(ctx);
+        try (final MediaDriver ignore = MediaDriver.launch();
              final Aeron aeron = Aeron.connect(context);
              final Publication publication = aeron.addPublication(CHANNEL, STREAM_ID);
              final Subscription subscription = aeron.addSubscription(CHANNEL, STREAM_ID))

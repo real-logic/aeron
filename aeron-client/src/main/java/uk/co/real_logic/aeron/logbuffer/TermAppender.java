@@ -301,7 +301,7 @@ public class TermAppender
         final int termLength,
         final int termId)
     {
-        final long resultingOffset;
+        int resultingOffset = FAILED;
 
         if (termOffset <= (termLength - HEADER_LENGTH))
         {
@@ -311,14 +311,10 @@ public class TermAppender
             frameType(termBuffer, offset, PADDING_FRAME_TYPE);
             frameLengthOrdered(termBuffer, offset, paddingLength);
 
-            resultingOffset = pack(termId, TRIPPED);
-        }
-        else
-        {
-            resultingOffset = pack(termId, FAILED);
+            resultingOffset = TRIPPED;
         }
 
-        return resultingOffset;
+        return pack(termId, resultingOffset);
     }
 
     private long getAndAddRawTail(final int alignedLength)

@@ -89,22 +89,22 @@ public final class TermScanner
     /**
      * The number of bytes that are available to be read after a scan.
      *
-     * @param scanOutcome into which the padding value has been packed.
+     * @param result into which the padding value has been packed.
      * @return the count of bytes that are available to be read.
      */
-    public static int available(final long scanOutcome)
+    public static int available(final long result)
     {
-        return (int)scanOutcome;
+        return (int)result;
     }
 
     /**
      * The count of bytes that should be added for padding to the position on top of what is available
      *
-     * @param scanOutcome into which the padding value has been packed.
+     * @param result into which the padding value has been packed.
      * @return the count of bytes that should be added for padding to the position on top of what is available.
      */
-    public static int padding(final long scanOutcome)
+    public static int padding(final long result)
     {
-        return (int)(scanOutcome >>> 32);
+        return (int)(result >>> 32);
     }
 }

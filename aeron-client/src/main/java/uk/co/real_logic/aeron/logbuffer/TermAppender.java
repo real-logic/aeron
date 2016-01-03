@@ -27,7 +27,6 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthOrdere
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_STATUS_OFFSET;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.termId;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.*;
 import static uk.co.real_logic.agrona.BitUtil.align;
 
@@ -121,63 +120,87 @@ public class TermAppender
         metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, status);
     }
 
-    public int claim(final HeaderWriter header, final int length, final BufferClaim bufferClaim)
+    /**
+     * Claim length of a the term buffer for writing in the message with zero copy semantics.
+     *
+     * @param header      for writing the default header.
+     * @param length      of the message to be written.
+     * @param bufferClaim to be updated with the claimed region.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
+     *         packed with the termId if a padding record was inserted at the end.
+     */
+    public long claim(final HeaderWriter header, final int length, final BufferClaim bufferClaim)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final long rawTail = getAndAddRawTail(alignedLength);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-        final int termId = termId(rawTail);
 
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        final long resultingOffset = termOffset + alignedLength;
-        final int returnOffset;
+        long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > (termLength - HEADER_LENGTH))
         {
-            returnOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
         }
         else
         {
-            header.write(termBuffer, termOffset, frameLength, termId);
+            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
             bufferClaim.wrap(termBuffer, (int)termOffset, frameLength);
-            returnOffset = (int)resultingOffset;
         }
 
-        return returnOffset;
+        return resultingOffset;
     }
 
-    public int appendUnfragmentedMessage(
+    /**
+     * Append an unfragmented message to the the term buffer.
+     *
+     * @param header    for writing the default header.
+     * @param srcBuffer containing the message.
+     * @param srcOffset at which the message begins.
+     * @param length    of the message in the source buffer.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
+     *         packed with the termId if a padding record was inserted at the end.
+     */
+    public long appendUnfragmentedMessage(
         final HeaderWriter header, final DirectBuffer srcBuffer, final int srcOffset, final int length)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
         final long rawTail = getAndAddRawTail(alignedLength);
         final long termOffset = rawTail & 0xFFFF_FFFFL;
-        final int termId = termId(rawTail);
 
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        final long resultingOffset = termOffset + alignedLength;
-        final int returnOffset;
+        long resultingOffset = termOffset + alignedLength;
         if (resultingOffset > (termLength - HEADER_LENGTH))
         {
-            returnOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
         }
         else
         {
-            header.write(termBuffer, termOffset, frameLength, termId);
+            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
             termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
             frameLengthOrdered(termBuffer, (int)termOffset, frameLength);
-            returnOffset = (int)resultingOffset;
         }
 
-        return returnOffset;
+        return resultingOffset;
     }
 
-    public int appendFragmentedMessage(
+    /**
+     * Append a fragmented message to the the term buffer.
+     * The message will be split up into fragments of MTU length minus header.
+     *
+     * @param header    for writing the default header.
+     * @param srcBuffer containing the message.
+     * @param srcOffset at which the message begins.
+     * @param length    of the message in the source buffer.
+     * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
+     *         packed with the termId if a padding record was inserted at the end.
+     */
+    public long appendFragmentedMessage(
         final HeaderWriter header,
         final DirectBuffer srcBuffer,
         final int srcOffset,
@@ -195,11 +218,10 @@ public class TermAppender
         final UnsafeBuffer termBuffer = this.termBuffer;
         final int termLength = termBuffer.capacity();
 
-        final long resultingOffset = termOffset + requiredLength;
-        final int returnOffset;
+        long resultingOffset = termOffset + requiredLength;
         if (resultingOffset > (termLength - HEADER_LENGTH))
         {
-            returnOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
+            resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
         }
         else
         {
@@ -231,21 +253,54 @@ public class TermAppender
                 remaining -= bytesToWrite;
             }
             while (remaining > 0);
-
-            returnOffset = (int)resultingOffset;
         }
 
-        return returnOffset;
+        return resultingOffset;
     }
 
-    private int handleEndOfLogCondition(
+
+    /**
+     * Pack the values for termOffset and termId into a long for returning on the stack.
+     *
+     * @param termId     value to be packed.
+     * @param termOffset value to be packed.
+     * @return a long with both ints packed into it.
+     */
+    public static long pack(final int termId, final int termOffset)
+    {
+        return ((long)termId << 32) | (termOffset & 0xFFFF_FFFFL);
+    }
+
+    /**
+     * The termOffset as a result of the append
+     *
+     * @param result into which the termOffset value has been packed.
+     * @return the termOffset after the append
+     */
+    public static int termOffset(final long result)
+    {
+        return (int)result;
+    }
+
+    /**
+     * The termId in which the append operation took place.
+     *
+     * @param result into which the termId value has been packed.
+     * @return the termId in which the append operation took place.
+     */
+    public static int termId(final long result)
+    {
+        return (int)(result >>> 32);
+    }
+
+    private long handleEndOfLogCondition(
         final UnsafeBuffer termBuffer,
         final long termOffset,
         final HeaderWriter header,
         final int termLength,
         final int termId)
     {
-        int resultingOffset = FAILED;
+        final long resultingOffset;
 
         if (termOffset <= (termLength - HEADER_LENGTH))
         {
@@ -255,7 +310,11 @@ public class TermAppender
             frameType(termBuffer, offset, PADDING_FRAME_TYPE);
             frameLengthOrdered(termBuffer, offset, paddingLength);
 
-            resultingOffset = TRIPPED;
+            resultingOffset = pack(termId, TRIPPED);
+        }
+        else
+        {
+            resultingOffset = pack(termId, FAILED);
         }
 
         return resultingOffset;

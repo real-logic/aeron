@@ -127,7 +127,7 @@ public class TermAppender
      * @param length      of the message to be written.
      * @param bufferClaim to be updated with the claimed region.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     *         packed with the termId if a padding record was inserted at the end.
+     * packed with the termId if a padding record was inserted at the end.
      */
     public long claim(final HeaderWriter header, final int length, final BufferClaim bufferClaim)
     {
@@ -161,7 +161,7 @@ public class TermAppender
      * @param srcOffset at which the message begins.
      * @param length    of the message in the source buffer.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     *         packed with the termId if a padding record was inserted at the end.
+     * packed with the termId if a padding record was inserted at the end.
      */
     public long appendUnfragmentedMessage(
         final HeaderWriter header, final DirectBuffer srcBuffer, final int srcOffset, final int length)
@@ -193,12 +193,13 @@ public class TermAppender
      * Append a fragmented message to the the term buffer.
      * The message will be split up into fragments of MTU length minus header.
      *
-     * @param header    for writing the default header.
-     * @param srcBuffer containing the message.
-     * @param srcOffset at which the message begins.
-     * @param length    of the message in the source buffer.
+     * @param header           for writing the default header.
+     * @param srcBuffer        containing the message.
+     * @param srcOffset        at which the message begins.
+     * @param length           of the message in the source buffer.
+     * @param maxPayloadLength that the message will be fragmented into.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
-     *         packed with the termId if a padding record was inserted at the end.
+     * packed with the termId if a padding record was inserted at the end.
      */
     public long appendFragmentedMessage(
         final HeaderWriter header,

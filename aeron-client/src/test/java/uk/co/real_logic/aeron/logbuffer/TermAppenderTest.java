@@ -82,13 +82,14 @@ public class TermAppenderTest
         final int alignedFrameLength = align(frameLength, FRAME_ALIGNMENT);
         final int tail = 0;
 
-        when(metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0L);
+        when(metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
+            .thenReturn(TermAppender.pack(TERM_ID, tail));
 
         assertThat(termAppender.appendUnfragmentedMessage(headerWriter, buffer, 0, msgLength), is((long)alignedFrameLength));
 
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, headerWriter);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        verifyDefaultHeader(inOrder, termBuffer, tail);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
         inOrder.verify(termBuffer, times(1)).putBytes(headerLength, buffer, 0, msgLength);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
@@ -104,7 +105,7 @@ public class TermAppenderTest
         int tail = 0;
 
         when(metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
-            .thenReturn(0L)
+            .thenReturn(TermAppender.pack(TERM_ID, tail))
             .thenReturn(TermAppender.pack(TERM_ID, alignedFrameLength));
 
         assertThat(termAppender.appendUnfragmentedMessage(
@@ -112,15 +113,15 @@ public class TermAppenderTest
         assertThat(termAppender.appendUnfragmentedMessage(
             headerWriter, buffer, 0, msgLength), is((long)alignedFrameLength * 2));
 
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, headerWriter);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        verifyDefaultHeader(inOrder, termBuffer, tail);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
         inOrder.verify(termBuffer, times(1)).putBytes(headerLength, buffer, 0, msgLength);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
 
         tail = alignedFrameLength;
         inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        verifyDefaultHeader(inOrder, termBuffer, tail);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, 0, msgLength);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
     }
@@ -141,9 +142,9 @@ public class TermAppenderTest
         final long expectResult = TermAppender.pack(TERM_ID, TRIPPED);
         assertThat(termAppender.appendUnfragmentedMessage(headerWriter, buffer, 0, msgLength), is(expectResult));
 
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, headerWriter);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
-        verifyDefaultHeader(inOrder, termBuffer, tailValue);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tailValue, frameLength, TERM_ID);
         inOrder.verify(termBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tailValue, frameLength);
     }
@@ -164,9 +165,9 @@ public class TermAppenderTest
         final long expectResult = TermAppender.pack(TERM_ID, TRIPPED);
         assertThat(termAppender.appendUnfragmentedMessage(headerWriter, buffer, 0, msgLength), is(expectResult));
 
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, headerWriter);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
-        verifyDefaultHeader(inOrder, termBuffer, tailValue);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tailValue, frameLength, TERM_ID);
         inOrder.verify(termBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tailValue, frameLength);
     }
@@ -179,24 +180,24 @@ public class TermAppenderTest
         final int frameLength = headerLength + 1;
         final int requiredCapacity = align(headerLength + 1, FRAME_ALIGNMENT) + MAX_FRAME_LENGTH;
         final UnsafeBuffer buffer = new UnsafeBuffer(new byte[msgLength]);
+        int tail  = 0;
 
         when(metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, requiredCapacity))
-            .thenReturn(0L);
+            .thenReturn(TermAppender.pack(TERM_ID, tail));
 
         assertThat(termAppender.appendFragmentedMessage(
             headerWriter, buffer, 0, msgLength, MAX_PAYLOAD_LENGTH), is((long)requiredCapacity));
 
-        int tail  = 0;
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, headerWriter);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, requiredCapacity);
 
-        verifyDefaultHeader(inOrder, termBuffer, tail);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, MAX_FRAME_LENGTH, TERM_ID);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, 0, MAX_PAYLOAD_LENGTH);
         inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), BEGIN_FRAG_FLAG);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, MAX_FRAME_LENGTH);
 
         tail = MAX_FRAME_LENGTH;
-        verifyDefaultHeader(inOrder, termBuffer, tail);
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
         inOrder.verify(termBuffer, times(1)).putBytes(tail + headerLength, buffer, MAX_PAYLOAD_LENGTH, 1);
         inOrder.verify(termBuffer, times(1)).putByte(flagsOffset(tail), END_FRAG_FLAG);
         inOrder.verify(termBuffer, times(1)).putIntOrdered(tail, frameLength);
@@ -212,7 +213,8 @@ public class TermAppenderTest
         final int tail = 0;
         final BufferClaim bufferClaim = new BufferClaim();
 
-        when(metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength)).thenReturn(0L);
+        when(metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength))
+            .thenReturn(TermAppender.pack(TERM_ID, tail));
 
         assertThat(termAppender.claim(headerWriter, msgLength, bufferClaim), is((long)alignedFrameLength));
 
@@ -222,20 +224,8 @@ public class TermAppenderTest
         // Map flyweight or encode to buffer directly then call commit() when done
         bufferClaim.commit();
 
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer);
+        final InOrder inOrder = inOrder(metaDataBuffer, headerWriter);
         inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, alignedFrameLength);
-        verifyDefaultHeader(inOrder, termBuffer, tail);
-    }
-
-    private void verifyDefaultHeader(final InOrder inOrder, final UnsafeBuffer termBuffer, final int frameOffset)
-    {
-        long headerOffset = 0;
-        inOrder.verify(termBuffer, times(1)).putLongOrdered(eq(frameOffset + headerOffset), anyLong());
-
-        headerOffset += SIZE_OF_LONG;
-        inOrder.verify(termBuffer, times(1)).putLong(eq(frameOffset + headerOffset), anyLong());
-
-        headerOffset += SIZE_OF_LONG;
-        inOrder.verify(termBuffer, times(1)).putLong(eq(frameOffset + headerOffset), anyLong());
+        inOrder.verify(headerWriter, times(1)).write(termBuffer, tail, frameLength, TERM_ID);
     }
 }

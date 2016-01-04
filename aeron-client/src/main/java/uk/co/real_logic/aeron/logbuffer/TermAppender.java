@@ -146,7 +146,7 @@ public class TermAppender
         }
         else
         {
-            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
+            header.write(termBuffer, (int)termOffset, frameLength, termId(rawTail));
             bufferClaim.wrap(termBuffer, (int)termOffset, frameLength);
         }
 
@@ -181,8 +181,8 @@ public class TermAppender
         }
         else
         {
-            header.write(termBuffer, termOffset, frameLength, termId(rawTail));
-            termBuffer.putBytes(termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+            header.write(termBuffer, (int)termOffset, frameLength, termId(rawTail));
+            termBuffer.putBytes((int)termOffset + HEADER_LENGTH, srcBuffer, srcOffset, length);
             frameLengthOrdered(termBuffer, (int)termOffset, frameLength);
         }
 
@@ -234,9 +234,9 @@ public class TermAppender
                 final int frameLength = bytesToWrite + HEADER_LENGTH;
                 final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
 
-                header.write(termBuffer, termOffset, frameLength, termId);
+                header.write(termBuffer, (int)termOffset, frameLength, termId);
                 termBuffer.putBytes(
-                    termOffset + HEADER_LENGTH,
+                    (int)termOffset + HEADER_LENGTH,
                     srcBuffer,
                     srcOffset + (length - remaining),
                     bytesToWrite);

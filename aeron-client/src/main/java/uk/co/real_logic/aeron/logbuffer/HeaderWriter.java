@@ -64,7 +64,7 @@ public class HeaderWriter
      * @param length     of the fragment including the header.
      * @param termId     of the current term buffer.
      */
-    public void write(final UnsafeBuffer termBuffer, final long offset, final int length, final int termId)
+    public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
     {
         final long lengthVersionFlagsType;
         final long termOffsetSessionId;
@@ -79,7 +79,7 @@ public class HeaderWriter
         else
         {
             lengthVersionFlagsType = versionFlagsType | ((((long)reverseBytes(-length))) << 32);
-            termOffsetSessionId = sessionId | ((((long)reverseBytes((int)offset))) << 32);
+            termOffsetSessionId = sessionId | ((((long)reverseBytes(offset))) << 32);
             streamAndTermIds = streamId | (reverseBytes(termId) & 0xFFFF_FFFFL);
         }
 

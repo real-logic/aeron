@@ -209,24 +209,24 @@ public:
             TermAppender *termAppender = m_appenders[partitionIndex].get();
             const std::int64_t rawTail = termAppender->rawTailVolatile();
             const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
-            const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
             const std::int64_t position =
-                LogBufferDescriptor::computeTermBeginPosition(termId, m_positionBitsToShift, m_initialTermId) + termOffset;
+                LogBufferDescriptor::computeTermBeginPosition(
+                    LogBufferDescriptor::termId(rawTail), m_positionBitsToShift, m_initialTermId) + termOffset;
 
             if (position < limit)
             {
-                std::int32_t newOffset;
+                TermAppender::Result appendResult;
                 if (length <= m_maxPayloadLength)
                 {
-                    newOffset = termAppender->appendUnfragmentedMessage(m_headerWriter, buffer, offset, length);
+                    termAppender->appendUnfragmentedMessage(appendResult, m_headerWriter, buffer, offset, length);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    newOffset = termAppender->appendFragmentedMessage(m_headerWriter, buffer, offset, length, m_maxPayloadLength);
+                    termAppender->appendFragmentedMessage(appendResult, m_headerWriter, buffer, offset, length, m_maxPayloadLength);
                 }
 
-                newPosition = Publication::newPosition(termId, partitionIndex, termOffset, position, newOffset);
+                newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, appendResult);
             }
             else if (0 == limit)
             {
@@ -297,15 +297,15 @@ public:
             TermAppender *termAppender = m_appenders[partitionIndex].get();
             const std::int64_t rawTail = termAppender->rawTailVolatile();
             const std::int64_t termOffset = rawTail & 0xFFFFFFFF;
-            const std::int32_t termId = LogBufferDescriptor::termId(rawTail);
             const std::int64_t position =
-                LogBufferDescriptor::computeTermBeginPosition(termId, m_positionBitsToShift, m_initialTermId) + termOffset;
+                LogBufferDescriptor::computeTermBeginPosition(
+                    LogBufferDescriptor::termId(rawTail), m_positionBitsToShift, m_initialTermId) + termOffset;
 
             if (position < limit)
             {
-                const std::int32_t newOffset =
-                    termAppender->claim(m_headerWriter, length, bufferClaim);
-                newPosition = Publication::newPosition(termId, partitionIndex, termOffset, position, newOffset);
+                TermAppender::Result claimResult;
+                termAppender->claim(claimResult, m_headerWriter, length, bufferClaim);
+                newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, claimResult);
             }
             else if (0 == limit)
             {
@@ -344,21 +344,24 @@ private:
     HeaderWriter m_headerWriter;
 
     std::int64_t newPosition(
-        std::int32_t termId, int index, std::int32_t currentTail, std::int64_t position, std::int32_t newOffset)
+        int index,
+        std::int32_t currentTail,
+        std::int64_t position,
+        const TermAppender::Result& result)
     {
         std::int64_t newPosition = BACK_PRESSURED;
 
-        if (newOffset > 0)
+        if (result.termOffset > 0)
         {
-            newPosition = (position - currentTail) + newOffset;
+            newPosition = (position - currentTail) + result.termOffset;
 
         }
-        else if (newOffset == TERM_APPENDER_TRIPPED)
+        else if (result.termOffset == TERM_APPENDER_TRIPPED)
         {
             const int nextIndex = LogBufferDescriptor::nextPartitionIndex(index);
             const int nextNextIndex = LogBufferDescriptor::nextPartitionIndex(nextIndex);
 
-            m_appenders[nextIndex]->tailTermId(termId + 1);
+            m_appenders[nextIndex]->tailTermId(result.termId + 1);
             m_appenders[nextNextIndex]->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
             LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer, nextIndex);
 

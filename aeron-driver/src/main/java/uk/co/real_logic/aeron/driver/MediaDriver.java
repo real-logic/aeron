@@ -312,8 +312,10 @@ public final class MediaDriver implements AutoCloseable
             if (maxSoSndBuf < Configuration.SOCKET_SNDBUF_LENGTH)
             {
                 System.err.format(
-                    "WARNING: Could not get desired SO_SNDBUF: attempted=%d, actual=%d\n",
-                    Configuration.SOCKET_SNDBUF_LENGTH, maxSoSndBuf);
+                    "WARNING: Could not get desired SO_SNDBUF, increase %s: attempted=%d, actual=%d\n",
+                    Configuration.SOCKET_SNDBUF_LENGTH_PROP_NAME,
+                    Configuration.SOCKET_SNDBUF_LENGTH,
+                    maxSoSndBuf);
             }
 
             probe.setOption(StandardSocketOptions.SO_RCVBUF, Integer.MAX_VALUE);
@@ -322,17 +324,22 @@ public final class MediaDriver implements AutoCloseable
             if (maxSoRcvBuf < Configuration.SOCKET_RCVBUF_LENGTH)
             {
                 System.err.format(
-                    "WARNING: Could not get desired SO_RCVBUF: attempted=%d, actual=%d\n",
-                    Configuration.SOCKET_RCVBUF_LENGTH, maxSoRcvBuf);
+                    "WARNING: Could not get desired SO_RCVBUF, increase %s: attempted=%d, actual=%d\n",
+                    Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME,
+                    Configuration.SOCKET_RCVBUF_LENGTH,
+                    maxSoRcvBuf);
             }
 
             final int soSndBuf =
-                (0 == Configuration.SOCKET_SNDBUF_LENGTH) ? defaultSoSndBuf : Configuration.SOCKET_SNDBUF_LENGTH;
+                0 == Configuration.SOCKET_SNDBUF_LENGTH ? defaultSoSndBuf : Configuration.SOCKET_SNDBUF_LENGTH;
 
             if (ctx.mtuLength() > soSndBuf)
             {
                 throw new ConfigurationException(String.format(
-                    "MTU greater than socket SO_SNDBUF: mtuLength=%d, SO_SNDBUF=%d", ctx.mtuLength(), soSndBuf));
+                    "MTU greater than socket SO_SNDBUF, increase %s: mtuLength=%d, SO_SNDBUF=%d",
+                    Configuration.SOCKET_SNDBUF_LENGTH_PROP_NAME,
+                    ctx.mtuLength(),
+                    soSndBuf));
             }
         }
         catch (final IOException ex)
@@ -344,14 +351,18 @@ public final class MediaDriver implements AutoCloseable
     private void ensureDirectoryIsRecreated(final Context ctx)
     {
         final File aeronDir = new File(ctx.aeronDirectoryName());
-        Consumer<String> logProgress = (message) -> { };
 
         if (aeronDir.exists())
         {
+            final Consumer<String> logProgress;
             if (ctx.warnIfDirectoriesExist())
             {
                 System.err.println("WARNING: " + aeronDir + " already exists.");
                 logProgress = System.err::println;
+            }
+            else
+            {
+                logProgress = (message) -> { };
             }
 
             if (ctx.dirsDeleteOnStart())

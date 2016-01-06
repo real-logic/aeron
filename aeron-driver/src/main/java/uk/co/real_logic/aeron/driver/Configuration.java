@@ -65,7 +65,7 @@ public class Configuration
     public static final String COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.dir.counters.length";
 
     /**
-     * Property name for length of the initial window
+     * Property name for length of the initial window  which must be sufficient for Bandwidth Delay Produce (BDP).
      */
     public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
 
@@ -75,12 +75,12 @@ public class Configuration
     public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
 
     /**
-     * Property name for SO_RCVBUF setting on UDP sockets
+     * Property name for SO_RCVBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
      */
     public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
 
     /**
-     * Property name for SO_SNDBUF setting on UDP sockets
+     * Property name for SO_SNDBUF setting on UDP sockets  which must be sufficient for Bandwidth Delay Produce (BDP).
      */
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 

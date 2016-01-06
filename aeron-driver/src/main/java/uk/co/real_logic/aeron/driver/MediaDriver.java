@@ -312,7 +312,7 @@ public final class MediaDriver implements AutoCloseable
             if (maxSoSndBuf < Configuration.SOCKET_SNDBUF_LENGTH)
             {
                 System.err.format(
-                    "WARNING: Could not get desired SO_SNDBUF, increase %s: attempted=%d, actual=%d\n",
+                    "WARNING: Could not get desired SO_SNDBUF, adjust OS buffer to match %s: attempted=%d, actual=%d\n",
                     Configuration.SOCKET_SNDBUF_LENGTH_PROP_NAME,
                     Configuration.SOCKET_SNDBUF_LENGTH,
                     maxSoSndBuf);
@@ -324,7 +324,7 @@ public final class MediaDriver implements AutoCloseable
             if (maxSoRcvBuf < Configuration.SOCKET_RCVBUF_LENGTH)
             {
                 System.err.format(
-                    "WARNING: Could not get desired SO_RCVBUF, increase %s: attempted=%d, actual=%d\n",
+                    "WARNING: Could not get desired SO_RCVBUF, adjust OS buffer to match %s: attempted=%d, actual=%d\n",
                     Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME,
                     Configuration.SOCKET_RCVBUF_LENGTH,
                     maxSoRcvBuf);
@@ -336,7 +336,7 @@ public final class MediaDriver implements AutoCloseable
             if (ctx.mtuLength() > soSndBuf)
             {
                 throw new ConfigurationException(String.format(
-                    "MTU greater than socket SO_SNDBUF, increase %s: mtuLength=%d, SO_SNDBUF=%d",
+                    "MTU greater than socket SO_SNDBUF, adjust %s to match MTU: mtuLength=%d, SO_SNDBUF=%d",
                     Configuration.SOCKET_SNDBUF_LENGTH_PROP_NAME,
                     ctx.mtuLength(),
                     soSndBuf));

@@ -176,9 +176,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (windowMaxLength > soRcvbuf)
         {
             throw new ConfigurationException(String.format(
-                "Max Window length greater than socket SO_RCVBUF, increase %s, %s: windowMaxLength=%d, SO_RCVBUF=%d",
+                "Max Window length greater than socket SO_RCVBUF, increase %s to match window: windowMaxLength=%d, SO_RCVBUF=%d",
                 Configuration.INITIAL_WINDOW_LENGTH_PROP_NAME,
-                Configuration.RECEIVE_BUFFER_LENGTH_PROP_NAME,
                 windowMaxLength,
                 soRcvbuf));
         }
@@ -191,7 +190,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (senderMtuLength > soRcvbuf)
         {
             throw new ConfigurationException(String.format(
-                "Sender MTU greater than socket SO_RCVBUF, increase %s: senderMtuLength=%d, SO_RCVBUF=%d",
+                "Sender MTU greater than socket SO_RCVBUF, increase %s to match MTU: senderMtuLength=%d, SO_RCVBUF=%d",
                 Configuration.SOCKET_RCVBUF_LENGTH_PROP_NAME,
                 senderMtuLength,
                 soRcvbuf));
@@ -201,7 +200,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         if (senderMtuLength > capacity)
         {
             throw new ConfigurationException(String.format(
-                "Sender MTU greater than receive buffer capacity, increase %s: senderMtuLength=%d, capacity=%d",
+                "Sender MTU greater than receive buffer capacity, increase %s to match MTU: senderMtuLength=%d, capacity=%d",
                 Configuration.RECEIVE_BUFFER_LENGTH_PROP_NAME,
                 senderMtuLength,
                 capacity));

@@ -268,9 +268,9 @@ public:
             const std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
             AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position,
                 m_positionBitsToShift)];
+            TermReader::ReadOutcome readOutcome;
 
-            const TermReader::ReadOutcome readOutcome =
-                TermReader::read(termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
+            TermReader::read(readOutcome, termBuffer, termOffset, fragmentHandler, fragmentLimit, m_header, m_exceptionHandler);
 
             const std::int64_t newPosition = position + (readOutcome.offset - termOffset);
             if (newPosition > position)

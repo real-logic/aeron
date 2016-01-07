@@ -63,13 +63,10 @@ struct ReadOutcome
 {
     std::int32_t offset;
     int fragmentsRead;
-
-    ReadOutcome(std::int32_t offset, int fragmentsRead) : offset(offset), fragmentsRead(fragmentsRead)
-    {
-    }
 };
 
-inline ReadOutcome read(
+inline void read(
+    ReadOutcome& outcome,
     AtomicBuffer& termBuffer,
     std::int32_t termOffset,
     const fragment_handler_t & handler,
@@ -77,7 +74,8 @@ inline ReadOutcome read(
     Header& header,
     const exception_handler_t & exceptionHandler)
 {
-    int fragmentsRead = 0;
+    outcome.fragmentsRead = 0;
+    outcome.offset = termOffset;
     const util::index_t capacity = termBuffer.capacity();
 
     try
@@ -100,17 +98,17 @@ inline ReadOutcome read(
                 handler(termBuffer, fragmentOffset + DataFrameHeader::LENGTH, frameLength - DataFrameHeader::LENGTH,
                     header);
 
-                ++fragmentsRead;
+                ++outcome.fragmentsRead;
             }
         }
-        while (fragmentsRead < fragmentsLimit && termOffset < capacity);
+        while (outcome.fragmentsRead < fragmentsLimit && termOffset < capacity);
     }
     catch (std::exception ex)
     {
         exceptionHandler(ex);
     }
 
-    return ReadOutcome(termOffset, fragmentsRead);
+    outcome.offset = termOffset;
 }
 
 }

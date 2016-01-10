@@ -60,7 +60,7 @@ public class LogBufferPartition
     public void clean()
     {
         termBuffer.setMemory(0, termBuffer.capacity(), (byte)0);
-        metaDataBuffer.putIntOrdered(TERM_STATUS_OFFSET, CLEAN);
+        metaDataBuffer.putInt(TERM_STATUS_OFFSET, CLEAN);
     }
 
     /**

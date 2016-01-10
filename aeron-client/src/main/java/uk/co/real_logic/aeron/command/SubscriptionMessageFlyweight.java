@@ -51,7 +51,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public long registrationCorrelationId()
     {
-        return buffer().getLong(offset() + REGISTRATION_CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer().getLong(REGISTRATION_CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -62,7 +62,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public SubscriptionMessageFlyweight registrationCorrelationId(final long correlationId)
     {
-        buffer().putLong(offset() + REGISTRATION_CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
+        buffer().putLong(REGISTRATION_CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -74,7 +74,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int streamId()
     {
-        return buffer().getInt(offset() + STREAM_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(STREAM_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -85,7 +85,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public SubscriptionMessageFlyweight streamId(final int streamId)
     {
-        buffer().putInt(offset() + STREAM_ID_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer().putInt(STREAM_ID_OFFSET, streamId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -97,7 +97,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public String channel()
     {
-        return stringGet(offset() + CHANNEL_OFFSET, LITTLE_ENDIAN);
+        return stringGet(CHANNEL_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -108,7 +108,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public SubscriptionMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = stringPut(offset() + CHANNEL_OFFSET, channel, LITTLE_ENDIAN);
+        lengthOfChannel = stringPut(CHANNEL_OFFSET, channel, LITTLE_ENDIAN);
 
         return this;
     }

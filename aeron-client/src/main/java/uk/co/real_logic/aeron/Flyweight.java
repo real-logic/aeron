@@ -30,88 +30,73 @@ public class Flyweight
     private static final byte[] EMPTY_BUFFER = new byte[0];
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(EMPTY_BUFFER);
-    private int offset;
 
-    public Flyweight wrap(final byte[] buffer)
+    public final Flyweight wrap(final byte[] buffer)
     {
         this.buffer.wrap(buffer);
-        offset = 0;
 
         return this;
     }
 
-    public Flyweight wrap(final ByteBuffer buffer)
-    {
-        return wrap(buffer, 0);
-    }
-
-    public Flyweight wrap(final ByteBuffer buffer, final int offset)
+    public final  Flyweight wrap(final ByteBuffer buffer)
     {
         this.buffer.wrap(buffer);
-        this.offset = offset;
 
         return this;
     }
 
-    public Flyweight wrap(final MutableDirectBuffer buffer)
-    {
-        return wrap(buffer, 0);
-    }
-
-    public Flyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    public final Flyweight wrap(final MutableDirectBuffer buffer)
     {
         this.buffer.wrap(buffer);
-        this.offset = offset;
 
         return this;
     }
 
-    public MutableDirectBuffer buffer()
+    public final Flyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    {
+        this.buffer.wrap(buffer, offset, buffer.capacity() - offset);
+
+        return this;
+    }
+
+    public final Flyweight wrap(final MutableDirectBuffer buffer, final int offset, final int length)
+    {
+        this.buffer.wrap(buffer, offset, length);
+
+        return this;
+    }
+
+    public final MutableDirectBuffer buffer()
     {
         return buffer;
     }
 
-    public int offset()
-    {
-        return offset;
-    }
-
-    public void offset(final int offset)
-    {
-        this.offset = offset;
-    }
-
-    protected void copyFlyweight(final Flyweight srcFlyweight, final int index, final int length)
-    {
-        buffer.putBytes(index, srcFlyweight.buffer, srcFlyweight.offset, length);
-    }
-
-    protected short uint8Get(final int offset)
+    protected final short uint8Get(final int offset)
     {
         return (short)(buffer.getByte(offset) & 0xFF);
     }
 
-    protected void uint8Put(final int offset, final short value)
+    protected final void uint8Put(final int offset, final short value)
     {
         buffer.putByte(offset, (byte)value);
     }
 
-    protected int uint16Get(final int offset, final ByteOrder byteOrder)
+    protected final int uint16Get(final int offset, final ByteOrder byteOrder)
     {
         return buffer.getShort(offset, byteOrder) & 0xFFFF;
     }
 
-    protected void uint16Put(final int offset, final int value, final ByteOrder byteOrder)
+    protected final void uint16Put(final int offset, final int value, final ByteOrder byteOrder)
     {
         buffer.putShort(offset, (short)value, byteOrder);
     }
 
-    public String stringGet(final int offset, final ByteOrder byteOrder)
+    protected final String stringGet(final int offset, final ByteOrder byteOrder)
     {
         return buffer.getStringUtf8(offset, byteOrder);
     }
 
-    public int stringPut(final int offset, final String value, final ByteOrder byteOrder)
+    protected final int stringPut(final int offset, final String value, final ByteOrder byteOrder)
     {
         return buffer.putStringUtf8(offset, value, byteOrder);
     }

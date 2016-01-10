@@ -53,11 +53,11 @@ public class DriverProxy
     {
         this.toDriverCommandBuffer = toDriverCommandBuffer;
 
-        publicationMessage.wrap(writeBuffer, 0);
-        subscriptionMessage.wrap(writeBuffer, 0);
+        publicationMessage.wrap(writeBuffer);
+        subscriptionMessage.wrap(writeBuffer);
 
-        correlatedMessage.wrap(keepaliveBuffer, 0);
-        removeMessage.wrap(writeBuffer, 0);
+        correlatedMessage.wrap(keepaliveBuffer);
+        removeMessage.wrap(writeBuffer);
 
         clientId = toDriverCommandBuffer.nextCorrelationId();
     }

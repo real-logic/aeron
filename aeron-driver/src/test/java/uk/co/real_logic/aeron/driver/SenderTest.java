@@ -159,7 +159,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
-        setupHeader.wrap(receivedFrames.remove(), 0);
+        setupHeader.wrap(receivedFrames.remove());
         assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
         assertThat(setupHeader.initialTermId(), is(INITIAL_TERM_ID));
         assertThat(setupHeader.activeTermId(), is(INITIAL_TERM_ID));
@@ -213,7 +213,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(1));
 
-        dataHeader.wrap(receivedFrames.remove(), 0);
+        dataHeader.wrap(receivedFrames.remove());
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
@@ -241,7 +241,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(2));
 
-        dataHeader.wrap(receivedFrames.remove(), 0);
+        dataHeader.wrap(receivedFrames.remove());
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
@@ -252,44 +252,7 @@ public class SenderTest
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
-        dataHeader.wrap(receivedFrames.remove(), 0);
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
-        assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.streamId(), is(STREAM_ID));
-        assertThat(dataHeader.sessionId(), is(SESSION_ID));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-    }
-
-    @Test
-    public void shouldBeAbleToSendOnChannelTwiceAsBatch() throws Exception
-    {
-        publication.senderPositionLimit(
-            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, (2 * ALIGNED_FRAME_LENGTH), rcvAddress));
-
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
-        buffer.putBytes(0, PAYLOAD);
-
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
-        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
-        sender.doWork();
-
-        assertThat(receivedFrames.size(), is(1));
-        final ByteBuffer frame = receivedFrames.remove();
-
-        dataHeader.wrap(frame, 0);
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
-        assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
-        assertThat(dataHeader.streamId(), is(STREAM_ID));
-        assertThat(dataHeader.sessionId(), is(SESSION_ID));
-        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
-        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
-        assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
-        assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
-
-        dataHeader.wrap(frame, offsetOfMessage(2));
+        dataHeader.wrap(receivedFrames.remove());
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
@@ -316,7 +279,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(1));
 
-        dataHeader.wrap(receivedFrames.remove(), 0);
+        dataHeader.wrap(receivedFrames.remove());
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
@@ -341,7 +304,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(1));
 
-        dataHeader.wrap(receivedFrames.remove(), 0);
+        dataHeader.wrap(receivedFrames.remove());
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));

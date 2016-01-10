@@ -96,7 +96,7 @@ public class LogInspector
                 int offset = 0;
                 do
                 {
-                    dataHeaderFlyweight.offset(offset);
+                    dataHeaderFlyweight.wrap(termBuffer, offset);
                     out.println(dataHeaderFlyweight.toString());
 
                     final int frameLength = dataHeaderFlyweight.frameLength();

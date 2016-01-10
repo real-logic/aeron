@@ -66,7 +66,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public short version()
     {
-        return uint8Get(offset() + VERSION_FIELD_OFFSET);
+        return uint8Get(VERSION_FIELD_OFFSET);
     }
 
     /**
@@ -77,7 +77,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight version(final short ver)
     {
-        uint8Put(offset() + VERSION_FIELD_OFFSET, ver);
+        uint8Put(VERSION_FIELD_OFFSET, ver);
 
         return this;
     }
@@ -89,7 +89,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public short flags()
     {
-        return uint8Get(offset() + FLAGS_FIELD_OFFSET);
+        return uint8Get(FLAGS_FIELD_OFFSET);
     }
 
     /**
@@ -100,7 +100,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight flags(final short flags)
     {
-        uint8Put(offset() + FLAGS_FIELD_OFFSET, flags);
+        uint8Put(FLAGS_FIELD_OFFSET, flags);
 
         return this;
     }
@@ -112,7 +112,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int headerType()
     {
-        return uint16Get(offset() + TYPE_FIELD_OFFSET, LITTLE_ENDIAN);
+        return uint16Get(TYPE_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -123,7 +123,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight headerType(final int type)
     {
-        uint16Put(offset() + TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
+        uint16Put(TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
 
         return this;
     }
@@ -135,7 +135,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int frameLength()
     {
-        return buffer().getInt(offset() + FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer().getInt(FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -146,7 +146,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        buffer().putInt(offset() + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        buffer().putInt(FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
 
         return this;
     }

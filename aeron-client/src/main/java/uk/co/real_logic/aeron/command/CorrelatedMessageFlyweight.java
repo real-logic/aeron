@@ -46,7 +46,7 @@ public class CorrelatedMessageFlyweight extends Flyweight
      */
     public long clientId()
     {
-        return buffer().getLong(offset() + CLIENT_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getLong(CLIENT_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -57,7 +57,7 @@ public class CorrelatedMessageFlyweight extends Flyweight
      */
     public CorrelatedMessageFlyweight clientId(final long clientId)
     {
-        buffer().putLong(offset() + CLIENT_ID_FIELD_OFFSET, clientId, ByteOrder.LITTLE_ENDIAN);
+        buffer().putLong(CLIENT_ID_FIELD_OFFSET, clientId, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }
@@ -69,7 +69,7 @@ public class CorrelatedMessageFlyweight extends Flyweight
      */
     public long correlationId()
     {
-        return buffer().getLong(offset() + CORRELATION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getLong(CORRELATION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -80,7 +80,7 @@ public class CorrelatedMessageFlyweight extends Flyweight
      */
     public CorrelatedMessageFlyweight correlationId(final long correlationId)
     {
-        buffer().putLong(offset() + CORRELATION_ID_FIELD_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+        buffer().putLong(CORRELATION_ID_FIELD_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
 
         return this;
     }

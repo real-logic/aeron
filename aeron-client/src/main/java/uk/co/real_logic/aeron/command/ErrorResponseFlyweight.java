@@ -52,7 +52,7 @@ public class ErrorResponseFlyweight extends Flyweight
      */
     public long offendingCommandCorrelationId()
     {
-        return buffer().getLong(offset() + OFFENDING_COMMAND_CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getLong(OFFENDING_COMMAND_CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -63,7 +63,7 @@ public class ErrorResponseFlyweight extends Flyweight
      */
     public ErrorResponseFlyweight offendingCommandCorrelationId(final long correlationId)
     {
-        buffer().putLong(offset() + OFFENDING_COMMAND_CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+        buffer().putLong(OFFENDING_COMMAND_CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -74,7 +74,7 @@ public class ErrorResponseFlyweight extends Flyweight
      */
     public ErrorCode errorCode()
     {
-        return ErrorCode.get(buffer().getInt(offset() + ERROR_CODE_OFFSET, ByteOrder.LITTLE_ENDIAN));
+        return ErrorCode.get(buffer().getInt(ERROR_CODE_OFFSET, ByteOrder.LITTLE_ENDIAN));
     }
 
     /**
@@ -85,7 +85,7 @@ public class ErrorResponseFlyweight extends Flyweight
      */
     public ErrorResponseFlyweight errorCode(final ErrorCode code)
     {
-        buffer().putInt(offset() + ERROR_CODE_OFFSET, code.value(), ByteOrder.LITTLE_ENDIAN);
+        buffer().putInt(ERROR_CODE_OFFSET, code.value(), ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -96,7 +96,7 @@ public class ErrorResponseFlyweight extends Flyweight
      */
     public String errorMessage()
     {
-        return buffer().getStringUtf8(offset() + ERROR_MESSAGE_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer().getStringUtf8(ERROR_MESSAGE_OFFSET, ByteOrder.LITTLE_ENDIAN);
     }
 
     /**
@@ -107,7 +107,7 @@ public class ErrorResponseFlyweight extends Flyweight
      */
     public ErrorResponseFlyweight errorMessage(final String message)
     {
-        buffer().putStringUtf8(offset() + ERROR_MESSAGE_OFFSET, message, ByteOrder.LITTLE_ENDIAN);
+        buffer().putStringUtf8(ERROR_MESSAGE_OFFSET, message, ByteOrder.LITTLE_ENDIAN);
         return this;
     }
 
@@ -118,7 +118,6 @@ public class ErrorResponseFlyweight extends Flyweight
      */
     public int length()
     {
-        return buffer().getInt(offset() + ERROR_MESSAGE_OFFSET, ByteOrder.LITTLE_ENDIAN) +
-            ERROR_MESSAGE_OFFSET + BitUtil.SIZE_OF_INT;
+        return buffer().getInt(ERROR_MESSAGE_OFFSET, ByteOrder.LITTLE_ENDIAN) + ERROR_MESSAGE_OFFSET + BitUtil.SIZE_OF_INT;
     }
 }

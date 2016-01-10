@@ -120,9 +120,9 @@ public class ClientConductorTest
             AWAIT_TIMEOUT,
             TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
 
-        publicationReady.wrap(publicationReadyBuffer, 0);
-        correlatedMessage.wrap(correlatedMessageBuffer, 0);
-        errorResponse.wrap(errorMessageBuffer, 0);
+        publicationReady.wrap(publicationReadyBuffer);
+        correlatedMessage.wrap(correlatedMessageBuffer);
+        errorResponse.wrap(errorMessageBuffer);
 
         publicationReady.correlationId(CORRELATION_ID);
         publicationReady.sessionId(SESSION_ID_1);

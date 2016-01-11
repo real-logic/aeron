@@ -78,14 +78,12 @@ public class AeronStat
         buffer.putLong(System.currentTimeMillis());
 
         countersManager.forEach(
-            (id, label) -> {
-
-                final int offset = CountersManager.counterOffset(id);
-                final long value = valuesBuffer.getLongVolatile(offset);
+            (id, label) ->
+            {
                 buffer.putInt(id);
                 buffer.putInt(label.length());
                 buffer.put(label.getBytes());
-                buffer.putLong(value);
+                buffer.putLong(valuesBuffer.getLongVolatile(CountersManager.counterOffset(id)));
             });
     }
 

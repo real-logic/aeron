@@ -32,44 +32,43 @@ import java.util.Map;
  * value     = *( "[^|]" )
  * </pre>
  *
- * <p>
  * Multiple params with the same key are allowed, the last value specified 'wins'.
  */
 public class AeronUri
 {
+    private enum State
+    {
+        MEDIA, PARAMS_KEY, PARAMS_VALUE
+    }
+
     private static final String AERON_PREFIX = "aeron:";
     private final String scheme;
     private final String media;
     private final Map<String, String> params;
 
-    public AeronUri(String scheme, String media, Map<String, String> params)
+    public AeronUri(final String scheme, final String media, final Map<String, String> params)
     {
         this.scheme = scheme;
         this.media = media;
         this.params = params;
     }
 
-    public String getMedia()
+    public String media()
     {
         return media;
     }
 
-    public String getScheme()
+    public String scheme()
     {
         return scheme;
     }
 
-    private enum State
-    {
-        MEDIA, PARAMS_KEY, PARAMS_VALUE
-    }
-
-    public String get(String key)
+    public String get(final String key)
     {
         return params.get(key);
     }
 
-    public String get(String key, String defaultValue)
+    public String get(final String key, final String defaultValue)
     {
         final String value = params.get(key);
 
@@ -81,17 +80,17 @@ public class AeronUri
         return defaultValue;
     }
 
-    public InetAddress getInetAddress(String key) throws UnknownHostException
+    public InetAddress getInetAddress(final String key) throws UnknownHostException
     {
         return InetAddress.getByName(get(key));
     }
 
-    public InetSocketAddress getSocketAddress(String key)
+    public InetSocketAddress getSocketAddress(final String key)
     {
         return SocketAddressUtil.parse(get(key));
     }
 
-    public InetSocketAddress getSocketAddress(String key, int defaultPort, InetSocketAddress defaultValue)
+    public InetSocketAddress getSocketAddress(final String key, final int defaultPort, final InetSocketAddress defaultValue)
     {
         if (!containsKey(key))
         {
@@ -101,8 +100,8 @@ public class AeronUri
         return SocketAddressUtil.parse(get(key), defaultPort);
     }
 
-    public InterfaceSearchAddress getInterfaceSearchAddress(
-        String key, InterfaceSearchAddress defaultValue) throws UnknownHostException
+    public InterfaceSearchAddress getInterfaceSearchAddress(final String key, final InterfaceSearchAddress defaultValue)
+        throws UnknownHostException
     {
         if (!containsKey(key))
         {
@@ -112,7 +111,7 @@ public class AeronUri
         return InterfaceSearchAddress.parse(get(key));
     }
 
-    public boolean containsKey(String key)
+    public boolean containsKey(final String key)
     {
         return params.containsKey(key);
     }
@@ -130,7 +129,7 @@ public class AeronUri
         return false;
     }
 
-    public static AeronUri parse(CharSequence cs)
+    public static AeronUri parse(final CharSequence cs)
     {
         if (!startsWith(cs, AERON_PREFIX))
         {
@@ -151,74 +150,74 @@ public class AeronUri
 
             switch (state)
             {
-            case MEDIA:
-                switch (c)
-                {
-                case '?':
-                    media = builder.toString();
-                    builder.setLength(0);
-                    state = State.PARAMS_KEY;
+                case MEDIA:
+                    switch (c)
+                    {
+                        case '?':
+                            media = builder.toString();
+                            builder.setLength(0);
+                            state = State.PARAMS_KEY;
+                            break;
+
+                        case ':':
+                            throw new IllegalArgumentException("Encountered ':' within media definition");
+
+                        default:
+                            builder.append(c);
+                    }
                     break;
 
-                case ':':
-                    throw new IllegalArgumentException("Encountered ':' within media definition");
+                case PARAMS_KEY:
+                    switch (c)
+                    {
+                        case '=':
+                            key = builder.toString();
+                            builder.setLength(0);
+                            state = State.PARAMS_VALUE;
+                            break;
 
-                default:
-                    builder.append(c);
-                }
-                break;
+                        default:
+                            builder.append(c);
+                    }
+                    break;
 
-            case PARAMS_KEY:
-                switch (c)
-                {
-                case '=':
-                    key = builder.toString();
-                    builder.setLength(0);
-                    state = State.PARAMS_VALUE;
+                case PARAMS_VALUE:
+                    switch (c)
+                    {
+                        case '|':
+                            params.put(key, builder.toString());
+                            builder.setLength(0);
+                            state = State.PARAMS_KEY;
+                            break;
+
+                        default:
+                            builder.append(c);
+                    }
                     break;
 
                 default:
-                    builder.append(c);
-                }
-                break;
-
-            case PARAMS_VALUE:
-                switch (c)
-                {
-                case '|':
-                    params.put(key, builder.toString());
-                    builder.setLength(0);
-                    state = State.PARAMS_KEY;
-                    break;
-
-                default:
-                    builder.append(c);
-                }
-                break;
-
-            default:
-                throw new IllegalStateException("Que?  State = " + state);
+                    throw new IllegalStateException("Que?  State = " + state);
             }
         }
 
         switch (state)
         {
-        case MEDIA:
-            media = builder.toString();
-            break;
+            case MEDIA:
+                media = builder.toString();
+                break;
 
-        case PARAMS_VALUE:
-            params.put(key, builder.toString());
-            break;
+            case PARAMS_VALUE:
+                params.put(key, builder.toString());
+                break;
 
-        default:
-            throw new IllegalArgumentException("No more input found, but was in state: " + state);
+            default:
+                throw new IllegalArgumentException("No more input found, but was in state: " + state);
         }
 
         return new AeronUri(scheme, media, params);
     }
 
-    private static boolean startsWith(CharSequence input, CharSequence prefix)
+    private static boolean startsWith(final CharSequence input, final CharSequence prefix)
     {
         if (input.length() < prefix.length())
         {
@@ -241,13 +240,13 @@ public class AeronUri
         private final Map<String, String> params = new HashMap<>();
         private String media;
 
-        public Builder media(String media)
+        public Builder media(final String media)
         {
             this.media = media;
             return this;
         }
 
-        public Builder param(String key, String value)
+        public Builder param(final String key, final String value)
         {
             if (null != key && null != value)
             {

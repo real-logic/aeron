@@ -417,9 +417,10 @@ public class LogBufferDescriptor
      */
     public static long computeLogLength(final int termLength)
     {
-        return (termLength * PARTITION_COUNT) +
-        (TERM_META_DATA_LENGTH * PARTITION_COUNT) +
-        LOG_META_DATA_LENGTH;
+        return
+            (termLength * PARTITION_COUNT) +
+            (TERM_META_DATA_LENGTH * PARTITION_COUNT) +
+            LOG_META_DATA_LENGTH;
     }
 
     /**

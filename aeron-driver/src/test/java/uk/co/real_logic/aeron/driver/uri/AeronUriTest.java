@@ -91,8 +91,8 @@ public class AeronUriTest
     private void assertParseWithMedia(String uriStr, String media)
     {
         final AeronUri uri = AeronUri.parse(uriStr);
-        assertThat(uri.getScheme(), is("aeron"));
-        assertThat(uri.getMedia(), is(media));
+        assertThat(uri.scheme(), is("aeron"));
+        assertThat(uri.media(), is(media));
     }
 
     private static void assertInvalid(String string)

@@ -154,7 +154,7 @@ public final class UdpChannel
 
     private static void validateMedia(final AeronUri uri)
     {
-        if (!UDP_MEDIA_ID.equals(uri.getMedia()))
+        if (!UDP_MEDIA_ID.equals(uri.media()))
         {
             throw new IllegalArgumentException("Udp channel only supports udp media: " + uri);
         }

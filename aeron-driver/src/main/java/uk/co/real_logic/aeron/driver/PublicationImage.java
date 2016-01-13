@@ -298,37 +298,10 @@ public class PublicationImage
      */
     public void ifActiveGoInactive()
     {
-        if (Status.ACTIVE == this.status)
+        if (Status.ACTIVE == status)
         {
             status(Status.INACTIVE);
         }
-    }
-
-    /**
-     * Return time of last status change. Retrieved by {@link DriverConductor}.
-     *
-     * @return time of last status change
-     */
-    public long timeOfLastStatusChange()
-    {
-        return timeOfLastStatusChange;
-    }
-
-    /**
-     * Called from the {@link DriverConductor} to determine if the subscribers have drained the image yet.
-     *
-     * @return true if the subscribers have drained the stream.
-     */
-    public boolean isDrained()
-    {
-        long subscriberPosition = Long.MAX_VALUE;
-        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
-        {
-            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).getVolatile());
-        }
-
-        return subscriberPosition >= rebuildPosition;
     }
 
     /**
@@ -562,6 +535,59 @@ public class PublicationImage
         return rebuildPosition;
     }
 
+    public void onTimeEvent(final long time, final DriverConductor conductor)
+    {
+        switch (status)
+        {
+            case INACTIVE:
+                if (isDrained() || time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
+                {
+                    status(PublicationImage.Status.LINGER);
+                    conductor.imageTransitionToLinger(this);
+                }
+                break;
+
+            case LINGER:
+                if (time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
+                {
+                    reachedEndOfLife = true;
+                    conductor.cleanupImage(this);
+                }
+                break;
+        }
+    }
+
+    public boolean hasReachedEndOfLife()
+    {
+        return reachedEndOfLife;
+    }
+
+    public void timeOfLastStateChange(final long time)
+    {
+    }
+
+    public long timeOfLastStateChange()
+    {
+        return timeOfLastStatusChange;
+    }
+
+    public void delete()
+    {
+        close();
+    }
+
+    private boolean isDrained()
+    {
+        long subscriberPosition = Long.MAX_VALUE;
+        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        {
+            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).getVolatile());
+        }
+
+        return subscriberPosition >= rebuildPosition;
+    }
+
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)
     {
         return length == DataHeaderFlyweight.HEADER_LENGTH && buffer.getInt(0) == 0;
@@ -595,46 +621,5 @@ public class PublicationImage
         }
 
         return isFlowControlOverRun;
-    }
-
-    public void onTimeEvent(final long time, final DriverConductor conductor)
-    {
-        switch (status())
-        {
-            case INACTIVE:
-                if (isDrained() || time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
-                {
-                    status(PublicationImage.Status.LINGER);
-                    conductor.imageTransitionToLinger(PublicationImage.this);
-                }
-                break;
-
-            case LINGER:
-                if (time > (timeOfLastStatusChange() + imageLivenessTimeoutNs))
-                {
-                    reachedEndOfLife = true;
-                    conductor.cleanupImage(PublicationImage.this);
-                }
-                break;
-        }
-    }
-
-    public boolean hasReachedEndOfLife()
-    {
-        return reachedEndOfLife;
-    }
-
-    public void timeOfLastStateChange(final long time)
-    {
-    }
-
-    public long timeOfLastStateChange()
-    {
-        return timeOfLastStatusChange;
-    }
-
-    public void delete()
-    {
-        close();
     }
 }

@@ -15,9 +15,7 @@
  */
 package uk.co.real_logic.aeron.command;
 
-import uk.co.real_logic.aeron.Flyweight;
-
-import java.nio.ByteOrder;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
@@ -46,13 +44,31 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * ...                                                             |
  * +---------------------------------------------------------------+
  */
-public class PublicationBuffersReadyFlyweight extends Flyweight
+public class PublicationBuffersReadyFlyweight
 {
     private static final int CORRELATION_ID_OFFSET = 0;
     private static final int SESSION_ID_OFFSET = CORRELATION_ID_OFFSET + SIZE_OF_LONG;
     private static final int STREAM_ID_FIELD_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
     private static final int PUBLICATION_LIMIT_COUNTER_ID_OFFSET = STREAM_ID_FIELD_OFFSET + SIZE_OF_INT;
     private static final int LOGFILE_FIELD_OFFSET = PUBLICATION_LIMIT_COUNTER_ID_OFFSET + SIZE_OF_INT;
+
+    private MutableDirectBuffer buffer;
+    private int offset;
+
+    /**
+     * Wrap the buffer at a given offset for updates.
+     *
+     * @param buffer to wrap
+     * @param offset at which the message begins.
+     * @return for fluent API
+     */
+    public final PublicationBuffersReadyFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    {
+        this.buffer = buffer;
+        this.offset = offset;
+
+        return this;
+    }
 
     /**
      * return correlation id field
@@ -61,7 +77,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public long correlationId()
     {
-        return buffer().getLong(CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong(offset + CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -72,7 +88,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public PublicationBuffersReadyFlyweight correlationId(final long correlationId)
     {
-        buffer().putLong(CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -84,7 +100,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public int sessionId()
     {
-        return buffer().getInt(SESSION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + SESSION_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -95,7 +111,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public PublicationBuffersReadyFlyweight sessionId(final int sessionId)
     {
-        buffer().putInt(SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
+        buffer.putInt(offset + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -107,7 +123,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public int streamId()
     {
-        return buffer().getInt(STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -118,7 +134,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public PublicationBuffersReadyFlyweight streamId(final int streamId)
     {
-        buffer().putInt(STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -130,7 +146,7 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public int publicationLimitCounterId()
     {
-        return buffer().getInt(PUBLICATION_LIMIT_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -141,19 +157,19 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public PublicationBuffersReadyFlyweight publicationLimitCounterId(final int positionCounterId)
     {
-        buffer().putInt(PUBLICATION_LIMIT_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+        buffer.putInt(offset + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
 
         return this;
     }
 
     public String logFileName()
     {
-        return buffer().getStringUtf8(LOGFILE_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getStringUtf8(offset + LOGFILE_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     public PublicationBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer().putStringUtf8(LOGFILE_FIELD_OFFSET, logFileName, ByteOrder.LITTLE_ENDIAN);
+        buffer.putStringUtf8(offset + LOGFILE_FIELD_OFFSET, logFileName, LITTLE_ENDIAN);
         return this;
     }
 
@@ -166,6 +182,6 @@ public class PublicationBuffersReadyFlyweight extends Flyweight
      */
     public int length()
     {
-        return buffer().getInt(LOGFILE_FIELD_OFFSET) + LOGFILE_FIELD_OFFSET + SIZE_OF_INT;
+        return buffer.getInt(offset + LOGFILE_FIELD_OFFSET) + LOGFILE_FIELD_OFFSET + SIZE_OF_INT;
     }
 }

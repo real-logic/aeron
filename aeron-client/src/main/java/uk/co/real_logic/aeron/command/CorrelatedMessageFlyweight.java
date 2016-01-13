@@ -15,10 +15,9 @@
  */
 package uk.co.real_logic.aeron.command;
 
-import uk.co.real_logic.aeron.Flyweight;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import java.nio.ByteOrder;
-
+import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
@@ -32,12 +31,29 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
  * |                                                               |
  * +---------------------------------------------------------------+
  */
-public class CorrelatedMessageFlyweight extends Flyweight
+public class CorrelatedMessageFlyweight
 {
     public static final int CLIENT_ID_FIELD_OFFSET = 0;
     public static final int CORRELATION_ID_FIELD_OFFSET = CLIENT_ID_FIELD_OFFSET + SIZE_OF_LONG;
-
     public static final int LENGTH = 2 * SIZE_OF_LONG;
+
+    protected MutableDirectBuffer buffer;
+    protected int offset;
+
+    /**
+     * Wrap the buffer at a given offset for updates.
+     *
+     * @param buffer to wrap
+     * @param offset at which the message begins.
+     * @return for fluent API
+     */
+    public final CorrelatedMessageFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    {
+        this.buffer = buffer;
+        this.offset = offset;
+
+        return this;
+    }
 
     /**
      * return client id field
@@ -46,18 +62,18 @@ public class CorrelatedMessageFlyweight extends Flyweight
      */
     public long clientId()
     {
-        return buffer().getLong(CLIENT_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong(offset + CLIENT_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * set client id field
      *
      * @param clientId field value
-     * @return flyweight
+     * @return for fluent API
      */
     public CorrelatedMessageFlyweight clientId(final long clientId)
     {
-        buffer().putLong(CLIENT_ID_FIELD_OFFSET, clientId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong(offset + CLIENT_ID_FIELD_OFFSET, clientId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -69,18 +85,18 @@ public class CorrelatedMessageFlyweight extends Flyweight
      */
     public long correlationId()
     {
-        return buffer().getLong(CORRELATION_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong(offset + CORRELATION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * set correlation id field
      *
      * @param correlationId field value
-     * @return flyweight
+     * @return for fluent API
      */
     public CorrelatedMessageFlyweight correlationId(final long correlationId)
     {
-        buffer().putLong(CORRELATION_ID_FIELD_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong(offset + CORRELATION_ID_FIELD_OFFSET, correlationId, LITTLE_ENDIAN);
 
         return this;
     }

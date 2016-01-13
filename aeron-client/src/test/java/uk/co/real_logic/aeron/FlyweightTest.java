@@ -160,12 +160,12 @@ public class FlyweightTest
     @Test
     public void shouldEncodeAndDecodeStringsCorrectly()
     {
-        encodePublication.wrap(aBuff);
+        encodePublication.wrap(aBuff, 0);
 
         final String example = "abcç̀漢字仮名交じり文";
         encodePublication.channel(example);
 
-        decodePublication.wrap(aBuff);
+        decodePublication.wrap(aBuff, 0);
 
         assertThat(decodePublication.channel(), is(example));
     }

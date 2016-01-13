@@ -30,13 +30,6 @@ public class Flyweight
 
     private final MutableDirectBuffer buffer = new UnsafeBuffer(EMPTY_BUFFER);
 
-    public final Flyweight wrap(final byte[] buffer)
-    {
-        this.buffer.wrap(buffer);
-
-        return this;
-    }
-
     public final Flyweight wrap(final MutableDirectBuffer buffer)
     {
         this.buffer.wrap(buffer);
@@ -74,15 +67,5 @@ public class Flyweight
     protected final void uint16Put(final int offset, final int value, final ByteOrder byteOrder)
     {
         buffer.putShort(offset, (short)value, byteOrder);
-    }
-
-    protected final String stringGet(final int offset, final ByteOrder byteOrder)
-    {
-        return buffer.getStringUtf8(offset, byteOrder);
-    }
-
-    protected final int stringPut(final int offset, final String value, final ByteOrder byteOrder)
-    {
-        return buffer.putStringUtf8(offset, value, byteOrder);
     }
 }

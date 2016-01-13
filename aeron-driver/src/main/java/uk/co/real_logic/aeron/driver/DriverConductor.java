@@ -144,10 +144,9 @@ public class DriverConductor implements Agent
 
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
-        final long nowNano = nanoClock.nanoTime();
-
-        timeOfLastTimeoutCheck = nowNano;
-        timeOfLastToDriverPositionChange = nowNano;
+        final long now = nanoClock.nanoTime();
+        timeOfLastTimeoutCheck = now;
+        timeOfLastToDriverPositionChange = now;
         lastConsumerCommandPosition = toDriverCommands.consumerPosition();
     }
 

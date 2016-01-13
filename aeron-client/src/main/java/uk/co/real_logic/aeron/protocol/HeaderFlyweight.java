@@ -15,13 +15,14 @@
  */
 package uk.co.real_logic.aeron.protocol;
 
-import uk.co.real_logic.aeron.Flyweight;
+import uk.co.real_logic.agrona.MutableDirectBuffer;
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_SHORT;
 
 /**
- * Flyweight for general Aeron header
+ * Flyweight for general Aeron network protocol header
  *
  * 0                   1                   2                   3
  * 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -33,7 +34,7 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_SHORT;
  * |                       Depends on Type                        ...
  *
  */
-public class HeaderFlyweight extends Flyweight
+public class HeaderFlyweight
 {
     /** header type PAD */
     public static final int HDR_TYPE_PAD = 0x00;
@@ -59,6 +60,38 @@ public class HeaderFlyweight extends Flyweight
     public static final int TYPE_FIELD_OFFSET = 6;
     public static final int HEADER_LENGTH = TYPE_FIELD_OFFSET + SIZE_OF_SHORT;
 
+    protected UnsafeBuffer buffer;
+    protected int offset;
+
+    /**
+     * Wrap the buffer at a given offset for updates.
+     *
+     * @param buffer to wrap
+     * @param offset at which the message begins.
+     * @return for fluent API
+     */
+    public final HeaderFlyweight wrap(final MutableDirectBuffer buffer, final int offset)
+    {
+        this.buffer = (UnsafeBuffer)buffer;
+        this.offset = offset;
+
+        return this;
+    }
+
+    /**
+     * Wrap the buffer at a zero offset
+     *
+     * @param buffer to wrap
+     * @return for fluent API
+     */
+    public final HeaderFlyweight wrap(final MutableDirectBuffer buffer)
+    {
+        this.buffer = (UnsafeBuffer)buffer;
+        this.offset = 0;
+
+        return this;
+    }
+
     /**
      * return version field value
      *
@@ -66,7 +99,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public short version()
     {
-        return uint8Get(VERSION_FIELD_OFFSET);
+        return (short)(buffer.getByte(offset + VERSION_FIELD_OFFSET) & 0xFF);
     }
 
     /**
@@ -77,7 +110,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight version(final short ver)
     {
-        uint8Put(VERSION_FIELD_OFFSET, ver);
+        buffer.putByte(offset + VERSION_FIELD_OFFSET, (byte)ver);
 
         return this;
     }
@@ -89,7 +122,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public short flags()
     {
-        return uint8Get(FLAGS_FIELD_OFFSET);
+        return (short)(buffer.getByte(offset + FLAGS_FIELD_OFFSET) & 0xFF);
     }
 
     /**
@@ -100,7 +133,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight flags(final short flags)
     {
-        uint8Put(FLAGS_FIELD_OFFSET, flags);
+        buffer.putByte(offset + FLAGS_FIELD_OFFSET, (byte)flags);
 
         return this;
     }
@@ -112,7 +145,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int headerType()
     {
-        return uint16Get(TYPE_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getShort(offset + TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
     }
 
     /**
@@ -123,7 +156,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight headerType(final int type)
     {
-        uint16Put(TYPE_FIELD_OFFSET, (short)type, LITTLE_ENDIAN);
+        buffer.putShort(offset + TYPE_FIELD_OFFSET, (short)(int)(short)type, LITTLE_ENDIAN);
 
         return this;
     }
@@ -135,7 +168,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public int frameLength()
     {
-        return buffer().getInt(FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + FRAME_LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -146,7 +179,7 @@ public class HeaderFlyweight extends Flyweight
      */
     public HeaderFlyweight frameLength(final int length)
     {
-        buffer().putInt(FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        buffer.putInt(offset + FRAME_LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
 
         return this;
     }

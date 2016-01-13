@@ -253,7 +253,7 @@ public class RetransmitHandlerTest
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        dataHeader.buffer().putBytes(dataHeader.dataOffset(), DATA);
+        rcvBuffer.putBytes(dataHeader.dataOffset(), DATA);
 
         TermRebuilder.insert(termBuffer, offsetOfFrame(msgNum), rcvBuffer, MESSAGE_LENGTH);
     }

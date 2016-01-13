@@ -330,7 +330,7 @@ public class LossDetectorTest
                   .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
                   .version(HeaderFlyweight.CURRENT_VERSION);
 
-        dataHeader.buffer().putBytes(dataHeader.dataOffset(), payload);
+        rcvBuffer.putBytes(dataHeader.dataOffset(), payload);
 
         TermRebuilder.insert(termBuffer, offset, rcvBuffer, payload.length + DataHeaderFlyweight.HEADER_LENGTH);
     }

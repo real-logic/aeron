@@ -21,8 +21,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * Flyweight for a Nak Packet
  *
  * <a href="https://github.com/real-logic/Aeron/wiki/Protocol-Specification#data-recovery-via-retransmit-request">
- *     Data Recovery
- * </a>
+ * Data Recovery</a>
  */
 public class NakFlyweight extends HeaderFlyweight
 {
@@ -36,21 +35,23 @@ public class NakFlyweight extends HeaderFlyweight
 
     /**
      * return session id field
+     *
      * @return session id field
      */
     public int sessionId()
     {
-        return buffer().getInt(SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * set session id field
+     *
      * @param sessionId field value
      * @return flyweight
      */
     public NakFlyweight sessionId(final int sessionId)
     {
-        buffer().putInt(SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        buffer.putInt(offset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -62,7 +63,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public int streamId()
     {
-        return buffer().getInt(STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -73,49 +74,53 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight streamId(final int streamId)
     {
-        buffer().putInt(STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
         return this;
     }
 
     /**
      * return term id field
+     *
      * @return term id field
      */
     public int termId()
     {
-        return buffer().getInt(TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * set term id field
+     *
      * @param termId field value
      * @return flyweight
      */
     public NakFlyweight termId(final int termId)
     {
-        buffer().putInt(TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        buffer.putInt(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }
 
     /**
      * return term offset field
+     *
      * @return term offset field
      */
     public int termOffset()
     {
-        return buffer().getInt(TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * set term offset field
+     *
      * @param termOffset field value
      * @return flyweight
      */
     public NakFlyweight termOffset(final int termOffset)
     {
-        buffer().putInt(TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        buffer.putInt(offset + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
 
         return this;
     }
@@ -127,17 +132,18 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public int length()
     {
-        return buffer().getInt(LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
      * set length field
+     *
      * @param length field value
      * @return flyweight
      */
     public NakFlyweight length(final int length)
     {
-        buffer().putInt(LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        buffer.putInt(offset + LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
 
         return this;
     }

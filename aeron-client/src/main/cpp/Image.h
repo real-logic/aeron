@@ -37,6 +37,46 @@ static UnsafeBufferPosition NULL_POSITION;
 
 static const int IMAGE_CLOSED = -1;
 
+enum class ControlledPollAction : int
+{
+    /**
+     * Abort the current polling operation and do not advance the position for this fragment.
+     */
+    ABORT = 1,
+
+    /**
+     * Break from the current polling operation and commit the position as of the end of the current fragment
+     * being handled.
+     */
+    BREAK,
+
+    /**
+     * Continue processing but commit the position as of the end of the current fragment so that
+     * flow control is applied to this point.
+     */
+    COMMIT,
+
+    /**
+     * Continue processing taking the same approach as the in fragment_handler_t.
+     */
+    CONTINUE
+};
+
+/**
+ * Callback for handling fragments of data being read from a log.
+ *
+ * @param buffer containing the data.
+ * @param offset at which the data begins.
+ * @param length of the data in bytes.
+ * @param header representing the meta data for the data.
+ * @return The action to be taken with regard to the stream position after the callback.
+ */
+typedef std::function<ControlledPollAction(
+    concurrent::AtomicBuffer &buffer,
+    util::index_t offset,
+    util::index_t length,
+    Header &header)> controlled_poll_fragment_handler_t;
+
 /**
  * Represents a replicated publication {@link Image} from a publisher to a {@link Subscription}.
  * Each {@link Image} identifies a source publisher by session id.
@@ -279,6 +319,98 @@ public:
             }
 
             result = readOutcome.fragmentsRead;
+        }
+
+        return result;
+    }
+
+    /**
+     * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
+     * will be delivered to the controlled_poll_fragment_handler_t up to a limited number of fragments as specified.
+     *
+     * To assemble messages that span multiple fragments then use ControlledFragmentAssembler.
+     *
+     * @param fragmentHandler to which message fragments are delivered.
+     * @param fragmentLimit   for the number of fragments to be consumed during one polling operation.
+     * @return the number of fragments that have been consumed.
+     *
+     * @see controlled_poll_fragment_handler_t
+     */
+    int controlledPoll(const controlled_poll_fragment_handler_t& fragmentHandler, int fragmentLimit)
+    {
+        int result = IMAGE_CLOSED;
+
+        if (!isClosed())
+        {
+            std::int64_t position = m_subscriberPosition.get();
+            std::int32_t termOffset = (std::int32_t) position & m_termLengthMask;
+            AtomicBuffer &termBuffer = m_termBuffers[LogBufferDescriptor::indexByPosition(position,
+                m_positionBitsToShift)];
+            int fragmentsRead = 0;
+            std::int32_t offset = termOffset;
+
+            try
+            {
+                const util::index_t capacity = termBuffer.capacity();
+
+                do
+                {
+                    const std::int32_t length = FrameDescriptor::frameLengthVolatile(termBuffer, offset);
+                    if (length <= 0)
+                    {
+                        break;
+                    }
+
+                    const std::int32_t frameOffset = offset;
+                    const std::int32_t alignedLength = util::BitUtil::align(length, FrameDescriptor::FRAME_ALIGNMENT);
+                    offset += alignedLength;
+
+                    if (!FrameDescriptor::isPaddingFrame(termBuffer, frameOffset))
+                    {
+                        m_header.buffer(termBuffer);
+                        m_header.offset(frameOffset);
+
+                        const ControlledPollAction action =
+                            fragmentHandler(
+                                termBuffer,
+                                frameOffset + DataFrameHeader::LENGTH,
+                                length - DataFrameHeader::LENGTH,
+                                m_header);
+
+                        ++fragmentsRead;
+
+                        if (ControlledPollAction::BREAK == action)
+                        {
+                            break;
+                        }
+                        else if (ControlledPollAction::ABORT == action)
+                        {
+                            --fragmentsRead;
+                            offset = frameOffset;
+                            break;
+                        }
+                        else if (ControlledPollAction::COMMIT == action)
+                        {
+                            position += alignedLength;
+                            termOffset = offset;
+                            m_subscriberPosition.setOrdered(position);
+                        }
+                    }
+                }
+                while (fragmentsRead < fragmentLimit && offset < capacity);
+            }
+            catch (std::exception ex)
+            {
+                m_exceptionHandler(ex);
+            }
+
+            const std::int64_t newPosition = position + (offset - termOffset);
+            if (newPosition > position)
+            {
+                m_subscriberPosition.setOrdered(newPosition);
+            }
+
+            result = fragmentsRead;
         }
 
         return result;

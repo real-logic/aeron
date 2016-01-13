@@ -142,12 +142,6 @@ public class DriverConductor implements Agent
         onEventFunc =
             (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset, length));
 
-        final AtomicBuffer buffer = toDriverCommands.buffer();
-        publicationMsgFlyweight.wrap(buffer, 0);
-        subscriptionMsgFlyweight.wrap(buffer, 0);
-        correlatedMsgFlyweight.wrap(buffer, 0);
-        removeMsgFlyweight.wrap(buffer, 0);
-
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
         final long nowNano = nanoClock.nanoTime();

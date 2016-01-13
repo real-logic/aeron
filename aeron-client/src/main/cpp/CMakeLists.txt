@@ -36,7 +36,9 @@ SET(HEADERS
     DriverProxy.h
     DriverListenerAdapter.h
     LogBuffers.h
+    BufferBuilder.h
     FragmentAssembler.h
+    ControlledFragmentAssembler.h
     command/ImageMessageFlyweight.h
     command/ImageBuffersReadyFlyweight.h
     command/ControlProtocolEvents.h

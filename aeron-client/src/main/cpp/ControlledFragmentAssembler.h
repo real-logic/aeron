@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-#ifndef AERON_FRAGMENTASSEMBLYADAPTER_H
-#define AERON_FRAGMENTASSEMBLYADAPTER_H
+#ifndef AERON_CONTROLLEDFRAGMENTASSEMBLER_H
+#define AERON_CONTROLLEDFRAGMENTASSEMBLER_H
 
 #include <unordered_map>
 #include "Aeron.h"
@@ -23,7 +22,7 @@
 
 namespace aeron {
 
-static const std::size_t DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
+static const std::size_t DEFAULT_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
 
 /**
  * A handler that sits in a chain-of-responsibility pattern that reassembles fragmented messages
@@ -36,7 +35,7 @@ static const std::size_t DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH = 4096;
  * When sessions go inactive see {@link on_unavailable_image_t}, it is possible to free the buffer by calling
  * {@link #deleteSessionBuffer(std::int32_t)}.
  */
-class FragmentAssembler
+class ControlledFragmentAssembler
 {
 public:
 
@@ -46,23 +45,25 @@ public:
      * @param delegate            onto which whole messages are forwarded.
      * @param initialBufferLength to be used for each session.
      */
-    FragmentAssembler(
-        const fragment_handler_t& delegate, size_t initialBufferLength = DEFAULT_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
-        m_initialBufferLength(initialBufferLength), m_delegate(delegate)
+    ControlledFragmentAssembler(
+        const controlled_poll_fragment_handler_t& delegate,
+        size_t initialBufferLength = DEFAULT_CONTROLLED_FRAGMENT_ASSEMBLY_BUFFER_LENGTH) :
+        m_initialBufferLength(initialBufferLength),
+        m_delegate(delegate)
     {
     }
 
     /**
-     * Compose a fragment_handler_t that calls the this FragmentAssembler instance for reassembly. Suitable for
-     * passing to Subscription::poll(fragment_handler_t, int).
+     * Compose a controlled_poll_fragment_handler_t that calls the this ControlledFragmentAssembler instance for reassembly. Suitable for
+     * passing to Subscription::poll(controlled_poll_fragment_handler_t, int).
      *
-     * @return fragment_handler_t composed with the FragmentAssembler instance
+     * @return controlled_poll_fragment_handler_t composed with the ControlledFragmentAssembler instance
      */
-    fragment_handler_t handler()
+    controlled_poll_fragment_handler_t handler()
     {
         return [&](AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
         {
-            this->onFragment(buffer, offset, length, header);
+            return this->onFragment(buffer, offset, length, header);
         };
     }
 
@@ -79,16 +80,17 @@ public:
 
 private:
     std::size_t m_initialBufferLength;
-    fragment_handler_t m_delegate;
+    controlled_poll_fragment_handler_t m_delegate;
     std::unordered_map<std::int32_t, BufferBuilder> m_builderBySessionIdMap;
 
-    void onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
+    ControlledPollAction onFragment(AtomicBuffer& buffer, util::index_t offset, util::index_t length, Header& header)
     {
         const std::uint8_t flags = header.flags();
+        ControlledPollAction action = ControlledPollAction::CONTINUE;
 
         if ((flags & FrameDescriptor::UNFRAGMENTED) == FrameDescriptor::UNFRAGMENTED)
         {
-            m_delegate(buffer, offset, length, header);
+            action = m_delegate(buffer, offset, length, header);
         }
         else
         {
@@ -108,6 +110,7 @@ private:
                 if (result != m_builderBySessionIdMap.end())
                 {
                     BufferBuilder& builder = result->second;
+                    const std::uint32_t limit = builder.limit();
 
                     if (builder.limit() != DataFrameHeader::LENGTH)
                     {
@@ -132,17 +135,25 @@ private:
                             frame.type = DataFrameHeader::HDR_TYPE_DATA;
                             frame.termOffset = header.termOffset() - (frame.frameLength - header.frameLength());
 
-                            m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, assemblyHeader);
+                            action = m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, assemblyHeader);
 
-                            builder.reset();
+                            if (ControlledPollAction::ABORT == action)
+                            {
+                                builder.limit(limit);
+                            }
+                            else
+                            {
+                                builder.reset();
+                            }
                         }
                     }
                 }
             }
         }
+
+        return action;
     }
 };
 
 }
-
-#endif //AERON_FRAGMENTASSEMBLYADAPTER_H
+#endif

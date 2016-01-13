@@ -59,13 +59,6 @@ public class Flyweight
         return this;
     }
 
-    public final Flyweight wrap(final MutableDirectBuffer buffer, final int offset, final int length)
-    {
-        this.buffer.wrap(buffer, offset, length);
-
-        return this;
-    }
-
     public final MutableDirectBuffer buffer()
     {
         return buffer;

@@ -448,7 +448,7 @@ public class DriverConductor implements Agent
                     logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
 
                     final PublicationMessageFlyweight publicationMessageFlyweight = publicationMsgFlyweight;
-                    publicationMessageFlyweight.wrap(buffer, index, length);
+                    publicationMessageFlyweight.wrap(buffer, index);
                     flyweight = publicationMessageFlyweight;
 
                     final String channel = publicationMessageFlyweight.channel();
@@ -472,7 +472,7 @@ public class DriverConductor implements Agent
                     logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
 
                     final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
-                    removeMessageFlyweight.wrap(buffer, index, length);
+                    removeMessageFlyweight.wrap(buffer, index);
                     flyweight = removeMessageFlyweight;
                     onRemovePublication(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
                     break;
@@ -483,7 +483,7 @@ public class DriverConductor implements Agent
                     logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
 
                     final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMsgFlyweight;
-                    subscriptionMessageFlyweight.wrap(buffer, index, length);
+                    subscriptionMessageFlyweight.wrap(buffer, index);
                     flyweight = subscriptionMessageFlyweight;
 
                     final String channel = subscriptionMessageFlyweight.channel();
@@ -507,7 +507,7 @@ public class DriverConductor implements Agent
                     logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
 
                     final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
-                    removeMessageFlyweight.wrap(buffer, index, length);
+                    removeMessageFlyweight.wrap(buffer, index);
                     flyweight = removeMessageFlyweight;
                     onRemoveSubscription(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
                     break;
@@ -518,7 +518,7 @@ public class DriverConductor implements Agent
                     logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
 
                     final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMsgFlyweight;
-                    correlatedMessageFlyweight.wrap(buffer, index, length);
+                    correlatedMessageFlyweight.wrap(buffer, index);
                     flyweight = correlatedMessageFlyweight;
                     onClientKeepalive(correlatedMessageFlyweight.clientId());
                     break;

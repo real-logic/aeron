@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
-import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
 /**
@@ -32,13 +31,6 @@ public class Flyweight
     private final MutableDirectBuffer buffer = new UnsafeBuffer(EMPTY_BUFFER);
 
     public final Flyweight wrap(final byte[] buffer)
-    {
-        this.buffer.wrap(buffer);
-
-        return this;
-    }
-
-    public final  Flyweight wrap(final ByteBuffer buffer)
     {
         this.buffer.wrap(buffer);
 

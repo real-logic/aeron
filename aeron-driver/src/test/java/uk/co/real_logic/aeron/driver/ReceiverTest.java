@@ -227,7 +227,7 @@ public class ReceiverTest
         }
         while (null == rcvAddress);
 
-        statusHeader.wrap(rcvBuffer);
+        statusHeader.wrap(new UnsafeBuffer(rcvBuffer));
 
         assertNotNull(rcvAddress);
         assertThat(rcvAddress.getPort(), is(UDP_CHANNEL.remoteData().getPort()));

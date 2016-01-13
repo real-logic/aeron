@@ -159,7 +159,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
-        setupHeader.wrap(receivedFrames.remove());
+        setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
         assertThat(setupHeader.initialTermId(), is(INITIAL_TERM_ID));
         assertThat(setupHeader.activeTermId(), is(INITIAL_TERM_ID));
@@ -213,7 +213,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(1));
 
-        dataHeader.wrap(receivedFrames.remove());
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
@@ -241,7 +241,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(2));
 
-        dataHeader.wrap(receivedFrames.remove());
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
@@ -252,7 +252,7 @@ public class SenderTest
         assertThat(dataHeader.flags(), is(DataHeaderFlyweight.BEGIN_AND_END_FLAGS));
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
-        dataHeader.wrap(receivedFrames.remove());
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
@@ -279,7 +279,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(1));
 
-        dataHeader.wrap(receivedFrames.remove());
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
@@ -304,7 +304,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), is(1));
 
-        dataHeader.wrap(receivedFrames.remove());
+        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
 
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));

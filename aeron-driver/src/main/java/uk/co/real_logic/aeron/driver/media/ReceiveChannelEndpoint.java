@@ -67,14 +67,14 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             lossGenerator,
             logger);
 
-        smHeader.wrap(smBuffer);
+        smHeader.wrap(new UnsafeBuffer(smBuffer));
         smHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
             .flags((byte)0)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
             .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
 
-        nakHeader.wrap(nakBuffer);
+        nakHeader.wrap(new UnsafeBuffer(nakBuffer));
         nakHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
             .flags((byte)0)

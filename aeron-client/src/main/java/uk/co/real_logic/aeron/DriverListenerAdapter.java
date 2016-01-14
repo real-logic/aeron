@@ -73,7 +73,6 @@ class DriverListenerAdapter implements MessageHandler
                 publicationReady.wrap(buffer, index);
 
                 final long correlationId = publicationReady.correlationId();
-
                 if (correlationId == activeCorrelationId)
                 {
                     listener.onNewPublication(
@@ -129,17 +128,15 @@ class DriverListenerAdapter implements MessageHandler
             {
                 imageMessage.wrap(buffer, index);
 
-                listener.onUnavailableImage(
-                    imageMessage.streamId(),
-                    imageMessage.correlationId());
+                listener.onUnavailableImage(imageMessage.streamId(), imageMessage.correlationId());
                 break;
             }
 
             case ON_ERROR:
             {
                 errorResponse.wrap(buffer, index);
-                final long correlationId = errorResponse.offendingCommandCorrelationId();
 
+                final long correlationId = errorResponse.offendingCommandCorrelationId();
                 if (correlationId == activeCorrelationId)
                 {
                     listener.onError(errorResponse.errorCode(), errorResponse.errorMessage(), correlationId);

@@ -51,21 +51,23 @@ public class ClientProxy
     {
         this.transmitter = transmitter;
         this.logger = logger;
+
+        errorResponse.wrap(tmpBuffer, 0);
+        imageReady.wrap(tmpBuffer, 0);
+        publicationReady.wrap(tmpBuffer, 0);
+        correlatedMessage.wrap(tmpBuffer, 0);
+        imageMessage.wrap(tmpBuffer, 0);
     }
 
-    public void onError(
-        final ErrorCode errorCode,
-        String errorMessage,
-        final CorrelatedMessageFlyweight offendingFlyweight)
+    public void onError(final ErrorCode errorCode, String errorMessage, final CorrelatedMessageFlyweight offender)
     {
         if (null == errorMessage)
         {
             errorMessage = "";
         }
 
-        errorResponse.wrap(tmpBuffer, 0);
         errorResponse
-            .offendingCommandCorrelationId(offendingFlyweight.correlationId())
+            .offendingCommandCorrelationId(offender.correlationId())
             .errorCode(errorCode)
             .errorMessage(errorMessage);
 
@@ -80,7 +82,6 @@ public class ClientProxy
         final List<SubscriberPosition> subscriberPositions,
         final String sourceIdentity)
     {
-        imageReady.wrap(tmpBuffer, 0);
         imageReady
             .sessionId(sessionId)
             .streamId(streamId)
@@ -99,8 +100,9 @@ public class ClientProxy
             .logFileName(rawLog.logFileName())
             .sourceIdentity(sourceIdentity);
 
-        logger.log(CMD_OUT_AVAILABLE_IMAGE, tmpBuffer, 0, imageReady.length());
-        transmitter.transmit(ON_AVAILABLE_IMAGE, tmpBuffer, 0, imageReady.length());
+        final int length = imageReady.length();
+        logger.log(CMD_OUT_AVAILABLE_IMAGE, tmpBuffer, 0, length);
+        transmitter.transmit(ON_AVAILABLE_IMAGE, tmpBuffer, 0, length);
     }
 
     public void onPublicationReady(
@@ -110,7 +112,6 @@ public class ClientProxy
         final long registrationId,
         final int positionCounterId)
     {
-        publicationReady.wrap(tmpBuffer, 0);
         publicationReady
             .sessionId(sessionId)
             .streamId(streamId)
@@ -119,32 +120,29 @@ public class ClientProxy
 
         publicationReady.logFileName(rawLog.logFileName());
 
-        logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());
-
-        transmitter.transmit(ON_PUBLICATION_READY, tmpBuffer, 0, publicationReady.length());
+        final int length = publicationReady.length();
+        logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, length);
+        transmitter.transmit(ON_PUBLICATION_READY, tmpBuffer, 0, length);
     }
 
     public void operationSucceeded(final long correlationId)
     {
-        correlatedMessage.wrap(tmpBuffer, 0);
         correlatedMessage.clientId(0);
         correlatedMessage.correlationId(correlationId);
 
         logger.log(EventCode.CMD_OUT_ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
-
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
     public void onUnavailableImage(final long correlationId, final int streamId, final String channel)
     {
-        imageMessage.wrap(tmpBuffer, 0);
         imageMessage
             .correlationId(correlationId)
             .streamId(streamId)
             .channel(channel);
 
-        logger.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, imageMessage.length());
-
-        transmitter.transmit(ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, imageMessage.length());
+        final int length = imageMessage.length();
+        logger.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, length);
+        transmitter.transmit(ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, length);
     }
 }

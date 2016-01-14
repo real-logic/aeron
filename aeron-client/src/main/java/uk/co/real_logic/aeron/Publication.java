@@ -242,7 +242,8 @@ public class Publication implements AutoCloseable
      * Non-blocking publish of a buffer containing a message.
      *
      * @param buffer containing message.
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      */
     public long offer(final DirectBuffer buffer)
     {
@@ -325,7 +326,8 @@ public class Publication implements AutoCloseable
      *
      * @param length      of the range to claim, in bytes..
      * @param bufferClaim to be populated if the claim succeeds.
-     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED} or {@link #ADMIN_ACTION}.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
      * @throws IllegalArgumentException if the length is greater than max payload length within an MTU.
      * @see BufferClaim#commit()
      * @see BufferClaim#abort()

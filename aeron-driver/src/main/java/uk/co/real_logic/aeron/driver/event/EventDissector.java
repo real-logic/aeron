@@ -22,28 +22,26 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 import java.net.InetAddress;
 
-import static java.lang.ThreadLocal.withInitial;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Dissect encoded log events.
+ * Dissect encoded log events. The event consumer of the log should be single threaded.
  */
 public class EventDissector
 {
-    private static final ThreadLocal<DataHeaderFlyweight> DATA_HEADER = withInitial(DataHeaderFlyweight::new);
-    private static final ThreadLocal<StatusMessageFlyweight> SM_HEADER = withInitial(StatusMessageFlyweight::new);
-    private static final ThreadLocal<NakFlyweight> NAK_HEADER = withInitial(NakFlyweight::new);
-    private static final ThreadLocal<SetupFlyweight> SETUP_HEADER = withInitial(SetupFlyweight::new);
-    private static final ThreadLocal<PublicationMessageFlyweight> PUB_MESSAGE = withInitial(PublicationMessageFlyweight::new);
-    private static final ThreadLocal<SubscriptionMessageFlyweight> SUB_MESSAGE = withInitial(SubscriptionMessageFlyweight::new);
-    private static final ThreadLocal<PublicationBuffersReadyFlyweight> PUBLICATION_READY =
-        withInitial(PublicationBuffersReadyFlyweight::new);
-    private static final ThreadLocal<ImageBuffersReadyFlyweight> IMAGE_READY = withInitial(ImageBuffersReadyFlyweight::new);
-    private static final ThreadLocal<CorrelatedMessageFlyweight> CORRELATED_MSG = withInitial(CorrelatedMessageFlyweight::new);
-    private static final ThreadLocal<ImageMessageFlyweight> IMAGE_MSG = withInitial(ImageMessageFlyweight::new);
-    private static final ThreadLocal<RemoveMessageFlyweight> REMOVE_MSG = withInitial(RemoveMessageFlyweight::new);
+    private static final DataHeaderFlyweight DATA_HEADER = new DataHeaderFlyweight();
+    private static final StatusMessageFlyweight SM_HEADER = new StatusMessageFlyweight();
+    private static final NakFlyweight NAK_HEADER = new NakFlyweight();
+    private static final SetupFlyweight SETUP_HEADER = new SetupFlyweight();
+    private static final PublicationMessageFlyweight PUB_MESSAGE = new PublicationMessageFlyweight();
+    private static final SubscriptionMessageFlyweight SUB_MESSAGE = new SubscriptionMessageFlyweight();
+    private static final PublicationBuffersReadyFlyweight PUBLICATION_READY = new PublicationBuffersReadyFlyweight();
+    private static final ImageBuffersReadyFlyweight IMAGE_READY = new ImageBuffersReadyFlyweight();
+    private static final CorrelatedMessageFlyweight CORRELATED_MSG = new CorrelatedMessageFlyweight();
+    private static final ImageMessageFlyweight IMAGE_MSG = new ImageMessageFlyweight();
+    private static final RemoveMessageFlyweight REMOVE_MSG = new RemoveMessageFlyweight();
 
     public static String dissectAsFrame(final EventCode code, final MutableDirectBuffer buffer, final int offset)
     {
@@ -60,25 +58,25 @@ public class EventDissector
         {
             case HeaderFlyweight.HDR_TYPE_PAD:
             case HeaderFlyweight.HDR_TYPE_DATA:
-                final DataHeaderFlyweight dataFrame = DATA_HEADER.get();
+                final DataHeaderFlyweight dataFrame = DATA_HEADER;
                 dataFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(dataFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SM:
-                final StatusMessageFlyweight smFrame = SM_HEADER.get();
+                final StatusMessageFlyweight smFrame = SM_HEADER;
                 smFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(smFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_NAK:
-                final NakFlyweight nakFrame = NAK_HEADER.get();
+                final NakFlyweight nakFrame = NAK_HEADER;
                 nakFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(nakFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SETUP:
-                final SetupFlyweight setupFrame = SETUP_HEADER.get();
+                final SetupFlyweight setupFrame = SETUP_HEADER;
                 setupFrame.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(setupFrame));
                 break;
@@ -101,45 +99,45 @@ public class EventDissector
         switch (code)
         {
             case CMD_IN_ADD_PUBLICATION:
-                final PublicationMessageFlyweight pubCommand = PUB_MESSAGE.get();
+                final PublicationMessageFlyweight pubCommand = PUB_MESSAGE;
                 pubCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(pubCommand));
                 break;
 
             case CMD_IN_ADD_SUBSCRIPTION:
-                final SubscriptionMessageFlyweight subCommand = SUB_MESSAGE.get();
+                final SubscriptionMessageFlyweight subCommand = SUB_MESSAGE;
                 subCommand.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(subCommand));
                 break;
 
             case CMD_IN_REMOVE_PUBLICATION:
             case CMD_IN_REMOVE_SUBSCRIPTION:
-                final RemoveMessageFlyweight removeCmd = REMOVE_MSG.get();
+                final RemoveMessageFlyweight removeCmd = REMOVE_MSG;
                 removeCmd.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(removeCmd));
                 break;
 
             case CMD_OUT_PUBLICATION_READY:
-                final PublicationBuffersReadyFlyweight publicationReadyEvent = PUBLICATION_READY.get();
+                final PublicationBuffersReadyFlyweight publicationReadyEvent = PUBLICATION_READY;
                 publicationReadyEvent.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(publicationReadyEvent));
                 break;
 
             case CMD_OUT_AVAILABLE_IMAGE:
-                final ImageBuffersReadyFlyweight imageAvailableEvent = IMAGE_READY.get();
+                final ImageBuffersReadyFlyweight imageAvailableEvent = IMAGE_READY;
                 imageAvailableEvent.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(imageAvailableEvent));
                 break;
 
             case CMD_OUT_ON_OPERATION_SUCCESS:
             case CMD_IN_KEEPALIVE_CLIENT:
-                final CorrelatedMessageFlyweight correlatedEvent = CORRELATED_MSG.get();
+                final CorrelatedMessageFlyweight correlatedEvent = CORRELATED_MSG;
                 correlatedEvent.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(correlatedEvent));
                 break;
 
             case CMD_OUT_ON_UNAVAILABLE_IMAGE:
-                final ImageMessageFlyweight imageUnavailableEvent = IMAGE_MSG.get();
+                final ImageMessageFlyweight imageUnavailableEvent = IMAGE_MSG;
                 imageUnavailableEvent.wrap(buffer, offset + relativeOffset);
                 builder.append(dissect(imageUnavailableEvent));
                 break;

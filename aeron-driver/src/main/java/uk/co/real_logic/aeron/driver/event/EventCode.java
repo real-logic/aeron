@@ -23,50 +23,50 @@ import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
  */
 public enum EventCode
 {
-    FRAME_IN(1, EventCodec::dissectAsFrame),
-    FRAME_OUT(2, EventCodec::dissectAsFrame),
-    CMD_IN_ADD_PUBLICATION(3, EventCodec::dissectAsCommand),
-    CMD_IN_REMOVE_PUBLICATION(4, EventCodec::dissectAsCommand),
-    CMD_IN_ADD_SUBSCRIPTION(5, EventCodec::dissectAsCommand),
+    FRAME_IN(1, EventDissector::dissectAsFrame),
+    FRAME_OUT(2, EventDissector::dissectAsFrame),
+    CMD_IN_ADD_PUBLICATION(3, EventDissector::dissectAsCommand),
+    CMD_IN_REMOVE_PUBLICATION(4, EventDissector::dissectAsCommand),
+    CMD_IN_ADD_SUBSCRIPTION(5, EventDissector::dissectAsCommand),
 
-    CMD_IN_REMOVE_SUBSCRIPTION(6, EventCodec::dissectAsCommand),
-    CMD_OUT_PUBLICATION_READY(7, EventCodec::dissectAsCommand),
-    CMD_OUT_AVAILABLE_IMAGE(8, EventCodec::dissectAsCommand),
-    INVOCATION(9, EventCodec::dissectAsInvocation),
-    EXCEPTION(10, EventCodec::dissectAsException),
+    CMD_IN_REMOVE_SUBSCRIPTION(6, EventDissector::dissectAsCommand),
+    CMD_OUT_PUBLICATION_READY(7, EventDissector::dissectAsCommand),
+    CMD_OUT_AVAILABLE_IMAGE(8, EventDissector::dissectAsCommand),
+    INVOCATION(9, EventDissector::dissectAsInvocation),
+    EXCEPTION(10, EventDissector::dissectAsException),
 
-    MALFORMED_FRAME_LENGTH(11, EventCodec::dissectAsCommand),
-    CMD_OUT_ON_OPERATION_SUCCESS(12, EventCodec::dissectAsCommand),
-    CMD_IN_KEEPALIVE_CLIENT(13, EventCodec::dissectAsCommand),
-    REMOVE_PUBLICATION_CLEANUP(14, EventCodec::dissectAsString),
-    REMOVE_SUBSCRIPTION_CLEANUP(15, EventCodec::dissectAsString),
+    MALFORMED_FRAME_LENGTH(11, EventDissector::dissectAsCommand),
+    CMD_OUT_ON_OPERATION_SUCCESS(12, EventDissector::dissectAsCommand),
+    CMD_IN_KEEPALIVE_CLIENT(13, EventDissector::dissectAsCommand),
+    REMOVE_PUBLICATION_CLEANUP(14, EventDissector::dissectAsString),
+    REMOVE_SUBSCRIPTION_CLEANUP(15, EventDissector::dissectAsString),
 
-    REMOVE_IMAGE_CLEANUP(16, EventCodec::dissectAsString),
-    CMD_OUT_ON_UNAVAILABLE_IMAGE(17, EventCodec::dissectAsCommand),
-    FRAME_IN_DROPPED(18, EventCodec::dissectAsFrame),
-    ERROR_DELETING_FILE(19, EventCodec::dissectAsString),
+    REMOVE_IMAGE_CLEANUP(16, EventDissector::dissectAsString),
+    CMD_OUT_ON_UNAVAILABLE_IMAGE(17, EventDissector::dissectAsCommand),
+    FRAME_IN_DROPPED(18, EventDissector::dissectAsFrame),
+    ERROR_DELETING_FILE(19, EventDissector::dissectAsString),
 
-    INVALID_VERSION(22, EventCodec::dissectAsCommand),
+    INVALID_VERSION(22, EventDissector::dissectAsCommand),
 
-    CHANNEL_CREATION(23, EventCodec::dissectAsString);
+    CHANNEL_CREATION(23, EventDissector::dissectAsString);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 
     @FunctionalInterface
     private interface DissectFunction
     {
-        String dissect(final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length);
+        String dissect(final EventCode code, final MutableDirectBuffer buffer, final int offset);
     }
 
-    private long tagBit;
+    private final long tagBit;
     private final int id;
     private final DissectFunction dissector;
 
     static
     {
-        for (final EventCode e : EventCode.values())
+        for (final EventCode code : EventCode.values())
         {
-            EVENT_CODE_BY_ID_MAP.put(e.id(), e);
+            EVENT_CODE_BY_ID_MAP.put(code.id(), code);
         }
     }
 
@@ -83,7 +83,7 @@ public enum EventCode
     }
 
     /**
-     * returns the event code's tag bit. Each tag bit is a unique identifier for the event code used
+     * Get the event code's tag bit. Each tag bit is a unique identifier for the event code used
      * when checking that the event code is enabled or not. Each EventCode has a unique tag bit.
      *
      * @return the tag bit
@@ -105,8 +105,8 @@ public enum EventCode
         return code;
     }
 
-    public String decode(final MutableDirectBuffer buffer, final int offset, final int length)
+    public String decode(final MutableDirectBuffer buffer, final int offset)
     {
-        return dissector.dissect(this, buffer, offset, length);
+        return dissector.dissect(this, buffer, offset);
     }
 }

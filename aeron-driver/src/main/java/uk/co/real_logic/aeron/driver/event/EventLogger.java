@@ -63,7 +63,7 @@ public class EventLogger
         if (isEnabled(code, ENABLED_EVENT_CODES))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length);
+            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
         }
@@ -86,7 +86,7 @@ public class EventLogger
         if (IS_FRAME_IN_ENABLED)
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
+            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
 
             ringBuffer.write(FRAME_IN.id(), encodedBuffer, 0, encodedLength);
         }
@@ -101,7 +101,7 @@ public class EventLogger
         if (IS_FRAME_IN_DROPPED_ENABLED)
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, buffer, offset, length, dstAddress);
+            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
 
             ringBuffer.write(FRAME_IN_DROPPED.id(), encodedBuffer, 0, encodedLength);
         }
@@ -113,7 +113,7 @@ public class EventLogger
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength =
-                EventCodec.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
+                EventEncoder.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
 
             ringBuffer.write(FRAME_OUT.id(), encodedBuffer, 0, encodedLength);
         }
@@ -156,7 +156,7 @@ public class EventLogger
         if (isEnabled(EXCEPTION, ENABLED_EVENT_CODES))
         {
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventCodec.encode(encodedBuffer, ex);
+            final int encodedLength = EventEncoder.encode(encodedBuffer, ex);
 
             while (!ringBuffer.write(EXCEPTION.id(), encodedBuffer, 0, encodedLength))
             {
@@ -172,7 +172,7 @@ public class EventLogger
     private void logString(final EventCode code, final String value)
     {
         final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-        final int encodingLength = EventCodec.encode(encodedBuffer, value);
+        final int encodingLength = EventEncoder.encode(encodedBuffer, value);
         ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
     }
 

@@ -139,8 +139,7 @@ public class DriverConductor implements Agent
         controlLossGenerator = ctx.controlLossGenerator();
 
         final Consumer<String> eventConsumer = ctx.eventConsumer();
-        onEventFunc =
-            (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset, length));
+        onEventFunc = (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset));
 
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 

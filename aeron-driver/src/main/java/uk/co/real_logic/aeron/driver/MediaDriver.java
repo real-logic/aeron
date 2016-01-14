@@ -463,7 +463,6 @@ public final class MediaDriver implements AutoCloseable
             controlLossSeed(Configuration.controlLossSeed());
             mtuLength(Configuration.MTU_LENGTH);
 
-            eventConsumer = System.out::println;
             eventBufferLength = EventConfiguration.bufferLength();
 
             warnIfDirectoriesExist = true;
@@ -477,44 +476,7 @@ public final class MediaDriver implements AutoCloseable
 
             try
             {
-                if (null == epochClock)
-                {
-                    epochClock = new SystemEpochClock();
-                }
-
-                if (null == nanoClock)
-                {
-                    nanoClock = new SystemNanoClock();
-                }
-
-                if (threadingMode == null)
-                {
-                    threadingMode = Configuration.threadingMode();
-                }
-
-                final ByteBuffer eventByteBuffer = ByteBuffer.allocateDirect(eventBufferLength);
-
-                if (null == eventLogger)
-                {
-                    eventLogger = new EventLogger(eventByteBuffer);
-                }
-
-                if (null == unicastSenderFlowControlSupplier)
-                {
-                    unicastSenderFlowControlSupplier = Configuration::unicastFlowControlStrategy;
-                }
-
-                if (null == multicastSenderFlowControlSupplier)
-                {
-                    multicastSenderFlowControlSupplier = Configuration::multicastFlowControlStrategy;
-                }
-
-                if (0 == ipcPublicationTermBufferLength)
-                {
-                    ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(termBufferLength());
-                }
-
-                toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
+                concludeNullProperties();
 
                 receiverTransportPoller(new DataTransportPoller());
                 senderTransportPoller(new ControlTransportPoller());
@@ -567,6 +529,53 @@ public final class MediaDriver implements AutoCloseable
             }
 
             return this;
+        }
+
+        private void concludeNullProperties()
+        {
+            if (null == epochClock)
+            {
+                epochClock = new SystemEpochClock();
+            }
+
+            if (null == nanoClock)
+            {
+                nanoClock = new SystemNanoClock();
+            }
+
+            if (threadingMode == null)
+            {
+                threadingMode = Configuration.threadingMode();
+            }
+
+            final ByteBuffer eventByteBuffer = ByteBuffer.allocateDirect(eventBufferLength);
+
+            if (null == eventLogger)
+            {
+                eventLogger = new EventLogger(eventByteBuffer);
+            }
+
+            if (null == eventConsumer)
+            {
+                eventConsumer = System.out::println;
+            }
+
+            toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
+
+            if (null == unicastSenderFlowControlSupplier)
+            {
+                unicastSenderFlowControlSupplier = Configuration::unicastFlowControlStrategy;
+            }
+
+            if (null == multicastSenderFlowControlSupplier)
+            {
+                multicastSenderFlowControlSupplier = Configuration::multicastFlowControlStrategy;
+            }
+
+            if (0 == ipcPublicationTermBufferLength)
+            {
+                ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(termBufferLength());
+            }
         }
 
         public Context epochClock(final EpochClock clock)

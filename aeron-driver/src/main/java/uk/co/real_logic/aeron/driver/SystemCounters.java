@@ -70,7 +70,7 @@ public class SystemCounters implements AutoCloseable
         clientKeepAlives = countersManager.newCounter("Client keep-alives");
         senderFlowControlLimits = countersManager.newCounter("Sender flow control limits applied");
         unblockedPublications = countersManager.newCounter("Unblocked Publications");
-        unblockedCommands = countersManager.newCounter("Unblocked Commands");
+        unblockedCommands = countersManager.newCounter("Unblocked Control Commands");
     }
 
     public void close()

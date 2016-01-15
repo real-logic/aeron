@@ -17,6 +17,8 @@ package uk.co.real_logic.aeron.protocol;
 
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.ByteBuffer;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
@@ -42,6 +44,11 @@ public class SetupFlyweight extends HeaderFlyweight
     }
 
     public SetupFlyweight(final UnsafeBuffer buffer)
+    {
+        super(buffer);
+    }
+
+    public SetupFlyweight(final ByteBuffer buffer)
     {
         super(buffer);
     }

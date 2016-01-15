@@ -89,10 +89,10 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
     private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
     private final SystemCounters systemCounters;
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final SetupFlyweight setupHeader = new SetupFlyweight();
+    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight(heartbeatFrameBuffer);
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
+    private final SetupFlyweight setupHeader = new SetupFlyweight(setupFrameBuffer);
     private final FlowControl flowControl;
     private final RetransmitHandler retransmitHandler;
     private final RawLog rawLog;
@@ -136,12 +136,9 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
-        this.publisherLimit.setOrdered(0);
+        publisherLimit.setOrdered(0);
 
-        setupHeader.wrap(setupFrameBuffer);
         initSetupFrame(initialTermId, termLength, sessionId, streamId);
-
-        dataHeader.wrap(heartbeatFrameBuffer);
         initHeartBeatFrame(sessionId, streamId);
     }
 

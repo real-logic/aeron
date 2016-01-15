@@ -76,7 +76,7 @@ public class ImageTest
     @Before
     public void setUp()
     {
-        dataHeader.wrap(rcvBuffer, 0);
+        dataHeader.wrap(rcvBuffer);
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {

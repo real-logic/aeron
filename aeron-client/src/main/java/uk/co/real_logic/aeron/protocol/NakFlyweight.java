@@ -15,6 +15,10 @@
  */
 package uk.co.real_logic.aeron.protocol;
 
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteBuffer;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
@@ -33,6 +37,20 @@ public class NakFlyweight extends HeaderFlyweight
     private static final int TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int LENGTH_FIELD_OFFSET = 24;
 
+    public NakFlyweight()
+    {
+    }
+
+    public NakFlyweight(final ByteBuffer buffer)
+    {
+        super(buffer);
+    }
+
+    public NakFlyweight(final UnsafeBuffer buffer)
+    {
+        super(buffer);
+    }
+
     /**
      * return session id field
      *
@@ -40,7 +58,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public int sessionId()
     {
-        return buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -51,7 +69,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight sessionId(final int sessionId)
     {
-        buffer.putInt(offset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        putInt(SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -63,7 +81,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public int streamId()
     {
-        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -74,7 +92,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight streamId(final int streamId)
     {
-        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        putInt(STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -86,7 +104,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public int termId()
     {
-        return buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -97,7 +115,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight termId(final int termId)
     {
-        buffer.putInt(offset + TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        putInt(TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -109,7 +127,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public int termOffset()
     {
-        return buffer.getInt(offset + TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -120,7 +138,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight termOffset(final int termOffset)
     {
-        buffer.putInt(offset + TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        putInt(TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
 
         return this;
     }
@@ -132,7 +150,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public int length()
     {
-        return buffer.getInt(offset + LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(LENGTH_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -143,7 +161,7 @@ public class NakFlyweight extends HeaderFlyweight
      */
     public NakFlyweight length(final int length)
     {
-        buffer.putInt(offset + LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
+        putInt(LENGTH_FIELD_OFFSET, length, LITTLE_ENDIAN);
 
         return this;
     }

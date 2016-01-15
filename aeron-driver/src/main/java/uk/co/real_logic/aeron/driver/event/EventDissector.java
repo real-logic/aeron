@@ -54,30 +54,31 @@ public class EventDissector
 
         builder.append(" ");
 
-        switch (frameType(buffer, offset + relativeOffset))
+        final int frameOffset = offset + relativeOffset;
+        switch (frameType(buffer, frameOffset))
         {
             case HeaderFlyweight.HDR_TYPE_PAD:
             case HeaderFlyweight.HDR_TYPE_DATA:
                 final DataHeaderFlyweight dataFrame = DATA_HEADER;
-                dataFrame.wrap(buffer, offset + relativeOffset);
+                dataFrame.wrap(buffer, frameOffset, buffer.capacity() - frameOffset);
                 builder.append(dissect(dataFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SM:
                 final StatusMessageFlyweight smFrame = SM_HEADER;
-                smFrame.wrap(buffer, offset + relativeOffset);
+                smFrame.wrap(buffer,  frameOffset, buffer.capacity() - frameOffset);
                 builder.append(dissect(smFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_NAK:
                 final NakFlyweight nakFrame = NAK_HEADER;
-                nakFrame.wrap(buffer, offset + relativeOffset);
+                nakFrame.wrap(buffer,  frameOffset, buffer.capacity() - frameOffset);
                 builder.append(dissect(nakFrame));
                 break;
 
             case HeaderFlyweight.HDR_TYPE_SETUP:
                 final SetupFlyweight setupFrame = SETUP_HEADER;
-                setupFrame.wrap(buffer, offset + relativeOffset);
+                setupFrame.wrap(buffer,  frameOffset, buffer.capacity() - frameOffset);
                 builder.append(dissect(setupFrame));
                 break;
 

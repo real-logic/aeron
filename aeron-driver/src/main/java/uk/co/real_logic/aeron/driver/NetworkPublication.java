@@ -138,10 +138,10 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
         this.publisherLimit.setOrdered(0);
 
-        setupHeader.wrap(new UnsafeBuffer(setupFrameBuffer), 0);
+        setupHeader.wrap(setupFrameBuffer);
         initSetupFrame(initialTermId, termLength, sessionId, streamId);
 
-        dataHeader.wrap(new UnsafeBuffer(heartbeatFrameBuffer), 0);
+        dataHeader.wrap(heartbeatFrameBuffer);
         initHeartBeatFrame(sessionId, streamId);
     }
 

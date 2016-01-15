@@ -88,7 +88,7 @@ public class FlyweightTest
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_DATA);
         encodeHeader.frameLength(8);
 
-        encodeHeader.wrap(aBuff, 8);
+        encodeHeader.wrap(aBuff, 8, aBuff.capacity() - 8);
         encodeHeader.version((short)2);
         encodeHeader.flags((short)0x01);
         encodeHeader.headerType(HeaderFlyweight.HDR_TYPE_SM);
@@ -100,7 +100,7 @@ public class FlyweightTest
         assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA));
         assertThat(decodeHeader.frameLength(), is(8));
 
-        decodeHeader.wrap(aBuff, 8);
+        decodeHeader.wrap(aBuff, 8, aBuff.capacity() - 8);
         assertThat(decodeHeader.version(), is((short)2));
         assertThat(decodeHeader.flags(), is((short)0x01));
         assertThat(decodeHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SM));

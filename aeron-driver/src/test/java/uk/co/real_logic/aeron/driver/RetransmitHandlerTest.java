@@ -242,7 +242,7 @@ public class RetransmitHandlerTest
 
     private void addReceivedDataFrame(final int msgNum)
     {
-        dataHeader.wrap(rcvBuffer, 0);
+        dataHeader.wrap(rcvBuffer);
 
         dataHeader.termId(TERM_ID)
                   .streamId(STREAM_ID)

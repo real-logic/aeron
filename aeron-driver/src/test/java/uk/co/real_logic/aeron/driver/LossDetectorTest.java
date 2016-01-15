@@ -73,7 +73,7 @@ public class LossDetectorTest
         nakMessageSender = mock(NakMessageSender.class);
 
         handler = new LossDetector(DELAY_GENERATOR, nakMessageSender);
-        dataHeader.wrap(rcvBuffer, 0);
+        dataHeader.wrap(rcvBuffer);
     }
 
     @Test

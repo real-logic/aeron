@@ -556,7 +556,7 @@ public class ReceiverTest
 
     private void fillDataFrame(final DataHeaderFlyweight header, final int termOffset, final byte[] payload)
     {
-        header.wrap(dataBuffer, 0);
+        header.wrap(dataBuffer);
         header
             .termOffset(termOffset)
             .termId(ACTIVE_TERM_ID)
@@ -580,7 +580,7 @@ public class ReceiverTest
 
     private void fillSetupFrame(final SetupFlyweight header, final int termOffset)
     {
-        header.wrap(setupBuffer, 0);
+        header.wrap(setupBuffer);
         header
             .streamId(STREAM_ID)
             .sessionId(SESSION_ID)

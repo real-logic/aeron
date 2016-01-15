@@ -15,6 +15,10 @@
  */
 package uk.co.real_logic.aeron.protocol;
 
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteBuffer;
+
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
 /**
@@ -36,13 +40,27 @@ public class StatusMessageFlyweight extends HeaderFlyweight
     private static final int CONSUMPTION_TERM_OFFSET_FIELD_OFFSET = 20;
     private static final int RECEIVER_WINDOW_FIELD_OFFSET = 24;
 
+    public StatusMessageFlyweight()
+    {
+    }
+
+    public StatusMessageFlyweight(final ByteBuffer buffer)
+    {
+        super(buffer);
+    }
+
+    public StatusMessageFlyweight(final UnsafeBuffer buffer)
+    {
+        super(buffer);
+    }
+
     /**
      * return session id field
      * @return session id field
      */
     public int sessionId()
     {
-        return buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -52,7 +70,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight sessionId(final int sessionId)
     {
-        buffer.putInt(offset + SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        putInt(SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -64,7 +82,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public int streamId()
     {
-        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -75,7 +93,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight streamId(final int streamId)
     {
-        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        putInt(STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -87,7 +105,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public int consumptionTermOffset()
     {
-        return buffer.getInt(offset + CONSUMPTION_TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(CONSUMPTION_TERM_OFFSET_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -98,7 +116,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight consumptionTermOffset(final int termOffset)
     {
-        buffer.putInt(offset + CONSUMPTION_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
+        putInt(CONSUMPTION_TERM_OFFSET_FIELD_OFFSET, termOffset, LITTLE_ENDIAN);
 
         return this;
     }
@@ -110,7 +128,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public int consumptionTermId()
     {
-        return buffer.getInt(offset + CONSUMPTION_TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(CONSUMPTION_TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -121,7 +139,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight consumptionTermId(final int termId)
     {
-        buffer.putInt(offset + CONSUMPTION_TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
+        putInt(CONSUMPTION_TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
 
         return this;
     }
@@ -133,7 +151,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public int receiverWindowLength()
     {
-        return buffer.getInt(offset + RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
+        return getInt(RECEIVER_WINDOW_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -144,7 +162,7 @@ public class StatusMessageFlyweight extends HeaderFlyweight
      */
     public StatusMessageFlyweight receiverWindowLength(final int receiverWindowLength)
     {
-        buffer.putInt(offset + RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowLength, LITTLE_ENDIAN);
+        putInt(RECEIVER_WINDOW_FIELD_OFFSET, receiverWindowLength, LITTLE_ENDIAN);
 
         return this;
     }

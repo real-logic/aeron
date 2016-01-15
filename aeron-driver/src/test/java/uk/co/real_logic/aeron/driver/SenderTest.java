@@ -345,7 +345,7 @@ public class SenderTest
 
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
-        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
+        dataHeader.wrap(receivedFrames.remove());
         assertThat(dataHeader.frameLength(), is(0));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
     }
@@ -372,7 +372,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
-        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
+        dataHeader.wrap(receivedFrames.remove());
         assertThat(dataHeader.frameLength(), is(0));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
 
@@ -383,7 +383,7 @@ public class SenderTest
         sender.doWork();
         assertThat(receivedFrames.size(), greaterThanOrEqualTo(1));  // should send ticks
 
-        dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()), 0);
+        dataHeader.wrap(receivedFrames.remove());
         assertThat(dataHeader.frameLength(), is(0));
         assertThat(dataHeader.termOffset(), is(offsetOfMessage(2)));
     }

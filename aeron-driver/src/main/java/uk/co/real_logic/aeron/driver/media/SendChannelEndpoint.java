@@ -38,8 +38,8 @@ import static uk.co.real_logic.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_
  */
 public class SendChannelEndpoint extends UdpChannelTransport
 {
-    private final NakFlyweight nakMessage = new NakFlyweight();
-    private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
+    private final NakFlyweight nakMessage;
+    private final StatusMessageFlyweight statusMessage;
 
     private final Int2ObjectHashMap<NetworkPublication> driversPublicationByStreamId = new Int2ObjectHashMap<>();
     private final BiInt2ObjectMap<NetworkPublication> sendersPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
@@ -64,8 +64,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.nakMessagesReceived = systemCounters.nakMessagesReceived();
         this.statusMessagesReceived = systemCounters.statusMessagesReceived();
 
-        nakMessage.wrap(receiveBuffer(), 0);
-        statusMessage.wrap(receiveBuffer(), 0);
+        nakMessage = new NakFlyweight(receiveBuffer());
+        statusMessage = new StatusMessageFlyweight(receiveBuffer());
     }
 
     /**

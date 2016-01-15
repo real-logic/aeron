@@ -40,15 +40,14 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final DataPacketDispatcher dispatcher;
     private final SystemCounters systemCounters;
 
-    private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
-
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
-    private final SetupFlyweight setupHeader = new SetupFlyweight();
-
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
+    private final StatusMessageFlyweight smHeader;
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
-    private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight();
-    private final NakFlyweight nakHeader = new NakFlyweight();
+    private final NakFlyweight nakHeader;
+
+    private final SetupFlyweight setupHeader;
+    private final DataHeaderFlyweight dataHeader;
+    private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
     private volatile boolean isClosed = false;
 
@@ -67,22 +66,20 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             lossGenerator,
             logger);
 
-        smHeader.wrap(new UnsafeBuffer(smBuffer));
+        smHeader = new StatusMessageFlyweight(smBuffer);
         smHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
-            .flags((byte)0)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
             .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
 
-        nakHeader.wrap(new UnsafeBuffer(nakBuffer));
+        nakHeader = new NakFlyweight(nakBuffer);
         nakHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
-            .flags((byte)0)
             .headerType(HeaderFlyweight.HDR_TYPE_NAK)
             .frameLength(NakFlyweight.HEADER_LENGTH);
 
-        dataHeader.wrap(receiveBuffer(), 0);
-        setupHeader.wrap(receiveBuffer(), 0);
+        dataHeader = new DataHeaderFlyweight(receiveBuffer());
+        setupHeader = new SetupFlyweight(receiveBuffer());
 
         this.dispatcher = dispatcher;
         this.systemCounters = systemCounters;

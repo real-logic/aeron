@@ -201,4 +201,69 @@ public class MultiDriverTest
             eq(MESSAGE_LENGTH),
             any(Header.class));
     }
+
+    @Test(timeout = 10000)
+    public void shouldJoinExistingIdleStreamWithLockStepSendingReceiving() throws Exception
+    {
+        final int numMessagesToSendPreJoin = 0;
+        final int numMessagesToSendPostJoin = NUM_MESSAGES_PER_TERM;
+        final CountDownLatch newImageLatch = new CountDownLatch(1);
+
+        aeronBContext.availableImageHandler((image) -> newImageLatch.countDown());
+
+        launch();
+
+        publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
+        subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
+
+        Thread.sleep(200);  // intentioanlyl wait so that Publication and Subscription have time to do SETUP
+
+        subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
+
+        // wait until new subscriber gets new image indication
+        newImageLatch.await();
+
+        for (int i = 0; i < numMessagesToSendPostJoin; i++)
+        {
+            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Thread.yield();
+            }
+
+            final int fragmentsRead[] = new int[1];
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] > 0,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscriptionA.poll(fragmentHandlerA, 10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+
+            fragmentsRead[0] = 0;
+            SystemTestHelper.executeUntil(
+                () -> fragmentsRead[0] > 0,
+                (j) ->
+                {
+                    fragmentsRead[0] += subscriptionB.poll(fragmentHandlerB, 10);
+                    Thread.yield();
+                },
+                Integer.MAX_VALUE,
+                TimeUnit.MILLISECONDS.toNanos(500));
+        }
+
+        verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
+            any(UnsafeBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+
+        verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
+            any(UnsafeBuffer.class),
+            anyInt(),
+            eq(MESSAGE_LENGTH),
+            any(Header.class));
+    }
+
 }

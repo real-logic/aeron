@@ -58,6 +58,7 @@ class NetworkPublicationReceiverFields extends NetworkPublicationPadding2
 {
     protected long timeOfLastSendOrHeartbeat;
     protected long senderPositionLimit = 0;
+    protected long timeOfLastSetup;
     protected boolean trackSenderLimits = true;
     protected boolean shouldSendSetupFrame = true;
 }
@@ -132,7 +133,8 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         termLengthMask = termLength - 1;
         flowControl.initialize(initialTermId, termLength);
 
-        timeOfLastSendOrHeartbeat = clock.nanoTime();
+        timeOfLastSendOrHeartbeat = clock.nanoTime() - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        timeOfLastSetup = clock.nanoTime() - PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -372,7 +374,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
 
     private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
     {
-        if (0 != senderPosition || (now > (timeOfLastSendOrHeartbeat + PUBLICATION_SETUP_TIMEOUT_NS)))
+        if (now > (timeOfLastSetup + PUBLICATION_SETUP_TIMEOUT_NS))
         {
             setupFrameBuffer.clear();
             setupHeader.activeTermId(activeTermId).termOffset(termOffset);
@@ -383,12 +385,13 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
                 systemCounters.setupMessageShortSends().orderedIncrement();
             }
 
+            timeOfLastSetup = now;
             timeOfLastSendOrHeartbeat = now;
-        }
 
-        if (hasStatusMessageBeenReceived)
-        {
-            shouldSendSetupFrame = false;
+            if (hasStatusMessageBeenReceived)
+            {
+                shouldSendSetupFrame = false;
+            }
         }
     }
 

@@ -152,12 +152,14 @@ public class SenderTest
     @Test
     public void shouldSendSetupFrameOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
-        sender.doWork();
-        assertThat(receivedFrames.size(), is(0));
-        currentTimestamp += 10;
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
+        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
+        sender.doWork();
+        assertThat(receivedFrames.size(), is(1));
+        currentTimestamp += 10;
+        sender.doWork();
+        assertThat(receivedFrames.size(), is(2));
 
         setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
         assertThat(setupHeader.frameLength(), is(SetupFlyweight.HEADER_LENGTH));
@@ -173,10 +175,6 @@ public class SenderTest
     @Test
     public void shouldSendMultipleSetupFramesOnChannelWhenTimeoutWithoutStatusMessage() throws Exception
     {
-        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
-        sender.doWork();
-        assertThat(receivedFrames.size(), is(0));
-        currentTimestamp += 10;
         sender.doWork();
         assertThat(receivedFrames.size(), is(1));
 
@@ -191,12 +189,50 @@ public class SenderTest
     @Test
     public void shouldNotSendSetupFrameAfterReceivingStatusMessage() throws Exception
     {
-        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
-
         publication.senderPositionLimit(flowControl.onStatusMessage(INITIAL_TERM_ID, 0, 0, rcvAddress));
         sender.doWork();
+        assertThat(receivedFrames.size(), is(1));
+        receivedFrames.remove();
 
-        assertThat(receivedFrames.size(), is(0));
+        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10;
+        sender.doWork();
+
+        assertThat(receivedFrames.size(), is(1));
+        dataHeader.wrap(receivedFrames.remove());
+        assertThat(dataHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_DATA)); // heartbeat
+        assertThat(dataHeader.frameLength(), is(0));
+        assertThat(dataHeader.termOffset(), is(offsetOfMessage(1)));
+    }
+
+    @Test
+    public void shouldSendSetupFrameAfterReceivingStatusMessageWithSetupBit() throws Exception
+    {
+        publication.senderPositionLimit(
+            flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
+
+        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(PAYLOAD.length));
+        buffer.putBytes(0, PAYLOAD);
+
+        termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
+        sender.doWork();
+
+        assertThat(receivedFrames.size(), is(2)); // setup then data
+        receivedFrames.remove();
+        receivedFrames.remove();
+
+        publication.triggerSendSetupFrame();
+
+        sender.doWork();
+        assertThat(receivedFrames.size(), is(0)); // setup has been sent already, have to wait
+
+        currentTimestamp += Configuration.PUBLICATION_SETUP_TIMEOUT_NS + 10;
+
+        sender.doWork();
+
+        assertThat(receivedFrames.size(), is(1));
+
+        setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
+        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
     }
 
     @Test
@@ -211,10 +247,11 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(1));
+        assertThat(receivedFrames.size(), is(2));
+        setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
+        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
@@ -239,10 +276,12 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(2));
+        assertThat(receivedFrames.size(), is(3));
+
+        setupHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
+        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
@@ -271,7 +310,9 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
 
         sender.doWork();
-        assertThat(receivedFrames.size(), is(0));
+        assertThat(receivedFrames.size(), is(1));
+        setupHeader.wrap(receivedFrames.remove());
+        assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
 
         publication.senderPositionLimit(
             flowControl.onStatusMessage(INITIAL_TERM_ID, 0, ALIGNED_FRAME_LENGTH, rcvAddress));
@@ -302,10 +343,10 @@ public class SenderTest
 
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(1));
+        assertThat(receivedFrames.size(), is(2));
+        receivedFrames.remove();                   // skip setup
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-
         assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
@@ -333,8 +374,9 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(1));  // should send ticks
-        receivedFrames.remove();                   // skip data frame
+        assertThat(receivedFrames.size(), is(2));  // should send ticks
+        receivedFrames.remove();                   // skip setup & data frame
+        receivedFrames.remove();
 
         currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         sender.doWork();
@@ -362,8 +404,9 @@ public class SenderTest
         termAppenders[0].appendUnfragmentedMessage(headerWriter, buffer, 0, PAYLOAD.length);
         sender.doWork();
 
-        assertThat(receivedFrames.size(), is(1));  // should send ticks
-        receivedFrames.remove();                   // skip data frame
+        assertThat(receivedFrames.size(), is(2));  // should send ticks
+        receivedFrames.remove();
+        receivedFrames.remove();                   // skip setup & data frame
 
         currentTimestamp += Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         sender.doWork();

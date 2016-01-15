@@ -856,6 +856,16 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * @see CommonContext#aeronDirectoryName(String)
+         */
+        @Override
+        public Context aeronDirectoryName(String dirName)
+        {
+            super.aeronDirectoryName(dirName);
+            return this;
+        }
+
         public EpochClock epochClock()
         {
             return epochClock;

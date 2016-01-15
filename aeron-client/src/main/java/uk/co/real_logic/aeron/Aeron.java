@@ -454,6 +454,16 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
+         * @see CommonContext#aeronDirectoryName(String)
+         */
+        @Override
+        public Context aeronDirectoryName(String dirName)
+        {
+            super.aeronDirectoryName(dirName);
+            return this;
+        }
+
+        /**
          * Clean up all resources that the client uses to communicate with the Media Driver.
          */
         public void close()

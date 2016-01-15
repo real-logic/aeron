@@ -76,15 +76,15 @@ public class MultiDriverTest
 
         buffer.putInt(0, 1);
 
-        driverAContext.termBufferLength(TERM_BUFFER_SIZE);
-        driverAContext.aeronDirectoryName(baseDirA);
-        driverAContext.threadingMode(THREADING_MODE);
+        driverAContext.termBufferLength(TERM_BUFFER_SIZE)
+            .aeronDirectoryName(baseDirA)
+            .threadingMode(THREADING_MODE);
 
         aeronAContext.aeronDirectoryName(driverAContext.aeronDirectoryName());
 
-        driverBContext.termBufferLength(TERM_BUFFER_SIZE);
-        driverBContext.aeronDirectoryName(baseDirB);
-        driverBContext.threadingMode(THREADING_MODE);
+        driverBContext.termBufferLength(TERM_BUFFER_SIZE)
+            .aeronDirectoryName(baseDirB)
+            .threadingMode(THREADING_MODE);
 
         aeronBContext.aeronDirectoryName(driverBContext.aeronDirectoryName());
 

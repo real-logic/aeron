@@ -23,6 +23,7 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.BitUtil;
+import uk.co.real_logic.agrona.LangUtil;
 
 import java.net.*;
 import java.util.HashMap;
@@ -339,23 +340,24 @@ public class UdpChannelTest
     {
         return new TypeSafeMatcher<NetworkInterface>()
         {
-            @Override
             public void describeTo(Description description)
             {
                 description.appendText("Interface supports multicast or is loopack");
             }
 
-            @Override
             protected boolean matchesSafely(final NetworkInterface item)
             {
+                boolean matchesSafely = false;
                 try
                 {
-                    return item.supportsMulticast() || item.isLoopback();
+                    matchesSafely = item.supportsMulticast() || item.isLoopback();
                 }
                 catch (final SocketException e)
                 {
-                    throw new RuntimeException(e);
+                    LangUtil.rethrowUnchecked(e);
                 }
+
+                return matchesSafely;
             }
         };
     }

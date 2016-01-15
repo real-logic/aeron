@@ -422,23 +422,6 @@ public final class Aeron implements AutoCloseable
         }
 
         /**
-         * Set the timeout between service calls for the client.
-         *
-         * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
-         * closed.
-         *
-         * @deprecated overriden by value in CnC file.
-         * @param value the timeout between service calls.
-         * @return this Aeron.Context for method chaining.
-         */
-        @Deprecated
-        public Context interServiceTimeout(final long value)
-        {
-            interServiceTimeout = value;
-            return this;
-        }
-
-        /**
          * Return the timeout between service calls for the client.
          *
          * When exceeded, {@link #errorHandler} will be called and the active {@link Publication}s and {@link Image}s
@@ -456,7 +439,6 @@ public final class Aeron implements AutoCloseable
         /**
          * @see CommonContext#aeronDirectoryName(String)
          */
-        @Override
         public Context aeronDirectoryName(String dirName)
         {
             super.aeronDirectoryName(dirName);

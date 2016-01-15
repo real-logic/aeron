@@ -188,19 +188,16 @@ public class NetworkUtilTest
         private final IdentityHashMap<NetworkInterface, List<InterfaceAddress>> addressesByInterface =
             new IdentityHashMap<>();
 
-        @Override
         public Enumeration<NetworkInterface> getNetworkInterfaces() throws SocketException
         {
             return Collections.enumeration(addressesByInterface.keySet());
         }
 
-        @Override
         public List<InterfaceAddress> getInterfaceAddresses(NetworkInterface ifc)
         {
             return addressesByInterface.get(ifc);
         }
 
-        @Override
         public boolean isLoopback(NetworkInterface ifc) throws SocketException
         {
             return false;

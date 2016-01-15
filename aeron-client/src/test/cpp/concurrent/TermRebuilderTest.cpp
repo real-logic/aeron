@@ -19,6 +19,7 @@
 
 #include <thread>
 #include "MockAtomicBuffer.h"
+#include <concurrent/logbuffer/DataFrameHeader.h>
 #include <concurrent/logbuffer/TermRebuilder.h>
 #include <concurrent/logbuffer/LogBufferDescriptor.h>
 
@@ -78,13 +79,13 @@ TEST_F(TermRebuilderTest, shouldInsertLastFrameIntoBuffer)
     const std::int32_t tail = TERM_BUFFER_CAPACITY - frameLength;
     const std::int32_t termOffset = tail;
 
-    m_packet.putUInt16(FrameDescriptor::typeOffset(srcOffset), FrameDescriptor::PADDING_FRAME_TYPE);
+    m_packet.putUInt16(FrameDescriptor::typeOffset(srcOffset), DataFrameHeader::HDR_TYPE_PAD);
     m_packet.putInt32(srcOffset, frameLength);
 
     ON_CALL(m_log, getInt32(tail))
         .WillByDefault(testing::Return(frameLength));
     ON_CALL(m_log, getUInt16(FrameDescriptor::typeOffset(tail)))
-        .WillByDefault(testing::Return(FrameDescriptor::PADDING_FRAME_TYPE));
+        .WillByDefault(testing::Return(DataFrameHeader::HDR_TYPE_PAD));
 
     EXPECT_CALL(m_log, putBytes(tail, testing::Ref(m_packet), srcOffset, frameLength));
     EXPECT_CALL(m_log, putInt32Ordered(tail, frameLength));

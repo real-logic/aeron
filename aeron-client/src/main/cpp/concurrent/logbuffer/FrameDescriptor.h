@@ -68,10 +68,6 @@ static const util::index_t TYPE_OFFSET = 6;
 static const util::index_t LENGTH_OFFSET = 0;
 static const util::index_t TERM_OFFSET = 8;
 
-// TODO: Can we include DataFrameHeader.h?
-static const std::uint16_t PADDING_FRAME_TYPE = 0;
-
->>>>>>> [C++]: Implement TermScanner.  Add {put,get}Int16 to AtomicBuffer and associated mock methods.  Use std::int16 for frame type.
 inline static void checkHeaderLength(util::index_t length)
 {
     if (length != DataFrameHeader::LENGTH)

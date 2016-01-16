@@ -38,6 +38,7 @@ class MappedRawLog implements RawLog
 {
     private static final int ONE_GIG = 1 << 30;
 
+    private final int termLength;
     private final RawLogPartition[] partitions;
     private final EventLogger logger;
     private final File logFile;
@@ -46,10 +47,10 @@ class MappedRawLog implements RawLog
 
     MappedRawLog(final File location, final FileChannel blankTemplate, final int termLength, final EventLogger logger)
     {
+        this.termLength = termLength;
         this.logger = logger;
         this.logFile = location;
         partitions = new RawLogPartition[PARTITION_COUNT];
-
 
         try (final RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
              final FileChannel logChannel = raf.getChannel())
@@ -102,6 +103,11 @@ class MappedRawLog implements RawLog
         {
             throw new IllegalStateException(ex);
         }
+    }
+
+    public int termLength()
+    {
+        return termLength;
     }
 
     public void close()

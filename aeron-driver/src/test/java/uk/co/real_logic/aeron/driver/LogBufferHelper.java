@@ -40,6 +40,11 @@ public class LogBufferHelper
 
             private final UnsafeBuffer logMetaData = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
 
+            public int termLength()
+            {
+                return partitions[0].termBuffer().capacity();
+            }
+
             public Stream<RawLogPartition> stream()
             {
                 return Stream.of(partitions);

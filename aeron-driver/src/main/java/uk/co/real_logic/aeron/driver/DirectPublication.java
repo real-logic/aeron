@@ -29,21 +29,20 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
- * Encapsulation of a LogBuffer used directly between publishers and subscribers.
+ * Encapsulation of a LogBuffer used directly between publishers and subscribers for IPC.
  */
 public class DirectPublication implements DriverManagedResource
 {
     private final long correlationId;
     private final long tripGain;
-    private long tripLimit;
+    private long tripLimit = 0;
     private final int sessionId;
     private final int streamId;
     private final int termWindowLength;
     private final int positionBitsToShift;
-    private final RawLog rawLog;
     private final LogBufferPartition[] logPartitions;
-    private final UnsafeBuffer logMetaDataBuffer;
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
+    private final RawLog rawLog;
 
     private final Position publisherLimit;
     private long consumerPosition = 0;
@@ -66,16 +65,12 @@ public class DirectPublication implements DriverManagedResource
             .map((partition) -> new LogBufferPartition(partition.termBuffer(), partition.metaDataBuffer()))
             .toArray(LogBufferPartition[]::new);
 
-        final int termLength = logPartitions[0].termBuffer().capacity();
-
+        final int termLength = rawLog.termLength();
         this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.rawLog = rawLog;
         this.publisherLimit = publisherLimit;
         this.tripGain = this.termWindowLength / 8;
-        this.tripLimit = 0;
-
-        this.logMetaDataBuffer = rawLog.logMetaData();
 
         this.publisherLimit.setOrdered(0);
     }
@@ -123,9 +118,9 @@ public class DirectPublication implements DriverManagedResource
         subscriberPosition.close();
     }
 
-    // called by conductor thread to update publisherLimit
     public int updatePublishersLimit()
     {
+        int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = 0;
 
@@ -137,7 +132,6 @@ public class DirectPublication implements DriverManagedResource
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        int workCount = 0;
         final long proposedLimit = subscriberPositions.isEmpty() ? 0L : minSubscriberPosition + termWindowLength;
 
         if (proposedLimit > tripLimit)
@@ -152,7 +146,6 @@ public class DirectPublication implements DriverManagedResource
         return workCount;
     }
 
-    // called by conductor thread to clean logbuffers
     public int cleanLogBuffer()
     {
         int workCount = 0;
@@ -169,10 +162,9 @@ public class DirectPublication implements DriverManagedResource
         return workCount;
     }
 
-    // position a new subscriber should start reception at
     public long joiningPosition()
     {
-        long maxSubscriberPosition = publicationPosition();
+        long maxSubscriberPosition = producerPosition();
 
         final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
@@ -184,12 +176,12 @@ public class DirectPublication implements DriverManagedResource
         return maxSubscriberPosition;
     }
 
-    public long publicationPosition()
+    public long producerPosition()
     {
         final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
-        final int termOffset = termOffset(rawTail, termWindowLength);
+        final int termOffset = termOffset(rawTail, rawLog.termLength());
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }
@@ -230,11 +222,6 @@ public class DirectPublication implements DriverManagedResource
     public int decRef()
     {
         return --refCount;
-    }
-
-    public long producerPosition()
-    {
-        return publicationPosition();
     }
 
     public long consumerPosition()

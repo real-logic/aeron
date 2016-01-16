@@ -280,7 +280,7 @@ public class NetworkPublication
         {
             final long senderPosition = this.senderPosition.getVolatile();
             final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-            isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailVolatile();
+            isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailOffsetVolatile();
 
             if (isActive && isFlushed)
             {

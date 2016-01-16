@@ -89,7 +89,7 @@ public class LogBufferPartition
      *
      * @return the current tail value.
      */
-    public int tailVolatile()
+    public int tailOffsetVolatile()
     {
         final long tail = metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET) & 0xFFFF_FFFFL;
 
@@ -104,18 +104,6 @@ public class LogBufferPartition
     public long rawTailVolatile()
     {
         return metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET);
-    }
-
-    /**
-     * Get the current tail value.
-     *
-     * @return the current tail value.
-     */
-    public int tail()
-    {
-        final long tail = metaDataBuffer.getLong(TERM_TAIL_COUNTER_OFFSET) & 0xFFFF_FFFFL;
-
-        return (int)Math.min(tail, (long)termBuffer.capacity());
     }
 
     /**

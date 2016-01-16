@@ -35,13 +35,15 @@ public class LogBufferUnblocker
     public static boolean unblock(
         final LogBufferPartition[] logPartitions, final UnsafeBuffer logMetaDataBuffer, final long blockedPosition)
     {
-        final int positionBitsToShift = Integer.numberOfTrailingZeros(logPartitions[0].termBuffer().capacity());
+        final int termLength = logPartitions[0].termBuffer().capacity();
+        final int positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         final int activeIndex = indexByPosition(blockedPosition, positionBitsToShift);
         final LogBufferPartition activePartition = logPartitions[activeIndex];
         final UnsafeBuffer termBuffer = activePartition.termBuffer();
+        final long rawTail = activePartition.rawTailVolatile();
+        final int termId = termId(rawTail);
+        final int tailOffset = termOffset(rawTail, termLength);
         final int blockedOffset = computeTermOffsetFromPosition(blockedPosition, positionBitsToShift);
-        final int termId = termId(activePartition.rawTailVolatile());
-        final int tailOffset = activePartition.tailVolatile();
 
         boolean result = false;
 

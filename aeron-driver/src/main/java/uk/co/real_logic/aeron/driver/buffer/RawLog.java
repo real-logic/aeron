@@ -27,6 +27,13 @@ import java.util.stream.Stream;
 public interface RawLog extends AutoCloseable
 {
     /**
+     * The length of each term in bytes.
+     *
+     * @return the length of each term in bytes.
+     */
+    int termLength();
+
+    /**
      * A {@link Stream} of the {@link RawLogPartition} buffers.
      *
      * @return a {@link Stream} of the {@link RawLogPartition} buffers.

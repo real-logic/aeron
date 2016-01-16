@@ -194,8 +194,7 @@ public class DriverConductor implements Agent
         final ArrayList<PublicationImage> publicationImages = this.publicationImages;
         for (int i = 0, size = publicationImages.size(); i < size; i++)
         {
-            final PublicationImage image = publicationImages.get(i);
-            workCount += image.trackRebuild(now);
+            workCount += publicationImages.get(i).trackRebuild(now);
         }
 
         final ArrayList<NetworkPublication> networkPublications = this.networkPublications;

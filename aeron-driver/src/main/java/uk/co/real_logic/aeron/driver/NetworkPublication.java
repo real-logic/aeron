@@ -159,14 +159,14 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
 
         if (shouldSendSetupFrame)
         {
-            setupMessageCheck(now, activeTermId, termOffset, senderPosition);
+            setupMessageCheck(now, activeTermId, termOffset);
         }
 
         final int bytesSent = sendData(now, senderPosition, termOffset);
 
         if (0 == bytesSent)
         {
-            heartbeatMessageCheck(now, senderPosition, activeTermId);
+            heartbeatMessageCheck(now, activeTermId, termOffset);
             senderPositionLimit = flowControl.onIdle(now);
         }
 
@@ -372,7 +372,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         return bytesSent;
     }
 
-    private void setupMessageCheck(final long now, final int activeTermId, final int termOffset, final long senderPosition)
+    private void setupMessageCheck(final long now, final int activeTermId, final int termOffset)
     {
         if (now > (timeOfLastSetup + PUBLICATION_SETUP_TIMEOUT_NS))
         {
@@ -395,12 +395,10 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         }
     }
 
-    private void heartbeatMessageCheck(final long now, final long senderPosition, final int activeTermId)
+    private void heartbeatMessageCheck(final long now, final int activeTermId, final int termOffset)
     {
         if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
-            final int termOffset = (int)senderPosition & termLengthMask;
-
             heartbeatFrameBuffer.clear();
             dataHeader.termId(activeTermId).termOffset(termOffset);
 

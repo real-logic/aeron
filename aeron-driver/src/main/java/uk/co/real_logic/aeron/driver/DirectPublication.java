@@ -231,6 +231,6 @@ public class DirectPublication implements DriverManagedResource
 
     public boolean unblockAtConsumerPosition()
     {
-        return LogBufferUnblocker.unblock(logPartitions, rawLog.logMetaData(), consumerPosition());
+        return LogBufferUnblocker.unblock(logPartitions, rawLog.logMetaData(), consumerPosition);
     }
 }

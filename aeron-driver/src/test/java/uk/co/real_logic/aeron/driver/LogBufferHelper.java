@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
+import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
@@ -31,7 +31,7 @@ public class LogBufferHelper
     {
         return new RawLog()
         {
-            private final RawLogPartition[] partitions = new RawLogPartition[]
+            private final LogBufferPartition[] partitions = new LogBufferPartition[]
             {
                 newTestLogBuffer(termLength, metaDataLength),
                 newTestLogBuffer(termLength, metaDataLength),
@@ -45,12 +45,12 @@ public class LogBufferHelper
                 return partitions[0].termBuffer().capacity();
             }
 
-            public Stream<RawLogPartition> stream()
+            public Stream<LogBufferPartition> stream()
             {
                 return Stream.of(partitions);
             }
 
-            public RawLogPartition[] partitions()
+            public LogBufferPartition[] partitions()
             {
                 return partitions;
             }
@@ -82,9 +82,9 @@ public class LogBufferHelper
         };
     }
 
-    private static RawLogPartition newTestLogBuffer(final int termBufferLength, final int metaDataBufferLength)
+    private static LogBufferPartition newTestLogBuffer(final int termBufferLength, final int metaDataBufferLength)
     {
-        return new RawLogPartition(
+        return new LogBufferPartition(
             new UnsafeBuffer(ByteBuffer.allocateDirect(termBufferLength)),
             new UnsafeBuffer(ByteBuffer.allocateDirect(metaDataBufferLength)));
     }

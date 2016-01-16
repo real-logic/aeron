@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -39,7 +40,7 @@ class MappedRawLog implements RawLog
     private static final int ONE_GIG = 1 << 30;
 
     private final int termLength;
-    private final RawLogPartition[] partitions;
+    private final LogBufferPartition[] partitions;
     private final EventLogger logger;
     private final File logFile;
     private final MappedByteBuffer[] mappedBuffers;
@@ -50,7 +51,7 @@ class MappedRawLog implements RawLog
         this.termLength = termLength;
         this.logger = logger;
         this.logFile = location;
-        partitions = new RawLogPartition[PARTITION_COUNT];
+        partitions = new LogBufferPartition[PARTITION_COUNT];
 
         try (final RandomAccessFile raf = new RandomAccessFile(logFile, "rw");
              final FileChannel logChannel = raf.getChannel())
@@ -69,7 +70,7 @@ class MappedRawLog implements RawLog
                 {
                     final int metaDataOffset = metaDataSectionOffset + (i * TERM_META_DATA_LENGTH);
 
-                    partitions[i] = new RawLogPartition(
+                    partitions[i] = new LogBufferPartition(
                         new UnsafeBuffer(mappedBuffer, i * termLength, termLength),
                         new UnsafeBuffer(mappedBuffer, metaDataOffset, TERM_META_DATA_LENGTH));
                 }
@@ -90,7 +91,7 @@ class MappedRawLog implements RawLog
                 {
                     mappedBuffers[i] = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
 
-                    partitions[i] = new RawLogPartition(
+                    partitions[i] = new LogBufferPartition(
                         new UnsafeBuffer(mappedBuffers[i]),
                         new UnsafeBuffer(metaDataMappedBuffer, i * TERM_META_DATA_LENGTH, TERM_META_DATA_LENGTH));
                 }
@@ -123,12 +124,12 @@ class MappedRawLog implements RawLog
         }
     }
 
-    public Stream<RawLogPartition> stream()
+    public Stream<LogBufferPartition> stream()
     {
         return Stream.of(partitions);
     }
 
-    public RawLogPartition[] partitions()
+    public LogBufferPartition[] partitions()
     {
         return partitions;
     }

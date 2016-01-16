@@ -123,11 +123,7 @@ public class NetworkPublication
         this.mtuLength = mtuLength;
         this.initialTermId = initialTermId;
 
-        logPartitions = rawLog
-            .stream()
-            .map((partition) -> new LogBufferPartition(partition.termBuffer(), partition.metaDataBuffer()))
-            .toArray(LogBufferPartition[]::new);
-
+        logPartitions = rawLog.partitions();
         sendBuffers = rawLog.sliceTerms();
 
         final int termLength = rawLog.termLength();

@@ -59,11 +59,7 @@ public class DirectPublication implements DriverManagedResource
         this.correlationId = correlationId;
         this.sessionId = sessionId;
         this.streamId = streamId;
-
-        this.logPartitions = rawLog
-            .stream()
-            .map((partition) -> new LogBufferPartition(partition.termBuffer(), partition.metaDataBuffer()))
-            .toArray(LogBufferPartition[]::new);
+        this.logPartitions = rawLog.partitions();
 
         final int termLength = rawLog.termLength();
         this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);

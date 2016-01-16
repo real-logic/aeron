@@ -72,8 +72,9 @@ class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
 /**
  * Publication to be sent to registered subscribers.
  */
-public class NetworkPublication extends NetworkPublicationPadding3 implements
-    RetransmitSender, AutoCloseable, DriverManagedResource
+public class NetworkPublication
+    extends NetworkPublicationPadding3
+    implements RetransmitSender, AutoCloseable, DriverManagedResource
 {
     private final int positionBitsToShift;
     private final int initialTermId;
@@ -490,7 +491,7 @@ public class NetworkPublication extends NetworkPublicationPadding3 implements
         final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
-        final int termOffset = termOffset(rawTail, termWindowLength);
+        final int termOffset = termOffset(rawTail, termLengthMask + 1);
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }

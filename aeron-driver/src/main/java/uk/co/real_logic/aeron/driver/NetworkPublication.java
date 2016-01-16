@@ -130,7 +130,7 @@ public class NetworkPublication
 
         sendBuffers = rawLog.sliceTerms();
 
-        final int termLength = logPartitions[0].termBuffer().capacity();
+        final int termLength = rawLog.termLength();
         termLengthMask = termLength - 1;
         flowControl.initialize(initialTermId, termLength);
 

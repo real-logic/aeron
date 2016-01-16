@@ -156,13 +156,13 @@ public class PublicationImage
         termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
         this.lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
-        final int termCapacity = termBuffers[0].capacity();
+        final int termLength = rawLog.termLength();
 
-        this.currentWindowLength = Math.min(termCapacity, initialWindowLength);
-        this.currentGain = Math.min(currentWindowLength / 4, termCapacity / 4);
+        this.currentWindowLength = Math.min(termLength, initialWindowLength);
+        this.currentGain = Math.min(currentWindowLength / 4, termLength / 4);
 
-        this.termLengthMask = termCapacity - 1;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
+        this.termLengthMask = termLength - 1;
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.initialTermId = initialTermId;
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);

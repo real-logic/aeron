@@ -487,7 +487,7 @@ public class NetworkPublication
         final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
         final int initialTermId = initialTermId(logMetaDataBuffer);
         final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
-        final int termOffset = termOffset(rawTail, termLengthMask + 1);
+        final int termOffset = termOffset(rawTail, rawLog.termLength());
 
         return computePosition(termId(rawTail), termOffset, positionBitsToShift, initialTermId);
     }

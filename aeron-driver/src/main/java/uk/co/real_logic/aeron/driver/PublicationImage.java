@@ -336,10 +336,9 @@ public class PublicationImage
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
-        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
         {
-            final long position = subscriberPositions.get(i).getVolatile();
+            final long position = subscriberPosition.getVolatile();
             minSubscriberPosition = Math.min(minSubscriberPosition, position);
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
@@ -581,14 +580,13 @@ public class PublicationImage
 
     private boolean isDrained()
     {
-        long subscriberPosition = Long.MAX_VALUE;
-        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
-        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
+        long minSubscriberPosition = Long.MAX_VALUE;
+        for (final ReadablePosition position : subscriberPositions)
         {
-            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).getVolatile());
+            minSubscriberPosition = Math.min(minSubscriberPosition, position.getVolatile());
         }
 
-        return subscriberPosition >= rebuildPosition;
+        return minSubscriberPosition >= rebuildPosition;
     }
 
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)

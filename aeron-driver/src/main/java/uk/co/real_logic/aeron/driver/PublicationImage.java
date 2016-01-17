@@ -336,9 +336,10 @@ public class PublicationImage
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
 
-        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            final long position = subscriberPosition.getVolatile();
+            final long position = subscriberPositions.get(i).getVolatile();
             minSubscriberPosition = Math.min(minSubscriberPosition, position);
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
@@ -581,9 +582,10 @@ public class PublicationImage
     private boolean isDrained()
     {
         long minSubscriberPosition = Long.MAX_VALUE;
-        for (final ReadablePosition position : subscriberPositions)
+        final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
+        for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            minSubscriberPosition = Math.min(minSubscriberPosition, position.getVolatile());
+            minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPositions.get(i).getVolatile());
         }
 
         return minSubscriberPosition >= rebuildPosition;

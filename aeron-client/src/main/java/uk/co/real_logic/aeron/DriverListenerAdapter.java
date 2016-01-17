@@ -92,6 +92,7 @@ class DriverListenerAdapter implements MessageHandler
             {
                 imageReady.wrap(buffer, index);
 
+                subscriberPositionMap.clear();
                 for (int i = 0, max = imageReady.subscriberPositionCount(); i < max; i++)
                 {
                     final long registrationId = imageReady.positionIndicatorRegistrationId(i);
@@ -107,8 +108,6 @@ class DriverListenerAdapter implements MessageHandler
                     imageReady.logFileName(),
                     imageReady.sourceIdentity(),
                     imageReady.correlationId());
-
-                subscriberPositionMap.clear();
                 break;
             }
 

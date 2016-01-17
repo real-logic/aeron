@@ -271,10 +271,9 @@ public class DriverConductor implements Agent
             receiverProxy.newPublicationImage(channelEndpoint, image);
 
             clientProxy.onAvailableImage(
-                streamId,
+                imageCorrelationId, streamId,
                 sessionId,
-                rawLog,
-                imageCorrelationId,
+                rawLog.logFileName(),
                 subscriberPositions,
                 generateSourceIdentity(sourceAddress));
         }
@@ -585,10 +584,10 @@ public class DriverConductor implements Agent
         linkPublication(registrationId, publication, getOrAddClient(clientId));
 
         clientProxy.onPublicationReady(
+            registrationId,
             streamId,
             publication.sessionId(),
-            publication.rawLog(),
-            registrationId,
+            publication.rawLog().logFileName(),
             publication.publisherLimitId());
     }
 
@@ -600,10 +599,10 @@ public class DriverConductor implements Agent
         linkPublication(registrationId, directPublication, client);
 
         clientProxy.onPublicationReady(
+            registrationId,
             streamId,
             directPublication.sessionId(),
-            directPublication.rawLog(),
-            registrationId,
+            directPublication.rawLog().logFileName(),
             directPublication.publisherLimitId());
     }
 
@@ -757,18 +756,18 @@ public class DriverConductor implements Agent
             .forEach(
                 (image) ->
                 {
-                    final Position position = newPosition(
-                        "subscriber pos", channel, image.sessionId(), streamId, registrationId);
+                    final int sessionId = image.sessionId();
+                    final Position position = newPosition("subscriber pos", channel, sessionId, streamId, registrationId);
                     position.setOrdered(image.rebuildPosition());
 
                     image.addSubscriber(position);
                     subscription.addImage(image, position);
 
                     clientProxy.onAvailableImage(
-                        streamId,
-                        image.sessionId(),
-                        image.rawLog(),
                         image.correlationId(),
+                        streamId,
+                        sessionId,
+                        image.rawLog().logFileName(),
                         Collections.singletonList(new SubscriberPosition(subscription, position)),
                         generateSourceIdentity(image.sourceAddress()));
                 });
@@ -776,18 +775,17 @@ public class DriverConductor implements Agent
 
     private void onAddDirectPublicationSubscription(final int streamId, final long registrationId, final long clientId)
     {
-        final DirectPublication directPublication = getOrAddDirectPublication(streamId);
+        final DirectPublication publication = getOrAddDirectPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);
 
-        final Position position = newPosition(
-            "subscriber pos", CommonContext.IPC_CHANNEL, directPublication.sessionId(), streamId, registrationId);
-        position.setOrdered(directPublication.joiningPosition());
+        final int sessionId = publication.sessionId();
+        final Position position = newPosition("subscriber pos", CommonContext.IPC_CHANNEL, sessionId, streamId, registrationId);
+        position.setOrdered(publication.joiningPosition());
 
-        final SubscriptionLink subscriptionLink = new SubscriptionLink(
-            registrationId, streamId, directPublication, position, client);
+        final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, streamId, publication, position, client);
 
         subscriptionLinks.add(subscriptionLink);
-        directPublication.addSubscription(position);
+        publication.addSubscription(position);
 
         clientProxy.operationSucceeded(registrationId);
 
@@ -795,10 +793,10 @@ public class DriverConductor implements Agent
         subscriberPositions.add(new SubscriberPosition(subscriptionLink, position));
 
         clientProxy.onAvailableImage(
+            publication.correlationId(),
             streamId,
-            directPublication.sessionId(),
-            directPublication.rawLog(),
-            directPublication.correlationId(),
+            sessionId,
+            publication.rawLog().logFileName(),
             subscriberPositions,
             CommonContext.IPC_CHANNEL);
     }

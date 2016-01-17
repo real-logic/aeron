@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.ErrorCode;
 import uk.co.real_logic.aeron.command.*;
-import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -75,10 +74,10 @@ public class ClientProxy
     }
 
     public void onAvailableImage(
+        final long correlationId,
         final int streamId,
         final int sessionId,
-        final RawLog rawLog,
-        final long correlationId,
+        final String logFileName,
         final List<SubscriberPosition> subscriberPositions,
         final String sourceIdentity)
     {
@@ -97,32 +96,31 @@ public class ClientProxy
         }
 
         imageReady
-            .logFileName(rawLog.logFileName())
+            .logFileName(logFileName)
             .sourceIdentity(sourceIdentity);
 
         final int length = imageReady.length();
-        logger.log(CMD_OUT_AVAILABLE_IMAGE, tmpBuffer, 0, length);
         transmitter.transmit(ON_AVAILABLE_IMAGE, tmpBuffer, 0, length);
+        logger.log(CMD_OUT_AVAILABLE_IMAGE, tmpBuffer, 0, length);
     }
 
     public void onPublicationReady(
+        final long registrationId,
         final int streamId,
         final int sessionId,
-        final RawLog rawLog,
-        final long registrationId,
+        final String logFileName,
         final int positionCounterId)
     {
         publicationReady
             .sessionId(sessionId)
             .streamId(streamId)
             .correlationId(registrationId)
-            .publicationLimitCounterId(positionCounterId);
-
-        publicationReady.logFileName(rawLog.logFileName());
+            .publicationLimitCounterId(positionCounterId)
+            .logFileName(logFileName);
 
         final int length = publicationReady.length();
-        logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, length);
         transmitter.transmit(ON_PUBLICATION_READY, tmpBuffer, 0, length);
+        logger.log(CMD_OUT_PUBLICATION_READY, tmpBuffer, 0, length);
     }
 
     public void operationSucceeded(final long correlationId)
@@ -130,8 +128,8 @@ public class ClientProxy
         correlatedMessage.clientId(0);
         correlatedMessage.correlationId(correlationId);
 
-        logger.log(EventCode.CMD_OUT_ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
         transmitter.transmit(ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
+        logger.log(EventCode.CMD_OUT_ON_OPERATION_SUCCESS, tmpBuffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
     public void onUnavailableImage(final long correlationId, final int streamId, final String channel)
@@ -142,7 +140,7 @@ public class ClientProxy
             .channel(channel);
 
         final int length = imageMessage.length();
-        logger.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, length);
         transmitter.transmit(ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, length);
+        logger.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, tmpBuffer, 0, length);
     }
 }

@@ -68,7 +68,22 @@ public class DriverProxy
 
     public long addPublication(final String channel, final int streamId)
     {
-        return sendPublicationMessage(channel, streamId, ADD_PUBLICATION);
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        publicationMessage
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        publicationMessage
+            .streamId(streamId)
+            .channel(channel);
+
+        if (!toDriverCommandBuffer.write(ADD_PUBLICATION, buffer, 0, publicationMessage.length()))
+        {
+            throw new IllegalStateException("could not write publication message");
+        }
+
+        return correlationId;
     }
 
     public long removePublication(final long registrationId)
@@ -87,7 +102,24 @@ public class DriverProxy
 
     public long addSubscription(final String channel, final int streamId)
     {
-        return sendSubscriptionMessage(ADD_SUBSCRIPTION, channel, streamId, -1);
+        final long registrationId = -1;
+        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
+
+        subscriptionMessage
+            .clientId(clientId)
+            .correlationId(correlationId);
+
+        subscriptionMessage
+            .registrationCorrelationId(registrationId)
+            .streamId(streamId)
+            .channel(channel);
+
+        if (!toDriverCommandBuffer.write(ADD_SUBSCRIPTION, buffer, 0, subscriptionMessage.length()))
+        {
+            throw new IllegalStateException("could not write subscription message");
+        }
+
+        return correlationId;
     }
 
     public long removeSubscription(final long registrationId)
@@ -114,46 +146,5 @@ public class DriverProxy
         {
             throw new IllegalStateException("could not write keepalive message");
         }
-    }
-
-    private long sendPublicationMessage(final String channel, final int streamId, final int msgTypeId)
-    {
-        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        publicationMessage
-            .clientId(clientId)
-            .correlationId(correlationId);
-
-        publicationMessage
-            .streamId(streamId)
-            .channel(channel);
-
-        if (!toDriverCommandBuffer.write(msgTypeId, buffer, 0, publicationMessage.length()))
-        {
-            throw new IllegalStateException("could not write publication message");
-        }
-
-        return correlationId;
-    }
-
-    private long sendSubscriptionMessage(final int msgTypeId, final String channel, final int streamId, final long registrationId)
-    {
-        final long correlationId = toDriverCommandBuffer.nextCorrelationId();
-
-        subscriptionMessage
-            .clientId(clientId)
-            .correlationId(correlationId);
-
-        subscriptionMessage
-            .registrationCorrelationId(registrationId)
-            .streamId(streamId)
-            .channel(channel);
-
-        if (!toDriverCommandBuffer.write(msgTypeId, buffer, 0, subscriptionMessage.length()))
-        {
-            throw new IllegalStateException("could not write subscription message");
-        }
-
-        return correlationId;
     }
 }

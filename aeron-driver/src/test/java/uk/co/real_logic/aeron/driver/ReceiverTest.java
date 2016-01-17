@@ -20,13 +20,13 @@ import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
-import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.cmd.CreatePublicationImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.*;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.Header;
+import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.logbuffer.TermReader;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
@@ -148,7 +148,7 @@ public class ReceiverTest
 
         termBuffers = rawLog
             .stream()
-            .map(RawLogPartition::termBuffer)
+            .map(LogBufferPartition::termBuffer)
             .toArray(UnsafeBuffer[]::new);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(

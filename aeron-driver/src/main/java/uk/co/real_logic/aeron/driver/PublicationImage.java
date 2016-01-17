@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
-import uk.co.real_logic.aeron.driver.buffer.RawLogPartition;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
@@ -110,7 +109,7 @@ public class PublicationImage
     private final ReceiveChannelEndpoint channelEndpoint;
     private final SystemCounters systemCounters;
     private final NanoClock clock;
-    private final UnsafeBuffer[] termBuffers;
+    private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final Position hwmPosition;
     private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
@@ -153,7 +152,11 @@ public class PublicationImage
         this.timeOfLastStatusChange = time;
         this.lastPacketTimestamp = time;
 
-        termBuffers = rawLog.stream().map(RawLogPartition::termBuffer).toArray(UnsafeBuffer[]::new);
+        for (int i = 0; i < PARTITION_COUNT; i++)
+        {
+            termBuffers[i] = rawLog.partitions()[i].termBuffer();
+        }
+
         this.lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
         final int termLength = rawLog.termLength();
@@ -578,14 +581,14 @@ public class PublicationImage
 
     private boolean isDrained()
     {
-        long subscriberPosition = Long.MAX_VALUE;
+        long minSubscriberPosition = Long.MAX_VALUE;
         final List<ReadablePosition> subscriberPositions = this.subscriberPositions;
         for (int i = 0, size = subscriberPositions.size(); i < size; i++)
         {
-            subscriberPosition = Math.min(subscriberPosition, subscriberPositions.get(i).getVolatile());
+            minSubscriberPosition = Math.min(minSubscriberPosition, subscriberPositions.get(i).getVolatile());
         }
 
-        return subscriberPosition >= rebuildPosition;
+        return minSubscriberPosition >= rebuildPosition;
     }
 
     private boolean isHeartbeat(final UnsafeBuffer buffer, final int length)

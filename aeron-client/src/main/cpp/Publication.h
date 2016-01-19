@@ -350,7 +350,7 @@ private:
         std::int64_t position,
         const TermAppender::Result& result)
     {
-        std::int64_t newPosition = BACK_PRESSURED;
+        std::int64_t newPosition = ADMIN_ACTION;
 
         if (result.termOffset > 0)
         {
@@ -365,8 +365,6 @@ private:
             m_appenders[nextIndex]->tailTermId(result.termId + 1);
             m_appenders[nextNextIndex]->statusOrdered(LogBufferDescriptor::NEEDS_CLEANING);
             LogBufferDescriptor::activePartitionIndex(m_logMetaDataBuffer, nextIndex);
-
-            newPosition = ADMIN_ACTION;
         }
 
         return newPosition;

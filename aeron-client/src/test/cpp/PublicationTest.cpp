@@ -163,7 +163,7 @@ TEST_F(PublicationTest, shouldFailToOfferWhenAppendFails)
     m_publicationLimit.set(LONG_MAX);
 
     EXPECT_EQ(m_publication->position(), initialPosition);
-    EXPECT_EQ(m_publication->offer(m_srcBuffer), BACK_PRESSURED);
+    EXPECT_EQ(m_publication->offer(m_srcBuffer), ADMIN_ACTION);
 }
 
 TEST_F(PublicationTest, shouldRotateWhenAppendTrips)

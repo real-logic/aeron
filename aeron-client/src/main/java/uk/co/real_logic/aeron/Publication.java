@@ -382,7 +382,7 @@ public class Publication implements AutoCloseable
 
     private long newPosition(final int index, final int currentTail, final long position, final long result)
     {
-        long newPosition = BACK_PRESSURED;
+        long newPosition = ADMIN_ACTION;
         final int termOffset = TermAppender.termOffset(result);
         if (termOffset > 0)
         {
@@ -396,8 +396,6 @@ public class Publication implements AutoCloseable
             termAppenders[nextIndex].tailTermId(TermAppender.termId(result) + 1);
             termAppenders[nextNextIndex].statusOrdered(NEEDS_CLEANING);
             LogBufferDescriptor.activePartitionIndex(logMetaDataBuffer, nextIndex);
-
-            newPosition = ADMIN_ACTION;
         }
 
         return newPosition;

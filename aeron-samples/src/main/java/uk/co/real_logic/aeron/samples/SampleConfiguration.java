@@ -56,10 +56,10 @@ public class SampleConfiguration
 
     static
     {
-        CHANNEL = System.getProperty(CHANNEL_PROP, "udp://localhost:40123");
+        CHANNEL = System.getProperty(CHANNEL_PROP, "aeron:udp?remote=localhost:40123");
         STREAM_ID = Integer.getInteger(STREAM_ID_PROP, 10);
-        PING_CHANNEL = System.getProperty(PING_CHANNEL_PROP, "udp://localhost:40123");
-        PONG_CHANNEL = System.getProperty(PONG_CHANNEL_PROP, "udp://localhost:40124");
+        PING_CHANNEL = System.getProperty(PING_CHANNEL_PROP, "aeron:udp?remote=localhost:40123");
+        PONG_CHANNEL = System.getProperty(PONG_CHANNEL_PROP, "aeron:udp?remote=localhost:40124");
         PING_STREAM_ID = Integer.getInteger(PING_STREAM_ID_PROP, 10);
         PONG_STREAM_ID = Integer.getInteger(PONG_STREAM_ID_PROP, 10);
         FRAGMENT_COUNT_LIMIT = Integer.getInteger(FRAME_COUNT_LIMIT_PROP, 256);

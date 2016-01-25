@@ -40,7 +40,7 @@ import static org.mockito.Mockito.*;
  */
 public class MultiDriverTest
 {
-    public static final String MULTICAST_URI = "udp://localhost@224.20.30.39:54326";
+    public static final String MULTICAST_URI = "aeron:udp?group=224.20.30.39:54326|interface=localhost";
 
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;

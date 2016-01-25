@@ -37,10 +37,10 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.UNFRAGMENTED;
 public class FragmentedMessageTest
 {
     @DataPoint
-    public static final String UNICAST_CHANNEL = "udp://localhost:54325";
+    public static final String UNICAST_CHANNEL = "aeron:udp?remote=localhost:54325";
 
     @DataPoint
-    public static final String MULTICAST_CHANNEL = "udp://localhost@224.20.30.39:54326";
+    public static final String MULTICAST_CHANNEL = "aeron:udp?group=224.20.30.39:54326|interface=localhost";
 
     @DataPoint
     public static final ThreadingMode SHARED = ThreadingMode.SHARED;

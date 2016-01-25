@@ -34,7 +34,7 @@ import static org.mockito.Mockito.*;
 public class AbortedMessageTest
 {
     @DataPoint
-    public static final String UNICAST_CHANNEL = "udp://localhost:54325";
+    public static final String UNICAST_CHANNEL = "aeron:udp?remote=localhost:54325";
 
     @DataPoint
     public static final String IPC_CHANNEL = CommonContext.IPC_CHANNEL;

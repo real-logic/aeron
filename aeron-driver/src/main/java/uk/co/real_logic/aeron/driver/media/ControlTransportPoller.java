@@ -45,9 +45,10 @@ public class ControlTransportPoller extends UdpTransportPoller
             {
                 selector.selectNow();
 
-                for (final SelectionKey key : selectedKeySet.keys())
+                final SelectionKey[] keys = selectedKeySet.keys();
+                for (int i = 0, length = selectedKeySet.size(); i < length; i++)
                 {
-                    bytesReceived += ((SendChannelEndpoint)key.attachment()).pollForData();
+                    bytesReceived += ((SendChannelEndpoint)keys[i].attachment()).pollForData();
                 }
 
                 selectedKeySet.reset();

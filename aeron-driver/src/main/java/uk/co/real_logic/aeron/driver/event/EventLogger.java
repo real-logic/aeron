@@ -158,10 +158,7 @@ public class EventLogger
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventEncoder.encode(encodedBuffer, ex);
 
-            while (!ringBuffer.write(EXCEPTION.id(), encodedBuffer, 0, encodedLength))
-            {
-                Thread.yield();
-            }
+            ringBuffer.write(EXCEPTION.id(), encodedBuffer, 0, encodedLength);
         }
         else
         {

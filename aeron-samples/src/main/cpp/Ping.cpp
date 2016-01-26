@@ -137,6 +137,8 @@ int main(int argc, char **argv)
 
         aeron::Context context;
         std::atomic<int> countDown(1);
+        std::int64_t subscriptionId;
+        std::int64_t publicationId;
 
         if (settings.dirPrefix != "")
         {
@@ -155,10 +157,16 @@ int main(int argc, char **argv)
                 std::cout << "Publication: " << channel << " " << correlationId << ":" << streamId << ":" << sessionId << std::endl;
             });
 
-        context.availableImageHandler([](Image &image)
+        context.availableImageHandler(
+            [&](Image &image)
             {
                 std::cout << "Available image correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
                 std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
+
+                if (image.subscriptionRegistrationId() == subscriptionId)
+                {
+                    countDown--;
+                }
             });
 
         context.unavailableImageHandler([](Image &image)
@@ -169,8 +177,8 @@ int main(int argc, char **argv)
 
         Aeron aeron(context);
 
-        std::int64_t subscriptionId = aeron.addSubscription(settings.pongChannel, settings.pongStreamId);
-        std::int64_t publicationId = aeron.addPublication(settings.pingChannel, settings.pingStreamId);
+        subscriptionId = aeron.addSubscription(settings.pongChannel, settings.pongStreamId);
+        publicationId = aeron.addPublication(settings.pingChannel, settings.pingStreamId);
 
         std::shared_ptr<Subscription> pongSubscription = aeron.findSubscription(subscriptionId);
         while (!pongSubscription)

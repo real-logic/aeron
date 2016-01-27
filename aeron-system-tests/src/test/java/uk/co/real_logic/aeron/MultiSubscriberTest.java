@@ -17,9 +17,9 @@ package uk.co.real_logic.aeron;
 
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.CoreMatchers.is;

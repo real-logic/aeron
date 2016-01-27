@@ -58,7 +58,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             udpChannel.remoteData(),
             udpChannel.remoteData(),
             null,
-            context.dataLossGenerator(),
             context.eventLogger());
 
         smHeader = new StatusMessageFlyweight(smBuffer);
@@ -264,25 +263,16 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             final int length = receiveByteBuffer.position();
             final UnsafeBuffer receiveBuffer = receiveBuffer();
 
-            if (lossGenerator().shouldDropFrame(srcAddress, receiveBuffer, length))
+            if (isValidFrame(receiveBuffer, length))
             {
-                logger().logFrameInDropped(receiveByteBuffer, 0, length, srcAddress);
-            }
-            else
-            {
-                logger().logFrameIn(receiveByteBuffer, 0, length, srcAddress);
-
-                if (isValidFrame(receiveBuffer, length))
-                {
-                    bytesReceived = dispatch(receiveBuffer, length, srcAddress);
-                }
+                bytesReceived = dispatch(receiveBuffer, length, srcAddress);
             }
         }
 
         return bytesReceived;
     }
 
-    private int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int bytesReceived = 0;
         switch (frameType(buffer, 0))

@@ -24,6 +24,8 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
+import uk.co.real_logic.aeron.driver.DebugReceiveChannelEndpointSupplier;
+import uk.co.real_logic.aeron.driver.DebugSendChannelEndpointSupplier;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
@@ -331,6 +333,8 @@ public class PubAndSubTest
         context.termBufferLength(termBufferLength);
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xdeadbeefL);         // predictable seed
+        context.sendChannelEndpointSupplier(new DebugSendChannelEndpointSupplier());
+        context.receiveChannelEndpointSupplier(new DebugReceiveChannelEndpointSupplier());
 
         launch(channel);
 
@@ -376,6 +380,8 @@ public class PubAndSubTest
         context.termBufferLength(termBufferLength);
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xcafebabeL);         // predictable seed
+        context.sendChannelEndpointSupplier(new DebugSendChannelEndpointSupplier());
+        context.receiveChannelEndpointSupplier(new DebugReceiveChannelEndpointSupplier());
 
         launch(channel);
 

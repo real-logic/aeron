@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.aeron.driver.Configuration;
-import uk.co.real_logic.aeron.driver.LossGenerator;
 import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
@@ -36,7 +35,6 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameVersion;
 public abstract class UdpChannelTransport implements AutoCloseable
 {
     private final UdpChannel udpChannel;
-    private final LossGenerator lossGenerator;
     private final EventLogger logger;
     private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
@@ -53,11 +51,9 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final InetSocketAddress endPointSocketAddress,
         final InetSocketAddress bindSocketAddress,
         final InetSocketAddress connectAddress,
-        final LossGenerator lossGenerator,
         final EventLogger logger)
     {
         this.udpChannel = udpChannel;
-        this.lossGenerator = lossGenerator;
         this.logger = logger;
         this.endPointSocketAddress = endPointSocketAddress;
         this.bindSocketAddress = bindSocketAddress;
@@ -161,7 +157,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int send(final ByteBuffer buffer)
     {
-        logger.logFrameOut(buffer, connectAddress);
+//        logger.logFrameOut(buffer, connectAddress);
 
         int byteSent = 0;
         try
@@ -189,7 +185,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        logger.logFrameOut(buffer, remoteAddress);
+//        logger.logFrameOut(buffer, remoteAddress);
 
         int bytesSent = 0;
         try
@@ -309,16 +305,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected final ByteBuffer receiveByteBuffer()
     {
         return receiveByteBuffer;
-    }
-
-    protected final EventLogger logger()
-    {
-        return logger;
-    }
-
-    protected final LossGenerator lossGenerator()
-    {
-        return lossGenerator;
     }
 
     protected final InetSocketAddress receive()

@@ -30,19 +30,22 @@ import static uk.co.real_logic.aeron.driver.event.EventCode.*;
  */
 public class EventLogger
 {
-    private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
-        () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
+    public static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledEventCodes();
 
-    private static final long ENABLED_EVENT_CODES = EventConfiguration.getEnabledEventCodes();
-
-    private static final boolean IS_FRAME_IN_ENABLED =
+    public static final boolean IS_FRAME_IN_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_IN.tagBit()) == FRAME_IN.tagBit();
 
-    private static final boolean IS_FRAME_IN_DROPPED_ENABLED =
+    public static final boolean IS_FRAME_IN_DROPPED_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_IN_DROPPED.tagBit()) == FRAME_IN_DROPPED.tagBit();
 
-    private static final boolean IS_FRAME_OUT_ENABLED =
+    public static final boolean IS_FRAME_OUT_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_OUT.tagBit()) == FRAME_OUT.tagBit();
+
+    public static final boolean IS_FRAME_LOGGING_ENABLED =
+        IS_FRAME_IN_ENABLED || IS_FRAME_IN_DROPPED_ENABLED || IS_FRAME_OUT_ENABLED;
+
+    private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
+        () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
     private final ManyToOneRingBuffer ringBuffer;
 

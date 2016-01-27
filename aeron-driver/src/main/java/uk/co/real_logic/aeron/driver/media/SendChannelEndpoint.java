@@ -55,7 +55,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel.remoteControl(),
             udpChannel.localControl(),
             udpChannel.remoteData(),
-            context.controlLossGenerator(),
             context.eventLogger());
 
         this.nakMessagesReceived = context.systemCounters().nakMessagesReceived();
@@ -149,7 +148,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         {
             final ByteBuffer receiveByteBuffer = receiveByteBuffer();
             final int length = receiveByteBuffer.position();
-            logger().logFrameIn(receiveByteBuffer, 0, length, srcAddress);
 
             final UnsafeBuffer receiveBuffer = receiveBuffer();
             if (isValidFrame(receiveBuffer, length))
@@ -161,7 +159,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return bytesReceived;
     }
 
-    private int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
         switch (frameType(buffer, 0))

@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
+import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -393,13 +394,25 @@ public class Configuration
      */
     public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 
-    public static final String SEND_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
-    public static final String SEND_CHANNEL_ENDPOINT_GENERATOR = getProperty(
-        SEND_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME, "uk.co.real_logic.aeron.driver.SendChannelEndpointSupplier");
+    public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
 
-    public static final String RECEIVE_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME = "aeron.ReceiveChannelEndpoint.supplier";
-    public static final String RECEIVE_CHANNEL_ENDPOINT_GENERATOR = getProperty(
-        RECEIVE_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME, "uk.co.real_logic.aeron.driver.ReceiveChannelEndpointSupplier");
+    public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
+        EventLogger.IS_FRAME_LOGGING_ENABLED ?
+            "uk.co.real_logic.aeron.driver.DebugSendChannelEndpointSupplier" :
+            "uk.co.real_logic.aeron.driver.SendChannelEndpointSupplier";
+
+    public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
+        SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
+
+    public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.ReceiveChannelEndpoint.supplier";
+
+    public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
+        EventLogger.IS_FRAME_LOGGING_ENABLED ?
+            "uk.co.real_logic.aeron.driver.DebugReceiveChannelEndpointSupplier" :
+            "uk.co.real_logic.aeron.driver.ReceiveChannelEndpointSupplier";
+
+    public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
+        RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
 
     /**
      * How far ahead the publisher can get from the sender position.
@@ -606,7 +619,7 @@ public class Configuration
         SendChannelEndpointSupplier generator = null;
         try
         {
-            generator = (SendChannelEndpointSupplier) Class.forName(SEND_CHANNEL_ENDPOINT_GENERATOR).newInstance();
+            generator = (SendChannelEndpointSupplier) Class.forName(SEND_CHANNEL_ENDPOINT_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {
@@ -621,7 +634,7 @@ public class Configuration
         ReceiveChannelEndpointSupplier generator = null;
         try
         {
-            generator = (ReceiveChannelEndpointSupplier) Class.forName(RECEIVE_CHANNEL_ENDPOINT_GENERATOR).newInstance();
+            generator = (ReceiveChannelEndpointSupplier) Class.forName(RECEIVE_CHANNEL_ENDPOINT_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {

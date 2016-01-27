@@ -393,6 +393,14 @@ public class Configuration
      */
     public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 
+    public static final String SEND_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
+    public static final String SEND_CHANNEL_ENDPOINT_GENERATOR = getProperty(
+        SEND_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME, "uk.co.real_logic.aeron.driver.SendChannelEndpointSupplier");
+
+    public static final String RECEIVE_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME = "aeron.ReceiveChannelEndpoint.supplier";
+    public static final String RECEIVE_CHANNEL_ENDPOINT_GENERATOR = getProperty(
+        RECEIVE_CHANNEL_ENDPOINT_GENERATOR_PROP_NAME, "uk.co.real_logic.aeron.driver.ReceiveChannelEndpointSupplier");
+
     /**
      * How far ahead the publisher can get from the sender position.
      *
@@ -591,5 +599,35 @@ public class Configuration
     public static int ipcPublicationTermWindowLength(final int termBufferLength)
     {
         return 0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH ? IPC_PUBLICATION_TERM_WINDOW_LENGTH : termBufferLength / 2;
+    }
+
+    public static SendChannelEndpointSupplier sendChannelEndpointGenerator()
+    {
+        SendChannelEndpointSupplier generator = null;
+        try
+        {
+            generator = (SendChannelEndpointSupplier) Class.forName(SEND_CHANNEL_ENDPOINT_GENERATOR).newInstance();
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return generator;
+    }
+
+    public static ReceiveChannelEndpointSupplier receivehannelEndpointGenerator()
+    {
+        ReceiveChannelEndpointSupplier generator = null;
+        try
+        {
+            generator = (ReceiveChannelEndpointSupplier) Class.forName(RECEIVE_CHANNEL_ENDPOINT_GENERATOR).newInstance();
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return generator;
     }
 }

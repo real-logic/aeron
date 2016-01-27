@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.aeron.protocol.*;
@@ -28,9 +27,7 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
-import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
-import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
-import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_SETUP;
+import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.*;
 
 /**
  * Aggregator of multiple subscriptions onto a single transport session for processing of data frames.
@@ -54,17 +51,15 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,
-        final EventLogger logger,
-        final SystemCounters systemCounters,
-        final LossGenerator lossGenerator)
+        final MediaDriver.Context context)
     {
         super(
             udpChannel,
             udpChannel.remoteData(),
             udpChannel.remoteData(),
             null,
-            lossGenerator,
-            logger);
+            context.dataLossGenerator(),
+            context.eventLogger());
 
         smHeader = new StatusMessageFlyweight(smBuffer);
         smHeader
@@ -82,7 +77,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         setupHeader = new SetupFlyweight(receiveBuffer());
 
         this.dispatcher = dispatcher;
-        this.systemCounters = systemCounters;
+        this.systemCounters = context.systemCounters();
     }
 
     public String originalUriString()

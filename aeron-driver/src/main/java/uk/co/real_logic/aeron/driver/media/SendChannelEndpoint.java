@@ -15,10 +15,9 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
-import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
@@ -49,20 +48,18 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel,
-        final EventLogger logger,
-        final LossGenerator lossGenerator,
-        final SystemCounters systemCounters)
+        final MediaDriver.Context context)
     {
         super(
             udpChannel,
             udpChannel.remoteControl(),
             udpChannel.localControl(),
             udpChannel.remoteData(),
-            lossGenerator,
-            logger);
+            context.controlLossGenerator(),
+            context.eventLogger());
 
-        this.nakMessagesReceived = systemCounters.nakMessagesReceived();
-        this.statusMessagesReceived = systemCounters.statusMessagesReceived();
+        this.nakMessagesReceived = context.systemCounters().nakMessagesReceived();
+        this.statusMessagesReceived = context.systemCounters().statusMessagesReceived();
 
         nakMessage = new NakFlyweight(receiveBuffer());
         statusMessage = new StatusMessageFlyweight(receiveBuffer());
@@ -157,14 +154,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
             final UnsafeBuffer receiveBuffer = receiveBuffer();
             if (isValidFrame(receiveBuffer, length))
             {
-                bytesReceived = dispatch(receiveBuffer, srcAddress);
+                bytesReceived = dispatch(receiveBuffer, length, srcAddress);
             }
         }
 
         return bytesReceived;
     }
 
-    private int dispatch(final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+    private int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
         switch (frameType(buffer, 0))

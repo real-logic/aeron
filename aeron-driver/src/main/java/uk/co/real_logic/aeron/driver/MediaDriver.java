@@ -451,6 +451,9 @@ public final class MediaDriver implements AutoCloseable
         private LossGenerator dataLossGenerator;
         private LossGenerator controlLossGenerator;
 
+        private SendChannelEndpointSupplier sendChannelEndpointSupplier;
+        private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
+
         public Context()
         {
             termBufferLength(Configuration.termBufferLength());
@@ -575,6 +578,16 @@ public final class MediaDriver implements AutoCloseable
             if (0 == ipcPublicationTermBufferLength)
             {
                 ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(termBufferLength());
+            }
+
+            if (null == sendChannelEndpointSupplier)
+            {
+                sendChannelEndpointSupplier = Configuration.sendChannelEndpointGenerator();
+            }
+
+            if (null == receiveChannelEndpointSupplier)
+            {
+                receiveChannelEndpointSupplier = Configuration.receivehannelEndpointGenerator();
             }
         }
 
@@ -865,6 +878,18 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        public Context sendChannelEndpointSupplier(final SendChannelEndpointSupplier supplier)
+        {
+            this.sendChannelEndpointSupplier = supplier;
+            return this;
+        }
+
+        public Context receiveChannelEndpointSupplier(final ReceiveChannelEndpointSupplier supplier)
+        {
+            this.receiveChannelEndpointSupplier = supplier;
+            return this;
+        }
+
         public EpochClock epochClock()
         {
             return epochClock;
@@ -1104,6 +1129,16 @@ public final class MediaDriver implements AutoCloseable
         public RingBuffer toEventReader()
         {
             return toEventReader;
+        }
+
+        public SendChannelEndpointSupplier sendChannelEndpointSupplier()
+        {
+            return sendChannelEndpointSupplier;
+        }
+
+        public ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
+        {
+            return receiveChannelEndpointSupplier;
         }
 
         public void close()

@@ -68,6 +68,7 @@ public class DriverConductor implements Agent
     private final int initialWindowLength;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
+    private final Context context;
     private final RawLogFactory rawLogFactory;
     private final ReceiverProxy receiverProxy;
     private final SenderProxy senderProxy;
@@ -102,8 +103,8 @@ public class DriverConductor implements Agent
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
     private final MessageHandler onEventFunc;
-    private final LossGenerator dataLossGenerator;
-    private final LossGenerator controlLossGenerator;
+    private final SendChannelEndpointSupplier sendChannelEndpointSupplier;
+    private final ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
 
     private long timeOfLastTimeoutCheck;
     private long timeOfLastToDriverPositionChange;
@@ -111,6 +112,7 @@ public class DriverConductor implements Agent
 
     public DriverConductor(final Context ctx)
     {
+        context = ctx;
         imageLivenessTimeoutNs = ctx.imageLivenessTimeoutNs();
         clientLivenessTimeoutNs = ctx.clientLivenessTimeoutNs();
         publicationUnblockTimeoutNs = ctx.publicationUnblockTimeoutNs();
@@ -135,11 +137,11 @@ public class DriverConductor implements Agent
         fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
         logger = ctx.eventLogger();
         systemCounters = ctx.systemCounters();
-        dataLossGenerator = ctx.dataLossGenerator();
-        controlLossGenerator = ctx.controlLossGenerator();
 
         final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc = (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset));
+        sendChannelEndpointSupplier = context.sendChannelEndpointSupplier();
+        receiveChannelEndpointSupplier = context.receiveChannelEndpointSupplier();
 
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
@@ -695,11 +697,7 @@ public class DriverConductor implements Agent
         {
             logger.logChannelCreated(udpChannel.description());
 
-            channelEndpoint = new SendChannelEndpoint(
-                udpChannel,
-                logger,
-                controlLossGenerator,
-                systemCounters);
+            channelEndpoint = sendChannelEndpointSupplier.generate(udpChannel, context);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             senderProxy.registerSendChannelEndpoint(channelEndpoint);
@@ -806,12 +804,10 @@ public class DriverConductor implements Agent
         ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
-            channelEndpoint = new ReceiveChannelEndpoint(
+            channelEndpoint = receiveChannelEndpointSupplier.generate(
                 udpChannel,
                 new DataPacketDispatcher(fromReceiverConductorProxy, receiverProxy.receiver()),
-                logger,
-                systemCounters,
-                dataLossGenerator);
+                context);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             receiverProxy.registerReceiveChannelEndpoint(channelEndpoint);

@@ -110,6 +110,7 @@ public class ReceiverTest
     private ReceiverProxy receiverProxy;
     private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorQueue;
 
+    private MediaDriver.Context context = new MediaDriver.Context();
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
     // TODO rework test to use proxies rather than the command queues.
@@ -151,12 +152,14 @@ public class ReceiverTest
             .map(LogBufferPartition::termBuffer)
             .toArray(UnsafeBuffer[]::new);
 
+        context.eventLogger(mockLogger);
+        context.systemCounters(mockSystemCounters);
+        context.dataLossGenerator((address, buffer, length) -> false);
+
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI),
             new DataPacketDispatcher(driverConductorProxy, receiver),
-            mockLogger,
-            mockSystemCounters,
-            (address, buffer, length) -> false);
+            context);
     }
 
     @After

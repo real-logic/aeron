@@ -71,12 +71,19 @@ public class SelectorAndTransportTest
     private SendChannelEndpoint sendChannelEndpoint;
     private ReceiveChannelEndpoint receiveChannelEndpoint;
 
+    private MediaDriver.Context context = new MediaDriver.Context();
+
     @Before
     public void setup()
     {
         when(mockSystemCounters.statusMessagesReceived()).thenReturn(mockStatusMessagesReceivedCounter);
         when(mockPublication.streamId()).thenReturn(STREAM_ID);
         when(mockPublication.sessionId()).thenReturn(SESSION_ID);
+
+        context.controlLossGenerator(NO_LOSS);
+        context.dataLossGenerator(NO_LOSS);
+        context.eventLogger(mockTransportLogger);
+        context.systemCounters(mockSystemCounters);
     }
 
     @After
@@ -111,9 +118,8 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTearDown() throws Exception
     {
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(
-            RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
 
         receiveChannelEndpoint.openDatagramChannel();
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
@@ -141,9 +147,8 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(
-            RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
 
         receiveChannelEndpoint.openDatagramChannel();
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
@@ -190,9 +195,8 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(
-            RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
 
         receiveChannelEndpoint.openDatagramChannel();
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
@@ -247,9 +251,8 @@ public class SelectorAndTransportTest
             })
             .when(mockPublication).onStatusMessage(anyInt(), anyInt(), anyInt(), any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(
-            RCV_DST, mockDispatcher, mockTransportLogger, mockSystemCounters, NO_LOSS);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockTransportLogger, NO_LOSS, mockSystemCounters);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
         sendChannelEndpoint.registerForSend(mockPublication);
 
         receiveChannelEndpoint.openDatagramChannel();

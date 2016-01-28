@@ -540,23 +540,15 @@ public class PublicationImage
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        switch (status)
+        if (status.equals(Status.INACTIVE) && (isDrained() || time > (timeOfLastStatusChange + imageLivenessTimeoutNs)))
         {
-            case INACTIVE:
-                if (isDrained() || time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
-                {
-                    status(PublicationImage.Status.LINGER);
-                    conductor.imageTransitionToLinger(this);
-                }
-                break;
+            status(PublicationImage.Status.LINGER);
+            conductor.imageTransitionToLinger(this);
 
-            case LINGER:
-                if (time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
-                {
-                    reachedEndOfLife = true;
-                    conductor.cleanupImage(this);
-                }
-                break;
+        } else if(status.equals(Status.LINGER) && time > (timeOfLastStatusChange + imageLivenessTimeoutNs))
+        {
+            reachedEndOfLife = true;
+            conductor.cleanupImage(this);
         }
     }
 

@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
+import uk.co.real_logic.aeron.logbuffer.TermUnblocker.Status;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
 /**
@@ -47,13 +47,13 @@ public class LogBufferUnblocker
 
         boolean result = false;
 
-        switch (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId))
+        if (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId).equals(Status.UNBLOCKED_TO_END))
         {
-            case UNBLOCKED_TO_END:
-                rotateLog(logPartitions, logMetaDataBuffer, activeIndex, termId + 1);
-                // fall through
-            case UNBLOCKED:
-                result = true;
+            rotateLog(logPartitions, logMetaDataBuffer, activeIndex, termId + 1);
+            result = true;
+        } else if (TermUnblocker.unblock(logMetaDataBuffer, termBuffer, blockedOffset, tailOffset, termId).equals(Status.UNBLOCKED))
+        {
+            result = true;
         }
 
         return result;

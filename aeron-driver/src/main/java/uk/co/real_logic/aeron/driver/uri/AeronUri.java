@@ -168,30 +168,26 @@ public class AeronUri
                     break;
 
                 case PARAMS_KEY:
-                    switch (c)
+                    if (c == '=')
                     {
-                        case '=':
-                            key = builder.toString();
-                            builder.setLength(0);
-                            state = State.PARAMS_VALUE;
-                            break;
-
-                        default:
-                            builder.append(c);
+                        key = builder.toString();
+                        builder.setLength(0);
+                        state = State.PARAMS_VALUE;
+                    } else
+                    {
+                        builder.append(c);
                     }
                     break;
 
                 case PARAMS_VALUE:
-                    switch (c)
+                    if (c == '|')
                     {
-                        case '|':
-                            params.put(key, builder.toString());
-                            builder.setLength(0);
-                            state = State.PARAMS_KEY;
-                            break;
-
-                        default:
-                            builder.append(c);
+                        params.put(key, builder.toString());
+                        builder.setLength(0);
+                        state = State.PARAMS_KEY;
+                    } else
+                    {
+                        builder.append(c);
                     }
                     break;
 

@@ -128,13 +128,12 @@ public class LogInspector
 
     public static char[] formatBytes(final DirectBuffer buffer, final int offset, final int length)
     {
-        switch (DATA_FORMAT)
+        if (DATA_FORMAT.equals("ascii"))
         {
-            case "ascii":
-                return bytesToAscii(buffer, offset, length);
-
-            default:
-                return bytesToHex(buffer, offset, length);
+            return bytesToAscii(buffer, offset, length);
+        } else
+        {
+            return bytesToHex(buffer, offset, length);
         }
     }
 

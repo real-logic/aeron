@@ -118,7 +118,7 @@ public class ImageMessageFlyweight
         final int length = buffer.getInt(offset + CHANNEL_OFFSET, ByteOrder.LITTLE_ENDIAN);
         lengthOfChannel = SIZE_OF_INT + length;
 
-        return buffer.getStringUtf8(CHANNEL_OFFSET, length);
+        return buffer.getStringUtf8(offset + CHANNEL_OFFSET, length);
     }
 
     /**

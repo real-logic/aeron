@@ -59,7 +59,8 @@ import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READE
  */
 public class DriverConductor implements Agent
 {
-    private final long imageLivenessTimeoutNs;
+    private static final String SUBSCRIBER_POS = "subscriber pos";
+	private final long imageLivenessTimeoutNs;
     private final long clientLivenessTimeoutNs;
     private final long publicationUnblockTimeoutNs;
     private final int mtuLength;
@@ -367,7 +368,7 @@ public class DriverConductor implements Agent
                 (subscription) ->
                 {
                     final Position position = newPosition(
-                        "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
+                        SUBSCRIBER_POS, channel, sessionId, streamId, subscription.registrationId());
 
                     position.setOrdered(joiningPosition);
 
@@ -754,7 +755,7 @@ public class DriverConductor implements Agent
                 (image) ->
                 {
                     final int sessionId = image.sessionId();
-                    final Position position = newPosition("subscriber pos", channel, sessionId, streamId, registrationId);
+                    final Position position = newPosition(SUBSCRIBER_POS, channel, sessionId, streamId, registrationId);
                     position.setOrdered(image.rebuildPosition());
 
                     image.addSubscriber(position);
@@ -776,7 +777,7 @@ public class DriverConductor implements Agent
         final AeronClient client = getOrAddClient(clientId);
 
         final int sessionId = publication.sessionId();
-        final Position position = newPosition("subscriber pos", CommonContext.IPC_CHANNEL, sessionId, streamId, registrationId);
+        final Position position = newPosition(SUBSCRIBER_POS, CommonContext.IPC_CHANNEL, sessionId, streamId, registrationId);
         position.setOrdered(publication.joiningPosition());
 
         final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, streamId, publication, position, client);

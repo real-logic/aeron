@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.samples.raw;
 
 import org.HdrHistogram.Histogram;
+
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
 import java.io.IOException;
@@ -33,7 +34,9 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 public class TransferToPing
 {
-    public static void main(final String[] args) throws IOException
+    private static final String LOCALHOST = "localhost";
+
+	public static void main(final String[] args) throws IOException
     {
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 
@@ -41,15 +44,15 @@ public class TransferToPing
         final ByteBuffer sendByteBuffer = sendFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel sendDatagramChannel = DatagramChannel.open();
         init(sendDatagramChannel);
-        sendDatagramChannel.bind(new InetSocketAddress("localhost", 40123));
-        sendDatagramChannel.connect(new InetSocketAddress("localhost", 40124));
+        sendDatagramChannel.bind(new InetSocketAddress(LOCALHOST, 40123));
+        sendDatagramChannel.connect(new InetSocketAddress(LOCALHOST, 40124));
 
         final FileChannel receiveFileChannel = Common.createTmpFileChannel();
         final ByteBuffer receiveByteBuffer = receiveFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel receiveDatagramChannel = DatagramChannel.open();
         init(receiveDatagramChannel);
-        receiveDatagramChannel.bind(new InetSocketAddress("localhost", 40126));
-        receiveDatagramChannel.connect(new InetSocketAddress("localhost", 40125));
+        receiveDatagramChannel.bind(new InetSocketAddress(LOCALHOST, 40126));
+        receiveDatagramChannel.connect(new InetSocketAddress(LOCALHOST, 40125));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));

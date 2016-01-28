@@ -41,7 +41,8 @@ import uk.co.real_logic.agrona.console.ContinueBarrier;
 
 public class EmbeddedPingPong
 {
-    private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
+    private static final String ON_STREAM_ID = " on stream Id ";
+	private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
     private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
     private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
@@ -90,8 +91,8 @@ public class EmbeddedPingPong
             .availableImageHandler(EmbeddedPingPong::availablePongImageHandler)
             .aeronDirectoryName(embeddedDirName);
 
-        System.out.println("Publishing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
-        System.out.println("Subscribing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+        System.out.println("Publishing Ping at " + PING_CHANNEL + ON_STREAM_ID + PING_STREAM_ID);
+        System.out.println("Subscribing Pong at " + PONG_CHANNEL + ON_STREAM_ID + PONG_STREAM_ID);
         System.out.println("Message size of " + MESSAGE_LENGTH + " bytes");
 
         final FragmentAssembler dataHandler = new FragmentAssembler(EmbeddedPingPong::pongHandler);
@@ -135,8 +136,8 @@ public class EmbeddedPingPong
         {
             public void run()
             {
-                System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
-                System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);
+                System.out.println("Subscribing Ping at " + PING_CHANNEL + ON_STREAM_ID + PING_STREAM_ID);
+                System.out.println("Publishing Pong at " + PONG_CHANNEL + ON_STREAM_ID + PONG_STREAM_ID);
 
                 final Aeron.Context ctx = new Aeron.Context().aeronDirectoryName(embeddedDirName);
 

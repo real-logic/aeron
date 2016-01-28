@@ -226,11 +226,6 @@ public class Configuration
         NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     /**
-     * NAKs are effectively disabled.
-     */
-    public static final StaticDelayGenerator NO_NAK_DELAY_GENERATOR = new StaticDelayGenerator(-1, false);
-
-    /**
      * Default delay for retransmission of data for unicast
      */
     public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
@@ -385,9 +380,6 @@ public class Configuration
 
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
-
-    /** Disable sending NAKs from the media driver. */
-    public static final String DO_NOT_SEND_NAK_PROP_NAME = "aeron.driver.disable.naks";
 
     /**
      * how often to check liveness and cleanup
@@ -585,11 +577,6 @@ public class Configuration
     public static ThreadingMode threadingMode()
     {
         return ThreadingMode.valueOf(getProperty(THREADING_MODE_PROP_NAME, THREADING_MODE_DEFAULT));
-    }
-
-    public static boolean doNotSendNaks()
-    {
-        return Boolean.parseBoolean(getProperty(DO_NOT_SEND_NAK_PROP_NAME, "false"));
     }
 
     /**

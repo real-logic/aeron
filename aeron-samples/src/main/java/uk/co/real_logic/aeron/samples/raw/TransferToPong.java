@@ -30,21 +30,23 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 public class TransferToPong
 {
-    public static void main(final String[] args) throws IOException
+    private static final String LOCALHOST = "localhost";
+
+	public static void main(final String[] args) throws IOException
     {
         final FileChannel receiveFileChannel = Common.createTmpFileChannel();
         final ByteBuffer receiveByteBuffer = receiveFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel receiveDatagramChannel = DatagramChannel.open();
         init(receiveDatagramChannel);
-        receiveDatagramChannel.bind(new InetSocketAddress("localhost", 40124));
-        receiveDatagramChannel.connect(new InetSocketAddress("localhost", 40123));
+        receiveDatagramChannel.bind(new InetSocketAddress(LOCALHOST, 40124));
+        receiveDatagramChannel.connect(new InetSocketAddress(LOCALHOST, 40123));
 
         final FileChannel sendFileChannel = Common.createTmpFileChannel();
         final ByteBuffer sendByteBuffer = sendFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);
         final DatagramChannel sendDatagramChannel = DatagramChannel.open();
         init(sendDatagramChannel);
-        sendDatagramChannel.bind(new InetSocketAddress("localhost", 40125));
-        sendDatagramChannel.connect(new InetSocketAddress("localhost", 40126));
+        sendDatagramChannel.bind(new InetSocketAddress(LOCALHOST, 40125));
+        sendDatagramChannel.connect(new InetSocketAddress(LOCALHOST, 40126));
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));

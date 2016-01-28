@@ -35,7 +35,9 @@ import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
  */
 public class Configuration
 {
-    /**
+    private static final String UK_CO_REAL_LOGIC_AGRONA_CONCURRENT_BACKOFF_IDLE_STRATEGY = "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy";
+
+	/**
      * Byte buffer length (in bytes) for reads
      */
     public static final String RECEIVE_BUFFER_LENGTH_PROP_NAME = "aeron.rcv.buffer.length";
@@ -312,7 +314,7 @@ public class Configuration
      */
     public static final String SENDER_IDLE_STRATEGY_PROP_NAME = "aeron.sender.idle.strategy";
     public static final String SENDER_IDLE_STRATEGY = getProperty(
-        SENDER_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+        SENDER_IDLE_STRATEGY_PROP_NAME, UK_CO_REAL_LOGIC_AGRONA_CONCURRENT_BACKOFF_IDLE_STRATEGY);
 
     /**
      * {@link IdleStrategy} to be employed by {@link DriverConductor} for {@link ThreadingMode#DEDICATED}
@@ -320,14 +322,14 @@ public class Configuration
      */
     public static final String CONDUCTOR_IDLE_STRATEGY_PROP_NAME = "aeron.conductor.idle.strategy";
     public static final String CONDUCTOR_IDLE_STRATEGY = getProperty(
-        CONDUCTOR_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+        CONDUCTOR_IDLE_STRATEGY_PROP_NAME, UK_CO_REAL_LOGIC_AGRONA_CONCURRENT_BACKOFF_IDLE_STRATEGY);
 
     /**
      * {@link IdleStrategy} to be employed by {@link Receiver} for {@link ThreadingMode#DEDICATED}.
      */
     public static final String RECEIVER_IDLE_STRATEGY_PROP_NAME = "aeron.receiver.idle.strategy";
     public static final String RECEIVER_IDLE_STRATEGY = getProperty(
-        RECEIVER_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+        RECEIVER_IDLE_STRATEGY_PROP_NAME, UK_CO_REAL_LOGIC_AGRONA_CONCURRENT_BACKOFF_IDLE_STRATEGY);
 
     /**
      * {@link IdleStrategy} to be employed by {@link Sender} and {@link Receiver} for
@@ -335,7 +337,7 @@ public class Configuration
      */
     public static final String SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME = "aeron.sharednetwork.idle.strategy";
     public static final String SHARED_NETWORK_IDLE_STRATEGY = getProperty(
-        SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+        SHARED_NETWORK_IDLE_STRATEGY_PROP_NAME, UK_CO_REAL_LOGIC_AGRONA_CONCURRENT_BACKOFF_IDLE_STRATEGY);
 
     /**
      * {@link IdleStrategy} to be employed by {@link Sender}, {@link Receiver}, and {@link DriverConductor}
@@ -343,7 +345,7 @@ public class Configuration
      */
     public static final String SHARED_IDLE_STRATEGY_PROP_NAME = "aeron.shared.idle.strategy";
     public static final String SHARED_IDLE_STRATEGY = getProperty(
-        SHARED_IDLE_STRATEGY_PROP_NAME, "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy");
+        SHARED_IDLE_STRATEGY_PROP_NAME, UK_CO_REAL_LOGIC_AGRONA_CONCURRENT_BACKOFF_IDLE_STRATEGY);
 
     /** Capacity for the command queues used between driver agents. */
     public static final int CMD_QUEUE_CAPACITY = 1024;
@@ -449,7 +451,7 @@ public class Configuration
         IdleStrategy idleStrategy = null;
         switch (name)
         {
-            case "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy":
+            case UK_CO_REAL_LOGIC_AGRONA_CONCURRENT_BACKOFF_IDLE_STRATEGY:
                 idleStrategy = new BackoffIdleStrategy(
                     AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
                 break;

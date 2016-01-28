@@ -142,7 +142,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
     }
 
     /**
-     * Send contents of {@link ByteBuffer} to connected address
+     * Send contents of a {@link ByteBuffer} to connected address.
+     * This is used on the send size for performance over sentTo().
      *
      * @param buffer to send
      * @return number of bytes sent
@@ -205,8 +206,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
-            msg.sessionId(), msg.streamId());
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
 
         if (null != publication)
         {

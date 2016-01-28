@@ -188,17 +188,14 @@ public class SendChannelEndpoint extends UdpChannelTransport
     protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int framesRead = 0;
-        switch (frameType(buffer, 0))
+        if (frameType(buffer, 0) == HDR_TYPE_NAK)
         {
-            case HDR_TYPE_NAK:
-                onNakMessage(nakMessage);
-                framesRead = 1;
-                break;
-
-            case HDR_TYPE_SM:
-                onStatusMessage(statusMessage, srcAddress);
-                framesRead = 1;
-                break;
+            onNakMessage(nakMessage);
+            framesRead = 1;
+        } else if (frameType(buffer, 0) == HDR_TYPE_SM)
+        {
+            onStatusMessage(statusMessage, srcAddress);
+            framesRead = 1;
         }
 
         return framesRead;

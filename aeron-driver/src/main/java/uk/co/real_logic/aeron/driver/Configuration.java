@@ -447,25 +447,19 @@ public class Configuration
     public static IdleStrategy agentIdleStrategy(final String name)
     {
         IdleStrategy idleStrategy = null;
-        switch (name)
+        if (name.equals("uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy"))
         {
-            case "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy":
-                idleStrategy = new BackoffIdleStrategy(
-                    AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
-                break;
-
-            default:
-                try
-                {
-                    idleStrategy = (IdleStrategy)Class.forName(name).newInstance();
-                }
-                catch (final Exception ex)
-                {
-                    LangUtil.rethrowUnchecked(ex);
-                }
-                break;
+            idleStrategy = new BackoffIdleStrategy(AGENT_IDLE_MAX_SPINS, AGENT_IDLE_MAX_YIELDS, AGENT_IDLE_MIN_PARK_NS, AGENT_IDLE_MAX_PARK_NS);
+        } else
+        {
+            try
+            {
+                idleStrategy = (IdleStrategy)Class.forName(name).newInstance();
+            } catch (final Exception ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
-
         return idleStrategy;
     }
 

@@ -151,27 +151,17 @@ public class RetransmitHandler
         {
             for (final RetransmitAction action : retransmitActionPool)
             {
-                switch (action.state)
+                if(action.state.equals(State.DELAYED) && now > action.expire)
                 {
-                    case DELAYED:
-                        if (now > action.expire)
-                        {
-                            action.onDelayTimeout(retransmitSender);
-                            result++;
-                        }
-                        break;
-
-                    case LINGERING:
-                        if (now > action.expire)
-                        {
-                            action.onLingerTimeout();
-                            result++;
-                        }
-                        break;
+                    action.onDelayTimeout(retransmitSender);
+                    result++;
+                } else if(action.state.equals(State.LINGERING) && (now > action.expire))
+                {
+                    action.onLingerTimeout();
+                    result++;
                 }
             }
         }
-
         return result;
     }
 

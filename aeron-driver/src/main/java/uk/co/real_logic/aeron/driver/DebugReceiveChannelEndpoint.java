@@ -59,10 +59,7 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         {
             logger.logFrameIn(receiveByteBuffer, 0, length, srcAddress);
 
-            if (isValidFrame(buffer, length))
-            {
-                result = super.dispatch(buffer, length, srcAddress);
-            }
+            result = super.dispatch(buffer, length, srcAddress);
         }
 
         return result;

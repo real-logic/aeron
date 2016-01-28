@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -25,8 +24,6 @@ import java.nio.ByteBuffer;
 
 public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
 {
-    private final InetSocketAddress connectAddres;
-    private final EventLogger logger;
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
 
@@ -37,8 +34,6 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     {
         super(udpChannel, dispatcher, context);
 
-        connectAddres = udpChannel.remoteData();
-        logger = context.eventLogger();
         dataLossGenerator = context.dataLossGenerator();
         controlLossGenerator = context.controlLossGenerator();
     }
@@ -52,19 +47,9 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         return super.sendTo(buffer, remoteAddress);
     }
 
-    public int send(final ByteBuffer buffer)
-    {
-        logger.logFrameOut(buffer, connectAddres);
-
-        // TODO: call controlLossGenerator and drop (call log to inform) - need a shouldDropAllFrame() method
-
-        return super.send(buffer);
-    }
-
     protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int result = 0;
-        final ByteBuffer receiveByteBuffer = receiveByteBuffer();
 
         if (dataLossGenerator.shouldDropFrame(srcAddress, buffer, length))
         {

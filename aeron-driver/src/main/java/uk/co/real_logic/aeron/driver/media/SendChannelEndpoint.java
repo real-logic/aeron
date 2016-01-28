@@ -18,13 +18,17 @@ package uk.co.real_logic.aeron.driver.media;
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.protocol.NakFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
@@ -43,12 +47,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final Int2ObjectHashMap<NetworkPublication> driversPublicationByStreamId = new Int2ObjectHashMap<>();
     private final BiInt2ObjectMap<NetworkPublication> sendersPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
 
-    private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter statusMessagesReceived;
+    private final AtomicCounter nakMessagesReceived;
 
-    public SendChannelEndpoint(
-        final UdpChannel udpChannel,
-        final MediaDriver.Context context)
+    public SendChannelEndpoint(final UdpChannel udpChannel, final MediaDriver.Context context)
     {
         super(
             udpChannel,
@@ -60,8 +62,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
         this.nakMessagesReceived = context.systemCounters().nakMessagesReceived();
         this.statusMessagesReceived = context.systemCounters().statusMessagesReceived();
 
-        nakMessage = new NakFlyweight(receiveBuffer());
-        statusMessage = new StatusMessageFlyweight(receiveBuffer());
+        nakMessage = new NakFlyweight(receiveBuffer);
+        statusMessage = new StatusMessageFlyweight(receiveBuffer);
     }
 
     /**
@@ -139,6 +141,31 @@ public class SendChannelEndpoint extends UdpChannelTransport
         sendersPublicationByStreamAndSessionId.remove(publication.sessionId(), publication.streamId());
     }
 
+    /**
+     * Send contents of {@link ByteBuffer} to connected address
+     *
+     * @param buffer to send
+     * @return number of bytes sent
+     */
+    public int send(final ByteBuffer buffer)
+    {
+        int byteSent = 0;
+        try
+        {
+            byteSent = sendDatagramChannel.write(buffer);
+        }
+        catch (final PortUnreachableException | ClosedChannelException ex)
+        {
+            // ignore
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return byteSent;
+    }
+
     public int pollForData()
     {
         int bytesReceived = 0;
@@ -146,10 +173,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         if (null != srcAddress)
         {
-            final ByteBuffer receiveByteBuffer = receiveByteBuffer();
             final int length = receiveByteBuffer.position();
 
-            final UnsafeBuffer receiveBuffer = receiveBuffer();
             if (isValidFrame(receiveBuffer, length))
             {
                 bytesReceived = dispatch(receiveBuffer, length, srcAddress);
@@ -178,23 +203,23 @@ public class SendChannelEndpoint extends UdpChannelTransport
         return framesRead;
     }
 
-    private void onStatusMessage(final StatusMessageFlyweight statusMsg, final InetSocketAddress srcAddress)
+    private void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
         final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(
-            statusMsg.sessionId(), statusMsg.streamId());
+            msg.sessionId(), msg.streamId());
 
         if (null != publication)
         {
-            if (SEND_SETUP_FLAG == (statusMsg.flags() & SEND_SETUP_FLAG))
+            if (SEND_SETUP_FLAG == (msg.flags() & SEND_SETUP_FLAG))
             {
                 publication.triggerSendSetupFrame();
             }
             else
             {
                 publication.onStatusMessage(
-                    statusMsg.consumptionTermId(),
-                    statusMsg.consumptionTermOffset(),
-                    statusMsg.receiverWindowLength(),
+                    msg.consumptionTermId(),
+                    msg.consumptionTermOffset(),
+                    msg.receiverWindowLength(),
                     srcAddress);
             }
 
@@ -202,12 +227,12 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    private void onNakMessage(final NakFlyweight nakMsg)
+    private void onNakMessage(final NakFlyweight msg)
     {
-        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(nakMsg.sessionId(), nakMsg.streamId());
+        final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
         if (null != publication)
         {
-            publication.onNak(nakMsg.termId(), nakMsg.termOffset(), nakMsg.length());
+            publication.onNak(msg.termId(), msg.termOffset(), msg.length());
             nakMessagesReceived.orderedIncrement();
         }
     }

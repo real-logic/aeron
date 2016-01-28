@@ -38,9 +38,9 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final SystemCounters systemCounters;
 
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
-    private final StatusMessageFlyweight smHeader;
+    private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight(smBuffer);
     private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
-    private final NakFlyweight nakHeader;
+    private final NakFlyweight nakHeader = new NakFlyweight(nakBuffer);
 
     private final SetupFlyweight setupHeader;
     private final DataHeaderFlyweight dataHeader;
@@ -60,20 +60,18 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             null,
             context.eventLogger());
 
-        smHeader = new StatusMessageFlyweight(smBuffer);
         smHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_SM)
             .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
 
-        nakHeader = new NakFlyweight(nakBuffer);
         nakHeader
             .version(HeaderFlyweight.CURRENT_VERSION)
             .headerType(HeaderFlyweight.HDR_TYPE_NAK)
             .frameLength(NakFlyweight.HEADER_LENGTH);
 
-        dataHeader = new DataHeaderFlyweight(receiveBuffer());
-        setupHeader = new SetupFlyweight(receiveBuffer());
+        dataHeader = new DataHeaderFlyweight(receiveBuffer);
+        setupHeader = new SetupFlyweight(receiveBuffer);
 
         this.dispatcher = dispatcher;
         this.systemCounters = context.systemCounters();
@@ -259,9 +257,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         if (null != srcAddress)
         {
-            final ByteBuffer receiveByteBuffer = receiveByteBuffer();
             final int length = receiveByteBuffer.position();
-            final UnsafeBuffer receiveBuffer = receiveBuffer();
 
             if (isValidFrame(receiveBuffer, length))
             {

@@ -34,17 +34,17 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameVersion;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
-    private final UdpChannel udpChannel;
-    private final EventLogger logger;
-    private final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
-    private final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
-    private DatagramChannel sendDatagramChannel;
-    private DatagramChannel receiveDatagramChannel;
-    private SelectionKey selectionKey;
-    private UdpTransportPoller transportPoller;
-    private InetSocketAddress bindSocketAddress;
-    private InetSocketAddress endPointSocketAddress;
-    private InetSocketAddress connectAddress;
+    protected final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
+    protected final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
+    protected DatagramChannel sendDatagramChannel;
+    protected DatagramChannel receiveDatagramChannel;
+    protected SelectionKey selectionKey;
+    protected UdpTransportPoller transportPoller;
+    protected InetSocketAddress bindSocketAddress;
+    protected InetSocketAddress endPointSocketAddress;
+    protected InetSocketAddress connectAddress;
+    protected final UdpChannel udpChannel;
+    protected final EventLogger logger;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
@@ -150,33 +150,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Send contents of {@link ByteBuffer} to connected address
-     *
-     * @param buffer to send
-     * @return number of bytes sent
-     */
-    public int send(final ByteBuffer buffer)
-    {
-//        logger.logFrameOut(buffer, connectAddress);
-
-        int byteSent = 0;
-        try
-        {
-            byteSent = sendDatagramChannel.write(buffer);
-        }
-        catch (final PortUnreachableException | ClosedChannelException ex)
-        {
-            // ignore
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return byteSent;
-    }
-
-    /**
      * Send contents of {@link java.nio.ByteBuffer} to remote address
      *
      * @param buffer        to send
@@ -185,8 +158,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-//        logger.logFrameOut(buffer, remoteAddress);
-
         int bytesSent = 0;
         try
         {
@@ -295,16 +266,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
 
         return isFrameValid;
-    }
-
-    protected final UnsafeBuffer receiveBuffer()
-    {
-        return receiveBuffer;
-    }
-
-    protected final ByteBuffer receiveByteBuffer()
-    {
-        return receiveByteBuffer;
     }
 
     protected final InetSocketAddress receive()

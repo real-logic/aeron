@@ -61,7 +61,7 @@ public class FragmentAssembler implements FragmentHandler
     public FragmentAssembler(final FragmentHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
-        builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
+        builderFunc = ignore -> new BufferBuilder(initialBufferLength);
     }
 
     /**

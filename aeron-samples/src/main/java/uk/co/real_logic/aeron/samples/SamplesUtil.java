@@ -61,7 +61,7 @@ public class SamplesUtil
         final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running, final IdleStrategy idleStrategy)
     {
         return
-            (subscription) ->
+            subscription ->
             {
                 try
                 {

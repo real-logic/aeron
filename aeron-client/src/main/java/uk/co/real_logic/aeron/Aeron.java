@@ -47,7 +47,7 @@ public final class Aeron implements AutoCloseable
      * @see Aeron.Context#errorHandler(ErrorHandler)
      */
     public static final ErrorHandler DEFAULT_ERROR_HANDLER =
-        (throwable) ->
+        throwable ->
         {
             throwable.printStackTrace();
             if (throwable instanceof DriverTimeoutException)
@@ -255,12 +255,12 @@ public final class Aeron implements AutoCloseable
 
                 if (null == availableImageHandler)
                 {
-                    availableImageHandler = (image) -> { };
+                    availableImageHandler = image -> { };
                 }
 
                 if (null == unavailableImageHandler)
                 {
-                    unavailableImageHandler = (image) -> { };
+                    unavailableImageHandler = image -> { };
                 }
             }
             catch (final Exception ex)

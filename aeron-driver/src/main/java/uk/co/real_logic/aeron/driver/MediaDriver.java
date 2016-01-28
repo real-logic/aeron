@@ -290,7 +290,7 @@ public final class MediaDriver implements AutoCloseable
     private MediaDriver start()
     {
         runners.forEach(
-            (runner) ->
+            runner ->
             {
                 final Thread thread = new Thread(runner);
                 thread.setName(runner.agent().roleName());
@@ -362,7 +362,7 @@ public final class MediaDriver implements AutoCloseable
             }
             else
             {
-                logProgress = (message) -> { };
+                logProgress = message -> { };
             }
 
             if (ctx.dirsDeleteOnStart())

@@ -43,7 +43,7 @@ public class ActivePublications
     public Publication put(final String channel, final int streamId, final Publication publication)
     {
         final Int2ObjectHashMap<Publication> publicationByStreamIdMap =
-            getOrDefault(publicationsByChannelMap, channel, (ignore) -> new Int2ObjectHashMap<>());
+            getOrDefault(publicationsByChannelMap, channel, ignore -> new Int2ObjectHashMap<>());
 
         return publicationByStreamIdMap.put(streamId, publication);
     }
@@ -70,7 +70,7 @@ public class ActivePublications
         publicationsByChannelMap
             .values()
             .stream()
-            .flatMap((publicationByStreamIdMap) -> publicationByStreamIdMap.values().stream())
+            .flatMap(publicationByStreamIdMap -> publicationByStreamIdMap.values().stream())
             .collect(toList())
             .forEach(Publication::release);
     }

@@ -18,10 +18,12 @@ package uk.co.real_logic.aeron.driver.media;
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.aeron.protocol.*;
+import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.collections.MutableInteger;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
@@ -76,6 +78,28 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         this.dispatcher = dispatcher;
         this.systemCounters = context.systemCounters();
+    }
+
+    /**
+     * Send contents of {@link java.nio.ByteBuffer} to remote address
+     *
+     * @param buffer        to send
+     * @param remoteAddress to send to
+     * @return number of bytes sent
+     */
+    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
+    {
+        int bytesSent = 0;
+        try
+        {
+            bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
+        }
+        catch (final IOException ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return bytesSent;
     }
 
     public String originalUriString()

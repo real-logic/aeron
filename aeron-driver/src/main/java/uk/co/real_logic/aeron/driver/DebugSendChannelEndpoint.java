@@ -35,15 +35,6 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         controlLossGenerator = context.controlLossGenerator();
     }
 
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
-    {
-        logger.logFrameOut(buffer, remoteAddress);
-
-        // TODO: call dataLossGenerator and drop (call log to inform) - need a shouldDropAllFrame() method
-
-        return super.sendTo(buffer, remoteAddress);
-    }
-
     public int send(final ByteBuffer buffer)
     {
         logger.logFrameOut(buffer, connectAddress);

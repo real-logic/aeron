@@ -150,28 +150,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Send contents of {@link java.nio.ByteBuffer} to remote address
-     *
-     * @param buffer        to send
-     * @param remoteAddress to send to
-     * @return number of bytes sent
-     */
-    public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
-    {
-        int bytesSent = 0;
-        try
-        {
-            bytesSent = sendDatagramChannel.send(buffer, remoteAddress);
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return bytesSent;
-    }
-
-    /**
      * Close transport, canceling any pending read operations and closing channel
      */
     public void close()

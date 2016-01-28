@@ -57,7 +57,6 @@ public class SelectorAndTransportTest
     private final StatusMessageFlyweight statusMessage = new StatusMessageFlyweight();
 
     private final InetSocketAddress rcvRemoteAddress = new InetSocketAddress("localhost", SRC_PORT);
-    private final InetSocketAddress srcRemoteAddress = new InetSocketAddress("localhost", RCV_PORT);
 
     private final EventLogger mockTransportLogger = mock(EventLogger.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
@@ -168,7 +167,7 @@ public class SelectorAndTransportTest
         byteBuffer.position(0).limit(FRAME_LENGTH);
 
         processLoop(dataTransportPoller, 5);
-        sendChannelEndpoint.sendTo(byteBuffer, srcRemoteAddress);
+        sendChannelEndpoint.send(byteBuffer);
         while (dataHeadersReceived.get() < 1)
         {
             processLoop(dataTransportPoller, 1);
@@ -229,7 +228,7 @@ public class SelectorAndTransportTest
         byteBuffer.position(0).limit(2 * alignedFrameLength);
 
         processLoop(dataTransportPoller, 5);
-        sendChannelEndpoint.sendTo(byteBuffer, srcRemoteAddress);
+        sendChannelEndpoint.send(byteBuffer);
         while (dataHeadersReceived.get() < 1)
         {
             processLoop(dataTransportPoller, 1);

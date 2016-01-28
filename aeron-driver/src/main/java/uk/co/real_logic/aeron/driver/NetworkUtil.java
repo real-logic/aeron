@@ -72,7 +72,7 @@ public class NetworkUtil
         sort(filterResults);
 
         final List<NetworkInterface> results = new ArrayList<>();
-        filterResults.forEach((filterResult) -> results.add(filterResult.ifc));
+        filterResults.forEach(filterResult -> results.add(filterResult.ifc));
 
         return results;
     }

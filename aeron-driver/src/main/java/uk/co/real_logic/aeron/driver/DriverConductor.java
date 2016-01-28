@@ -266,7 +266,7 @@ public class DriverConductor implements Agent
                 sourceAddress);
 
             subscriberPositions.forEach(
-                (subscriberPosition) -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));
+                subscriberPosition -> subscriberPosition.subscription().addImage(image, subscriberPosition.position()));
 
             publicationImages.add(image);
             receiverProxy.newPublicationImage(channelEndpoint, image);
@@ -349,8 +349,8 @@ public class DriverConductor implements Agent
 
         subscriptionLinks
             .stream()
-            .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))
-            .forEach((subscriptionLink) -> subscriptionLink.removeImage(image));
+            .filter(link -> image.matches(link.channelEndpoint(), link.streamId()))
+            .forEach(subscriptionLink -> subscriptionLink.removeImage(image));
     }
 
     private List<SubscriberPosition> listSubscriberPositions(
@@ -362,9 +362,9 @@ public class DriverConductor implements Agent
     {
         return subscriptionLinks
             .stream()
-            .filter((subscription) -> subscription.matches(channelEndpoint, streamId))
+            .filter(subscription -> subscription.matches(channelEndpoint, streamId))
             .map(
-                (subscription) ->
+                subscription ->
                 {
                     final Position position = newPosition(
                         "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
@@ -749,9 +749,9 @@ public class DriverConductor implements Agent
 
         publicationImages
             .stream()
-            .filter((image) -> image.matches(channelEndpoint, streamId) && (image.subscriberCount() > 0))
+            .filter(image -> image.matches(channelEndpoint, streamId) && (image.subscriberCount() > 0))
             .forEach(
-                (image) ->
+                image ->
                 {
                     final int sessionId = image.sessionId();
                     final Position position = newPosition("subscriber pos", channel, sessionId, streamId, registrationId);

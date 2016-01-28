@@ -59,7 +59,7 @@ public class HackSelectReceiveSendUdpPong
         final NioSelectedKeySet keySet = Common.keySet(selector);
 
         final ToIntFunction<SelectionKey> handler =
-            (key) ->
+            key ->
             {
                 try
                 {

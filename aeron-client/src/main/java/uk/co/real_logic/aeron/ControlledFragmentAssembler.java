@@ -61,7 +61,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
     public ControlledFragmentAssembler(final ControlledFragmentHandler delegate, final int initialBufferLength)
     {
         this.delegate = delegate;
-        builderFunc = (ignore) -> new BufferBuilder(initialBufferLength);
+        builderFunc = ignore -> new BufferBuilder(initialBufferLength);
     }
 
     /**

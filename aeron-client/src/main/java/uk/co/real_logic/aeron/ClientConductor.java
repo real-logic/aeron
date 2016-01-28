@@ -206,7 +206,7 @@ class ClientConductor implements Agent, DriverListener
     {
         activeSubscriptions.forEach(
             streamId,
-            (subscription) ->
+            subscription ->
             {
                 if (!subscription.hasImage(sessionId))
                 {
@@ -241,7 +241,7 @@ class ClientConductor implements Agent, DriverListener
     {
         activeSubscriptions.forEach(
             streamId,
-            (subscription) ->
+            subscription ->
             {
                 final Image image = subscription.removeImage(correlationId);
                 if (null != image)

@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.driver.media.UdpChannel;
 
 public class ReceiveChannelEndpointSupplier
 {
-    public ReceiveChannelEndpoint generate(
+    public ReceiveChannelEndpoint newInstance(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,
         final MediaDriver.Context context)

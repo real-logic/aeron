@@ -697,7 +697,7 @@ public class DriverConductor implements Agent
         {
             logger.logChannelCreated(udpChannel.description());
 
-            channelEndpoint = sendChannelEndpointSupplier.generate(udpChannel, context);
+            channelEndpoint = sendChannelEndpointSupplier.newInstance(udpChannel, context);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             senderProxy.registerSendChannelEndpoint(channelEndpoint);
@@ -804,7 +804,7 @@ public class DriverConductor implements Agent
         ReceiveChannelEndpoint channelEndpoint = receiveChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
-            channelEndpoint = receiveChannelEndpointSupplier.generate(
+            channelEndpoint = receiveChannelEndpointSupplier.newInstance(
                 udpChannel,
                 new DataPacketDispatcher(fromReceiverConductorProxy, receiverProxy.receiver()),
                 context);

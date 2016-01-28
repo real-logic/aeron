@@ -20,7 +20,7 @@ import uk.co.real_logic.aeron.driver.media.UdpChannel;
 
 public class DebugSendChannelEndpointSupplier extends SendChannelEndpointSupplier
 {
-    public SendChannelEndpoint generate(UdpChannel udpChannel, MediaDriver.Context context)
+    public SendChannelEndpoint newInstance(UdpChannel udpChannel, MediaDriver.Context context)
     {
         return new DebugSendChannelEndpoint(udpChannel, context);
     }

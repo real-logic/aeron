@@ -30,7 +30,8 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.*;
 
 /**
- * Aggregator of multiple subscriptions onto a single transport session for processing of data frames.
+ * Aggregator of multiple subscriptions onto a single transport session for receiving of data and setup frames
+ * plus sending status and NAK frames.
  */
 public class ReceiveChannelEndpoint extends UdpChannelTransport
 {

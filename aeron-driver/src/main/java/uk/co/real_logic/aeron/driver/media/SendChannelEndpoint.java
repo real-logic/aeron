@@ -37,7 +37,7 @@ import static uk.co.real_logic.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_
 
 /**
  * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for
- * sending data and processing of control frames.
+ * sending data and setup frames plus the receiving of status and NAK frames.
  */
 public class SendChannelEndpoint extends UdpChannelTransport
 {

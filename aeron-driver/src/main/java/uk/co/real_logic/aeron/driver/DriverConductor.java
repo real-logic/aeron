@@ -484,11 +484,11 @@ public class DriverConductor implements Agent
 
                     if (CommonContext.IPC_CHANNEL.equals(channel))
                     {
-                        onAddDirectPublicationSubscription(streamId, correlationId, clientId);
+                        onAddDirectSubscription(streamId, correlationId, clientId);
                     }
                     else
                     {
-                        onAddNetworkPublicationSubscription(channel, streamId, correlationId, clientId);
+                        onAddNetworkSubscription(channel, streamId, correlationId, clientId);
                     }
                     break;
                 }
@@ -730,7 +730,7 @@ public class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
-    private void onAddNetworkPublicationSubscription(
+    private void onAddNetworkSubscription(
         final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(UdpChannel.parse(channel));
@@ -770,7 +770,7 @@ public class DriverConductor implements Agent
                 });
     }
 
-    private void onAddDirectPublicationSubscription(final int streamId, final long registrationId, final long clientId)
+    private void onAddDirectSubscription(final int streamId, final long registrationId, final long clientId)
     {
         final DirectPublication publication = getOrAddDirectPublication(streamId);
         final AeronClient client = getOrAddClient(clientId);

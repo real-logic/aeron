@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.ErrorCode;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.ByteOrder;
 
 /**
  * Control message flyweight for any errors sent from driver to clients
@@ -70,7 +70,7 @@ public class ErrorResponseFlyweight
      */
     public long offendingCommandCorrelationId()
     {
-        return buffer.getLong(offset + OFFENDING_COMMAND_CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getLong(offset + OFFENDING_COMMAND_CORRELATION_ID_OFFSET);
     }
 
     /**
@@ -81,7 +81,7 @@ public class ErrorResponseFlyweight
      */
     public ErrorResponseFlyweight offendingCommandCorrelationId(final long correlationId)
     {
-        buffer.putLong(offset + OFFENDING_COMMAND_CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
+        buffer.putLong(offset + OFFENDING_COMMAND_CORRELATION_ID_OFFSET, correlationId);
         return this;
     }
 
@@ -92,7 +92,7 @@ public class ErrorResponseFlyweight
      */
     public ErrorCode errorCode()
     {
-        return ErrorCode.get(buffer.getInt(offset + ERROR_CODE_OFFSET, LITTLE_ENDIAN));
+        return ErrorCode.get(buffer.getInt(offset + ERROR_CODE_OFFSET));
     }
 
     /**
@@ -103,7 +103,7 @@ public class ErrorResponseFlyweight
      */
     public ErrorResponseFlyweight errorCode(final ErrorCode code)
     {
-        buffer.putInt(offset + ERROR_CODE_OFFSET, code.value(), LITTLE_ENDIAN);
+        buffer.putInt(offset + ERROR_CODE_OFFSET, code.value());
         return this;
     }
 
@@ -114,7 +114,7 @@ public class ErrorResponseFlyweight
      */
     public String errorMessage()
     {
-        return buffer.getStringUtf8(offset + ERROR_MESSAGE_OFFSET, LITTLE_ENDIAN);
+        return buffer.getStringUtf8(offset + ERROR_MESSAGE_OFFSET, ByteOrder.nativeOrder());
     }
 
     /**
@@ -125,7 +125,7 @@ public class ErrorResponseFlyweight
      */
     public ErrorResponseFlyweight errorMessage(final String message)
     {
-        buffer.putStringUtf8(offset + ERROR_MESSAGE_OFFSET, message, LITTLE_ENDIAN);
+        buffer.putStringUtf8(offset + ERROR_MESSAGE_OFFSET, message, ByteOrder.nativeOrder());
         return this;
     }
 
@@ -136,6 +136,6 @@ public class ErrorResponseFlyweight
      */
     public int length()
     {
-        return buffer.getInt(offset + ERROR_MESSAGE_OFFSET, LITTLE_ENDIAN) + ERROR_MESSAGE_OFFSET + BitUtil.SIZE_OF_INT;
+        return buffer.getInt(offset + ERROR_MESSAGE_OFFSET) + ERROR_MESSAGE_OFFSET + BitUtil.SIZE_OF_INT;
     }
 }

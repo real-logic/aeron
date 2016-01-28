@@ -17,7 +17,8 @@ package uk.co.real_logic.aeron.command;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.ByteOrder;
+
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -77,7 +78,7 @@ public class PublicationBuffersReadyFlyweight
      */
     public long correlationId()
     {
-        return buffer.getLong(offset + CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getLong(offset + CORRELATION_ID_OFFSET);
     }
 
     /**
@@ -88,7 +89,7 @@ public class PublicationBuffersReadyFlyweight
      */
     public PublicationBuffersReadyFlyweight correlationId(final long correlationId)
     {
-        buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
+        buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId);
 
         return this;
     }
@@ -100,7 +101,7 @@ public class PublicationBuffersReadyFlyweight
      */
     public int sessionId()
     {
-        return buffer.getInt(offset + SESSION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + SESSION_ID_OFFSET);
     }
 
     /**
@@ -111,7 +112,7 @@ public class PublicationBuffersReadyFlyweight
      */
     public PublicationBuffersReadyFlyweight sessionId(final int sessionId)
     {
-        buffer.putInt(offset + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
+        buffer.putInt(offset + SESSION_ID_OFFSET, sessionId);
 
         return this;
     }
@@ -123,7 +124,7 @@ public class PublicationBuffersReadyFlyweight
      */
     public int streamId()
     {
-        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET);
     }
 
     /**
@@ -134,7 +135,7 @@ public class PublicationBuffersReadyFlyweight
      */
     public PublicationBuffersReadyFlyweight streamId(final int streamId)
     {
-        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId);
 
         return this;
     }
@@ -146,7 +147,7 @@ public class PublicationBuffersReadyFlyweight
      */
     public int publicationLimitCounterId()
     {
-        return buffer.getInt(offset + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + PUBLICATION_LIMIT_COUNTER_ID_OFFSET);
     }
 
     /**
@@ -157,19 +158,19 @@ public class PublicationBuffersReadyFlyweight
      */
     public PublicationBuffersReadyFlyweight publicationLimitCounterId(final int positionCounterId)
     {
-        buffer.putInt(offset + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, positionCounterId, LITTLE_ENDIAN);
+        buffer.putInt(offset + PUBLICATION_LIMIT_COUNTER_ID_OFFSET, positionCounterId);
 
         return this;
     }
 
     public String logFileName()
     {
-        return buffer.getStringUtf8(offset + LOGFILE_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getStringUtf8(offset + LOGFILE_FIELD_OFFSET, ByteOrder.nativeOrder());
     }
 
     public PublicationBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer.putStringUtf8(offset + LOGFILE_FIELD_OFFSET, logFileName, LITTLE_ENDIAN);
+        buffer.putStringUtf8(offset + LOGFILE_FIELD_OFFSET, logFileName, ByteOrder.nativeOrder());
         return this;
     }
 

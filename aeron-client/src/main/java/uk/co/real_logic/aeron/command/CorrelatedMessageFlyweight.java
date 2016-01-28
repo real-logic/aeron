@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.command;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
@@ -62,7 +61,7 @@ public class CorrelatedMessageFlyweight
      */
     public long clientId()
     {
-        return buffer.getLong(offset + CLIENT_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getLong(offset + CLIENT_ID_FIELD_OFFSET);
     }
 
     /**
@@ -73,7 +72,7 @@ public class CorrelatedMessageFlyweight
      */
     public CorrelatedMessageFlyweight clientId(final long clientId)
     {
-        buffer.putLong(offset + CLIENT_ID_FIELD_OFFSET, clientId, LITTLE_ENDIAN);
+        buffer.putLong(offset + CLIENT_ID_FIELD_OFFSET, clientId);
 
         return this;
     }
@@ -85,7 +84,7 @@ public class CorrelatedMessageFlyweight
      */
     public long correlationId()
     {
-        return buffer.getLong(offset + CORRELATION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getLong(offset + CORRELATION_ID_FIELD_OFFSET);
     }
 
     /**
@@ -96,7 +95,7 @@ public class CorrelatedMessageFlyweight
      */
     public CorrelatedMessageFlyweight correlationId(final long correlationId)
     {
-        buffer.putLong(offset + CORRELATION_ID_FIELD_OFFSET, correlationId, LITTLE_ENDIAN);
+        buffer.putLong(offset + CORRELATION_ID_FIELD_OFFSET, correlationId);
 
         return this;
     }

@@ -17,7 +17,8 @@ package uk.co.real_logic.aeron.command;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
+import java.nio.ByteOrder;
+
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -102,7 +103,7 @@ public class ImageBuffersReadyFlyweight
      */
     public long correlationId()
     {
-        return buffer.getLong(offset + CORRELATION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getLong(offset + CORRELATION_ID_OFFSET);
     }
 
     /**
@@ -113,7 +114,7 @@ public class ImageBuffersReadyFlyweight
      */
     public ImageBuffersReadyFlyweight correlationId(final long correlationId)
     {
-        buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId, LITTLE_ENDIAN);
+        buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId);
 
         return this;
     }
@@ -125,7 +126,7 @@ public class ImageBuffersReadyFlyweight
      */
     public int sessionId()
     {
-        return buffer.getInt(offset + SESSION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + SESSION_ID_OFFSET);
     }
 
     /**
@@ -135,7 +136,7 @@ public class ImageBuffersReadyFlyweight
      */
     public ImageBuffersReadyFlyweight sessionId(final int sessionId)
     {
-        buffer.putInt(offset + SESSION_ID_OFFSET, sessionId, LITTLE_ENDIAN);
+        buffer.putInt(offset + SESSION_ID_OFFSET, sessionId);
 
         return this;
     }
@@ -147,7 +148,7 @@ public class ImageBuffersReadyFlyweight
      */
     public int streamId()
     {
-        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET);
     }
 
     /**
@@ -158,7 +159,7 @@ public class ImageBuffersReadyFlyweight
      */
     public ImageBuffersReadyFlyweight streamId(final int streamId)
     {
-        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId);
 
         return this;
     }
@@ -170,7 +171,7 @@ public class ImageBuffersReadyFlyweight
      */
     public int subscriberPositionCount()
     {
-        return buffer.getInt(offset + SUBSCRIBER_POSITION_COUNT_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + SUBSCRIBER_POSITION_COUNT_OFFSET);
     }
 
     /**
@@ -181,8 +182,8 @@ public class ImageBuffersReadyFlyweight
      */
     public ImageBuffersReadyFlyweight subscriberPositionCount(final int value)
     {
-        buffer.putInt(offset + SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET, SUBSCRIBER_POSITION_BLOCK_LENGTH, LITTLE_ENDIAN);
-        buffer.putInt(offset + SUBSCRIBER_POSITION_COUNT_OFFSET, value, LITTLE_ENDIAN);
+        buffer.putInt(offset + SUBSCRIBER_POSITION_BLOCK_LENGTH_OFFSET, SUBSCRIBER_POSITION_BLOCK_LENGTH);
+        buffer.putInt(offset + SUBSCRIBER_POSITION_COUNT_OFFSET, value);
 
         return this;
     }
@@ -244,7 +245,7 @@ public class ImageBuffersReadyFlyweight
      */
     public String logFileName()
     {
-        return buffer.getStringUtf8(offset + logFileNameOffset(), LITTLE_ENDIAN);
+        return buffer.getStringUtf8(offset + logFileNameOffset(), ByteOrder.nativeOrder());
     }
 
     /**
@@ -255,7 +256,7 @@ public class ImageBuffersReadyFlyweight
      */
     public ImageBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer.putStringUtf8(offset + logFileNameOffset(), logFileName, LITTLE_ENDIAN);
+        buffer.putStringUtf8(offset + logFileNameOffset(), logFileName, ByteOrder.nativeOrder());
         return this;
     }
 
@@ -266,7 +267,7 @@ public class ImageBuffersReadyFlyweight
      */
     public String sourceIdentity()
     {
-        return buffer.getStringUtf8(offset + sourceIdentityOffset(), LITTLE_ENDIAN);
+        return buffer.getStringUtf8(offset + sourceIdentityOffset(), ByteOrder.nativeOrder());
     }
 
     /**
@@ -277,7 +278,7 @@ public class ImageBuffersReadyFlyweight
      */
     public ImageBuffersReadyFlyweight sourceIdentity(final String value)
     {
-        buffer.putStringUtf8(offset + sourceIdentityOffset(), value, LITTLE_ENDIAN);
+        buffer.putStringUtf8(offset + sourceIdentityOffset(), value, ByteOrder.nativeOrder());
         return this;
     }
 
@@ -291,7 +292,7 @@ public class ImageBuffersReadyFlyweight
     public int length()
     {
         final int sourceIdentityOffset = sourceIdentityOffset();
-        return sourceIdentityOffset + buffer.getInt(offset + sourceIdentityOffset, LITTLE_ENDIAN) + SIZE_OF_INT;
+        return sourceIdentityOffset + buffer.getInt(offset + sourceIdentityOffset) + SIZE_OF_INT;
     }
 
     private int subscriberPositionOffset(final int index)
@@ -307,6 +308,6 @@ public class ImageBuffersReadyFlyweight
     private int sourceIdentityOffset()
     {
         final int logFileNameOffset = logFileNameOffset();
-        return logFileNameOffset + buffer.getInt(offset + logFileNameOffset, LITTLE_ENDIAN) + SIZE_OF_INT;
+        return logFileNameOffset + buffer.getInt(offset + logFileNameOffset) + SIZE_OF_INT;
     }
 }

@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.command;
 
-import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
@@ -43,7 +42,7 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public long registrationId()
     {
-        return buffer.getLong(offset + REGISTRATION_ID_OFFSET, LITTLE_ENDIAN);
+        return buffer.getLong(offset + REGISTRATION_ID_OFFSET);
     }
 
     /**
@@ -54,7 +53,7 @@ public class RemoveMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public RemoveMessageFlyweight registrationId(final long registrationId)
     {
-        buffer.putLong(offset + REGISTRATION_ID_OFFSET, registrationId, LITTLE_ENDIAN);
+        buffer.putLong(offset + REGISTRATION_ID_OFFSET, registrationId);
 
         return this;
     }

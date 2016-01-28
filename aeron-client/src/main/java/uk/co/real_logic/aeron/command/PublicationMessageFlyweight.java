@@ -52,7 +52,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public int streamId()
     {
-        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET);
     }
 
     /**
@@ -63,7 +63,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public PublicationMessageFlyweight streamId(final int streamId)
     {
-        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId);
 
         return this;
     }
@@ -75,7 +75,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public String channel()
     {
-        return buffer.getStringUtf8(offset + CHANNEL_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getStringUtf8(offset + CHANNEL_OFFSET, ByteOrder.nativeOrder());
     }
 
     /**
@@ -86,7 +86,7 @@ public class PublicationMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public PublicationMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
+        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel, ByteOrder.nativeOrder());
 
         return this;
     }

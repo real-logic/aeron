@@ -70,7 +70,7 @@ public class ImageMessageFlyweight
      */
     public long correlationId()
     {
-        return buffer.getLong(offset + CORRELATION_ID_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getLong(offset + CORRELATION_ID_OFFSET);
     }
 
     /**
@@ -80,7 +80,7 @@ public class ImageMessageFlyweight
      */
     public ImageMessageFlyweight correlationId(final long correlationId)
     {
-        buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong(offset + CORRELATION_ID_OFFSET, correlationId);
 
         return this;
     }
@@ -92,7 +92,7 @@ public class ImageMessageFlyweight
      */
     public int streamId()
     {
-        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET);
     }
 
     /**
@@ -103,7 +103,7 @@ public class ImageMessageFlyweight
      */
     public ImageMessageFlyweight streamId(final int streamId)
     {
-        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putInt(offset + STREAM_ID_FIELD_OFFSET, streamId);
 
         return this;
     }
@@ -115,7 +115,7 @@ public class ImageMessageFlyweight
      */
     public String channel()
     {
-        final int length = buffer.getInt(offset + CHANNEL_OFFSET, ByteOrder.LITTLE_ENDIAN);
+        final int length = buffer.getInt(offset + CHANNEL_OFFSET);
         lengthOfChannel = SIZE_OF_INT + length;
 
         return buffer.getStringUtf8(offset + CHANNEL_OFFSET, length);
@@ -129,7 +129,7 @@ public class ImageMessageFlyweight
      */
     public ImageMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel, ByteOrder.LITTLE_ENDIAN);
+        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel, ByteOrder.nativeOrder());
 
         return this;
     }

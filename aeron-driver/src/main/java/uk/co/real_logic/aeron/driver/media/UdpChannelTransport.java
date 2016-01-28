@@ -250,7 +250,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public abstract int pollForData();
 
-    public final boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)
+    public boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)
     {
         boolean isFrameValid = true;
 

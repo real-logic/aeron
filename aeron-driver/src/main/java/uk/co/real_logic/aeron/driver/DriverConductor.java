@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.aeron.command.CorrelatedMessageFlyweight;
 import uk.co.real_logic.aeron.command.PublicationMessageFlyweight;
 import uk.co.real_logic.aeron.command.RemoveMessageFlyweight;
@@ -49,6 +48,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.stream.Collectors.toList;
+import static uk.co.real_logic.aeron.CommonContext.IPC_CHANNEL;
 import static uk.co.real_logic.aeron.ErrorCode.*;
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
@@ -59,8 +59,9 @@ import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READE
  */
 public class DriverConductor implements Agent
 {
-    private static final String SUBSCRIBER_POS = "subscriber pos";
-	private final long imageLivenessTimeoutNs;
+    private static final String SUBSCRIBER_POS_LABEL = "subscriber pos";
+
+    private final long imageLivenessTimeoutNs;
     private final long clientLivenessTimeoutNs;
     private final long publicationUnblockTimeoutNs;
     private final int mtuLength;
@@ -368,7 +369,7 @@ public class DriverConductor implements Agent
                 (subscription) ->
                 {
                     final Position position = newPosition(
-                        SUBSCRIBER_POS, channel, sessionId, streamId, subscription.registrationId());
+                        SUBSCRIBER_POS_LABEL, channel, sessionId, streamId, subscription.registrationId());
 
                     position.setOrdered(joiningPosition);
 
@@ -448,7 +449,7 @@ public class DriverConductor implements Agent
                     final long correlationId = publicationMessageFlyweight.correlationId();
                     final long clientId = publicationMessageFlyweight.clientId();
 
-                    if (CommonContext.IPC_CHANNEL.equals(channel))
+                    if (IPC_CHANNEL.equals(channel))
                     {
                         onAddDirectPublication(streamId, correlationId, clientId);
                     }
@@ -483,7 +484,7 @@ public class DriverConductor implements Agent
                     final long correlationId = subscriptionMessageFlyweight.correlationId();
                     final long clientId = subscriptionMessageFlyweight.clientId();
 
-                    if (CommonContext.IPC_CHANNEL.equals(channel))
+                    if (IPC_CHANNEL.equals(channel))
                     {
                         onAddDirectSubscription(streamId, correlationId, clientId);
                     }
@@ -755,7 +756,7 @@ public class DriverConductor implements Agent
                 (image) ->
                 {
                     final int sessionId = image.sessionId();
-                    final Position position = newPosition(SUBSCRIBER_POS, channel, sessionId, streamId, registrationId);
+                    final Position position = newPosition(SUBSCRIBER_POS_LABEL, channel, sessionId, streamId, registrationId);
                     position.setOrdered(image.rebuildPosition());
 
                     image.addSubscriber(position);
@@ -777,7 +778,7 @@ public class DriverConductor implements Agent
         final AeronClient client = getOrAddClient(clientId);
 
         final int sessionId = publication.sessionId();
-        final Position position = newPosition(SUBSCRIBER_POS, CommonContext.IPC_CHANNEL, sessionId, streamId, registrationId);
+        final Position position = newPosition(SUBSCRIBER_POS_LABEL, IPC_CHANNEL, sessionId, streamId, registrationId);
         position.setOrdered(publication.joiningPosition());
 
         final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, streamId, publication, position, client);
@@ -796,7 +797,7 @@ public class DriverConductor implements Agent
             sessionId,
             publication.rawLog().logFileName(),
             subscriberPositions,
-            CommonContext.IPC_CHANNEL);
+            IPC_CHANNEL);
     }
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)
@@ -890,7 +891,7 @@ public class DriverConductor implements Agent
             final RawLog rawLog = newDirectPublicationLog(sessionId, streamId, initialTermId, imageCorrelationId);
 
             final Position publisherLimit =
-                newPosition("publisher limit", CommonContext.IPC_CHANNEL, sessionId, streamId, imageCorrelationId);
+                newPosition("publisher limit", IPC_CHANNEL, sessionId, streamId, imageCorrelationId);
 
             directPublication = new DirectPublication(imageCorrelationId, sessionId, streamId, publisherLimit, rawLog);
 

@@ -32,7 +32,7 @@ public class TransferToPong
 {
     private static final String LOCALHOST = "localhost";
 
-	public static void main(final String[] args) throws IOException
+    public static void main(final String[] args) throws IOException
     {
         final FileChannel receiveFileChannel = Common.createTmpFileChannel();
         final ByteBuffer receiveByteBuffer = receiveFileChannel.map(FileChannel.MapMode.READ_WRITE, 0, MTU_LENGTH_DEFAULT);

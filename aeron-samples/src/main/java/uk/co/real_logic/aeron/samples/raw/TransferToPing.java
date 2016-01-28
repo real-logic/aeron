@@ -36,7 +36,7 @@ public class TransferToPing
 {
     private static final String LOCALHOST = "localhost";
 
-	public static void main(final String[] args) throws IOException
+    public static void main(final String[] args) throws IOException
     {
         final Histogram histogram = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
 

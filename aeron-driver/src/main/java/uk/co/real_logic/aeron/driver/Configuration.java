@@ -99,12 +99,6 @@ public class Configuration
     public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
-     * Property name for window limit on subscription side
-     */
-    public static final String SUBSCRIPTION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.subscription.term.window.length";
-    public static final int SUBSCRIPTION_TERM_WINDOW_LENGTH = getInteger(SUBSCRIPTION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
-
-    /**
      * Property name for client liveness timeout
      */
     public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";

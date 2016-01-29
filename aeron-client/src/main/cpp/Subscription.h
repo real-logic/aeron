@@ -234,7 +234,7 @@ public:
         return isConnected;
     }
 
-    Image *addImage(Image &connection)
+    Image *addImage(Image &image)
     {
         Image * oldArray = std::atomic_load(&m_images);
         int length = std::atomic_load(&m_imagesLength);
@@ -245,7 +245,7 @@ public:
             newArray[i] = std::move(oldArray[i]);
         }
 
-        newArray[length] = std::move(connection);
+        newArray[length] = image; // copy-assign
 
         std::atomic_store(&m_images, newArray);
         std::atomic_store(&m_imagesLength, length + 1); // set length last. Don't go over end of old array on poll

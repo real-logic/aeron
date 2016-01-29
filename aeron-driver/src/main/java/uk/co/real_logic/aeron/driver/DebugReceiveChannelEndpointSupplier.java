@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 
-public class DebugReceiveChannelEndpointSupplier extends ReceiveChannelEndpointSupplier
+public class DebugReceiveChannelEndpointSupplier extends DefaultReceiveChannelEndpointSupplier
 {
     public ReceiveChannelEndpoint newInstance(
         final UdpChannel udpChannel,

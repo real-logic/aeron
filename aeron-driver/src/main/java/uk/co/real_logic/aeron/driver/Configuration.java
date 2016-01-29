@@ -393,7 +393,7 @@ public class Configuration
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
         EventLogger.IS_FRAME_LOGGING_ENABLED ?
             "uk.co.real_logic.aeron.driver.DebugSendChannelEndpointSupplier" :
-            "uk.co.real_logic.aeron.driver.SendChannelEndpointSupplier";
+            "uk.co.real_logic.aeron.driver.DefaultSendChannelEndpointSupplier";
 
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
         SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
@@ -403,7 +403,7 @@ public class Configuration
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
         EventLogger.IS_FRAME_LOGGING_ENABLED ?
             "uk.co.real_logic.aeron.driver.DebugReceiveChannelEndpointSupplier" :
-            "uk.co.real_logic.aeron.driver.ReceiveChannelEndpointSupplier";
+            "uk.co.real_logic.aeron.driver.DefaultReceiveChannelEndpointSupplier";
 
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
         RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
@@ -602,33 +602,45 @@ public class Configuration
         return 0 != IPC_PUBLICATION_TERM_WINDOW_LENGTH ? IPC_PUBLICATION_TERM_WINDOW_LENGTH : termBufferLength / 2;
     }
 
-    public static SendChannelEndpointSupplier sendChannelEndpointGenerator()
+    /**
+     * Get the supplier of {@link uk.co.real_logic.aeron.driver.media.SendChannelEndpoint}s which can be used for
+     * debugging, monitoring, or modifying the behaviour when sending to the media channel.
+     *
+     * @return the {@link SendChannelEndpointSupplier}.
+     */
+    public static SendChannelEndpointSupplier sendChannelEndpointSupplier()
     {
-        SendChannelEndpointSupplier generator = null;
+        SendChannelEndpointSupplier supplier = null;
         try
         {
-            generator = (SendChannelEndpointSupplier) Class.forName(SEND_CHANNEL_ENDPOINT_SUPPLIER).newInstance();
+            supplier = (SendChannelEndpointSupplier)Class.forName(SEND_CHANNEL_ENDPOINT_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return generator;
+        return supplier;
     }
 
-    public static ReceiveChannelEndpointSupplier receivehannelEndpointGenerator()
+    /**
+     * Get the supplier of {@link uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint}s which can be used for
+     * debugging, monitoring, or modifying the behaviour when receiving from the media channel.
+     *
+     * @return the {@link SendChannelEndpointSupplier}.
+     */
+    public static ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
     {
-        ReceiveChannelEndpointSupplier generator = null;
+        ReceiveChannelEndpointSupplier supplier = null;
         try
         {
-            generator = (ReceiveChannelEndpointSupplier) Class.forName(RECEIVE_CHANNEL_ENDPOINT_SUPPLIER).newInstance();
+            supplier = (ReceiveChannelEndpointSupplier)Class.forName(RECEIVE_CHANNEL_ENDPOINT_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return generator;
+        return supplier;
     }
 }

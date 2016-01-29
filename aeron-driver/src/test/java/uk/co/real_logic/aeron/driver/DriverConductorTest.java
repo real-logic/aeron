@@ -125,8 +125,8 @@ public class DriverConductorTest
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager)
             .nanoClock(nanoClock)
-            .sendChannelEndpointSupplier(Configuration.sendChannelEndpointGenerator())
-            .receiveChannelEndpointSupplier(Configuration.receivehannelEndpointGenerator());
+            .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
+            .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier());
 
         ctx.toEventReader(toEventReader);
         ctx.toDriverCommands(fromClientCommands);

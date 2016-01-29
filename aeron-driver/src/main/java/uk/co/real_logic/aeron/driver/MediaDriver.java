@@ -582,12 +582,12 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == sendChannelEndpointSupplier)
             {
-                sendChannelEndpointSupplier = Configuration.sendChannelEndpointGenerator();
+                sendChannelEndpointSupplier = Configuration.sendChannelEndpointSupplier();
             }
 
             if (null == receiveChannelEndpointSupplier)
             {
-                receiveChannelEndpointSupplier = Configuration.receivehannelEndpointGenerator();
+                receiveChannelEndpointSupplier = Configuration.receiveChannelEndpointSupplier();
             }
         }
 

@@ -18,10 +18,7 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 
-public class SendChannelEndpointSupplier
+public interface SendChannelEndpointSupplier
 {
-    public SendChannelEndpoint newInstance(final UdpChannel udpChannel, final MediaDriver.Context context)
-    {
-        return new SendChannelEndpoint(udpChannel, context);
-    }
+    SendChannelEndpoint newInstance(UdpChannel udpChannel, MediaDriver.Context context);
 }

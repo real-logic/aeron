@@ -22,15 +22,17 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+/**
+ * Debug implementation which can record transmission frames to the {@link MediaDriver.Context#eventLogger()} and introduce
+ * loss via {@link MediaDriver.Context#controlLossGenerator()} and {@link MediaDriver.Context#dataLossGenerator()} .
+ */
 public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
 {
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
 
     public DebugReceiveChannelEndpoint(
-        final UdpChannel udpChannel,
-        final DataPacketDispatcher dispatcher,
-        final MediaDriver.Context context)
+        final UdpChannel udpChannel, final DataPacketDispatcher dispatcher, final MediaDriver.Context context)
     {
         super(udpChannel, dispatcher, context);
 

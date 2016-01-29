@@ -22,6 +22,10 @@ import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+/**
+ * Debug implementation which can record transmission frames to the {@link MediaDriver.Context#eventLogger()} and introduce
+ * loss via {@link MediaDriver.Context#controlLossGenerator()} and {@link MediaDriver.Context#dataLossGenerator()} .
+ */
 public class DebugSendChannelEndpoint extends SendChannelEndpoint
 {
     private final LossGenerator dataLossGenerator;

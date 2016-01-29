@@ -273,7 +273,12 @@ public class Subscription implements AutoCloseable
         return isClosed;
     }
 
-    long registrationId()
+    /**
+     * Return the registration id used to register this Publication with the media driver.
+     *
+     * @return registration id
+     */
+    public long registrationId()
     {
         return registrationId;
     }

@@ -113,7 +113,7 @@ int main(int argc, char** argv)
         context.unavailableImageHandler([](Image &image)
             {
                 std::cout << "Unavailable image on correlationId=" << image.correlationId() << " sessionId=" << image.sessionId();
-                std::cout << " at position=" << image.position() << std::endl;
+                std::cout << " at position=" << image.position() << " from " << image.sourceIdentity() << std::endl;
             });
 
         std::shared_ptr<Aeron> aeron = Aeron::connect(context);

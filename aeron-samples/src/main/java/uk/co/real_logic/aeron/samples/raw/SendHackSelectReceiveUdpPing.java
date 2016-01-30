@@ -74,7 +74,6 @@ public class SendHackSelectReceiveUdpPing implements ToIntFunction<SelectionKey>
             measureRoundTrip(HISTOGRAM, SEND_ADDRESS, buffer, sendChannel, selector, keySet, running);
 
             HISTOGRAM.reset();
-            System.gc();
             LockSupport.parkNanos(1000 * 1000 * 1000);
         }
     }

@@ -67,7 +67,6 @@ public class TransferToPing
                 running);
 
             histogram.reset();
-            System.gc();
             LockSupport.parkNanos(1000 * 1000 * 1000);
         }
     }

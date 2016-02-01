@@ -102,7 +102,6 @@ public class SendSelectReceiveUdpPing
             measureRoundTrip(histogram, SEND_ADDRESS, buffer, sendChannel, selector, running);
 
             histogram.reset();
-            System.gc();
             LockSupport.parkNanos(1000 * 1000 * 1000);
         }
     }

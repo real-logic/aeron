@@ -68,7 +68,6 @@ public class WriteReceiveUdpPing
             measureRoundTrip(histogram, buffer, receiveChannels, writeChannel, running);
 
             histogram.reset();
-            System.gc();
             LockSupport.parkNanos(1000_000_000);
         }
     }

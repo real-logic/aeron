@@ -32,7 +32,7 @@ import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
 
 public class EmbeddedBufferClaimIpcThroughput
 {
-    public static final int BURST_SIZE = 1_000_000;
+    public static final int BURST_LENGTH = 1_000_000;
     public static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     public static final int MESSAGE_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     public static final String CHANNEL = CommonContext.IPC_CHANNEL;
@@ -132,7 +132,7 @@ public class EmbeddedBufferClaimIpcThroughput
             outputResults:
             while (running.get())
             {
-                for (int i = 0; i < BURST_SIZE; i++)
+                for (int i = 0; i < BURST_LENGTH; i++)
                 {
                     while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) <= 0)
                     {

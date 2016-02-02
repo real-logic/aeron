@@ -45,10 +45,9 @@ public class MultiDriverTest
     private static final int STREAM_ID = 1;
     private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
-    private static final int TERM_BUFFER_SIZE = 64 * 1024;
+    private static final int TERM_BUFFER_LENGTH = 64 * 1024;
     private static final int NUM_MESSAGES_PER_TERM = 64;
-    private static final int MESSAGE_LENGTH =
-        (TERM_BUFFER_SIZE / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
+    private static final int MESSAGE_LENGTH = (TERM_BUFFER_LENGTH / NUM_MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
     private static final String ROOT_DIR =
         IoUtil.tmpDirName() + "aeron-system-tests-" + UUID.randomUUID().toString() + File.separator;
 
@@ -76,13 +75,13 @@ public class MultiDriverTest
 
         buffer.putInt(0, 1);
 
-        driverAContext.publicationTermBufferLength(TERM_BUFFER_SIZE)
+        driverAContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirA)
             .threadingMode(THREADING_MODE);
 
         aeronAContext.aeronDirectoryName(driverAContext.aeronDirectoryName());
 
-        driverBContext.publicationTermBufferLength(TERM_BUFFER_SIZE)
+        driverBContext.publicationTermBufferLength(TERM_BUFFER_LENGTH)
             .aeronDirectoryName(baseDirB)
             .threadingMode(THREADING_MODE);
 
@@ -265,5 +264,4 @@ public class MultiDriverTest
             eq(MESSAGE_LENGTH),
             any(Header.class));
     }
-
 }

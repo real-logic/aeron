@@ -206,7 +206,7 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -247,7 +247,7 @@ public class PubAndSubTest
             termBufferLengthMinusPaddingHeader - (num1kMessagesInTermBuffer * 1024) - HEADER_LENGTH;
         final int messageLength = 1024 - HEADER_LENGTH;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -330,7 +330,7 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xdeadbeefL);         // predictable seed
         context.sendChannelEndpointSupplier(new DebugSendChannelEndpointSupplier());
@@ -377,7 +377,7 @@ public class PubAndSubTest
         final int numBatches = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatches;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
         context.dataLossRate(0.10);                // 10% data loss
         context.dataLossSeed(0xcafebabeL);         // predictable seed
         context.sendChannelEndpointSupplier(new DebugSendChannelEndpointSupplier());
@@ -427,7 +427,7 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = numMessagesInTermBuffer + 1;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -490,7 +490,7 @@ public class PubAndSubTest
         final int messageLength = 1032 - HEADER_LENGTH;
         final int numMessagesToSend = 64;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -536,7 +536,7 @@ public class PubAndSubTest
         final int numBatchesPerTerm = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatchesPerTerm;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -583,7 +583,7 @@ public class PubAndSubTest
         final int maxFails = 10000;
         int messagesSent = 0;
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
 
         launch(channel);
 
@@ -639,7 +639,7 @@ public class PubAndSubTest
         final CountDownLatch newImageLatch = new CountDownLatch(1);
         final int stage[] = { 1 };
 
-        context.termBufferLength(termBufferLength);
+        context.publicationTermBufferLength(termBufferLength);
         subscribingAeronContext.availableImageHandler(
             (image) ->
             {
@@ -714,7 +714,7 @@ public class PubAndSubTest
         final int numMessagesToSend = 2;
         final int numFramesToExpect = numMessagesToSend * numFragmentsPerMessage;
 
-        context.termBufferLength(termBufferLength)
+        context.publicationTermBufferLength(termBufferLength)
             .mtuLength(mtuLength);
 
         launch(channel);

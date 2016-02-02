@@ -524,7 +524,7 @@ public class Configuration
         return getInteger(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
     }
 
-    public static int termBufferLengthMax()
+    public static int maxTermBufferLength()
     {
         return getInteger(TERM_BUFFER_MAX_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_MAX_DEFAULT);
     }

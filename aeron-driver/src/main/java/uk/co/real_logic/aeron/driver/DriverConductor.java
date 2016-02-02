@@ -538,7 +538,7 @@ public class DriverConductor implements Agent
                 RETRANSMIT_UNICAST_DELAY_GENERATOR,
                 RETRANSMIT_UNICAST_LINGER_GENERATOR,
                 initialTermId,
-                context.termBufferLength());
+                context.publicationTermBufferLength());
 
             publication = new NetworkPublication(
                 channelEndpoint,
@@ -552,7 +552,7 @@ public class DriverConductor implements Agent
                 context.mtuLength(),
                 context.systemCounters(),
                 udpChannel.isMulticast() ?
-                    context.multicastSenderFlowControlSupplier().get() : context.unicastSenderFlowControlSupplier().get(),
+                    context.multicastFlowControlSupplier().get() : context.unicastFlowControlSupplier().get(),
                 retransmitHandler);
 
             channelEndpoint.addPublication(publication);

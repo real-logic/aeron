@@ -399,8 +399,8 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private DataTransportPoller receiverTransportPoller;
         private ControlTransportPoller senderTransportPoller;
-        private Supplier<FlowControl> unicastSenderFlowControlSupplier;
-        private Supplier<FlowControl> multicastSenderFlowControlSupplier;
+        private Supplier<FlowControl> unicastFlowControlSupplier;
+        private Supplier<FlowControl> multicastFlowControlSupplier;
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue;
@@ -456,8 +456,8 @@ public final class MediaDriver implements AutoCloseable
 
         public Context()
         {
-            termBufferLength(Configuration.termBufferLength());
-            termBufferMaxLength(Configuration.termBufferLengthMax());
+            publicationTermBufferLength(Configuration.termBufferLength());
+            maxImageTermBufferLength(Configuration.maxTermBufferLength());
             initialWindowLength(Configuration.initialWindowLength());
             statusMessageTimeout(Configuration.statusMessageTimeout());
             dataLossRate(Configuration.dataLossRate());
@@ -484,7 +484,7 @@ public final class MediaDriver implements AutoCloseable
                 receiverTransportPoller(new DataTransportPoller());
                 senderTransportPoller(new ControlTransportPoller());
 
-                Configuration.validateTermBufferLength(termBufferLength());
+                Configuration.validateTermBufferLength(publicationTermBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
 
                 cncByteBuffer = mapNewFile(
@@ -565,19 +565,19 @@ public final class MediaDriver implements AutoCloseable
 
             toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
-            if (null == unicastSenderFlowControlSupplier)
+            if (null == unicastFlowControlSupplier)
             {
-                unicastSenderFlowControlSupplier = Configuration::unicastFlowControlStrategy;
+                unicastFlowControlSupplier = Configuration::unicastFlowControlStrategy;
             }
 
-            if (null == multicastSenderFlowControlSupplier)
+            if (null == multicastFlowControlSupplier)
             {
-                multicastSenderFlowControlSupplier = Configuration::multicastFlowControlStrategy;
+                multicastFlowControlSupplier = Configuration::multicastFlowControlStrategy;
             }
 
             if (0 == ipcPublicationTermBufferLength)
             {
-                ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(termBufferLength());
+                ipcPublicationTermBufferLength = Configuration.ipcTermBufferLength(publicationTermBufferLength());
             }
 
             if (null == sendChannelEndpointSupplier)
@@ -635,15 +635,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context unicastSenderFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
+        public Context unicastFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
         {
-            this.unicastSenderFlowControlSupplier = senderFlowControl;
+            this.unicastFlowControlSupplier = senderFlowControl;
             return this;
         }
 
-        public Context multicastSenderFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
+        public Context multicastFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
         {
-            this.multicastSenderFlowControlSupplier = senderFlowControl;
+            this.multicastFlowControlSupplier = senderFlowControl;
             return this;
         }
 
@@ -731,15 +731,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context termBufferLength(final int termBufferLength)
+        public Context publicationTermBufferLength(final int termBufferLength)
         {
             this.publicationTermBufferLength = termBufferLength;
             return this;
         }
 
-        public Context termBufferMaxLength(final int termBufferMaxLength)
+        public Context maxImageTermBufferLength(final int maxTermBufferLength)
         {
-            this.maxImageTermBufferLength = termBufferMaxLength;
+            this.maxImageTermBufferLength = maxTermBufferLength;
             return this;
         }
 
@@ -925,14 +925,14 @@ public final class MediaDriver implements AutoCloseable
             return senderTransportPoller;
         }
 
-        public Supplier<FlowControl> unicastSenderFlowControlSupplier()
+        public Supplier<FlowControl> unicastFlowControlSupplier()
         {
-            return unicastSenderFlowControlSupplier;
+            return unicastFlowControlSupplier;
         }
 
-        public Supplier<FlowControl> multicastSenderFlowControlSupplier()
+        public Supplier<FlowControl> multicastFlowControlSupplier()
         {
-            return multicastSenderFlowControlSupplier;
+            return multicastFlowControlSupplier;
         }
 
         public OneToOneConcurrentArrayQueue<ReceiverCmd> receiverCommandQueue()
@@ -1020,12 +1020,12 @@ public final class MediaDriver implements AutoCloseable
             return publicationUnblockTimeoutNs;
         }
 
-        public int termBufferLength()
+        public int publicationTermBufferLength()
         {
             return publicationTermBufferLength;
         }
 
-        public int termBufferMaxLength()
+        public int maxImageTermBufferLength()
         {
             return maxImageTermBufferLength;
         }

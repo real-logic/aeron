@@ -22,6 +22,7 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Layout description for log buffers which contains partitions of terms with associated term meta data,
@@ -156,10 +157,10 @@ public class LogBufferDescriptor
         LOG_TIME_OF_LAST_SM_OFFSET = offset;
 
         offset += (CACHE_LINE_LENGTH * 2);
-        LOG_INITIAL_TERM_ID_OFFSET = offset;
+        LOG_CORRELATION_ID_OFFSET = offset;
+        LOG_INITIAL_TERM_ID_OFFSET = LOG_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
         LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_CORRELATION_ID_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
 
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
@@ -185,14 +186,14 @@ public class LogBufferDescriptor
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
+     *  |                 Registration / Correlation ID                 |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
      *  |                        Initial Term Id                        |
      *  +---------------------------------------------------------------+
      *  |                  Default Frame Header Length                  |
      *  +---------------------------------------------------------------+
      *  |                          MTU Length                           |
-     *  +---------------------------------------------------------------+
-     *  |                 Registration / Correlation ID                 |
-     *  |                                                               |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |

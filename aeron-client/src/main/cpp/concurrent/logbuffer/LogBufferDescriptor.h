@@ -88,14 +88,14 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
+ *  |                 Registration / Correlation ID                 |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
  *  |                        Initial Term Id                        |
  *  +---------------------------------------------------------------+
  *  |                  Default Frame Header Length                  |
  *  +---------------------------------------------------------------+
  *  |                          MTU Length                           |
- *  +---------------------------------------------------------------+
- *  |                 Registration / Correlation ID                 |
- *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
@@ -116,10 +116,10 @@ struct LogMetaDataDefn
     std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
     std::int64_t timeOfLastSm;
     std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
+    std::int64_t correlationId;
     std::int32_t initialTermId;
     std::int32_t defaultFrameHeaderLength;
     std::int32_t mtuLength;
-    std::int64_t correlationId;
     std::int8_t pad3[(util::BitUtil::CACHE_LINE_LENGTH) - (5 * sizeof(std::int32_t))];
 };
 #pragma pack(pop)

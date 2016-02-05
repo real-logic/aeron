@@ -187,7 +187,9 @@ public class DriverConductor implements Agent
         for (int i = 0, size = directPublications.size(); i < size; i++)
         {
             final DirectPublication directPublication = directPublications.get(i);
-            workCount += directPublication.updatePublishersLimit() + directPublication.cleanLogBuffer();
+            workCount +=
+                directPublication.updatePublishersLimit(toDriverCommands.consumerHeartbeatTime()) +
+                    directPublication.cleanLogBuffer();
         }
 
         return workCount;

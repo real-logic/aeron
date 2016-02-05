@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.logbuffer.LogBufferUnblocker;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -26,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Encapsulation of a LogBuffer used directly between publishers and subscribers for IPC.
@@ -114,7 +114,7 @@ public class DirectPublication implements DriverManagedResource
         subscriberPosition.close();
     }
 
-    public int updatePublishersLimit()
+    public int updatePublishersLimit(final long nowInMillis)
     {
         int workCount = 0;
         long minSubscriberPosition = Long.MAX_VALUE;
@@ -128,7 +128,13 @@ public class DirectPublication implements DriverManagedResource
             maxSubscriberPosition = Math.max(maxSubscriberPosition, position);
         }
 
-        final long proposedLimit = subscriberPositions.isEmpty() ? 0L : minSubscriberPosition + termWindowLength;
+        long proposedLimit = 0;
+
+        if (!subscriberPositions.isEmpty())
+        {
+            proposedLimit = minSubscriberPosition + termWindowLength;
+            LogBufferDescriptor.timeOfLastSm(rawLog.logMetaData(), nowInMillis);
+        }
 
         if (proposedLimit > tripLimit)
         {

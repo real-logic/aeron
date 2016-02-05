@@ -104,7 +104,7 @@ public class DirectPublicationTest
     @Test
     public void shouldKeepPublisherLimitZeroOnNoSubscriptionUpdate()
     {
-        directPublication.updatePublishersLimit();
+        directPublication.updatePublishersLimit(0);
         assertThat(publisherLimit.get(), is(0L));
     }
 

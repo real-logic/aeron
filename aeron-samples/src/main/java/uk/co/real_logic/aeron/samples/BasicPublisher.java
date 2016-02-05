@@ -104,6 +104,11 @@ public class BasicPublisher
                     System.out.println("yay!");
                 }
 
+                if (!publication.isStillConnected())
+                {
+                    System.out.println("No active subscribers detected");
+                }
+
                 Thread.sleep(TimeUnit.SECONDS.toMillis(1));
             }
 

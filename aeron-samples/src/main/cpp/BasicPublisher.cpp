@@ -154,6 +154,11 @@ int main(int argc, char** argv)
                 std::cout << " yay!" << std::endl;
             }
 
+            if (!publication->isStillConnected())
+            {
+                std::cout << "No active subscribers detected" << std::endl;
+            }
+
             std::this_thread::sleep_for(std::chrono::seconds(1));
         }
 

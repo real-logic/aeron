@@ -45,6 +45,7 @@ static const long DRIVER_TIMEOUT_MS = 10 * 1000;
 static const long RESOURCE_LINGER_TIMEOUT_MS = 5 * 1000;
 static const long INTER_SERVICE_TIMEOUT_NS = 5 * 1000 * 1000 * 1000L;
 static const long INTER_SERVICE_TIMEOUT_MS = INTER_SERVICE_TIMEOUT_NS / 1000000L;
+static const long PUBLICATION_CONNECTION_TIMEOUT_MS = 5 * 1000L;
 
 typedef std::array<std::uint8_t, MANY_TO_ONE_RING_BUFFER_LENGTH> many_to_one_ring_buffer_t;
 typedef std::array<std::uint8_t, BROADCAST_BUFFER_LENGTH> broadcast_buffer_t;
@@ -86,7 +87,8 @@ public:
             [&](std::exception& exception) { m_errorHandler(exception); },
             DRIVER_TIMEOUT_MS,
             RESOURCE_LINGER_TIMEOUT_MS,
-            INTER_SERVICE_TIMEOUT_NS),
+            INTER_SERVICE_TIMEOUT_NS,
+            PUBLICATION_CONNECTION_TIMEOUT_MS),
         m_errorHandler(defaultErrorHandler)
     {
         m_toDriver.fill(0);

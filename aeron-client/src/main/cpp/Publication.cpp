@@ -58,4 +58,9 @@ Publication::~Publication()
     m_conductor.releasePublication(m_registrationId);
 }
 
+bool Publication::isStillConnected()
+{
+    return m_conductor.isPublicationConnected(LogBufferDescriptor::timeOfLastSm(m_logMetaDataBuffer));
+}
+
 }

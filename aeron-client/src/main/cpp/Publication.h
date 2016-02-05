@@ -138,6 +138,13 @@ public:
     }
 
     /**
+     * Has this Publication seen an active subscriber recently?
+     *
+     * @return true if this Publication has seen an active subscriber recently.
+     */
+    bool isStillConnected();
+
+    /**
      * Has this object been closed and should no longer be used?
      *
      * @return true if it has been closed otherwise false.

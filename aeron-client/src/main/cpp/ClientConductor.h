@@ -57,7 +57,8 @@ public:
         const exception_handler_t& errorHandler,
         long driverTimeoutMs,
         long resourceLingerTimeoutMs,
-        long interServiceTimeoutNs) :
+        long interServiceTimeoutNs,
+        long publicationConnectionTimeoutMs) :
         m_driverProxy(driverProxy),
         m_driverListenerAdapter(broadcastReceiver, *this),
         m_counterValuesBuffer(counterValuesBuffer),
@@ -73,6 +74,7 @@ public:
         m_driverTimeoutMs(driverTimeoutMs),
         m_resourceLingerTimeoutMs(resourceLingerTimeoutMs),
         m_interServiceTimeoutMs(interServiceTimeoutNs / 1000000),
+        m_publicationConnectionTimeoutMs(publicationConnectionTimeoutMs),
         m_driverActive(true)
     {
     }
@@ -129,6 +131,11 @@ public:
         std::int64_t correlationId);
 
     void onInterServiceTimeout(long now);
+
+    inline bool isPublicationConnected(std::int64_t timeOfLastSm)
+    {
+        return (m_epochClock() <= (timeOfLastSm + m_publicationConnectionTimeoutMs));
+    }
 
 protected:
     void onCheckManagedResources(long now);
@@ -231,6 +238,7 @@ private:
     long m_driverTimeoutMs;
     long m_resourceLingerTimeoutMs;
     long m_interServiceTimeoutMs;
+    long m_publicationConnectionTimeoutMs;
 
     std::atomic<bool> m_driverActive;
 

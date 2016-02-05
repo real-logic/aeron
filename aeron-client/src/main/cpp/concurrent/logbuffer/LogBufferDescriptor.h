@@ -82,11 +82,20 @@ static const util::index_t LOG_META_DATA_SECTION_INDEX = PARTITION_COUNT * 2;
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
  *  +---------------------------------------------------------------+
+ *  |                       Time of Last SM                         |
+ *  |                                                               |
+ *  +---------------------------------------------------------------+
+ *  |                      Cache Line Padding                      ...
+ * ...                                                              |
+ *  +---------------------------------------------------------------+
  *  |                        Initial Term Id                        |
  *  +---------------------------------------------------------------+
  *  |                  Default Frame Header Length                  |
  *  +---------------------------------------------------------------+
  *  |                          MTU Length                           |
+ *  +---------------------------------------------------------------+
+ *  |                 Registration / Correlation ID                 |
+ *  |                                                               |
  *  +---------------------------------------------------------------+
  *  |                      Cache Line Padding                      ...
  * ...                                                              |
@@ -105,14 +114,18 @@ struct LogMetaDataDefn
 {
     std::int32_t activePartitionIndex;
     std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
+    std::int64_t timeOfLastSm;
+    std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
     std::int32_t initialTermId;
     std::int32_t defaultFrameHeaderLength;
     std::int32_t mtuLength;
-    std::int8_t pad2[(util::BitUtil::CACHE_LINE_LENGTH) - (3 * sizeof(std::int32_t))];
+    std::int64_t correlationId;
+    std::int8_t pad3[(util::BitUtil::CACHE_LINE_LENGTH) - (5 * sizeof(std::int32_t))];
 };
 #pragma pack(pop)
 
 static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = offsetof(LogMetaDataDefn, activePartitionIndex);
+static const util::index_t LOG_TIME_OF_LAST_SM_OFFSET = offsetof(LogMetaDataDefn, timeOfLastSm);
 static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = offsetof(LogMetaDataDefn, initialTermId);
 static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
 static const util::index_t LOG_MTU_LENGTH_OFFSET = offsetof(LogMetaDataDefn, mtuLength);
@@ -177,6 +190,11 @@ inline static int previousPartitionIndex(int currentIndex) AERON_NOEXCEPT
 {
     static_assert(PARTITION_COUNT==3, "PARTITION_COUNT must be 3");
     return util::BitUtil::fastMod3(currentIndex + (PARTITION_COUNT - 1));
+}
+
+inline static std::int64_t timeOfLastSm(AtomicBuffer& logMetaDataBuffer) AERON_NOEXCEPT
+{
+    return logMetaDataBuffer.getInt64Volatile(LOG_TIME_OF_LAST_SM_OFFSET);
 }
 
 inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) AERON_NOEXCEPT

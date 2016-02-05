@@ -80,6 +80,7 @@ typedef std::function<void(
 const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
 const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
+const static long DEFAULT_PUBLICATION_CONNECTION_TIMEOUT_MS = 5000;
 
 /**
  * The Default handler for Aeron runtime exceptions.
@@ -147,6 +148,11 @@ public:
         if (NULL_TIMEOUT == m_resourceLingerTimeout)
         {
             m_resourceLingerTimeout = DEFAULT_RESOURCE_LINGER_MS;
+        }
+
+        if (NULL_TIMEOUT == m_publicationConnectionTimeout)
+        {
+            m_publicationConnectionTimeout = DEFAULT_PUBLICATION_CONNECTION_TIMEOUT_MS;
         }
 
         return *this;
@@ -265,6 +271,19 @@ public:
         return *this;
     }
 
+    /**
+     * Set the amount of time, in milliseconds, that this client will use to determine if a publication has
+     * active subscribers.
+     *
+     * @param value Number of milliseconds.
+     * @return reference to this Context instance
+     */
+    inline this_t& publicationConnectionTimeout(long value)
+    {
+        m_publicationConnectionTimeout = value;
+        return *this;
+    }
+
     inline static std::string tmpDir()
     {
 #if defined(_MSC_VER)
@@ -330,6 +349,7 @@ private:
     on_unavailable_image_t m_onUnavailableImageHandler = defaultOnUnavailableImageHandler;
     long m_mediaDriverTimeout = NULL_TIMEOUT;
     long m_resourceLingerTimeout = NULL_TIMEOUT;
+    long m_publicationConnectionTimeout = NULL_TIMEOUT;
 };
 
 }

@@ -68,6 +68,7 @@ public class ClientConductorTest
     private static final long KEEP_ALIVE_INTERVAL = TimeUnit.MILLISECONDS.toNanos(500);
     private static final long AWAIT_TIMEOUT = 100;
     private static final long INTER_SERVICE_TIMEOUT_MS = 100;
+    private static final long PUBLICATION_CONNECTION_TIMEOUT_MS = 5000;
 
     private static final String SOURCE_INFO = "127.0.0.1:40789";
 
@@ -118,7 +119,8 @@ public class ClientConductorTest
             mockUnavailableImageHandler,
             KEEP_ALIVE_INTERVAL,
             AWAIT_TIMEOUT,
-            TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS));
+            TimeUnit.MILLISECONDS.toNanos(INTER_SERVICE_TIMEOUT_MS),
+            TimeUnit.MILLISECONDS.toMillis(PUBLICATION_CONNECTION_TIMEOUT_MS));
 
         publicationReady.wrap(publicationReadyBuffer, 0);
         correlatedMessage.wrap(correlatedMessageBuffer, 0);

@@ -129,6 +129,7 @@ public class SenderTest
         publication = new NetworkPublication(
             mockSendChannelEndpoint,
             () -> currentTimestamp,
+            () -> currentTimestamp / (1_000_000L),
             rawLog,
             new AtomicLongPosition(),
             mock(Position.class),

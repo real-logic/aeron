@@ -17,11 +17,13 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.logbuffer.LogBufferUnblocker;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
+import uk.co.real_logic.agrona.concurrent.EpochClock;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -98,10 +100,12 @@ public class NetworkPublication
     private final FlowControl flowControl;
     private final RetransmitHandler retransmitHandler;
     private final RawLog rawLog;
+    private final EpochClock epochClock;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
-        final NanoClock clock,
+        final NanoClock nanoClock,
+        final EpochClock epochClock,
         final RawLog rawLog,
         final Position senderPosition,
         final Position publisherLimit,
@@ -115,6 +119,7 @@ public class NetworkPublication
     {
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
+        this.epochClock = epochClock;
         this.senderPosition = senderPosition;
         this.systemCounters = systemCounters;
         this.flowControl = flowControl;
@@ -130,8 +135,8 @@ public class NetworkPublication
         termLengthMask = termLength - 1;
         flowControl.initialize(initialTermId, termLength);
 
-        timeOfLastSendOrHeartbeat = clock.nanoTime() - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
-        timeOfLastSetup = clock.nanoTime() - PUBLICATION_SETUP_TIMEOUT_NS - 1;
+        timeOfLastSendOrHeartbeat = nanoClock.nanoTime() - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        timeOfLastSetup = nanoClock.nanoTime() - PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -328,6 +333,9 @@ public class NetworkPublication
     {
         final long position = flowControl.onStatusMessage(termId, termOffset, receiverWindowLength, srcAddress);
         senderPositionLimit(position);
+
+        final long now = epochClock.time();
+        LogBufferDescriptor.timeOfLastSm(rawLog.logMetaData(), now);
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)

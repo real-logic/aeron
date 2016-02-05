@@ -543,6 +543,7 @@ public class DriverConductor implements Agent
             publication = new NetworkPublication(
                 channelEndpoint,
                 nanoClock,
+                toDriverCommands::consumerHeartbeatTime,
                 newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId),
                 newPosition("sender pos", channel, sessionId, streamId, registrationId),
                 newPosition("publisher limit", channel, sessionId, streamId, registrationId),
@@ -621,6 +622,7 @@ public class DriverConductor implements Agent
 
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, context.mtuLength());
+        LogBufferDescriptor.correlationId(logMetaData, registrationId);
 
         return rawLog;
     }
@@ -643,6 +645,7 @@ public class DriverConductor implements Agent
         LogBufferDescriptor.storeDefaultFrameHeader(logMetaData, header);
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, senderMtuLength);
+        LogBufferDescriptor.correlationId(logMetaData, correlationId);
 
         return rawLog;
     }
@@ -663,6 +666,7 @@ public class DriverConductor implements Agent
 
         final int mtuLength = FrameDescriptor.computeMaxMessageLength(context.ipcTermBufferLength());
         LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
+        LogBufferDescriptor.correlationId(logMetaData, registrationId);
 
         return rawLog;
     }

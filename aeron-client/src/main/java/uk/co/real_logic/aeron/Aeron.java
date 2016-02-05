@@ -60,6 +60,7 @@ public final class Aeron implements AutoCloseable
     private static final long IDLE_SLEEP_NS = TimeUnit.MILLISECONDS.toNanos(4);
     private static final long KEEPALIVE_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(500);
     private static final long INTER_SERVICE_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(10);
+    private static final long PUBLICATION_CONNECTION_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
 
     private final ClientConductor conductor;
     private final AgentRunner conductorRunner;
@@ -82,7 +83,8 @@ public final class Aeron implements AutoCloseable
             ctx.unavailableImageHandler,
             ctx.keepAliveInterval(),
             ctx.driverTimeoutMs(),
-            ctx.interServiceTimeout());
+            ctx.interServiceTimeout(),
+            ctx.publicationConnectionTimeout());
 
         conductorRunner = new AgentRunner(ctx.idleStrategy, ctx.errorHandler, null, conductor);
     }
@@ -176,6 +178,7 @@ public final class Aeron implements AutoCloseable
         private UnavailableImageHandler unavailableImageHandler;
         private long keepAliveInterval = KEEPALIVE_INTERVAL_NS;
         private long interServiceTimeout = INTER_SERVICE_TIMEOUT_NS;
+        private long publicationConnectionTimeout = PUBLICATION_CONNECTION_TIMEOUT_MS;
 
         /**
          * This is called automatically by {@link Aeron#connect(Aeron.Context)} and its overloads.
@@ -443,6 +446,30 @@ public final class Aeron implements AutoCloseable
         {
             super.aeronDirectoryName(dirName);
             return this;
+        }
+
+        /**
+         * Set the amount of time, in milliseconds, that this client will use to determine if a {@link Publication}
+         * has active subscribers or not.
+         *
+         * @param value number of milliseconds.
+         * @return this Aeron.Context for method chaining.
+         */
+        public Context publicationConnectionTimeout(final long value)
+        {
+            publicationConnectionTimeout = value;
+            return this;
+        }
+
+        /**
+         * Return the timeout, in milliseconds, that this client will use to determine if a {@link Publication}
+         * has active subscribers or not.
+         *
+         * @return timeout in milliseconds.
+         */
+        public long publicationConnectionTimeout()
+        {
+            return publicationConnectionTimeout;
         }
 
         /**

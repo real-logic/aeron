@@ -48,6 +48,7 @@ class ClientConductor implements Agent, DriverListener
     private final long driverTimeoutMs;
     private final long driverTimeoutNs;
     private final long interServiceTimeoutNs;
+    private final long publicationConnectionTimeoutMs;
     private long timeOfLastKeepalive;
     private long timeOfLastCheckResources;
     private long timeOfLastDoWork;
@@ -80,7 +81,8 @@ class ClientConductor implements Agent, DriverListener
         final UnavailableImageHandler unavailableImageHandler,
         final long keepAliveIntervalNs,
         final long driverTimeoutMs,
-        final long interServiceTimeoutNs)
+        final long interServiceTimeoutNs,
+        final long publicationConnectionTimeoutMs)
     {
         this.epochClock = epochClock;
         this.nanoClock = nanoClock;
@@ -97,6 +99,7 @@ class ClientConductor implements Agent, DriverListener
         this.driverTimeoutMs = driverTimeoutMs;
         this.driverTimeoutNs = MILLISECONDS.toNanos(driverTimeoutMs);
         this.interServiceTimeoutNs = interServiceTimeoutNs;
+        this.publicationConnectionTimeoutMs = publicationConnectionTimeoutMs;
 
         this.driverListener = new DriverListenerAdapter(broadcastReceiver, this);
     }
@@ -260,6 +263,11 @@ class ClientConductor implements Agent, DriverListener
     {
         managedResource.timeOfLastStateChange(nanoClock.nanoTime());
         managedResources.add(managedResource);
+    }
+
+    public boolean isPublicationConnected(final long timeOfLastSm)
+    {
+        return (epochClock.time() <= (timeOfLastSm + publicationConnectionTimeoutMs));
     }
 
     private void checkDriverHeartbeat()

@@ -113,6 +113,11 @@ public class LogBufferDescriptor
     public static final int LOG_ACTIVE_PARTITION_INDEX_OFFSET;
 
     /**
+     * Offset within the log meta data where the time of last SM is stored.
+     */
+    public static final int LOG_TIME_OF_LAST_SM_OFFSET;
+
+    /**
      * Offset within the log meta data where the active term id is stored.
      */
     public static final int LOG_INITIAL_TERM_ID_OFFSET;
@@ -126,6 +131,11 @@ public class LogBufferDescriptor
      * Offset within the log meta data which the MTU length is stored;
      */
     public static final int LOG_MTU_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log meta data which the
+     */
+    public static final int LOG_CORRELATION_ID_OFFSET;
 
     /**
      * Offset at which the default frame headers begin.
@@ -143,9 +153,13 @@ public class LogBufferDescriptor
         LOG_ACTIVE_PARTITION_INDEX_OFFSET = offset;
 
         offset += (CACHE_LINE_LENGTH * 2);
+        LOG_TIME_OF_LAST_SM_OFFSET = offset;
+
+        offset += (CACHE_LINE_LENGTH * 2);
         LOG_INITIAL_TERM_ID_OFFSET = offset;
         LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_CORRELATION_ID_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
 
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
@@ -165,11 +179,20 @@ public class LogBufferDescriptor
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
+     *  |                       Time of Last SM                         |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
+     *  |                      Cache Line Padding                      ...
+     * ...                                                              |
+     *  +---------------------------------------------------------------+
      *  |                        Initial Term Id                        |
      *  +---------------------------------------------------------------+
      *  |                  Default Frame Header Length                  |
      *  +---------------------------------------------------------------+
      *  |                          MTU Length                           |
+     *  +---------------------------------------------------------------+
+     *  |                 Registration / Correlation ID                 |
+     *  |                                                               |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
@@ -267,6 +290,50 @@ public class LogBufferDescriptor
     public static void mtuLength(final UnsafeBuffer logMetaDataBuffer, final int mtuLength)
     {
         logMetaDataBuffer.putInt(LOG_MTU_LENGTH_OFFSET, mtuLength);
+    }
+
+    /**
+     * Get the value of the correlation ID for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of the correlation ID used for this log.
+     */
+    public static long correlationId(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getLong(LOG_CORRELATION_ID_OFFSET);
+    }
+
+    /**
+     * Set the correlation ID used for this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param id                value to be set.
+     */
+    public static void correlationId(final UnsafeBuffer logMetaDataBuffer, final long id)
+    {
+        logMetaDataBuffer.putLong(LOG_CORRELATION_ID_OFFSET, id);
+    }
+
+    /**
+     * Get the value of the time of last SM in {@link System#currentTimeMillis()}.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @return the value of time of last SM
+     */
+    public static long timeOfLastSm(final UnsafeBuffer logMetaDataBuffer)
+    {
+        return logMetaDataBuffer.getLongVolatile(LOG_TIME_OF_LAST_SM_OFFSET);
+    }
+
+    /**
+     * Set the value of the time of last SM used by the producer of this log.
+     *
+     * @param logMetaDataBuffer containing the meta data.
+     * @param timeInMillis      value of the time of last SM in {@link System#currentTimeMillis()}
+     */
+    public static void timeOfLastSm(final UnsafeBuffer logMetaDataBuffer, final long timeInMillis)
+    {
+        logMetaDataBuffer.putLongOrdered(LOG_TIME_OF_LAST_SM_OFFSET, timeInMillis);
     }
 
     /**

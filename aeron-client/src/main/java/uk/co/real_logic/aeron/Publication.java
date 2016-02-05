@@ -164,6 +164,16 @@ public class Publication implements AutoCloseable
     }
 
     /**
+     * Has the {@link Publication} seen an active Subscriber recently?
+     *
+     * @return true if this {@link Publication} has seen an active subscriber otherwise false.
+     */
+    public boolean isStillConnected()
+    {
+        return clientConductor.isPublicationConnected(LogBufferDescriptor.timeOfLastSm(logMetaDataBuffer));
+    }
+
+    /**
      * Release resources used by this Publication when there are no more references.
      *
      * Publications are reference counted and are only truly closed when the ref count reaches zero.

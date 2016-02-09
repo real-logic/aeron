@@ -20,6 +20,8 @@ if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
         "and run CMake from there. You may need to remove CMakeCache.txt.")
 endif()
 
+option(BUILD_AERON_DRIVER "Build Aeron driver" OFF)
+
 include(ExternalProject)
 
 project("aeron")
@@ -120,6 +122,9 @@ set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
 
+set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
+set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
+
 # gmock - includes gtest
 include_directories(${GMOCK_SOURCE_DIR}/include)
 include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
@@ -134,6 +139,11 @@ include_directories(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_TEST_PATH})
 add_subdirectory(${AERON_SAMPLES_PATH})
+
+if(BUILD_AERON_DRIVER)
+    add_subdirectory(${AERON_DRIVER_SOURCE_PATH})
+    add_subdirectory(${AERON_DRIVER_TEST_PATH})
+endif(BUILD_AERON_DRIVER)
 
 ##########################################################
 # doc target

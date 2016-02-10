@@ -625,6 +625,7 @@ public class DriverConductor implements Agent
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, context.mtuLength());
         LogBufferDescriptor.correlationId(logMetaData, registrationId);
+        LogBufferDescriptor.timeOfLastStatusMessage(logMetaData, 0);
 
         return rawLog;
     }
@@ -648,6 +649,7 @@ public class DriverConductor implements Agent
         LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
         LogBufferDescriptor.mtuLength(logMetaData, senderMtuLength);
         LogBufferDescriptor.correlationId(logMetaData, correlationId);
+        LogBufferDescriptor.timeOfLastStatusMessage(logMetaData, 0);
 
         return rawLog;
     }
@@ -669,6 +671,7 @@ public class DriverConductor implements Agent
         final int mtuLength = FrameDescriptor.computeMaxMessageLength(context.ipcTermBufferLength());
         LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
         LogBufferDescriptor.correlationId(logMetaData, registrationId);
+        LogBufferDescriptor.timeOfLastStatusMessage(logMetaData, 0);
 
         return rawLog;
     }

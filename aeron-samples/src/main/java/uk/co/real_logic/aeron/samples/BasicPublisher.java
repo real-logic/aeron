@@ -104,7 +104,7 @@ public class BasicPublisher
                     System.out.println("yay!");
                 }
 
-                if (!publication.isStillConnected())
+                if (!publication.isConnected())
                 {
                     System.out.println("No active subscribers detected");
                 }

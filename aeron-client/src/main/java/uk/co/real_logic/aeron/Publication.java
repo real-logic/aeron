@@ -155,21 +155,11 @@ public class Publication implements AutoCloseable
     }
 
     /**
-     * Has this {@link Publication} been connected to a {@link Subscription}?
-     *
-     * @return true if this {@link Publication} been connected to a {@link Subscription} otherwise false.
-     */
-    public boolean hasBeenConnected()
-    {
-        return !isClosed && positionLimit.getVolatile() > 0;
-    }
-
-    /**
      * Has the {@link Publication} seen an active Subscriber recently?
      *
      * @return true if this {@link Publication} has seen an active subscriber otherwise false.
      */
-    public boolean isStillConnected()
+    public boolean isConnected()
     {
         return !isClosed && clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer));
     }

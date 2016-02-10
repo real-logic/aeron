@@ -51,7 +51,7 @@ class ClientConductor implements Agent, DriverListener
     private final long publicationConnectionTimeoutMs;
     private long timeOfLastKeepalive;
     private long timeOfLastCheckResources;
-    private long timeOfLastDoWork;
+    private long timeOfLastWork;
     private volatile boolean driverActive = true;
 
     private final EpochClock epochClock;
@@ -60,7 +60,7 @@ class ClientConductor implements Agent, DriverListener
     private final LogBuffersFactory logBuffersFactory;
     private final ActivePublications activePublications = new ActivePublications();
     private final ActiveSubscriptions activeSubscriptions = new ActiveSubscriptions();
-    private final ArrayList<ManagedResource> managedResources = new ArrayList<>();
+    private final ArrayList<ManagedResource> lingeringResources = new ArrayList<>();
     private final UnsafeBuffer counterValuesBuffer;
     private final DriverProxy driverProxy;
     private final ErrorHandler errorHandler;
@@ -88,7 +88,7 @@ class ClientConductor implements Agent, DriverListener
         this.nanoClock = nanoClock;
         this.timeOfLastKeepalive = nanoClock.nanoTime();
         this.timeOfLastCheckResources = nanoClock.nanoTime();
-        this.timeOfLastDoWork = nanoClock.nanoTime();
+        this.timeOfLastWork = nanoClock.nanoTime();
         this.errorHandler = errorHandler;
         this.counterValuesBuffer = counterValuesBuffer;
         this.driverProxy = driverProxy;
@@ -106,12 +106,12 @@ class ClientConductor implements Agent, DriverListener
 
     public synchronized void onClose()
     {
-        activeSubscriptions.close();
         activePublications.close();
+        activeSubscriptions.close();
 
         Thread.yield();
 
-        managedResources.forEach(ManagedResource::delete);
+        lingeringResources.forEach(ManagedResource::delete);
     }
 
     public synchronized int doWork()
@@ -269,7 +269,7 @@ class ClientConductor implements Agent, DriverListener
     void lingerResource(final ManagedResource managedResource)
     {
         managedResource.timeOfLastStateChange(nanoClock.nanoTime());
-        managedResources.add(managedResource);
+        lingeringResources.add(managedResource);
     }
 
     boolean isPublicationConnected(final long timeOfLastStatusMessage)
@@ -344,16 +344,15 @@ class ClientConductor implements Agent, DriverListener
         final long now = nanoClock.nanoTime();
         int result = 0;
 
-        if (now > (timeOfLastDoWork + interServiceTimeoutNs))
+        if (now > (timeOfLastWork + interServiceTimeoutNs))
         {
-            activePublications.close();
-            activeSubscriptions.close();
+            onClose();
 
             throw new ConductorServiceTimeoutException(
                 String.format("Timeout between service calls over %dns", interServiceTimeoutNs));
         }
 
-        timeOfLastDoWork = now;
+        timeOfLastWork = now;
 
         if (now > (timeOfLastKeepalive + keepAliveIntervalNs))
         {
@@ -366,12 +365,12 @@ class ClientConductor implements Agent, DriverListener
 
         if (now > (timeOfLastCheckResources + RESOURCE_TIMEOUT_NS))
         {
-            for (int i = managedResources.size() - 1; i >= 0; i--)
+            for (int i = lingeringResources.size() - 1; i >= 0; i--)
             {
-                final ManagedResource resource = managedResources.get(i);
+                final ManagedResource resource = lingeringResources.get(i);
                 if (now > (resource.timeOfLastStateChange() + RESOURCE_LINGER_NS))
                 {
-                    managedResources.remove(i);
+                    lingeringResources.remove(i);
                     resource.delete();
                 }
             }

@@ -20,7 +20,6 @@ function(aeron_driver_test name file)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()
 
-aeron_driver_test(mediaDriverTest MediaDriverTest.cpp)
 aeron_driver_test(oneToOneConcurrentArrayQueueTest concurrent/OneToOneConcurrentArrayQueueTest.cpp)
 aeron_driver_test(aeronUriTest uri/AeronUriTest.cpp)
 aeron_driver_test(netUtilTest uri/NetUtilTest.cpp)

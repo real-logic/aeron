@@ -74,7 +74,7 @@ public:
         m_broadcastReceiver(m_toClientsBuffer),
         m_driverProxy(m_manyToOneRingBuffer),
         m_copyBroadcastReceiver(m_broadcastReceiver),
-        m_currentTime(0),
+        m_currentTime(10000),
         m_conductor(
             [&]() { return m_currentTime; },
             m_driverProxy,
@@ -93,6 +93,7 @@ public:
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
+        m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
     }
 
     // do this to not trip the interServiceTimeout

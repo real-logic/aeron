@@ -114,7 +114,7 @@ struct LogMetaDataDefn
 {
     std::int32_t activePartitionIndex;
     std::int8_t pad1[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int32_t)];
-    std::int64_t timeOfLastSm;
+    std::int64_t timeOfLastStatusMessage;
     std::int8_t pad2[(2 * util::BitUtil::CACHE_LINE_LENGTH) - sizeof(std::int64_t)];
     std::int64_t correlationId;
     std::int32_t initialTermId;
@@ -125,7 +125,7 @@ struct LogMetaDataDefn
 #pragma pack(pop)
 
 static const util::index_t LOG_ACTIVE_PARTITION_INDEX_OFFSET = offsetof(LogMetaDataDefn, activePartitionIndex);
-static const util::index_t LOG_TIME_OF_LAST_SM_OFFSET = offsetof(LogMetaDataDefn, timeOfLastSm);
+static const util::index_t LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET = offsetof(LogMetaDataDefn, timeOfLastStatusMessage);
 static const util::index_t LOG_INITIAL_TERM_ID_OFFSET = offsetof(LogMetaDataDefn, initialTermId);
 static const util::index_t LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = offsetof(LogMetaDataDefn, defaultFrameHeaderLength);
 static const util::index_t LOG_MTU_LENGTH_OFFSET = offsetof(LogMetaDataDefn, mtuLength);
@@ -192,9 +192,14 @@ inline static int previousPartitionIndex(int currentIndex) AERON_NOEXCEPT
     return util::BitUtil::fastMod3(currentIndex + (PARTITION_COUNT - 1));
 }
 
-inline static std::int64_t timeOfLastSm(AtomicBuffer& logMetaDataBuffer) AERON_NOEXCEPT
+inline static std::int64_t timeOfLastStatusMessage(AtomicBuffer &logMetaDataBuffer) AERON_NOEXCEPT
 {
-    return logMetaDataBuffer.getInt64Volatile(LOG_TIME_OF_LAST_SM_OFFSET);
+    return logMetaDataBuffer.getInt64Volatile(LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET);
+}
+
+inline static void timeOfLastStatusMessage(AtomicBuffer &logMetaDataBuffer, std::int64_t value) AERON_NOEXCEPT
+{
+    logMetaDataBuffer.putInt64Ordered(LOG_TIME_OF_LAST_STATUS_MESSAGE_OFFSET, value);
 }
 
 inline static int indexByTerm(std::int32_t initialTermId, std::int32_t activeTermId) AERON_NOEXCEPT

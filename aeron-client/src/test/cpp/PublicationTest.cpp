@@ -39,7 +39,7 @@ static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;
 static const std::int64_t CORRELATION_ID = 100;
 static const std::int32_t TERM_ID_1 = 1;
 
-class PublicationTest : public testing::Test, ClientConductorFixture
+class PublicationTest : public testing::Test, public ClientConductorFixture
 {
 public:
     PublicationTest() :
@@ -102,14 +102,14 @@ TEST_F(PublicationTest, shouldReportCorrectTermBufferLength)
 
 TEST_F(PublicationTest, shouldReportThatPublicationHasNotBeenConnectedYet)
 {
-    m_publicationLimit.set(0);
-    EXPECT_FALSE(m_publication->hasBeenConnected());
+    LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer, m_currentTime - PUBLICATION_CONNECTION_TIMEOUT_MS - 1);
+    EXPECT_FALSE(m_publication->isConnected());
 }
 
 TEST_F(PublicationTest, shouldReportThatPublicationHasBeenConnectedYet)
 {
-    m_publicationLimit.set(2 * m_srcBuffer.capacity());
-    EXPECT_TRUE(m_publication->hasBeenConnected());
+    LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer, m_currentTime);
+    EXPECT_TRUE(m_publication->isConnected());
 }
 
 TEST_F(PublicationTest, shouldEnsureThePublicationIsOpenBeforeReadingPosition)

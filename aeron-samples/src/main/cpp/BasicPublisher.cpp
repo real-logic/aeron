@@ -154,7 +154,7 @@ int main(int argc, char** argv)
                 std::cout << " yay!" << std::endl;
             }
 
-            if (!publication->isStillConnected())
+            if (!publication->isConnected())
             {
                 std::cout << "No active subscribers detected" << std::endl;
             }

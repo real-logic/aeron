@@ -128,21 +128,11 @@ public:
     }
 
     /**
-     * Has this Publication been connected to a Subscription?
-     *
-     * @return true if this Publication been connected to a Subscription otherwise false.
-     */
-    inline bool hasBeenConnected()
-    {
-        return (m_publicationLimit.getVolatile() > 0);
-    }
-
-    /**
      * Has this Publication seen an active subscriber recently?
      *
      * @return true if this Publication has seen an active subscriber recently.
      */
-    bool isStillConnected();
+    bool isConnected();
 
     /**
      * Has this object been closed and should no longer be used?

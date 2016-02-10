@@ -135,15 +135,6 @@ public class PublicationTest
     }
 
     @Test
-    public void shouldUnmapBuffersWhenReleased() throws Exception
-    {
-        publication.close();
-
-        logBuffersClosedOnce();
-        releaseSelfOnce();
-    }
-
-    @Test
     public void shouldNotUnmapBuffersBeforeLastRelease() throws Exception
     {
         publication.incRef();
@@ -159,7 +150,7 @@ public class PublicationTest
         publication.close();
 
         publication.close();
-        logBuffersClosedOnce();
+        verify(conductor, times(1)).releasePublication(publication);
     }
 
     @Test
@@ -168,17 +159,6 @@ public class PublicationTest
         publication.close();
         publication.close();
 
-        logBuffersClosedOnce();
-        releaseSelfOnce();
-    }
-
-    private void logBuffersClosedOnce()
-    {
-        verify(logBuffers, times(1)).close();
-    }
-
-    private void releaseSelfOnce()
-    {
         verify(conductor, times(1)).releasePublication(publication);
     }
 }

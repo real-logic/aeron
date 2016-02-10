@@ -106,8 +106,11 @@ class ClientConductor implements Agent, DriverListener
 
     public synchronized void onClose()
     {
-        activePublications.close();
         activeSubscriptions.close();
+        activePublications.close();
+
+        Thread.yield();
+
         managedResources.forEach(ManagedResource::delete);
     }
 
@@ -121,7 +124,7 @@ class ClientConductor implements Agent, DriverListener
         return "client-conductor";
     }
 
-    public synchronized Publication addPublication(final String channel, final int streamId)
+    synchronized Publication addPublication(final String channel, final int streamId)
     {
         verifyDriverIsActive();
 
@@ -141,18 +144,22 @@ class ClientConductor implements Agent, DriverListener
         return publication;
     }
 
-    public synchronized void releasePublication(final Publication publication)
+    synchronized void releasePublication(final Publication publication)
     {
         verifyDriverIsActive();
 
-        final long correlationId = driverProxy.removePublication(publication.registrationId());
-        activePublications.remove(publication.channel(), publication.streamId());
-        final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
+        if (publication == activePublications.remove(publication.channel(), publication.streamId()))
+        {
+            final long correlationId = driverProxy.removePublication(publication.registrationId());
 
-        doWorkUntil(correlationId, timeout, publication.channel());
+            final long timeout = nanoClock.nanoTime() + driverTimeoutNs;
+
+            lingerResource(publication.managedResource());
+            doWorkUntil(correlationId, timeout, publication.channel());
+        }
     }
 
-    public synchronized Subscription addSubscription(final String channel, final int streamId)
+    synchronized Subscription addSubscription(final String channel, final int streamId)
     {
         verifyDriverIsActive();
 
@@ -167,7 +174,7 @@ class ClientConductor implements Agent, DriverListener
         return subscription;
     }
 
-    public synchronized void releaseSubscription(final Subscription subscription)
+    synchronized void releaseSubscription(final Subscription subscription)
     {
         verifyDriverIsActive();
 
@@ -254,18 +261,18 @@ class ClientConductor implements Agent, DriverListener
             });
     }
 
-    public DriverListenerAdapter driverListenerAdapter()
+    DriverListenerAdapter driverListenerAdapter()
     {
         return driverListener;
     }
 
-    public void lingerResource(final ManagedResource managedResource)
+    void lingerResource(final ManagedResource managedResource)
     {
         managedResource.timeOfLastStateChange(nanoClock.nanoTime());
         managedResources.add(managedResource);
     }
 
-    public boolean isPublicationConnected(final long timeOfLastSm)
+    boolean isPublicationConnected(final long timeOfLastSm)
     {
         return (epochClock.time() <= (timeOfLastSm + publicationConnectionTimeoutMs));
     }

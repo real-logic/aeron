@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.*;
 import uk.co.real_logic.agrona.DirectBuffer;
+import uk.co.real_logic.agrona.ManagedResource;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
 
@@ -208,7 +209,6 @@ public class Publication implements AutoCloseable
         {
             isClosed = true;
             clientConductor.releasePublication(this);
-            logBuffers.close();
         }
     }
 
@@ -432,6 +432,31 @@ public class Publication implements AutoCloseable
         {
             throw new IllegalArgumentException(String.format(
                 "Encoded message exceeds maxMessageLength of %d, length=%d", maxMessageLength, length));
+        }
+    }
+
+    ManagedResource managedResource()
+    {
+        return new PublicationManagedResource();
+    }
+
+    private class PublicationManagedResource implements ManagedResource
+    {
+        private long timeOfLastStateChange = 0;
+
+        public void timeOfLastStateChange(final long time)
+        {
+            this.timeOfLastStateChange = time;
+        }
+
+        public long timeOfLastStateChange()
+        {
+            return timeOfLastStateChange;
+        }
+
+        public void delete()
+        {
+            logBuffers.close();
         }
     }
 }

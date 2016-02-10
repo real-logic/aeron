@@ -14,19 +14,25 @@
  * limitations under the License.
  */
 
-#include "MediaDriver.h"
+#ifndef INCLUDE_AERON_DRIVER_URI_NET_UTIL_
+#define INCLUDE_AERON_DRIVER_URI_NET_UTIL_
 
-aeron::driver::MediaDriver::MediaDriver(std::map<std::string, std::string>& properties) :
-    m_properties(std::move(properties))
+#include <arpa/inet.h>
+#include <cinttypes>
+
+namespace aeron { namespace driver { namespace uri {
+
+class NetUtil
 {
-}
+public:
+    static bool wildcardMatch(const struct in6_addr* data, const struct in6_addr* pattern, std::uint32_t prefixLength);
+    static bool wildcardMatch(const struct in_addr* data, const struct in_addr* pattern, std::uint32_t prefixLength);
+    static bool isEven(in_addr ipV4);
+    static bool isEven(in6_addr const & ipV6);
+};
 
-aeron::driver::MediaDriver::MediaDriver(std::string &propertiesFile)
-{
+}}}
 
-}
 
-aeron::driver::MediaDriver::~MediaDriver()
-{
 
-}
+#endif //AERON_NETUTIL_H

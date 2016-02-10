@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 Real Logic Ltd.
+ * Copyright 2016 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-#include "MediaDriver.h"
+#include "DataPacketDispatcher.h"
 
-aeron::driver::MediaDriver::MediaDriver(std::map<std::string, std::string>& properties) :
-    m_properties(std::move(properties))
+using namespace aeron::driver;
+
+std::int32_t DataPacketDispatcher::onDataPacket(
+    media::ReceiveChannelEndpoint &channelEndpoint,
+    protocol::DataHeaderFlyweight &header,
+    concurrent::AtomicBuffer &atomicBuffer,
+    const std::int32_t length,
+    media::InetAddress &srcAddress)
 {
-}
-
-aeron::driver::MediaDriver::MediaDriver(std::string &propertiesFile)
-{
-
-}
-
-aeron::driver::MediaDriver::~MediaDriver()
-{
-
+    return 0;
 }

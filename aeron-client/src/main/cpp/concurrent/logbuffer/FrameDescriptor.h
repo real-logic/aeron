@@ -60,6 +60,14 @@ static const std::uint8_t BEGIN_FRAG = 0x80;
 static const std::uint8_t END_FRAG = 0x40;
 static const std::uint8_t UNFRAGMENTED = BEGIN_FRAG | END_FRAG;
 
+static const util::index_t HEADER_LENGTH = 24;
+
+static const util::index_t VERSION_OFFSET = 4;
+static const util::index_t FLAGS_OFFSET = 5;
+static const util::index_t TYPE_OFFSET = 6;
+static const util::index_t LENGTH_OFFSET = 0;
+static const util::index_t TERM_OFFSET = 8;
+
 inline static void checkHeaderLength(util::index_t length)
 {
     if (length != DataFrameHeader::LENGTH)
@@ -108,6 +116,11 @@ inline static void frameType(AtomicBuffer& logBuffer, util::index_t frameOffset,
     logBuffer.putUInt16(typeOffset(frameOffset), type);
 }
 
+inline static std::uint16_t frameType(AtomicBuffer& logBuffer, util::index_t frameOffset)
+{
+    return logBuffer.getUInt16(frameOffset);
+}
+
 inline static void frameFlags(AtomicBuffer& logBuffer, util::index_t frameOffset, std::uint8_t flags)
 {
     logBuffer.putUInt8(flagsOffset(frameOffset), flags);
@@ -133,6 +146,11 @@ inline static void frameLengthOrdered(AtomicBuffer& logBuffer, util::index_t fra
 {
     // TODO: need to byte order to LITTLE_ENDIAN
     logBuffer.putInt32Ordered(lengthOffset(frameOffset), frameLength);
+}
+
+inline static std::uint8_t frameVersion(AtomicBuffer& logBuffer, util::index_t frameOffset)
+{
+    return logBuffer.getUInt8(frameOffset);
 }
 
 };

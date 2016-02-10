@@ -63,8 +63,8 @@ set(GMOCK_LIBS
 
 ExternalProject_Add(
     hdr_histogram
-    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-master.zip
-    URL_MD5 0c89f11747433c1b00a364aca45f8fe5
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/HdrHistogram_c-HdrHistogram_c-0.9.1.zip
+    URL_MD5 4d2b56927056ce4c9eec4cfe3f61c6f7
     INSTALL_COMMAND ""
 )
 
@@ -75,6 +75,26 @@ set(HDRHISTOGRAM_BINARY_DIR ${binary_dir})
 
 set(HDRHISTOGRAM_LIBS
     ${HDRHISTOGRAM_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}hdr_histogram_static${CMAKE_STATIC_LIBRARY_SUFFIX}
+)
+
+##########################################################
+# Google benchmark
+
+ExternalProject_Add(
+    google_benchmark
+    URL ${CMAKE_CURRENT_SOURCE_DIR}/cppbuild/benchmark-0.1.0.tar.gz
+    URL_MD5 5a3ec4924f75f98cf01a8f1ff47d7a44
+    INSTALL_COMMAND ""
+)
+
+ExternalProject_Get_Property(google_benchmark source_dir)
+set(GOOGLE_BENCHMARK_SOURCE_DIR ${source_dir})
+ExternalProject_Get_Property(google_benchmark binary_dir)
+set(GOOGLE_BENCHMARK_BINARY_DIR ${binary_dir})
+
+set(
+    GOOGLE_BENCHMARK_LIBS
+    ${GOOGLE_BENCHMARK_BINARY_DIR}/src/${CMAKE_STATIC_LIBRARY_PREFIX}benchmark${CMAKE_STATIC_LIBRARY_SUFFIX}
 )
 
 ##########################################################
@@ -121,6 +141,8 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
 set(AERON_SAMPLES_PATH "${CMAKE_SOURCE_DIR}/aeron-samples/src/main/cpp")
 set(AERON_CLIENT_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/main/cpp")
 set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
+set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
+set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
 
 set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
 set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
@@ -132,9 +154,13 @@ include_directories(${GMOCK_SOURCE_DIR}/gtest/include)
 # hdr_histogram
 include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
 
+# google benchmark
+include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
+
 ##########################################################
 
 include_directories(${AERON_CLIENT_SOURCE_PATH})
+include_directories(${AERON_DRIVER_SOURCE_PATH})
 
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_TEST_PATH})

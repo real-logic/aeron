@@ -64,7 +64,7 @@ public:
 };
 
 #define DECLARE_SOURCED_EXCEPTION(exceptionName)                                            \
-            class exceptionName : public SourcedException                                   \
+            class exceptionName : public aeron::util::SourcedException                      \
             {                                                                               \
                 public:                                                                     \
                     exceptionName (const std::string &what, const std::string& function, const std::string& where)   \

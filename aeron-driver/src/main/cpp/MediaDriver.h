@@ -14,14 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef AERON_MEDIADRIVER_H
-#define AERON_MEDIADRIVER_H
+#ifndef INCLUDED_AERON_DRIVER_MEDIADRIVER_H_
+#define INCLUDED_AERON_DRIVER_MEDIADRIVER_H_
+
+#include <map>
+#include <string>
+
+namespace aeron { namespace driver {
+
 
 class MediaDriver
 {
 public:
-    MediaDriver();
+    class Context
+    {
+    };
+
+    MediaDriver(std::map<std::string, std::string>& properties);
+    MediaDriver(std::string& propertiesFile);
+
+    ~MediaDriver();
+
 private:
+    std::map<std::string, std::string> m_properties;
 };
+
+
+}};
+
+
 
 #endif //AERON_MEDIADRIVER_H

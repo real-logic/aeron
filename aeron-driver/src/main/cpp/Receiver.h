@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 
+#ifndef INCLUDED_AERON_DRIVER_RECEIVER_
+#define INCLUDED_AERON_DRIVER_RECEIVER_
+
 #include "MediaDriver.h"
 
-aeron::driver::MediaDriver::MediaDriver(std::map<std::string, std::string>& properties) :
-    m_properties(std::move(properties))
+using namespace aeron::driver;
+
+class Receiver
 {
-}
+public:
+    Receiver(MediaDriver::Context& ctx);
+};
 
-aeron::driver::MediaDriver::MediaDriver(std::string &propertiesFile)
-{
 
-}
-
-aeron::driver::MediaDriver::~MediaDriver()
-{
-
-}
+#endif //AERON_RECEIVER_H

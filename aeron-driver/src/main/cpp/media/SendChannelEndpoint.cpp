@@ -14,19 +14,4 @@
  * limitations under the License.
  */
 
-#include "MediaDriver.h"
-
-aeron::driver::MediaDriver::MediaDriver(std::map<std::string, std::string>& properties) :
-    m_properties(std::move(properties))
-{
-}
-
-aeron::driver::MediaDriver::MediaDriver(std::string &propertiesFile)
-{
-
-}
-
-aeron::driver::MediaDriver::~MediaDriver()
-{
-
-}
+#include "SendChannelEndpoint.h"

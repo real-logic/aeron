@@ -13,20 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <gtest/gtest.h>
 
-#include "MediaDriver.h"
+#include "concurrent/OneToOneConcurrentArrayQueue.h"
 
-aeron::driver::MediaDriver::MediaDriver(std::map<std::string, std::string>& properties) :
-    m_properties(std::move(properties))
-{
-}
-
-aeron::driver::MediaDriver::MediaDriver(std::string &propertiesFile)
+class OneToOneConcurrentArrayQueueTest : public testing::Test
 {
 
-}
+};
 
-aeron::driver::MediaDriver::~MediaDriver()
+TEST_F(OneToOneConcurrentArrayQueueTest, pollFetchsAllValuesOffered)
 {
+    aeron::driver::concurrent::OneToOneConcurrentArrayQueue<int> q(1024);
 
+    const int iterations = 10;
+    int values[iterations];
+
+    for (int i = 0; i < iterations; i++)
+    {
+        values[i] = i;
+        q.offer(&values[i]);
+    }
+
+    for (int i = 0; i < iterations; i++)
+    {
+        EXPECT_EQ(values[i], *q.poll());
+    }
 }

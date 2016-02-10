@@ -165,8 +165,6 @@ include_directories(${AERON_DRIVER_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_SOURCE_PATH})
 add_subdirectory(${AERON_CLIENT_TEST_PATH})
 add_subdirectory(${AERON_SAMPLES_PATH})
-add_subdirectory(${AERON_DRIVER_SOURCE_PATH})
-add_subdirectory(${AERON_DRIVER_TEST_PATH})
 
 if(BUILD_AERON_DRIVER)
     add_subdirectory(${AERON_DRIVER_SOURCE_PATH})

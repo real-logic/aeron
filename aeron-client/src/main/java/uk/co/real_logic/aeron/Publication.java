@@ -286,7 +286,7 @@ public class Publication implements AutoCloseable
 
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (!isConnected())
+            else if (!clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
                 newPosition = NOT_CONNECTED;
             }
@@ -351,7 +351,7 @@ public class Publication implements AutoCloseable
                 final long result = termAppender.claim(headerWriter, length, bufferClaim);
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (!isConnected())
+            else if (clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
                 newPosition = NOT_CONNECTED;
             }

@@ -31,7 +31,7 @@ SET(HEADERS
     media/InterfaceLookup.h
     media/UdpChannel.h
     media/UdpChannelTransport.h
-    media/NetworkInterface.h media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h media/SendChannelEndpoint.cpp media/SendChannelEndpoint.h)
+    media/NetworkInterface.h media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h media/SendChannelEndpoint.cpp media/SendChannelEndpoint.h DataPacketDispatcher.cpp DataPacketDispatcher.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

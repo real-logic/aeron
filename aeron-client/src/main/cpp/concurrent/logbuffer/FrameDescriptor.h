@@ -116,6 +116,11 @@ inline static void frameType(AtomicBuffer& logBuffer, util::index_t frameOffset,
     logBuffer.putUInt16(typeOffset(frameOffset), type);
 }
 
+inline static std::uint16_t frameType(AtomicBuffer& logBuffer, util::index_t frameOffset)
+{
+    return logBuffer.getUInt16(frameOffset);
+}
+
 inline static void frameFlags(AtomicBuffer& logBuffer, util::index_t frameOffset, std::uint8_t flags)
 {
     logBuffer.putUInt8(flagsOffset(frameOffset), flags);

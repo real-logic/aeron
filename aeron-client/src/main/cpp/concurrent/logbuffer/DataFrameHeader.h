@@ -53,6 +53,11 @@ static const util::index_t LENGTH = DATA_OFFSET;
 
 static const std::uint16_t HDR_TYPE_PAD = 0x00;
 static const std::uint16_t HDR_TYPE_DATA = 0x01;
+static const std::uint16_t HDR_TYPE_NAK = 0x02;
+static const std::uint16_t HDR_TYPE_SM = 0x03;
+static const std::uint16_t HDR_TYPE_ERR = 0x04;
+static const std::uint16_t HDR_TYPE_SETUP = 0x05;
+static const std::uint16_t HDR_TYPE_EXT = 0xFFFF;
 
 static const std::int8_t CURRENT_VERSION = 0x0;
 

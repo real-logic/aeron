@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+#include <concurrent/AtomicBuffer.h>
+#include <concurrent/logbuffer/DataFrameHeader.h>
+#include <concurrent/logbuffer/FrameDescriptor.h>
+
 #include "ReceiveChannelEndpoint.h"
 
 using namespace aeron::driver::media;
@@ -39,5 +43,16 @@ std::int32_t ReceiveChannelEndpoint::pollForData()
 std::int32_t ReceiveChannelEndpoint::dispatch(
     concurrent::AtomicBuffer &buffer, std::int32_t length, InetAddress& address)
 {
-    return 0;
+    std::int32_t bytesReceived = 0;
+    switch (concurrent::logbuffer::FrameDescriptor::frameType(buffer, 0))
+    {
+        case concurrent::logbuffer::DataFrameHeader::HDR_TYPE_PAD:
+        case concurrent::logbuffer::DataFrameHeader::HDR_TYPE_DATA:
+            break;
+            // dispatch
+        case concurrent::logbuffer::DataFrameHeader::HDR_TYPE_SETUP:
+            break;
+    }
+
+    return bytesReceived;
 }

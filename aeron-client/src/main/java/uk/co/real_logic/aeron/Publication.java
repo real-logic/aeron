@@ -286,7 +286,7 @@ public class Publication implements AutoCloseable
 
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (0 == limit)
+            else if (!isConnected())
             {
                 newPosition = NOT_CONNECTED;
             }
@@ -346,12 +346,12 @@ public class Publication implements AutoCloseable
             final long termOffset = rawTail & 0xFFFF_FFFFL;
             final long position = computeTermBeginPosition(termId(rawTail), positionBitsToShift, initialTermId) + termOffset;
 
-            if (position  < limit)
+            if (position < limit)
             {
                 final long result = termAppender.claim(headerWriter, length, bufferClaim);
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (0 == limit)
+            else if (!isConnected())
             {
                 newPosition = NOT_CONNECTED;
             }

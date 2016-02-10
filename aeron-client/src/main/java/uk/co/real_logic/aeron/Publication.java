@@ -171,7 +171,7 @@ public class Publication implements AutoCloseable
      */
     public boolean isStillConnected()
     {
-        return clientConductor.isPublicationConnected(LogBufferDescriptor.timeOfLastSm(logMetaDataBuffer));
+        return !isClosed && clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer));
     }
 
     /**

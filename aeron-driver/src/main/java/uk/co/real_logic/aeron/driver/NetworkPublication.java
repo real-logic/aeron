@@ -335,7 +335,7 @@ public class NetworkPublication
         senderPositionLimit(position);
 
         final long now = epochClock.time();
-        LogBufferDescriptor.timeOfLastSm(rawLog.logMetaData(), now);
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), now);
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)

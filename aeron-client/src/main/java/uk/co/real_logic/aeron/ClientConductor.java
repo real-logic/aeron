@@ -272,9 +272,9 @@ class ClientConductor implements Agent, DriverListener
         managedResources.add(managedResource);
     }
 
-    boolean isPublicationConnected(final long timeOfLastSm)
+    boolean isPublicationConnected(final long timeOfLastStatusMessage)
     {
-        return (epochClock.time() <= (timeOfLastSm + publicationConnectionTimeoutMs));
+        return (epochClock.time() <= (timeOfLastStatusMessage + publicationConnectionTimeoutMs));
     }
 
     private void checkDriverHeartbeat()

@@ -133,7 +133,7 @@ public class DirectPublication implements DriverManagedResource
         if (!subscriberPositions.isEmpty())
         {
             proposedLimit = minSubscriberPosition + termWindowLength;
-            LogBufferDescriptor.timeOfLastSm(rawLog.logMetaData(), nowInMillis);
+            LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), nowInMillis);
         }
 
         if (proposedLimit > tripLimit)

@@ -321,7 +321,7 @@ public class LogBufferDescriptor
      * @param logMetaDataBuffer containing the meta data.
      * @return the value of time of last SM
      */
-    public static long timeOfLastSm(final UnsafeBuffer logMetaDataBuffer)
+    public static long timeOfLastStatusMessage(final UnsafeBuffer logMetaDataBuffer)
     {
         return logMetaDataBuffer.getLongVolatile(LOG_TIME_OF_LAST_SM_OFFSET);
     }
@@ -332,7 +332,7 @@ public class LogBufferDescriptor
      * @param logMetaDataBuffer containing the meta data.
      * @param timeInMillis      value of the time of last SM in {@link System#currentTimeMillis()}
      */
-    public static void timeOfLastSm(final UnsafeBuffer logMetaDataBuffer, final long timeInMillis)
+    public static void timeOfLastStatusMessage(final UnsafeBuffer logMetaDataBuffer, final long timeInMillis)
     {
         logMetaDataBuffer.putLongOrdered(LOG_TIME_OF_LAST_SM_OFFSET, timeInMillis);
     }

@@ -15,7 +15,7 @@
  */
 plugins {
     id 'java'
-    id 'com.github.johnrengelman.shadow' version '1.2.2'
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
 }
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
@@ -44,7 +44,7 @@ def projectPom = {
     name = 'Aeron'
     packaging = 'pom'
     // optionally artifactId can be defined here
-    description = 'Efficient reliable UDP unicast, multicast, and IPC transport protocol.'
+    description = 'Efficient reliable UDP unicast, UDP multicast, and IPC transport protocol.'
     url = 'https://github.com/real-logic/Aeron'
 
     scm {
@@ -437,5 +437,5 @@ task uploadToMavenCentral {
             'aeron-system-tests:uploadArchives', 'aeron-all:uploadArchives', 'aeron-all:uploadShadow'
 }
 task wrapper(type: Wrapper) {
-    gradleVersion = '2.10'
+    gradleVersion = '2.11'
 }

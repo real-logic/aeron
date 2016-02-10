@@ -2,7 +2,7 @@ Aeron
 =====
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/real-logic/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) To chat with other Aeron users and the contributors.
 
-Efficient reliable UDP unicast, multicast, and IPC message transport.
+Efficient reliable UDP unicast, UDP multicast, and IPC message transport.
 
 Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable latency possible of any messaging system.
 

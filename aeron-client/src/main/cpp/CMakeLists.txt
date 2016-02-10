@@ -1,5 +1,5 @@
 #
-# Copyright 2014 - 2015 Real Logic Ltd.
+# Copyright 2016 Real Logic Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -95,7 +95,9 @@ SET(HEADERS
     util/ScopeUtils.h
     util/BitUtil.h
     util/Index.h
-    util/Platform.h protocol/SetupFlyweight.h protocol/DataHeaderFlyweight.h)
+    util/Platform.h
+    protocol/SetupFlyweight.h
+    protocol/DataHeaderFlyweight.h)
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

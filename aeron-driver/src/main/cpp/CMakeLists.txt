@@ -1,4 +1,4 @@
-# Copyright 2015 Real Logic Ltd.
+# Copyright 2016 Real Logic Ltd.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,12 @@ SET(SOURCE
     uri/NetUtil.cpp
     media/UdpChannelTransport.cpp
     media/InterfaceLookup.cpp
-    media/InterfaceSearchAddress.cpp media/NetworkInterface.cpp media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h media/SendChannelEndpoint.cpp media/SendChannelEndpoint.h)
+    media/InterfaceSearchAddress.cpp
+    media/NetworkInterface.cpp
+    media/ReceiveChannelEndpoint.cpp
+    media/ReceiveChannelEndpoint.h
+    media/SendChannelEndpoint.cpp
+    media/SendChannelEndpoint.h)
 
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h
@@ -31,7 +36,13 @@ SET(HEADERS
     media/InterfaceLookup.h
     media/UdpChannel.h
     media/UdpChannelTransport.h
-    media/NetworkInterface.h media/ReceiveChannelEndpoint.cpp media/ReceiveChannelEndpoint.h media/SendChannelEndpoint.cpp media/SendChannelEndpoint.h DataPacketDispatcher.cpp DataPacketDispatcher.h)
+    media/NetworkInterface.h
+    media/ReceiveChannelEndpoint.cpp
+    media/ReceiveChannelEndpoint.h
+    media/SendChannelEndpoint.cpp
+    media/SendChannelEndpoint.h
+    DataPacketDispatcher.cpp
+    DataPacketDispatcher.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

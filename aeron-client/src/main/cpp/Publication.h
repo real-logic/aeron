@@ -132,7 +132,10 @@ public:
      *
      * @return true if this Publication has seen an active subscriber recently.
      */
-    bool isConnected();
+    inline bool isConnected() const
+    {
+        return !isClosed() && isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer));
+    }
 
     /**
      * Has this object been closed and should no longer be used?
@@ -226,7 +229,7 @@ public:
 
                 newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, appendResult);
             }
-            else if (0 == limit)
+            else if (!isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
             {
                 newPosition = NOT_CONNECTED;
             }
@@ -305,7 +308,7 @@ public:
                 termAppender->claim(claimResult, m_headerWriter, length, bufferClaim);
                 newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, claimResult);
             }
-            else if (0 == limit)
+            else if (!isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
             {
                 newPosition = NOT_CONNECTED;
             }
@@ -376,6 +379,8 @@ private:
                     m_maxPayloadLength, length), SOURCEINFO);
         }
     }
+
+    bool isPublicationConnected(std::int64_t timeOfLastStatusMessage) const;
 };
 
 }

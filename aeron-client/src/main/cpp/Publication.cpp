@@ -58,9 +58,9 @@ Publication::~Publication()
     m_conductor.releasePublication(m_registrationId);
 }
 
-bool Publication::isConnected()
+bool Publication::isPublicationConnected(std::int64_t timeOfLastStatusMessage) const
 {
-    return m_conductor.isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer));
+    return m_conductor.isPublicationConnected(timeOfLastStatusMessage);
 }
 
 }

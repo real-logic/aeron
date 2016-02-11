@@ -132,9 +132,9 @@ public:
 
     void onInterServiceTimeout(long now);
 
-    inline bool isPublicationConnected(std::int64_t timeOfLastSm)
+    inline bool isPublicationConnected(std::int64_t timeOfLastStatusMessage) const
     {
-        return (m_epochClock() <= (timeOfLastSm + m_publicationConnectionTimeoutMs));
+        return (m_epochClock() <= (timeOfLastStatusMessage + m_publicationConnectionTimeoutMs));
     }
 
 protected:

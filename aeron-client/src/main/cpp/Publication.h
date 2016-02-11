@@ -229,13 +229,13 @@ public:
 
                 newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, appendResult);
             }
-            else if (!isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
+            else if (isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = BACK_PRESSURED;
             }
             else
             {
-                newPosition = BACK_PRESSURED;
+                newPosition = NOT_CONNECTED;
             }
         }
 
@@ -308,13 +308,13 @@ public:
                 termAppender->claim(claimResult, m_headerWriter, length, bufferClaim);
                 newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, claimResult);
             }
-            else if (!isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
+            else if (isPublicationConnected(LogBufferDescriptor::timeOfLastStatusMessage(m_logMetaDataBuffer)))
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = BACK_PRESSURED;
             }
             else
             {
-                newPosition = BACK_PRESSURED;
+                newPosition = NOT_CONNECTED;
             }
         }
 

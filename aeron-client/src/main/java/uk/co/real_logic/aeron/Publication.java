@@ -286,13 +286,13 @@ public class Publication implements AutoCloseable
 
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (!clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+            else if (clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = BACK_PRESSURED;
             }
             else
             {
-                newPosition = BACK_PRESSURED;
+                newPosition = NOT_CONNECTED;
             }
         }
 
@@ -353,11 +353,11 @@ public class Publication implements AutoCloseable
             }
             else if (clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
-                newPosition = NOT_CONNECTED;
+                newPosition = BACK_PRESSURED;
             }
             else
             {
-                newPosition = BACK_PRESSURED;
+                newPosition = NOT_CONNECTED;
             }
         }
 

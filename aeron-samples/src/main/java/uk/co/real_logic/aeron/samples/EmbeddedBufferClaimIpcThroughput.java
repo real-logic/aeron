@@ -40,10 +40,7 @@ public class EmbeddedBufferClaimIpcThroughput
 
     public static void main(final String[] args) throws Exception
     {
-        if (1 == args.length)
-        {
-            MediaDriver.loadPropertiesFile(args[0]);
-        }
+        MediaDriver.loadPropertiesFiles(args);
 
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));

@@ -117,6 +117,20 @@ public final class MediaDriver implements AutoCloseable
     }
 
     /**
+     * Load system properties from a given set of filenames or URLs.
+     *
+     * @see #loadPropertiesFile(String)
+     * @param filenamesOrUrls that holds properties
+     */
+    public static void loadPropertiesFiles(final String[] filenamesOrUrls)
+    {
+        for (final String filenameOrUrl : filenamesOrUrls)
+        {
+            loadPropertiesFile(filenameOrUrl);
+        }
+    }
+
+    /**
      * Start Media Driver as a stand-alone process.
      *
      * @param args command line arguments
@@ -124,10 +138,7 @@ public final class MediaDriver implements AutoCloseable
      */
     public static void main(final String[] args) throws Exception
     {
-        if (1 == args.length)
-        {
-            loadPropertiesFile(args[0]);
-        }
+        loadPropertiesFiles(args);
 
         try (final MediaDriver ignored = MediaDriver.launch())
         {

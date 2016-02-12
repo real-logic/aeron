@@ -28,10 +28,7 @@ public class LowLatencyMediaDriver
 {
     public static void main(final String[] args) throws Exception
     {
-        if (1 == args.length)
-        {
-            MediaDriver.loadPropertiesFile(args[0]);
-        }
+        MediaDriver.loadPropertiesFiles(args);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .threadingMode(ThreadingMode.DEDICATED)

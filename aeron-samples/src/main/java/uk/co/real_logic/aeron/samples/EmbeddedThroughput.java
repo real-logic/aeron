@@ -49,12 +49,7 @@ public class EmbeddedThroughput
 
     public static void main(final String[] args) throws Exception
     {
-        if (1 != args.length)
-        {
-            throw new IllegalArgumentException("must specify properties file to use");
-        }
-
-        MediaDriver.loadPropertiesFile(args[0]);
+        MediaDriver.loadPropertiesFiles(args);
 
         final RateReporter reporter = new RateReporter(TimeUnit.SECONDS.toNanos(1), EmbeddedThroughput::printRate);
         final FragmentHandler rateReporterHandler = rateReporterHandler(reporter);

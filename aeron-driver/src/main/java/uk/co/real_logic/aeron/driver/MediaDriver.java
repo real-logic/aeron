@@ -52,6 +52,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.Boolean.getBoolean;
+import static uk.co.real_logic.aeron.CncFileDescriptor.createToClientsBuffer;
+import static uk.co.real_logic.aeron.CncFileDescriptor.createToDriverBuffer;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
@@ -430,6 +432,7 @@ public final class MediaDriver implements AutoCloseable
         private long clientLivenessTimeoutNs = CLIENT_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = PUBLICATION_UNBLOCK_TIMEOUT_NS;
 
+        private Boolean preZeroTermBuffers;
         private int publicationTermBufferLength;
         private int ipcPublicationTermBufferLength;
         private int maxImageTermBufferLength;
@@ -484,6 +487,18 @@ public final class MediaDriver implements AutoCloseable
                 receiverTransportPoller(new DataTransportPoller());
                 senderTransportPoller(new ControlTransportPoller());
 
+                if (null == preZeroTermBuffers)
+                {
+                    if (null != Configuration.PRE_ZERO_TERM_BUFFERS)
+                    {
+                        preZeroTermBuffers = Boolean.valueOf(Configuration.PRE_ZERO_TERM_BUFFERS);
+                    }
+                    else
+                    {
+                        preZeroTermBuffers = Boolean.TRUE;
+                    }
+                }
+
                 Configuration.validateTermBufferLength(publicationTermBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
 
@@ -503,12 +518,11 @@ public final class MediaDriver implements AutoCloseable
                     clientLivenessTimeoutNs);
 
                 final BroadcastTransmitter transmitter =
-                    new BroadcastTransmitter(CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    new BroadcastTransmitter(createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
 
                 clientProxy(new ClientProxy(transmitter, eventLogger));
 
-                toDriverCommands(
-                    new ManyToOneRingBuffer(CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
+                toDriverCommands(new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
                 concludeCounters();
 
@@ -520,8 +534,13 @@ public final class MediaDriver implements AutoCloseable
                 fromSenderDriverConductorProxy(new DriverConductorProxy(
                     threadingMode, toConductorFromSenderCommandQueue, systemCounters.conductorProxyFails()));
 
-                rawLogBuffersFactory(new RawLogFactory(aeronDirectoryName(),
-                    publicationTermBufferLength, maxImageTermBufferLength, ipcPublicationTermBufferLength, eventLogger));
+                rawLogBuffersFactory(new RawLogFactory(
+                    aeronDirectoryName(),
+                    publicationTermBufferLength,
+                    maxImageTermBufferLength,
+                    ipcPublicationTermBufferLength,
+                    preZeroTermBuffers,
+                    eventLogger));
 
                 concludeIdleStrategies();
                 concludeLossGenerators();
@@ -728,6 +747,12 @@ public final class MediaDriver implements AutoCloseable
         public Context countersManager(final CountersManager countersManager)
         {
             this.countersManager = countersManager;
+            return this;
+        }
+
+        public Context preZeroTermBuffers(final Boolean preZeroLogBuffers)
+        {
+            this.preZeroTermBuffers = preZeroLogBuffers;
             return this;
         }
 

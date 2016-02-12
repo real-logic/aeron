@@ -134,6 +134,12 @@ public class Configuration
     public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
 
     /**
+     * Should the log buffers be pre-zero'ed so the files are not sparse. Defaults to true.
+     */
+    public static final String PRE_ZERO_TERM_BUFFERS_PROP_NAME = "aeron.term.buffer.preZero";
+    public static final String PRE_ZERO_TERM_BUFFERS = getProperty(PRE_ZERO_TERM_BUFFERS_PROP_NAME);
+
+    /**
      * Default term buffer length.
      */
     public static final int TERM_BUFFER_IPC_LENGTH_DEFAULT = 64 * 1024 * 1024;

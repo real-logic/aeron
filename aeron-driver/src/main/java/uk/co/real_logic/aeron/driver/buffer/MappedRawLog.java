@@ -46,7 +46,12 @@ class MappedRawLog implements RawLog
     private final MappedByteBuffer[] mappedBuffers;
     private final UnsafeBuffer logMetaDataBuffer;
 
-    MappedRawLog(final File location, final FileChannel blankTemplate, final int termLength, final EventLogger logger)
+    MappedRawLog(
+        final File location,
+        final FileChannel blankTemplate,
+        final boolean preZeroLog,
+        final int termLength,
+        final EventLogger logger)
     {
         this.termLength = termLength;
         this.logger = logger;
@@ -58,12 +63,16 @@ class MappedRawLog implements RawLog
         {
             final long logLength = computeLogLength(termLength);
             raf.setLength(logLength);
-            blankTemplate.transferTo(0, logLength, logChannel);
+
+            if (preZeroLog)
+            {
+                blankTemplate.transferTo(0, logLength, logChannel);
+            }
 
             if (logLength <= Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
-                mappedBuffers = new MappedByteBuffer[]{ mappedBuffer };
+                mappedBuffers = new MappedByteBuffer[]{mappedBuffer};
                 final int metaDataSectionOffset = termLength * PARTITION_COUNT;
 
                 for (int i = 0; i < PARTITION_COUNT; i++)

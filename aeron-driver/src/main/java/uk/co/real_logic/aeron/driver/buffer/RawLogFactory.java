@@ -33,6 +33,8 @@ public class RawLogFactory implements AutoCloseable
     private final int publicationTermBufferLength;
     private final int imagesTermBufferMaxLength;
     private final int ipcPublicationTermBufferLength;
+    private final boolean preZeroLog;
+
     private final FileChannel blankTemplate;
     private final File publicationsDir;
     private final File imagesDir;
@@ -43,8 +45,10 @@ public class RawLogFactory implements AutoCloseable
         final int publicationTermBufferLength,
         final int imagesTermBufferMaxLength,
         final int ipcPublicationTermBufferLength,
+        final boolean preZeroLog,
         final EventLogger logger)
     {
+        this.preZeroLog = preZeroLog;
         this.logger = logger;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
@@ -62,7 +66,14 @@ public class RawLogFactory implements AutoCloseable
         maxTermLength = Math.max(maxTermLength, imagesTermBufferMaxLength);
         final long blankTemplateLength = computeLogLength(maxTermLength);
 
-        blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
+        if (preZeroLog)
+        {
+            blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
+        }
+        else
+        {
+            blankTemplate = null;
+        }
     }
 
     /**
@@ -72,7 +83,10 @@ public class RawLogFactory implements AutoCloseable
     {
         try
         {
-            blankTemplate.close();
+            if (null != blankTemplate)
+            {
+                blankTemplate.close();
+            }
         }
         catch (final Exception ex)
         {
@@ -147,6 +161,6 @@ public class RawLogFactory implements AutoCloseable
     {
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, blankTemplate, termBufferLength, logger);
+        return new MappedRawLog(location, blankTemplate, preZeroLog, termBufferLength, logger);
     }
 }

@@ -41,6 +41,7 @@ public class RawLogFactoryTest
     private static final File DATA_DIR = new File(IoUtil.tmpDirName(), "dataDirName");
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
     private static final int TERM_BUFFER_MAX_LENGTH = Configuration.TERM_BUFFER_LENGTH_MAX_DEFAULT;
+    private static final boolean PRE_ZERO_LOG = false;
     private RawLogFactory rawLogFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
     private EventLogger logger = mock(EventLogger.class);
@@ -50,7 +51,7 @@ public class RawLogFactoryTest
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         rawLogFactory = new RawLogFactory(
-            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, TERM_BUFFER_LENGTH, logger);
+            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, TERM_BUFFER_LENGTH, PRE_ZERO_LOG, logger);
     }
 
     @After

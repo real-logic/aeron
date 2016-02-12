@@ -322,7 +322,9 @@ project(':aeron-system-tests') {
     }
 
     test {
-        systemProperties('aeron.event.log': System.properties['aeron.event.log'])
+        systemProperties(
+            'aeron.term.buffer.preZero' : 'false',
+            'aeron.event.log': System.properties['aeron.event.log'])
     }
 
     uploadArchives {

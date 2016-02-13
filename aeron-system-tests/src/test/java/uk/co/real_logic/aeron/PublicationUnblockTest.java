@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 public class PublicationUnblockTest
 {
     @DataPoint
-    public static final String NETWORK_CHANNEL = "aeron:udp?remote=localhost:54325";
+    public static final String NETWORK_CHANNEL = "aeron:udp?endpoint=localhost:54325";
 
     @DataPoint
     public static final String IPC_CHANNEL = "aeron:ipc";

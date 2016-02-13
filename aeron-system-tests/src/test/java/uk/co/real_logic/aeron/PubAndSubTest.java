@@ -53,10 +53,10 @@ import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 public class PubAndSubTest
 {
     @DataPoint
-    public static final String UNICAST_URI = "aeron:udp?remote=localhost:54325";
+    public static final String UNICAST_URI = "aeron:udp?endpoint=localhost:54325";
 
     @DataPoint
-    public static final String MULTICAST_URI = "aeron:udp?group=224.20.30.39:54326|interface=localhost";
+    public static final String MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:54326|interface=localhost";
 
     @DataPoint
     public static final String IPC_URI = "aeron:ipc";

@@ -36,8 +36,8 @@ import static org.mockito.Mockito.verify;
 
 public class PongTest
 {
-    public static final String PING_URI = "aeron:udp?remote=localhost:54325";
-    public static final String PONG_URI = "aeron:udp?remote=localhost:54326";
+    public static final String PING_URI = "aeron:udp?endpoint=localhost:54325";
+    public static final String PONG_URI = "aeron:udp?endpoint=localhost:54326";
 
     private static final int PING_STREAM_ID = 1;
     private static final int PONG_STREAM_ID = 2;

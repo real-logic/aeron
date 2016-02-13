@@ -37,8 +37,8 @@ import static org.junit.Assert.assertTrue;
  */
 public class StopStartSecondSubscriberTest
 {
-    public static final String CHANNEL1 = "aeron:udp?remote=localhost:54325";
-    public static final String CHANNEL2 = "aeron:udp?remote=localhost:54326";
+    public static final String CHANNEL1 = "aeron:udp?endpoint=localhost:54325";
+    public static final String CHANNEL2 = "aeron:udp?endpoint=localhost:54326";
     private static final int STREAM_ID1 = 1;
     private static final int STREAM_ID2 = 2;
 

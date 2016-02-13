@@ -30,8 +30,8 @@ import static org.mockito.Mockito.*;
 
 public class MultiSubscriberTest
 {
-    public static final String CHANNEL_1 = "aeron:udp?remote=localhost:54325|fruit=banana";
-    public static final String CHANNEL_2 = "aeron:udp?remote=localhost:54325|fruit=apple";
+    public static final String CHANNEL_1 = "aeron:udp?endpoint=localhost:54325|fruit=banana";
+    public static final String CHANNEL_2 = "aeron:udp?endpoint=localhost:54325|fruit=apple";
     public static final int STREAM_ID = 1;
     public static final int FRAGMENT_COUNT_LIMIT = 10;
 

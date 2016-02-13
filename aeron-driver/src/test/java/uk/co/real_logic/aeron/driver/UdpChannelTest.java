@@ -20,6 +20,10 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Assume;
 import org.junit.Test;
+import org.junit.experimental.theories.DataPoint;
+import org.junit.experimental.theories.Theories;
+import org.junit.experimental.theories.Theory;
+import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.BitUtil;
@@ -29,9 +33,11 @@ import java.net.*;
 import java.util.HashMap;
 import java.util.Map;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
+@RunWith(Theories.class)
 public class UdpChannelTest
 {
     @Test
@@ -45,10 +51,23 @@ public class UdpChannelTest
         assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
-    @Test
-    public void shouldHandleExplicitLocalAddressAndPortFormatWithAeronUri() throws Exception
+    private static String uri(String endpointKey, String endpointValue, String interfaceKey, String interfaceValue)
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=localhost:40123|remote=localhost:40124");
+        return format("aeron:udp?%s=%s|%s=%s", endpointKey, endpointValue, interfaceKey, interfaceValue);
+    }
+
+    private static String uri(String endpointKey, String endpointValue)
+    {
+        return format("aeron:udp?%s=%s", endpointKey, endpointValue);
+    }
+
+    @Theory
+    public void shouldHandleExplicitLocalAddressAndPortFormatWithAeronUri(
+        @Values({"remote", "endpoint"}) final String endpointKey,
+        @Values({"local", "interface"}) final String interfaceKey) throws Exception
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(
+            uri(endpointKey, "localhost:40124", interfaceKey, "localhost:40123"));
 
         assertThat(udpChannel.localData(), is(new InetSocketAddress("localhost", 40123)));
         assertThat(udpChannel.localControl(), is(new InetSocketAddress("localhost", 40123)));
@@ -67,10 +86,11 @@ public class UdpChannelTest
         assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
-    @Test
-    public void shouldHandleImpliedLocalAddressAndPortFormatWithAeronUri() throws Exception
+    @Theory
+    public void shouldHandleImpliedLocalAddressAndPortFormatWithAeronUri(
+        @Values({"remote", "endpoint"}) final String endpointKey) throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=localhost:40124");
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "localhost:40124"));
 
         assertThat(udpChannel.localData(), is(new InetSocketAddress("0.0.0.0", 0)));
         assertThat(udpChannel.localControl(), is(new InetSocketAddress("0.0.0.0", 0)));
@@ -114,10 +134,12 @@ public class UdpChannelTest
         assertThat(udpChannel.localInterface(), is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
     }
 
-    @Test
-    public void shouldParseValidMulticastAddressWithAeronUri() throws Exception
+    @Theory
+    public void shouldParseValidMulticastAddressWithAeronUri(
+        @Values({"remote", "endpoint"}) final String endpointKey,
+        @Values({"local", "interface"}) final String interfaceKey) throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|group=224.10.9.9:40124");
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "224.10.9.9:40124", interfaceKey, "localhost"));
 
         assertThat(udpChannel.localControl(), is(new InetSocketAddress("localhost", 0)));
         assertThat(udpChannel.remoteControl(), isMulticastAddress("224.10.9.10", 40124));
@@ -143,10 +165,12 @@ public class UdpChannelTest
         assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
-    @Test
-    public void shouldHandleImpliedLocalPortFormatWithAeronUri() throws Exception
+    @Theory
+    public void shouldHandleImpliedLocalPortFormatWithAeronUri(
+        @Values({"remote", "endpoint"}) final String endpointKey,
+        @Values({"local", "interface"}) final String interfaceKey) throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=localhost|remote=localhost:40124");
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "localhost:40124", interfaceKey, "localhost"));
 
         assertThat(udpChannel.localData(), is(new InetSocketAddress("localhost", 0)));
         assertThat(udpChannel.localControl(), is(new InetSocketAddress("localhost", 0)));
@@ -163,10 +187,11 @@ public class UdpChannelTest
         assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("127.0.0.1", 40124)));
     }
 
-    @Test
-    public void shouldHandleLocalhostLookupWithAeronUri() throws Exception
+    @Theory
+    public void shouldHandleLocalhostLookupWithAeronUri(
+        @Values({"remote", "endpoint"}) final String endpointKey) throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=localhost:40124");
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "localhost:40124"));
 
         assertThat(udpChannel.remoteData(), is(new InetSocketAddress("127.0.0.1", 40124)));
         assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("127.0.0.1", 40124)));
@@ -204,24 +229,32 @@ public class UdpChannelTest
         assertThat(udpChannelLocalhost.canonicalForm(), is("UDP-7f000001-0-7f000001-40456"));
     }
 
-    @Test
-    public void shouldHandleIpV6CanonicalFormForUnicastCorrectly() throws Exception
+    @Theory
+    public void shouldHandleIpV6CanonicalFormForUnicastCorrectly(
+        @Values({"remote", "endpoint"}) final String endpointKey,
+        @Values({"local", "interface"}) final String interfaceKey) throws Exception
     {
-        final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?local=[::1]|remote=192.168.0.1:40456");
+        final UdpChannel udpChannelLocal =
+            UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456", interfaceKey, "[::1]"));
         final UdpChannel udpChannelLocalPort =
-            UdpChannel.parse("aeron:udp?local=127.0.0.1:40455|remote=[fe80::5246:5dff:fe73:df06]:40456");
+            UdpChannel.parse(uri(endpointKey, "[fe80::5246:5dff:fe73:df06]:40456", interfaceKey, "127.0.0.1:40455"));
 
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-00000000000000000000000000000001-0-c0a80001-40456"));
         assertThat(udpChannelLocalPort.canonicalForm(), is("UDP-7f000001-40455-fe8000000000000052465dfffe73df06-40456"));
     }
 
-    @Test
-    public void shouldHandleCanonicalFormForUnicastCorrectlyWithAeronUri() throws Exception
+    @Theory
+    public void shouldHandleCanonicalFormForUnicastCorrectlyWithAeronUri(
+        @Values({"remote", "endpoint"}) final String endpointKey,
+        @Values({"local", "interface"}) final String interfaceKey) throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=192.168.0.1:40456");
-        final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?local=127.0.0.1|remote=192.168.0.1:40456");
-        final UdpChannel udpChannelLocalPort = UdpChannel.parse("aeron:udp?local=127.0.0.1:40455|remote=192.168.0.1:40456");
-        final UdpChannel udpChannelLocalhost = UdpChannel.parse("aeron:udp?local=localhost|remote=localhost:40456");
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456"));
+        final UdpChannel udpChannelLocal =
+            UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456", interfaceKey, "127.0.0.1"));
+        final UdpChannel udpChannelLocalPort =
+            UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456", interfaceKey, "127.0.0.1:40455"));
+        final UdpChannel udpChannelLocalhost =
+            UdpChannel.parse(uri(endpointKey, "localhost:40456", interfaceKey, "localhost"));
 
         assertThat(udpChannel.canonicalForm(), is("UDP-00000000-0-c0a80001-40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-c0a80001-40456"));
@@ -232,28 +265,28 @@ public class UdpChannelTest
     @Test
     public void shouldGetProtocolFamilyForIpV4() throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=127.0.0.1|remote=127.0.0.1:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:12345|interface=127.0.0.1");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV6() throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?local=[::1]|remote=[::1]:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=[::1]:12345|interface=[::1]");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV4WithoutLocalSpecified() throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=127.0.0.1:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=127.0.0.1:12345");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET));
     }
 
     @Test
     public void shouldGetProtocolFamilyForIpV6WithoutLocalSpecified() throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?remote=[::1]:12345");
+        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=[::1]:12345");
         assertThat(udpChannel.protocolFamily(), is((ProtocolFamily) StandardProtocolFamily.INET6));
     }
 
@@ -262,7 +295,7 @@ public class UdpChannelTest
     {
         final String localhostIpAsHex = resolveToHexAddress("localhost");
 
-        final UdpChannel udpChannelExampleCom0 = UdpChannel.parse("aeron:udp?remote=localhost:40456");
+        final UdpChannel udpChannelExampleCom0 = UdpChannel.parse("aeron:udp?endpoint=localhost:40456");
         assertThat(udpChannelExampleCom0.canonicalForm(), is("UDP-00000000-0-" + localhostIpAsHex + "-40456"));
 
         final UdpChannel udpChannelExampleCom1 = UdpChannel.parse("udp://localhost:40456");
@@ -299,16 +332,21 @@ public class UdpChannelTest
         assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
 
-    @Test
-    public void shouldHandleCanonicalFormForMulticastCorrectlyWithAeronUri() throws Exception
+    @Theory
+    public void shouldHandleCanonicalFormForMulticastCorrectlyWithAeronUri(
+        @Values({"group", "endpoint"}) final String endpointKey,
+        @Values({"interface"}) final String interfaceKey) throws Exception
     {
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|group=224.0.1.1:40456");
-        final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?interface=127.0.0.1|group=224.0.1.1:40456");
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "localhost"));
+        final UdpChannel udpChannelLocal =
+            UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "127.0.0.1"));
         final UdpChannel udpChannelAllSystems =
-            UdpChannel.parse("aeron:udp?interface=localhost|group=224.0.0.1:40456");
-        final UdpChannel udpChannelDefault = UdpChannel.parse("aeron:udp?group=224.0.1.1:40456");
-        final UdpChannel udpChannelSubnet = UdpChannel.parse("aeron:udp?interface=localhost/24|group=224.0.1.1:40456");
-        final UdpChannel udpChannelSubnetLocal = UdpChannel.parse("aeron:udp?interface=127.0.0.0/24|group=224.0.1.1:40456");
+            UdpChannel.parse(uri(endpointKey, "224.0.0.1:40456", interfaceKey, "127.0.0.1"));
+        final UdpChannel udpChannelDefault = UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456"));
+        final UdpChannel udpChannelSubnet =
+            UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "localhost/24"));
+        final UdpChannel udpChannelSubnetLocal =
+            UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "127.0.0.0/24"));
 
         assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-7f000001-0-e0000101-40456"));
@@ -318,22 +356,20 @@ public class UdpChannelTest
         assertThat(udpChannelDefault.localInterface(), supportsMulticastOrIsLoopback());
     }
 
-    @Test
-    public void shouldHandleIpV6CanonicalFormForMulticastCorrectly() throws Exception
+    @Theory
+    public void shouldHandleIpV6CanonicalFormForMulticastCorrectly(
+        @Values({"group", "endpoint"}) final String endpointKey,
+        @Values({"interface"}) final String interfaceKey) throws Exception
     {
         Assume.assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
 
-        final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?interface=localhost|group=[FF01::FD]:40456");
-        final UdpChannel udpChannelLocal = UdpChannel.parse("aeron:udp?interface=[::1]:54321/64|group=224.0.1.1:40456");
+        final UdpChannel udpChannel =
+            UdpChannel.parse(uri(endpointKey, "[FF01::FD]:40456", interfaceKey, "localhost"));
+        final UdpChannel udpChannelLocal =
+            UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "[::1]:54321/64"));
 
         assertThat(udpChannel.canonicalForm(), is("UDP-7f000001-0-ff0100000000000000000000000000fd-40456"));
         assertThat(udpChannelLocal.canonicalForm(), is("UDP-00000000000000000000000000000001-54321-e0000101-40456"));
-    }
-
-    @Test(expected = InvalidChannelException.class)
-    public void shouldFailIfBothUnicastAndMulticastSpecified() throws Exception
-    {
-        UdpChannel.parse("aeron:udp?group=224.0.1.1:40456|remote=192.168.0.1:40456");
     }
 
     private static Matcher<NetworkInterface> supportsMulticastOrIsLoopback()

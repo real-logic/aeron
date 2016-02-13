@@ -50,6 +50,7 @@ public final class UdpChannel
     private static final String LOCAL_KEY = "local";
     private static final String INTERFACE_KEY = "interface";
     private static final String GROUP_KEY = "group";
+    private static final String ENDPOINT_KEY = "endpoint";
 
     private static final String[] UNICAST_KEYS = {LOCAL_KEY, REMOTE_KEY};
     private static final String[] MULTICAST_KEYS = {GROUP_KEY, INTERFACE_KEY};
@@ -80,49 +81,54 @@ public final class UdpChannel
 
             final Context context = new Context().uriStr(uriStr);
 
-            if (isMulticast(uri))
+            final InetSocketAddress endpointAddress = getEndpointAddress(uri);
+
+            if (null == endpointAddress)
             {
-                final InetSocketAddress dataAddress = uri.getSocketAddress(GROUP_KEY);
-                final byte[] addressAsBytes = dataAddress.getAddress().getAddress();
+                throw new IllegalArgumentException("Aeron URIs for UDP must specify an endpoint address");
+            }
+
+            if (endpointAddress.getAddress().isMulticastAddress())
+            {
+                final byte[] addressAsBytes = endpointAddress.getAddress().getAddress();
 
                 validateDataAddress(addressAsBytes);
 
                 addressAsBytes[addressAsBytes.length - 1]++;
                 final InetSocketAddress controlAddress =
-                    new InetSocketAddress(getByAddress(addressAsBytes), dataAddress.getPort());
+                    new InetSocketAddress(getByAddress(addressAsBytes), endpointAddress.getPort());
 
-                final InterfaceSearchAddress searchAddress =
-                    uri.getInterfaceSearchAddress(INTERFACE_KEY, InterfaceSearchAddress.wildcard());
+                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(uri);
 
                 final NetworkInterface localInterface = findInterface(searchAddress);
                 final InetSocketAddress localAddress = resolveToAddressOfInterface(localInterface, searchAddress);
 
-                final ProtocolFamily protocolFamily = getProtocolFamily(dataAddress.getAddress());
+                final ProtocolFamily protocolFamily = getProtocolFamily(endpointAddress.getAddress());
 
                 context.localControlAddress(localAddress)
                     .remoteControlAddress(controlAddress)
                     .localDataAddress(localAddress)
-                    .remoteDataAddress(dataAddress)
+                    .remoteDataAddress(endpointAddress)
                     .localInterface(localInterface)
                     .protocolFamily(protocolFamily)
-                    .canonicalForm(canonicalise(localAddress, dataAddress));
+                    .canonicalForm(canonicalise(localAddress, endpointAddress));
             }
             else
             {
-                final InetSocketAddress remoteAddress = uri.getSocketAddress(REMOTE_KEY);
-                final InetSocketAddress localAddress = uri.getSocketAddress(LOCAL_KEY, 0, new InetSocketAddress(0));
+                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(uri);
+                final InetSocketAddress localAddress = searchAddress.getAddress();
 
                 final ProtocolFamily protocolFamily =
-                    !uri.containsKey(LOCAL_KEY) && null != remoteAddress
-                        ? getProtocolFamily(remoteAddress.getAddress())
+                    !uri.containsKey(LOCAL_KEY)
+                        ? getProtocolFamily(endpointAddress.getAddress())
                         : getProtocolFamily(localAddress.getAddress());
 
-                context.remoteControlAddress(remoteAddress)
-                    .remoteDataAddress(remoteAddress)
+                context.remoteControlAddress(endpointAddress)
+                    .remoteDataAddress(endpointAddress)
                     .localControlAddress(localAddress)
                     .localDataAddress(localAddress)
                     .protocolFamily(protocolFamily)
-                    .canonicalForm(canonicalise(localAddress, remoteAddress));
+                    .canonicalForm(canonicalise(localAddress, endpointAddress));
             }
 
             return new UdpChannel(context);
@@ -133,6 +139,50 @@ public final class UdpChannel
         }
     }
 
+    private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
+    {
+        InterfaceSearchAddress interfaceSearchAddress;
+
+        if (uri.containsKey(INTERFACE_KEY))
+        {
+            interfaceSearchAddress = uri.getInterfaceSearchAddress(INTERFACE_KEY, InterfaceSearchAddress.wildcard());
+        }
+        else if (uri.containsKey(LOCAL_KEY))
+        {
+            interfaceSearchAddress = uri.getInterfaceSearchAddress(LOCAL_KEY, InterfaceSearchAddress.wildcard());
+        }
+        else
+        {
+            interfaceSearchAddress = InterfaceSearchAddress.wildcard();
+        }
+
+        return interfaceSearchAddress;
+    }
+
+    private static InetSocketAddress getEndpointAddress(final AeronUri uri) throws UnknownHostException
+    {
+        InetSocketAddress endpointAddress;
+
+        if (uri.containsKey(ENDPOINT_KEY))
+        {
+            endpointAddress = uri.getSocketAddress(ENDPOINT_KEY);
+        }
+        else if (uri.containsKey(GROUP_KEY))
+        {
+            endpointAddress = uri.getSocketAddress(GROUP_KEY);
+        }
+        else if (uri.containsKey(REMOTE_KEY))
+        {
+            endpointAddress = uri.getSocketAddress(REMOTE_KEY);
+        }
+        else
+        {
+            endpointAddress = null;
+        }
+
+        return endpointAddress;
+    }
+
     private static void validateDataAddress(final byte[] addressAsBytes)
     {
         if (BitUtil.isEven(addressAsBytes[addressAsBytes.length - 1]))
@@ -141,15 +191,9 @@ public final class UdpChannel
         }
     }
 
-    private static boolean isMulticast(final AeronUri uri)
-    {
-        return uri.containsKey(GROUP_KEY);
-    }
-
     private static void validateConfiguration(final AeronUri uri)
     {
         validateMedia(uri);
-        validateUnicastXorMulticast(uri);
     }
 
     private static void validateMedia(final AeronUri uri)
@@ -157,19 +201,6 @@ public final class UdpChannel
         if (!UDP_MEDIA_ID.equals(uri.media()))
         {
             throw new IllegalArgumentException("Udp channel only supports udp media: " + uri);
-        }
-    }
-
-    private static void validateUnicastXorMulticast(final AeronUri uri)
-    {
-        final boolean hasMulticastKeys = uri.containsAnyKey(MULTICAST_KEYS);
-        final boolean hasUnicastKeys = uri.containsAnyKey(UNICAST_KEYS);
-
-        if (hasMulticastKeys == hasUnicastKeys)
-        {
-            throw new IllegalArgumentException(format(
-                "URI must contain either a unicast configuration (%s) or a multicast configuration (%s) not both",
-                Arrays.toString(UNICAST_KEYS), Arrays.toString(MULTICAST_KEYS)));
         }
     }
 
@@ -217,12 +248,11 @@ public final class UdpChannel
         else
         {
             final String remote = uri.getHost() + ":" + uriPort;
-            final String local = userInfo;
 
             return AeronUri.builder()
                 .media(UDP_MEDIA_ID)
                 .param(REMOTE_KEY, remote)
-                .param(LOCAL_KEY, local)
+                .param(LOCAL_KEY, userInfo)
                 .newInstance();
         }
     }

@@ -111,7 +111,16 @@ public final class UdpChannel
             else
             {
                 final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(uri);
-                final InetSocketAddress localAddress = searchAddress.getAddress();
+                final InetSocketAddress localAddress;
+                if (searchAddress.getInetAddress().isAnyLocalAddress())
+                {
+                    localAddress = searchAddress.getAddress();
+                }
+                else
+                {
+                    final NetworkInterface localInterface = findInterface(searchAddress);
+                    localAddress = resolveToAddressOfInterface(localInterface, searchAddress);
+                }
 
                 final ProtocolFamily protocolFamily =
                     !uri.containsKey(LOCAL_KEY)

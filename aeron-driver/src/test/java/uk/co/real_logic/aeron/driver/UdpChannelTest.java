@@ -172,6 +172,34 @@ public class UdpChannelTest
         assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
+    @Theory
+    public void shouldHandleIPv4AnyAddressAsInterfaceAddressForUnicast(
+        @Values({"remote", "endpoint"}) final String endpointKey,
+        @Values({"local", "interface"}) final String interfaceKey)
+        throws Exception
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "localhost:40124", interfaceKey, "0.0.0.0"));
+
+        assertThat(udpChannel.localData(), is(new InetSocketAddress("0.0.0.0", 0)));
+        assertThat(udpChannel.localControl(), is(new InetSocketAddress("0.0.0.0", 0)));
+        assertThat(udpChannel.remoteData(), is(new InetSocketAddress("localhost", 40124)));
+        assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
+    }
+
+    @Theory
+    public void shouldHandleIPv6AnyAddressAsInterfaceAddressForUnicast(
+        @Values({"remote", "endpoint"}) final String endpointKey,
+        @Values({"local", "interface"}) final String interfaceKey)
+        throws Exception
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "[::1]:40124", interfaceKey, "[::]"));
+
+        assertThat(udpChannel.localData(), is(new InetSocketAddress("::", 0)));
+        assertThat(udpChannel.localControl(), is(new InetSocketAddress("::", 0)));
+        assertThat(udpChannel.remoteData(), is(new InetSocketAddress("::1", 40124)));
+        assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("::1", 40124)));
+    }
+
     @Test
     public void shouldHandleLocalhostLookup() throws Exception
     {

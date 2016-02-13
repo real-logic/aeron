@@ -20,7 +20,6 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 import org.junit.Assume;
 import org.junit.Test;
-import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
@@ -51,20 +50,11 @@ public class UdpChannelTest
         assertThat(udpChannel.remoteControl(), is(new InetSocketAddress("localhost", 40124)));
     }
 
-    private static String uri(String endpointKey, String endpointValue, String interfaceKey, String interfaceValue)
-    {
-        return format("aeron:udp?%s=%s|%s=%s", endpointKey, endpointValue, interfaceKey, interfaceValue);
-    }
-
-    private static String uri(String endpointKey, String endpointValue)
-    {
-        return format("aeron:udp?%s=%s", endpointKey, endpointValue);
-    }
-
     @Theory
     public void shouldHandleExplicitLocalAddressAndPortFormatWithAeronUri(
         @Values({"remote", "endpoint"}) final String endpointKey,
-        @Values({"local", "interface"}) final String interfaceKey) throws Exception
+        @Values({"local", "interface"}) final String interfaceKey)
+        throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse(
             uri(endpointKey, "localhost:40124", interfaceKey, "localhost:40123"));
@@ -88,7 +78,8 @@ public class UdpChannelTest
 
     @Theory
     public void shouldHandleImpliedLocalAddressAndPortFormatWithAeronUri(
-        @Values({"remote", "endpoint"}) final String endpointKey) throws Exception
+        @Values({"remote", "endpoint"}) final String endpointKey)
+        throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "localhost:40124"));
 
@@ -137,7 +128,8 @@ public class UdpChannelTest
     @Theory
     public void shouldParseValidMulticastAddressWithAeronUri(
         @Values({"remote", "endpoint"}) final String endpointKey,
-        @Values({"local", "interface"}) final String interfaceKey) throws Exception
+        @Values({"local", "interface"}) final String interfaceKey)
+        throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "224.10.9.9:40124", interfaceKey, "localhost"));
 
@@ -148,7 +140,8 @@ public class UdpChannelTest
         assertThat(udpChannel.localInterface(), is(NetworkInterface.getByInetAddress(InetAddress.getByName("localhost"))));
     }
 
-    private Matcher<InetSocketAddress> isMulticastAddress(final String addressName, final int port) throws UnknownHostException
+    private Matcher<InetSocketAddress> isMulticastAddress(final String addressName, final int port)
+        throws UnknownHostException
     {
         final InetAddress inetAddress = InetAddress.getByName(addressName);
         return is(new InetSocketAddress(inetAddress, port));
@@ -168,7 +161,8 @@ public class UdpChannelTest
     @Theory
     public void shouldHandleImpliedLocalPortFormatWithAeronUri(
         @Values({"remote", "endpoint"}) final String endpointKey,
-        @Values({"local", "interface"}) final String interfaceKey) throws Exception
+        @Values({"local", "interface"}) final String interfaceKey)
+        throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "localhost:40124", interfaceKey, "localhost"));
 
@@ -232,7 +226,8 @@ public class UdpChannelTest
     @Theory
     public void shouldHandleIpV6CanonicalFormForUnicastCorrectly(
         @Values({"remote", "endpoint"}) final String endpointKey,
-        @Values({"local", "interface"}) final String interfaceKey) throws Exception
+        @Values({"local", "interface"}) final String interfaceKey)
+        throws Exception
     {
         final UdpChannel udpChannelLocal =
             UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456", interfaceKey, "[::1]"));
@@ -246,7 +241,8 @@ public class UdpChannelTest
     @Theory
     public void shouldHandleCanonicalFormForUnicastCorrectlyWithAeronUri(
         @Values({"remote", "endpoint"}) final String endpointKey,
-        @Values({"local", "interface"}) final String interfaceKey) throws Exception
+        @Values({"local", "interface"}) final String interfaceKey)
+        throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "192.168.0.1:40456"));
         final UdpChannel udpChannelLocal =
@@ -335,7 +331,8 @@ public class UdpChannelTest
     @Theory
     public void shouldHandleCanonicalFormForMulticastCorrectlyWithAeronUri(
         @Values({"group", "endpoint"}) final String endpointKey,
-        @Values({"interface"}) final String interfaceKey) throws Exception
+        @Values({"interface"}) final String interfaceKey)
+        throws Exception
     {
         final UdpChannel udpChannel = UdpChannel.parse(uri(endpointKey, "224.0.1.1:40456", interfaceKey, "localhost"));
         final UdpChannel udpChannelLocal =
@@ -359,7 +356,8 @@ public class UdpChannelTest
     @Theory
     public void shouldHandleIpV6CanonicalFormForMulticastCorrectly(
         @Values({"group", "endpoint"}) final String endpointKey,
-        @Values({"interface"}) final String interfaceKey) throws Exception
+        @Values({"interface"}) final String interfaceKey)
+        throws Exception
     {
         Assume.assumeTrue(System.getProperty("java.net.preferIPv4Stack") == null);
 
@@ -376,7 +374,7 @@ public class UdpChannelTest
     {
         return new TypeSafeMatcher<NetworkInterface>()
         {
-            public void describeTo(Description description)
+            public void describeTo(final Description description)
             {
                 description.appendText("Interface supports multicast or is loopack");
             }
@@ -388,9 +386,9 @@ public class UdpChannelTest
                 {
                     matchesSafely = item.supportsMulticast() || item.isLoopback();
                 }
-                catch (final SocketException e)
+                catch (final SocketException ex)
                 {
-                    LangUtil.rethrowUnchecked(e);
+                    LangUtil.rethrowUnchecked(ex);
                 }
 
                 return matchesSafely;
@@ -401,5 +399,16 @@ public class UdpChannelTest
     private String resolveToHexAddress(final String host) throws UnknownHostException
     {
         return BitUtil.toHex(InetAddress.getByName(host).getAddress());
+    }
+
+    private static String uri(
+        final String endpointKey, final String endpointValue, final String interfaceKey, final String interfaceValue)
+    {
+        return format("aeron:udp?%s=%s|%s=%s", endpointKey, endpointValue, interfaceKey, interfaceValue);
+    }
+
+    private static String uri(final String endpointKey, final String endpointValue)
+    {
+        return format("aeron:udp?%s=%s", endpointKey, endpointValue);
     }
 }

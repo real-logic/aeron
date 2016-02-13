@@ -23,12 +23,10 @@ import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
 
 import java.net.*;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-import static java.lang.String.format;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
 import static uk.co.real_logic.aeron.driver.NetworkUtil.*;
@@ -51,9 +49,6 @@ public final class UdpChannel
     private static final String INTERFACE_KEY = "interface";
     private static final String GROUP_KEY = "group";
     private static final String ENDPOINT_KEY = "endpoint";
-
-    private static final String[] UNICAST_KEYS = {LOCAL_KEY, REMOTE_KEY};
-    private static final String[] MULTICAST_KEYS = {GROUP_KEY, INTERFACE_KEY};
 
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -141,7 +136,7 @@ public final class UdpChannel
 
     private static InterfaceSearchAddress getInterfaceSearchAddress(final AeronUri uri) throws UnknownHostException
     {
-        InterfaceSearchAddress interfaceSearchAddress;
+        final InterfaceSearchAddress interfaceSearchAddress;
 
         if (uri.containsKey(INTERFACE_KEY))
         {
@@ -161,7 +156,7 @@ public final class UdpChannel
 
     private static InetSocketAddress getEndpointAddress(final AeronUri uri) throws UnknownHostException
     {
-        InetSocketAddress endpointAddress;
+        final InetSocketAddress endpointAddress;
 
         if (uri.containsKey(ENDPOINT_KEY))
         {
@@ -374,6 +369,7 @@ public final class UdpChannel
         {
             return true;
         }
+
         if (o == null || getClass() != o.getClass())
         {
             return false;
@@ -521,7 +517,8 @@ public final class UdpChannel
     }
 
     private static String errorNoMatchingInterfaces(
-        final Collection<NetworkInterface> filteredIfcs, final InterfaceSearchAddress address)
+        final Collection<NetworkInterface> filteredIfcs,
+        final InterfaceSearchAddress address)
         throws SocketException
     {
         final StringBuilder builder = new StringBuilder();
@@ -532,8 +529,7 @@ public final class UdpChannel
 
         if (filteredIfcs.size() > 0)
         {
-            builder.append(lineSeparator())
-                .append("  Candidates:");
+            builder.append(lineSeparator()).append("  Candidates:");
 
             for (final NetworkInterface ifc : filteredIfcs)
             {

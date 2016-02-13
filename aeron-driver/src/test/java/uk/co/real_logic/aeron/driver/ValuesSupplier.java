@@ -3,7 +3,6 @@ package uk.co.real_logic.aeron.driver;
 import org.junit.experimental.theories.ParameterSignature;
 import org.junit.experimental.theories.ParameterSupplier;
 import org.junit.experimental.theories.PotentialAssignment;
-import org.junit.experimental.theories.suppliers.TestedOn;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,16 +13,17 @@ import java.util.List;
  */
 public class ValuesSupplier extends ParameterSupplier
 {
-    @Override
-    public List<PotentialAssignment> getValueSources(ParameterSignature sig)
+    public List<PotentialAssignment> getValueSources(final ParameterSignature sig)
     {
-        List<PotentialAssignment> list = new ArrayList<PotentialAssignment>();
-        Values testedOn = sig.getAnnotation(Values.class);
-        String[] values = testedOn.value();
+        final List<PotentialAssignment> list = new ArrayList<>();
+        final Values testedOn = sig.getAnnotation(Values.class);
+        final String[] values = testedOn.value();
+
         for (final String s : values)
         {
             list.add(PotentialAssignment.forValue("value", s));
         }
+
         return list;
     }
 }

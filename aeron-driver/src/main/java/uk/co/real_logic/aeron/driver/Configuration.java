@@ -134,7 +134,10 @@ public class Configuration
     public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
 
     /**
-     * Should the log buffers be pre-zero'ed so the files are not sparse. Defaults to true.
+     * Should the log buffers be pre-zero'ed so the files are not sparse. Defaults to false.
+     *
+     * Should be set to true if log buffers are on HDD or if one wants to confirm sufficient memory is
+     * available at setup of publications or connections.
      */
     public static final String PRE_ZERO_TERM_BUFFERS_PROP_NAME = "aeron.term.buffer.preZero";
     public static final String PRE_ZERO_TERM_BUFFERS = getProperty(PRE_ZERO_TERM_BUFFERS_PROP_NAME);

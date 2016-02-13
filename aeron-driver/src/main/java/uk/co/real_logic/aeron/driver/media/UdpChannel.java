@@ -17,9 +17,9 @@ package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.aeron.ErrorCode;
 import uk.co.real_logic.aeron.driver.UriUtil;
+import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.aeron.driver.uri.AeronUri;
 import uk.co.real_logic.aeron.driver.uri.InterfaceSearchAddress;
-import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.agrona.BitUtil;
 
 import java.net.*;

@@ -65,7 +65,7 @@ public class Configuration
     /**
      * Property name for length of the memory mapped buffers for the counters file
      */
-    public static final String COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.dir.counters.length";
+    public static final String COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
 
     /**
      * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).

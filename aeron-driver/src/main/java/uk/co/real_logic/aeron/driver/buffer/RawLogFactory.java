@@ -22,7 +22,6 @@ import uk.co.real_logic.agrona.LangUtil;
 import java.io.File;
 import java.nio.channels.FileChannel;
 
-import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computeLogLength;
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
@@ -33,7 +32,7 @@ public class RawLogFactory implements AutoCloseable
     private final int publicationTermBufferLength;
     private final int imagesTermBufferMaxLength;
     private final int ipcPublicationTermBufferLength;
-    private final boolean preZeroLog;
+    private final boolean preZeroTermBuffers;
 
     private final FileChannel blankTemplate;
     private final File publicationsDir;
@@ -45,10 +44,10 @@ public class RawLogFactory implements AutoCloseable
         final int publicationTermBufferLength,
         final int imagesTermBufferMaxLength,
         final int ipcPublicationTermBufferLength,
-        final boolean preZeroLog,
+        final boolean preZeroTermBuffers,
         final EventLogger logger)
     {
-        this.preZeroLog = preZeroLog;
+        this.preZeroTermBuffers = preZeroTermBuffers;
         this.logger = logger;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
@@ -64,11 +63,10 @@ public class RawLogFactory implements AutoCloseable
 
         int maxTermLength = Math.max(publicationTermBufferLength, ipcPublicationTermBufferLength);
         maxTermLength = Math.max(maxTermLength, imagesTermBufferMaxLength);
-        final long blankTemplateLength = computeLogLength(maxTermLength);
 
-        if (preZeroLog)
+        if (preZeroTermBuffers)
         {
-            blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", blankTemplateLength);
+            blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", maxTermLength);
         }
         else
         {
@@ -161,6 +159,6 @@ public class RawLogFactory implements AutoCloseable
     {
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, blankTemplate, preZeroLog, termBufferLength, logger);
+        return new MappedRawLog(location, blankTemplate, preZeroTermBuffers, termBufferLength, logger);
     }
 }

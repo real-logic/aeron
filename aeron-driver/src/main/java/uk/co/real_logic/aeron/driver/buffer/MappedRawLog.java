@@ -49,7 +49,7 @@ class MappedRawLog implements RawLog
     MappedRawLog(
         final File location,
         final FileChannel blankTemplate,
-        final boolean preZeroLog,
+        final boolean preZeroTermBuffers,
         final int termLength,
         final EventLogger logger)
     {
@@ -64,9 +64,12 @@ class MappedRawLog implements RawLog
             final long logLength = computeLogLength(termLength);
             raf.setLength(logLength);
 
-            if (preZeroLog)
+            if (preZeroTermBuffers)
             {
-                blankTemplate.transferTo(0, logLength, logChannel);
+                for (int i = 0; i < PARTITION_COUNT; i++)
+                {
+                    blankTemplate.transferTo(0, termLength, logChannel);
+                }
             }
 
             if (logLength <= Integer.MAX_VALUE)

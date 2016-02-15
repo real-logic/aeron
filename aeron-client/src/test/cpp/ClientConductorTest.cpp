@@ -588,6 +588,32 @@ TEST_F(ClientConductorTest, shouldNotCallInactiveConnecitonIfUinterestingConnect
         STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
     m_conductor.onUnavailableImage(STREAM_ID, connectionId + 1);
     EXPECT_TRUE(sub->hasImage(SESSION_ID));
+
+    testing::Mock::VerifyAndClearExpectations(&m_handlers);  // avoid catching unavailable call on sub release
+}
+
+TEST_F(ClientConductorTest, shouldCallUnavailableImageIfSubscriptionReleased)
+{
+    std::int64_t id = m_conductor.addSubscription(CHANNEL, STREAM_ID);
+    std::int64_t connectionId = id + 1;
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_handlers, onNewSub(CHANNEL, STREAM_ID, id))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_handlers, onNewImage(testing::_))
+        .Times(1)
+        .InSequence(sequence);
+    EXPECT_CALL(m_handlers, onInactive(testing::_))
+        .Times(1);
+
+    ImageBuffersReadyDefn::SubscriberPosition positions[] = { { 1, id } };
+
+    m_conductor.onOperationSuccess(id);
+    std::shared_ptr<Subscription> sub = m_conductor.findSubscription(id);
+    m_conductor.onAvailableImage(
+        STREAM_ID, SESSION_ID, m_logFileName, SOURCE_IDENTITY, 1, positions, connectionId);
+    EXPECT_TRUE(sub->hasImage(SESSION_ID));
 }
 
 TEST_F(ClientConductorTest, shouldClosePublicationOnInterServiceTimeout)

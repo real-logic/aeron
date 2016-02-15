@@ -151,7 +151,6 @@ class MappedRawLog implements RawLog
     public ByteBuffer[] sliceTerms()
     {
         final ByteBuffer[] terms = new ByteBuffer[PARTITION_COUNT];
-        final int termLength = partitions[0].termBuffer().capacity();
 
         if (termLength < ONE_GIG)
         {

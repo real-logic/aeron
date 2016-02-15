@@ -68,7 +68,7 @@ public class Configuration
     public static final String COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.dir.counters.length";
 
     /**
-     * Property name for length of the initial window  which must be sufficient for Bandwidth Delay Produce (BDP).
+     * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).
      */
     public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
 
@@ -83,7 +83,7 @@ public class Configuration
     public static final String SOCKET_RCVBUF_LENGTH_PROP_NAME = "aeron.socket.so_rcvbuf";
 
     /**
-     * Property name for SO_SNDBUF setting on UDP sockets  which must be sufficient for Bandwidth Delay Produce (BDP).
+     * Property name for SO_SNDBUF setting on UDP sockets which must be sufficient for Bandwidth Delay Produce (BDP).
      */
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 
@@ -148,7 +148,7 @@ public class Configuration
     public static final int TERM_BUFFER_IPC_LENGTH_DEFAULT = 64 * 1024 * 1024;
 
     /**
-     * Property name for term buffer length (in bytes) for IPC logbuffers
+     * Property name for term buffer length (in bytes) for IPC log buffers
      */
     public static final String IPC_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.ipc.term.buffer.length";
     public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
@@ -387,7 +387,7 @@ public class Configuration
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
 
     /**
-     * how often to check liveness and cleanup
+     * How often to check liveness and cleanup
      */
     public static final long HEARTBEAT_TIMEOUT_NS = TimeUnit.SECONDS.toNanos(1);
 

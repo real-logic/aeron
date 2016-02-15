@@ -64,14 +64,7 @@ public class RawLogFactory implements AutoCloseable
         int maxTermLength = Math.max(publicationTermBufferLength, ipcPublicationTermBufferLength);
         maxTermLength = Math.max(maxTermLength, imagesTermBufferMaxLength);
 
-        if (preZeroTermBuffers)
-        {
-            blankTemplate = createTemplateFile(dataDirectoryName, "blankTemplate", maxTermLength);
-        }
-        else
-        {
-            blankTemplate = null;
-        }
+        blankTemplate = preZeroTermBuffers ? createTemplateFile(dataDirectoryName, "blankTemplate", maxTermLength) : null;
     }
 
     /**

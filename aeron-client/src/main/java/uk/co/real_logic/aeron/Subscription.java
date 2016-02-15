@@ -255,6 +255,7 @@ public class Subscription implements AutoCloseable
 
                 for (final Image image : images)
                 {
+                    clientConductor.unavailableImageHandler().onUnavailableImage(image);
                     clientConductor.lingerResource(image.managedResource());
                 }
 

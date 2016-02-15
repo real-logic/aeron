@@ -277,6 +277,11 @@ class ClientConductor implements Agent, DriverListener
         return (epochClock.time() <= (timeOfLastStatusMessage + publicationConnectionTimeoutMs));
     }
 
+    UnavailableImageHandler unavailableImageHandler()
+    {
+        return unavailableImageHandler;
+    }
+
     private void checkDriverHeartbeat()
     {
         final long now = epochClock.time();

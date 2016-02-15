@@ -95,7 +95,7 @@ public class Publication implements AutoCloseable
         this.channel = channel;
         this.streamId = streamId;
         this.sessionId = sessionId;
-        this.initialTermId = initialTermId(logMetaDataBuffer);
+        this.initialTermId = LogBufferDescriptor.initialTermId(logMetaDataBuffer);
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
@@ -142,6 +142,17 @@ public class Publication implements AutoCloseable
     public int sessionId()
     {
         return sessionId;
+    }
+
+    /**
+     * The initial term id assigned when this {@link Publication} was created. This can be used to determine how many
+     * terms have passed since creation.
+     *
+     * @return the initial term id.
+     */
+    public int initialTermId()
+    {
+        return initialTermId;
     }
 
     /**

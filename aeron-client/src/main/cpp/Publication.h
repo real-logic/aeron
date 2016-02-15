@@ -98,6 +98,17 @@ public:
     }
 
     /**
+     * The initial term id assigned when this Publication was created. This can be used to determine how many
+     * terms have passed since creation.
+     *
+     * @return the initial term id.
+     */
+    inline std::int32_t initialTermId() const
+    {
+        return m_initialTermId;
+    }
+
+    /**
      * Registration Id returned by Aeron::addPublication when this Publication was added.
      *
      * @return the registrationId of the publication.

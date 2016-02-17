@@ -506,7 +506,7 @@ public final class MediaDriver implements AutoCloseable
                     }
                     else
                     {
-                        preZeroTermBuffers = Boolean.FALSE;
+                        preZeroTermBuffers = Boolean.TRUE;
                     }
                 }
 

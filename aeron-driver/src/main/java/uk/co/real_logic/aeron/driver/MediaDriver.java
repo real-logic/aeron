@@ -227,7 +227,8 @@ public final class MediaDriver implements AutoCloseable
 
     /**
      * Launch an isolated MediaDriver embedded in the current process with a provided configuration context and a generated
-     * aeronDirectoryName (overwrites configured aeronDirectoryName) that can be retrieved by calling aeronDirectoryName.
+     * aeronDirectoryName (overwrites configured {@link Context#aeronDirectoryName()}) that can be retrieved by calling
+     * aeronDirectoryName.
      *
      * If the aeronDirectoryName is configured then it will be used.
      *

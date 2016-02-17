@@ -582,12 +582,12 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == unicastFlowControlSupplier)
             {
-                unicastFlowControlSupplier = Configuration::unicastFlowControlStrategy;
+                unicastFlowControlSupplier = Configuration::unicastFlowControlSupplier;
             }
 
             if (null == multicastFlowControlSupplier)
             {
-                multicastFlowControlSupplier = Configuration::multicastFlowControlStrategy;
+                multicastFlowControlSupplier = Configuration::multicastFlowControlSupplier;
             }
 
             if (0 == ipcPublicationTermBufferLength)
@@ -810,15 +810,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context eventConsumer(final Consumer<String> value)
+        public Context eventConsumer(final Consumer<String> consumer)
         {
-            this.eventConsumer = value;
+            this.eventConsumer = consumer;
             return this;
         }
 
-        public Context eventLogger(final EventLogger value)
+        public Context eventLogger(final EventLogger logger)
         {
-            this.eventLogger = value;
+            this.eventLogger = logger;
             return this;
         }
 
@@ -1103,26 +1103,6 @@ public final class MediaDriver implements AutoCloseable
             return eventLogger::logException;
         }
 
-        public double dataLossRate()
-        {
-            return dataLossRate;
-        }
-
-        public long dataLossSeed()
-        {
-            return dataLossSeed;
-        }
-
-        public double controlLossRate()
-        {
-            return controlLossRate;
-        }
-
-        public long controlLossSeed()
-        {
-            return controlLossSeed;
-        }
-
         public int mtuLength()
         {
             return mtuLength;
@@ -1247,12 +1227,12 @@ public final class MediaDriver implements AutoCloseable
         {
             if (null == dataLossGenerator)
             {
-                dataLossGenerator(Configuration.createLossGenerator(dataLossRate, dataLossSeed));
+                dataLossGenerator(Configuration.lossGeneratorSupplier(dataLossRate, dataLossSeed));
             }
 
             if (null == controlLossGenerator)
             {
-                controlLossGenerator(Configuration.createLossGenerator(controlLossRate, controlLossSeed));
+                controlLossGenerator(Configuration.lossGeneratorSupplier(controlLossRate, controlLossSeed));
             }
         }
     }

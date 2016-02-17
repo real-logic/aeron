@@ -498,7 +498,7 @@ public class Configuration
         return agentIdleStrategy(SHARED_IDLE_STRATEGY);
     }
 
-    public static FlowControl unicastFlowControlStrategy()
+    public static FlowControl unicastFlowControlSupplier()
     {
         FlowControl flowControl = null;
         try
@@ -513,7 +513,7 @@ public class Configuration
         return flowControl;
     }
 
-    public static FlowControl multicastFlowControlStrategy()
+    public static FlowControl multicastFlowControlSupplier()
     {
         FlowControl flowControl = null;
         try
@@ -568,7 +568,7 @@ public class Configuration
         return Double.parseDouble(getProperty(CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
     }
 
-    public static LossGenerator createLossGenerator(final double lossRate, final long lossSeed)
+    public static LossGenerator lossGeneratorSupplier(final double lossRate, final long lossSeed)
     {
         if (0 == lossRate)
         {

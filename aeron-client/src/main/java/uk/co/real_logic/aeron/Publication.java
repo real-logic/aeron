@@ -362,7 +362,7 @@ public class Publication implements AutoCloseable
                 final long result = termAppender.claim(headerWriter, length, bufferClaim);
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);
             }
-            else if (!clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
+            else if (clientConductor.isPublicationConnected(timeOfLastStatusMessage(logMetaDataBuffer)))
             {
                 newPosition = BACK_PRESSURED;
             }

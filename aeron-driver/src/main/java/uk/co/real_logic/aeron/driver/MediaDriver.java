@@ -89,25 +89,25 @@ public final class MediaDriver implements AutoCloseable
     {
         final Properties properties = new Properties(System.getProperties());
 
-        try (final InputStream inputStream = MediaDriver.class.getClassLoader().getResourceAsStream(filenameOrUrl))
+        try (final InputStream in = MediaDriver.class.getClassLoader().getResourceAsStream(filenameOrUrl))
         {
-            properties.load(inputStream);
+            properties.load(in);
         }
         catch (final Exception ignore)
         {
         }
 
-        try (final FileInputStream inputStream = new FileInputStream(filenameOrUrl))
+        try (final FileInputStream in = new FileInputStream(filenameOrUrl))
         {
-            properties.load(inputStream);
+            properties.load(in);
         }
         catch (final Exception ignore)
         {
         }
 
-        try (final InputStream inputStream = new URL(filenameOrUrl).openStream())
+        try (final InputStream in = new URL(filenameOrUrl).openStream())
         {
-            properties.load(inputStream);
+            properties.load(in);
         }
         catch (final Exception ignore)
         {
@@ -1142,11 +1142,6 @@ public final class MediaDriver implements AutoCloseable
         public Consumer<String> eventConsumer()
         {
             return eventConsumer;
-        }
-
-        public int eventBufferLength()
-        {
-            return eventBufferLength;
         }
 
         public RingBuffer toEventReader()

@@ -296,8 +296,8 @@ public final class MediaDriver implements AutoCloseable
 
     private void freeSocketsForReuseOnWindows()
     {
-        ctx.receiverTransportPoller().selectNowWithoutProcessing();
-        ctx.senderTransportPoller().selectNowWithoutProcessing();
+        ctx.dataTransportPoller().selectNowWithoutProcessing();
+        ctx.controlTransportPoller().selectNowWithoutProcessing();
     }
 
     private MediaDriver start()
@@ -410,8 +410,8 @@ public final class MediaDriver implements AutoCloseable
     public static class Context extends CommonContext
     {
         private RawLogFactory rawLogFactory;
-        private DataTransportPoller receiverTransportPoller;
-        private ControlTransportPoller senderTransportPoller;
+        private DataTransportPoller dataTransportPoller;
+        private ControlTransportPoller controlTransportPoller;
         private Supplier<FlowControl> unicastFlowControlSupplier;
         private Supplier<FlowControl> multicastFlowControlSupplier;
         private EpochClock epochClock;
@@ -495,21 +495,6 @@ public final class MediaDriver implements AutoCloseable
             {
                 concludeNullProperties();
 
-                receiverTransportPoller(new DataTransportPoller());
-                senderTransportPoller(new ControlTransportPoller());
-
-                if (null == preZeroTermBuffers)
-                {
-                    if (null != Configuration.PRE_ZERO_TERM_BUFFERS)
-                    {
-                        preZeroTermBuffers = Boolean.valueOf(Configuration.PRE_ZERO_TERM_BUFFERS);
-                    }
-                    else
-                    {
-                        preZeroTermBuffers = Boolean.TRUE;
-                    }
-                }
-
                 Configuration.validateTermBufferLength(publicationTermBufferLength());
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
 
@@ -576,7 +561,7 @@ public final class MediaDriver implements AutoCloseable
                 nanoClock = new SystemNanoClock();
             }
 
-            if (threadingMode == null)
+            if (null == threadingMode)
             {
                 threadingMode = Configuration.threadingMode();
             }
@@ -619,6 +604,28 @@ public final class MediaDriver implements AutoCloseable
             {
                 receiveChannelEndpointSupplier = Configuration.receiveChannelEndpointSupplier();
             }
+
+            if (null == dataTransportPoller)
+            {
+                dataTransportPoller = new DataTransportPoller();
+            }
+
+            if (null == controlTransportPoller)
+            {
+                controlTransportPoller = new ControlTransportPoller();
+            }
+
+            if (null == preZeroTermBuffers)
+            {
+                if (null != Configuration.PRE_ZERO_TERM_BUFFERS)
+                {
+                    preZeroTermBuffers = Boolean.valueOf(Configuration.PRE_ZERO_TERM_BUFFERS);
+                }
+                else
+                {
+                    preZeroTermBuffers = Boolean.TRUE;
+                }
+            }
         }
 
         public Context epochClock(final EpochClock clock)
@@ -653,15 +660,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context receiverTransportPoller(final DataTransportPoller transportPoller)
+        public Context dataTransportPoller(final DataTransportPoller transportPoller)
         {
-            this.receiverTransportPoller = transportPoller;
+            this.dataTransportPoller = transportPoller;
             return this;
         }
 
-        public Context senderTransportPoller(final ControlTransportPoller transportPoller)
+        public Context controlTransportPoller(final ControlTransportPoller transportPoller)
         {
-            this.senderTransportPoller = transportPoller;
+            this.controlTransportPoller = transportPoller;
             return this;
         }
 
@@ -951,14 +958,14 @@ public final class MediaDriver implements AutoCloseable
             return rawLogFactory;
         }
 
-        public DataTransportPoller receiverTransportPoller()
+        public DataTransportPoller dataTransportPoller()
         {
-            return receiverTransportPoller;
+            return dataTransportPoller;
         }
 
-        public ControlTransportPoller senderTransportPoller()
+        public ControlTransportPoller controlTransportPoller()
         {
-            return senderTransportPoller;
+            return controlTransportPoller;
         }
 
         public Supplier<FlowControl> unicastFlowControlSupplier()

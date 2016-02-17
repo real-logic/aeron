@@ -43,7 +43,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     public Sender(final MediaDriver.Context ctx)
     {
-        this.controlTransportPoller = ctx.senderTransportPoller();
+        this.controlTransportPoller = ctx.controlTransportPoller();
         this.commandQueue = ctx.senderCommandQueue();
         this.conductorProxy = ctx.fromSenderDriverConductorProxy();
         this.totalBytesSent = ctx.systemCounters().bytesSent();

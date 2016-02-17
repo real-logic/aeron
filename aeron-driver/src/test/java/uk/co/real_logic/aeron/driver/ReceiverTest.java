@@ -126,8 +126,8 @@ public class ReceiverTest
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .receiverTransportPoller(mockDataTransportPoller)
-            .senderTransportPoller(mockControlTransportPoller)
+            .dataTransportPoller(mockDataTransportPoller)
+            .controlTransportPoller(mockControlTransportPoller)
             .rawLogBuffersFactory(mockRawLogFactory)
             .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))

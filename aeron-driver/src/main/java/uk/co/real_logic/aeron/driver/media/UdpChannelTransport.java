@@ -29,34 +29,36 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
+import static java.net.StandardSocketOptions.SO_RCVBUF;
+import static java.net.StandardSocketOptions.SO_SNDBUF;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLength;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameVersion;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
+    protected InetSocketAddress bindAddress;
+    protected InetSocketAddress endPointAddress;
+    protected InetSocketAddress connectAddress;
+    protected SelectionKey selectionKey;
+    protected UdpTransportPoller transportPoller;
+    protected final UdpChannel udpChannel;
+    protected final EventLogger logger;
     protected final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     protected final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
-    protected SelectionKey selectionKey;
-    protected UdpTransportPoller transportPoller;
-    protected InetSocketAddress bindSocketAddress;
-    protected InetSocketAddress endPointSocketAddress;
-    protected InetSocketAddress connectAddress;
-    protected final UdpChannel udpChannel;
-    protected final EventLogger logger;
 
     public UdpChannelTransport(
         final UdpChannel udpChannel,
-        final InetSocketAddress endPointSocketAddress,
-        final InetSocketAddress bindSocketAddress,
+        final InetSocketAddress endPointAddress,
+        final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
         final EventLogger logger)
     {
         this.udpChannel = udpChannel;
         this.logger = logger;
-        this.endPointSocketAddress = endPointSocketAddress;
-        this.bindSocketAddress = bindSocketAddress;
+        this.endPointAddress = endPointAddress;
+        this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
     }
 
@@ -79,8 +81,8 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 }
 
                 receiveDatagramChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-                receiveDatagramChannel.bind(new InetSocketAddress(endPointSocketAddress.getPort()));
-                receiveDatagramChannel.join(endPointSocketAddress.getAddress(), localInterface);
+                receiveDatagramChannel.bind(new InetSocketAddress(endPointAddress.getPort()));
+                receiveDatagramChannel.join(endPointAddress.getAddress(), localInterface);
                 sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
 
                 if (null != connectAddress)
@@ -90,7 +92,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
             }
             else
             {
-                sendDatagramChannel.bind(bindSocketAddress);
+                sendDatagramChannel.bind(bindAddress);
 
                 if (null != connectAddress)
                 {
@@ -100,12 +102,12 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
             if (0 != Configuration.SOCKET_SNDBUF_LENGTH)
             {
-                sendDatagramChannel.setOption(StandardSocketOptions.SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
+                sendDatagramChannel.setOption(SO_SNDBUF, Configuration.SOCKET_SNDBUF_LENGTH);
             }
 
             if (0 != Configuration.SOCKET_RCVBUF_LENGTH)
             {
-                receiveDatagramChannel.setOption(StandardSocketOptions.SO_RCVBUF, Configuration.SOCKET_RCVBUF_LENGTH);
+                receiveDatagramChannel.setOption(SO_RCVBUF, Configuration.SOCKET_RCVBUF_LENGTH);
             }
 
             sendDatagramChannel.configureBlocking(false);
@@ -113,8 +115,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            throw new RuntimeException(String.format(
-                "channel \"%s\" : %s", udpChannel.originalUriString(), ex.toString()), ex);
+            throw new RuntimeException(String.format("channel \"%s\" : %s", udpChannel.originalUriString(), ex), ex);
         }
     }
 

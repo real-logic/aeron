@@ -130,7 +130,6 @@ public class DriverConductor implements Agent
 
     public void onClose()
     {
-        rawLogFactory.close();
         networkPublications.forEach(NetworkPublication::close);
         publicationImages.forEach(PublicationImage::close);
         directPublications.forEach(DirectPublication::close);

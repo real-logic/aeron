@@ -38,6 +38,8 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 class MappedRawLog implements RawLog
 {
     private static final int ONE_GIG = 1 << 30;
+    private static final int PAGE_LENGTH = 4096;
+    private static final ByteBuffer PAGE_BUFFER = ByteBuffer.allocateDirect(PAGE_LENGTH);
 
     private final int termLength;
     private final LogBufferPartition[] partitions;
@@ -48,7 +50,6 @@ class MappedRawLog implements RawLog
 
     MappedRawLog(
         final File location,
-        final FileChannel blankTemplate,
         final boolean preZeroTermBuffers,
         final int termLength,
         final EventLogger logger)
@@ -66,9 +67,10 @@ class MappedRawLog implements RawLog
 
             if (preZeroTermBuffers)
             {
-                for (int i = 0; i < PARTITION_COUNT; i++)
+                for (int i = 0; i < logLength; i += PAGE_LENGTH)
                 {
-                    blankTemplate.transferTo(0, termLength, logChannel);
+                    PAGE_BUFFER.clear();
+                    logChannel.write(PAGE_BUFFER);
                 }
             }
 

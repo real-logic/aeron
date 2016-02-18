@@ -17,24 +17,21 @@ package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.LangUtil;
 
 import java.io.File;
-import java.nio.channels.FileChannel;
 
 import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamLocation;
 
 /**
  * Factory for creating new {@link RawLog} in the source publications or rebuilt publication images directories as appropriate.
  */
-public class RawLogFactory implements AutoCloseable
+public class RawLogFactory
 {
     private final int publicationTermBufferLength;
     private final int imagesTermBufferMaxLength;
     private final int ipcPublicationTermBufferLength;
     private final boolean preZeroTermBuffers;
 
-    private final FileChannel blankTemplate;
     private final File publicationsDir;
     private final File imagesDir;
     private final EventLogger logger;
@@ -60,29 +57,6 @@ public class RawLogFactory implements AutoCloseable
         this.publicationTermBufferLength = publicationTermBufferLength;
         this.imagesTermBufferMaxLength = imagesTermBufferMaxLength;
         this.ipcPublicationTermBufferLength = ipcPublicationTermBufferLength;
-
-        int maxTermLength = Math.max(publicationTermBufferLength, ipcPublicationTermBufferLength);
-        maxTermLength = Math.max(maxTermLength, imagesTermBufferMaxLength);
-
-        blankTemplate = preZeroTermBuffers ? createTemplateFile(dataDirectoryName, "blankTemplate", maxTermLength) : null;
-    }
-
-    /**
-     * Close the template files.
-     */
-    public void close()
-    {
-        try
-        {
-            if (null != blankTemplate)
-            {
-                blankTemplate.close();
-            }
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
     }
 
     /**
@@ -134,14 +108,6 @@ public class RawLogFactory implements AutoCloseable
         return newInstance(publicationsDir, "ipc", sessionId, streamId, correlationId, ipcPublicationTermBufferLength);
     }
 
-    private static FileChannel createTemplateFile(final String dataDir, final String name, final long length)
-    {
-        final File file = new File(dataDir, name);
-        file.deleteOnExit();
-
-        return IoUtil.createEmptyFile(file, length);
-    }
-
     private RawLog newInstance(
         final File rootDir,
         final String channel,
@@ -152,6 +118,6 @@ public class RawLogFactory implements AutoCloseable
     {
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, blankTemplate, preZeroTermBuffers, termBufferLength, logger);
+        return new MappedRawLog(location, preZeroTermBuffers, termBufferLength, logger);
     }
 }

@@ -39,7 +39,6 @@ class MappedRawLog implements RawLog
 {
     private static final int ONE_GIG = 1 << 30;
     private static final int PAGE_LENGTH = 4096;
-    private static final ByteBuffer PAGE_BUFFER = ByteBuffer.allocateDirect(PAGE_LENGTH);
 
     private final int termLength;
     private final LogBufferPartition[] partitions;
@@ -65,18 +64,11 @@ class MappedRawLog implements RawLog
             final long logLength = computeLogLength(termLength);
             raf.setLength(logLength);
 
-            if (preZeroTermBuffers)
-            {
-                for (int i = 0; i < logLength; i += PAGE_LENGTH)
-                {
-                    PAGE_BUFFER.clear();
-                    logChannel.write(PAGE_BUFFER);
-                }
-            }
-
             if (logLength <= Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
+                zeroBuffer(preZeroTermBuffers, logLength, mappedBuffer);
+
                 mappedBuffers = new MappedByteBuffer[]{mappedBuffer};
                 final int metaDataSectionOffset = termLength * PARTITION_COUNT;
 
@@ -104,6 +96,8 @@ class MappedRawLog implements RawLog
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
                     mappedBuffers[i] = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
+                    zeroBuffer(preZeroTermBuffers, termLength, mappedBuffers[i]);
+
 
                     partitions[i] = new LogBufferPartition(
                         new UnsafeBuffer(mappedBuffers[i]),
@@ -180,5 +174,16 @@ class MappedRawLog implements RawLog
     public String logFileName()
     {
         return logFile.getAbsolutePath();
+    }
+
+    private static void zeroBuffer(final boolean shouldZero, final long length, final MappedByteBuffer buffer)
+    {
+        if (shouldZero)
+        {
+            for (int i = 0; i < length; i += PAGE_LENGTH)
+            {
+                buffer.putInt(i, 0);
+            }
+        }
     }
 }

@@ -182,7 +182,7 @@ class MappedRawLog implements RawLog
         {
             for (int i = 0; i < length; i += PAGE_LENGTH)
             {
-                buffer.putInt(i, 0);
+                buffer.put(i, (byte)0);
             }
         }
     }

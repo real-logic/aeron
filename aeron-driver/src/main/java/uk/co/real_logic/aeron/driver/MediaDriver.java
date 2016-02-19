@@ -769,9 +769,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context preZeroTermBuffers(final Boolean preZeroLogBuffers)
+        public Context termBufferSparseFile(final Boolean termBufferSparseFile)
         {
-            this.termBufferSparseFile = preZeroLogBuffers;
+            this.termBufferSparseFile = termBufferSparseFile;
             return this;
         }
 

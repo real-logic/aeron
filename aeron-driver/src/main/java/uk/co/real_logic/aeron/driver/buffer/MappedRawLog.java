@@ -49,7 +49,7 @@ class MappedRawLog implements RawLog
 
     MappedRawLog(
         final File location,
-        final boolean preZeroTermBuffers,
+        final boolean useSparseFiles,
         final int termLength,
         final EventLogger logger)
     {
@@ -67,7 +67,10 @@ class MappedRawLog implements RawLog
             if (logLength <= Integer.MAX_VALUE)
             {
                 final MappedByteBuffer mappedBuffer = logChannel.map(READ_WRITE, 0, logLength);
-                zeroBuffer(preZeroTermBuffers, logLength, mappedBuffer);
+                if (!useSparseFiles)
+                {
+                    allocatePages(mappedBuffer, (int)logLength);
+                }
 
                 mappedBuffers = new MappedByteBuffer[]{mappedBuffer};
                 final int metaDataSectionOffset = termLength * PARTITION_COUNT;
@@ -96,8 +99,10 @@ class MappedRawLog implements RawLog
                 for (int i = 0; i < PARTITION_COUNT; i++)
                 {
                     mappedBuffers[i] = logChannel.map(READ_WRITE, termLength * (long)i, termLength);
-                    zeroBuffer(preZeroTermBuffers, termLength, mappedBuffers[i]);
-
+                    if (!useSparseFiles)
+                    {
+                        allocatePages(mappedBuffers[i], termLength);
+                    }
 
                     partitions[i] = new LogBufferPartition(
                         new UnsafeBuffer(mappedBuffers[i]),
@@ -176,14 +181,11 @@ class MappedRawLog implements RawLog
         return logFile.getAbsolutePath();
     }
 
-    private static void zeroBuffer(final boolean shouldZero, final long length, final MappedByteBuffer buffer)
+    private static void allocatePages(final MappedByteBuffer buffer, final int length)
     {
-        if (shouldZero)
+        for (int i = 0; i < length; i += PAGE_LENGTH)
         {
-            for (int i = 0; i < length; i += PAGE_LENGTH)
-            {
-                buffer.put(i, (byte)0);
-            }
+            buffer.put(i, (byte)0);
         }
     }
 }

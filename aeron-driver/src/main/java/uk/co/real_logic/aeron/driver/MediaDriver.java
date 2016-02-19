@@ -444,7 +444,7 @@ public final class MediaDriver implements AutoCloseable
         private long clientLivenessTimeoutNs = CLIENT_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = PUBLICATION_UNBLOCK_TIMEOUT_NS;
 
-        private Boolean preZeroTermBuffers;
+        private Boolean termBufferSparseFile;
         private int publicationTermBufferLength;
         private int ipcPublicationTermBufferLength;
         private int maxImageTermBufferLength;
@@ -536,7 +536,7 @@ public final class MediaDriver implements AutoCloseable
                     publicationTermBufferLength,
                     maxImageTermBufferLength,
                     ipcPublicationTermBufferLength,
-                    preZeroTermBuffers,
+                    termBufferSparseFile,
                     eventLogger));
 
                 concludeIdleStrategies();
@@ -616,15 +616,15 @@ public final class MediaDriver implements AutoCloseable
                 controlTransportPoller = new ControlTransportPoller();
             }
 
-            if (null == preZeroTermBuffers)
+            if (null == termBufferSparseFile)
             {
-                if (null != Configuration.PRE_ZERO_TERM_BUFFERS)
+                if (null != Configuration.TERM_BUFFER_SPARSE_FILE)
                 {
-                    preZeroTermBuffers = Boolean.valueOf(Configuration.PRE_ZERO_TERM_BUFFERS);
+                    termBufferSparseFile = Boolean.valueOf(Configuration.TERM_BUFFER_SPARSE_FILE);
                 }
                 else
                 {
-                    preZeroTermBuffers = Boolean.TRUE;
+                    termBufferSparseFile = Boolean.FALSE;
                 }
             }
         }
@@ -771,7 +771,7 @@ public final class MediaDriver implements AutoCloseable
 
         public Context preZeroTermBuffers(final Boolean preZeroLogBuffers)
         {
-            this.preZeroTermBuffers = preZeroLogBuffers;
+            this.termBufferSparseFile = preZeroLogBuffers;
             return this;
         }
 

@@ -134,13 +134,13 @@ public class Configuration
     public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
 
     /**
-     * Should the log buffers be pre-zero'ed so the files are not sparse. Defaults to false.
+     * Should term buffers be created as sparse files. Defaults to false.
      *
-     * Should be set to true if log buffers are on HDD or if one wants to confirm sufficient memory is
-     * available at setup of publications or connections.
+     * If a platform supports spare files then log buffer creation is faster with pages being allocated as
+     * needed. This can help for large numbers of channels/streams but can result in latency pauses.
      */
-    public static final String PRE_ZERO_TERM_BUFFERS_PROP_NAME = "aeron.term.buffer.preZero";
-    public static final String PRE_ZERO_TERM_BUFFERS = getProperty(PRE_ZERO_TERM_BUFFERS_PROP_NAME);
+    public static final String TERM_BUFFER_SPARSE_FILE_PROP_NAME = "aeron.term.buffer.sparse.file";
+    public static final String TERM_BUFFER_SPARSE_FILE = getProperty(TERM_BUFFER_SPARSE_FILE_PROP_NAME);
 
     /**
      * Default term buffer length.

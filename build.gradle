@@ -323,7 +323,7 @@ project(':aeron-system-tests') {
 
     test {
         systemProperties(
-            'aeron.term.buffer.preZero' : 'false',
+            'aeron.term.buffer.sparse.file' : 'true',
             'aeron.event.log': System.properties['aeron.event.log'])
     }
 

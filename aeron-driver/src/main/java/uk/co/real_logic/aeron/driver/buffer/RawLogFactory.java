@@ -30,7 +30,7 @@ public class RawLogFactory
     private final int publicationTermBufferLength;
     private final int imagesTermBufferMaxLength;
     private final int ipcPublicationTermBufferLength;
-    private final boolean preZeroTermBuffers;
+    private final boolean useSparseFiles;
 
     private final File publicationsDir;
     private final File imagesDir;
@@ -41,10 +41,10 @@ public class RawLogFactory
         final int publicationTermBufferLength,
         final int imagesTermBufferMaxLength,
         final int ipcPublicationTermBufferLength,
-        final boolean preZeroTermBuffers,
+        final boolean useSparseFiles,
         final EventLogger logger)
     {
-        this.preZeroTermBuffers = preZeroTermBuffers;
+        this.useSparseFiles = useSparseFiles;
         this.logger = logger;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
@@ -118,6 +118,6 @@ public class RawLogFactory
     {
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, preZeroTermBuffers, termBufferLength, logger);
+        return new MappedRawLog(location, useSparseFiles, termBufferLength, logger);
     }
 }

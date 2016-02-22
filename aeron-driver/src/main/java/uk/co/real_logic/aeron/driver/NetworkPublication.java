@@ -76,7 +76,7 @@ class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
  */
 public class NetworkPublication
     extends NetworkPublicationPadding3
-    implements RetransmitSender, AutoCloseable, DriverManagedResource
+    implements RetransmitSender, DriverManagedResource
 {
     private final int positionBitsToShift;
     private final int initialTermId;

@@ -88,7 +88,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
     {
         networkPublications = ArrayUtil.remove(networkPublications, publication);
         publication.sendChannelEndpoint().unregisterForSend(publication);
-        conductorProxy.closeResource(publication);
+        conductorProxy.closeNetworkPublication(publication);
     }
 
     public void accept(final SenderCmd cmd)

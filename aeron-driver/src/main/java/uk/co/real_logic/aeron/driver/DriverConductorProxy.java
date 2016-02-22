@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.cmd.CloseResourceCmd;
+import uk.co.real_logic.aeron.driver.cmd.CloseNetworkPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.CreatePublicationImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
@@ -92,15 +92,15 @@ public class DriverConductorProxy
         }
     }
 
-    public void closeResource(final AutoCloseable resource)
+    public void closeNetworkPublication(final NetworkPublication publication)
     {
         if (isShared())
         {
-            driverConductor.onCloseResource(resource);
+            driverConductor.onClosePublication(publication);
         }
         else
         {
-            offer(new CloseResourceCmd(resource));
+            offer(new CloseNetworkPublicationCmd(publication));
         }
     }
 

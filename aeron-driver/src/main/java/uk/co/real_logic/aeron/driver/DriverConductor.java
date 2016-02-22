@@ -261,16 +261,9 @@ public class DriverConductor implements Agent
         }
     }
 
-    public void onCloseResource(final AutoCloseable resource)
+    public void onClosePublication(final NetworkPublication publication)
     {
-        try
-        {
-            resource.close();
-        }
-        catch (final Exception ex)
-        {
-            logger.logException(ex);
-        }
+        publication.close();
     }
 
     public void cleanupPublication(final NetworkPublication publication)

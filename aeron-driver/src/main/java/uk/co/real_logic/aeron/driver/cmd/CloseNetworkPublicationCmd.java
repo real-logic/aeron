@@ -16,18 +16,19 @@
 package uk.co.real_logic.aeron.driver.cmd;
 
 import uk.co.real_logic.aeron.driver.DriverConductor;
+import uk.co.real_logic.aeron.driver.NetworkPublication;
 
-public class CloseResourceCmd implements DriverConductorCmd
+public class CloseNetworkPublicationCmd implements DriverConductorCmd
 {
-    private final AutoCloseable resource;
+    private final NetworkPublication publication;
 
-    public CloseResourceCmd(final AutoCloseable resource)
+    public CloseNetworkPublicationCmd(final NetworkPublication publication)
     {
-        this.resource = resource;
+        this.publication = publication;
     }
 
     public void execute(DriverConductor conductor)
     {
-        conductor.onCloseResource(resource);
+        conductor.onClosePublication(publication);
     }
 }

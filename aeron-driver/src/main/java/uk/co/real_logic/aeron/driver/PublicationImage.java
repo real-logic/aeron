@@ -86,7 +86,7 @@ class PublicationImagePadding4 extends PublicationImageStatusFields
  */
 public class PublicationImage
     extends PublicationImagePadding4
-    implements AutoCloseable, NakMessageSender, DriverManagedResource
+    implements NakMessageSender, DriverManagedResource
 {
     public enum Status
     {

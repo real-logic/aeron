@@ -73,12 +73,13 @@ public class DirectPublicationTest
             .toDriverCommands(fromClientCommands)
             .rawLogBuffersFactory(mockRawLogFactory)
             .clientProxy(mock(ClientProxy.class))
-            .eventLogger(mock(EventLogger.class))
             .toConductorFromReceiverCommandQueue(mock(OneToOneConcurrentArrayQueue.class))
             .toConductorFromSenderCommandQueue(mock(OneToOneConcurrentArrayQueue.class))
             .toEventReader(mock(ManyToOneRingBuffer.class))
             .epochClock(new SystemEpochClock())
             .countersManager(countersManager)
+            .eventLogger(mock(EventLogger.class))
+            .systemCounters(mock(SystemCounters.class))
             .nanoClock(nanoClock);
 
         ctx.counterValuesBuffer(counterBuffer);

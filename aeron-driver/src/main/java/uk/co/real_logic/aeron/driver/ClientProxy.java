@@ -58,7 +58,7 @@ public class ClientProxy
         imageMessage.wrap(buffer, 0);
     }
 
-    public void onError(final ErrorCode errorCode, String errorMessage, final CorrelatedMessageFlyweight offender)
+    public void onError(final ErrorCode errorCode, String errorMessage, final long correlationId)
     {
         if (null == errorMessage)
         {
@@ -66,7 +66,7 @@ public class ClientProxy
         }
 
         errorResponse
-            .offendingCommandCorrelationId(offender.correlationId())
+            .offendingCommandCorrelationId(correlationId)
             .errorCode(errorCode)
             .errorMessage(errorMessage);
 

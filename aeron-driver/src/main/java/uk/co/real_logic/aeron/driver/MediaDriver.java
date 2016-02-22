@@ -524,8 +524,12 @@ public final class MediaDriver implements AutoCloseable
 
                 toDriverCommands(new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
-                errorLog = new DistinctErrorLog(
-                    new UnsafeBuffer(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer)), epochClock);
+                if (null != errorLog)
+                {
+                    errorLog = new DistinctErrorLog(
+                        new UnsafeBuffer(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer)), epochClock);
+                }
+
                 if (null == errorHandler)
                 {
                     errorHandler =
@@ -837,6 +841,12 @@ public final class MediaDriver implements AutoCloseable
         public Context eventLogger(final EventLogger logger)
         {
             this.eventLogger = logger;
+            return this;
+        }
+
+        public Context errorLog(final DistinctErrorLog errorLog)
+        {
+            this.errorLog = errorLog;
             return this;
         }
 

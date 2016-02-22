@@ -28,6 +28,7 @@ import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
@@ -73,6 +74,7 @@ public class DriverConductorTest
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
+    private final DistinctErrorLog mockErrorLog = mock(DistinctErrorLog.class);
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
     private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
@@ -122,6 +124,7 @@ public class DriverConductorTest
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .eventLogger(mockConductorLogger)
+            .errorLog(mockErrorLog)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager)
             .nanoClock(nanoClock)
@@ -314,10 +317,10 @@ public class DriverConductorTest
 
         inOrder.verify(senderProxy).newNetworkPublication(any());
         inOrder.verify(mockClientProxy).onPublicationReady(eq(id), eq(STREAM_ID_1), anyInt(), any(), anyInt());
-        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), any());
+        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), anyLong());
         inOrder.verifyNoMoreInteractions();
 
-        verify(mockConductorLogger).logException(any());
+        verify(mockErrorLog).record(any(Throwable.class));
     }
 
     @Test
@@ -332,10 +335,10 @@ public class DriverConductorTest
 
         inOrder.verify(receiverProxy).addSubscription(any(), anyInt());
         inOrder.verify(mockClientProxy).operationSucceeded(id1);
-        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_SUBSCRIPTION), argThat(not(isEmptyOrNullString())), any());
+        inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_SUBSCRIPTION), argThat(not(isEmptyOrNullString())), anyLong());
         inOrder.verifyNoMoreInteractions();
 
-        verify(mockConductorLogger).logException(any());
+        verify(mockErrorLog).record(any(Throwable.class));
     }
 
     @Test
@@ -348,9 +351,9 @@ public class DriverConductorTest
 
         verify(senderProxy, never()).newNetworkPublication(any());
 
-        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), any());
+        verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), anyLong());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
-        verify(mockConductorLogger).logException(any());
+        verify(mockErrorLog).record(any(Throwable.class));
     }
 
     @Test

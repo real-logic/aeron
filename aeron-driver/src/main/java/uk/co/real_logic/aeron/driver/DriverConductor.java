@@ -35,6 +35,7 @@ import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
+import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
@@ -94,6 +95,7 @@ public class DriverConductor implements Agent
     private final NanoClock nanoClock;
 
     private final EventLogger logger;
+    private final DistinctErrorLog errorLog;
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
     private final MessageHandler onEventFunc;
@@ -116,6 +118,7 @@ public class DriverConductor implements Agent
         clientProxy = ctx.clientProxy();
         fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
         logger = ctx.eventLogger();
+        errorLog = ctx.errorLog();
 
         final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc = (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset));
@@ -406,7 +409,7 @@ public class DriverConductor implements Agent
 
     private void onClientCommand(final int msgTypeId, final MutableDirectBuffer buffer, final int index, final int length)
     {
-        CorrelatedMessageFlyweight flyweight = null;
+        long correlationId = 0;
 
         try
         {
@@ -418,12 +421,11 @@ public class DriverConductor implements Agent
 
                     final PublicationMessageFlyweight publicationMessageFlyweight = publicationMsgFlyweight;
                     publicationMessageFlyweight.wrap(buffer, index);
-                    flyweight = publicationMessageFlyweight;
 
-                    final String channel = publicationMessageFlyweight.channel();
+                    correlationId = publicationMessageFlyweight.correlationId();
                     final int streamId = publicationMessageFlyweight.streamId();
-                    final long correlationId = publicationMessageFlyweight.correlationId();
                     final long clientId = publicationMessageFlyweight.clientId();
+                    final String channel = publicationMessageFlyweight.channel();
 
                     if (IPC_CHANNEL.equals(channel))
                     {
@@ -442,8 +444,8 @@ public class DriverConductor implements Agent
 
                     final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
                     removeMessageFlyweight.wrap(buffer, index);
-                    flyweight = removeMessageFlyweight;
-                    onRemovePublication(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
+                    correlationId = removeMessageFlyweight.correlationId();
+                    onRemovePublication(removeMessageFlyweight.registrationId(), correlationId);
                     break;
                 }
 
@@ -453,12 +455,11 @@ public class DriverConductor implements Agent
 
                     final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMsgFlyweight;
                     subscriptionMessageFlyweight.wrap(buffer, index);
-                    flyweight = subscriptionMessageFlyweight;
 
-                    final String channel = subscriptionMessageFlyweight.channel();
+                    correlationId = subscriptionMessageFlyweight.correlationId();
                     final int streamId = subscriptionMessageFlyweight.streamId();
-                    final long correlationId = subscriptionMessageFlyweight.correlationId();
                     final long clientId = subscriptionMessageFlyweight.clientId();
+                    final String channel = subscriptionMessageFlyweight.channel();
 
                     if (IPC_CHANNEL.equals(channel))
                     {
@@ -477,8 +478,8 @@ public class DriverConductor implements Agent
 
                     final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
                     removeMessageFlyweight.wrap(buffer, index);
-                    flyweight = removeMessageFlyweight;
-                    onRemoveSubscription(removeMessageFlyweight.registrationId(), removeMessageFlyweight.correlationId());
+                    correlationId = removeMessageFlyweight.correlationId();
+                    onRemoveSubscription(removeMessageFlyweight.registrationId(), correlationId);
                     break;
                 }
 
@@ -488,7 +489,7 @@ public class DriverConductor implements Agent
 
                     final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMsgFlyweight;
                     correlatedMessageFlyweight.wrap(buffer, index);
-                    flyweight = correlatedMessageFlyweight;
+                    correlationId = correlatedMessageFlyweight.correlationId();
                     onClientKeepalive(correlatedMessageFlyweight.clientId());
                     break;
                 }
@@ -496,13 +497,13 @@ public class DriverConductor implements Agent
         }
         catch (final ControlProtocolException ex)
         {
-            clientProxy.onError(ex.errorCode(), ex.getMessage(), flyweight);
-            logger.logException(ex);
+            clientProxy.onError(ex.errorCode(), ex.getMessage(), correlationId);
+            errorLog.record(ex);
         }
         catch (final Exception ex)
         {
-            clientProxy.onError(GENERIC_ERROR, ex.getMessage(), flyweight);
-            logger.logException(ex);
+            clientProxy.onError(GENERIC_ERROR, ex.getMessage(), correlationId);
+            errorLog.record(ex);
         }
     }
 

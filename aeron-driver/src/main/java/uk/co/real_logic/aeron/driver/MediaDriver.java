@@ -31,6 +31,7 @@ import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
+import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
@@ -433,6 +434,8 @@ public final class MediaDriver implements AutoCloseable
         private ClientProxy clientProxy;
         private RingBuffer toDriverCommands;
         private RingBuffer toEventReader;
+        private DistinctErrorLog errorLog;
+        private ErrorHandler errorHandler;
 
         private MappedByteBuffer cncByteBuffer;
         private UnsafeBuffer cncMetaDataBuffer;
@@ -503,7 +506,7 @@ public final class MediaDriver implements AutoCloseable
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
                         CONDUCTOR_BUFFER_LENGTH + TO_CLIENTS_BUFFER_LENGTH +
-                        COUNTER_LABELS_BUFFER_LENGTH + COUNTER_VALUES_BUFFER_LENGTH));
+                        COUNTER_LABELS_BUFFER_LENGTH + COUNTER_VALUES_BUFFER_LENGTH + ERROR_BUFFER_LENGTH));
 
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 CncFileDescriptor.fillMetaData(
@@ -512,14 +515,28 @@ public final class MediaDriver implements AutoCloseable
                     TO_CLIENTS_BUFFER_LENGTH,
                     COUNTER_LABELS_BUFFER_LENGTH,
                     COUNTER_VALUES_BUFFER_LENGTH,
-                    clientLivenessTimeoutNs);
+                    clientLivenessTimeoutNs,
+                    ERROR_BUFFER_LENGTH);
 
                 final BroadcastTransmitter transmitter =
                     new BroadcastTransmitter(createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
-
                 clientProxy(new ClientProxy(transmitter, eventLogger));
 
                 toDriverCommands(new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
+
+                errorLog = new DistinctErrorLog(
+                    new UnsafeBuffer(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer)), epochClock);
+                if (null == errorHandler)
+                {
+                    errorHandler =
+                        (throwable) ->
+                        {
+                            if (!errorLog.record(throwable))
+                            {
+                                eventLogger.logException(throwable);
+                            }
+                        };
+                }
 
                 concludeCounters();
 
@@ -1101,7 +1118,12 @@ public final class MediaDriver implements AutoCloseable
 
         public ErrorHandler errorHandler()
         {
-            return eventLogger::logException;
+            return errorHandler;
+        }
+
+        public DistinctErrorLog errorLog()
+        {
+            return errorLog;
         }
 
         public int mtuLength()

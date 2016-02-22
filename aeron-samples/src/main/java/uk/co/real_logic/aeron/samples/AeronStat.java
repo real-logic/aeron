@@ -51,7 +51,7 @@ public class AeronStat
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
-            throw new IllegalStateException("CNC version not supported: version=" + cncVersion);
+            throw new IllegalStateException("CNC version not supported: file version=" + cncVersion);
         }
 
         final AtomicBuffer labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);

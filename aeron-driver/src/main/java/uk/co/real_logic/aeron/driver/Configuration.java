@@ -31,41 +31,46 @@ import static java.lang.System.getProperty;
 import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
 
 /**
- * Configuration options for the media driver.
+ * Configuration options for the {@link MediaDriver}.
  */
 public class Configuration
 {
     private static final String DEFAULT_IDLE_STRATEGY = "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy";
 
     /**
-     * Byte buffer length (in bytes) for reads
+     * Byte buffer length (in bytes) for reads.
      */
     public static final String RECEIVE_BUFFER_LENGTH_PROP_NAME = "aeron.rcv.buffer.length";
 
     /**
-     * Length (in bytes) of the log buffers for publication terms
+     * Length (in bytes) of the log buffers for publication terms.
      */
     public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
 
     /**
-     * Length (in bytes) of the log buffers for terms for incoming images
+     * Length (in bytes) of the log buffers for terms for incoming images.
      */
     public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
 
     /**
-     * Length (in bytes) of the conductor buffers between the media driver and the client
+     * Length (in bytes) of the conductor buffers between the media driver and the client.
      */
     public static final String CONDUCTOR_BUFFER_LENGTH_PROP_NAME = "aeron.conductor.buffer.length";
 
     /**
-     * Length (in bytes) of the broadcast buffers from the media driver to the clients
+     * Length (in bytes) of the broadcast buffers from the media driver to the clients.
      */
     public static final String TO_CLIENTS_BUFFER_LENGTH_PROP_NAME = "aeron.clients.buffer.length";
 
     /**
-     * Property name for length of the memory mapped buffers for the counters file
+     * Property name for length of the error buffer for the system counters.
      */
     public static final String COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
+
+    /**
+     * Property name for length of the memory mapped buffer for the distinct error log.
+     */
+    public static final String ERROR_BUFFER_LENGTH_PROP_NAME = "aeron.error.buffer.length";
 
     /**
      * Property name for length of the initial window which must be sufficient for Bandwidth Delay Produce (BDP).
@@ -73,7 +78,7 @@ public class Configuration
     public static final String INITIAL_WINDOW_LENGTH_PROP_NAME = "aeron.rcv.initial.window.length";
 
     /**
-     * Property name for status message timeout in nanoseconds
+     * Property name for status message timeout in nanoseconds.
      */
     public static final String STATUS_MESSAGE_TIMEOUT_PROP_NAME = "aeron.rcv.status.message.timeout";
 
@@ -88,48 +93,48 @@ public class Configuration
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 
     /**
-     * Property name for linger timeout for publications
+     * Property name for linger timeout on {@link uk.co.real_logic.aeron.Publication}s.
      */
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
 
     /**
-     * Property name for window limit on publication side
+     * Property name for window limit on {@link uk.co.real_logic.aeron.Publication} side.
      */
     public static final String PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.publication.term.window.length";
     public static final int PUBLICATION_TERM_WINDOW_LENGTH = getInteger(PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
-     * Property name for client liveness timeout
+     * Property name for {@link uk.co.real_logic.aeron.Aeron} client liveness timeout.
      */
     public static final String CLIENT_LIVENESS_TIMEOUT_PROP_NAME = "aeron.client.liveness.timeout";
 
     /**
-     * Property name for image liveness timeout
+     * Property name for {@link uk.co.real_logic.aeron.Image} liveness timeout.
      */
     public static final String IMAGE_LIVENESS_TIMEOUT_PROP_NAME = "aeron.image.liveness.timeout";
 
     /**
-     * Property name for publication unblock timeout
+     * Property name for {@link uk.co.real_logic.aeron.Publication} unblock timeout.
      */
     public static final String PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME = "aeron.publication.unblock.timeout";
 
     /**
-     * Property name for data loss rate
+     * Property name for data loss rate.
      */
     public static final String DATA_LOSS_RATE_PROP_NAME = "aeron.debug.data.loss.rate";
 
     /**
-     * Property name for data loss seed
+     * Property name for data loss seed.
      */
     public static final String DATA_LOSS_SEED_PROP_NAME = "aeron.debug.data.loss.seed";
 
     /**
-     * Property name for control loss rate
+     * Property name for control loss rate.
      */
     public static final String CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.control.loss.rate";
 
     /**
-     * Property name for control loss seed
+     * Property name for control loss seed.
      */
     public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
 
@@ -148,20 +153,20 @@ public class Configuration
     public static final int TERM_BUFFER_IPC_LENGTH_DEFAULT = 64 * 1024 * 1024;
 
     /**
-     * Property name for term buffer length (in bytes) for IPC log buffers
+     * Property name for term buffer length (in bytes) for IPC buffers.
      */
     public static final String IPC_TERM_BUFFER_LENGTH_PROP_NAME = "aeron.ipc.term.buffer.length";
     public static final int IPC_TERM_BUFFER_LENGTH = getInteger(IPC_TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_IPC_LENGTH_DEFAULT);
 
     /**
-     * Property name for window limit for IPC publications
+     * Property name for window limit for IPC publications.
      */
     public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.ipc.publication.term.window.length";
     public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getInteger(
         IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
 
     /**
-     * Default byte buffer length for reads
+     * Default byte buffer length for reads from network sockets.
      */
     public static final int RECEIVE_BYTE_BUFFER_LENGTH_DEFAULT = 4096;
     public static final int RECEIVE_BYTE_BUFFER_LENGTH = getInteger(
@@ -178,21 +183,21 @@ public class Configuration
     public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 16 * 1024 * 1024;
 
     /**
-     * Default buffer length for conductor buffers between the media driver and the client
+     * Default buffer length for conductor buffers between the client and the media driver conductor.
      */
-    public static final int CONDUCTOR_BUFFER_LENGTH_DEFAULT = 1024 * 1024 + RingBufferDescriptor.TRAILER_LENGTH;
+    public static final int CONDUCTOR_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + RingBufferDescriptor.TRAILER_LENGTH;
     public static final int CONDUCTOR_BUFFER_LENGTH = getInteger(
         CONDUCTOR_BUFFER_LENGTH_PROP_NAME, CONDUCTOR_BUFFER_LENGTH_DEFAULT);
 
     /**
-     * Default buffer length for broadcast buffers from the media driver to the clients
+     * Default buffer length for broadcast buffers from the media driver and the clients.
      */
-    public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = 1024 * 1024 + BroadcastBufferDescriptor.TRAILER_LENGTH;
+    public static final int TO_CLIENTS_BUFFER_LENGTH_DEFAULT = (1024 * 1024) + BroadcastBufferDescriptor.TRAILER_LENGTH;
     public static final int TO_CLIENTS_BUFFER_LENGTH = getInteger(
         TO_CLIENTS_BUFFER_LENGTH_PROP_NAME, TO_CLIENTS_BUFFER_LENGTH_DEFAULT);
 
     /**
-     * Length of the memory mapped buffers for the counters file
+     * Length of the memory mapped buffers for the system counters file.
      */
     public static final int COUNTER_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
     public static final int COUNTER_VALUES_BUFFER_LENGTH = getInteger(
@@ -201,37 +206,43 @@ public class Configuration
     public static final int COUNTER_LABELS_BUFFER_LENGTH = COUNTER_VALUES_BUFFER_LENGTH;
 
     /**
-     * Default group size estimate for NAK delay randomization
+     * Default buffer length for the error buffer for the media driver.
+     */
+    public static final int ERROR_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+    public static final int ERROR_BUFFER_LENGTH = getInteger(ERROR_BUFFER_LENGTH_PROP_NAME, ERROR_BUFFER_LENGTH_DEFAULT);
+
+    /**
+     * Default group size estimate for NAK delay randomization.
      */
     public static final int NAK_GROUPSIZE_DEFAULT = 10;
 
     /**
-     * Default group RTT estimate for NAK delay randomization in msec
+     * Default group RTT estimate for NAK delay randomization in msec.
      */
     public static final int NAK_GRTT_DEFAULT = 10;
 
     /**
-     * Default max backoff for NAK delay randomization in msec
+     * Default max backoff for NAK delay randomization in msec.
      */
     public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
     /**
-     * Multicast NAK delay is immediate initial with delayed subsequent delay
+     * Multicast NAK delay is immediate initial with delayed subsequent delay.
      */
     public static final OptimalMulticastDelayGenerator NAK_MULTICAST_DELAY_GENERATOR = new OptimalMulticastDelayGenerator(
         NAK_MAX_BACKOFF_DEFAULT, NAK_GROUPSIZE_DEFAULT, NAK_GRTT_DEFAULT);
 
     /**
-     * Default Unicast NAK delay in nanoseconds
+     * Default Unicast NAK delay in nanoseconds.
      */
     public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
     /**
-     * Unicast NAK delay is immediate initial with delayed subsequent delay
+     * Unicast NAK delay is immediate initial with delayed subsequent delay.
      */
     public static final StaticDelayGenerator NAK_UNICAST_DELAY_GENERATOR = new StaticDelayGenerator(
         NAK_UNICAST_DELAY_DEFAULT_NS, true);
 
     /**
-     * Default delay for retransmission of data for unicast
+     * Default delay for retransmission of data for unicast.
      */
     public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
     /**
@@ -240,26 +251,26 @@ public class Configuration
     public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_DELAY_GENERATOR = () -> RETRANSMIT_UNICAST_DELAY_DEFAULT_NS;
 
     /**
-     * Default delay for linger for unicast
+     * Default delay for linger for unicast.
      */
     public static final long RETRANSMIT_UNICAST_LINGER_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
     public static final FeedbackDelayGenerator RETRANSMIT_UNICAST_LINGER_GENERATOR = () -> RETRANSMIT_UNICAST_LINGER_DEFAULT_NS;
 
     /**
-     * Default max number of active retransmissions per Term
+     * Default max number of active retransmissions per connected stream.
      */
     public static final int MAX_RETRANSMITS_DEFAULT = 16;
 
     /**
      * Default initial window length for flow control sender to receiver purposes
-     * <p>
+     *
      * Length of Initial Window
-     * <p>
+     *
      * RTT (LAN) = 100 usec
      * Throughput = 10 Gbps
-     * <p>
+     *
      * Buffer = Throughput * RTT
-     * Buffer = (10*1000*1000*1000/8) * 0.0001 = 125000
+     * Buffer = (10 * 1000 * 1000 * 1000 / 8) * 0.0001 = 125000
      * Round to 128KB
      */
     public static final int INITIAL_WINDOW_LENGTH_DEFAULT = 128 * 1024;
@@ -282,26 +293,27 @@ public class Configuration
     public static final int SOCKET_SNDBUF_LENGTH = getInteger(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
 
     /**
-     * Time for publications to linger before cleanup
+     * Time for {@link uk.co.real_logic.aeron.Publication}s to linger before cleanup.
      */
     public static final long PUBLICATION_LINGER_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
     public static final long PUBLICATION_LINGER_NS = getLong(PUBLICATION_LINGER_PROP_NAME, PUBLICATION_LINGER_DEFAULT_NS);
 
     /**
-     * Timeout for client liveness in nanoseconds
+     * Timeout for client liveness in nanoseconds.
      */
     public static final long CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(5000);
     public static final long CLIENT_LIVENESS_TIMEOUT_NS = getLong(
         CLIENT_LIVENESS_TIMEOUT_PROP_NAME, CLIENT_LIVENESS_TIMEOUT_DEFAULT_NS);
+
     /**
-     * Timeout for connection liveness in nanoseconds
+     * Timeout for {@link uk.co.real_logic.aeron.Image} liveness in nanoseconds.
      */
     public static final long IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
     public static final long IMAGE_LIVENESS_TIMEOUT_NS = getLong(
         IMAGE_LIVENESS_TIMEOUT_PROP_NAME, IMAGE_LIVENESS_TIMEOUT_DEFAULT_NS);
 
     /**
-     * Timeout for publication unblock in nanoseconds
+     * Timeout for {@link uk.co.real_logic.aeron.Publication} unblock in nanoseconds
      */
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(10);
     public static final long PUBLICATION_UNBLOCK_TIMEOUT_NS = getLong(
@@ -353,13 +365,13 @@ public class Configuration
     /** Capacity for the command queues used between driver agents. */
     public static final int CMD_QUEUE_CAPACITY = 1024;
 
-    /** Timeout on cleaning up pending SETUP state on subscriber */
+    /** Timeout on cleaning up pending SETUP state on subscriber. */
     public static final long PENDING_SETUPS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
-    /** Timeout between SETUP frames for publications during initial setup phase */
+    /** Timeout between SETUP frames for publications during initial setup phase. */
     public static final long PUBLICATION_SETUP_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
-    /** Timeout between heartbeats for publications */
+    /** Timeout between heartbeats for publications. */
     public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
     /**
@@ -378,7 +390,7 @@ public class Configuration
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
         MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.MaxMulticastFlowControl");
 
-    /** Length of the maximum transport unit of the media driver's protocol */
+    /** Length of the maximum transmission unit of the media driver's protocol */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
     public static final int MTU_LENGTH_DEFAULT = 4096;
     public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);

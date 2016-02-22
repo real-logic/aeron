@@ -36,13 +36,15 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *  +----------------------------+
  *  |      to-clients Buffer     |
  *  +----------------------------+
- *  |     Counter Labels Buffer  |
+ *  |    Counter Labels Buffer   |
  *  +----------------------------+
- *  |     Counter Values Buffer  |
+ *  |    Counter Values Buffer   |
+ *  +----------------------------+
+ *  |          Error Log         |
  *  +----------------------------+
  * </pre>
  *
- * Meta Data Layout (CnC Version 3)
+ * Meta Data Layout (CnC Version 4)
  * <pre>
  *  +----------------------------+
  *  |   to-driver buffer length  |
@@ -56,13 +58,15 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  *  |   Client Liveness Timeout  |
  *  |                            |
  *  +----------------------------+
+ *  |      Error Log length      |
+ *  +----------------------------+
  * </pre>
  */
 public class CncFileDescriptor
 {
     public static final String CNC_FILE = "cnc";
 
-    public static final int CNC_VERSION = 3;
+    public static final int CNC_VERSION = 4;
 
     public static final int CNC_VERSION_FIELD_OFFSET;
     public static final int META_DATA_OFFSET;
@@ -74,6 +78,7 @@ public class CncFileDescriptor
     public static final int COUNTER_LABELS_BUFFER_LENGTH_FIELD_OFFSET;
     public static final int COUNTER_VALUES_BUFFER_LENGTH_FIELD_OFFSET;
     public static final int CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET;
+    public static final int ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET;
 
     static
     {
@@ -85,11 +90,12 @@ public class CncFileDescriptor
         COUNTER_LABELS_BUFFER_LENGTH_FIELD_OFFSET = TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
         COUNTER_VALUES_BUFFER_LENGTH_FIELD_OFFSET = COUNTER_LABELS_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
         CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET = COUNTER_VALUES_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
+        ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET = CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET + SIZE_OF_LONG;
     }
 
-    public static final int META_DATA_LENGTH = CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET + SIZE_OF_LONG;
+    public static final int META_DATA_LENGTH = ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET + SIZE_OF_INT;
 
-    public static final int END_OF_META_DATA_OFFSET = align(SIZE_OF_INT + META_DATA_LENGTH, CACHE_LINE_LENGTH);
+    public static final int END_OF_META_DATA_OFFSET = align(SIZE_OF_INT + META_DATA_LENGTH, (CACHE_LINE_LENGTH * 2));
 
     /**
      * Compute the length of the cnc file and return it.
@@ -132,9 +138,9 @@ public class CncFileDescriptor
         return baseOffset + META_DATA_OFFSET + CLIENT_LIVENESS_TIMEOUT_FIELD_OFFSET;
     }
 
-    public static UnsafeBuffer createMetaDataBuffer(final ByteBuffer buffer)
+    public static int errorLogBufferLengthOffset(final int baseOffset)
     {
-        return new UnsafeBuffer(buffer, 0, SIZE_OF_INT + META_DATA_LENGTH);
+        return baseOffset + META_DATA_OFFSET + ERROR_LOG_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
     public static void fillMetaData(
@@ -143,7 +149,8 @@ public class CncFileDescriptor
         final int toClientsBufferLength,
         final int counterLabelsBufferLength,
         final int counterValuesBufferLength,
-        final long clientLivenessTimeout)
+        final long clientLivenessTimeout,
+        final int errorLogBufferLength)
     {
         cncMetaDataBuffer.putInt(cncVersionOffset(0), CNC_VERSION);
         cncMetaDataBuffer.putInt(toDriverBufferLengthOffset(0), toDriverBufferLength);
@@ -151,6 +158,12 @@ public class CncFileDescriptor
         cncMetaDataBuffer.putInt(counterLabelsBufferLengthOffset(0), counterLabelsBufferLength);
         cncMetaDataBuffer.putInt(counterValuesBufferLengthOffset(0), counterValuesBufferLength);
         cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
+        cncMetaDataBuffer.putInt(errorLogBufferLengthOffset(0), errorLogBufferLength);
+    }
+
+    public static UnsafeBuffer createMetaDataBuffer(final ByteBuffer buffer)
+    {
+        return new UnsafeBuffer(buffer, 0, SIZE_OF_INT + META_DATA_LENGTH);
     }
 
     public static UnsafeBuffer createToDriverBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
@@ -182,6 +195,17 @@ public class CncFileDescriptor
             metaDataBuffer.getInt(counterLabelsBufferLengthOffset(0));
 
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(counterValuesBufferLengthOffset(0)));
+    }
+
+    public static UnsafeBuffer createErrorLogBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
+    {
+        final int offset = END_OF_META_DATA_OFFSET +
+            metaDataBuffer.getInt(toDriverBufferLengthOffset(0)) +
+            metaDataBuffer.getInt(toClientsBufferLengthOffset(0)) +
+            metaDataBuffer.getInt(counterLabelsBufferLengthOffset(0)) +
+            metaDataBuffer.getInt(counterValuesBufferLengthOffset(0));
+
+        return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(errorLogBufferLengthOffset(0)));
     }
 
     public static long clientLivenessTimeout(final DirectBuffer metaDataBuffer)

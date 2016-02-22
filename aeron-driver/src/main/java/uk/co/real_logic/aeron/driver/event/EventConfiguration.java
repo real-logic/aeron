@@ -75,7 +75,7 @@ public class EventConfiguration
     /**
      * Maximum length of an event in bytes
      */
-    public static final int MAX_EVENT_LENGTH = 2048;
+    public static final int MAX_EVENT_LENGTH = 4096;
 
     /**
      * Limit for event reader loop

@@ -171,7 +171,7 @@ subprojects {
 
 project(':aeron-client') {
     dependencies {
-        compile 'uk.co.real-logic:Agrona:0.4.11'
+        compile 'uk.co.real-logic:Agrona:0.4.12-SNAPSHOT'
     }
 
     uploadArchives {

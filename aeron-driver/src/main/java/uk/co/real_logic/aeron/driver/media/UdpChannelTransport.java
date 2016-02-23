@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.IOException;
 import java.net.*;
@@ -43,6 +44,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected UdpTransportPoller transportPoller;
     protected final UdpChannel udpChannel;
     protected final EventLogger logger;
+    protected final DistinctErrorLog errorLog;
     protected final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     protected final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
     protected DatagramChannel sendDatagramChannel;
@@ -53,10 +55,12 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
+        final DistinctErrorLog errorLog,
         final EventLogger logger)
     {
         this.udpChannel = udpChannel;
         this.logger = logger;
+        this.errorLog = errorLog;
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
@@ -176,7 +180,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
         catch (final Exception ex)
         {
-            logger.logException(ex);
+            errorLog.record(ex);
         }
     }
 

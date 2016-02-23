@@ -154,21 +154,6 @@ public class EventLogger
         }
     }
 
-    public void logException(final Throwable ex)
-    {
-        if (isEnabled(EXCEPTION, ENABLED_EVENT_CODES))
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventEncoder.encode(encodedBuffer, ex);
-
-            ringBuffer.write(EXCEPTION.id(), encodedBuffer, 0, encodedLength);
-        }
-        else
-        {
-            ex.printStackTrace();
-        }
-    }
-
     private void logString(final EventCode code, final String value)
     {
         final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();

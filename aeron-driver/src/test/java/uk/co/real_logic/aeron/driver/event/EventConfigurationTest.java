@@ -22,7 +22,7 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.driver.event.EventCode.EXCEPTION;
+import static uk.co.real_logic.aeron.driver.event.EventCode.MALFORMED_FRAME_LENGTH;
 import static uk.co.real_logic.aeron.driver.event.EventCode.FRAME_IN;
 import static uk.co.real_logic.aeron.driver.event.EventConfiguration.*;
 
@@ -49,15 +49,15 @@ public class EventConfigurationTest
     @Test
     public void eventCodesPropertyShouldBeParsedAsAListOfEventCodes()
     {
-        final Set<EventCode> expectedCodes = EnumSet.of(EXCEPTION, FRAME_IN);
-        assertThat(getEnabledEventCodes("EXCEPTION,FRAME_IN"), is(expectedCodes));
+        final Set<EventCode> expectedCodes = EnumSet.of(MALFORMED_FRAME_LENGTH, FRAME_IN);
+        assertThat(getEnabledEventCodes("MALFORMED_FRAME_LENGTH,FRAME_IN"), is(expectedCodes));
     }
 
     @Test
     public void makeTagBitSet()
     {
-        final Set<EventCode> eventCodes = EnumSet.of(EXCEPTION, FRAME_IN);
+        final Set<EventCode> eventCodes = EnumSet.of(MALFORMED_FRAME_LENGTH, FRAME_IN);
         final long bitSet = EventConfiguration.makeTagBitSet(eventCodes);
-        assertThat(bitSet, is(EXCEPTION.tagBit() | FRAME_IN.tagBit()));
+        assertThat(bitSet, is(MALFORMED_FRAME_LENGTH.tagBit() | FRAME_IN.tagBit()));
     }
 }

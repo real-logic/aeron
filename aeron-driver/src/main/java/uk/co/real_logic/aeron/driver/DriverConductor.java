@@ -491,11 +491,13 @@ public class DriverConductor implements Agent
         catch (final ControlProtocolException ex)
         {
             clientProxy.onError(ex.errorCode(), ex.getMessage(), correlationId);
+            context.systemCounters().errors().increment();
             errorLog.record(ex);
         }
         catch (final Exception ex)
         {
             clientProxy.onError(GENERIC_ERROR, ex.getMessage(), correlationId);
+            context.systemCounters().errors().increment();
             errorLog.record(ex);
         }
     }

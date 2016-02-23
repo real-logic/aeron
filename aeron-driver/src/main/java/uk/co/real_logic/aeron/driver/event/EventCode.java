@@ -33,7 +33,6 @@ public enum EventCode
     CMD_OUT_PUBLICATION_READY(7, EventDissector::dissectAsCommand),
     CMD_OUT_AVAILABLE_IMAGE(8, EventDissector::dissectAsCommand),
     INVOCATION(9, EventDissector::dissectAsInvocation),
-    EXCEPTION(10, EventDissector::dissectAsException),
 
     MALFORMED_FRAME_LENGTH(11, EventDissector::dissectAsCommand),
     CMD_OUT_ON_OPERATION_SUCCESS(12, EventDissector::dissectAsCommand),

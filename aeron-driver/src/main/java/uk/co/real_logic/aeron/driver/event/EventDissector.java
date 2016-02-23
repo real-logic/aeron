@@ -162,31 +162,6 @@ public class EventDissector
         return builder.toString();
     }
 
-    public static String dissectAsException(final EventCode code, final MutableDirectBuffer buffer, final int initialOffset)
-    {
-        final StringBuilder builder = new StringBuilder();
-        int offset = initialOffset + dissectLogHeader(code, buffer, initialOffset, builder);
-        builder.append(": ");
-
-        int strLength = buffer.getInt(offset, LITTLE_ENDIAN);
-        builder.append(buffer.getStringUtf8(offset, strLength));
-        offset += strLength + SIZE_OF_INT;
-
-        builder.append('(');
-        strLength = buffer.getInt(offset, LITTLE_ENDIAN);
-        builder.append(buffer.getStringUtf8(offset, strLength));
-        offset += strLength + SIZE_OF_INT;
-        builder.append(')');
-
-        for (int i = 0; i < EventEncoder.STACK_DEPTH; i++)
-        {
-            builder.append('\n');
-            offset = readStackTraceElement(buffer, offset, builder);
-        }
-
-        return builder.toString();
-    }
-
     public static String dissectAsString(final EventCode code, final MutableDirectBuffer buffer, final int offset)
     {
         final StringBuilder builder = new StringBuilder();

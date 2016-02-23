@@ -37,18 +37,17 @@ public class EventConfiguration
      * <ul>
      * <li>A comma separated list of EventCodes to enable</li>
      * <li>"all" which enables all the codes</li>
-     * <li>"prod" which enables the codes specified by PRODUCTION_LOGGER_EVENT_CODES</li>
+     * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES}</li>
+     * <li>"prod" which enables the codes specified by {@link #PRODUCTION_LOGGER_EVENT_CODES}</li>
      * </ul>
      */
     public static final String ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME = "aeron.event.log";
 
     public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES = EnumSet.of(
-        EventCode.EXCEPTION,
         EventCode.MALFORMED_FRAME_LENGTH,
         EventCode.ERROR_DELETING_FILE);
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
-        EventCode.EXCEPTION,
         EventCode.MALFORMED_FRAME_LENGTH,
         EventCode.CMD_IN_ADD_PUBLICATION,
         EventCode.CMD_IN_ADD_SUBSCRIPTION,
@@ -80,7 +79,7 @@ public class EventConfiguration
     /**
      * Limit for event reader loop
      */
-    public static final int EVENT_READER_FRAME_LIMIT = 10;
+    public static final int EVENT_READER_FRAME_LIMIT = 8;
 
     private static final Pattern COMMA = Pattern.compile(",");
 

@@ -61,6 +61,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             udpChannel.remoteData(),
             udpChannel.remoteData(),
             null,
+            context.errorLog(),
             context.eventLogger());
 
         smHeader

@@ -75,6 +75,7 @@ public class DriverConductorTest
 
     private final EventLogger mockConductorLogger = mock(EventLogger.class);
     private final DistinctErrorLog mockErrorLog = mock(DistinctErrorLog.class);
+    private final AtomicCounter mockErrorCounter = mock(AtomicCounter.class);
 
     private final SenderProxy senderProxy = mock(SenderProxy.class);
     private final ReceiverProxy receiverProxy = mock(ReceiverProxy.class);
@@ -140,6 +141,7 @@ public class DriverConductorTest
         ctx.systemCounters(mockSystemCounters);
         when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
         when(mockSystemCounters.clientKeepAlives()).thenReturn(mock(AtomicCounter.class));
+        when(mockSystemCounters.errors()).thenReturn(mockErrorCounter);
 
         ctx.epochClock(new SystemEpochClock());
         ctx.receiverProxy(receiverProxy);
@@ -320,6 +322,7 @@ public class DriverConductorTest
         inOrder.verify(mockClientProxy).onError(eq(UNKNOWN_PUBLICATION), argThat(not(isEmptyOrNullString())), anyLong());
         inOrder.verifyNoMoreInteractions();
 
+        verify(mockErrorCounter).increment();
         verify(mockErrorLog).record(any(Throwable.class));
     }
 
@@ -353,6 +356,8 @@ public class DriverConductorTest
 
         verify(mockClientProxy).onError(eq(INVALID_CHANNEL), argThat(not(isEmptyOrNullString())), anyLong());
         verify(mockClientProxy, never()).operationSucceeded(anyLong());
+
+        verify(mockErrorCounter).increment();
         verify(mockErrorLog).record(any(Throwable.class));
     }
 

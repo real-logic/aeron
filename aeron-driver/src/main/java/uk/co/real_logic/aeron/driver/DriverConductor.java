@@ -974,6 +974,6 @@ public class DriverConductor implements Agent
 
     private static String generateSourceIdentity(final InetSocketAddress address)
     {
-        return String.format("%s:%d", address.getHostString(), address.getPort());
+        return address.getHostString() + ':' + address.getPort();
     }
 }

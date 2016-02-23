@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.command;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import java.nio.ByteOrder;
-
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 
 /**
@@ -129,7 +127,7 @@ public class ImageMessageFlyweight
      */
     public ImageMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel, ByteOrder.nativeOrder());
+        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel);
 
         return this;
     }

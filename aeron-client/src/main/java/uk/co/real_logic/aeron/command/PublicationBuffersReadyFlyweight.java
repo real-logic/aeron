@@ -17,8 +17,6 @@ package uk.co.real_logic.aeron.command;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import java.nio.ByteOrder;
-
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -165,12 +163,12 @@ public class PublicationBuffersReadyFlyweight
 
     public String logFileName()
     {
-        return buffer.getStringUtf8(offset + LOGFILE_FIELD_OFFSET, ByteOrder.nativeOrder());
+        return buffer.getStringUtf8(offset + LOGFILE_FIELD_OFFSET);
     }
 
     public PublicationBuffersReadyFlyweight logFileName(final String logFileName)
     {
-        buffer.putStringUtf8(offset + LOGFILE_FIELD_OFFSET, logFileName, ByteOrder.nativeOrder());
+        buffer.putStringUtf8(offset + LOGFILE_FIELD_OFFSET, logFileName);
         return this;
     }
 

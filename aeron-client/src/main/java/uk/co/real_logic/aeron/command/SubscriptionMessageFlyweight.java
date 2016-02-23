@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.command;
 
-import java.nio.ByteOrder;
-
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
 import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
@@ -98,7 +96,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public String channel()
     {
-        return buffer.getStringUtf8(offset + CHANNEL_OFFSET, ByteOrder.nativeOrder());
+        return buffer.getStringUtf8(offset + CHANNEL_OFFSET);
     }
 
     /**
@@ -109,7 +107,7 @@ public class SubscriptionMessageFlyweight extends CorrelatedMessageFlyweight
      */
     public SubscriptionMessageFlyweight channel(final String channel)
     {
-        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel, ByteOrder.nativeOrder());
+        lengthOfChannel = buffer.putStringUtf8(offset + CHANNEL_OFFSET, channel);
 
         return this;
     }

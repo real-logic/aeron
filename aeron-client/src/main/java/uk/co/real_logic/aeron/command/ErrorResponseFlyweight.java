@@ -19,8 +19,6 @@ import uk.co.real_logic.aeron.ErrorCode;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
-import java.nio.ByteOrder;
-
 /**
  * Control message flyweight for any errors sent from driver to clients
  *
@@ -114,7 +112,7 @@ public class ErrorResponseFlyweight
      */
     public String errorMessage()
     {
-        return buffer.getStringUtf8(offset + ERROR_MESSAGE_OFFSET, ByteOrder.nativeOrder());
+        return buffer.getStringUtf8(offset + ERROR_MESSAGE_OFFSET);
     }
 
     /**
@@ -125,7 +123,7 @@ public class ErrorResponseFlyweight
      */
     public ErrorResponseFlyweight errorMessage(final String message)
     {
-        buffer.putStringUtf8(offset + ERROR_MESSAGE_OFFSET, message, ByteOrder.nativeOrder());
+        buffer.putStringUtf8(offset + ERROR_MESSAGE_OFFSET, message);
         return this;
     }
 

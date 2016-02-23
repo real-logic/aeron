@@ -29,9 +29,6 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
-import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
@@ -53,6 +50,9 @@ import static uk.co.real_logic.aeron.ErrorCode.*;
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
+import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
+import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
 
 /**
  * Driver Conductor to take commands from publishers and subscribers as well as determining if loss has occurred.
@@ -188,10 +188,9 @@ public class DriverConductor implements Agent
         final ArrayList<DirectPublication> directPublications = this.directPublications;
         for (int i = 0, size = directPublications.size(); i < size; i++)
         {
-            final DirectPublication directPublication = directPublications.get(i);
+            final DirectPublication publication = directPublications.get(i);
             workCount +=
-                directPublication.updatePublishersLimit(toDriverCommands.consumerHeartbeatTime()) +
-                    directPublication.cleanLogBuffer();
+                publication.updatePublishersLimit(toDriverCommands.consumerHeartbeatTime()) + publication.cleanLogBuffer();
         }
 
         return workCount;
@@ -216,7 +215,7 @@ public class DriverConductor implements Agent
         final String channel = udpChannel.originalUriString();
         final long imageCorrelationId = nextImageCorrelationId();
 
-        final long joiningPosition = LogBufferDescriptor.computePosition(
+        final long joiningPosition = computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
 
         final List<SubscriberPosition> subscriberPositions = listSubscriberPositions(
@@ -610,17 +609,17 @@ public class DriverConductor implements Agent
         final String canonicalForm = udpChannel.canonicalForm();
         final RawLog rawLog = rawLogFactory.newNetworkPublication(canonicalForm, sessionId, streamId, registrationId);
 
-        final UnsafeBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
+        final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        LogBufferDescriptor.storeDefaultFrameHeader(logMetaData, header);
+        storeDefaultFrameHeader(logMetaData, header);
 
         final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();
-        LogBufferDescriptor.initialiseTailWithTermId(termMetaData, initialTermId);
+        initialiseTailWithTermId(termMetaData, initialTermId);
 
-        LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
-        LogBufferDescriptor.mtuLength(logMetaData, context.mtuLength());
-        LogBufferDescriptor.correlationId(logMetaData, registrationId);
-        LogBufferDescriptor.timeOfLastStatusMessage(logMetaData, 0);
+        initialTermId(logMetaData, initialTermId);
+        mtuLength(logMetaData, context.mtuLength());
+        correlationId(logMetaData, registrationId);
+        timeOfLastStatusMessage(logMetaData, 0);
 
         return rawLog;
     }
@@ -638,13 +637,13 @@ public class DriverConductor implements Agent
         final RawLog rawLog = rawLogFactory.newNetworkedImage(
             canonicalForm, sessionId, streamId, correlationId, termBufferLength);
 
-        final UnsafeBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
+        final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        LogBufferDescriptor.storeDefaultFrameHeader(logMetaData, header);
-        LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
-        LogBufferDescriptor.mtuLength(logMetaData, senderMtuLength);
-        LogBufferDescriptor.correlationId(logMetaData, correlationId);
-        LogBufferDescriptor.timeOfLastStatusMessage(logMetaData, 0);
+        storeDefaultFrameHeader(logMetaData, header);
+        initialTermId(logMetaData, initialTermId);
+        mtuLength(logMetaData, senderMtuLength);
+        correlationId(logMetaData, correlationId);
+        timeOfLastStatusMessage(logMetaData, 0);
 
         return rawLog;
     }
@@ -654,19 +653,19 @@ public class DriverConductor implements Agent
     {
         final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId);
 
-        final UnsafeBuffer header = DataHeaderFlyweight.createDefaultHeader(sessionId, streamId, initialTermId);
+        final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
-        LogBufferDescriptor.storeDefaultFrameHeader(logMetaData, header);
+        storeDefaultFrameHeader(logMetaData, header);
 
         final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();
-        LogBufferDescriptor.initialiseTailWithTermId(termMetaData, initialTermId);
+        initialiseTailWithTermId(termMetaData, initialTermId);
 
-        LogBufferDescriptor.initialTermId(logMetaData, initialTermId);
+        initialTermId(logMetaData, initialTermId);
 
-        final int mtuLength = FrameDescriptor.computeMaxMessageLength(context.ipcTermBufferLength());
-        LogBufferDescriptor.mtuLength(logMetaData, mtuLength);
-        LogBufferDescriptor.correlationId(logMetaData, registrationId);
-        LogBufferDescriptor.timeOfLastStatusMessage(logMetaData, 0);
+        final int mtuLength = computeMaxMessageLength(context.ipcTermBufferLength());
+        mtuLength(logMetaData, mtuLength);
+        correlationId(logMetaData, registrationId);
+        timeOfLastStatusMessage(logMetaData, 0);
 
         return rawLog;
     }

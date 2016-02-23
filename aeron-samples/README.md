@@ -12,5 +12,6 @@ Here is a brief list of the examples and what each tries to do.
 - __RateSubscriber__: Subscriber that prints the rate of reception of messages.
 - __StreamingPublisher__: Publisher that streams out messages as fast as possible, displaying rate of publication.
 - __AeronStat__: Monitoring application that prints the labels and values of the counters in use by a media driver.
+- __ErrorStat__: Monitoring application that prints the distinct errors observed by the media driver.
 - __Ping__: Ping side of Ping/Pong latency testing tool.
 - __Pong__: Pong side of Ping/Pong latency testing tool.

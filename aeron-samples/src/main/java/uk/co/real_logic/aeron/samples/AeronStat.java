@@ -95,7 +95,8 @@ public class AeronStat
         {
             System.out.print("\033[H\033[2J");
             aeronStat.output(System.out);
-            Thread.sleep(1000);
+            System.out.println("--");
+            Thread.sleep(1_000);
         }
     }
 }

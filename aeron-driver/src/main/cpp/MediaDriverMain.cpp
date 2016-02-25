@@ -19,6 +19,7 @@
 #include <util/CommandOptionParser.h>
 #include <thread>
 #include <array>
+#include <atomic>
 #include "MediaDriver.h"
 
 using namespace aeron::util;

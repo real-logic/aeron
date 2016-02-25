@@ -20,6 +20,7 @@
 #include <protocol/HeaderFlyweight.h>
 #include <concurrent/AtomicBuffer.h>
 #include <concurrent/logbuffer/FrameDescriptor.h>
+#include <unistd.h>
 
 #include "UdpChannel.h"
 

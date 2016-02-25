@@ -345,8 +345,8 @@ private:
 #if !defined(DISABLE_BOUNDS_CHECKS)
         if (AERON_COND_EXPECT((index + length) > m_length, false))
         {
-            throw util::OutOfBoundsException(
-                util::strPrintf("Index Out of Bounds[%p]. Index: %d + %d Capacity: %d", this, index, length, m_length),
+            throw aeron::util::OutOfBoundsException(
+                aeron::util::strPrintf("Index Out of Bounds[%p]. Index: %d + %d Capacity: %d", this, index, length, m_length),
                 SOURCEINFO);
         }
 #endif

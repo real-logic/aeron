@@ -40,9 +40,9 @@ using namespace aeron::concurrent;
 *  +----------------------------+
 *  |      to-clients Buffer     |
 *  +----------------------------+
-*  |     Counter Labels Buffer  |
+*  |   Counter Metadata Buffer  |
 *  +----------------------------+
-*  |     Counter Values Buffer  |
+*  |    Counter Values Buffer   |
 *  +----------------------------+
 *  |          Error Log         |
 *  +----------------------------+
@@ -55,7 +55,7 @@ using namespace aeron::concurrent;
 *  +----------------------------+
 *  |  to-clients buffer length  |
 *  +----------------------------+
-*  |    labels buffer length    |
+*  |   metadata buffer length   |
 *  +----------------------------+
 *  |    values buffer length    |
 *  +----------------------------+
@@ -79,7 +79,7 @@ struct MetaDataDefn
     std::int32_t cncVersion;
     std::int32_t toDriverBufferLength;
     std::int32_t toClientsBufferLength;
-    std::int32_t counterLabelsBufferLength;
+    std::int32_t counterMetadataBufferLength;
     std::int32_t counterValuesBufferLength;
     std::int64_t clientLivenessTimeout;
     std::int32_t errorLogBufferLength;
@@ -116,7 +116,7 @@ inline static AtomicBuffer createToClientsBuffer(MemoryMappedFile::ptr_t cncFile
     return AtomicBuffer(basePtr, metaData.toClientsBufferLength);
 }
 
-inline static AtomicBuffer createCounterLabelsBuffer(MemoryMappedFile::ptr_t cncFile)
+inline static AtomicBuffer createCounterMetadataBuffer(MemoryMappedFile::ptr_t cncFile)
 {
     AtomicBuffer metaDataBuffer(cncFile->getMemoryPtr(), cncFile->getMemorySize());
 
@@ -127,7 +127,7 @@ inline static AtomicBuffer createCounterLabelsBuffer(MemoryMappedFile::ptr_t cnc
         metaData.toDriverBufferLength +
         metaData.toClientsBufferLength;
 
-    return AtomicBuffer(basePtr, metaData.counterLabelsBufferLength);
+    return AtomicBuffer(basePtr, metaData.counterMetadataBufferLength);
 }
 
 inline static AtomicBuffer createCounterValuesBuffer(MemoryMappedFile::ptr_t cncFile)
@@ -140,7 +140,7 @@ inline static AtomicBuffer createCounterValuesBuffer(MemoryMappedFile::ptr_t cnc
         VERSION_AND_META_DATA_LENGTH +
         metaData.toDriverBufferLength +
         metaData.toClientsBufferLength +
-        metaData.counterLabelsBufferLength;
+        metaData.counterMetadataBufferLength;
 
     return AtomicBuffer(basePtr, metaData.counterValuesBufferLength);
 }
@@ -155,7 +155,7 @@ inline static AtomicBuffer createErrorLogBuffer(MemoryMappedFile::ptr_t cncFile)
             VERSION_AND_META_DATA_LENGTH +
             metaData.toDriverBufferLength +
             metaData.toClientsBufferLength +
-            metaData.counterLabelsBufferLength +
+            metaData.counterMetadataBufferLength +
             metaData.counterValuesBufferLength;
 
     return AtomicBuffer(basePtr, metaData.errorLogBufferLength);

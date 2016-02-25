@@ -87,7 +87,7 @@ int main (int argc, char** argv)
         const std::int32_t cncVersion = CncFileDescriptor::cncVersion(cncFile);
         const std::int64_t clientLivenessTimeoutNs = CncFileDescriptor::clientLivenessTimeout(cncFile);
 
-        AtomicBuffer labelsBuffer = CncFileDescriptor::createCounterLabelsBuffer(cncFile);
+        AtomicBuffer labelsBuffer = CncFileDescriptor::createCounterMetadataBuffer(cncFile);
         AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);
 
         CountersManager counters(labelsBuffer, valuesBuffer);

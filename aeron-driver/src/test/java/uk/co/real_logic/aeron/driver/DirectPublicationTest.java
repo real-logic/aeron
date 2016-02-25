@@ -42,7 +42,7 @@ public class DirectPublicationTest
 {
     private static final int STREAM_ID = 10;
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
-    private static final int BUFFER_LENGTH = 1024 * 1024;
+    private static final int BUFFER_LENGTH = 1024 * 16;
 
     private Position publisherLimit;
     private DirectPublication directPublication;
@@ -64,7 +64,7 @@ public class DirectPublicationTest
         final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
         final CountersManager countersManager = new CountersManager(
-            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH)), counterBuffer);
+            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer);
 
         when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));

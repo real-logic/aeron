@@ -203,7 +203,7 @@ public class Configuration
     public static final int COUNTER_VALUES_BUFFER_LENGTH = getInteger(
         COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTER_VALUES_BUFFER_LENGTH_DEFAULT);
 
-    public static final int COUNTER_LABELS_BUFFER_LENGTH = COUNTER_VALUES_BUFFER_LENGTH;
+    public static final int COUNTER_METADATA_BUFFER_LENGTH = COUNTER_VALUES_BUFFER_LENGTH * 2;
 
     /**
      * Default buffer length for the error buffer for the media driver.

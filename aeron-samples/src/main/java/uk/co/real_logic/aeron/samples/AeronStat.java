@@ -28,6 +28,7 @@ import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
@@ -38,7 +39,7 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
 public class AeronStat
 {
     private final AtomicBuffer valuesBuffer;
-    private final CountersManager countersManager;
+    private final CountersReader counters;
 
     public AeronStat()
     {
@@ -56,7 +57,7 @@ public class AeronStat
 
         final AtomicBuffer labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
         valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
-        countersManager = new CountersManager(labelsBuffer, valuesBuffer);
+        counters = new CountersReader(labelsBuffer, valuesBuffer);
     }
 
     public void output(final PrintStream out)
@@ -64,11 +65,10 @@ public class AeronStat
         out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
         out.println("=========================");
 
-        this.countersManager.forEach(
+        counters.forEach(
             (id, label) ->
             {
-                final int offset = CountersManager.counterOffset(id);
-                final long value = valuesBuffer.getLongVolatile(offset);
+                final long value = counters.getCounterValue(id);
                 out.format("%3d: %,20d - %s\n", id, value, label);
             });
     }
@@ -77,7 +77,7 @@ public class AeronStat
     {
         buffer.putLong(System.currentTimeMillis());
 
-        countersManager.forEach(
+        counters.forEach(
             (id, label) ->
             {
                 buffer.putInt(id);

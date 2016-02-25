@@ -61,7 +61,7 @@ public class DriverConductorTest
     private static final int STREAM_ID_3 = 30;
     private static final int STREAM_ID_4 = 40;
     private static final int TERM_BUFFER_LENGTH = Configuration.TERM_BUFFER_LENGTH_DEFAULT;
-    private static final int BUFFER_LENGTH = 1024 * 1024;
+    private static final int BUFFER_LENGTH = 16 * 1024;
 
     private final ByteBuffer toDriverBuffer = ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH);
     private final ByteBuffer toEventBuffer = ByteBuffer.allocateDirect(
@@ -116,7 +116,7 @@ public class DriverConductorTest
 
         final UnsafeBuffer counterBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH));
         final CountersManager countersManager = new CountersManager(
-            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH)), counterBuffer);
+            new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
             .unicastFlowControlSupplier(UnicastFlowControl::new)

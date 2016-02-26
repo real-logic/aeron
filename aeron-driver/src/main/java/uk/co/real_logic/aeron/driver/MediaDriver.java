@@ -506,15 +506,15 @@ public final class MediaDriver implements AutoCloseable
                     cncFile(),
                     CncFileDescriptor.computeCncFileLength(
                         CONDUCTOR_BUFFER_LENGTH + TO_CLIENTS_BUFFER_LENGTH +
-                            COUNTER_METADATA_BUFFER_LENGTH + COUNTER_VALUES_BUFFER_LENGTH + ERROR_BUFFER_LENGTH));
+                            COUNTERS_METADATA_BUFFER_LENGTH + COUNTERS_VALUES_BUFFER_LENGTH + ERROR_BUFFER_LENGTH));
 
                 cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
                 CncFileDescriptor.fillMetaData(
                     cncMetaDataBuffer,
                     CONDUCTOR_BUFFER_LENGTH,
                     TO_CLIENTS_BUFFER_LENGTH,
-                    COUNTER_METADATA_BUFFER_LENGTH,
-                    COUNTER_VALUES_BUFFER_LENGTH,
+                    COUNTERS_METADATA_BUFFER_LENGTH,
+                    COUNTERS_VALUES_BUFFER_LENGTH,
                     clientLivenessTimeoutNs,
                     ERROR_BUFFER_LENGTH);
 
@@ -1205,17 +1205,17 @@ public final class MediaDriver implements AutoCloseable
         {
             if (countersManager() == null)
             {
-                if (counterLabelsBuffer() == null)
+                if (countersMetaDataBuffer() == null)
                 {
-                    counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    countersMetaDataBuffer(CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                if (counterValuesBuffer() == null)
+                if (countersValuesBuffer() == null)
                 {
-                    counterValuesBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                countersManager(new CountersManager(counterLabelsBuffer(), counterValuesBuffer()));
+                countersManager(new CountersManager(countersMetaDataBuffer(), countersValuesBuffer()));
             }
 
             if (null == systemCounters)

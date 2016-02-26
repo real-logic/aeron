@@ -65,7 +65,7 @@ public class Configuration
     /**
      * Property name for length of the error buffer for the system counters.
      */
-    public static final String COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
+    public static final String COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME = "aeron.counters.buffer.length";
 
     /**
      * Property name for length of the memory mapped buffer for the distinct error log.
@@ -199,11 +199,11 @@ public class Configuration
     /**
      * Length of the memory mapped buffers for the system counters file.
      */
-    public static final int COUNTER_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
-    public static final int COUNTER_VALUES_BUFFER_LENGTH = getInteger(
-        COUNTER_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTER_VALUES_BUFFER_LENGTH_DEFAULT);
+    public static final int COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT = 1024 * 1024;
+    public static final int COUNTERS_VALUES_BUFFER_LENGTH = getInteger(
+        COUNTERS_VALUES_BUFFER_LENGTH_PROP_NAME, COUNTERS_VALUES_BUFFER_LENGTH_DEFAULT);
 
-    public static final int COUNTER_METADATA_BUFFER_LENGTH = COUNTER_VALUES_BUFFER_LENGTH * 2;
+    public static final int COUNTERS_METADATA_BUFFER_LENGTH = COUNTERS_VALUES_BUFFER_LENGTH * 2;
 
     /**
      * Default buffer length for the error buffer for the media driver.
@@ -395,6 +395,7 @@ public class Configuration
     public static final int MTU_LENGTH_DEFAULT = 4096;
     public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
+    /** {@link ThreadingMode} to be used by the Aeron {@link MediaDriver} */
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
 

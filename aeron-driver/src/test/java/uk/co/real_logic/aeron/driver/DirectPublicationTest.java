@@ -82,7 +82,7 @@ public class DirectPublicationTest
             .systemCounters(mock(SystemCounters.class))
             .nanoClock(nanoClock);
 
-        ctx.counterValuesBuffer(counterBuffer);
+        ctx.countersValuesBuffer(counterBuffer);
 
         driverProxy = new DriverProxy(fromClientCommands);
         driverConductor = new DriverConductor(ctx);

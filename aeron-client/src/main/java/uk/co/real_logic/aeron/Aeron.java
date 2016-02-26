@@ -76,7 +76,7 @@ public final class Aeron implements AutoCloseable
             ctx.nanoClock,
             ctx.toClientBuffer,
             ctx.logBuffersFactory,
-            ctx.counterValuesBuffer(),
+            ctx.countersValuesBuffer(),
             new DriverProxy(ctx.toDriverBuffer),
             ctx.errorHandler,
             ctx.availableImageHandler,
@@ -234,14 +234,14 @@ public final class Aeron implements AutoCloseable
                         CncFileDescriptor.createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                if (counterLabelsBuffer() == null)
+                if (countersMetaDataBuffer() == null)
                 {
-                    counterLabelsBuffer(CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    countersMetaDataBuffer(CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
-                if (counterValuesBuffer() == null)
+                if (countersValuesBuffer() == null)
                 {
-                    counterValuesBuffer(CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 interServiceTimeout = CncFileDescriptor.clientLivenessTimeout(cncMetaDataBuffer);

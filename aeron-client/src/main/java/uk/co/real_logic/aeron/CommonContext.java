@@ -60,8 +60,8 @@ public class CommonContext implements AutoCloseable
     private long driverTimeoutMs = DEFAULT_DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName;
     private File cncFile;
-    private UnsafeBuffer counterLabelsBuffer;
-    private UnsafeBuffer counterValuesBuffer;
+    private UnsafeBuffer countersMetaDataBuffer;
+    private UnsafeBuffer countersValuesBuffer;
 
     static
     {
@@ -147,24 +147,24 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Get the buffer containing the counter labels.
+     * Get the buffer containing the counter meta data.
      *
-     * @return The buffer storing the counter labels.
+     * @return The buffer storing the counter meta data.
      */
-    public UnsafeBuffer counterLabelsBuffer()
+    public UnsafeBuffer countersMetaDataBuffer()
     {
-        return counterLabelsBuffer;
+        return countersMetaDataBuffer;
     }
 
     /**
-     * Set the buffer containing the counter labels.
+     * Set the buffer containing the counter meta data.
      *
-     * @param counterLabelsBuffer The new counter labels buffer.
+     * @param countersMetaDataBuffer The new counter meta data buffer.
      * @return this Object for method chaining.
      */
-    public CommonContext counterLabelsBuffer(final UnsafeBuffer counterLabelsBuffer)
+    public CommonContext countersMetaDataBuffer(final UnsafeBuffer countersMetaDataBuffer)
     {
-        this.counterLabelsBuffer = counterLabelsBuffer;
+        this.countersMetaDataBuffer = countersMetaDataBuffer;
         return this;
     }
 
@@ -173,20 +173,20 @@ public class CommonContext implements AutoCloseable
      *
      * @return The buffer storing the counters.
      */
-    public UnsafeBuffer counterValuesBuffer()
+    public UnsafeBuffer countersValuesBuffer()
     {
-        return counterValuesBuffer;
+        return countersValuesBuffer;
     }
 
     /**
      * Set the buffer containing the counters
      *
-     * @param counterValuesBuffer The new counters buffer.
+     * @param countersValuesBuffer The new counters buffer.
      * @return this Object for method chaining.
      */
-    public CommonContext counterValuesBuffer(final UnsafeBuffer counterValuesBuffer)
+    public CommonContext countersValuesBuffer(final UnsafeBuffer countersValuesBuffer)
     {
-        this.counterValuesBuffer = counterValuesBuffer;
+        this.countersValuesBuffer = countersValuesBuffer;
         return this;
     }
 

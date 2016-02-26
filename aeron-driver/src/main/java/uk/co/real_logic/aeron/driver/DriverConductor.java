@@ -860,9 +860,9 @@ public class DriverConductor implements Agent
 
     private DirectPublication getOrAddDirectPublication(final int streamId)
     {
-        DirectPublication directPublication = findDirectPublication(directPublications, streamId);
+        DirectPublication publication = findDirectPublication(directPublications, streamId);
 
-        if (null == directPublication)
+        if (null == publication)
         {
             final long imageCorrelationId = nextImageCorrelationId();
             final int sessionId = nextSessionId + nextSessionId();
@@ -872,19 +872,19 @@ public class DriverConductor implements Agent
             final Position publisherLimit =
                 newPosition("publisher limit", IPC_CHANNEL, sessionId, streamId, imageCorrelationId);
 
-            directPublication = new DirectPublication(imageCorrelationId, sessionId, streamId, publisherLimit, rawLog);
+            publication = new DirectPublication(imageCorrelationId, sessionId, streamId, publisherLimit, rawLog);
 
-            directPublications.add(directPublication);
+            directPublications.add(publication);
         }
 
-        return directPublication;
+        return publication;
     }
 
     private Position newPosition(
         final String name, final String channel, final int sessionId, final int streamId, final long correlationId)
     {
         final int positionId = allocateCounter(name, channel, sessionId, streamId, correlationId);
-        return new UnsafeBufferPosition(context.counterValuesBuffer(), positionId, context.countersManager());
+        return new UnsafeBufferPosition(context.countersValuesBuffer(), positionId, context.countersManager());
     }
 
     private int allocateCounter(

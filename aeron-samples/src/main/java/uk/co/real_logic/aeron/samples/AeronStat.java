@@ -27,7 +27,6 @@ import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
 import uk.co.real_logic.agrona.concurrent.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
@@ -38,7 +37,6 @@ import uk.co.real_logic.agrona.concurrent.SigInt;
  */
 public class AeronStat
 {
-    private final AtomicBuffer valuesBuffer;
     private final CountersReader counters;
 
     public AeronStat()
@@ -47,16 +45,16 @@ public class AeronStat
         System.out.println("Command `n Control file " + cncFile);
 
         final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-        final DirectBuffer metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+        final DirectBuffer cncMetaData = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaData.getInt(CncFileDescriptor.cncVersionOffset(0));
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
             throw new IllegalStateException("CNC version not supported: file version=" + cncVersion);
         }
 
-        final AtomicBuffer labelsBuffer = CncFileDescriptor.createCounterLabelsBuffer(cncByteBuffer, metaDataBuffer);
-        valuesBuffer = CncFileDescriptor.createCounterValuesBuffer(cncByteBuffer, metaDataBuffer);
+        final AtomicBuffer labelsBuffer = CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaData);
+        final AtomicBuffer valuesBuffer = CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaData);
         counters = new CountersReader(labelsBuffer, valuesBuffer);
     }
 
@@ -66,10 +64,10 @@ public class AeronStat
         out.println("=========================");
 
         counters.forEach(
-            (id, label) ->
+            (counterId, label) ->
             {
-                final long value = counters.getCounterValue(id);
-                out.format("%3d: %,20d - %s\n", id, value, label);
+                final long value = counters.getCounterValue(counterId);
+                out.format("%3d: %,20d - %s\n", counterId, value, label);
             });
     }
 
@@ -78,12 +76,12 @@ public class AeronStat
         buffer.putLong(System.currentTimeMillis());
 
         counters.forEach(
-            (id, label) ->
+            (counterId, label) ->
             {
-                buffer.putInt(id);
+                buffer.putInt(counterId);
                 buffer.putInt(label.length());
                 buffer.put(label.getBytes());
-                buffer.putLong(valuesBuffer.getLongVolatile(CountersManager.counterOffset(id)));
+                buffer.putLong(counters.getCounterValue(counterId));
             });
     }
 

@@ -40,15 +40,15 @@ public class ErrorStat
         System.out.println("Command `n Control file " + cncFile);
 
         final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-        final DirectBuffer metaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = metaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+        final DirectBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
 
         if (CncFileDescriptor.CNC_VERSION != cncVersion)
         {
             throw new IllegalStateException("CNC version not supported: file version=" + cncVersion);
         }
 
-        final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, metaDataBuffer);
+        final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
         final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 
         final int distinctErrorCount = ErrorLogReader.read(

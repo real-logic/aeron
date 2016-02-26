@@ -883,8 +883,8 @@ public class DriverConductor implements Agent
     private Position newPosition(
         final String name, final String channel, final int sessionId, final int streamId, final long correlationId)
     {
-        final int positionId = allocateCounter(name, channel, sessionId, streamId, correlationId);
-        return new UnsafeBufferPosition(context.countersValuesBuffer(), positionId, context.countersManager());
+        final int counterId = allocateCounter(name, channel, sessionId, streamId, correlationId);
+        return new UnsafeBufferPosition(context.countersValuesBuffer(), counterId, context.countersManager());
     }
 
     private int allocateCounter(

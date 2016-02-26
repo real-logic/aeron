@@ -525,7 +525,7 @@ public class DriverConductor implements Agent
         NetworkPublication publication = channelEndpoint.getPublication(streamId);
         if (null == publication)
         {
-            final int sessionId = nextSessionId + nextSessionId();
+            final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
@@ -584,7 +584,7 @@ public class DriverConductor implements Agent
 
     private int nextSessionId()
     {
-        return ++nextSessionId;
+        return nextSessionId++;
     }
 
     private void linkPublication(final long registrationId, final DriverManagedResource publication, final AeronClient client)
@@ -865,7 +865,7 @@ public class DriverConductor implements Agent
         if (null == publication)
         {
             final long imageCorrelationId = nextImageCorrelationId();
-            final int sessionId = nextSessionId + nextSessionId();
+            final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
             final RawLog rawLog = newDirectPublicationLog(sessionId, streamId, initialTermId, imageCorrelationId);
 

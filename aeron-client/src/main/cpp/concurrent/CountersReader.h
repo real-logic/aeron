@@ -78,7 +78,7 @@ typedef std::function<void(
 class CountersReader
 {
 public:
-    CountersReader(const AtomicBuffer& metadataBuffer, const AtomicBuffer& valuesBuffer) :
+    inline CountersReader(const AtomicBuffer& metadataBuffer, const AtomicBuffer& valuesBuffer) :
         m_metadataBuffer(metadataBuffer), m_valuesBuffer(valuesBuffer)
     {
     }
@@ -100,7 +100,7 @@ public:
                 const struct CounterMetaDataDefn& record = m_metadataBuffer.overlayStruct<CounterMetaDataDefn>(i);
 
                 const std::string label = m_metadataBuffer.getStringUtf8(i + LABEL_LENGTH_OFFSET);
-                const AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
+                const AtomicBuffer keyBuffer(m_metadataBuffer.buffer() + i + KEY_OFFSET, sizeof(CounterMetaDataDefn::key));
 
                 onCountersMetadata(id, record.typeId, keyBuffer, label);
             }
@@ -109,12 +109,21 @@ public:
         }
     }
 
-    std::int64_t getCounterValue(std::int32_t id)
+    inline std::int64_t getCounterValue(std::int32_t id)
     {
         return m_valuesBuffer.getInt64Volatile(id * COUNTER_LENGTH);
     }
 
-private:
+    inline static util::index_t counterOffset(std::int32_t counterId)
+    {
+        return counterId * COUNTER_LENGTH;
+    }
+
+    inline static util::index_t metadataOffset(std::int32_t counterId)
+    {
+        return counterId * METADATA_LENGTH;
+    }
+
 #pragma pack(push)
 #pragma pack(4)
     struct CounterValueDefn
@@ -142,6 +151,9 @@ private:
     static const util::index_t KEY_OFFSET = offsetof(CounterMetaDataDefn, key);
     static const util::index_t LABEL_LENGTH_OFFSET = offsetof(CounterMetaDataDefn, labelLength);
 
+    static const std::int32_t MAX_LABEL_LENGTH = sizeof(CounterMetaDataDefn::label);
+
+protected:
     AtomicBuffer m_metadataBuffer;
     AtomicBuffer m_valuesBuffer;
 };

@@ -17,6 +17,7 @@
 #define AERON_COUNTERSREADER_H
 
 #include <cstdint>
+#include <cstddef>
 #include <util/BitUtil.h>
 
 #include "AtomicBuffer.h"

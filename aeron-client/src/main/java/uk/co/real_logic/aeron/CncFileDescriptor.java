@@ -123,7 +123,7 @@ public class CncFileDescriptor
         return baseOffset + CNC_METADATA_OFFSET + TO_CLIENTS_BUFFER_LENGTH_FIELD_OFFSET;
     }
 
-    public static int countersMetadataBufferLengthOffset(final int baseOffset)
+    public static int countersMetaDataBufferLengthOffset(final int baseOffset)
     {
         return baseOffset + CNC_METADATA_OFFSET + COUNTERS_METADATA_BUFFER_LENGTH_FIELD_OFFSET;
     }
@@ -147,7 +147,7 @@ public class CncFileDescriptor
         final UnsafeBuffer cncMetaDataBuffer,
         final int toDriverBufferLength,
         final int toClientsBufferLength,
-        final int counterMetadataBufferLength,
+        final int counterMetaDataBufferLength,
         final int counterValuesBufferLength,
         final long clientLivenessTimeout,
         final int errorLogBufferLength)
@@ -155,7 +155,7 @@ public class CncFileDescriptor
         cncMetaDataBuffer.putInt(cncVersionOffset(0), CNC_VERSION);
         cncMetaDataBuffer.putInt(toDriverBufferLengthOffset(0), toDriverBufferLength);
         cncMetaDataBuffer.putInt(toClientsBufferLengthOffset(0), toClientsBufferLength);
-        cncMetaDataBuffer.putInt(countersMetadataBufferLengthOffset(0), counterMetadataBufferLength);
+        cncMetaDataBuffer.putInt(countersMetaDataBufferLengthOffset(0), counterMetaDataBufferLength);
         cncMetaDataBuffer.putInt(countersValuesBufferLengthOffset(0), counterValuesBufferLength);
         cncMetaDataBuffer.putLong(clientLivenessTimeoutOffset(0), clientLivenessTimeout);
         cncMetaDataBuffer.putInt(errorLogBufferLengthOffset(0), errorLogBufferLength);
@@ -184,7 +184,7 @@ public class CncFileDescriptor
             metaDataBuffer.getInt(toDriverBufferLengthOffset(0)) +
             metaDataBuffer.getInt(toClientsBufferLengthOffset(0));
 
-        return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(countersMetadataBufferLengthOffset(0)));
+        return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(countersMetaDataBufferLengthOffset(0)));
     }
 
     public static UnsafeBuffer createCountersValuesBuffer(final ByteBuffer buffer, final DirectBuffer metaDataBuffer)
@@ -192,7 +192,7 @@ public class CncFileDescriptor
         final int offset = END_OF_METADATA_OFFSET +
             metaDataBuffer.getInt(toDriverBufferLengthOffset(0)) +
             metaDataBuffer.getInt(toClientsBufferLengthOffset(0)) +
-            metaDataBuffer.getInt(countersMetadataBufferLengthOffset(0));
+            metaDataBuffer.getInt(countersMetaDataBufferLengthOffset(0));
 
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(countersValuesBufferLengthOffset(0)));
     }
@@ -202,7 +202,7 @@ public class CncFileDescriptor
         final int offset = END_OF_METADATA_OFFSET +
             metaDataBuffer.getInt(toDriverBufferLengthOffset(0)) +
             metaDataBuffer.getInt(toClientsBufferLengthOffset(0)) +
-            metaDataBuffer.getInt(countersMetadataBufferLengthOffset(0)) +
+            metaDataBuffer.getInt(countersMetaDataBufferLengthOffset(0)) +
             metaDataBuffer.getInt(countersValuesBufferLengthOffset(0));
 
         return new UnsafeBuffer(buffer, offset, metaDataBuffer.getInt(errorLogBufferLengthOffset(0)));

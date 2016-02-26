@@ -15,7 +15,7 @@
  */
 
 #include <util/MemoryMappedFile.h>
-#include <concurrent/CountersManager.h>
+#include <concurrent/CountersReader.h>
 #include <util/CommandOptionParser.h>
 
 #include <iostream>
@@ -87,10 +87,10 @@ int main (int argc, char** argv)
         const std::int32_t cncVersion = CncFileDescriptor::cncVersion(cncFile);
         const std::int64_t clientLivenessTimeoutNs = CncFileDescriptor::clientLivenessTimeout(cncFile);
 
-        AtomicBuffer labelsBuffer = CncFileDescriptor::createCounterMetadataBuffer(cncFile);
+        AtomicBuffer metadataBuffer = CncFileDescriptor::createCounterMetadataBuffer(cncFile);
         AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);
 
-        CountersManager counters(labelsBuffer, valuesBuffer);
+        CountersReader counters(metadataBuffer, valuesBuffer);
 
         while(running)
         {
@@ -109,11 +109,11 @@ int main (int argc, char** argv)
 
             ::setlocale(LC_NUMERIC, "");
 
-            counters.forEach([&](int id, const std::string l)
+            counters.forEach([&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string& l)
             {
-                std::int64_t value = valuesBuffer.getInt64Volatile(counters.counterOffset(id));
+                std::int64_t value = counters.getCounterValue(counterId);
 
-                std::printf("%3d: %'20" PRId64 " - %s\n", id, value, l.c_str());
+                std::printf("%3d: %'20" PRId64 " - %s\n", counterId, value, l.c_str());
             });
 
             std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalms));

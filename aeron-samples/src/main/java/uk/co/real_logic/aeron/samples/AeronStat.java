@@ -58,7 +58,7 @@ public class AeronStat
         counters = new CountersReader(labelsBuffer, valuesBuffer);
     }
 
-    public void output(final PrintStream out)
+    public void print(final PrintStream out)
     {
         out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
         out.println("=========================");
@@ -94,7 +94,7 @@ public class AeronStat
         while (running.get())
         {
             System.out.print("\033[H\033[2J");
-            aeronStat.output(System.out);
+            aeronStat.print(System.out);
             System.out.println("--");
             Thread.sleep(1_000);
         }

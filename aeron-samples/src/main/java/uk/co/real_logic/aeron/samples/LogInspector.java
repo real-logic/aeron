@@ -144,14 +144,14 @@ public class LogInspector
 
         for (int i = 0; i < length; i++)
         {
-            int b = buffer.getByte(offset + i) & 0xFF;
+            byte b = buffer.getByte(offset + i);
 
             if (b < 0)
             {
                 b = 0;
             }
 
-            chars[i] = (char)b;
+            chars[i] = (char) (b & 0xFF);
         }
 
         return chars;

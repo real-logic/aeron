@@ -37,8 +37,8 @@ public class LogInspectorAsciiFormatBytesTest
 
     public LogInspectorAsciiFormatBytesTest(final int buffer, final int expected)
     {
-        this.buffer = (byte) buffer;
-        this.expected = (char) expected;
+        this.buffer = (byte)buffer;
+        this.expected = (char)expected;
     }
 
     @Parameters(name = "{index}: ascii format[{0}]={1}")
@@ -59,7 +59,7 @@ public class LogInspectorAsciiFormatBytesTest
     public void shouldFormatBytesToAscii()
     {
         System.setProperty(FORMAT_KEY, "ascii");
-        final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[] { buffer }), 0, 1);
+        final char[] formattedBytes = LogInspector.formatBytes(new UnsafeBuffer(new byte[]{ buffer }), 0, 1);
 
         Assert.assertEquals(expected, formattedBytes[0]);
     }
@@ -73,7 +73,7 @@ public class LogInspectorAsciiFormatBytesTest
     @After
     public void tearDown()
     {
-        if (originalDataFormatProperty == null)
+        if (null == originalDataFormatProperty)
         {
             System.clearProperty(FORMAT_KEY);
         }

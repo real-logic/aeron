@@ -151,7 +151,7 @@ public class LogInspector
                 b = 0;
             }
 
-            chars[i] = (char) (b & 0xFF);
+            chars[i] = (char)b;
         }
 
         return chars;

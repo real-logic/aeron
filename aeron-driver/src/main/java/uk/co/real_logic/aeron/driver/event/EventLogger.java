@@ -41,8 +41,11 @@ public class EventLogger
     public static final boolean IS_FRAME_OUT_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_OUT.tagBit()) == FRAME_OUT.tagBit();
 
+    public static final boolean IS_FRAME_OUT_DROPPED_ENABLED =
+        (ENABLED_EVENT_CODES & FRAME_OUT_DROPPED.tagBit()) == FRAME_OUT_DROPPED.tagBit();
+
     public static final boolean IS_FRAME_LOGGING_ENABLED =
-        IS_FRAME_IN_ENABLED || IS_FRAME_IN_DROPPED_ENABLED || IS_FRAME_OUT_ENABLED;
+        IS_FRAME_IN_ENABLED || IS_FRAME_IN_DROPPED_ENABLED || IS_FRAME_OUT_ENABLED || IS_FRAME_OUT_DROPPED_ENABLED;
 
     private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
         () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
@@ -119,6 +122,21 @@ public class EventLogger
                 EventEncoder.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
 
             ringBuffer.write(FRAME_OUT.id(), encodedBuffer, 0, encodedLength);
+        }
+    }
+
+    public void logFrameOutDropped(
+        final ByteBuffer buffer,
+        final int offset,
+        final int length,
+        final InetSocketAddress dstAddress)
+    {
+        if (IS_FRAME_OUT_DROPPED_ENABLED)
+        {
+            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
+            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
+
+            ringBuffer.write(FRAME_OUT_DROPPED.id(), encodedBuffer, 0, encodedLength);
         }
     }
 

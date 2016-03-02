@@ -21,32 +21,64 @@ import static java.lang.System.getProperty;
 public class DebugChannelEndpointConfiguration
 {
     /**
-     * Property name for data loss rate.
+     * Property name for receiver inbound data loss rate.
      */
-    public static final String DATA_LOSS_RATE_PROP_NAME = "aeron.debug.data.loss.rate";
+    public static final String RECEIVE_DATA_LOSS_RATE_PROP_NAME = "aeron.debug.receive.data.loss.rate";
 
     /**
-     * Property name for data loss seed.
+     * Property name for receiver inbound data loss seed.
      */
-    public static final String DATA_LOSS_SEED_PROP_NAME = "aeron.debug.data.loss.seed";
+    public static final String RECEIVE_DATA_LOSS_SEED_PROP_NAME = "aeron.debug.receive.data.loss.seed";
 
     /**
-     * Property name for control loss rate.
+     * Property name for receiver outbound control loss rate.
      */
-    public static final String CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.control.loss.rate";
+    public static final String RECEIVE_CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.receive.control.loss.rate";
 
     /**
-     * Property name for control loss seed.
+     * Property name for receiver outbound control loss seed.
      */
-    public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
+    public static final String RECEIVE_CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.receive.control.loss.seed";
 
-    public static final long DATA_LOSS_SEED = getLong(DATA_LOSS_SEED_PROP_NAME, -1);
+    /**
+     * Property name for sender outbound data loss rate.
+     */
+    public static final String SEND_DATA_LOSS_RATE_PROP_NAME = "aeron.debug.send.data.loss.rate";
 
-    public static final double DATA_LOSS_RATE = Double.parseDouble(getProperty(DATA_LOSS_RATE_PROP_NAME, "0.0"));
+    /**
+     * Property name for sender outbound data loss seed.
+     */
+    public static final String SEND_DATA_LOSS_SEED_PROP_NAME = "aeron.debug.send.data.loss.seed";
 
-    public static final long CONTROL_LOSS_SEED = getLong(CONTROL_LOSS_SEED_PROP_NAME, -1);
+    /**
+     * Property name for sender inbound control loss rate.
+     */
+    public static final String SEND_CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.send.control.loss.rate";
 
-    public static final double CONTROL_LOSS_RATE = Double.parseDouble(getProperty(CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
+    /**
+     * Property name for sender inbound control loss seed.
+     */
+    public static final String SEND_CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.send.control.loss.seed";
+
+    public static final long RECEIVE_DATA_LOSS_SEED = getLong(RECEIVE_DATA_LOSS_SEED_PROP_NAME, -1);
+
+    public static final double RECEIVE_DATA_LOSS_RATE =
+        Double.parseDouble(getProperty(RECEIVE_DATA_LOSS_RATE_PROP_NAME, "0.0"));
+
+    public static final long RECEIVE_CONTROL_LOSS_SEED = getLong(RECEIVE_CONTROL_LOSS_SEED_PROP_NAME, -1);
+
+    public static final double RECEIVE_CONTROL_LOSS_RATE =
+        Double.parseDouble(getProperty(RECEIVE_CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
+
+    public static final long SEND_DATA_LOSS_SEED = getLong(SEND_DATA_LOSS_SEED_PROP_NAME, -1);
+
+    public static final double SEND_DATA_LOSS_RATE =
+        Double.parseDouble(getProperty(SEND_DATA_LOSS_RATE_PROP_NAME, "0.0"));
+
+    public static final long SEND_CONTROL_LOSS_SEED = getLong(SEND_CONTROL_LOSS_SEED_PROP_NAME, -1);
+
+    public static final double SEND_CONTROL_LOSS_RATE =
+        Double.parseDouble(getProperty(SEND_CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
 
     public static LossGenerator lossGeneratorSupplier(final double lossRate, final long lossSeed)
     {
@@ -58,14 +90,23 @@ public class DebugChannelEndpointConfiguration
         return new RandomLossGenerator(lossRate, lossSeed);
     }
 
-    public static LossGenerator dataLossGeneratorSupplier()
+    public static LossGenerator receiveDataLossGeneratorSupplier()
     {
-        return lossGeneratorSupplier(DATA_LOSS_RATE, DATA_LOSS_SEED);
+        return lossGeneratorSupplier(RECEIVE_DATA_LOSS_RATE, RECEIVE_DATA_LOSS_SEED);
     }
 
-    public static LossGenerator controlLossGeneratorSupplier()
+    public static LossGenerator receiveControlLossGeneratorSupplier()
     {
-        return lossGeneratorSupplier(CONTROL_LOSS_RATE, CONTROL_LOSS_SEED);
+        return lossGeneratorSupplier(RECEIVE_CONTROL_LOSS_RATE, RECEIVE_CONTROL_LOSS_SEED);
     }
 
+    public static LossGenerator sendDataLossGeneratorSupplier()
+    {
+        return lossGeneratorSupplier(SEND_DATA_LOSS_RATE, SEND_DATA_LOSS_SEED);
+    }
+
+    public static LossGenerator sendControlLossGeneratorSupplier()
+    {
+        return lossGeneratorSupplier(SEND_CONTROL_LOSS_RATE, SEND_CONTROL_LOSS_SEED);
+    }
 }

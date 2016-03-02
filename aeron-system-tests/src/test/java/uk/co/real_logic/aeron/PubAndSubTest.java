@@ -329,18 +329,18 @@ public class PubAndSubTest
 
         final LossGenerator dataLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
-        final LossGenerator controlLossGenerator =
+        final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
         context.publicationTermBufferLength(termBufferLength);
 
         context.sendChannelEndpointSupplier(
             (udpChannel, context) -> new DebugSendChannelEndpoint(
-                udpChannel, context, dataLossGenerator, controlLossGenerator));
+                udpChannel, context, noLossGenerator, noLossGenerator));
 
         context.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, context, dataLossGenerator, controlLossGenerator));
+                udpChannel, dispatcher, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
 
@@ -385,18 +385,18 @@ public class PubAndSubTest
 
         final LossGenerator dataLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
-        final LossGenerator controlLossGenerator =
+        final LossGenerator noLossGenerator =
             DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
 
         context.publicationTermBufferLength(termBufferLength);
 
         context.sendChannelEndpointSupplier(
             (udpChannel, context) -> new DebugSendChannelEndpoint(
-                udpChannel, context, dataLossGenerator, controlLossGenerator));
+                udpChannel, context, noLossGenerator, noLossGenerator));
 
         context.receiveChannelEndpointSupplier(
             (udpChannel, dispatcher, context) -> new DebugReceiveChannelEndpoint(
-                udpChannel, dispatcher, context, dataLossGenerator, controlLossGenerator));
+                udpChannel, dispatcher, context, dataLossGenerator, noLossGenerator));
 
         launch(channel);
 

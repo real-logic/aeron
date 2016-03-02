@@ -30,6 +30,7 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
 {
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
+    private final UnsafeBuffer controlBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
 
     public DebugReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -40,8 +41,8 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
             udpChannel,
             dispatcher,
             context,
-            DebugChannelEndpointConfiguration.dataLossGeneratorSupplier(),
-            DebugChannelEndpointConfiguration.controlLossGeneratorSupplier());
+            DebugChannelEndpointConfiguration.receiveDataLossGeneratorSupplier(),
+            DebugChannelEndpointConfiguration.receiveControlLossGeneratorSupplier());
     }
 
     public DebugReceiveChannelEndpoint(
@@ -59,11 +60,21 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        logger.logFrameOut(buffer, remoteAddress);
+        int result = buffer.remaining();
 
-        // TODO: call controlLossGenerator and drop (call log to inform) - need a shouldDropAllFrame() method
+        controlBuffer.wrap(buffer, buffer.position(), buffer.remaining());
+        if (controlLossGenerator.shouldDropFrame(remoteAddress, controlBuffer, buffer.remaining()))
+        {
+            logger.logFrameOutDropped(buffer, buffer.position(), buffer.remaining(), remoteAddress);
+        }
+        else
+        {
+            logger.logFrameOut(buffer, remoteAddress);
 
-        return super.sendTo(buffer, remoteAddress);
+            result = super.sendTo(buffer, remoteAddress);
+        }
+
+        return result;
     }
 
     protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)

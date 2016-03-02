@@ -28,7 +28,7 @@ public interface LossGenerator
     /**
      * Should a frame be dropped?
      *
-     * @param address The source address of the frame.
+     * @param address The source address of the frame if inbound or the remote address if outbound.
      * @param buffer  The buffer containing the frame data.
      * @param length  The length of the frame.
      * @return true to drop, false to process

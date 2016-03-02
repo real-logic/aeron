@@ -43,7 +43,8 @@ public enum EventCode
     REMOVE_IMAGE_CLEANUP(16, EventDissector::dissectAsString),
     CMD_OUT_ON_UNAVAILABLE_IMAGE(17, EventDissector::dissectAsCommand),
     FRAME_IN_DROPPED(18, EventDissector::dissectAsFrame),
-    ERROR_DELETING_FILE(19, EventDissector::dissectAsString),
+    FRAME_OUT_DROPPED(19, EventDissector::dissectAsFrame),
+    ERROR_DELETING_FILE(20, EventDissector::dissectAsString),
 
     INVALID_VERSION(22, EventDissector::dissectAsCommand),
 

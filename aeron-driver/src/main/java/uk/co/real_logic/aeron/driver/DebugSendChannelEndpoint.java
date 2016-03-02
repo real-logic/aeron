@@ -23,8 +23,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Debug implementation which can record transmission frames to the {@link MediaDriver.Context#eventLogger()} and introduce
- * loss via {@link MediaDriver.Context#controlLossGenerator()} and {@link MediaDriver.Context#dataLossGenerator()} .
+ * Debug implementation which can record transmission frames to the {@link MediaDriver.Context#eventLogger()} and
+ * introduce loss.
  */
 public class DebugSendChannelEndpoint extends SendChannelEndpoint
 {
@@ -33,10 +33,22 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
 
     public DebugSendChannelEndpoint(final UdpChannel udpChannel, final MediaDriver.Context context)
     {
+        this(udpChannel,
+            context,
+            DebugChannelEndpointConfiguration.dataLossGeneratorSupplier(),
+            DebugChannelEndpointConfiguration.controlLossGeneratorSupplier());
+    }
+
+    public DebugSendChannelEndpoint(
+        final UdpChannel udpChannel,
+        final MediaDriver.Context context,
+        final LossGenerator dataLossGenerator,
+        final LossGenerator controlLossGenerator)
+    {
         super(udpChannel, context);
 
-        dataLossGenerator = context.dataLossGenerator();
-        controlLossGenerator = context.controlLossGenerator();
+        this.dataLossGenerator = dataLossGenerator;
+        this.controlLossGenerator = controlLossGenerator;
     }
 
     public int send(final ByteBuffer buffer)

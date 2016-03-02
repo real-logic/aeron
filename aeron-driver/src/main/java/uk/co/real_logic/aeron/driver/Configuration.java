@@ -119,26 +119,6 @@ public class Configuration
     public static final String PUBLICATION_UNBLOCK_TIMEOUT_PROP_NAME = "aeron.publication.unblock.timeout";
 
     /**
-     * Property name for data loss rate.
-     */
-    public static final String DATA_LOSS_RATE_PROP_NAME = "aeron.debug.data.loss.rate";
-
-    /**
-     * Property name for data loss seed.
-     */
-    public static final String DATA_LOSS_SEED_PROP_NAME = "aeron.debug.data.loss.seed";
-
-    /**
-     * Property name for control loss rate.
-     */
-    public static final String CONTROL_LOSS_RATE_PROP_NAME = "aeron.debug.control.loss.rate";
-
-    /**
-     * Property name for control loss seed.
-     */
-    public static final String CONTROL_LOSS_SEED_PROP_NAME = "aeron.debug.control.loss.seed";
-
-    /**
      * Should term buffers be created as sparse files. Defaults to false.
      *
      * If a platform supports spare files then log buffer creation is faster with pages being allocated as
@@ -559,36 +539,6 @@ public class Configuration
     public static long statusMessageTimeout()
     {
         return getLong(STATUS_MESSAGE_TIMEOUT_PROP_NAME, STATUS_MESSAGE_TIMEOUT_DEFAULT_NS);
-    }
-
-    public static long dataLossSeed()
-    {
-        return getLong(DATA_LOSS_SEED_PROP_NAME, -1);
-    }
-
-    public static long controlLossSeed()
-    {
-        return getLong(CONTROL_LOSS_SEED_PROP_NAME, -1);
-    }
-
-    public static double dataLossRate()
-    {
-        return Double.parseDouble(getProperty(DATA_LOSS_RATE_PROP_NAME, "0.0"));
-    }
-
-    public static double controlLossRate()
-    {
-        return Double.parseDouble(getProperty(CONTROL_LOSS_RATE_PROP_NAME, "0.0"));
-    }
-
-    public static LossGenerator lossGeneratorSupplier(final double lossRate, final long lossSeed)
-    {
-        if (0 == lossRate)
-        {
-            return (address, buffer, length) -> false;
-        }
-
-        return new RandomLossGenerator(lossRate, lossSeed);
     }
 
     public static ThreadingMode threadingMode()

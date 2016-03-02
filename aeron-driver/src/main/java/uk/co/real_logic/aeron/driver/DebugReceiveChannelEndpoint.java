@@ -23,8 +23,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Debug implementation which can record transmission frames to the {@link MediaDriver.Context#eventLogger()} and introduce
- * loss via {@link MediaDriver.Context#controlLossGenerator()} and {@link MediaDriver.Context#dataLossGenerator()} .
+ * Debug implementation which can record transmission frames to the {@link MediaDriver.Context#eventLogger()} and
+ * introduce loss.
  */
 public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
 {
@@ -32,12 +32,29 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     private final LossGenerator controlLossGenerator;
 
     public DebugReceiveChannelEndpoint(
-        final UdpChannel udpChannel, final DataPacketDispatcher dispatcher, final MediaDriver.Context context)
+        final UdpChannel udpChannel,
+        final DataPacketDispatcher dispatcher,
+        final MediaDriver.Context context)
+    {
+        this(
+            udpChannel,
+            dispatcher,
+            context,
+            DebugChannelEndpointConfiguration.dataLossGeneratorSupplier(),
+            DebugChannelEndpointConfiguration.controlLossGeneratorSupplier());
+    }
+
+    public DebugReceiveChannelEndpoint(
+        final UdpChannel udpChannel,
+        final DataPacketDispatcher dispatcher,
+        final MediaDriver.Context context,
+        final LossGenerator dataLossGenerator,
+        final LossGenerator controlLossGenerator)
     {
         super(udpChannel, dispatcher, context);
 
-        dataLossGenerator = context.dataLossGenerator();
-        controlLossGenerator = context.controlLossGenerator();
+        this.dataLossGenerator = dataLossGenerator;
+        this.controlLossGenerator = controlLossGenerator;
     }
 
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)

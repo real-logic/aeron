@@ -24,10 +24,7 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import uk.co.real_logic.aeron.driver.DebugReceiveChannelEndpointSupplier;
-import uk.co.real_logic.aeron.driver.DebugSendChannelEndpointSupplier;
-import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.ThreadingMode;
+import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
@@ -330,11 +327,20 @@ public class PubAndSubTest
         final int messageLength = (termBufferLength / numMessagesInTermBuffer) - HEADER_LENGTH;
         final int numMessagesToSend = 2 * numMessagesInTermBuffer;
 
+        final LossGenerator dataLossGenerator =
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
+        final LossGenerator controlLossGenerator =
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
+
         context.publicationTermBufferLength(termBufferLength);
-        context.dataLossRate(0.10);                // 10% data loss
-        context.dataLossSeed(0xdeadbeefL);         // predictable seed
-        context.sendChannelEndpointSupplier(new DebugSendChannelEndpointSupplier());
-        context.receiveChannelEndpointSupplier(new DebugReceiveChannelEndpointSupplier());
+
+        context.sendChannelEndpointSupplier(
+            (udpChannel, context) -> new DebugSendChannelEndpoint(
+                udpChannel, context, dataLossGenerator, controlLossGenerator));
+
+        context.receiveChannelEndpointSupplier(
+            (udpChannel, dispatcher, context) -> new DebugReceiveChannelEndpoint(
+                udpChannel, dispatcher, context, dataLossGenerator, controlLossGenerator));
 
         launch(channel);
 
@@ -377,11 +383,20 @@ public class PubAndSubTest
         final int numBatches = 4;
         final int numMessagesPerBatch = numMessagesToSend / numBatches;
 
+        final LossGenerator dataLossGenerator =
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0.10, 0xcafebabeL);  // 10% data loss, predictable seed
+        final LossGenerator controlLossGenerator =
+            DebugChannelEndpointConfiguration.lossGeneratorSupplier(0, 0);
+
         context.publicationTermBufferLength(termBufferLength);
-        context.dataLossRate(0.10);                // 10% data loss
-        context.dataLossSeed(0xcafebabeL);         // predictable seed
-        context.sendChannelEndpointSupplier(new DebugSendChannelEndpointSupplier());
-        context.receiveChannelEndpointSupplier(new DebugReceiveChannelEndpointSupplier());
+
+        context.sendChannelEndpointSupplier(
+            (udpChannel, context) -> new DebugSendChannelEndpoint(
+                udpChannel, context, dataLossGenerator, controlLossGenerator));
+
+        context.receiveChannelEndpointSupplier(
+            (udpChannel, dispatcher, context) -> new DebugReceiveChannelEndpoint(
+                udpChannel, dispatcher, context, dataLossGenerator, controlLossGenerator));
 
         launch(channel);
 

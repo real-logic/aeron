@@ -454,10 +454,6 @@ public final class MediaDriver implements AutoCloseable
         private int initialWindowLength;
         private int eventBufferLength;
         private long statusMessageTimeout;
-        private long dataLossSeed;
-        private long controlLossSeed;
-        private double dataLossRate;
-        private double controlLossRate;
         private int mtuLength;
 
         private boolean warnIfDirectoriesExist;
@@ -465,9 +461,6 @@ public final class MediaDriver implements AutoCloseable
         private Consumer<String> eventConsumer;
         private ThreadingMode threadingMode;
         private boolean dirsDeleteOnStart;
-
-        private LossGenerator dataLossGenerator;
-        private LossGenerator controlLossGenerator;
 
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
@@ -478,10 +471,6 @@ public final class MediaDriver implements AutoCloseable
             maxImageTermBufferLength(Configuration.maxTermBufferLength());
             initialWindowLength(Configuration.initialWindowLength());
             statusMessageTimeout(Configuration.statusMessageTimeout());
-            dataLossRate(Configuration.dataLossRate());
-            dataLossSeed(Configuration.dataLossSeed());
-            controlLossRate(Configuration.controlLossRate());
-            controlLossSeed(Configuration.controlLossSeed());
             mtuLength(Configuration.MTU_LENGTH);
 
             eventBufferLength = EventConfiguration.bufferLength();
@@ -562,7 +551,6 @@ public final class MediaDriver implements AutoCloseable
                     eventLogger));
 
                 concludeIdleStrategies();
-                concludeLossGenerators();
             }
             catch (final Exception ex)
             {
@@ -881,30 +869,6 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context dataLossRate(final double lossRate)
-        {
-            this.dataLossRate = lossRate;
-            return this;
-        }
-
-        public Context dataLossSeed(final long lossSeed)
-        {
-            this.dataLossSeed = lossSeed;
-            return this;
-        }
-
-        public Context controlLossRate(final double lossRate)
-        {
-            this.controlLossRate = lossRate;
-            return this;
-        }
-
-        public Context controlLossSeed(final long lossSeed)
-        {
-            this.controlLossSeed = lossSeed;
-            return this;
-        }
-
         public Context systemCounters(final SystemCounters systemCounters)
         {
             this.systemCounters = systemCounters;
@@ -914,18 +878,6 @@ public final class MediaDriver implements AutoCloseable
         public Context threadingMode(final ThreadingMode threadingMode)
         {
             this.threadingMode = threadingMode;
-            return this;
-        }
-
-        public Context dataLossGenerator(final LossGenerator generator)
-        {
-            this.dataLossGenerator = generator;
-            return this;
-        }
-
-        public Context controlLossGenerator(final LossGenerator generator)
-        {
-            this.controlLossGenerator = generator;
             return this;
         }
 
@@ -1142,16 +1094,6 @@ public final class MediaDriver implements AutoCloseable
             return mtuLength;
         }
 
-        public LossGenerator dataLossGenerator()
-        {
-            return dataLossGenerator;
-        }
-
-        public LossGenerator controlLossGenerator()
-        {
-            return controlLossGenerator;
-        }
-
         public CommonContext mtuLength(final int mtuLength)
         {
             this.mtuLength = mtuLength;
@@ -1249,19 +1191,6 @@ public final class MediaDriver implements AutoCloseable
             if (null == sharedIdleStrategy)
             {
                 sharedIdleStrategy(Configuration.sharedIdleStrategy());
-            }
-        }
-
-        private void concludeLossGenerators()
-        {
-            if (null == dataLossGenerator)
-            {
-                dataLossGenerator(Configuration.lossGeneratorSupplier(dataLossRate, dataLossSeed));
-            }
-
-            if (null == controlLossGenerator)
-            {
-                controlLossGenerator(Configuration.lossGeneratorSupplier(controlLossRate, controlLossSeed));
             }
         }
     }

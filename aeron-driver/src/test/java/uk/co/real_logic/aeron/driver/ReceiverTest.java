@@ -154,7 +154,6 @@ public class ReceiverTest
 
         context.eventLogger(mockLogger);
         context.systemCounters(mockSystemCounters);
-        context.dataLossGenerator((address, buffer, length) -> false);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI),

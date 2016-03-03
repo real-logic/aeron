@@ -301,12 +301,12 @@ public class CommonContext implements AutoCloseable
     }
 
     /**
-     * Read the error log and
+     * Read the error log to a given {@link PrintStream}
      *
      * @param stream to write the error log contents to.
      * @return the number of observations from the error log
      */
-    public int printErrorLog(final PrintStream stream)
+    public int saveErrorLog(final PrintStream stream)
     {
         final File dirFile = new File(aeronDirectoryName);
         int result = 0;

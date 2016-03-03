@@ -398,7 +398,7 @@ public final class MediaDriver implements AutoCloseable
 
                 try (final PrintStream stream = new PrintStream(errorLogFile, "UTF-8"))
                 {
-                    observations = ctx.printErrorLog(stream);
+                    observations = ctx.saveErrorLog(stream);
                 }
                 catch (final Exception ex)
                 {
@@ -534,7 +534,7 @@ public final class MediaDriver implements AutoCloseable
 
                 toDriverCommands(new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
-                if (null != errorLog)
+                if (null == errorLog)
                 {
                     errorLog = new DistinctErrorLog(
                         new UnsafeBuffer(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer)), epochClock);

@@ -17,11 +17,16 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.LangUtil;
+import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.errors.ErrorLogReader;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.File;
+import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -293,6 +298,69 @@ public class CommonContext implements AutoCloseable
         }
 
         return false;
+    }
+
+    /**
+     * Read the error log and
+     *
+     * @param stream to write the error log contents to.
+     * @return the number of observations from the error log
+     */
+    public int printErrorLog(final PrintStream stream)
+    {
+        final File dirFile = new File(aeronDirectoryName);
+        int result = 0;
+
+        if (dirFile.exists() && dirFile.isDirectory())
+        {
+            final File cncFile = new File(aeronDirectoryName, CncFileDescriptor.CNC_FILE);
+
+            if (cncFile.exists())
+            {
+                MappedByteBuffer cncByteBuffer = null;
+
+                try
+                {
+                    cncByteBuffer = IoUtil.mapExistingFile(cncFile, CncFileDescriptor.CNC_FILE);
+                    final UnsafeBuffer cncMetaDataBuffer = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
+
+                    final int cncVersion = cncMetaDataBuffer.getInt(CncFileDescriptor.cncVersionOffset(0));
+
+                    if (CncFileDescriptor.CNC_VERSION != cncVersion)
+                    {
+                        throw new IllegalStateException("aeron cnc file version not understood: version=" + cncVersion);
+                    }
+
+                    final AtomicBuffer buffer = CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer);
+                    final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+
+                    final int distinctErrorCount = ErrorLogReader.read(
+                        buffer,
+                        (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
+                            stream.format(
+                                "***\n%d observations from %s to %s for:\n %s\n",
+                                observationCount,
+                                dateFormat.format(new Date(firstObservationTimestamp)),
+                                dateFormat.format(new Date(lastObservationTimestamp)),
+                                encodedException
+                            ));
+
+                    stream.format("\n%d distinct errors observed.\n", distinctErrorCount);
+
+                    result = distinctErrorCount;
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+                finally
+                {
+                    IoUtil.unmap(cncByteBuffer);
+                }
+            }
+        }
+
+        return result;
     }
 
     /**

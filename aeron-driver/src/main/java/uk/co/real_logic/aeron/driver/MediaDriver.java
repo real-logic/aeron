@@ -35,19 +35,14 @@ import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.StandardSocketOptions;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -391,6 +386,32 @@ public final class MediaDriver implements AutoCloseable
                 if (driverActive)
                 {
                     throw new ActiveDriverException("active driver detected");
+                }
+
+                final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
+                final String errorLogFilename = String.format(
+                    "%s-%s-error.log",
+                    ctx.aeronDirectoryName(),
+                    dateFormat.format(new Date(System.currentTimeMillis())));
+                final File errorLogFile = new File(errorLogFilename);
+                int observations = 0;
+
+                try (final PrintStream stream = new PrintStream(errorLogFile, "UTF-8"))
+                {
+                    observations = ctx.printErrorLog(stream);
+                }
+                catch (final Exception ex)
+                {
+                    LangUtil.rethrowUnchecked(ex);
+                }
+
+                if (0 == observations)
+                {
+                    errorLogFile.delete();
+                }
+                else
+                {
+                    System.err.println("WARNING: existing errors saved to " + errorLogFile);
                 }
 
                 ctx.deleteAeronDirectory();

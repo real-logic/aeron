@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.media;
 
 import org.junit.Test;
 import uk.co.real_logic.agrona.LangUtil;
@@ -28,16 +28,17 @@ import static java.net.InetAddress.getByName;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.*;
-import static uk.co.real_logic.aeron.driver.NetworkUtil.filterBySubnet;
+import static uk.co.real_logic.aeron.driver.media.NetworkUtil.filterBySubnet;
+import static uk.co.real_logic.aeron.driver.media.NetworkUtil.isMatchWithPrefix;
 
 public class NetworkUtilTest
 {
     @Test
     public void shouldNotMatchIfLengthsAreDifferent()
     {
-        assertFalse(NetworkUtil.isMatchWithPrefix(new byte[0], new byte[3], 0));
-        assertFalse(NetworkUtil.isMatchWithPrefix(new byte[1], new byte[2], 0));
-        assertFalse(NetworkUtil.isMatchWithPrefix(new byte[5], new byte[5000], 0));
+        assertFalse(isMatchWithPrefix(new byte[0], new byte[3], 0));
+        assertFalse(isMatchWithPrefix(new byte[1], new byte[2], 0));
+        assertFalse(isMatchWithPrefix(new byte[5], new byte[5000], 0));
     }
 
     @Test
@@ -45,7 +46,7 @@ public class NetworkUtilTest
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'c', 'd' };
-        assertTrue(NetworkUtil.isMatchWithPrefix(a, b, 32));
+        assertTrue(isMatchWithPrefix(a, b, 32));
     }
 
     @Test
@@ -53,7 +54,7 @@ public class NetworkUtilTest
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'c', 'e' };
-        assertTrue(NetworkUtil.isMatchWithPrefix(a, b, 24));
+        assertTrue(isMatchWithPrefix(a, b, 24));
     }
 
     @Test
@@ -61,13 +62,13 @@ public class NetworkUtilTest
     {
         final byte[] a = { 'a', 'b', 'c', 'd' };
         final byte[] b = { 'a', 'b', 'd', 'd' };
-        assertFalse(NetworkUtil.isMatchWithPrefix(a, b, 24));
+        assertFalse(isMatchWithPrefix(a, b, 24));
     }
 
     @Test
     public void shouldMatchIfAllBytesWithPrefixUnalignedMatch() throws Exception
     {
-        assertTrue(NetworkUtil.isMatchWithPrefix(
+        assertTrue(isMatchWithPrefix(
             asBytes(0b10101010_11111111_00000000_00000000),
             asBytes(0b10101010_11111110_00000000_00000000),
             15));
@@ -76,7 +77,7 @@ public class NetworkUtilTest
     @Test
     public void shouldNotMatchIfNotAllBytesWithUnalignedPrefixMatch() throws Exception
     {
-        assertFalse(NetworkUtil.isMatchWithPrefix(
+        assertFalse(isMatchWithPrefix(
             asBytes(0b10101010_11111111_00000000_00000000),
             asBytes(0b10101010_11111111_10000000_00000000),
             17));
@@ -136,8 +137,7 @@ public class NetworkUtilTest
         final NetworkInterface ifc1 = stub.add("fe80:0:0:0001:0002:0:0:1/80");
         stub.add("fe80:0:0:0002:0003:0:0:1/80");
 
-        final Collection<NetworkInterface> filteredBySubnet =
-            filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
+        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0001:0002:0:0:0"), 80);
 
         assertThat(filteredBySubnet.size(), is(1));
         assertThat(first(filteredBySubnet), is(ifc1));
@@ -151,8 +151,7 @@ public class NetworkUtilTest
         stub.add("fe80:0:0:0001:0:0:0:1/64");
         stub.add("fe80:0:0:0002:0:0:0:1/64");
 
-        final Collection<NetworkInterface> filteredBySubnet =
-            filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
+        final Collection<NetworkInterface> filteredBySubnet = filterBySubnet(stub, getByName("fe80:0:0:0004:0:0:0:0"), 64);
 
         assertThat(filteredBySubnet.size(), is(0));
     }
@@ -176,7 +175,7 @@ public class NetworkUtilTest
         assertThat(it.next(), sameInstance(ifc1));
     }
 
-    private static <T> T first(Collection<T> c)
+    private static <T> T first(final Collection<T> c)
     {
         return c.iterator().next();
     }
@@ -185,25 +184,24 @@ public class NetworkUtilTest
     {
         private int counter = 0;
 
-        private final IdentityHashMap<NetworkInterface, List<InterfaceAddress>> addressesByInterface =
-            new IdentityHashMap<>();
+        private final IdentityHashMap<NetworkInterface, List<InterfaceAddress>> addressesByInterface = new IdentityHashMap<>();
 
         public Enumeration<NetworkInterface> getNetworkInterfaces() throws SocketException
         {
             return Collections.enumeration(addressesByInterface.keySet());
         }
 
-        public List<InterfaceAddress> getInterfaceAddresses(NetworkInterface ifc)
+        public List<InterfaceAddress> getInterfaceAddresses(final NetworkInterface ifc)
         {
             return addressesByInterface.get(ifc);
         }
 
-        public boolean isLoopback(NetworkInterface ifc) throws SocketException
+        public boolean isLoopback(final NetworkInterface ifc) throws SocketException
         {
             return false;
         }
 
-        public NetworkInterface add(String...ips) throws UnknownHostException
+        public NetworkInterface add(final String...ips) throws UnknownHostException
         {
             final List<InterfaceAddress> ias = new ArrayList<>();
             for (final String ip : ips)
@@ -219,7 +217,7 @@ public class NetworkUtilTest
         }
     }
 
-    private static NetworkInterface newNetworkInterface(String name)
+    private static NetworkInterface newNetworkInterface(final String name)
     {
         NetworkInterface networkInterface = null;
         try
@@ -241,7 +239,7 @@ public class NetworkUtilTest
         return networkInterface;
     }
 
-    private static InterfaceAddress newInterfaceAddress(InetAddress inetAddress, short maskLength)
+    private static InterfaceAddress newInterfaceAddress(final InetAddress inetAddress, final short maskLength)
     {
         InterfaceAddress interfaceAddress = null;
         try
@@ -265,7 +263,7 @@ public class NetworkUtilTest
         return interfaceAddress;
     }
 
-    private static byte[] asBytes(int i)
+    private static byte[] asBytes(final int i)
     {
         final byte[] bs = new byte[4];
         bs[0] = (byte) ((i >> 24) & 0xFF);

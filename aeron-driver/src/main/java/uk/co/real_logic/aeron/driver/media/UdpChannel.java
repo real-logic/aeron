@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.aeron.ErrorCode;
-import uk.co.real_logic.aeron.driver.UriUtil;
+import uk.co.real_logic.aeron.driver.uri.UriUtil;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.aeron.driver.uri.AeronUri;
 import uk.co.real_logic.aeron.driver.uri.InterfaceSearchAddress;
@@ -29,8 +29,9 @@ import java.util.Map;
 
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
-import static uk.co.real_logic.aeron.driver.NetworkUtil.*;
+import static uk.co.real_logic.aeron.driver.media.NetworkUtil.*;
 import static uk.co.real_logic.aeron.driver.Strings.isEmpty;
+import static uk.co.real_logic.agrona.BitUtil.toHex;
 
 /**
  * Encapsulation of UDP Channels
@@ -423,9 +424,9 @@ public final class UdpChannel
     {
         return String.format(
             "UDP-%1$s-%2$d-%3$s-%4$d",
-            BitUtil.toHex(localData.getAddress().getAddress()),
+            toHex(localData.getAddress().getAddress()),
             localData.getPort(),
-            BitUtil.toHex(remoteData.getAddress().getAddress()),
+            toHex(remoteData.getAddress().getAddress()),
             remoteData.getPort());
     }
 
@@ -518,7 +519,7 @@ public final class UdpChannel
             return this;
         }
 
-        public Context protocolFamily(ProtocolFamily protocolFamily)
+        public Context protocolFamily(final ProtocolFamily protocolFamily)
         {
             this.protocolFamily = protocolFamily;
             return this;

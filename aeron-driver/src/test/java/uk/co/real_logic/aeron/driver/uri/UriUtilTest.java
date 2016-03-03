@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.driver.uri;
 
 import org.junit.Test;
 
@@ -26,15 +26,14 @@ import java.util.Map;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.driver.UriUtil.parseQueryString;
+import static uk.co.real_logic.aeron.driver.uri.UriUtil.parseQueryString;
 
 public class UriUtilTest
 {
     @Test
     public void shouldParseSimpleQueryParameters() throws Exception
     {
-        final Map<String, String> params =
-            doParse(URI.create("http://example.com:12345/foo/bar.html?mask=24"));
+        final Map<String, String> params = doParse(URI.create("http://example.com:12345/foo/bar.html?mask=24"));
 
         assertThat(params.size(), is(1));
         assertThat(params.get("mask"), is("24"));
@@ -43,8 +42,7 @@ public class UriUtilTest
     @Test
     public void shouldParseWithMissingValuePart() throws Exception
     {
-        final Map<String, String> params =
-            doParse(URI.create("http://example.com:12345/foo/bar.html?mask"));
+        final Map<String, String> params = doParse(URI.create("http://example.com:12345/foo/bar.html?mask"));
 
         assertThat(params.containsKey("mask"), is(true));
         assertThat(params.get("mask"), is(""));

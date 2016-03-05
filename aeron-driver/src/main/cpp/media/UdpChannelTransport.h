@@ -26,6 +26,10 @@
 
 namespace aeron { namespace driver { namespace media {
 
+using namespace aeron::concurrent;
+using namespace aeron::concurrent::logbuffer;
+using namespace aeron::protocol;
+
 class UdpChannelTransport
 {
 public:
@@ -77,20 +81,20 @@ public:
     UdpChannel& udpChannel();
 
 protected:
-    inline concurrent::AtomicBuffer& receiveBuffer()
+    inline AtomicBuffer& receiveBuffer()
     {
         return m_receiveBuffer;
     }
 
-    inline bool isValidFrame(concurrent::AtomicBuffer& buffer, std::int32_t length)
+    inline bool isValidFrame(AtomicBuffer& buffer, std::int32_t length)
     {
         bool isValid = true;
 
-        if (concurrent::logbuffer::FrameDescriptor::frameVersion(buffer, 0) != protocol::HeaderFlyweight::CURRENT_VERSION)
+        if (FrameDescriptor::frameVersion(buffer, 0) != HeaderFlyweight::CURRENT_VERSION)
         {
             isValid = false;
         }
-        else if (length < protocol::HeaderFlyweight::headerLength())
+        else if (length < HeaderFlyweight::headerLength())
         {
             isValid = false;
         }
@@ -108,7 +112,7 @@ private:
     int m_sendSocketFd;
     int m_recvSocketFd;
     std::uint8_t m_receiveBufferBytes[m_receiveBufferLength];
-    concurrent::AtomicBuffer m_receiveBuffer;
+    AtomicBuffer m_receiveBuffer;
 };
 
 inline std::ostream& operator<<(std::ostream& os, const UdpChannelTransport& dt)

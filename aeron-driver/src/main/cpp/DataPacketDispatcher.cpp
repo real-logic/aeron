@@ -16,15 +16,12 @@
 
 #include "DataPacketDispatcher.h"
 
-using namespace aeron::driver;
-using namespace aeron::driver::media;
-
 std::int32_t DataPacketDispatcher::onDataPacket(
-    ReceiveChannelEndpoint &channelEndpoint,
-    protocol::DataHeaderFlyweight &header,
-    concurrent::AtomicBuffer &atomicBuffer,
+    ReceiveChannelEndpoint& channelEndpoint,
+    DataHeaderFlyweight& header,
+    AtomicBuffer& atomicBuffer,
     const std::int32_t length,
-    InetAddress &srcAddress)
+    InetAddress& srcAddress)
 {
     std::int32_t streamId = header.streamId();
 

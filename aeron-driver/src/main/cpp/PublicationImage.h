@@ -24,6 +24,8 @@
 namespace aeron { namespace driver
 {
 
+using namespace aeron::concurrent;
+
 class PublicationImage
 {
 public:
@@ -37,7 +39,7 @@ public:
     std::int32_t streamId();
 
     virtual std::int32_t insertPacket(
-        std::int32_t termId, std::int32_t termOffset, aeron::concurrent::AtomicBuffer& buffer, std::int32_t length);
+        std::int32_t termId, std::int32_t termOffset, AtomicBuffer& buffer, std::int32_t length);
 
 };
 

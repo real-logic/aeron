@@ -6,6 +6,7 @@
 #include "NetworkInterface.h"
 
 using namespace aeron::driver::media;
+using namespace aeron::util;
 
 void NetworkInterface::setAsMulticastInterface(int socketFd) const
 {
@@ -14,12 +15,12 @@ void NetworkInterface::setAsMulticastInterface(int socketFd) const
         case AF_INET:
             if(setsockopt(socketFd, IPPROTO_IP, IP_MULTICAST_IF, m_address->addrPtr(), m_address->addrSize()) < 0)
             {
-                throw aeron::util::IOException("Unable to set socket option", SOURCEINFO);
+                throw IOException("Unable to set socket option", SOURCEINFO);
             }
             break;
         case AF_INET6:
             break;
         default:
-            throw aeron::util::IllegalStateException("Invalid address type", SOURCEINFO);
+            throw IllegalStateException("Invalid address type", SOURCEINFO);
     }
 }

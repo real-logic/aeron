@@ -27,6 +27,11 @@
 
 namespace aeron { namespace driver {
 
+using namespace aeron::concurrent;
+using namespace aeron::driver;
+using namespace aeron::driver::media;
+using namespace aeron::protocol;
+
 enum SessionStatus
 {
     PENDING_SETUP_FRAME,
@@ -51,11 +56,11 @@ public:
     {}
 
     std::int32_t onDataPacket(
-        media::ReceiveChannelEndpoint& channelEndpoint,
-        aeron::protocol::DataHeaderFlyweight& header,
-        aeron::concurrent::AtomicBuffer& atomicBuffer,
+        ReceiveChannelEndpoint& channelEndpoint,
+        DataHeaderFlyweight& header,
+        AtomicBuffer& atomicBuffer,
         const std::int32_t length,
-        media::InetAddress& srcAddress);
+        InetAddress& srcAddress);
 
     void addSubscription(std::int32_t streamId);
 

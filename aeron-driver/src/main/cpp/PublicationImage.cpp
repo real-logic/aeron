@@ -29,7 +29,7 @@ std::int32_t PublicationImage::streamId()
 }
 
 COND_MOCK_VIRTUAL std::int32_t PublicationImage::insertPacket(
-    std::int32_t termId, std::int32_t termOffset, aeron::concurrent::AtomicBuffer &buffer, std::int32_t length)
+    std::int32_t termId, std::int32_t termOffset, AtomicBuffer &buffer, std::int32_t length)
 {
     return 0;
 }

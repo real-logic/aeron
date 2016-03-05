@@ -24,6 +24,8 @@
 
 namespace aeron { namespace driver { namespace media {
 
+using namespace aeron::protocol;
+
 class SendChannelEndpoint : public UdpChannelTransport
 {
 public:
@@ -35,8 +37,8 @@ public:
     }
 
 private:
-    protocol::DataHeaderFlyweight m_dataHeaderFlyweight;
-    protocol::StatusMessageFlyweight m_smFlyweight;
+    DataHeaderFlyweight m_dataHeaderFlyweight;
+    StatusMessageFlyweight m_smFlyweight;
 };
 
 }}}

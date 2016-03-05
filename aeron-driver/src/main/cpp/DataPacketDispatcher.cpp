@@ -17,13 +17,51 @@
 #include "DataPacketDispatcher.h"
 
 using namespace aeron::driver;
+using namespace aeron::driver::media;
 
 std::int32_t DataPacketDispatcher::onDataPacket(
-    media::ReceiveChannelEndpoint &channelEndpoint,
+    ReceiveChannelEndpoint &channelEndpoint,
     protocol::DataHeaderFlyweight &header,
     concurrent::AtomicBuffer &atomicBuffer,
     const std::int32_t length,
-    media::InetAddress &srcAddress)
+    InetAddress &srcAddress)
 {
+    std::int32_t streamId = header.streamId();
+
+    if (sessionsByStreamId.find(streamId) != sessionsByStreamId.end())
+    {
+        std::unordered_map<int32_t, PublicationImage::ptr_t> &sessions = sessionsByStreamId[streamId];
+
+        std::int32_t sessionId = header.sessionId();
+        std::int32_t termId = header.termId();
+
+        const std::pair<int, int>& sessionRef = std::make_pair(sessionId, streamId);
+
+        if (sessions.find(sessionId) != sessions.end())
+        {
+//            sessions[sessionId].
+        }
+        else if (ignoredSessions.find(sessionRef) == ignoredSessions.end())
+        {
+            InetAddress& controlAddress =
+                channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
+
+            ignoredSessions[sessionRef] = PENDING_SETUP_FRAME;
+
+            channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
+
+            m_receiver->addPendingSetupMessage(sessionId, streamId, channelEndpoint);
+        }
+    }
+
     return 0;
+}
+
+void DataPacketDispatcher::addSubscription(std::int32_t streamId)
+{
+    if (sessionsByStreamId.find(streamId) == sessionsByStreamId.end())
+    {
+        std::unordered_map<std::int32_t,PublicationImage::ptr_t> session;
+        sessionsByStreamId.emplace(std::make_pair(streamId, session));
+    }
 }

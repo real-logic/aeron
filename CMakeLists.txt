@@ -157,6 +157,8 @@ include_directories(${HDRHISTOGRAM_SOURCE_DIR}/src)
 # google benchmark
 include_directories(${GOOGLE_BENCHMARK_SOURCE_DIR}/include)
 
+include_directories(${AERON_CLIENT_TEST_PATH})
+
 ##########################################################
 
 include_directories(${AERON_CLIENT_SOURCE_PATH})

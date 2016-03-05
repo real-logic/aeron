@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 - 2016 Real Logic Ltd.
+ * Copyright 2016 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,22 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_DRIVER_RECEIVER_
-#define INCLUDED_AERON_DRIVER_RECEIVER_
-
-#include <cstdint>
-#include "MediaDriver.h"
-#include "media/ReceiveChannelEndpoint.h"
+#include "PublicationImage.h"
 
 using namespace aeron::driver;
-using namespace aeron::driver::media;
 
-namespace aeron { namespace driver
+std::int32_t PublicationImage::sessionId()
 {
+    return 0;
+}
 
-class Receiver
+std::int32_t PublicationImage::streamId()
 {
-public:
-    virtual ~Receiver() = default;
+    return 0;
+}
 
-    virtual void addPendingSetupMessage(
-        std::int32_t sessionId, std::int32_t streamId, ReceiveChannelEndpoint& receiveChannelEndpoint);
-};
-
-}};
-
-#endif //AERON_RECEIVER_H
+COND_MOCK_VIRTUAL std::int32_t PublicationImage::insertPacket(
+    std::int32_t termId, std::int32_t termOffset, aeron::concurrent::AtomicBuffer &buffer, std::int32_t length)
+{
+    return 0;
+}

@@ -56,3 +56,9 @@ std::int32_t ReceiveChannelEndpoint::dispatch(
 
     return bytesReceived;
 }
+
+void ReceiveChannelEndpoint::sendSetupElicitingStatusMessage(
+    InetAddress& address, std::int32_t sessionId, std::int32_t streamId)
+{
+
+}

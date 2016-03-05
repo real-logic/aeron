@@ -44,7 +44,7 @@ public:
         m_receiveBuffer.setMemory(0, m_receiveBuffer.capacity(), 0);
     }
 
-    ~UdpChannelTransport()
+    virtual ~UdpChannelTransport()
     {
         if (0 != m_sendSocketFd)
         {
@@ -73,6 +73,8 @@ public:
     std::int32_t recv(char* data, const int32_t len);
     void setTimeout(timeval timeout);
     InetAddress* receive(int32_t* pInt);
+    bool isMulticast();
+    UdpChannel& udpChannel();
 
 protected:
     inline concurrent::AtomicBuffer& receiveBuffer()

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 - 2016 Real Logic Ltd.
+ * Copyright 2016 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 #include "Receiver.h"
 
-Receiver::Receiver(MediaDriver::Context &ctx)
+void Receiver::addPendingSetupMessage(
+    std::int32_t sessionId, std::int32_t streamId, ReceiveChannelEndpoint& receiveChannelEndpoint)
 {
-
 }

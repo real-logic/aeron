@@ -24,7 +24,6 @@
 #include <protocol/StatusMessageFlyweight.h>
 
 #include "UdpChannelTransport.h"
-#include "../../../../../aeron-client/src/main/cpp/concurrent/AtomicBuffer.h"
 
 namespace aeron { namespace driver { namespace media {
 
@@ -44,7 +43,10 @@ public:
         m_nakBuffer.setMemory(0, m_nakBuffer.capacity(), 0);
     }
 
-    std::int32_t pollForData();
+    virtual std::int32_t pollForData();
+
+    virtual void sendSetupElicitingStatusMessage(
+        InetAddress& address, std::int32_t sessionId, std::int32_t streamId);
 
 private:
     std::uint8_t m_smBufferBytes[protocol::StatusMessageFlyweight::headerLength()];

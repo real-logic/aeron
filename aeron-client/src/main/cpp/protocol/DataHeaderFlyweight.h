@@ -43,13 +43,15 @@ struct DataHeaderDefn
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t termId;
-    std::uint8_t data;
+    std::uint8_t data[0];
 };
 #pragma pack(pop)
 
 class DataHeaderFlyweight : public HeaderFlyweight
 {
 public:
+    typedef DataHeaderFlyweight this_t;
+
     DataHeaderFlyweight(concurrent::AtomicBuffer& buffer, std::int32_t offset)
         : HeaderFlyweight(buffer, offset), m_struct(overlayStruct<DataHeaderDefn>(0))
     {
@@ -101,12 +103,12 @@ public:
 
     inline std::uint8_t* data()
     {
-        return &m_struct.data;
+        return m_struct.data;
     }
 
-    inline std::int32_t headerLength()
+    inline static constexpr std::int32_t headerLength()
     {
-        return sizeof(HeaderDefn) + frameLength();
+        return sizeof(DataHeaderDefn);
     }
 
 private:

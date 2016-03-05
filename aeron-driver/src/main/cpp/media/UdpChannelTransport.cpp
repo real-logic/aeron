@@ -189,3 +189,13 @@ InetAddress* UdpChannelTransport::receive(int32_t* bytesRead)
 
     return nullptr;
 }
+
+bool UdpChannelTransport::isMulticast()
+{
+    return m_channel->isMulticast();
+}
+
+UdpChannel& UdpChannelTransport::udpChannel()
+{
+    return *m_channel;
+}

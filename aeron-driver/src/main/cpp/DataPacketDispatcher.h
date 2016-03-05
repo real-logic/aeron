@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <utility>
 #include <media/ReceiveChannelEndpoint.h>
+#include "PublicationImage.h"
+#include "Receiver.h"
 
 namespace aeron { namespace driver {
 
@@ -44,14 +46,23 @@ struct Hasher
 class DataPacketDispatcher
 {
 public:
+    DataPacketDispatcher(std::shared_ptr<Receiver> receiver) :
+        m_receiver(std::move(receiver))
+    {}
+
     std::int32_t onDataPacket(
         media::ReceiveChannelEndpoint& channelEndpoint,
         aeron::protocol::DataHeaderFlyweight& header,
         aeron::concurrent::AtomicBuffer& atomicBuffer,
         const std::int32_t length,
         media::InetAddress& srcAddress);
+
+    void addSubscription(std::int32_t streamId);
+
 private:
+    std::shared_ptr<Receiver> m_receiver;
     std::unordered_map<std::pair<std::int32_t, std::int32_t>, SessionStatus, Hasher> ignoredSessions;
+    std::unordered_map<std::int32_t,std::unordered_map<std::int32_t, PublicationImage::ptr_t>> sessionsByStreamId;
 };
 
 }}

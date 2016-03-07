@@ -31,6 +31,22 @@ TEST_F(InetAddressTest, parsesIpv4Address)
     EXPECT_EQ(AF_INET, address->domain());
     EXPECT_FALSE(address->isEven());
     EXPECT_EQ(1234, address->port());
+    EXPECT_FALSE(address->isMulticast());
+}
+
+TEST_F(InetAddressTest, parsesIpv4MulticastAddress)
+{
+    EXPECT_FALSE(InetAddress::parse("223.255.255.255:1234")->isMulticast());
+    EXPECT_TRUE(InetAddress::parse("224.0.0.0:1234")->isMulticast());
+    EXPECT_TRUE(InetAddress::parse("239.255.255.255:1234")->isMulticast());
+    EXPECT_FALSE(InetAddress::parse("240.0.0.0:1234")->isMulticast());
+}
+
+TEST_F(InetAddressTest, parsesIpv6MulticastAddress)
+{
+    EXPECT_FALSE(InetAddress::parse("[FEFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:1234")->isMulticast());
+    EXPECT_TRUE(InetAddress::parse("[FF00::]:1234")->isMulticast());
+    EXPECT_TRUE(InetAddress::parse("[FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF]:1234")->isMulticast());
 }
 
 TEST_F(InetAddressTest, parsesIpv6Address)

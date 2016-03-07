@@ -28,7 +28,7 @@ class ChannelEndpointTest : public testing::Test
 
 TEST_F(ChannelEndpointTest, initialisesEndpoint)
 {
-    const char* uri = "aeron:udp?group=224.10.9.9:54326|interface=localhost";
+    const char* uri = "aeron:udp?endpoint=224.10.9.9:54326|interface=localhost";
     std::uint8_t setupBytes[protocol::SetupFlyweight::headerLength()];
     concurrent::AtomicBuffer setupBuffer{setupBytes, protocol::SetupFlyweight::headerLength()};
     protocol::SetupFlyweight setupFlyweight{setupBuffer, 0};

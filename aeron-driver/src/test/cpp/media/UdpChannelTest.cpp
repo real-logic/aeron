@@ -40,7 +40,7 @@ class UdpChannelTest : public testing::Test
 
 TEST_F(UdpChannelTest, throwsExceptionOnEvenMultcastDataAddress)
 {
-    EXPECT_THROW(UdpChannel::parse("aeron:udp?group=224.10.9.8:40124"), InvalidChannelException);
+    EXPECT_THROW(UdpChannel::parse("aeron:udp?endpoint=224.10.9.8:40124"), InvalidChannelException);
 }
 
 TEST_F(UdpChannelTest, throwsExceptionWithMissingAddress)
@@ -48,24 +48,14 @@ TEST_F(UdpChannelTest, throwsExceptionWithMissingAddress)
     EXPECT_THROW(UdpChannel::parse("aeron:udp"), InvalidChannelException);
 }
 
-TEST_F(UdpChannelTest, throwsExceptionWithBothMulticastAndUnicastSpecified)
-{
-    EXPECT_THROW(
-        UdpChannel::parse("aeron:udp?group=224.10.9.9:40124|local=127.0.0.1:12345"),
-        InvalidChannelException);
-    EXPECT_THROW(
-        UdpChannel::parse("aeron:udp?interface=127.0.0.1:12345|remote=127.0.0.1:12345"),
-        InvalidChannelException);
-}
-
 TEST_F(UdpChannelTest, throwsExceptionWithInvalidMedia)
 {
-    EXPECT_THROW(UdpChannel::parse("aeron:ipc?group=224.10.9.9:40124"), InvalidChannelException);
+    EXPECT_THROW(UdpChannel::parse("aeron:ipc?endpoint=224.10.9.9:40124"), InvalidChannelException);
 }
 
 TEST_F(UdpChannelTest, createValidMulticastUdpChannel)
 {
-    auto channel = UdpChannel::parse("aeron:udp?interface=localhost|group=224.10.9.9:40124");
+    auto channel = UdpChannel::parse("aeron:udp?endpoint=224.10.9.9:40124|interface=localhost");
 
     EXPECT_EQ(*InetAddress::fromIPv4("224.10.9.10", 41024), channel->remoteControl());
     EXPECT_EQ(*InetAddress::fromIPv4("224.10.9.9", 41024), channel->remoteData());
@@ -77,7 +67,7 @@ TEST_F(UdpChannelTest, createValidMulticastUdpChannel)
 
 TEST_F(UdpChannelTest, createValidUnicastUdpChannel)
 {
-    auto channel = UdpChannel::parse("aeron:udp?local=localhost|remote=localhost:40124");
+    auto channel = UdpChannel::parse("aeron:udp?endpoint=localhost:40124|interface=localhost");
 
     EXPECT_EQ(*InetAddress::parse("localhost:40124", AF_INET), channel->remoteControl());
     EXPECT_EQ(*InetAddress::parse("localhost:40124", AF_INET), channel->remoteData());

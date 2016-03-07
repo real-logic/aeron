@@ -87,7 +87,7 @@ public:
         m_setupFlyweight(m_setupBufferAtomic, 0),
         m_receiver(new MockReceiver{}),
         m_dataPacketDispatcher(m_receiver),
-        m_receiveChannelEndpoint(UdpChannel::parse("aeron:udp?remote=127.0.0.1:4444"))
+        m_receiveChannelEndpoint(UdpChannel::parse("aeron:udp?endpoint=127.0.0.1:4444"))
     {
         m_dataBuffer.fill(0);
         m_setupBuffer.fill(0);

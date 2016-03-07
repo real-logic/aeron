@@ -22,6 +22,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sstream>
 
 #include "util/Exceptions.h"
 
@@ -44,6 +46,15 @@ public:
         return IPPROTO_UDP;
     }
 
+    std::unique_ptr<const char[]> toString()
+    {
+        std::stringstream stream;
+        output(stream);
+        const char* ss = stream.str().c_str();
+
+        return std::unique_ptr<const char[]>{ss};
+    }
+
     virtual void output(std::ostream& os) const = 0;
     virtual uint16_t port() const = 0;
     virtual bool isEven() const = 0;
@@ -53,6 +64,7 @@ public:
     virtual sa_family_t family() const = 0;
     virtual void* addrPtr() const = 0;
     virtual socklen_t addrSize() const = 0;
+    virtual bool isMulticast() const = 0;
 
     static std::unique_ptr<InetAddress> parse(const char* address, int familyHint = PF_INET);
     static std::unique_ptr<InetAddress> parse(std::string const & address, int familyHint = PF_INET);
@@ -143,6 +155,12 @@ public:
         return sizeof(struct in_addr);
     }
 
+    bool isMulticast() const
+    {
+        in_addr_t addr = ntohl(m_socketAddress.sin_addr.s_addr);
+        return 0xE0000000 <= addr && addr < 0xF0000000;
+    }
+
     bool isEven() const;
     bool equals(const InetAddress& other) const;
     void output(std::ostream& os) const;
@@ -227,6 +245,11 @@ public:
     void scope(uint32_t scope)
     {
         m_socketAddress.sin6_scope_id = scope;
+    }
+
+    bool isMulticast() const
+    {
+        return m_socketAddress.sin6_addr.__u6_addr.__u6_addr8[0] == 0xFF;
     }
 
     bool isEven() const;

@@ -22,15 +22,10 @@
 using namespace aeron::driver::media;
 using namespace aeron::driver::uri;
 
-static const char* GROUP_KEY = "group";
+static const char* ENDPOINT_KEY = "endpoint";
 static const char* INTERFACE_KEY = "interface";
 static const char* LOCAL_KEY = "local";
 static const char* REMOTE_KEY = "remote";
-
-static bool isMulticastUri(const AeronUri* uri)
-{
-    return uri->hasParam("group");
-}
 
 static void validateUri(const AeronUri* uri)
 {
@@ -39,7 +34,7 @@ static void validateUri(const AeronUri* uri)
         throw InvalidChannelException("Only UDP media supported for UdpChannel", SOURCEINFO);
     }
 
-    bool hasMulticastKeys = uri->hasParam(GROUP_KEY) || uri->hasParam(INTERFACE_KEY);
+    bool hasMulticastKeys = uri->hasParam(ENDPOINT_KEY) || uri->hasParam(INTERFACE_KEY);
     bool hasUnicastKeys = uri->hasParam(LOCAL_KEY) || uri->hasParam(REMOTE_KEY);
 
     if (!(hasMulticastKeys ^ hasUnicastKeys))
@@ -56,10 +51,10 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, I
 
     validateUri(aeronUri);
 
-    if (isMulticastUri(aeronUri))
-    {
-        auto dataAddress = InetAddress::parse(aeronUri->param(GROUP_KEY));
+    auto dataAddress = InetAddress::parse(aeronUri->param(ENDPOINT_KEY), familyHint);
 
+    if (dataAddress->isMulticast())
+    {
         if (dataAddress->isEven())
         {
             throw InvalidChannelException("Multicast data addresses must be odd", SOURCEINFO);
@@ -75,14 +70,13 @@ std::unique_ptr<UdpChannel> UdpChannel::parse(const char* uri, int familyHint, I
     }
     else
     {
-        auto remoteAddress = InetAddress::parse(aeronUri->param(REMOTE_KEY), familyHint);
-        std::unique_ptr<InetAddress> localAddress = (aeronUri->hasParam(LOCAL_KEY))
-            ? InetAddress::parse(aeronUri->param(LOCAL_KEY), familyHint)
+        std::unique_ptr<InetAddress> localAddress = (aeronUri->hasParam(INTERFACE_KEY))
+            ? InetAddress::parse(aeronUri->param(INTERFACE_KEY), familyHint)
             : InetAddress::any(familyHint);
 
         std::unique_ptr<InetAddress> empty{nullptr};
         auto localInterface = std::unique_ptr<NetworkInterface>{new NetworkInterface{std::move(localAddress), nullptr, 0}};
-        return std::unique_ptr<UdpChannel>(new UdpChannel{remoteAddress, empty, localInterface, false});
+        return std::unique_ptr<UdpChannel>(new UdpChannel{dataAddress, empty, localInterface, false});
     }
 }
 

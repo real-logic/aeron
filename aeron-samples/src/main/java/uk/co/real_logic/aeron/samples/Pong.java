@@ -41,6 +41,7 @@ public class Pong
     private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
     private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final boolean INFO_FLAG = SampleConfiguration.INFO_FLAG;
 
     private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = new NoOpIdleStrategy();
 
@@ -52,6 +53,12 @@ public class Pong
         if (EMBEDDED_MEDIA_DRIVER)
         {
             ctx.aeronDirectoryName(driver.aeronDirectoryName());
+        }
+
+        if (INFO_FLAG)
+        {
+            ctx.availableImageHandler(SamplesUtil::printAvailableImage);
+            ctx.unavailableImageHandler(SamplesUtil::printUnavailableImage);
         }
 
         final IdleStrategy idleStrategy = new NoOpIdleStrategy();

@@ -39,6 +39,8 @@ public class SampleConfiguration
     public static final String LINGER_TIMEOUT_MS_PROP = "aeron.sample.lingerTimeout";
     public static final String EMBEDDED_MEDIA_DRIVER_PROP = "aeron.sample.embeddedMediaDriver";
 
+    public static final String INFO_FLAG_PROP = "aeron.sample.info";
+
     public static final String CHANNEL;
     public static final String PING_CHANNEL;
     public static final String PONG_CHANNEL;
@@ -53,6 +55,7 @@ public class SampleConfiguration
     public static final long LINGER_TIMEOUT_MS;
     public static final boolean EMBEDDED_MEDIA_DRIVER;
     public static final boolean RANDOM_MESSAGE_LENGTH;
+    public static final boolean INFO_FLAG;
 
     static
     {
@@ -70,5 +73,6 @@ public class SampleConfiguration
         WARMUP_NUMBER_OF_ITERATIONS = Integer.getInteger(WARMUP_NUMBER_OF_ITERATIONS_PROP, 5);
         LINGER_TIMEOUT_MS = Long.getLong(LINGER_TIMEOUT_MS_PROP, TimeUnit.SECONDS.toMillis(5));
         EMBEDDED_MEDIA_DRIVER = Boolean.getBoolean(EMBEDDED_MEDIA_DRIVER_PROP);
+        INFO_FLAG = Boolean.getBoolean(INFO_FLAG_PROP);
     }
 }

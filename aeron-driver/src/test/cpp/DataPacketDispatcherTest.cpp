@@ -27,14 +27,17 @@
 #include <DataPacketDispatcher.h>
 #include <PublicationImage.h>
 #include <Receiver.h>
+#include <DriverConductorProxy.h>
 
 #include <media/ReceiveChannelEndpoint.h>
+#include <media/InetAddress.h>
 
 using namespace aeron::protocol;
 using namespace aeron::concurrent;
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::driver;
 using namespace aeron::driver::media;
+using namespace testing;
 
 #define CAPACITY (100)
 #define TOTAL_BUFFER_LENGTH (CAPACITY + DataHeaderFlyweight::headerLength())
@@ -77,7 +80,13 @@ public:
     MOCK_METHOD3(addPendingSetupMessage, void(std::int32_t sessionId, std::int32_t streamId, ReceiveChannelEndpoint& receiveChannelEndpoint));
 };
 
-class DataPacketDispatcherTest : public testing::Test
+class MockDriverConductorProxy : public DriverConductorProxy
+{
+public:
+    MOCK_METHOD10(createPublicationImage, void(std::int32_t sessionId, std::int32_t streamId, std::int32_t initialTermId, std::int32_t activeTermId, std::int32_t termOffset, std::int32_t termLength, std::int32_t mtuLength, InetAddress& controlAddress, InetAddress& srcAddress, ReceiveChannelEndpoint& channelEndpoint));
+};
+
+class DataPacketDispatcherTest : public Test
 {
 public:
     DataPacketDispatcherTest() :
@@ -86,8 +95,9 @@ public:
         m_dataHeaderFlyweight(m_dataBufferAtomic, 0),
         m_setupFlyweight(m_setupBufferAtomic, 0),
         m_receiver(new MockReceiver{}),
-        m_dataPacketDispatcher(m_receiver),
-        m_receiveChannelEndpoint(UdpChannel::parse("aeron:udp?endpoint=127.0.0.1:4444"))
+        m_driverConductorProxy(new MockDriverConductorProxy{}),
+        m_receiveChannelEndpoint(UdpChannel::parse("aeron:udp?endpoint=127.0.0.1:4444")),
+        m_dataPacketDispatcher(m_driverConductorProxy, m_receiver)
     {
         m_dataBuffer.fill(0);
         m_setupBuffer.fill(0);
@@ -113,8 +123,8 @@ public:
             .mtu(MTU_LENGTH)
             .termLength(TERM_LENGTH);
 
-        ON_CALL(m_publicationImage, sessionId()).WillByDefault(testing::Return(SESSION_ID));
-        ON_CALL(m_publicationImage, streamId()).WillByDefault(testing::Return(STREAM_ID));
+        ON_CALL(m_publicationImage, sessionId()).WillByDefault(Return(SESSION_ID));
+        ON_CALL(m_publicationImage, streamId()).WillByDefault(Return(STREAM_ID));
     }
 
 protected:
@@ -125,23 +135,79 @@ protected:
     DataHeaderFlyweight m_dataHeaderFlyweight;
     SetupFlyweight m_setupFlyweight;
     std::shared_ptr<MockReceiver> m_receiver;
-    DataPacketDispatcher m_dataPacketDispatcher;
+    std::shared_ptr<MockDriverConductorProxy> m_driverConductorProxy;
     MockReceiveChannelEndpoint m_receiveChannelEndpoint;
     MockPublicationImage m_publicationImage;
+    DataPacketDispatcher m_dataPacketDispatcher;
 };
 
 TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageWhenDataArrivesForSubscriptionWithoutImage)
 {
     std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
 
-    EXPECT_CALL(m_publicationImage, insertPacket(testing::_, testing::_, testing::_, testing::_)).Times(0);
+    EXPECT_CALL(m_publicationImage, insertPacket(_, _, _, _)).Times(0);
     EXPECT_CALL(
         m_receiveChannelEndpoint,
-        sendSetupElicitingStatusMessage(testing::_, testing::Eq(SESSION_ID), testing::Eq(STREAM_ID))).Times(1);
-    EXPECT_CALL(*m_receiver, addPendingSetupMessage(testing::Eq(SESSION_ID), testing::Eq(STREAM_ID), testing::_)).Times(1);
+        sendSetupElicitingStatusMessage(_, Eq(SESSION_ID), Eq(STREAM_ID))).Times(1);
+    EXPECT_CALL(*m_receiver, addPendingSetupMessage(Eq(SESSION_ID), Eq(STREAM_ID), _)).Times(1);
 
     m_dataPacketDispatcher.addSubscription(STREAM_ID);
     m_dataPacketDispatcher.onDataPacket(
         m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
 
+}
+
+TEST_F(DataPacketDispatcherTest, shouldOnlyElicitSetupMessageOnceWhenDataArrivesForSubscriptionWithoutImage)
+{
+    std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
+
+    EXPECT_CALL(m_publicationImage, insertPacket(_, _, _, _)).Times(0);
+    EXPECT_CALL(
+        m_receiveChannelEndpoint,
+        sendSetupElicitingStatusMessage(_, Eq(SESSION_ID), Eq(STREAM_ID))).Times(1);
+    EXPECT_CALL(*m_receiver, addPendingSetupMessage(Eq(SESSION_ID), Eq(STREAM_ID), _)).Times(1);
+
+    m_dataPacketDispatcher.addSubscription(STREAM_ID);
+    m_dataPacketDispatcher.onDataPacket(
+        m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
+    m_dataPacketDispatcher.onDataPacket(
+        m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
+    m_dataPacketDispatcher.onDataPacket(
+        m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
+}
+
+TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageAgainWhenDataArrivesForSubscriptionWithoutImageAfterRemovePendingSetup)
+{
+    std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
+
+    EXPECT_CALL(m_publicationImage, insertPacket(_, _, _, _)).Times(0);
+    EXPECT_CALL(
+        m_receiveChannelEndpoint,
+        sendSetupElicitingStatusMessage(_, Eq(SESSION_ID), Eq(STREAM_ID))).Times(2);
+    EXPECT_CALL(*m_receiver, addPendingSetupMessage(Eq(SESSION_ID), Eq(STREAM_ID), _)).Times(2);
+
+    m_dataPacketDispatcher.addSubscription(STREAM_ID);
+    m_dataPacketDispatcher.onDataPacket(
+        m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
+    m_dataPacketDispatcher.onDataPacket(
+        m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
+    m_dataPacketDispatcher.removePendingSetup(SESSION_ID, STREAM_ID);
+    m_dataPacketDispatcher.onDataPacket(
+        m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
+    m_dataPacketDispatcher.onDataPacket(
+        m_receiveChannelEndpoint, m_dataHeaderFlyweight, m_dataBufferAtomic, CAPACITY, *src);
+}
+
+TEST_F(DataPacketDispatcherTest, shouldRequestCreateImageUponReceivingSetup)
+{
+    std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
+
+    EXPECT_CALL(
+        *m_driverConductorProxy,
+        createPublicationImage(
+            Eq(SESSION_ID), Eq(STREAM_ID), Eq(INITIAL_TERM_ID), Eq(ACTIVE_TERM_ID), Eq(TERM_OFFSET), Eq(TERM_LENGTH),
+            Eq(MTU_LENGTH), _, _, _)).Times(1);
+
+    m_dataPacketDispatcher.addSubscription(STREAM_ID);
+    m_dataPacketDispatcher.onSetupMessage(m_receiveChannelEndpoint, m_setupFlyweight, m_setupBufferAtomic, *src);
 }

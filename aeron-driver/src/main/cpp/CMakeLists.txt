@@ -26,7 +26,8 @@ SET(SOURCE
     media/ReceiveChannelEndpoint.cpp
     media/SendChannelEndpoint.cpp
     DataPacketDispatcher.cpp
-    PublicationImage.cpp)
+    PublicationImage.cpp
+    DriverConductorProxy.cpp)
 
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h
@@ -41,7 +42,8 @@ SET(HEADERS
     media/SendChannelEndpoint.h
     DataPacketDispatcher.h
     PublicationImage.h
-    Receiver.h)
+    Receiver.h
+    DriverConductorProxy.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

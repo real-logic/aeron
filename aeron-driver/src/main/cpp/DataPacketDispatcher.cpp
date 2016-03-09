@@ -25,9 +25,9 @@ std::int32_t DataPacketDispatcher::onDataPacket(
 {
     std::int32_t streamId = header.streamId();
 
-    if (sessionsByStreamId.find(streamId) != sessionsByStreamId.end())
+    if (m_sessionsByStreamId.find(streamId) != m_sessionsByStreamId.end())
     {
-        std::unordered_map<int32_t, PublicationImage::ptr_t> &sessions = sessionsByStreamId[streamId];
+        std::unordered_map<int32_t, PublicationImage::ptr_t> &sessions = m_sessionsByStreamId[streamId];
 
         std::int32_t sessionId = header.sessionId();
         std::int32_t termId = header.termId();
@@ -38,12 +38,12 @@ std::int32_t DataPacketDispatcher::onDataPacket(
         {
 //            sessions[sessionId].
         }
-        else if (ignoredSessions.find(sessionRef) == ignoredSessions.end())
+        else if (m_ignoredSessions.find(sessionRef) == m_ignoredSessions.end())
         {
             InetAddress& controlAddress =
                 channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
-            ignoredSessions[sessionRef] = PENDING_SETUP_FRAME;
+            m_ignoredSessions[sessionRef] = PENDING_SETUP_FRAME;
 
             channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
 
@@ -56,9 +56,60 @@ std::int32_t DataPacketDispatcher::onDataPacket(
 
 void DataPacketDispatcher::addSubscription(std::int32_t streamId)
 {
-    if (sessionsByStreamId.find(streamId) == sessionsByStreamId.end())
+    if (m_sessionsByStreamId.find(streamId) == m_sessionsByStreamId.end())
     {
         std::unordered_map<std::int32_t,PublicationImage::ptr_t> session;
-        sessionsByStreamId.emplace(std::make_pair(streamId, session));
+        m_sessionsByStreamId.emplace(std::make_pair(streamId, session));
     }
 }
+
+void DataPacketDispatcher::removePendingSetup(int32_t sessionId, int32_t streamId)
+{
+    const std::pair<int, int> sessionRef{sessionId, streamId};
+    auto ignoredSession = m_ignoredSessions.find(sessionRef);
+
+    if (ignoredSession != m_ignoredSessions.end() && ignoredSession->second == PENDING_SETUP_FRAME)
+    {
+        m_ignoredSessions.erase(sessionRef);
+    }
+}
+
+void DataPacketDispatcher::onSetupMessage(
+    ReceiveChannelEndpoint& channelEndpoint, SetupFlyweight& header, AtomicBuffer& buffer, InetAddress& srcAddress)
+{
+    std::int32_t streamId = header.streamId();
+
+    auto sessions = m_sessionsByStreamId.find(streamId);
+    if (sessions != m_sessionsByStreamId.end())
+    {
+        std::int32_t sessionId = header.sessionId();
+        std::int32_t initialTermId = header.initialTermId();
+        std::int32_t activeTermId = header.actionTermId();
+        auto session = sessions->second.find(sessionId);
+
+        if (session == sessions->second.end())
+        {
+            InetAddress& controlAddress =
+                channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
+
+            const std::pair<int, int> sessionRef{sessionId, streamId};
+            m_ignoredSessions[sessionRef] = INIT_IN_PROGRESS;
+
+            m_driverConductorProxy->createPublicationImage(
+                sessionId,
+                streamId,
+                initialTermId,
+                activeTermId,
+                header.termOffset(),
+                header.termLength(),
+                header.mtu(),
+                controlAddress,
+                srcAddress,
+                channelEndpoint
+            );
+        }
+    }
+}
+
+
+

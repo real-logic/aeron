@@ -30,20 +30,18 @@ std::int32_t DataPacketDispatcher::onDataPacket(
         std::unordered_map<int32_t, PublicationImage::ptr_t> &sessions = m_sessionsByStreamId[streamId];
 
         std::int32_t sessionId = header.sessionId();
-        std::int32_t termId = header.termId();
-
-        const std::pair<int, int>& sessionRef = std::make_pair(sessionId, streamId);
+//        std::int32_t termId = header.termId();
 
         if (sessions.find(sessionId) != sessions.end())
         {
 //            sessions[sessionId].
         }
-        else if (m_ignoredSessions.find(sessionRef) == m_ignoredSessions.end())
+        else if (m_ignoredSessions.find({sessionId, streamId}) == m_ignoredSessions.end())
         {
             InetAddress& controlAddress =
                 channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
-            m_ignoredSessions[sessionRef] = PENDING_SETUP_FRAME;
+            m_ignoredSessions[{sessionId, streamId}] = PENDING_SETUP_FRAME;
 
             channelEndpoint.sendSetupElicitingStatusMessage(controlAddress, sessionId, streamId);
 
@@ -92,8 +90,7 @@ void DataPacketDispatcher::onSetupMessage(
             InetAddress& controlAddress =
                 channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
 
-            const std::pair<int, int> sessionRef{sessionId, streamId};
-            m_ignoredSessions[sessionRef] = INIT_IN_PROGRESS;
+            m_ignoredSessions[{sessionId, streamId}] = INIT_IN_PROGRESS;
 
             m_driverConductorProxy->createPublicationImage(
                 sessionId,

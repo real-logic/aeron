@@ -64,6 +64,9 @@ SET(HEADERS
     concurrent/broadcast/BroadcastTransmitter.h
     concurrent/broadcast/CopyBroadcastReceiver.h
     concurrent/broadcast/RecordDescriptor.h
+    concurrent/errors/ErrorLogDescriptor.h
+    concurrent/errors/ErrorLogReader.h
+    concurrent/errors/DistinctErrorLog.h
     concurrent/logbuffer/BufferClaim.h
     concurrent/logbuffer/DataFrameHeader.h
     concurrent/logbuffer/FrameDescriptor.h

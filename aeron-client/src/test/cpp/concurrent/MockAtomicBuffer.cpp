@@ -19,7 +19,8 @@
 namespace aeron { namespace concurrent { namespace mock {
 
 MockAtomicBuffer::MockAtomicBuffer(std::uint8_t *buffer, util::index_t length) :
-    AtomicBuffer(buffer, length)
+    AtomicBuffer(buffer, length),
+    m_realBuffer(buffer, length)
 {
 }
 

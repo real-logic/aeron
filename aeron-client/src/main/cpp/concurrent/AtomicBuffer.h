@@ -329,7 +329,7 @@ public:
         return static_cast<std::int32_t>(sizeof(std::int32_t)) + length;
     }
 
-    std::int32_t putStringUtf8WithoutLength(util::index_t offset, const std::string& value)
+    std::int32_t COND_MOCK_VIRTUAL putStringUtf8WithoutLength(util::index_t offset, const std::string& value)
     {
         boundsCheck(offset, value.length());
         ::memcpy(m_buffer + offset, value.c_str(), value.length());

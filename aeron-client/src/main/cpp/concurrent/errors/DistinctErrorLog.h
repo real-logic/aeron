@@ -93,7 +93,7 @@ private:
         util::index_t m_offset;
     };
 
-    AtomicBuffer m_buffer;
+    AtomicBuffer& m_buffer;
     clock_t m_clock;
     std::recursive_mutex m_lock;
 

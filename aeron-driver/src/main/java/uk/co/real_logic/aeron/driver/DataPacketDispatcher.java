@@ -77,10 +77,6 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
         final int streamId = image.streamId();
 
         final Int2ObjectHashMap<PublicationImage> imageBySessionIdMap = sessionsByStreamIdMap.get(streamId);
-        if (null == imageBySessionIdMap)
-        {
-            throw new IllegalStateException("No subscription registered on stream " + streamId);
-        }
 
         imageBySessionIdMap.put(sessionId, image);
         ignoredSessionsMap.remove(sessionId, streamId);

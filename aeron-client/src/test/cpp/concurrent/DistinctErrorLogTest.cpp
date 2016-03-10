@@ -54,5 +54,6 @@ protected:
 
 TEST_F(DistinctErrorLogTest, should)
 {
+
 }
 

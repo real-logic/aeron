@@ -59,6 +59,7 @@ public:
 
     bool record(std::size_t errorCode, const std::string& description, const std::string& message)
     {
+        std::int64_t timestamp = m_clock();
         std::size_t originalNumObservations = std::atomic_load(&m_numObservations);
 
         auto it = findObservation(m_observations, originalNumObservations, errorCode, description);
@@ -67,7 +68,7 @@ public:
         {
             std::lock_guard<std::recursive_mutex> lock(m_lock);
 
-            it = newObservation(originalNumObservations, errorCode, description, message);
+            it = newObservation(originalNumObservations, timestamp, errorCode, description, message);
             if (it == m_observations.end())
             {
                 return false;
@@ -79,7 +80,7 @@ public:
         util::index_t offset = observation.m_offset;
 
         m_buffer.getAndAddInt32(offset + ErrorLogDescriptor::OBSERVATION_COUNT_OFFSET, 1);
-        m_buffer.putInt64Ordered(offset + ErrorLogDescriptor::LAST_OBERSATION_TIMESTAMP_OFFSET, m_clock());
+        m_buffer.putInt64Ordered(offset + ErrorLogDescriptor::LAST_OBERSATION_TIMESTAMP_OFFSET, timestamp);
 
         return true;
     }
@@ -113,16 +114,20 @@ private:
         const std::string& description)
     {
         auto begin = observations.begin();
+        auto end = begin + numObservations;
 
-        return std::find_if(begin, begin + numObservations,
+        auto result = std::find_if(begin, end,
             [errorCode, description](const DistinctObservation& observation)
             {
                 return (errorCode == observation.m_errorCode && description == observation.m_description);
             });
+
+        return (result != end) ? result : observations.end();
     }
 
     std::vector<DistinctObservation>::iterator newObservation(
         std::size_t existingNumObservations,
+        std::int64_t timestamp,
         std::size_t errorCode,
         const std::string& description,
         const std::string& message)
@@ -147,10 +152,12 @@ private:
                 return m_observations.end();
             }
 
-            m_buffer.putStringUtf8WithoutLength(offset, encodedError);
-            m_buffer.putInt64(offset + ErrorLogDescriptor::FIRST_OBERSATION_TIMESTAMP_OFFSET, m_clock());
+            m_buffer.putStringUtf8WithoutLength(offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET, encodedError);
+            m_buffer.putInt64(offset + ErrorLogDescriptor::FIRST_OBERSATION_TIMESTAMP_OFFSET, timestamp);
 
-            m_nextOffset += util::BitUtil::align(offset + length, ErrorLogDescriptor::RECORD_ALIGNMENT);
+            m_nextOffset = util::BitUtil::align(offset + length, ErrorLogDescriptor::RECORD_ALIGNMENT);
+
+            it = m_observations.begin() + numObservations;
 
             DistinctObservation& observation = *it;
             observation.m_errorCode = errorCode;
@@ -158,8 +165,6 @@ private:
             observation.m_offset = offset;
 
             std::atomic_store(&m_numObservations, numObservations + 1);
-
-            it = m_observations.begin() + numObservations;
 
             m_buffer.putInt32Ordered(offset + ErrorLogDescriptor::LENGTH_OFFSET, length);
         }

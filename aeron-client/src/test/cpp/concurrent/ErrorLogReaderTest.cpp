@@ -116,3 +116,45 @@ TEST_F(ErrorLogReaderTest, shouldReadSummarisedObservation)
     EXPECT_EQ(ErrorLogReader::read(m_mockBuffer, m_consumer, 0), 1);
 }
 
+TEST_F(ErrorLogReaderTest, shouldReadTwoDistinctObservations)
+{
+    DistinctErrorLog log(m_mockBuffer, m_clock);
+
+    EXPECT_CALL(m_timestampClock, now())
+        .Times(2)
+        .WillOnce(testing::Return(7))
+        .WillOnce(testing::Return(10));
+
+    testing::Sequence sequence;
+
+    EXPECT_CALL(m_error, onError(1, 7, 7, testing::_))
+        .Times(1)
+        .InSequence(sequence);
+
+    EXPECT_CALL(m_error, onError(1, 10, 10, testing::_))
+        .Times(1)
+        .InSequence(sequence);
+
+    EXPECT_TRUE(log.record(1, "description 1", "message"));
+    EXPECT_TRUE(log.record(2, "description 2", "message"));
+
+    EXPECT_EQ(ErrorLogReader::read(m_mockBuffer, m_consumer, 0), 2);
+}
+
+TEST_F(ErrorLogReaderTest, shouldReadOneObservationSinceTimestamp)
+{
+    DistinctErrorLog log(m_mockBuffer, m_clock);
+
+    EXPECT_CALL(m_timestampClock, now())
+        .Times(2)
+        .WillOnce(testing::Return(7))
+        .WillOnce(testing::Return(10));
+
+    EXPECT_CALL(m_error, onError(1, 10, 10, testing::_))
+        .Times(1);
+
+    EXPECT_TRUE(log.record(1, "description 1", "message"));
+    EXPECT_TRUE(log.record(2, "description 2", "message"));
+
+    EXPECT_EQ(ErrorLogReader::read(m_mockBuffer, m_consumer, 10), 1);
+}

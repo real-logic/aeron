@@ -1,5 +1,5 @@
 /*
- * Copyright 2014 - 2016 Real Logic Ltd.
+ * Copyright 2016 Real Logic Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 #include <util/MemoryMappedFile.h>
-#include <concurrent/CountersReader.h>
+#include <concurrent/errors/ErrorLogReader.h>
 #include <util/CommandOptionParser.h>
 
 #include <iostream>
@@ -27,28 +27,20 @@
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <iomanip>
 
 using namespace aeron;
 using namespace aeron::util;
 using namespace aeron::concurrent;
+using namespace aeron::concurrent::errors;
 using namespace std::chrono;
-
-
-std::atomic<bool> running (true);
-
-void sigIntHandler (int param)
-{
-    running = false;
-}
 
 static const char optHelp   = 'h';
 static const char optPath   = 'p';
-static const char optPeriod = 'u';
 
 struct Settings
 {
     std::string basePath = Context::defaultAeronPath();
-    int updateIntervalms = 1000;
 };
 
 Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
@@ -63,9 +55,26 @@ Settings parseCmdLine(CommandOptionParser& cp, int argc, char** argv)
     Settings s;
 
     s.basePath = cp.getOption(optPath).getParam(0, s.basePath);
-    s.updateIntervalms = cp.getOption(optPeriod).getParamAsInt(0, 1, 1000000, s.updateIntervalms);
 
     return s;
+}
+
+std::string formatDate(std::int64_t millisecondsSinceEpoch)
+{
+    // yyyy-MM-dd HH:mm:ss.SSSZ
+    milliseconds msSinceEpoch(millisecondsSinceEpoch);
+    milliseconds msAfterSec(millisecondsSinceEpoch % 1000);
+    system_clock::time_point tp(msSinceEpoch);
+
+    std::time_t tm = system_clock::to_time_t(tp);
+
+    std::ostringstream result;
+
+    result << std::put_time(std::localtime(&tm), "%Y-%m-%d %H:%M:%S.");
+    result.fill('0');
+    result << std::setw(3) << msAfterSec.count() << std::put_time(std::localtime(&tm), "%z");
+
+    return result.str();
 }
 
 int main (int argc, char** argv)
@@ -73,9 +82,6 @@ int main (int argc, char** argv)
     CommandOptionParser cp;
     cp.addOption(CommandOption (optHelp,   0, 0, "                Displays help information."));
     cp.addOption(CommandOption (optPath,   1, 1, "basePath        Base Path to shared memory. Default: " + Context::defaultAeronPath()));
-    cp.addOption(CommandOption (optPeriod, 1, 1, "update period   Update period in millseconds. Default: 1000ms"));
-
-    signal (SIGINT, sigIntHandler);
 
     try
     {
@@ -92,41 +98,26 @@ int main (int argc, char** argv)
             return -1;
         }
 
-        const std::int64_t clientLivenessTimeoutNs = CncFileDescriptor::clientLivenessTimeout(cncFile);
+        AtomicBuffer errorBuffer = CncFileDescriptor::createErrorLogBuffer(cncFile);
 
-        AtomicBuffer metadataBuffer = CncFileDescriptor::createCounterMetadataBuffer(cncFile);
-        AtomicBuffer valuesBuffer = CncFileDescriptor::createCounterValuesBuffer(cncFile);
+        const int distinctErrorCount = ErrorLogReader::read(
+            errorBuffer,
+            [](
+                std::int32_t observationCount,
+                std::int64_t firstObservationTimestamp,
+                std::int64_t lastObservationTimestamp,
+                const std::string &encodedException)
+                {
+                    std::printf(
+                        "***\n%d observations from %s to %s for:\n %s\n",
+                        observationCount,
+                        formatDate(firstObservationTimestamp).c_str(),
+                        formatDate(lastObservationTimestamp).c_str(),
+                        encodedException.c_str());
+                },
+            0);
 
-        CountersReader counters(metadataBuffer, valuesBuffer);
-
-        while(running)
-        {
-            time_t rawtime;
-            char currentTime[80];
-
-            ::time(&rawtime);
-            ::strftime(currentTime, sizeof(currentTime) - 1, "%H:%M:%S", localtime(&rawtime));
-
-            std::printf("\033[H\033[2J");
-
-            std::printf(
-                "%s - Aeron Stat (CnC v%" PRId32 "), client liveness %'" PRId64 " ns\n",
-                currentTime, cncVersion, clientLivenessTimeoutNs);
-            std::printf("===========================\n");
-
-            ::setlocale(LC_NUMERIC, "");
-
-            counters.forEach([&](std::int32_t counterId, std::int32_t, const AtomicBuffer&, const std::string& l)
-            {
-                std::int64_t value = counters.getCounterValue(counterId);
-
-                std::printf("%3d: %'20" PRId64 " - %s\n", counterId, value, l.c_str());
-            });
-
-            std::this_thread::sleep_for(std::chrono::milliseconds(settings.updateIntervalms));
-        }
-
-        std::cout << "Exiting..." << std::endl;
+        std::printf("\n%d distinct errors observed.\n", distinctErrorCount);
     }
     catch (CommandOptionException& e)
     {

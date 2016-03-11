@@ -28,8 +28,22 @@ std::int32_t PublicationImage::streamId()
     return 0;
 }
 
-COND_MOCK_VIRTUAL std::int32_t PublicationImage::insertPacket(
+std::int32_t PublicationImage::insertPacket(
     std::int32_t termId, std::int32_t termOffset, AtomicBuffer &buffer, std::int32_t length)
 {
     return 0;
 }
+
+void PublicationImage::ifActiveGoInactive()
+{
+
+}
+
+void PublicationImage::status(PublicationImageStatus status)
+{
+
+}
+
+
+
+

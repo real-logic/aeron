@@ -26,6 +26,11 @@ namespace aeron { namespace driver
 
 using namespace aeron::concurrent;
 
+enum PublicationImageStatus
+{
+    INIT, ACTIVE, INACTIVE, LINGER
+};
+
 class PublicationImage
 {
 public:
@@ -35,11 +40,15 @@ public:
     PublicationImage(){}
     virtual ~PublicationImage(){}
 
-    std::int32_t sessionId();
-    std::int32_t streamId();
+    virtual std::int32_t sessionId();
+    virtual std::int32_t streamId();
 
     virtual std::int32_t insertPacket(
         std::int32_t termId, std::int32_t termOffset, AtomicBuffer& buffer, std::int32_t length);
+
+    virtual void ifActiveGoInactive();
+
+    virtual void status(PublicationImageStatus status);
 
 };
 

@@ -14,7 +14,19 @@
  * limitations under the License.
  */
 
+#include <util/Exceptions.h>
+
 #include "DataPacketDispatcher.h"
+
+using namespace aeron::util;
+
+static inline bool isNotAlreadyInProgressOrOnCoolDown(
+    DataPacketDispatcher::ignored_sessions_t& ignoredSessions, std::int32_t sessionId, std::int32_t streamId)
+{
+    auto ignoredSession = ignoredSessions.find({sessionId, streamId});
+    return ignoredSession == ignoredSessions.end() ||
+        (ignoredSession->second != INIT_IN_PROGRESS && ignoredSession->second != ON_COOL_DOWN);
+}
 
 std::int32_t DataPacketDispatcher::onDataPacket(
     ReceiveChannelEndpoint& channelEndpoint,
@@ -30,11 +42,13 @@ std::int32_t DataPacketDispatcher::onDataPacket(
         std::unordered_map<int32_t, PublicationImage::ptr_t> &sessions = m_sessionsByStreamId[streamId];
 
         std::int32_t sessionId = header.sessionId();
-//        std::int32_t termId = header.termId();
 
-        if (sessions.find(sessionId) != sessions.end())
+        auto sessionItr = sessions.find(sessionId);
+        if (sessionItr != sessions.end())
         {
-//            sessions[sessionId].
+            std::int32_t termId = header.termId();
+
+            return sessionItr->second->insertPacket(termId, header.termOffset(), atomicBuffer, length);
         }
         else if (m_ignoredSessions.find({sessionId, streamId}) == m_ignoredSessions.end())
         {
@@ -83,9 +97,10 @@ void DataPacketDispatcher::onSetupMessage(
         std::int32_t sessionId = header.sessionId();
         std::int32_t initialTermId = header.initialTermId();
         std::int32_t activeTermId = header.actionTermId();
-        auto session = sessions->second.find(sessionId);
 
-        if (session == sessions->second.end())
+        auto session = sessions->second.find(sessionId);
+        if (session == sessions->second.end() &&
+            isNotAlreadyInProgressOrOnCoolDown(m_ignoredSessions, sessionId, streamId))
         {
             InetAddress& controlAddress =
                 channelEndpoint.isMulticast() ? channelEndpoint.udpChannel().remoteControl() : srcAddress;
@@ -107,6 +122,74 @@ void DataPacketDispatcher::onSetupMessage(
         }
     }
 }
+
+void DataPacketDispatcher::removeSubscription(int32_t streamId)
+{
+    auto sessionsItr = m_sessionsByStreamId.find(streamId);
+    if (sessionsItr == m_sessionsByStreamId.end())
+    {
+        throw UnknownSubscriptionException(
+            strPrintf("No subscription registered on stream %d", streamId), SOURCEINFO);
+    }
+
+    auto allSessionForStream = sessionsItr->second;
+
+    for (auto it = allSessionForStream.begin(); it != allSessionForStream.end(); ++it)
+    {
+        it->second->ifActiveGoInactive();
+    }
+}
+
+void DataPacketDispatcher::addPublicationImage(PublicationImage::ptr_t image)
+{
+    std::int32_t streamId = image->streamId();
+    std::int32_t sessionId = image->sessionId();
+
+    auto sessionsItr = m_sessionsByStreamId.find(streamId);
+    if (sessionsItr == m_sessionsByStreamId.end())
+    {
+        throw UnknownSubscriptionException(
+            strPrintf("No subscription registered on stream %d", streamId), SOURCEINFO);
+    }
+
+    sessionsItr->second[sessionId] = image;
+    m_ignoredSessions.erase({sessionId, streamId});
+
+    image->status(PublicationImageStatus::ACTIVE);
+}
+
+void DataPacketDispatcher::removePublicationImage(PublicationImage::ptr_t image)
+{
+    std::int32_t streamId = image->streamId();
+    std::int32_t sessionId = image->sessionId();
+
+    auto sessionsItr = m_sessionsByStreamId.find(streamId);
+    if (sessionsItr != m_sessionsByStreamId.end())
+    {
+        sessionsItr->second.erase(sessionId);
+        m_ignoredSessions.erase({sessionId, streamId});
+    }
+
+    image->ifActiveGoInactive();
+    m_ignoredSessions[{sessionId, streamId}] = ON_COOL_DOWN;
+}
+
+void DataPacketDispatcher::removeCoolDown(std::int32_t sessionId, std::int32_t streamId)
+{
+    auto ignoredItr = m_ignoredSessions.find({sessionId, streamId});
+    if (ignoredItr != m_ignoredSessions.end() && ignoredItr->second == ON_COOL_DOWN)
+    {
+        m_ignoredSessions.erase({sessionId, streamId});
+    }
+}
+
+
+
+
+
+
+
+
 
 
 

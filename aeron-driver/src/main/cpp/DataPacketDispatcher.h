@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-// INCLUDED_AERON_DRIVER_MEDIA_RECEIVECHANNELENDPOINT__
-
 #ifndef INCLUDED_AERON_DRIVER_DATAPACKETDISPATCHER__
 #define INCLUDED_AERON_DRIVER_DATAPACKETDISPATCHER__
 
@@ -52,6 +50,8 @@ struct Hasher
 class DataPacketDispatcher
 {
 public:
+    typedef std::unordered_map<std::pair<std::int32_t, std::int32_t>, SessionStatus, Hasher> ignored_sessions_t;
+
     DataPacketDispatcher(
         std::shared_ptr<DriverConductorProxy> driverConductorProxy,
         std::shared_ptr<Receiver> receiver) :
@@ -66,8 +66,6 @@ public:
         const std::int32_t length,
         InetAddress& srcAddress);
 
-    void addSubscription(std::int32_t streamId);
-
     void removePendingSetup(std::int32_t sessionId, std::int32_t streamId);
 
     void onSetupMessage(
@@ -75,6 +73,16 @@ public:
         SetupFlyweight& header,
         AtomicBuffer& buffer,
         InetAddress& srcAddress);
+
+    void addSubscription(std::int32_t streamId);
+
+    void removeSubscription(std::int32_t streamId);
+
+    void addPublicationImage(PublicationImage::ptr_t image);
+
+    void removePublicationImage(PublicationImage::ptr_t shared_ptr);
+
+    void removeCoolDown(std::int32_t sessionId, std::int32_t streamId);
 
 private:
     std::shared_ptr<Receiver> m_receiver;

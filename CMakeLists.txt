@@ -144,9 +144,6 @@ set(AERON_CLIENT_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-client/src/test/cpp")
 set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
 set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
 
-set(AERON_DRIVER_SOURCE_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/main/cpp")
-set(AERON_DRIVER_TEST_PATH "${CMAKE_SOURCE_DIR}/aeron-driver/src/test/cpp")
-
 # gmock - includes gtest
 include_directories(${GMOCK_SOURCE_DIR}/include)
 include_directories(${GMOCK_SOURCE_DIR}/gtest/include)

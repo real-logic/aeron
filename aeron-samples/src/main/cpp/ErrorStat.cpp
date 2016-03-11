@@ -68,13 +68,15 @@ std::string formatDate(std::int64_t millisecondsSinceEpoch)
 
     std::time_t tm = system_clock::to_time_t(tp);
 
-    std::ostringstream result;
+    char timeBuffer[80];
+    char msecBuffer[8];
+    char tzBuffer[8];
 
-    result << std::put_time(std::localtime(&tm), "%Y-%m-%d %H:%M:%S.");
-    result.fill('0');
-    result << std::setw(3) << msAfterSec.count() << std::put_time(std::localtime(&tm), "%z");
+    std::strftime(timeBuffer, sizeof(timeBuffer) - 1, "%Y-%m-%d %H:%M:%S.", std::localtime(&tm));
+    std::snprintf(msecBuffer, sizeof(msecBuffer) - 1, "%03" PRId64, msAfterSec.count());
+    std::strftime(tzBuffer, sizeof(tzBuffer) - 1, "%z", std::localtime(&tm));
 
-    return result.str();
+    return std::string(timeBuffer) + std::string(msecBuffer) + std::string(tzBuffer);
 }
 
 int main (int argc, char** argv)

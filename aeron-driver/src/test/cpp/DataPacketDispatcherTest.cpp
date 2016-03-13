@@ -303,18 +303,6 @@ TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAnd
     m_dataPacketDispatcher.onSetupMessage(m_receiveChannelEndpoint, m_setupFlyweight, m_setupBufferAtomic, *src);
 }
 
-/*
-    @Test
-    public void shouldDispatchDataToCorrectImage()
-    {
-        dispatcher.addSubscription(STREAM_ID);
-        dispatcher.addPublicationImage(mockImage);
-        dispatcher.onDataPacket(mockChannelEndpoint, mockHeader, mockBuffer, LENGTH, SRC_ADDRESS);
-
-        verify(mockImage).status(PublicationImage.Status.ACTIVE);
-        verify(mockImage).insertPacket(ACTIVE_TERM_ID, TERM_OFFSET, mockBuffer, LENGTH);
-    } */
-
 TEST_F(DataPacketDispatcherTest, shouldDispatchDataToCorrectImage)
 {
     std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");

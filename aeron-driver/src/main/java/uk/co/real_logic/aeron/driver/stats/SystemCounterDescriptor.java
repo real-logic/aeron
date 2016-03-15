@@ -57,7 +57,10 @@ public enum SystemCounterDescriptor
     {
         for (final SystemCounterDescriptor descriptor : SystemCounterDescriptor.values())
         {
-            DESCRIPTOR_BY_ID_MAP.put(descriptor.id, descriptor);
+            if (null != DESCRIPTOR_BY_ID_MAP.put(descriptor.id, descriptor))
+            {
+                throw new IllegalStateException("Descriptor id already in use: " + descriptor.id);
+            }
         }
     }
 

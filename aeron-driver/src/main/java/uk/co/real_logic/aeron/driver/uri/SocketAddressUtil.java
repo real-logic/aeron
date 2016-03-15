@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.Integer.parseInt;
-import static uk.co.real_logic.aeron.driver.Strings.parseIntOrDefault;
+import static uk.co.real_logic.agrona.Strings.parseIntOrDefault;
 
 public class SocketAddressUtil
 {
@@ -81,10 +81,12 @@ public class SocketAddressUtil
 
     public static InetSocketAddress parse(final CharSequence cs, final int defaultPort)
     {
-        return parse(cs, (hostString, portString) ->
-        {
-            final int port = parseIntOrDefault(portString, defaultPort);
-            return new InetSocketAddress(hostString, port);
-        });
+        return parse(
+            cs,
+            (hostString, portString) ->
+            {
+                final int port = parseIntOrDefault(portString, defaultPort);
+                return new InetSocketAddress(hostString, port);
+            });
     }
 }

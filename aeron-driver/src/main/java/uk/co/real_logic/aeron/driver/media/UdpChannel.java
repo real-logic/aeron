@@ -30,8 +30,8 @@ import java.util.Map;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
 import static uk.co.real_logic.aeron.driver.media.NetworkUtil.*;
-import static uk.co.real_logic.aeron.driver.Strings.isEmpty;
 import static uk.co.real_logic.agrona.BitUtil.toHex;
+import static uk.co.real_logic.agrona.Strings.isEmpty;
 
 /**
  * Encapsulation of UDP Channels

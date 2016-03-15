@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.uri;
 
-import uk.co.real_logic.aeron.driver.Strings;
+import uk.co.real_logic.agrona.Strings;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -23,7 +23,7 @@ import java.net.UnknownHostException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static uk.co.real_logic.aeron.driver.Strings.parseIntOrDefault;
+import static uk.co.real_logic.agrona.Strings.parseIntOrDefault;
 
 public class InterfaceSearchAddress
 {

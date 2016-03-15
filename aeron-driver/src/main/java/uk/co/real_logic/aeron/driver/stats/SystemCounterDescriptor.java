@@ -20,7 +20,7 @@ import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 
 /**
- * System wide counters for monitoring. These are separate from counters using for position tracking on streams.
+ * System wide counters for monitoring. These are separate from counters used for position tracking on streams.
  */
 public enum SystemCounterDescriptor
 {

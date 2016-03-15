@@ -19,6 +19,9 @@ import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.CountersManager;
 
+/**
+ * System wide counters for monitoring. These are separate from counters using for position tracking on streams.
+ */
 public enum SystemCounterDescriptor
 {
     BYTES_SENT(1, "Bytes Sent"),

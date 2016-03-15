@@ -16,9 +16,7 @@
 package uk.co.real_logic.aeron.driver.stats;
 
 import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 public class SubscriberPos
 {
@@ -34,14 +32,7 @@ public class SubscriberPos
         final int streamId,
         final String channel)
     {
-        final String label = "subscriber pos: " + registrationId + ' ' + sessionId + ' ' + streamId + ' ' + channel;
-
-        final int counterId = countersManager.allocate(
-            label,
-            SUBSCRIBER_POSITION_TYPE_ID,
-            (buffer) -> buffer.putLong(0, registrationId)
-        );
-
-        return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
+        return StreamPositionCounter.allocate(
+            "subscriber pos", SUBSCRIBER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

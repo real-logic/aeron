@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver;
+package uk.co.real_logic.aeron.samples;
 
 import java.util.concurrent.locks.LockSupport;
 
@@ -75,7 +75,6 @@ public class RateReporter implements Runnable
         {
             LockSupport.parkNanos(parkNs);
 
-            // These are not transacted, so they could be off from one another.
             final long currentTotalMessages = totalMessages;
             final long currentTotalBytes = totalBytes;
             final long currentTimestamp = System.nanoTime();

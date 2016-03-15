@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.Image;
 import uk.co.real_logic.aeron.Subscription;
-import uk.co.real_logic.aeron.driver.RateReporter;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.LangUtil;

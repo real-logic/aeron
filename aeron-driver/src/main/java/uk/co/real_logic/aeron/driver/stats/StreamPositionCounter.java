@@ -16,15 +16,41 @@
 package uk.co.real_logic.aeron.driver.stats;
 
 import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.CountersReader;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
+
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Allocates {@link Position} counters on a stream of messages.
  */
 public class StreamPositionCounter
 {
+    /**
+     * Offset in the key meta data for the registration id of the counter.
+     */
+    public static final int REGISTRATION_ID_OFFSET = 0;
+
+    /**
+     * Offset in the key meta data for the session id of the counter.
+     */
+    public static final int SESSION_ID_OFFSET = REGISTRATION_ID_OFFSET + SIZE_OF_LONG;
+
+    /**
+     * Offset in the key meta data for the stream id of the counter.
+     */
+    public static final int STREAM_ID_OFFSET = SESSION_ID_OFFSET + SIZE_OF_INT;
+
+    /**
+     * Offset in the key meta data for the channel of the counter.
+     */
+    public static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_INT;
+
+    public static final int MAX_CHANNEL_LENGTH = CountersReader.MAX_KEY_LENGTH - (CHANNEL_OFFSET + SIZE_OF_INT);
+
     /**
      * Allocate a counter for tracking a position on a stream of messages.
      *
@@ -51,7 +77,13 @@ public class StreamPositionCounter
         final int counterId = countersManager.allocate(
             label,
             typeId,
-            (buffer) -> buffer.putLong(0, registrationId)
+            (buffer) ->
+            {
+                buffer.putLong(REGISTRATION_ID_OFFSET, registrationId);
+                buffer.putInt(SESSION_ID_OFFSET, sessionId);
+                buffer.putInt(STREAM_ID_OFFSET, streamId);
+                buffer.putStringUtf8(CHANNEL_OFFSET, channel, MAX_CHANNEL_LENGTH);
+            }
         );
 
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);

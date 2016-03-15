@@ -48,8 +48,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.lang.Boolean.getBoolean;
-import static uk.co.real_logic.aeron.CncFileDescriptor.createToClientsBuffer;
-import static uk.co.real_logic.aeron.CncFileDescriptor.createToDriverBuffer;
+import static uk.co.real_logic.aeron.CncFileDescriptor.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
@@ -537,7 +536,7 @@ public final class MediaDriver implements AutoCloseable
                 if (null == errorLog)
                 {
                     errorLog = new DistinctErrorLog(
-                        new UnsafeBuffer(CncFileDescriptor.createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer)), epochClock);
+                        new UnsafeBuffer(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer)), epochClock);
                 }
 
                 if (null == errorHandler)
@@ -1170,12 +1169,12 @@ public final class MediaDriver implements AutoCloseable
             {
                 if (countersMetaDataBuffer() == null)
                 {
-                    countersMetaDataBuffer(CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    countersMetaDataBuffer(createCountersMetaDataBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 if (countersValuesBuffer() == null)
                 {
-                    countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
+                    countersValuesBuffer(createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
                 }
 
                 countersManager(new CountersManager(countersMetaDataBuffer(), countersValuesBuffer()));

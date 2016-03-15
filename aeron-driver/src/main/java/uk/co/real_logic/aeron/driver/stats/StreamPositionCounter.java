@@ -49,6 +49,9 @@ public class StreamPositionCounter
      */
     public static final int CHANNEL_OFFSET = STREAM_ID_OFFSET + SIZE_OF_INT;
 
+    /**
+     * The maximum length in bytes of the encoded channel identity.
+     */
     public static final int MAX_CHANNEL_LENGTH = CountersReader.MAX_KEY_LENGTH - (CHANNEL_OFFSET + SIZE_OF_INT);
 
     /**

@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
+import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.aeron.protocol.*;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;

@@ -19,6 +19,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.aeron.logbuffer.HeaderWriter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;

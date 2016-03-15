@@ -47,7 +47,7 @@ public enum SystemCounterDescriptor
     UNBLOCKED_COMMANDS(24, "Unblocked Control Commands");
 
     /**
-     * All system counters have the same type id.
+     * All system counters have the same type id, i.e. system counters are the same type. Others types can exist.
      */
     public static final int SYSTEM_COUNTER_TYPE_ID = 0;
 
@@ -104,6 +104,12 @@ public enum SystemCounterDescriptor
         return label;
     }
 
+    /**
+     * Create a new counter for the enumerated descriptor.
+     *
+     * @param countersManager for managing the underlying storage.
+     * @return a new counter for the enumerated descriptor.
+     */
     public AtomicCounter newCounter(final CountersManager countersManager)
     {
         return countersManager.newCounter(label, SYSTEM_COUNTER_TYPE_ID, (buffer) -> buffer.putInt(0, id));

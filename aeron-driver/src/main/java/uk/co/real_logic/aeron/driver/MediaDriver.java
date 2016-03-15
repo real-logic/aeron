@@ -371,7 +371,10 @@ public final class MediaDriver implements AutoCloseable
             }
             else
             {
-                logProgress = (message) -> { };
+                logProgress =
+                    (message) ->
+                    {
+                    };
             }
 
             if (ctx.dirsDeleteOnStart())

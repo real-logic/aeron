@@ -197,12 +197,12 @@ public class Configuration
     public static final int NAK_GROUPSIZE_DEFAULT = 10;
 
     /**
-     * Default group RTT estimate for NAK delay randomization in msec.
+     * Default group RTT estimate for NAK delay randomization in ms.
      */
     public static final int NAK_GRTT_DEFAULT = 10;
 
     /**
-     * Default max backoff for NAK delay randomization in msec.
+     * Default max backoff for NAK delay randomization in ms.
      */
     public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
     /**

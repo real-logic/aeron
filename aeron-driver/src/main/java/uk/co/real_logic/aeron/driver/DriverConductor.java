@@ -29,13 +29,16 @@ import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.aeron.driver.stats.PublisherLimit;
+import uk.co.real_logic.aeron.driver.stats.ReceiverHwm;
+import uk.co.real_logic.aeron.driver.stats.SenderPos;
+import uk.co.real_logic.aeron.driver.stats.SubscriberPos;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -103,6 +106,7 @@ public class DriverConductor implements Agent
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
     private final MessageHandler onEventFunc;
 
+    private final CountersManager countersManager;
     private final AtomicCounter clientKeepAlives;
     private final AtomicCounter errors;
 
@@ -126,6 +130,7 @@ public class DriverConductor implements Agent
         logger = ctx.eventLogger();
         errorLog = ctx.errorLog();
 
+        countersManager = context.countersManager();
         clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
         errors = context.systemCounters().get(ERRORS);
 
@@ -222,7 +227,7 @@ public class DriverConductor implements Agent
 
         final UdpChannel udpChannel = channelEndpoint.udpChannel();
         final String channel = udpChannel.originalUriString();
-        final long imageCorrelationId = nextImageCorrelationId();
+        final long registrationId = nextImageCorrelationId();
 
         final long joiningPosition = computePosition(
             activeTermId, initialTermOffset, Integer.numberOfTrailingZeros(termBufferLength), initialTermId);
@@ -233,10 +238,10 @@ public class DriverConductor implements Agent
         if (subscriberPositions.size() > 0)
         {
             final RawLog rawLog = newPublicationImageLog(
-                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, imageCorrelationId);
+                sessionId, streamId, initialTermId, termBufferLength, senderMtuLength, udpChannel, registrationId);
 
             final PublicationImage image = new PublicationImage(
-                imageCorrelationId,
+                registrationId,
                 imageLivenessTimeoutNs,
                 channelEndpoint,
                 controlAddress,
@@ -249,7 +254,7 @@ public class DriverConductor implements Agent
                 rawLog,
                 udpChannel.isMulticast() ? NAK_MULTICAST_DELAY_GENERATOR : NAK_UNICAST_DELAY_GENERATOR,
                 subscriberPositions.stream().map(SubscriberPosition::position).collect(toList()),
-                newPosition("receiver hwm", channel, sessionId, streamId, imageCorrelationId),
+                ReceiverHwm.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 nanoClock,
                 context.systemCounters(),
                 sourceAddress);
@@ -261,7 +266,8 @@ public class DriverConductor implements Agent
             receiverProxy.newPublicationImage(channelEndpoint, image);
 
             clientProxy.onAvailableImage(
-                imageCorrelationId, streamId,
+                registrationId,
+                streamId,
                 sessionId,
                 rawLog.logFileName(),
                 subscriberPositions,
@@ -348,8 +354,8 @@ public class DriverConductor implements Agent
             .map(
                 (subscription) ->
                 {
-                    final Position position = newPosition(
-                        "subscriber pos", channel, sessionId, streamId, subscription.registrationId());
+                    final Position position = SubscriberPos.allocate(
+                        countersManager, subscription.registrationId(), sessionId, streamId, channel);
 
                     position.setOrdered(joiningPosition);
 
@@ -550,8 +556,8 @@ public class DriverConductor implements Agent
                 nanoClock,
                 toDriverCommands::consumerHeartbeatTime,
                 newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId),
-                newPosition("sender pos", channel, sessionId, streamId, registrationId),
-                newPosition("publisher limit", channel, sessionId, streamId, registrationId),
+                SenderPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
+                PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 sessionId,
                 streamId,
                 initialTermId,
@@ -744,7 +750,9 @@ public class DriverConductor implements Agent
                 (image) ->
                 {
                     final int sessionId = image.sessionId();
-                    final Position position = newPosition("subscriber pos", channel, sessionId, streamId, registrationId);
+                    final Position position = SubscriberPos.allocate(
+                        countersManager, registrationId, sessionId, streamId, channel);
+
                     position.setOrdered(image.rebuildPosition());
 
                     image.addSubscriber(position);
@@ -766,7 +774,7 @@ public class DriverConductor implements Agent
         final AeronClient client = getOrAddClient(clientId);
 
         final int sessionId = publication.sessionId();
-        final Position position = newPosition("subscriber pos", IPC_CHANNEL, sessionId, streamId, registrationId);
+        final Position position = SubscriberPos.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL);
         position.setOrdered(publication.joiningPosition());
 
         final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, streamId, publication, position, client);
@@ -873,34 +881,20 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            final long imageCorrelationId = nextImageCorrelationId();
+            final long registrationId = nextImageCorrelationId();
             final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newDirectPublicationLog(sessionId, streamId, initialTermId, imageCorrelationId);
+            final RawLog rawLog = newDirectPublicationLog(sessionId, streamId, initialTermId, registrationId);
 
             final Position publisherLimit =
-                newPosition("publisher limit", IPC_CHANNEL, sessionId, streamId, imageCorrelationId);
+                PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL);
 
-            publication = new DirectPublication(imageCorrelationId, sessionId, streamId, publisherLimit, rawLog);
+            publication = new DirectPublication(registrationId, sessionId, streamId, publisherLimit, rawLog);
 
             directPublications.add(publication);
         }
 
         return publication;
-    }
-
-    private Position newPosition(
-        final String name, final String channel, final int sessionId, final int streamId, final long correlationId)
-    {
-        final int counterId = allocateCounter(name, channel, sessionId, streamId, correlationId);
-        return new UnsafeBufferPosition(context.countersValuesBuffer(), counterId, context.countersManager());
-    }
-
-    private int allocateCounter(
-        final String type, final String channel, final int sessionId, final int streamId, final long correlationId)
-    {
-        return context.countersManager().allocate(String.format(
-            "%s: %s %d %d %d", type, channel, sessionId, streamId, correlationId));
     }
 
     private long nextImageCorrelationId()

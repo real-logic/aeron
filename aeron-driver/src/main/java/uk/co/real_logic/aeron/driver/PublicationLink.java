@@ -18,6 +18,8 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
+
 /**
  * Tracks a aeron client interest registration in a {@link NetworkPublication}.
  */
@@ -48,7 +50,7 @@ public class PublicationLink implements DriverManagedResource
         this.lastConsumerPosition = publication.consumerPosition();
         this.timeOfLastConsumerPositionChange = now;
         this.unblockTimeoutNs = unblockTimeoutNs;
-        this.unblockedPublications = systemCounters.unblockedPublications();
+        this.unblockedPublications = systemCounters.get(UNBLOCKED_PUBLICATIONS);
     }
 
     public void close()

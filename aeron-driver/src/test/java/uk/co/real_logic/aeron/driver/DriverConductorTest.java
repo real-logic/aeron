@@ -140,9 +140,7 @@ public class DriverConductorTest
 
         final SystemCounters mockSystemCounters = mock(SystemCounters.class);
         ctx.systemCounters(mockSystemCounters);
-        when(mockSystemCounters.bytesReceived()).thenReturn(mock(AtomicCounter.class));
-        when(mockSystemCounters.clientKeepAlives()).thenReturn(mock(AtomicCounter.class));
-        when(mockSystemCounters.errors()).thenReturn(mockErrorCounter);
+        when(mockSystemCounters.get(anyObject())).thenReturn(mockErrorCounter);
 
         ctx.epochClock(new SystemEpochClock());
         ctx.receiverProxy(receiverProxy);

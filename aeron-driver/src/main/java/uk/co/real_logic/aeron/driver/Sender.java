@@ -25,6 +25,8 @@ import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.function.Consumer;
 
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.BYTES_SENT;
+
 /**
  * Agent that iterates over networkPublications for sending them to registered subscribers.
  */
@@ -46,7 +48,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         this.controlTransportPoller = ctx.controlTransportPoller();
         this.commandQueue = ctx.senderCommandQueue();
         this.conductorProxy = ctx.fromSenderDriverConductorProxy();
-        this.totalBytesSent = ctx.systemCounters().bytesSent();
+        this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.nanoClock = ctx.nanoClock();
     }
 

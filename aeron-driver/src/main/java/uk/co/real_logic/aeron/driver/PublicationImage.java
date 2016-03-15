@@ -21,6 +21,7 @@ import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.UnsafeAccess;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -30,6 +31,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import static uk.co.real_logic.aeron.driver.PublicationImage.Status.ACTIVE;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
 class PublicationImagePadding1
@@ -108,12 +110,16 @@ public class PublicationImage
     private final InetSocketAddress controlAddress;
     private final InetSocketAddress sourceAddress;
     private final ReceiveChannelEndpoint channelEndpoint;
-    private final SystemCounters systemCounters;
     private final NanoClock clock;
     private final UnsafeBuffer[] termBuffers = new UnsafeBuffer[PARTITION_COUNT];
     private final Position hwmPosition;
     private final List<ReadablePosition> subscriberPositions;
     private final LossDetector lossDetector;
+    private final AtomicCounter heartbeatsReceived;
+    private final AtomicCounter statusMessagesSent;
+    private final AtomicCounter nakMessagesSent;
+    private final AtomicCounter flowControlUnderRuns;
+    private final AtomicCounter flowControlOverRuns;
 
     private boolean reachedEndOfLife = false;
 
@@ -145,8 +151,13 @@ public class PublicationImage
         this.rawLog = rawLog;
         this.subscriberPositions = subscriberPositions;
         this.hwmPosition = hwmPosition;
-        this.systemCounters = systemCounters;
         this.sourceAddress = sourceAddress;
+
+        heartbeatsReceived = systemCounters.get(HEARTBEATS_RECEIVED);
+        statusMessagesSent = systemCounters.get(STATUS_MESSAGES_SENT);
+        nakMessagesSent = systemCounters.get(NAK_MESSAGES_SENT);
+        flowControlUnderRuns = systemCounters.get(FLOW_CONTROL_UNDER_RUNS);
+        flowControlOverRuns = systemCounters.get(FLOW_CONTROL_OVER_RUNS);
 
         this.clock = clock;
         final long time = clock.nanoTime();
@@ -401,7 +412,7 @@ public class PublicationImage
         if (isHeartbeat(buffer, length))
         {
             hwmCandidate(packetPosition);
-            systemCounters.heartbeatsReceived().orderedIncrement();
+            heartbeatsReceived.orderedIncrement();
         }
         else if (isFlowControlUnderRun(windowPosition, packetPosition) || isFlowControlOverRun(windowPosition, proposedPosition))
         {
@@ -460,7 +471,7 @@ public class PublicationImage
 
                 lastStatusMessageTimestamp = now;
                 lastStatusMessagePosition = statusMessagePosition;
-                systemCounters.statusMessagesSent().orderedIncrement();
+                statusMessagesSent.orderedIncrement();
                 workCount = 1;
             }
         }
@@ -490,7 +501,7 @@ public class PublicationImage
             {
                 channelEndpoint.sendNakMessage(controlAddress, sessionId, streamId, termId, termOffset, length);
                 lastChangeNumber = changeNumber;
-                systemCounters.nakMessagesSent().orderedIncrement();
+                nakMessagesSent.orderedIncrement();
                 workCount = 1;
             }
         }
@@ -609,7 +620,7 @@ public class PublicationImage
 
         if (isFlowControlUnderRun)
         {
-            systemCounters.flowControlUnderRuns().orderedIncrement();
+            flowControlUnderRuns.orderedIncrement();
         }
 
         return isFlowControlUnderRun;
@@ -621,7 +632,7 @@ public class PublicationImage
 
         if (isFlowControlOverRun)
         {
-            systemCounters.flowControlOverRuns().orderedIncrement();
+            flowControlOverRuns.orderedIncrement();
         }
 
         return isFlowControlOverRun;

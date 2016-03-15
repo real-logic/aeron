@@ -74,7 +74,7 @@ public class SelectorAndTransportTest
     @Before
     public void setup()
     {
-        when(mockSystemCounters.statusMessagesReceived()).thenReturn(mockStatusMessagesReceivedCounter);
+        when(mockSystemCounters.get(anyObject())).thenReturn(mockStatusMessagesReceivedCounter);
         when(mockPublication.streamId()).thenReturn(STREAM_ID);
         when(mockPublication.sessionId()).thenReturn(SESSION_ID);
 

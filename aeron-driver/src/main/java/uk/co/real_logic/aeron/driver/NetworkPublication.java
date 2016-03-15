@@ -24,6 +24,7 @@ import uk.co.real_logic.aeron.logbuffer.LogBufferUnblocker;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
+import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.EpochClock;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -35,6 +36,7 @@ import java.nio.ByteBuffer;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
 import static uk.co.real_logic.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.TermScanner.*;
 
@@ -93,15 +95,19 @@ public class NetworkPublication
     private final Position publisherLimit;
     private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
-    private final SystemCounters systemCounters;
     private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight(heartbeatFrameBuffer);
     private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
     private final SetupFlyweight setupHeader = new SetupFlyweight(setupFrameBuffer);
     private final FlowControl flowControl;
+    private final EpochClock epochClock;
     private final RetransmitHandler retransmitHandler;
     private final RawLog rawLog;
-    private final EpochClock epochClock;
+    private final AtomicCounter heartbeatsSent;
+    private final AtomicCounter retransmitsSent;
+    private final AtomicCounter senderFlowControlLimits;
+    private final AtomicCounter dataPacketShortSends;
+    private final AtomicCounter setupMessageShortSends;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -122,12 +128,17 @@ public class NetworkPublication
         this.rawLog = rawLog;
         this.epochClock = epochClock;
         this.senderPosition = senderPosition;
-        this.systemCounters = systemCounters;
         this.flowControl = flowControl;
         this.retransmitHandler = retransmitHandler;
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
         this.initialTermId = initialTermId;
+
+        heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
+        dataPacketShortSends = systemCounters.get(DATA_PACKET_SHORT_SENDS);
+        retransmitsSent = systemCounters.get(RETRANSMITS_SENT);
+        senderFlowControlLimits = systemCounters.get(SENDER_FLOW_CONTROL_LIMITS);
+        setupMessageShortSends = systemCounters.get(SETUP_MESSAGE_SHORT_SENDS);
 
         logPartitions = rawLog.partitions();
         sendBuffers = rawLog.sliceTerms();
@@ -257,7 +268,7 @@ public class NetworkPublication
 
                 if (available != channelEndpoint.send(sendBuffer))
                 {
-                    systemCounters.dataPacketShortSends().orderedIncrement();
+                    dataPacketShortSends.orderedIncrement();
                     break;
                 }
 
@@ -266,7 +277,7 @@ public class NetworkPublication
             }
             while (remainingBytes > 0);
 
-            systemCounters.retransmitsSent().orderedIncrement();
+            retransmitsSent.orderedIncrement();
         }
     }
 
@@ -365,14 +376,14 @@ public class NetworkPublication
                 }
                 else
                 {
-                    systemCounters.dataPacketShortSends().orderedIncrement();
+                    dataPacketShortSends.orderedIncrement();
                 }
             }
         }
         else if (trackSenderLimits)
         {
             trackSenderLimits = false;
-            systemCounters.senderFlowControlLimits().orderedIncrement();
+            senderFlowControlLimits.orderedIncrement();
         }
 
         return bytesSent;
@@ -388,7 +399,7 @@ public class NetworkPublication
             final int bytesSent = channelEndpoint.send(setupFrameBuffer);
             if (SetupFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.setupMessageShortSends().orderedIncrement();
+                setupMessageShortSends.orderedIncrement();
             }
 
             timeOfLastSetup = now;
@@ -411,10 +422,10 @@ public class NetworkPublication
             final int bytesSent = channelEndpoint.send(heartbeatFrameBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                systemCounters.dataPacketShortSends().orderedIncrement();
+                dataPacketShortSends.orderedIncrement();
             }
 
-            systemCounters.heartbeatsSent().orderedIncrement();
+            heartbeatsSent.orderedIncrement();
             timeOfLastSendOrHeartbeat = now;
         }
     }

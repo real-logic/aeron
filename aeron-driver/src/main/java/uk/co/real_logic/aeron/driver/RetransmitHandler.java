@@ -21,6 +21,7 @@ import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
 import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.INVALID_PACKETS;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
@@ -65,7 +66,7 @@ public class RetransmitHandler
         final int capacity)
     {
         this.nanoClock = nanoClock;
-        this.invalidPackets = systemCounters.invalidPackets();
+        this.invalidPackets = systemCounters.get(INVALID_PACKETS);
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
         this.initialTermId = initialTermId;

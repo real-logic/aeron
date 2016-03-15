@@ -26,6 +26,7 @@ import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.ActiveDriverException;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
 import uk.co.real_logic.aeron.driver.media.*;
+import uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor;
 import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.agrona.ErrorHandler;
 import uk.co.real_logic.agrona.IoUtil;
@@ -51,6 +52,9 @@ import java.util.function.Supplier;
 import static java.lang.Boolean.getBoolean;
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.CONDUCTOR_PROXY_FAILS;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.RECEIVER_PROXY_FAILS;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.SENDER_PROXY_FAILS;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
 /**
@@ -174,7 +178,7 @@ public final class MediaDriver implements AutoCloseable
         context.fromSenderDriverConductorProxy().driverConductor(conductor);
         context.toDriverCommands().consumerHeartbeatTime(context.epochClock().time());
 
-        final AtomicCounter errorCounter = context.systemCounters().errors();
+        final AtomicCounter errorCounter = context.systemCounters().get(SystemCounterDescriptor.ERRORS);
         final ErrorHandler errorHandler = context.errorHandler();
 
         switch (context.threadingMode)
@@ -559,12 +563,12 @@ public final class MediaDriver implements AutoCloseable
                 concludeCounters();
 
                 receiverProxy(new ReceiverProxy(
-                    threadingMode, receiverCommandQueue(), systemCounters.receiverProxyFails()));
-                senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.senderProxyFails()));
+                    threadingMode, receiverCommandQueue(), systemCounters.get(RECEIVER_PROXY_FAILS)));
+                senderProxy(new SenderProxy(threadingMode, senderCommandQueue(), systemCounters.get(SENDER_PROXY_FAILS)));
                 fromReceiverDriverConductorProxy(new DriverConductorProxy(
-                    threadingMode, toConductorFromReceiverCommandQueue, systemCounters.conductorProxyFails()));
+                    threadingMode, toConductorFromReceiverCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS)));
                 fromSenderDriverConductorProxy(new DriverConductorProxy(
-                    threadingMode, toConductorFromSenderCommandQueue, systemCounters.conductorProxyFails()));
+                    threadingMode, toConductorFromSenderCommandQueue, systemCounters.get(CONDUCTOR_PROXY_FAILS)));
 
                 rawLogBuffersFactory(new RawLogFactory(
                     aeronDirectoryName(),

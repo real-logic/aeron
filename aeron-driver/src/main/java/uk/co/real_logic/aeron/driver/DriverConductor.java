@@ -50,6 +50,9 @@ import static uk.co.real_logic.aeron.ErrorCode.*;
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.ERRORS;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
@@ -100,6 +103,9 @@ public class DriverConductor implements Agent
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
     private final MessageHandler onEventFunc;
 
+    private final AtomicCounter clientKeepAlives;
+    private final AtomicCounter errors;
+
     public DriverConductor(final Context ctx)
     {
         context = ctx;
@@ -119,6 +125,9 @@ public class DriverConductor implements Agent
         fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
         logger = ctx.eventLogger();
         errorLog = ctx.errorLog();
+
+        clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
+        errors = context.systemCounters().get(ERRORS);
 
         final Consumer<String> eventConsumer = ctx.eventConsumer();
         onEventFunc = (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset));
@@ -388,7 +397,7 @@ public class DriverConductor implements Agent
             {
                 if (toDriverCommands.unblock())
                 {
-                    context.systemCounters().unblockedCommands().orderedIncrement();
+                    context.systemCounters().get(UNBLOCKED_COMMANDS).orderedIncrement();
                 }
             }
         }
@@ -490,13 +499,13 @@ public class DriverConductor implements Agent
         catch (final ControlProtocolException ex)
         {
             clientProxy.onError(ex.errorCode(), ex.getMessage(), correlationId);
-            context.systemCounters().errors().increment();
+            errors.increment();
             errorLog.record(ex);
         }
         catch (final Exception ex)
         {
             clientProxy.onError(GENERIC_ERROR, ex.getMessage(), correlationId);
-            context.systemCounters().errors().increment();
+            errors.increment();
             errorLog.record(ex);
         }
     }
@@ -832,7 +841,7 @@ public class DriverConductor implements Agent
 
     private void onClientKeepalive(final long clientId)
     {
-        context.systemCounters().clientKeepAlives().addOrdered(1);
+        clientKeepAlives.addOrdered(1);
 
         final AeronClient client = findClient(clients, clientId);
         if (null != client)

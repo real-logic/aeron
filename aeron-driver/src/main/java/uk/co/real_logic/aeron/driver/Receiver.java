@@ -25,6 +25,8 @@ import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.BYTES_RECEIVED;
+
 /**
  * Receiver agent for JVM based media driver, uses an event loop with command buffer
  */
@@ -43,7 +45,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         statusMessageTimeout = ctx.statusMessageTimeout();
         dataTransportPoller = ctx.dataTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
-        totalBytesReceived = ctx.systemCounters().bytesReceived();
+        totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
         clock = ctx.nanoClock();
     }
 

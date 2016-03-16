@@ -15,8 +15,11 @@
  */
 package uk.co.real_logic.aeron.driver.event;
 
+import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
+import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -81,18 +84,34 @@ public class EventConfiguration
      */
     public static final int EVENT_READER_FRAME_LIMIT = 8;
 
+    /**
+     * The enabled event codes mask
+     */
+    public static final long ENABLED_EVENT_CODES;
+
+    /**
+     * Ring Buffer to use for logging
+     */
+    public static final ManyToOneRingBuffer EVENT_RING_BUFFER;
+
     private static final Pattern COMMA = Pattern.compile(",");
+
+    static
+    {
+        ENABLED_EVENT_CODES =
+            makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME)));
+
+        final int bufferLength =
+            Integer.getInteger(
+                EventConfiguration.BUFFER_LENGTH_PROPERTY_NAME,
+                EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
+
+        EVENT_RING_BUFFER = new ManyToOneRingBuffer(new UnsafeBuffer(ByteBuffer.allocateDirect(bufferLength)));
+    }
 
     public static long getEnabledEventCodes()
     {
-        return makeTagBitSet(getEnabledEventCodes(System.getProperty(ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME)));
-    }
-
-    public static int bufferLength()
-    {
-        return Integer.getInteger(
-            EventConfiguration.BUFFER_LENGTH_PROPERTY_NAME,
-            EventConfiguration.BUFFER_LENGTH_DEFAULT) + RingBufferDescriptor.TRAILER_LENGTH;
+        return ENABLED_EVENT_CODES;
     }
 
     static long makeTagBitSet(final Set<EventCode> eventCodes)

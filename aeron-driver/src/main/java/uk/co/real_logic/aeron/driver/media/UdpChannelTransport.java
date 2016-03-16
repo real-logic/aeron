@@ -55,11 +55,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
-        final DistinctErrorLog errorLog,
-        final EventLogger logger)
+        final DistinctErrorLog errorLog)
     {
         this.udpChannel = udpChannel;
-        this.logger = logger;
+        this.logger = EventLogger.LOGGER;
         this.errorLog = errorLog;
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;

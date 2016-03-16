@@ -23,8 +23,6 @@ import org.mockito.InOrder;
 import org.mockito.stubbing.Answer;
 import uk.co.real_logic.aeron.DriverProxy;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
-import uk.co.real_logic.aeron.driver.event.EventConfiguration;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.aeron.driver.stats.SystemCounters;
@@ -32,7 +30,6 @@ import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -65,16 +62,12 @@ public class DriverConductorTest
     private static final int BUFFER_LENGTH = 16 * 1024;
 
     private final ByteBuffer toDriverBuffer = ByteBuffer.allocateDirect(Configuration.CONDUCTOR_BUFFER_LENGTH);
-    private final ByteBuffer toEventBuffer = ByteBuffer.allocateDirect(
-        EventConfiguration.BUFFER_LENGTH_DEFAULT + RingBufferDescriptor.TRAILER_LENGTH);
 
     private final RawLogFactory mockRawLogFactory = mock(RawLogFactory.class);
 
     private final RingBuffer fromClientCommands = new ManyToOneRingBuffer(new UnsafeBuffer(toDriverBuffer));
-    private final RingBuffer toEventReader = new ManyToOneRingBuffer(new UnsafeBuffer(toEventBuffer));
     private final ClientProxy mockClientProxy = mock(ClientProxy.class);
 
-    private final EventLogger mockConductorLogger = mock(EventLogger.class);
     private final DistinctErrorLog mockErrorLog = mock(DistinctErrorLog.class);
     private final AtomicCounter mockErrorCounter = mock(AtomicCounter.class);
 
@@ -125,7 +118,6 @@ public class DriverConductorTest
                 // TODO: remove
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .eventLogger(mockConductorLogger)
             .errorLog(mockErrorLog)
             .rawLogBuffersFactory(mockRawLogFactory)
             .countersManager(countersManager)
@@ -133,7 +125,6 @@ public class DriverConductorTest
             .sendChannelEndpointSupplier(Configuration.sendChannelEndpointSupplier())
             .receiveChannelEndpointSupplier(Configuration.receiveChannelEndpointSupplier());
 
-        ctx.toEventReader(toEventReader);
         ctx.toDriverCommands(fromClientCommands);
         ctx.clientProxy(mockClientProxy);
         ctx.countersValuesBuffer(counterBuffer);

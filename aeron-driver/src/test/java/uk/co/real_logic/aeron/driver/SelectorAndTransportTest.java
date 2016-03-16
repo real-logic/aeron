@@ -21,7 +21,6 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.driver.media.*;
 import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
@@ -57,7 +56,6 @@ public class SelectorAndTransportTest
 
     private final InetSocketAddress rcvRemoteAddress = new InetSocketAddress("localhost", SRC_PORT);
 
-    private final EventLogger mockTransportLogger = mock(EventLogger.class);
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final AtomicCounter mockStatusMessagesReceivedCounter = mock(AtomicCounter.class);
 
@@ -78,7 +76,6 @@ public class SelectorAndTransportTest
         when(mockPublication.streamId()).thenReturn(STREAM_ID);
         when(mockPublication.sessionId()).thenReturn(SESSION_ID);
 
-        context.eventLogger(mockTransportLogger);
         context.systemCounters(mockSystemCounters);
     }
 

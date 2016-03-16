@@ -24,7 +24,8 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 /**
- * Debug implementation which can record transmission frames to the {@link MediaDriver.Context#eventLogger()} and
+ * Debug implementation which can record transmission frames to the
+ * {@link uk.co.real_logic.aeron.driver.event.EventLogger} and
  * introduce loss.
  */
 public class DebugSendChannelEndpoint extends SendChannelEndpoint

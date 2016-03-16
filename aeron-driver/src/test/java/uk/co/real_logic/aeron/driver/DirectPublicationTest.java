@@ -20,7 +20,6 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.aeron.DriverProxy;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
@@ -76,10 +75,8 @@ public class DirectPublicationTest
             .clientProxy(mock(ClientProxy.class))
             .toConductorFromReceiverCommandQueue(mock(OneToOneConcurrentArrayQueue.class))
             .toConductorFromSenderCommandQueue(mock(OneToOneConcurrentArrayQueue.class))
-            .toEventReader(mock(ManyToOneRingBuffer.class))
             .epochClock(new SystemEpochClock())
             .countersManager(countersManager)
-            .eventLogger(mock(EventLogger.class))
             .systemCounters(mock(SystemCounters.class))
             .nanoClock(nanoClock);
 

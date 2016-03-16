@@ -22,8 +22,10 @@ import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.CreatePublicationImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.driver.media.*;
+import uk.co.real_logic.aeron.driver.media.ControlTransportPoller;
+import uk.co.real_logic.aeron.driver.media.DataTransportPoller;
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
+import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.Header;
@@ -100,7 +102,6 @@ public class ReceiverTest
     private final NanoClock clock = () -> currentTime;
 
     private final RawLog rawLog = newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH);
-    private final EventLogger mockLogger = mock(EventLogger.class);
 
     private final Header header = new Header(INITIAL_TERM_ID, TERM_BUFFER_LENGTH);
     private UnsafeBuffer[] termBuffers;
@@ -130,7 +131,6 @@ public class ReceiverTest
             .rawLogBuffersFactory(mockRawLogFactory)
             .systemCounters(mockSystemCounters)
             .receiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
-            .eventLogger(mockLogger)
             .nanoClock(() -> currentTime);
 
         toConductorQueue = ctx.toConductorFromReceiverCommandQueue();
@@ -151,7 +151,6 @@ public class ReceiverTest
             .map(LogBufferPartition::termBuffer)
             .toArray(UnsafeBuffer[]::new);
 
-        context.eventLogger(mockLogger);
         context.systemCounters(mockSystemCounters);
 
         receiveChannelEndpoint = new ReceiveChannelEndpoint(

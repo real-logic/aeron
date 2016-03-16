@@ -50,11 +50,10 @@ class MappedRawLog implements RawLog
     MappedRawLog(
         final File location,
         final boolean useSparseFiles,
-        final int termLength,
-        final EventLogger logger)
+        final int termLength)
     {
         this.termLength = termLength;
-        this.logger = logger;
+        this.logger = EventLogger.LOGGER;
         this.logFile = location;
         partitions = new LogBufferPartition[PARTITION_COUNT];
 

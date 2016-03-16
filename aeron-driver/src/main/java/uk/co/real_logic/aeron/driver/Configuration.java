@@ -388,7 +388,7 @@ public class Configuration
 
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
         EventLogger.IS_FRAME_LOGGING_ENABLED ?
-            "uk.co.real_logic.aeron.driver.DebugSendChannelEndpointSupplier" :
+            "uk.co.real_logic.aeron.driver.ext.DebugSendChannelEndpointSupplier" :
             "uk.co.real_logic.aeron.driver.DefaultSendChannelEndpointSupplier";
 
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
@@ -398,7 +398,7 @@ public class Configuration
 
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
         EventLogger.IS_FRAME_LOGGING_ENABLED ?
-            "uk.co.real_logic.aeron.driver.DebugReceiveChannelEndpointSupplier" :
+            "uk.co.real_logic.aeron.driver.ext.DebugReceiveChannelEndpointSupplier" :
             "uk.co.real_logic.aeron.driver.DefaultReceiveChannelEndpointSupplier";
 
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(

@@ -46,10 +46,10 @@ public class ClientProxy
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final EventLogger logger;
 
-    public ClientProxy(final BroadcastTransmitter transmitter, final EventLogger logger)
+    public ClientProxy(final BroadcastTransmitter transmitter)
     {
         this.transmitter = transmitter;
-        this.logger = logger;
+        this.logger = EventLogger.LOGGER;
 
         errorResponse.wrap(buffer, 0);
         imageReady.wrap(buffer, 0);

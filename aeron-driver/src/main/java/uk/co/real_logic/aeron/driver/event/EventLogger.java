@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver.event;
 
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.io.File;
 import java.net.InetSocketAddress;
@@ -47,21 +47,16 @@ public class EventLogger
     public static final boolean IS_FRAME_LOGGING_ENABLED =
         IS_FRAME_IN_ENABLED || IS_FRAME_IN_DROPPED_ENABLED || IS_FRAME_OUT_ENABLED || IS_FRAME_OUT_DROPPED_ENABLED;
 
+    public static final EventLogger LOGGER = new EventLogger(EventConfiguration.EVENT_RING_BUFFER);
+
     private static final ThreadLocal<MutableDirectBuffer> ENCODING_BUFFER = ThreadLocal.withInitial(
         () -> new UnsafeBuffer(ByteBuffer.allocateDirect(EventConfiguration.MAX_EVENT_LENGTH)));
 
-    private final ManyToOneRingBuffer ringBuffer;
+    private final RingBuffer ringBuffer;
 
-    public EventLogger(final ByteBuffer buffer)
+    public EventLogger(final RingBuffer ringBuffer)
     {
-        if (null != buffer)
-        {
-            this.ringBuffer = new ManyToOneRingBuffer(new UnsafeBuffer(buffer));
-        }
-        else
-        {
-            this.ringBuffer = null;
-        }
+        this.ringBuffer = ringBuffer;
     }
 
     public void log(final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length)
@@ -136,7 +131,7 @@ public class EventLogger
             final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
             final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
 
-            ringBuffer.write(FRAME_OUT_DROPPED.id(), encodedBuffer, 0, encodedLength);
+            ringBuffer.write(FRAME_IN_DROPPED.id(), encodedBuffer, 0, encodedLength);
         }
     }
 

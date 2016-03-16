@@ -21,11 +21,10 @@ import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
-import uk.co.real_logic.aeron.driver.event.EventConfiguration;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.ActiveDriverException;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
-import uk.co.real_logic.aeron.driver.media.*;
+import uk.co.real_logic.aeron.driver.media.ControlTransportPoller;
+import uk.co.real_logic.aeron.driver.media.DataTransportPoller;
 import uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor;
 import uk.co.real_logic.aeron.driver.stats.SystemCounters;
 import uk.co.real_logic.agrona.ErrorHandler;
@@ -40,7 +39,6 @@ import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 import java.io.*;
 import java.net.StandardSocketOptions;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
@@ -52,9 +50,7 @@ import java.util.function.Supplier;
 import static java.lang.Boolean.getBoolean;
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.CONDUCTOR_PROXY_FAILS;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.RECEIVER_PROXY_FAILS;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.SENDER_PROXY_FAILS;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.*;
 import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
 
 /**
@@ -460,7 +456,6 @@ public final class MediaDriver implements AutoCloseable
         private IdleStrategy sharedIdleStrategy;
         private ClientProxy clientProxy;
         private RingBuffer toDriverCommands;
-        private RingBuffer toEventReader;
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
 
@@ -479,13 +474,10 @@ public final class MediaDriver implements AutoCloseable
         private int ipcPublicationTermBufferLength;
         private int maxImageTermBufferLength;
         private int initialWindowLength;
-        private int eventBufferLength;
         private long statusMessageTimeout;
         private int mtuLength;
 
         private boolean warnIfDirectoriesExist;
-        private EventLogger eventLogger;
-        private Consumer<String> eventConsumer;
         private ThreadingMode threadingMode;
         private boolean dirsDeleteOnStart;
 
@@ -499,8 +491,6 @@ public final class MediaDriver implements AutoCloseable
             initialWindowLength(Configuration.initialWindowLength());
             statusMessageTimeout(Configuration.statusMessageTimeout());
             mtuLength(Configuration.MTU_LENGTH);
-
-            eventBufferLength = EventConfiguration.bufferLength();
 
             warnIfDirectoriesExist = true;
 
@@ -536,7 +526,7 @@ public final class MediaDriver implements AutoCloseable
 
                 final BroadcastTransmitter transmitter =
                     new BroadcastTransmitter(createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer));
-                clientProxy(new ClientProxy(transmitter, eventLogger));
+                clientProxy(new ClientProxy(transmitter));
 
                 toDriverCommands(new ManyToOneRingBuffer(createToDriverBuffer(cncByteBuffer, cncMetaDataBuffer)));
 
@@ -573,8 +563,7 @@ public final class MediaDriver implements AutoCloseable
                     publicationTermBufferLength,
                     maxImageTermBufferLength,
                     ipcPublicationTermBufferLength,
-                    termBufferSparseFile,
-                    eventLogger));
+                    termBufferSparseFile));
 
                 concludeIdleStrategies();
             }
@@ -602,20 +591,6 @@ public final class MediaDriver implements AutoCloseable
             {
                 threadingMode = Configuration.threadingMode();
             }
-
-            final ByteBuffer eventByteBuffer = ByteBuffer.allocateDirect(eventBufferLength);
-
-            if (null == eventLogger)
-            {
-                eventLogger = new EventLogger(eventByteBuffer);
-            }
-
-            if (null == eventConsumer)
-            {
-                eventConsumer = System.out::println;
-            }
-
-            toEventReader(new ManyToOneRingBuffer(new UnsafeBuffer(eventByteBuffer)));
 
             if (null == unicastFlowControlSupplier)
             {
@@ -845,27 +820,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context eventConsumer(final Consumer<String> consumer)
-        {
-            this.eventConsumer = consumer;
-            return this;
-        }
-
-        public Context eventLogger(final EventLogger logger)
-        {
-            this.eventLogger = logger;
-            return this;
-        }
-
         public Context errorLog(final DistinctErrorLog errorLog)
         {
             this.errorLog = errorLog;
-            return this;
-        }
-
-        public Context toEventReader(final RingBuffer toEventReader)
-        {
-            this.toEventReader = toEventReader;
             return this;
         }
 
@@ -884,12 +841,6 @@ public final class MediaDriver implements AutoCloseable
         public Context publicationUnblockTimeoutNs(final long timeout)
         {
             this.publicationUnblockTimeoutNs = timeout;
-            return this;
-        }
-
-        public Context eventBufferLength(final int length)
-        {
-            this.eventBufferLength = length;
             return this;
         }
 
@@ -1098,11 +1049,6 @@ public final class MediaDriver implements AutoCloseable
             return warnIfDirectoriesExist;
         }
 
-        public EventLogger eventLogger()
-        {
-            return eventLogger;
-        }
-
         public ErrorHandler errorHandler()
         {
             return errorHandler;
@@ -1137,16 +1083,6 @@ public final class MediaDriver implements AutoCloseable
         public boolean dirsDeleteOnStart()
         {
             return dirsDeleteOnStart;
-        }
-
-        public Consumer<String> eventConsumer()
-        {
-            return eventConsumer;
-        }
-
-        public RingBuffer toEventReader()
-        {
-            return toEventReader;
         }
 
         public SendChannelEndpointSupplier sendChannelEndpointSupplier()

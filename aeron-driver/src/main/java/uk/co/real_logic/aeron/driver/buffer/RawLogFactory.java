@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.agrona.IoUtil;
 
 import java.io.File;
@@ -34,18 +33,15 @@ public class RawLogFactory
 
     private final File publicationsDir;
     private final File imagesDir;
-    private final EventLogger logger;
 
     public RawLogFactory(
         final String dataDirectoryName,
         final int publicationTermBufferLength,
         final int imagesTermBufferMaxLength,
         final int ipcPublicationTermBufferLength,
-        final boolean useSparseFiles,
-        final EventLogger logger)
+        final boolean useSparseFiles)
     {
         this.useSparseFiles = useSparseFiles;
-        this.logger = logger;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
         publicationsDir = fileMappingConvention.publicationsDir();
@@ -118,6 +114,6 @@ public class RawLogFactory
     {
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, useSparseFiles, termBufferLength, logger);
+        return new MappedRawLog(location, useSparseFiles, termBufferLength);
     }
 }

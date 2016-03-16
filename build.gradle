@@ -319,9 +319,11 @@ project(':aeron-system-tests') {
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
         testCompile project(path: ':aeron-client', configuration: 'tests')
+        testCompile project(':aeron-agent')
     }
 
     test {
+        jvmArgs "-javaagent:" + project(':aeron-agent').jar.outputs.files.getSingleFile()
         systemProperties(
             'aeron.term.buffer.sparse.file' : 'true',
             'aeron.event.log': System.properties['aeron.event.log'])
@@ -350,6 +352,38 @@ project(':aeron-system-tests') {
     task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.test.allSource
+    }
+
+    task javadocJar(type: Jar, dependsOn: javadoc) {
+        classifier = 'javadoc'
+        from javadoc.destinationDir
+    }
+
+    artifacts {
+        archives sourcesJar
+        archives javadocJar
+    }
+}
+
+project(':aeron-agent') {
+    dependencies {
+        compile project(':aeron-client'), project(':aeron-driver')
+        compile "net.bytebuddy:byte-buddy:1.3.4"
+    }
+
+    jar {
+        manifest {
+            attributes(
+                "Premain-Class" : "uk.co.real_logic.aeron.agent.EventLogAgent",
+                "Agent-Class" : "uk.co.real_logic.aeron.agent.EventLogAgent",
+                "Can-Redefine-Classes" : "true",
+                "Can-Retransform-Classes" : "true")
+        }
+    }
+
+    task sourcesJar(type: Jar) {
+        classifier = 'sources'
+        from sourceSets.main.allSource
     }
 
     task javadocJar(type: Jar, dependsOn: javadoc) {

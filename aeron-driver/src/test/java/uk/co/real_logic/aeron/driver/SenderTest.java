@@ -19,13 +19,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
-import uk.co.real_logic.aeron.driver.stats.SystemCounters;
-import uk.co.real_logic.aeron.logbuffer.HeaderWriter;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.cmd.NewPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
-import uk.co.real_logic.aeron.driver.media.*;
+import uk.co.real_logic.aeron.driver.media.ControlTransportPoller;
+import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
+import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.aeron.driver.stats.SystemCounters;
+import uk.co.real_logic.aeron.logbuffer.HeaderWriter;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
@@ -63,7 +64,6 @@ public class SenderTest
         DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
     private static final int ALIGNED_FRAME_LENGTH = align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
 
-    private final EventLogger mockLogger = mock(EventLogger.class);
     private final ControlTransportPoller mockTransportPoller = mock(ControlTransportPoller.class);
 
     private final RawLog rawLog = LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH);
@@ -114,7 +114,6 @@ public class SenderTest
                 .controlTransportPoller(mockTransportPoller)
                 .systemCounters(mockSystemCounters)
                 .senderCommandQueue(senderCommandQueue)
-                .eventLogger(mockLogger)
                 .nanoClock(() -> currentTimestamp));
 
         final UnsafeBuffer termMetaData = rawLog.partitions()[0].metaDataBuffer();

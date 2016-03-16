@@ -52,10 +52,7 @@ import static uk.co.real_logic.aeron.CommonContext.IPC_CHANNEL;
 import static uk.co.real_logic.aeron.ErrorCode.*;
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
-import static uk.co.real_logic.aeron.driver.event.EventConfiguration.EVENT_READER_FRAME_LIMIT;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.ERRORS;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.UNBLOCKED_COMMANDS;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.computeMaxMessageLength;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.createDefaultHeader;
@@ -80,7 +77,6 @@ public class DriverConductor implements Agent
     private final ClientProxy clientProxy;
     private final DriverConductorProxy fromReceiverConductorProxy;
     private final RingBuffer toDriverCommands;
-    private final RingBuffer toEventReader;
     private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromReceiverDriverConductorCmdQueue;
     private final OneToOneConcurrentArrayQueue<DriverConductorCmd> fromSenderDriverConductorCmdQueue;
     private final HashMap<String, SendChannelEndpoint> sendChannelEndpointByChannelMap = new HashMap<>();
@@ -104,7 +100,6 @@ public class DriverConductor implements Agent
     private final DistinctErrorLog errorLog;
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
-    private final MessageHandler onEventFunc;
 
     private final CountersManager countersManager;
     private final AtomicCounter clientKeepAlives;
@@ -124,18 +119,14 @@ public class DriverConductor implements Agent
         epochClock = ctx.epochClock();
         nanoClock = ctx.nanoClock();
         toDriverCommands = ctx.toDriverCommands();
-        toEventReader = ctx.toEventReader();
         clientProxy = ctx.clientProxy();
         fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
-        logger = ctx.eventLogger();
+        logger = EventLogger.LOGGER;
         errorLog = ctx.errorLog();
 
         countersManager = context.countersManager();
         clientKeepAlives = context.systemCounters().get(CLIENT_KEEP_ALIVES);
         errors = context.systemCounters().get(ERRORS);
-
-        final Consumer<String> eventConsumer = ctx.eventConsumer();
-        onEventFunc = (typeId, buffer, offset, length) -> eventConsumer.accept(EventCode.get(typeId).decode(buffer, offset));
 
         toDriverCommands.consumerHeartbeatTime(epochClock.time());
 
@@ -181,7 +172,6 @@ public class DriverConductor implements Agent
         workCount += toDriverCommands.read(onClientCommandFunc);
         workCount += fromReceiverDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
         workCount += fromSenderDriverConductorCmdQueue.drain(onDriverConductorCmdFunc);
-        workCount += toEventReader.read(onEventFunc, EVENT_READER_FRAME_LIMIT);
 
         final long now = nanoClock.nanoTime();
         workCount += processTimers(now);

@@ -18,10 +18,9 @@ package uk.co.real_logic.aeron.driver.buffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.Configuration;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
+import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
@@ -30,7 +29,6 @@ import java.io.IOException;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class RawLogFactoryTest
 {
@@ -44,14 +42,13 @@ public class RawLogFactoryTest
     private static final boolean PRE_ZERO_LOG = false;
     private RawLogFactory rawLogFactory;
     private UdpChannel udpChannel = UdpChannel.parse(CHANNEL);
-    private EventLogger logger = mock(EventLogger.class);
 
     @Before
     public void createDataDir()
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         rawLogFactory = new RawLogFactory(
-            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, TERM_BUFFER_LENGTH, PRE_ZERO_LOG, logger);
+            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
     }
 
     @After

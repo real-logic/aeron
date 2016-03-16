@@ -397,9 +397,7 @@ public final class MediaDriver implements AutoCloseable
 
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");
                 final String errorLogFilename = String.format(
-                    "%s-%s-error.log",
-                    ctx.aeronDirectoryName(),
-                    dateFormat.format(new Date(System.currentTimeMillis())));
+                    "%s-%s-error.log", ctx.aeronDirectoryName(), dateFormat.format(new Date()));
                 final File errorLogFile = new File(errorLogFilename);
                 int observations = 0;
 
@@ -678,17 +676,15 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context toConductorFromReceiverCommandQueue(
-            final OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue)
+        public Context toConductorFromReceiverCommandQueue(final OneToOneConcurrentArrayQueue<DriverConductorCmd> queue)
         {
-            this.toConductorFromReceiverCommandQueue = conductorCommandQueue;
+            this.toConductorFromReceiverCommandQueue = queue;
             return this;
         }
 
-        public Context toConductorFromSenderCommandQueue(
-            final OneToOneConcurrentArrayQueue<DriverConductorCmd> conductorCommandQueue)
+        public Context toConductorFromSenderCommandQueue(final OneToOneConcurrentArrayQueue<DriverConductorCmd> queue)
         {
-            this.toConductorFromSenderCommandQueue = conductorCommandQueue;
+            this.toConductorFromSenderCommandQueue = queue;
             return this;
         }
 

@@ -68,7 +68,7 @@ using namespace aeron::concurrent;
 */
 namespace CncFileDescriptor {
 
-static const std::string CNC_FILE = "cnc";
+static const std::string CNC_FILE = "cnc.dat";
 
 static const std::int32_t CNC_VERSION = 4;
 

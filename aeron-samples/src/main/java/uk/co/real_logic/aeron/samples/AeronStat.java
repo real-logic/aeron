@@ -20,6 +20,7 @@ import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import uk.co.real_logic.aeron.CncFileDescriptor;
 import uk.co.real_logic.aeron.CommonContext;
@@ -29,32 +30,74 @@ import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
+import static uk.co.real_logic.aeron.CncFileDescriptor.*;
+import static uk.co.real_logic.aeron.driver.stats.StreamPositionCounter.*;
+
 /**
- * Application to print out counters and their labels. A command-and-control (cnc) file is maintained by media driver
+ * Tool for printing out Aeron counters. A command-and-control (cnc) file is maintained by media driver
  * in shared memory. This application reads the the cnc file and prints the counters. Layout of the cnc file is
  * described in {@link CncFileDescriptor}.
+ *
+ * This tool accepts filters on the command line, e.g. for connections only see example below:
+ *
+ * <code>
+ *     java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.samples.AeronStat type=[1-4] identity=12345
+ * </code>
  */
 public class AeronStat
 {
+    /**
+     * Types of the counters.
+     * <ul>
+     *     <li>0: System Counters</li>
+     *     <li>1 - 4: Stream Positions</li>
+     * </ul>
+     */
+    public static final String COUNTER_TYPE_ID = "type";
+
+    /**
+     * The identity of each counter that can either be the system counter id or registration id for positions.
+     */
+    public static final String COUNTER_IDENTITY = "identity";
+
+    /**
+     * Session id filter to be used for position counters.
+     */
+    public static final String COUNTER_SESSION_ID = "session";
+
+    /**
+     * Stream id filter to be used for position counters.
+     */
+    public static final String COUNTER_STREAM_ID = "stream";
+
+    /**
+     * Channel filter to be used for position counters.
+     */
+    public static final String COUNTER_CHANNEL = "channel";
+
+    private static final int ONE_SECOND = 1_000;
+
     private final CountersReader counters;
+    private final Pattern typeFilter;
+    private final Pattern identityFilter;
+    private final Pattern sessionFilter;
+    private final Pattern streamFilter;
+    private final Pattern channelFilter;
 
-    public AeronStat()
+    public AeronStat(
+        final CountersReader counters,
+        final Pattern typeFilter,
+        final Pattern identityFilter,
+        final Pattern sessionFilter,
+        final Pattern streamFilter,
+        final Pattern channelFilter)
     {
-        final File cncFile = CommonContext.newDefaultCncFile();
-        System.out.println("Command `n Control file " + cncFile);
-
-        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-        final DirectBuffer cncMetaData = CncFileDescriptor.createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaData.getInt(CncFileDescriptor.cncVersionOffset(0));
-
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException("CNC version not supported: file version=" + cncVersion);
-        }
-
-        final AtomicBuffer labelsBuffer = CncFileDescriptor.createCountersMetaDataBuffer(cncByteBuffer, cncMetaData);
-        final AtomicBuffer valuesBuffer = CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaData);
-        counters = new CountersReader(labelsBuffer, valuesBuffer);
+        this.counters = counters;
+        this.typeFilter = typeFilter;
+        this.identityFilter = identityFilter;
+        this.sessionFilter = sessionFilter;
+        this.streamFilter = streamFilter;
+        this.channelFilter = channelFilter;
     }
 
     public void print(final PrintStream out)
@@ -63,16 +106,71 @@ public class AeronStat
         out.println("=========================");
 
         counters.forEach(
-            (counterId, label) ->
+            (counterId, typeId, key, label) ->
             {
-                final long value = counters.getCounterValue(counterId);
-                out.format("%3d: %,20d - %s\n", counterId, value, label);
+                if (filter(typeId, key))
+                {
+                    final long value = counters.getCounterValue(counterId);
+                    out.format("%3d: %,20d - %s\n", counterId, value, label);
+                }
             });
     }
 
     public static void main(final String[] args) throws Exception
     {
-        final AeronStat aeronStat = new AeronStat();
+        Pattern typeFilter = null;
+        Pattern identityFilter = null;
+        Pattern sessionFilter = null;
+        Pattern streamFilter = null;
+        Pattern channelFilter = null;
+
+        if (0 != args.length)
+        {
+            checkForHelp(args);
+
+            for (final String arg : args)
+            {
+                final int equalsIndex = arg.indexOf('=');
+                if (-1 == equalsIndex)
+                {
+                    System.out.println("Arguments must be in name=pattern format: Invalid arg '" + arg + "'");
+                    return;
+                }
+
+                final String argName = arg.substring(0, equalsIndex);
+                final String argValue = arg.substring(equalsIndex + 1);
+
+                switch (argName)
+                {
+                    case COUNTER_TYPE_ID:
+                        typeFilter = Pattern.compile(argValue);
+                        break;
+
+                    case COUNTER_IDENTITY:
+                        identityFilter = Pattern.compile(argValue);
+                        break;
+
+                    case COUNTER_SESSION_ID:
+                        sessionFilter = Pattern.compile(argValue);
+                        break;
+
+                    case COUNTER_STREAM_ID:
+                        streamFilter = Pattern.compile(argValue);
+                        break;
+
+                    case COUNTER_CHANNEL:
+                        channelFilter = Pattern.compile(argValue);
+                        break;
+
+                    default:
+                        System.out.println("Unrecognised argument: '" + arg + "'");
+                        return;
+                }
+            }
+        }
+
+        final AeronStat aeronStat = new AeronStat(
+            setupCounters(), typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
@@ -81,7 +179,89 @@ public class AeronStat
             System.out.print("\033[H\033[2J");
             aeronStat.print(System.out);
             System.out.println("--");
-            Thread.sleep(1_000);
+
+            Thread.sleep(ONE_SECOND);
         }
+    }
+
+    private static void checkForHelp(final String[] args)
+    {
+        for (final String arg : args)
+        {
+            if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg))
+            {
+                System.out.println(
+                    "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat\n" +
+                        "\toptionally filter by regex patterns:\n" +
+                        "\t[type=<pattern>]\n" +
+                        "\t[identity=<pattern>]\n" +
+                        "\t[sessionId=<pattern>]\n" +
+                        "\t[streamId=<pattern>]\n" +
+                        "\t[channel=<pattern>]\n");
+
+                System.exit(0);
+            }
+        }
+    }
+
+    private static CountersReader setupCounters()
+    {
+        final File cncFile = CommonContext.newDefaultCncFile();
+        System.out.println("Command `n Control file " + cncFile);
+
+        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
+
+        if (CncFileDescriptor.CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+        }
+
+        final AtomicBuffer labelsBuffer = createCountersMetaDataBuffer(cncByteBuffer, cncMetaData);
+        final AtomicBuffer valuesBuffer = createCountersValuesBuffer(cncByteBuffer, cncMetaData);
+        return new CountersReader(labelsBuffer, valuesBuffer);
+    }
+
+    private boolean filter(final int typeId, final DirectBuffer key)
+    {
+        if (!match(typeFilter, "" + typeId))
+        {
+            return false;
+        }
+
+        if (typeId > 0)
+        {
+            if (!match(identityFilter, "" + key.getLong(REGISTRATION_ID_OFFSET)))
+            {
+                return false;
+            }
+
+            if (!match(sessionFilter, "" + key.getInt(SESSION_ID_OFFSET)))
+            {
+                return false;
+            }
+
+            if (!match(streamFilter, "" + key.getInt(STREAM_ID_OFFSET)))
+            {
+                return false;
+            }
+
+            if (!match(channelFilter, key.getStringUtf8(CHANNEL_OFFSET)))
+            {
+                return false;
+            }
+        }
+        else if (!match(identityFilter, "" + key.getInt(0)))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static boolean match(final Pattern pattern, final CharSequence sequence)
+    {
+        return null == pattern || pattern.matcher(sequence).find();
     }
 }

@@ -64,7 +64,7 @@ import static uk.co.real_logic.agrona.BitUtil.*;
  */
 public class CncFileDescriptor
 {
-    public static final String CNC_FILE = "cnc";
+    public static final String CNC_FILE = "cnc.dat";
 
     public static final int CNC_VERSION = 4;
 

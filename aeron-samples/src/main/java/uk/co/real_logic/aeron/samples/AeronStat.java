@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.samples;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.util.Date;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,9 +30,9 @@ import uk.co.real_logic.agrona.concurrent.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
 /**
- * Application to print out counters and their labels A command-and-control (cnc) file is maintained by media driver in shared
- * memory. This application reads the the cnc file and prints the counters. Layout of the cnc file is described in
- * {@link CncFileDescriptor}.
+ * Application to print out counters and their labels. A command-and-control (cnc) file is maintained by media driver
+ * in shared memory. This application reads the the cnc file and prints the counters. Layout of the cnc file is
+ * described in {@link CncFileDescriptor}.
  */
 public class AeronStat
 {
@@ -68,20 +67,6 @@ public class AeronStat
             {
                 final long value = counters.getCounterValue(counterId);
                 out.format("%3d: %,20d - %s\n", counterId, value, label);
-            });
-    }
-
-    public void encode(final ByteBuffer buffer)
-    {
-        buffer.putLong(System.currentTimeMillis());
-
-        counters.forEach(
-            (counterId, label) ->
-            {
-                buffer.putInt(counterId);
-                buffer.putInt(label.length());
-                buffer.put(label.getBytes());
-                buffer.putLong(counters.getCounterValue(counterId));
             });
     }
 

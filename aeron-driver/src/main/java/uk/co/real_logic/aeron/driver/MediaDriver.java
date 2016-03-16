@@ -543,8 +543,7 @@ public final class MediaDriver implements AutoCloseable
 
                 if (null == errorLog)
                 {
-                    errorLog = new DistinctErrorLog(
-                        new UnsafeBuffer(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer)), epochClock);
+                    errorLog = new DistinctErrorLog(createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock);
                 }
 
                 if (null == errorHandler)

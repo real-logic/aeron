@@ -554,7 +554,7 @@ public final class MediaDriver implements AutoCloseable
                         {
                             if (!errorLog.record(throwable))
                             {
-                                System.err.println("Error Log is full, consider increasing " + ERROR_BUFFER_LENGTH);
+                                System.err.println("Error Log is full, consider increasing " + ERROR_BUFFER_LENGTH_PROP_NAME);
                                 throwable.printStackTrace();
                             }
                         };

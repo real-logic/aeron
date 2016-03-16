@@ -412,6 +412,7 @@ public final class MediaDriver implements AutoCloseable
 
                 if (0 == observations)
                 {
+                    //noinspection ResultOfMethodCallIgnored
                     errorLogFile.delete();
                 }
                 else

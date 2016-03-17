@@ -366,6 +366,8 @@ project(':aeron-system-tests') {
 }
 
 project(':aeron-agent') {
+    apply plugin: 'com.github.johnrengelman.shadow'
+
     dependencies {
         compile project(':aeron-client'), project(':aeron-driver')
         compile "net.bytebuddy:byte-buddy:1.3.4"
@@ -378,6 +380,14 @@ project(':aeron-agent') {
                 "Agent-Class" : "uk.co.real_logic.aeron.agent.EventLogAgent",
                 "Can-Redefine-Classes" : "true",
                 "Can-Retransform-Classes" : "true")
+        }
+    }
+
+    shadowJar {
+        dependencies {
+            exclude(project(':aeron-client'))
+            exclude(project(':aeron-driver'))
+            exclude(dependency('uk.co.real-logic:Agrona'))
         }
     }
 

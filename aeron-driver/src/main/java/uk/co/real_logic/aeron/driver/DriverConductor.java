@@ -669,8 +669,6 @@ public class DriverConductor implements Agent
         SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
-            logger.logChannelCreated(udpChannel.description());
-
             channelEndpoint = context.sendChannelEndpointSupplier().newInstance(udpChannel, context);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);

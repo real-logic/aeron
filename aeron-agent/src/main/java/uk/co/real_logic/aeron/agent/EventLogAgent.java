@@ -21,6 +21,9 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
+import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannelTransport;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
@@ -107,11 +110,45 @@ public class EventLogAgent
                             .intercept(MethodDelegation.to(CmdInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE));
                     }))
+                .type(nameEndsWith("SenderProxy"))
+                .transform(
+                    ((builder, typeDescription, classLoader) ->
+                    {
+                        return builder
+                            .method(named("registerSendChannelEndpoint"))
+                            .intercept(MethodDelegation.to(SenderProxyInterceptor.class)
+                                .andThen(SuperMethodCall.INSTANCE));
+                    }))
+                .type(nameEndsWith("ReceiverProxy"))
+                .transform(
+                    ((builder, typeDescription, classLoader) ->
+                    {
+                        return builder
+                            .method(named("registerReceiveChannelEndpoint"))
+                            .intercept(MethodDelegation.to(ReceiverProxyInterceptor.class)
+                                .andThen(SuperMethodCall.INSTANCE));
+                    }))
                 .installOn(instrumentation);
         }
     }
 
     public static void agentmain(final String agentArgs, final Instrumentation instrumentation)
     {
+    }
+
+    public static class SenderProxyInterceptor
+    {
+        public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+        {
+            EventLogger.LOGGER.logChannelCreated(channelEndpoint.udpChannel().description());
+        }
+    }
+
+    public static class ReceiverProxyInterceptor
+    {
+        public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+        {
+            EventLogger.LOGGER.logChannelCreated(channelEndpoint.udpChannel().description());
+        }
     }
 }

@@ -105,6 +105,11 @@ public enum EventCode
         return code;
     }
 
+    public static boolean isEnabled(final EventCode code, final long mask)
+    {
+        return ((mask & code.tagBit()) == code.tagBit());
+    }
+
     public String decode(final MutableDirectBuffer buffer, final int offset)
     {
         return dissector.dissect(this, buffer, offset);

@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.driver.MediaDriver.Context;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
@@ -414,8 +413,6 @@ public class DriverConductor implements Agent
             {
                 case ADD_PUBLICATION:
                 {
-                    logger.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
-
                     final PublicationMessageFlyweight publicationMessageFlyweight = publicationMsgFlyweight;
                     publicationMessageFlyweight.wrap(buffer, index);
 
@@ -437,8 +434,6 @@ public class DriverConductor implements Agent
 
                 case REMOVE_PUBLICATION:
                 {
-                    logger.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
-
                     final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
                     removeMessageFlyweight.wrap(buffer, index);
                     correlationId = removeMessageFlyweight.correlationId();
@@ -448,8 +443,6 @@ public class DriverConductor implements Agent
 
                 case ADD_SUBSCRIPTION:
                 {
-                    logger.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
-
                     final SubscriptionMessageFlyweight subscriptionMessageFlyweight = subscriptionMsgFlyweight;
                     subscriptionMessageFlyweight.wrap(buffer, index);
 
@@ -471,8 +464,6 @@ public class DriverConductor implements Agent
 
                 case REMOVE_SUBSCRIPTION:
                 {
-                    logger.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
-
                     final RemoveMessageFlyweight removeMessageFlyweight = removeMsgFlyweight;
                     removeMessageFlyweight.wrap(buffer, index);
                     correlationId = removeMessageFlyweight.correlationId();
@@ -482,8 +473,6 @@ public class DriverConductor implements Agent
 
                 case CLIENT_KEEPALIVE:
                 {
-                    logger.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
-
                     final CorrelatedMessageFlyweight correlatedMessageFlyweight = correlatedMsgFlyweight;
                     correlatedMessageFlyweight.wrap(buffer, index);
                     correlationId = correlatedMessageFlyweight.correlationId();

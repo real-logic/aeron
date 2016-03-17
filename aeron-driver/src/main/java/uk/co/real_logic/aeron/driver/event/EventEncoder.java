@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.event;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 
 import java.net.InetSocketAddress;
@@ -34,7 +35,7 @@ public class EventEncoder
     private static final int SOCKET_ADDRESS_MAX_LENGTH = 24;
 
     public static int encode(
-        final MutableDirectBuffer encodingBuffer, final MutableDirectBuffer buffer, final int offset, final int length)
+        final MutableDirectBuffer encodingBuffer, final DirectBuffer buffer, final int offset, final int length)
     {
         final int captureLength = determineCaptureLength(length);
         int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, length);

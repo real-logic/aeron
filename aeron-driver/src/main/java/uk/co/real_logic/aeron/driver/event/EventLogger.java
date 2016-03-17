@@ -15,6 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.event;
 
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
@@ -59,7 +60,7 @@ public class EventLogger
         this.ringBuffer = ringBuffer;
     }
 
-    public void log(final EventCode code, final MutableDirectBuffer buffer, final int offset, final int length)
+    public void log(final EventCode code, final DirectBuffer buffer, final int offset, final int length)
     {
         if (isEnabled(code, ENABLED_EVENT_CODES))
         {
@@ -172,11 +173,5 @@ public class EventLogger
         final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
         final int encodingLength = EventEncoder.encode(encodedBuffer, value);
         ringBuffer.write(code.id(), encodedBuffer, 0, encodingLength);
-    }
-
-    private static boolean isEnabled(final EventCode code, final long enabledEventCodes)
-    {
-        final long tagBit = code.tagBit();
-        return (enabledEventCodes & tagBit) == tagBit;
     }
 }

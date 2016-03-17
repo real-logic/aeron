@@ -17,8 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.ErrorCode;
 import uk.co.real_logic.aeron.command.*;
-import uk.co.real_logic.aeron.driver.event.EventCode;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
+import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
 
@@ -26,8 +25,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
-import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_AVAILABLE_IMAGE;
-import static uk.co.real_logic.aeron.driver.event.EventCode.CMD_OUT_PUBLICATION_READY;
 
 /**
  * Proxy for communicating from the driver to the client conductor.
@@ -44,12 +41,10 @@ public class ClientProxy
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
     private final CorrelatedMessageFlyweight correlatedMessage = new CorrelatedMessageFlyweight();
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
-    private final EventLogger logger;
 
     public ClientProxy(final BroadcastTransmitter transmitter)
     {
         this.transmitter = transmitter;
-        this.logger = EventLogger.LOGGER;
 
         errorResponse.wrap(buffer, 0);
         imageReady.wrap(buffer, 0);
@@ -70,7 +65,7 @@ public class ClientProxy
             .errorCode(errorCode)
             .errorMessage(errorMessage);
 
-        transmitter.transmit(ON_ERROR, buffer, 0, errorResponse.length());
+        transmit(ON_ERROR, buffer, 0, errorResponse.length());
     }
 
     public void onAvailableImage(
@@ -100,8 +95,7 @@ public class ClientProxy
             .sourceIdentity(sourceIdentity);
 
         final int length = imageReady.length();
-        transmitter.transmit(ON_AVAILABLE_IMAGE, buffer, 0, length);
-        logger.log(CMD_OUT_AVAILABLE_IMAGE, buffer, 0, length);
+        transmit(ON_AVAILABLE_IMAGE, buffer, 0, length);
     }
 
     public void onPublicationReady(
@@ -119,16 +113,14 @@ public class ClientProxy
             .logFileName(logFileName);
 
         final int length = publicationReady.length();
-        transmitter.transmit(ON_PUBLICATION_READY, buffer, 0, length);
-        logger.log(CMD_OUT_PUBLICATION_READY, buffer, 0, length);
+        transmit(ON_PUBLICATION_READY, buffer, 0, length);
     }
 
     public void operationSucceeded(final long correlationId)
     {
         correlatedMessage.clientId(0).correlationId(correlationId);
 
-        transmitter.transmit(ON_OPERATION_SUCCESS, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
-        logger.log(EventCode.CMD_OUT_ON_OPERATION_SUCCESS, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
+        transmit(ON_OPERATION_SUCCESS, buffer, 0, CorrelatedMessageFlyweight.LENGTH);
     }
 
     public void onUnavailableImage(final long correlationId, final int streamId, final String channel)
@@ -139,7 +131,11 @@ public class ClientProxy
             .channel(channel);
 
         final int length = imageMessage.length();
-        transmitter.transmit(ON_UNAVAILABLE_IMAGE, buffer, 0, length);
-        logger.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, buffer, 0, length);
+        transmit(ON_UNAVAILABLE_IMAGE, buffer, 0, length);
+    }
+
+    private void transmit(final int msgTypeId, final DirectBuffer buffer, final int index, final int length)
+    {
+        transmitter.transmit(msgTypeId, buffer, index, length);
     }
 }

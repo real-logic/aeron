@@ -85,9 +85,6 @@ public:
             .termOffset(TERM_OFFSET)
             .mtu(MTU_LENGTH)
             .termLength(TERM_LENGTH);
-
-        ON_CALL(*m_publicationImage, sessionId()).WillByDefault(Return(SESSION_ID));
-        ON_CALL(*m_publicationImage, streamId()).WillByDefault(Return(STREAM_ID));
     }
 
 protected:
@@ -196,6 +193,9 @@ TEST_F(DataPacketDispatcherTest, shouldNotRequestCreateImageOnceUponReceivingSet
 {
     std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
 
+    EXPECT_CALL(*m_publicationImage, status(PublicationImageStatus::ACTIVE));
+    EXPECT_CALL(*m_publicationImage, streamId()).WillRepeatedly(Return(STREAM_ID));
+    EXPECT_CALL(*m_publicationImage, sessionId()).WillRepeatedly(Return(SESSION_ID));
     EXPECT_CALL(*m_driverConductorProxy, createPublicationImage(_, _, _, _, _, _, _, _, _, _)).Times(0);
 
     m_dataPacketDispatcher.addSubscription(STREAM_ID);
@@ -205,6 +205,9 @@ TEST_F(DataPacketDispatcherTest, shouldNotRequestCreateImageOnceUponReceivingSet
 
 TEST_F(DataPacketDispatcherTest, shouldSetImageInactiveOnRemoveSubscription)
 {
+    EXPECT_CALL(*m_publicationImage, status(PublicationImageStatus::ACTIVE));
+    EXPECT_CALL(*m_publicationImage, streamId()).WillRepeatedly(Return(STREAM_ID));
+    EXPECT_CALL(*m_publicationImage, sessionId()).WillRepeatedly(Return(SESSION_ID));
     EXPECT_CALL(*m_publicationImage, ifActiveGoInactive()).Times(1);
 
     m_dataPacketDispatcher.addSubscription(STREAM_ID);
@@ -214,6 +217,9 @@ TEST_F(DataPacketDispatcherTest, shouldSetImageInactiveOnRemoveSubscription)
 
 TEST_F(DataPacketDispatcherTest, shouldSetImageInactiveOnRemoveImage)
 {
+    EXPECT_CALL(*m_publicationImage, status(PublicationImageStatus::ACTIVE));
+    EXPECT_CALL(*m_publicationImage, streamId()).WillRepeatedly(Return(STREAM_ID));
+    EXPECT_CALL(*m_publicationImage, sessionId()).WillRepeatedly(Return(SESSION_ID));
     EXPECT_CALL(*m_publicationImage, ifActiveGoInactive()).Times(1);
 
     m_dataPacketDispatcher.addSubscription(STREAM_ID);
@@ -225,8 +231,12 @@ TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)
 {
     std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
 
+    EXPECT_CALL(*m_publicationImage, status(PublicationImageStatus::ACTIVE));
+    EXPECT_CALL(*m_publicationImage, streamId()).WillRepeatedly(Return(STREAM_ID));
+    EXPECT_CALL(*m_publicationImage, sessionId()).WillRepeatedly(Return(SESSION_ID));
     EXPECT_CALL(*m_receiver, addPendingSetupMessage(_, _, _)).Times(0);
     EXPECT_CALL(*m_driverConductorProxy, createPublicationImage(_, _, _, _, _, _, _, _, _, _)).Times(0);
+    EXPECT_CALL(*m_publicationImage, ifActiveGoInactive()).Times(1);
 
     m_dataPacketDispatcher.addSubscription(STREAM_ID);
     m_dataPacketDispatcher.addPublicationImage(m_publicationImage);
@@ -239,6 +249,11 @@ TEST_F(DataPacketDispatcherTest, shouldIgnoreDataAndSetupAfterImageRemoved)
 TEST_F(DataPacketDispatcherTest, shouldNotIgnoreDataAndSetupAfterImageRemovedAndCooldownRemoved)
 {
     std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
+
+    EXPECT_CALL(*m_publicationImage, status(PublicationImageStatus::ACTIVE));
+    EXPECT_CALL(*m_publicationImage, streamId()).WillRepeatedly(Return(STREAM_ID));
+    EXPECT_CALL(*m_publicationImage, sessionId()).WillRepeatedly(Return(SESSION_ID));
+    EXPECT_CALL(*m_publicationImage, ifActiveGoInactive()).Times(1);
 
     EXPECT_CALL(*m_publicationImage, insertPacket(_, _, _, _)).Times(0);
 
@@ -268,6 +283,8 @@ TEST_F(DataPacketDispatcherTest, shouldDispatchDataToCorrectImage)
 {
     std::unique_ptr<InetAddress> src = InetAddress::parse("127.0.0.1");
 
+    EXPECT_CALL(*m_publicationImage, streamId()).WillRepeatedly(Return(STREAM_ID));
+    EXPECT_CALL(*m_publicationImage, sessionId()).WillRepeatedly(Return(SESSION_ID));
     EXPECT_CALL(*m_publicationImage, status(PublicationImageStatus::ACTIVE)).Times(1);
     EXPECT_CALL(*m_publicationImage, insertPacket(Eq(ACTIVE_TERM_ID), Eq(TERM_OFFSET), _, Eq(CAPACITY)))
         .Times(1);

@@ -22,6 +22,7 @@
 #include <protocol/NakFlyweight.h>
 #include <protocol/SetupFlyweight.h>
 #include <protocol/StatusMessageFlyweight.h>
+#include <util/MacroUtil.h>
 
 #include "UdpChannelTransport.h"
 
@@ -43,10 +44,28 @@ public:
         m_nakBuffer.setMemory(0, m_nakBuffer.capacity(), 0);
     }
 
-    virtual std::int32_t pollForData();
+    inline COND_MOCK_VIRTUAL std::int32_t pollForData()
+    {
+        std::int32_t bytesReceived = 0;
+        std::int32_t bytesRead = 0;
 
-    virtual void sendSetupElicitingStatusMessage(
-        InetAddress& address, std::int32_t sessionId, std::int32_t streamId);
+        InetAddress* srcAddress = receive(&bytesReceived);
+
+        if (nullptr != srcAddress)
+        {
+            if (isValidFrame(receiveBuffer(), bytesRead))
+            {
+                bytesReceived = dispatch(receiveBuffer(), bytesRead, *srcAddress);
+            }
+        }
+
+        return bytesReceived;
+    }
+
+
+    inline COND_MOCK_VIRTUAL void sendSetupElicitingStatusMessage(
+        InetAddress& address, std::int32_t sessionId, std::int32_t streamId)
+    {}
 
 private:
     std::uint8_t m_smBufferBytes[protocol::StatusMessageFlyweight::headerLength()];

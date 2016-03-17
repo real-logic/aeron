@@ -32,8 +32,10 @@ class Receiver
 public:
     virtual ~Receiver() = default;
 
-    virtual void addPendingSetupMessage(
-        std::int32_t sessionId, std::int32_t streamId, ReceiveChannelEndpoint& receiveChannelEndpoint);
+    inline COND_MOCK_VIRTUAL void addPendingSetupMessage(
+        std::int32_t sessionId, std::int32_t streamId, ReceiveChannelEndpoint& receiveChannelEndpoint)
+    {
+    }
 };
 
 }};

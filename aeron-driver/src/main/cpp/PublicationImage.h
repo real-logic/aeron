@@ -40,15 +40,29 @@ public:
     PublicationImage(){}
     virtual ~PublicationImage(){}
 
-    virtual std::int32_t sessionId();
-    virtual std::int32_t streamId();
+    inline COND_MOCK_VIRTUAL std::int32_t sessionId()
+    {
+        return 0;
+    }
 
-    virtual std::int32_t insertPacket(
-        std::int32_t termId, std::int32_t termOffset, AtomicBuffer& buffer, std::int32_t length);
+    inline COND_MOCK_VIRTUAL std::int32_t streamId()
+    {
+        return 0;
+    }
 
-    virtual void ifActiveGoInactive();
+    inline COND_MOCK_VIRTUAL std::int32_t insertPacket(
+        std::int32_t termId, std::int32_t termOffset, AtomicBuffer& buffer, std::int32_t length)
+    {
+        return 0;
+    }
 
-    virtual void status(PublicationImageStatus status);
+    inline COND_MOCK_VIRTUAL void ifActiveGoInactive()
+    {
+    }
+
+    inline COND_MOCK_VIRTUAL void status(PublicationImageStatus status)
+    {
+    }
 
 };
 

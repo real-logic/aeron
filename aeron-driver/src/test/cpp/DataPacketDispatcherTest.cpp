@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-
 #include <gtest/gtest.h>
-#include <gmock/gmock.h>
+
+
+#include "Mocks.h"
 
 #include <protocol/SetupFlyweight.h>
 #include <protocol/DataHeaderFlyweight.h>
@@ -25,11 +26,7 @@
 #include <concurrent/AtomicBuffer.h>
 
 #include <DataPacketDispatcher.h>
-#include <PublicationImage.h>
-#include <Receiver.h>
-#include <DriverConductorProxy.h>
 
-#include <media/ReceiveChannelEndpoint.h>
 #include <media/InetAddress.h>
 
 using namespace aeron::protocol;
@@ -50,43 +47,6 @@ using namespace testing;
 #define TERM_LENGTH (LogBufferDescriptor::TERM_MIN_LENGTH)
 
 typedef std::array<std::uint8_t, TOTAL_BUFFER_LENGTH> buffer_t;
-
-class MockReceiveChannelEndpoint : public ReceiveChannelEndpoint
-{
-public:
-    MockReceiveChannelEndpoint(std::unique_ptr<UdpChannel>&& channel) : ReceiveChannelEndpoint(std::move(channel))
-    {}
-    virtual ~MockReceiveChannelEndpoint() = default;
-
-    MOCK_METHOD0(pollForData, std::int32_t ());
-    MOCK_METHOD3(sendSetupElicitingStatusMessage, void(InetAddress& address, std::int32_t sessionId, std::int32_t streamId));
-};
-
-class MockPublicationImage : public PublicationImage
-{
-public:
-    virtual ~MockPublicationImage() = default;
-
-    MOCK_METHOD0(sessionId, std::int32_t());
-    MOCK_METHOD0(streamId, std::int32_t());
-    MOCK_METHOD4(insertPacket, std::int32_t(std::int32_t termId, std::int32_t termOffset, AtomicBuffer& buffer, std::int32_t length));
-    MOCK_METHOD0(ifActiveGoInactive, void());
-    MOCK_METHOD1(status, void(PublicationImageStatus status));
-};
-
-class MockReceiver : public Receiver
-{
-public:
-    virtual ~MockReceiver() = default;
-
-    MOCK_METHOD3(addPendingSetupMessage, void(std::int32_t sessionId, std::int32_t streamId, ReceiveChannelEndpoint& receiveChannelEndpoint));
-};
-
-class MockDriverConductorProxy : public DriverConductorProxy
-{
-public:
-    MOCK_METHOD10(createPublicationImage, void(std::int32_t sessionId, std::int32_t streamId, std::int32_t initialTermId, std::int32_t activeTermId, std::int32_t termOffset, std::int32_t termLength, std::int32_t mtuLength, InetAddress& controlAddress, InetAddress& srcAddress, ReceiveChannelEndpoint& channelEndpoint));
-};
 
 class DataPacketDispatcherTest : public Test
 {
@@ -152,6 +112,7 @@ TEST_F(DataPacketDispatcherTest, shouldElicitSetupMessageWhenDataArrivesForSubsc
     EXPECT_CALL(
         m_receiveChannelEndpoint,
         sendSetupElicitingStatusMessage(_, Eq(SESSION_ID), Eq(STREAM_ID))).Times(1);
+
     EXPECT_CALL(*m_receiver, addPendingSetupMessage(Eq(SESSION_ID), Eq(STREAM_ID), _)).Times(1);
 
     m_dataPacketDispatcher.addSubscription(STREAM_ID);

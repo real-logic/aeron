@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_MOCK_ATOMIC_BUFFER__
-#define INCLUDED_AERON_CONCURRENT_MOCK_ATOMIC_BUFFER__
+#ifndef INCLUDED_AERON_DRIVER_MOCKS__
+#define INCLUDED_AERON_DRIVER_MOCKS__
 
 #include <gmock/gmock.h>
 

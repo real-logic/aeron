@@ -14,7 +14,6 @@
 
 SET(SOURCE
     MediaDriver.cpp
-    Receiver.cpp
     media/UdpChannel.cpp
     media/InetAddress.cpp
     uri/AeronUri.cpp
@@ -25,9 +24,7 @@ SET(SOURCE
     media/NetworkInterface.cpp
     media/ReceiveChannelEndpoint.cpp
     media/SendChannelEndpoint.cpp
-    DataPacketDispatcher.cpp
-    PublicationImage.cpp
-    DriverConductorProxy.cpp)
+    DataPacketDispatcher.cpp)
 
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h

@@ -31,7 +31,7 @@ class DriverConductorProxy
 public:
     DriverConductorProxy() {}
 
-    virtual void createPublicationImage(
+    inline COND_MOCK_VIRTUAL void createPublicationImage(
         std::int32_t sessionId,
         std::int32_t streamId,
         std::int32_t initialTermId,
@@ -41,7 +41,9 @@ public:
         std::int32_t mtuLength,
         InetAddress& controlAddress,
         InetAddress& srcAddress,
-        ReceiveChannelEndpoint& channelEndpoint);
+        ReceiveChannelEndpoint& channelEndpoint)
+    {
+    }
 };
 
 }};

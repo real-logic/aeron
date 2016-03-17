@@ -48,7 +48,8 @@ public enum EventCode
 
     INVALID_VERSION(22, EventDissector::dissectAsCommand),
 
-    CHANNEL_CREATION(23, EventDissector::dissectAsString);
+    SEND_CHANNEL_CREATION(23, EventDissector::dissectAsString),
+    RECEIVE_CHANNEL_CREATION(24, EventDissector::dissectAsString);
 
     private static final Int2ObjectHashMap<EventCode> EVENT_CODE_BY_ID_MAP = new Int2ObjectHashMap<>();
 

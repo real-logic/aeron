@@ -20,6 +20,7 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
+import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
@@ -140,7 +141,8 @@ public class EventLogAgent
     {
         public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
         {
-            EventLogger.LOGGER.logChannelCreated(channelEndpoint.udpChannel().description());
+            EventLogger.LOGGER.logChannelCreated(
+                EventCode.SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
         }
     }
 
@@ -148,7 +150,8 @@ public class EventLogAgent
     {
         public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
         {
-            EventLogger.LOGGER.logChannelCreated(channelEndpoint.udpChannel().description());
+            EventLogger.LOGGER.logChannelCreated(
+                EventCode.RECEIVE_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
         }
     }
 }

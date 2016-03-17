@@ -160,11 +160,11 @@ public class EventLogger
         }
     }
 
-    public void logChannelCreated(final String description)
+    public void logChannelCreated(final EventCode code, final String description)
     {
-        if (isEnabled(EventCode.CHANNEL_CREATION, ENABLED_EVENT_CODES))
+        if (isEnabled(code, ENABLED_EVENT_CODES))
         {
-            logString(EventCode.CHANNEL_CREATION, description);
+            logString(code, description);
         }
     }
 

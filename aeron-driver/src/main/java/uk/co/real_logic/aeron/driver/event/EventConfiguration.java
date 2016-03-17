@@ -65,7 +65,8 @@ public class EventConfiguration
         EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE,
         EventCode.CMD_OUT_ON_OPERATION_SUCCESS,
         EventCode.ERROR_DELETING_FILE,
-        EventCode.CHANNEL_CREATION);
+        EventCode.SEND_CHANNEL_CREATION,
+        EventCode.RECEIVE_CHANNEL_CREATION);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 

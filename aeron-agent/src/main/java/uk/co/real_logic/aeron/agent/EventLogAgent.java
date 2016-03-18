@@ -67,7 +67,7 @@ public class EventLogAgent
         }
     };
 
-    public static void errorHandler(final Throwable throwable)
+    private static void errorHandler(final Throwable throwable)
     {
     }
 
@@ -93,12 +93,11 @@ public class EventLogAgent
                 .with(LISTENER)
                 .type(isSubTypeOf(UdpChannelTransport.class))
                 .transform(
-                    ((builder, typeDescription, classLoader) -> builder))
+                    (builder, typeDescription, classLoader) -> builder)
                 .type(nameEndsWith("DriverConductor"))
                 .transform(
-                    ((builder, typeDescription, classLoader) ->
-                    {
-                        return builder
+                    (builder, typeDescription, classLoader) ->
+                        builder
                             .method(named("onClientCommand"))
                             .intercept(MethodDelegation.to(CmdInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE))
@@ -110,41 +109,34 @@ public class EventLogAgent
                                 .andThen(SuperMethodCall.INSTANCE))
                             .method(named("cleanupSubscriptionLink"))
                             .intercept(MethodDelegation.to(DriverConductorInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE));
-                    }))
+                                .andThen(SuperMethodCall.INSTANCE)))
                 .type(nameEndsWith("ClientProxy"))
                 .transform(
-                    ((builder, typeDescription, classLoader) ->
-                    {
-                        return builder
+                    (builder, typeDescription, classLoader) ->
+                        builder
                             .method(named("transmit"))
                             .intercept(MethodDelegation.to(CmdInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE));
-                    }))
+                                .andThen(SuperMethodCall.INSTANCE)))
                 .type(nameEndsWith("SenderProxy"))
                 .transform(
-                    ((builder, typeDescription, classLoader) ->
-                    {
-                        return builder
+                    (builder, typeDescription, classLoader) ->
+                        builder
                             .method(named("registerSendChannelEndpoint"))
                             .intercept(MethodDelegation.to(SenderProxyInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE))
                             .method(named("closeSendChannelEndpoint"))
                             .intercept(MethodDelegation.to(SenderProxyInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE));
-                    }))
+                                .andThen(SuperMethodCall.INSTANCE)))
                 .type(nameEndsWith("ReceiverProxy"))
                 .transform(
-                    ((builder, typeDescription, classLoader) ->
-                    {
-                        return builder
+                    (builder, typeDescription, classLoader) ->
+                        builder
                             .method(named("registerReceiveChannelEndpoint"))
                             .intercept(MethodDelegation.to(ReceiverProxyInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE))
                             .method(named("closeReceiveChannelEndpoint"))
                             .intercept(MethodDelegation.to(ReceiverProxyInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE));
-                    }))
+                                .andThen(SuperMethodCall.INSTANCE)))
                 .installOn(instrumentation);
         }
     }
@@ -153,7 +145,7 @@ public class EventLogAgent
     {
     }
 
-    public static class SenderProxyInterceptor
+    static class SenderProxyInterceptor
     {
         public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
         {
@@ -168,7 +160,7 @@ public class EventLogAgent
         }
     }
 
-    public static class ReceiverProxyInterceptor
+    static class ReceiverProxyInterceptor
     {
         public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
         {
@@ -183,7 +175,7 @@ public class EventLogAgent
         }
     }
 
-    public static class DriverConductorInterceptor
+    static class DriverConductorInterceptor
     {
         public static void cleanupImageInterceptor(final PublicationImage image)
         {

@@ -149,17 +149,17 @@ public class DriverConductor implements Agent
         return "driver-conductor";
     }
 
-    public SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
+    SendChannelEndpoint senderChannelEndpoint(final UdpChannel channel)
     {
         return sendChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    public ReceiveChannelEndpoint receiverChannelEndpoint(final UdpChannel channel)
+    ReceiveChannelEndpoint receiverChannelEndpoint(final UdpChannel channel)
     {
         return receiveChannelEndpointByChannelMap.get(channel.canonicalForm());
     }
 
-    public DirectPublication getDirectPublication(final long streamId)
+    DirectPublication getDirectPublication(final long streamId)
     {
         return findDirectPublication(directPublications, streamId);
     }
@@ -269,7 +269,7 @@ public class DriverConductor implements Agent
         publication.close();
     }
 
-    public void cleanupPublication(final NetworkPublication publication)
+    void cleanupPublication(final NetworkPublication publication)
     {
         final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
@@ -285,7 +285,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    public void cleanupSubscriptionLink(final SubscriptionLink link)
+    void cleanupSubscriptionLink(final SubscriptionLink link)
     {
         final ReceiveChannelEndpoint channelEndpoint = link.channelEndpoint();
 
@@ -309,7 +309,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    public void imageTransitionToLinger(final PublicationImage image)
+    void imageTransitionToLinger(final PublicationImage image)
     {
         clientProxy.onUnavailableImage(
             image.correlationId(),
@@ -319,7 +319,7 @@ public class DriverConductor implements Agent
         receiverProxy.removeCoolDown(image.channelEndpoint(), image.sessionId(), image.streamId());
     }
 
-    public void cleanupImage(final PublicationImage image)
+    void cleanupImage(final PublicationImage image)
     {
         subscriptionLinks
             .stream()
@@ -532,8 +532,8 @@ public class DriverConductor implements Agent
                 nanoClock,
                 toDriverCommands::consumerHeartbeatTime,
                 newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId),
-                SenderPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
+                SenderPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 sessionId,
                 streamId,
                 initialTermId,

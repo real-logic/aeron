@@ -109,7 +109,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     {
         channelEndpoint.openChannel();
         channelEndpoint.registerForRead(dataTransportPoller);
-        dataTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)

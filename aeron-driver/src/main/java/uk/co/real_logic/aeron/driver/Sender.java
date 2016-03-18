@@ -70,7 +70,6 @@ public class Sender implements Agent, Consumer<SenderCmd>
     {
         channelEndpoint.openChannel();
         channelEndpoint.registerForRead(controlTransportPoller);
-        controlTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)

@@ -92,8 +92,7 @@ public class EventLogAgent
             new AgentBuilder.Default()
                 .with(LISTENER)
                 .type(isSubTypeOf(UdpChannelTransport.class))
-                .transform(
-                    (builder, typeDescription, classLoader) -> builder)
+                .transform((builder, typeDescription, classLoader) -> builder)
                 .type(nameEndsWith("DriverConductor"))
                 .transform(
                     (builder, typeDescription, classLoader) ->

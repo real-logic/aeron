@@ -34,7 +34,6 @@ public enum EventCode
     CMD_OUT_AVAILABLE_IMAGE(8, EventDissector::dissectAsCommand),
     INVOCATION(9, EventDissector::dissectAsInvocation),
 
-    MALFORMED_FRAME_LENGTH(11, EventDissector::dissectAsCommand),
     CMD_OUT_ON_OPERATION_SUCCESS(12, EventDissector::dissectAsCommand),
     CMD_IN_KEEPALIVE_CLIENT(13, EventDissector::dissectAsCommand),
     REMOVE_PUBLICATION_CLEANUP(14, EventDissector::dissectAsString),
@@ -45,8 +44,6 @@ public enum EventCode
     FRAME_IN_DROPPED(18, EventDissector::dissectAsFrame),
     FRAME_OUT_DROPPED(19, EventDissector::dissectAsFrame),
     ERROR_DELETING_FILE(20, EventDissector::dissectAsString),
-
-    INVALID_VERSION(22, EventDissector::dissectAsCommand),
 
     SEND_CHANNEL_CREATION(23, EventDissector::dissectAsString),
     RECEIVE_CHANNEL_CREATION(24, EventDissector::dissectAsString),

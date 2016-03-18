@@ -16,8 +16,6 @@
 package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.aeron.driver.Configuration;
-import uk.co.real_logic.aeron.driver.event.EventCode;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -32,7 +30,6 @@ import java.nio.channels.SelectionKey;
 
 import static java.net.StandardSocketOptions.SO_RCVBUF;
 import static java.net.StandardSocketOptions.SO_SNDBUF;
-import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLength;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameVersion;
 
 public abstract class UdpChannelTransport implements AutoCloseable
@@ -43,7 +40,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected SelectionKey selectionKey;
     protected UdpTransportPoller transportPoller;
     protected final UdpChannel udpChannel;
-    protected final EventLogger logger;
     protected final DistinctErrorLog errorLog;
     protected final ByteBuffer receiveByteBuffer = ByteBuffer.allocateDirect(Configuration.RECEIVE_BYTE_BUFFER_LENGTH);
     protected final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
@@ -58,7 +54,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
         final DistinctErrorLog errorLog)
     {
         this.udpChannel = udpChannel;
-        this.logger = EventLogger.LOGGER;
         this.errorLog = errorLog;
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;
@@ -243,12 +238,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
         if (frameVersion(receiveBuffer, 0) != HeaderFlyweight.CURRENT_VERSION)
         {
-            logger.log(EventCode.INVALID_VERSION, receiveBuffer, 0, frameLength(receiveBuffer, 0));
             isFrameValid = false;
         }
         else if (length < HeaderFlyweight.HEADER_LENGTH)
         {
-            logger.log(EventCode.MALFORMED_FRAME_LENGTH, receiveBuffer, 0, length);
             isFrameValid = false;
         }
 

@@ -30,6 +30,7 @@ import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.INVALID_PACKETS;
 import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
 import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
@@ -51,6 +52,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
+    private final AtomicCounter invalidPackets;
 
     public SendChannelEndpoint(final UdpChannel udpChannel, final MediaDriver.Context context)
     {
@@ -63,6 +65,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
+        invalidPackets = context.systemCounters().get(INVALID_PACKETS);
 
         nakMessage = new NakFlyweight(receiveBuffer);
         statusMessage = new StatusMessageFlyweight(receiveBuffer);
@@ -181,6 +184,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
             if (isValidFrame(receiveBuffer, length))
             {
                 bytesReceived = dispatch(receiveBuffer, length, srcAddress);
+            }
+            else
+            {
+                invalidPackets.orderedIncrement();
             }
         }
 

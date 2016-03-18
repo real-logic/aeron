@@ -47,11 +47,9 @@ public class EventConfiguration
     public static final String ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME = "aeron.event.log";
 
     public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES = EnumSet.of(
-        EventCode.MALFORMED_FRAME_LENGTH,
         EventCode.ERROR_DELETING_FILE);
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
-        EventCode.MALFORMED_FRAME_LENGTH,
         EventCode.CMD_IN_ADD_PUBLICATION,
         EventCode.CMD_IN_ADD_SUBSCRIPTION,
         EventCode.CMD_IN_KEEPALIVE_CLIENT,

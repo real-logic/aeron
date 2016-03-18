@@ -42,6 +42,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final DataPacketDispatcher dispatcher;
     private final AtomicCounter statusMessageShortSends;
     private final AtomicCounter nakMessageShortSends;
+    private final AtomicCounter invalidPackets;
 
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight(smBuffer);
@@ -82,6 +83,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         this.dispatcher = dispatcher;
         statusMessageShortSends = context.systemCounters().get(SystemCounterDescriptor.STATUS_MESSAGE_SHORT_SENDS);
         nakMessageShortSends = context.systemCounters().get(SystemCounterDescriptor.NAK_MESSAGE_SHORT_SENDS);
+        invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
     }
 
     /**
@@ -291,6 +293,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             if (isValidFrame(receiveBuffer, length))
             {
                 bytesReceived = dispatch(receiveBuffer, length, srcAddress);
+            }
+            else
+            {
+                invalidPackets.orderedIncrement();
             }
         }
 

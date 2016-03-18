@@ -144,7 +144,7 @@ public class EventLogAgent
     {
     }
 
-    static class SenderProxyInterceptor
+    public static class SenderProxyInterceptor
     {
         public static void registerSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
         {
@@ -159,7 +159,7 @@ public class EventLogAgent
         }
     }
 
-    static class ReceiverProxyInterceptor
+    public static class ReceiverProxyInterceptor
     {
         public static void registerReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
         {
@@ -174,7 +174,7 @@ public class EventLogAgent
         }
     }
 
-    static class DriverConductorInterceptor
+    public static class DriverConductorInterceptor
     {
         public static void cleanupImageInterceptor(final PublicationImage image)
         {

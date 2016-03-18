@@ -17,6 +17,7 @@ package uk.co.real_logic.aeron.driver.ext;
 
 import uk.co.real_logic.aeron.driver.DataPacketDispatcher;
 import uk.co.real_logic.aeron.driver.MediaDriver;
+import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -34,6 +35,7 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
     private final UnsafeBuffer controlBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
+    private final EventLogger logger = EventLogger.LOGGER;
 
     public DebugReceiveChannelEndpoint(
         final UdpChannel udpChannel,

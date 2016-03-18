@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver.buffer;
 
 import uk.co.real_logic.agrona.IoUtil;
+import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
 
@@ -26,6 +27,7 @@ import static uk.co.real_logic.aeron.driver.buffer.FileMappingConvention.streamL
  */
 public class RawLogFactory
 {
+    private final DistinctErrorLog errorLog;
     private final int publicationTermBufferLength;
     private final int imagesTermBufferMaxLength;
     private final int ipcPublicationTermBufferLength;
@@ -39,8 +41,10 @@ public class RawLogFactory
         final int publicationTermBufferLength,
         final int imagesTermBufferMaxLength,
         final int ipcPublicationTermBufferLength,
-        final boolean useSparseFiles)
+        final boolean useSparseFiles,
+        final DistinctErrorLog errorLog)
     {
+        this.errorLog = errorLog;
         this.useSparseFiles = useSparseFiles;
 
         final FileMappingConvention fileMappingConvention = new FileMappingConvention(dataDirectoryName);
@@ -114,6 +118,6 @@ public class RawLogFactory
     {
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
-        return new MappedRawLog(location, useSparseFiles, termBufferLength);
+        return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);
     }
 }

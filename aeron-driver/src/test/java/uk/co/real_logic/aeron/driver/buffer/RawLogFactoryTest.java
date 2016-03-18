@@ -23,12 +23,14 @@ import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
 import java.io.IOException;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class RawLogFactoryTest
 {
@@ -48,7 +50,11 @@ public class RawLogFactoryTest
     {
         IoUtil.ensureDirectoryExists(DATA_DIR, "data");
         rawLogFactory = new RawLogFactory(
-            DATA_DIR.getAbsolutePath(), TERM_BUFFER_LENGTH, TERM_BUFFER_MAX_LENGTH, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
+            DATA_DIR.getAbsolutePath(),
+            TERM_BUFFER_LENGTH,
+            TERM_BUFFER_MAX_LENGTH,
+            TERM_BUFFER_LENGTH, PRE_ZERO_LOG,
+            mock(DistinctErrorLog.class));
     }
 
     @After

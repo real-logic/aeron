@@ -41,13 +41,9 @@ public class EventConfiguration
      * <li>A comma separated list of EventCodes to enable</li>
      * <li>"all" which enables all the codes</li>
      * <li>"admin" which enables the codes specified by {@link #ADMIN_ONLY_EVENT_CODES}</li>
-     * <li>"prod" which enables the codes specified by {@link #PRODUCTION_LOGGER_EVENT_CODES}</li>
      * </ul>
      */
     public static final String ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME = "aeron.event.log";
-
-    public static final Set<EventCode> PRODUCTION_LOGGER_EVENT_CODES = EnumSet.of(
-        EventCode.ERROR_DELETING_FILE);
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
         EventCode.CMD_IN_ADD_PUBLICATION,
@@ -62,7 +58,6 @@ public class EventConfiguration
         EventCode.CMD_OUT_AVAILABLE_IMAGE,
         EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE,
         EventCode.CMD_OUT_ON_OPERATION_SUCCESS,
-        EventCode.ERROR_DELETING_FILE,
         EventCode.SEND_CHANNEL_CREATION,
         EventCode.RECEIVE_CHANNEL_CREATION,
         EventCode.SEND_CHANNEL_CLOSE,
@@ -134,16 +129,13 @@ public class EventConfiguration
     {
         if (enabledLoggerEventCodes == null)
         {
-            return PRODUCTION_LOGGER_EVENT_CODES;
+            return EnumSet.noneOf(EventCode.class);
         }
 
         switch (enabledLoggerEventCodes)
         {
             case "all":
                 return ALL_LOGGER_EVENT_CODES;
-
-            case "prod":
-                return PRODUCTION_LOGGER_EVENT_CODES;
 
             case "admin":
                 return ADMIN_ONLY_EVENT_CODES;

@@ -555,7 +555,8 @@ public final class MediaDriver implements AutoCloseable
                     publicationTermBufferLength,
                     maxImageTermBufferLength,
                     ipcPublicationTermBufferLength,
-                    termBufferSparseFile));
+                    termBufferSparseFile,
+                    errorLog));
 
                 concludeIdleStrategies();
             }

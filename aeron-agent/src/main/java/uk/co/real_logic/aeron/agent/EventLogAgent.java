@@ -20,6 +20,7 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
+import net.bytebuddy.matcher.BooleanMatcher;
 import uk.co.real_logic.aeron.driver.NetworkPublication;
 import uk.co.real_logic.aeron.driver.PublicationImage;
 import uk.co.real_logic.aeron.driver.SubscriptionLink;
@@ -75,10 +76,6 @@ public class EventLogAgent
     {
         if (EventConfiguration.ENABLED_EVENT_CODES != 0)
         {
-            EVENT_LOG_READER_THREAD.setName("event log reader");
-            EVENT_LOG_READER_THREAD.setDaemon(true);
-            EVENT_LOG_READER_THREAD.start();
-
             /*
              * Intercept based on enabled events:
              *  SenderProxy
@@ -97,7 +94,7 @@ public class EventLogAgent
                 .transform(
                     (builder, typeDescription, classLoader) ->
                         builder
-                            .method(named("onClientCommand"))
+                            .method(named("onClientCommand").and(new BooleanMatcher<>(true)))
                             .intercept(MethodDelegation.to(CmdInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE))
                             .method(named("cleanupImage"))
@@ -137,6 +134,10 @@ public class EventLogAgent
                             .intercept(MethodDelegation.to(ReceiverProxyInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE)))
                 .installOn(instrumentation);
+
+            EVENT_LOG_READER_THREAD.setName("event log reader");
+            EVENT_LOG_READER_THREAD.setDaemon(true);
+            EVENT_LOG_READER_THREAD.start();
         }
     }
 

@@ -15,11 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.aeron.driver.event.EventCode;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,18 +41,19 @@ class MappedRawLog implements RawLog
 
     private final int termLength;
     private final LogBufferPartition[] partitions;
-    private final EventLogger logger;
     private final File logFile;
     private final MappedByteBuffer[] mappedBuffers;
     private final UnsafeBuffer logMetaDataBuffer;
+    private final DistinctErrorLog errorLog;
 
     MappedRawLog(
         final File location,
         final boolean useSparseFiles,
-        final int termLength)
+        final int termLength,
+        final DistinctErrorLog errorLog)
     {
         this.termLength = termLength;
-        this.logger = EventLogger.LOGGER;
+        this.errorLog = errorLog;
         this.logFile = location;
         partitions = new LogBufferPartition[PARTITION_COUNT];
 
@@ -132,7 +132,7 @@ class MappedRawLog implements RawLog
 
         if (!logFile.delete())
         {
-            logger.log(EventCode.ERROR_DELETING_FILE, logFile);
+            errorLog.record(new IllegalStateException(String.format("could not delete file %s", logFile)));
         }
     }
 

@@ -31,7 +31,7 @@ public class EventConfigurationTest
     @Test
     public void nullPropertyShouldDefaultToProductionEventCodes()
     {
-        assertThat(getEnabledEventCodes(null), is(PRODUCTION_LOGGER_EVENT_CODES));
+        assertThat(getEnabledEventCodes(null), is(EnumSet.noneOf(EventCode.class)));
     }
 
     @Test(expected = IllegalArgumentException.class)

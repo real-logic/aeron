@@ -47,22 +47,22 @@ public class EventLogAgent
 
     private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
-        public void onTransformation(TypeDescription typeDescription, DynamicType dynamicType)
+        public void onTransformation(final TypeDescription typeDescription, final DynamicType dynamicType)
         {
             System.out.format("TRANSFORM %s\n", typeDescription.getName());
         }
 
-        public void onIgnored(TypeDescription typeDescription)
+        public void onIgnored(final TypeDescription typeDescription)
         {
         }
 
-        public void onError(String typeName, Throwable throwable)
+        public void onError(final String typeName, final Throwable throwable)
         {
             System.out.format("ERROR %s\n", typeName);
             throwable.printStackTrace(System.out);
         }
 
-        public void onComplete(String typeName)
+        public void onComplete(final String typeName)
         {
         }
     };
@@ -84,7 +84,7 @@ public class EventLogAgent
              *  SenderProxy
              *  ReceiverProxy
              *  ClientProxy
-             *  DriverCondcutor (onClientCommand)
+             *  DriverConductor (onClientCommand)
              *  SendChannelEndpoint
              *  ReceiveChannelEndpoint
              */
@@ -93,10 +93,7 @@ public class EventLogAgent
                 .with(LISTENER)
                 .type(isSubTypeOf(UdpChannelTransport.class))
                 .transform(
-                    ((builder, typeDescription, classLoader) ->
-                    {
-                        return builder;
-                    }))
+                    ((builder, typeDescription, classLoader) -> builder))
                 .type(nameEndsWith("DriverConductor"))
                 .transform(
                     ((builder, typeDescription, classLoader) ->
@@ -202,7 +199,6 @@ public class EventLogAgent
 
         public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
         {
-
         }
     }
 }

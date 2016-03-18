@@ -13,9 +13,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+SET(TEST_SOURCE Mocks.cpp)
+SET(TEST_HEADERS Mocks.h)
+
+add_library(aeron_driver_test STATIC ${TEST_SOURCE} ${TEST_HEADERS})
+add_dependencies(aeron_driver_test gmock)
+
 function(aeron_driver_test name file)
     add_executable(${name} ${file})
-    target_link_libraries(${name} aeron_client aeron_driver aeron_client_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(${name} aeron_client aeron_driver aeron_driver_test aeron_client_test ${GMOCK_LIBS} ${CMAKE_THREAD_LIBS_INIT})
     add_dependencies(${name} gmock)
     add_test(NAME ${name} COMMAND ${name})
 endfunction()

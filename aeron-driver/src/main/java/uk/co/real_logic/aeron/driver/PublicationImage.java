@@ -37,51 +37,51 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 class PublicationImagePadding1
 {
     @SuppressWarnings("unused")
-    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
+    long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
 class PublicationImageConductorFields extends PublicationImagePadding1
 {
-    protected long timeOfLastStatusChange;
-    protected long rebuildPosition;
+    long timeOfLastStatusChange;
+    long rebuildPosition;
 
-    protected volatile long beginLossChange = -1;
-    protected volatile long endLossChange = -1;
-    protected int lossTermId;
-    protected int lossTermOffset;
-    protected int lossLength;
+    volatile long beginLossChange = -1;
+    volatile long endLossChange = -1;
+    int lossTermId;
+    int lossTermOffset;
+    int lossLength;
 }
 
 class PublicationImagePadding2 extends PublicationImageConductorFields
 {
     @SuppressWarnings("unused")
-    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+    long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
 class PublicationImageHotFields extends PublicationImagePadding2
 {
-    protected long lastPacketTimestamp;
-    protected long lastStatusMessageTimestamp;
-    protected long lastStatusMessagePosition;
-    protected long lastChangeNumber = -1;
+    long lastPacketTimestamp;
+    long lastStatusMessageTimestamp;
+    long lastStatusMessagePosition;
+    long lastChangeNumber = -1;
 }
 
 class PublicationImagePadding3 extends PublicationImageHotFields
 {
     @SuppressWarnings("unused")
-    protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+    long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
 class PublicationImageStatusFields extends PublicationImagePadding3
 {
-    protected volatile long newStatusMessagePosition;
-    protected volatile PublicationImage.Status status = PublicationImage.Status.INIT;
+    volatile long newStatusMessagePosition;
+    volatile PublicationImage.Status status = PublicationImage.Status.INIT;
 }
 
 class PublicationImagePadding4 extends PublicationImageStatusFields
 {
     @SuppressWarnings("unused")
-    protected long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
+    long p46, p47, p48, p49, p50, p51, p52, p53, p54, p55, p56, p57, p58, p59, p60;
 }
 
 /**
@@ -91,7 +91,7 @@ public class PublicationImage
     extends PublicationImagePadding4
     implements NakMessageSender, DriverManagedResource
 {
-    public enum Status
+    enum Status
     {
         INIT, ACTIVE, INACTIVE, LINGER
     }
@@ -237,7 +237,7 @@ public class PublicationImage
      *
      * @return source address
      */
-    public InetSocketAddress sourceAddress()
+    InetSocketAddress sourceAddress()
     {
         return sourceAddress;
     }
@@ -247,7 +247,7 @@ public class PublicationImage
      *
      * @return {@link ReceiveChannelEndpoint} that the image is attached to.
      */
-    public ReceiveChannelEndpoint channelEndpoint()
+    ReceiveChannelEndpoint channelEndpoint()
     {
         return channelEndpoint;
     }
@@ -256,7 +256,7 @@ public class PublicationImage
      * Remove this image from the {@link DataPacketDispatcher} so it will process no further packets from the network.
      * Called from the {@link Receiver} thread.
      */
-    public void removeFromDispatcher()
+    void removeFromDispatcher()
     {
         channelEndpoint.dispatcher().removePublicationImage(this);
     }
@@ -278,7 +278,7 @@ public class PublicationImage
      *
      * @return the {@link uk.co.real_logic.aeron.driver.buffer.RawLog} the back this image.
      */
-    public RawLog rawLog()
+    RawLog rawLog()
     {
         return rawLog;
     }
@@ -311,7 +311,7 @@ public class PublicationImage
     /**
      * Set status to INACTIVE, but only if currently ACTIVE. Set by {@link Receiver}.
      */
-    public void ifActiveGoInactive()
+    void ifActiveGoInactive()
     {
         if (Status.ACTIVE == status)
         {
@@ -343,7 +343,7 @@ public class PublicationImage
      * @param now in nanoseconds
      * @return if work has been done or not
      */
-    public int trackRebuild(final long now)
+    int trackRebuild(final long now)
     {
         long minSubscriberPosition = Long.MAX_VALUE;
         long maxSubscriberPosition = Long.MIN_VALUE;
@@ -401,7 +401,7 @@ public class PublicationImage
      * @param length of the data packet
      * @return number of bytes applied as a result of this insertion.
      */
-    public int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
+    int insertPacket(final int termId, final int termOffset, final UnsafeBuffer buffer, final int length)
     {
         int bytesReceived = length;
         final int positionBitsToShift = this.positionBitsToShift;
@@ -435,7 +435,7 @@ public class PublicationImage
      * @param now current time to check against.
      * @return true if still active otherwise false.
      */
-    public boolean checkForActivity(final long now)
+    boolean checkForActivity(final long now)
     {
         boolean activity = true;
 
@@ -454,7 +454,7 @@ public class PublicationImage
      * @param statusMessageTimeout for sending of Status Messages.
      * @return number of work items processed.
      */
-    public int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
+    int sendPendingStatusMessage(final long now, final long statusMessageTimeout)
     {
         int workCount = 0;
 
@@ -484,7 +484,7 @@ public class PublicationImage
      *
      * @return number of work items processed.
      */
-    public int sendPendingNak()
+    int sendPendingNak()
     {
         int workCount = 0;
         final long changeNumber = endLossChange;
@@ -514,7 +514,7 @@ public class PublicationImage
      *
      * @param subscriberPosition for the subscriber that has been removed.
      */
-    public void removeSubscriber(final ReadablePosition subscriberPosition)
+    void removeSubscriber(final ReadablePosition subscriberPosition)
     {
         subscriberPositions.remove(subscriberPosition);
         subscriberPosition.close();
@@ -525,7 +525,7 @@ public class PublicationImage
      *
      * @param subscriberPosition for the subscriber to be added.
      */
-    public void addSubscriber(final ReadablePosition subscriberPosition)
+    void addSubscriber(final ReadablePosition subscriberPosition)
     {
         subscriberPositions.add(subscriberPosition);
     }
@@ -535,7 +535,7 @@ public class PublicationImage
      *
      * @return number of subscribers
      */
-    public int subscriberCount()
+    int subscriberCount()
     {
         return subscriberPositions.size();
     }
@@ -545,7 +545,7 @@ public class PublicationImage
      *
      * @return the position up to which the current stream rebuild is complete for reception.
      */
-    public long rebuildPosition()
+    long rebuildPosition()
     {
         return rebuildPosition;
     }

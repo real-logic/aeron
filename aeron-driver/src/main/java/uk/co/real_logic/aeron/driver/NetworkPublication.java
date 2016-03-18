@@ -43,35 +43,35 @@ import static uk.co.real_logic.aeron.logbuffer.TermScanner.*;
 class NetworkPublicationPadding1
 {
     @SuppressWarnings("unused")
-    protected long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
+    long p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15;
 }
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
-    protected long timeOfFlush = 0;
-    protected int refCount = 0;
-    protected boolean isActive = true;
+    long timeOfFlush = 0;
+    int refCount = 0;
+    boolean isActive = true;
 }
 
 class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
 {
     @SuppressWarnings("unused")
-    protected long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
+    long p16, p17, p18, p19, p20, p21, p22, p23, p24, p25, p26, p27, p28, p29, p30;
 }
 
 class NetworkPublicationReceiverFields extends NetworkPublicationPadding2
 {
-    protected long timeOfLastSendOrHeartbeat;
-    protected long senderPositionLimit = 0;
-    protected long timeOfLastSetup;
-    protected boolean trackSenderLimits = true;
-    protected boolean shouldSendSetupFrame = true;
+    long timeOfLastSendOrHeartbeat;
+    long senderPositionLimit = 0;
+    long timeOfLastSetup;
+    boolean trackSenderLimits = true;
+    boolean shouldSendSetupFrame = true;
 }
 
 class NetworkPublicationPadding3 extends NetworkPublicationReceiverFields
 {
     @SuppressWarnings("unused")
-    protected long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
+    long p31, p32, p33, p34, p35, p36, p37, p38, p39, p40, p41, p42, p43, p44, p45;
 }
 
 /**
@@ -204,7 +204,7 @@ public class NetworkPublication
         return dataHeader.streamId();
     }
 
-    public void senderPositionLimit(final long positionLimit)
+    void senderPositionLimit(final long positionLimit)
     {
         senderPositionLimit = positionLimit;
 
@@ -219,7 +219,7 @@ public class NetworkPublication
      *
      * @return amount of work done
      */
-    public int cleanLogBuffer()
+    int cleanLogBuffer()
     {
         int workCount = 0;
 
@@ -233,11 +233,6 @@ public class NetworkPublication
         }
 
         return workCount;
-    }
-
-    public long timeOfFlush()
-    {
-        return timeOfFlush;
     }
 
     public void resend(final int termId, int termOffset, final int length)
@@ -286,31 +281,12 @@ public class NetworkPublication
         shouldSendSetupFrame = true;
     }
 
-    public boolean isUnreferencedAndFlushed(final long now)
-    {
-        boolean isFlushed = false;
-        if (0 == refCount)
-        {
-            final long senderPosition = this.senderPosition.getVolatile();
-            final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-            isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailOffsetVolatile();
-
-            if (isActive && isFlushed)
-            {
-                timeOfFlush = now;
-                isActive = false;
-            }
-        }
-
-        return isFlushed;
-    }
-
-    public RawLog rawLog()
+    RawLog rawLog()
     {
         return rawLog;
     }
 
-    public int publisherLimitId()
+    int publisherLimitId()
     {
         return publisherLimit.id();
     }
@@ -320,7 +296,7 @@ public class NetworkPublication
      *
      * @return 1 if the limit has been updated otherwise 0.
      */
-    public int updatePublishersLimit()
+    int updatePublishersLimit()
     {
         int workCount = 0;
 
@@ -457,9 +433,28 @@ public class NetworkPublication
             .frameLength(0);
     }
 
+    private boolean isUnreferencedAndFlushed(final long now)
+    {
+        boolean isFlushed = false;
+        if (0 == refCount)
+        {
+            final long senderPosition = this.senderPosition.getVolatile();
+            final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
+            isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailOffsetVolatile();
+
+            if (isActive && isFlushed)
+            {
+                timeOfFlush = now;
+                isActive = false;
+            }
+        }
+
+        return isFlushed;
+    }
+
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        if (isUnreferencedAndFlushed(time) && time > (timeOfFlush() + PUBLICATION_LINGER_NS))
+        if (isUnreferencedAndFlushed(time) && time > (timeOfFlush + PUBLICATION_LINGER_NS))
         {
             reachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);
@@ -477,7 +472,7 @@ public class NetworkPublication
 
     public long timeOfLastStateChange()
     {
-        return timeOfFlush();
+        return timeOfFlush;
     }
 
     public void delete()

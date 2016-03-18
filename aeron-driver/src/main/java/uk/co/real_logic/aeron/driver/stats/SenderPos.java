@@ -23,7 +23,7 @@ public class SenderPos
     /**
      * Type id of a sender position counter.
      */
-    public static final int SENDER_POSITION_TYPE_ID = 4;
+    public static final int SENDER_POSITION_TYPE_ID = 2;
 
     public static Position allocate(
         final CountersManager countersManager,
@@ -33,6 +33,6 @@ public class SenderPos
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            "sender hwm", SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            "sender pos", SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

@@ -54,9 +54,8 @@ public class Sender implements Agent, Consumer<SenderCmd>
 
     public int doWork()
     {
-        final long now = nanoClock.nanoTime();
         final int workCount = commandQueue.drain(this);
-        final int bytesSent = doSend(now);
+        final int bytesSent = doSend(nanoClock.nanoTime());
         final int bytesReceived = controlTransportPoller.pollTransports();
 
         return workCount + bytesSent + bytesReceived;
@@ -77,7 +76,6 @@ public class Sender implements Agent, Consumer<SenderCmd>
     public void onCloseSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
-        controlTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onNewNetworkPublication(final NetworkPublication publication)

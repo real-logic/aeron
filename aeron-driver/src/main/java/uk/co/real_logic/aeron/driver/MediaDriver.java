@@ -270,8 +270,6 @@ public final class MediaDriver implements AutoCloseable
         try
         {
             runners.forEach(AgentRunner::close);
-
-            freeSocketsForReuseOnWindows();
             ctx.close();
         }
         catch (final Exception ex)
@@ -289,12 +287,6 @@ public final class MediaDriver implements AutoCloseable
     public String aeronDirectoryName()
     {
         return ctx.aeronDirectoryName();
-    }
-
-    private void freeSocketsForReuseOnWindows()
-    {
-        ctx.dataTransportPoller().selectNowWithoutProcessing();
-        ctx.controlTransportPoller().selectNowWithoutProcessing();
     }
 
     private MediaDriver start()

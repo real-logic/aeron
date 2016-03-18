@@ -168,17 +168,22 @@ public abstract class UdpChannelTransport implements AutoCloseable
             if (null != transportPoller)
             {
                 transportPoller.cancelRead(this);
+                transportPoller.selectNowWithoutProcessing();
             }
 
-            sendDatagramChannel.close();
+            if (null != sendDatagramChannel)
+            {
+                sendDatagramChannel.close();
+            }
 
-            if (receiveDatagramChannel != sendDatagramChannel)
+            if (receiveDatagramChannel != sendDatagramChannel && null != receiveDatagramChannel)
             {
                 receiveDatagramChannel.close();
             }
         }
-        catch (final Exception ex)
+        catch (final IOException ex)
         {
+            ex.printStackTrace();
             errorLog.record(ex);
         }
     }

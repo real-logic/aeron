@@ -115,7 +115,6 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
         channelEndpoint.close();
-        dataTransportPoller.selectNowWithoutProcessing();
     }
 
     public void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)

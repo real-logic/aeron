@@ -321,9 +321,6 @@ public class DriverConductor implements Agent
 
     public void cleanupImage(final PublicationImage image)
     {
-        logger.logImageRemoval(
-            image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
-
         subscriptionLinks
             .stream()
             .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))

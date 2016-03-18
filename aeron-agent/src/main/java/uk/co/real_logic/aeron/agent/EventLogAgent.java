@@ -20,6 +20,9 @@ import net.bytebuddy.description.type.TypeDescription;
 import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
+import uk.co.real_logic.aeron.driver.NetworkPublication;
+import uk.co.real_logic.aeron.driver.PublicationImage;
+import uk.co.real_logic.aeron.driver.SubscriptionLink;
 import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
@@ -73,6 +76,7 @@ public class EventLogAgent
         if (EventConfiguration.ENABLED_EVENT_CODES != 0)
         {
             EVENT_LOG_READER_THREAD.setName("event log reader");
+            EVENT_LOG_READER_THREAD.setDaemon(true);
             EVENT_LOG_READER_THREAD.start();
 
             /*
@@ -100,6 +104,15 @@ public class EventLogAgent
                         return builder
                             .method(named("onClientCommand"))
                             .intercept(MethodDelegation.to(CmdInterceptor.class)
+                                .andThen(SuperMethodCall.INSTANCE))
+                            .method(named("cleanupImage"))
+                            .intercept(MethodDelegation.to(DriverConductorInterceptor.class)
+                                .andThen(SuperMethodCall.INSTANCE))
+                            .method(named("cleanupPublication"))
+                            .intercept(MethodDelegation.to(DriverConductorInterceptor.class)
+                                .andThen(SuperMethodCall.INSTANCE))
+                            .method(named("cleanupSubscriptionLink"))
+                            .intercept(MethodDelegation.to(DriverConductorInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE));
                     }))
                 .type(nameEndsWith("ClientProxy"))
@@ -118,6 +131,9 @@ public class EventLogAgent
                         return builder
                             .method(named("registerSendChannelEndpoint"))
                             .intercept(MethodDelegation.to(SenderProxyInterceptor.class)
+                                .andThen(SuperMethodCall.INSTANCE))
+                            .method(named("closeSendChannelEndpoint"))
+                            .intercept(MethodDelegation.to(SenderProxyInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE));
                     }))
                 .type(nameEndsWith("ReceiverProxy"))
@@ -126,6 +142,9 @@ public class EventLogAgent
                     {
                         return builder
                             .method(named("registerReceiveChannelEndpoint"))
+                            .intercept(MethodDelegation.to(ReceiverProxyInterceptor.class)
+                                .andThen(SuperMethodCall.INSTANCE))
+                            .method(named("closeReceiveChannelEndpoint"))
                             .intercept(MethodDelegation.to(ReceiverProxyInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE));
                     }))
@@ -144,6 +163,12 @@ public class EventLogAgent
             EventLogger.LOGGER.logChannelCreated(
                 EventCode.SEND_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
         }
+
+        public static void closeSendChannelEndpoint(final SendChannelEndpoint channelEndpoint)
+        {
+            EventLogger.LOGGER.logChannelCreated(
+                EventCode.SEND_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
+        }
     }
 
     public static class ReceiverProxyInterceptor
@@ -152,6 +177,32 @@ public class EventLogAgent
         {
             EventLogger.LOGGER.logChannelCreated(
                 EventCode.RECEIVE_CHANNEL_CREATION, channelEndpoint.udpChannel().description());
+        }
+
+        public static void closeReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
+        {
+            EventLogger.LOGGER.logChannelCreated(
+                EventCode.RECEIVE_CHANNEL_CLOSE, channelEndpoint.udpChannel().description());
+        }
+    }
+
+    public static class DriverConductorInterceptor
+    {
+        public static void cleanupImageInterceptor(final PublicationImage image)
+        {
+            EventLogger.LOGGER.logImageRemoval(
+                image.channelUriString(), image.sessionId(), image.streamId(), image.correlationId());
+        }
+
+        public static void cleanupPublication(final NetworkPublication publication)
+        {
+            EventLogger.LOGGER.logPublicationRemoval(
+                publication.sendChannelEndpoint().originalUriString(), publication.sessionId(), publication.streamId());
+        }
+
+        public static void cleanupSubscriptionLink(final SubscriptionLink subscriptionLink)
+        {
+
         }
     }
 }

@@ -31,7 +31,10 @@ import uk.co.real_logic.agrona.concurrent.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
+import static uk.co.real_logic.aeron.driver.stats.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static uk.co.real_logic.aeron.driver.stats.StreamPositionCounter.*;
+import static uk.co.real_logic.aeron.driver.stats.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
+import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 
 /**
  * Tool for printing out Aeron counters. A command-and-control (cnc) file is maintained by media driver
@@ -53,27 +56,27 @@ public class AeronStat
      *     <li>1 - 4: Stream Positions</li>
      * </ul>
      */
-    public static final String COUNTER_TYPE_ID = "type";
+    private static final String COUNTER_TYPE_ID = "type";
 
     /**
      * The identity of each counter that can either be the system counter id or registration id for positions.
      */
-    public static final String COUNTER_IDENTITY = "identity";
+    private static final String COUNTER_IDENTITY = "identity";
 
     /**
      * Session id filter to be used for position counters.
      */
-    public static final String COUNTER_SESSION_ID = "session";
+    private static final String COUNTER_SESSION_ID = "session";
 
     /**
      * Stream id filter to be used for position counters.
      */
-    public static final String COUNTER_STREAM_ID = "stream";
+    private static final String COUNTER_STREAM_ID = "stream";
 
     /**
      * Channel filter to be used for position counters.
      */
-    public static final String COUNTER_CHANNEL = "channel";
+    private static final String COUNTER_CHANNEL = "channel";
 
     private static final int ONE_SECOND = 1_000;
 
@@ -98,22 +101,6 @@ public class AeronStat
         this.sessionFilter = sessionFilter;
         this.streamFilter = streamFilter;
         this.channelFilter = channelFilter;
-    }
-
-    public void print(final PrintStream out)
-    {
-        out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
-        out.println("=========================");
-
-        counters.forEach(
-            (counterId, typeId, key, label) ->
-            {
-                if (filter(typeId, key))
-                {
-                    final long value = counters.getCounterValue(counterId);
-                    out.format("%3d: %,20d - %s\n", counterId, value, label);
-                }
-            });
     }
 
     public static void main(final String[] args) throws Exception
@@ -184,6 +171,22 @@ public class AeronStat
         }
     }
 
+    private void print(final PrintStream out)
+    {
+        out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
+        out.println("=========================");
+
+        counters.forEach(
+            (counterId, typeId, key, label) ->
+            {
+                if (filter(typeId, key))
+                {
+                    final long value = counters.getCounterValue(counterId);
+                    out.format("%3d: %,20d - %s\n", counterId, value, label);
+                }
+            });
+    }
+
     private static void checkForHelp(final String[] args)
     {
         for (final String arg : args)
@@ -220,6 +223,7 @@ public class AeronStat
 
         final AtomicBuffer labelsBuffer = createCountersMetaDataBuffer(cncByteBuffer, cncMetaData);
         final AtomicBuffer valuesBuffer = createCountersValuesBuffer(cncByteBuffer, cncMetaData);
+
         return new CountersReader(labelsBuffer, valuesBuffer);
     }
 
@@ -230,31 +234,22 @@ public class AeronStat
             return false;
         }
 
-        if (typeId > 0)
-        {
-            if (!match(identityFilter, "" + key.getLong(REGISTRATION_ID_OFFSET)))
-            {
-                return false;
-            }
-
-            if (!match(sessionFilter, "" + key.getInt(SESSION_ID_OFFSET)))
-            {
-                return false;
-            }
-
-            if (!match(streamFilter, "" + key.getInt(STREAM_ID_OFFSET)))
-            {
-                return false;
-            }
-
-            if (!match(channelFilter, key.getStringUtf8(CHANNEL_OFFSET)))
-            {
-                return false;
-            }
-        }
-        else if (!match(identityFilter, "" + key.getInt(0)))
+        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, "" + key.getInt(0)))
         {
             return false;
+        }
+        else
+        {
+            if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= SUBSCRIBER_POSITION_TYPE_ID)
+            {
+                if (!match(identityFilter, "" + key.getLong(REGISTRATION_ID_OFFSET)) ||
+                    !match(sessionFilter, "" + key.getInt(SESSION_ID_OFFSET)) ||
+                    !match(streamFilter, "" + key.getInt(STREAM_ID_OFFSET)) ||
+                    !match(channelFilter, key.getStringUtf8(CHANNEL_OFFSET)))
+                {
+                    return false;
+                }
+            }
         }
 
         return true;

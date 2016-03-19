@@ -152,7 +152,6 @@ public class NetworkPublication
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
-        publisherLimit.setOrdered(0);
 
         initSetupFrame(initialTermId, termLength, sessionId, streamId);
         initHeartBeatFrame(sessionId, streamId);

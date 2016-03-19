@@ -31,10 +31,10 @@ import uk.co.real_logic.agrona.concurrent.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
-import static uk.co.real_logic.aeron.driver.stats.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static uk.co.real_logic.aeron.driver.stats.StreamPositionCounter.*;
-import static uk.co.real_logic.aeron.driver.stats.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
 import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static uk.co.real_logic.aeron.driver.stats.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
+import static uk.co.real_logic.aeron.driver.stats.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 
 /**
  * Tool for printing out Aeron counters. A command-and-control (cnc) file is maintained by media driver
@@ -164,6 +164,10 @@ public class AeronStat
         while (running.get())
         {
             System.out.print("\033[H\033[2J");
+
+            System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
+            System.out.println("=========================");
+
             aeronStat.print(System.out);
             System.out.println("--");
 
@@ -171,11 +175,8 @@ public class AeronStat
         }
     }
 
-    private void print(final PrintStream out)
+    public void print(final PrintStream out)
     {
-        out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
-        out.println("=========================");
-
         counters.forEach(
             (counterId, typeId, keyBuffer, label) ->
             {

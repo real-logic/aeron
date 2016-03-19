@@ -195,7 +195,7 @@ public class AeronStat
             {
                 System.out.println(
                     "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat\n" +
-                        "\toptionally filter by regex patterns:\n" +
+                        "\tfilter by optional regex patterns:\n" +
                         "\t[type=<pattern>]\n" +
                         "\t[identity=<pattern>]\n" +
                         "\t[sessionId=<pattern>]\n" +

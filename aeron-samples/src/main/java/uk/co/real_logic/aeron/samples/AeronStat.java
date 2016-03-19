@@ -240,17 +240,14 @@ public class AeronStat
         {
             return false;
         }
-        else
+        else if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= SUBSCRIBER_POSITION_TYPE_ID)
         {
-            if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= SUBSCRIBER_POSITION_TYPE_ID)
+            if (!match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) ||
+                !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||
+                !match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) ||
+                !match(channelFilter, () -> keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
             {
-                if (!match(identityFilter, () -> Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) ||
-                    !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||
-                    !match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) ||
-                    !match(channelFilter, () -> keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
-                {
-                    return false;
-                }
+                return false;
             }
         }
 

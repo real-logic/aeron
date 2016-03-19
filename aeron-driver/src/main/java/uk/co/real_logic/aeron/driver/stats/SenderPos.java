@@ -25,6 +25,11 @@ public class SenderPos
      */
     public static final int SENDER_POSITION_TYPE_ID = 2;
 
+    /**
+     * Human readable name for the counter.
+     */
+    public static final String NAME = "sender-pos";
+
     public static Position allocate(
         final CountersManager countersManager,
         final long registrationId,
@@ -33,6 +38,6 @@ public class SenderPos
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            "sender pos", SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            NAME, SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

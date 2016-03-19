@@ -25,6 +25,11 @@ public class PublisherLimit
      */
     public static final int PUBLISHER_LIMIT_TYPE_ID = 1;
 
+    /**
+     * Human readable name for the counter.
+     */
+    public static final String NAME = "publisher-limit";
+
     public static Position allocate(
         final CountersManager countersManager,
         final long registrationId,
@@ -33,6 +38,6 @@ public class PublisherLimit
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            "publisher limit", PUBLISHER_LIMIT_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            NAME, PUBLISHER_LIMIT_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

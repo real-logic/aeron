@@ -25,6 +25,11 @@ public class ReceiverHwm
      */
     public static final int RECEIVER_HWM_TYPE_ID = 3;
 
+    /**
+     * Human readable name for the counter.
+     */
+    public static final String NAME = "receiver-hwm";
+
     public static Position allocate(
         final CountersManager countersManager,
         final long registrationId,
@@ -33,6 +38,6 @@ public class ReceiverHwm
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            "receiver hwm", RECEIVER_HWM_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            NAME, RECEIVER_HWM_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

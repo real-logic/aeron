@@ -120,7 +120,7 @@ public class AeronStat
                 final int equalsIndex = arg.indexOf('=');
                 if (-1 == equalsIndex)
                 {
-                    System.out.println("Arguments must be in name=pattern format: Invalid arg '" + arg + "'");
+                    System.out.println("Arguments must be in name=pattern format: Invalid '" + arg + "'");
                     return;
                 }
 

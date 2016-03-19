@@ -28,7 +28,7 @@ public class ReceiverHwm
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "receiver-hwm";
+    public static final String NAME = "Rcv-hwm";
 
     public static Position allocate(
         final CountersManager countersManager,

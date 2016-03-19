@@ -28,7 +28,7 @@ public class PublisherLimit
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "publisher-limit";
+    public static final String NAME = "Pub-lmt";
 
     public static Position allocate(
         final CountersManager countersManager,

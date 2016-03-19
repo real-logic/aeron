@@ -28,7 +28,7 @@ public class SubscriberPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "subscriber-pos";
+    public static final String NAME = "Sub-pos";
 
     public static Position allocate(
         final CountersManager countersManager,

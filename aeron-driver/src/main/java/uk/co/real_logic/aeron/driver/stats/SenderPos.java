@@ -28,7 +28,7 @@ public class SenderPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "sender-pos";
+    public static final String NAME = "Snd-pos";
 
     public static Position allocate(
         final CountersManager countersManager,

@@ -67,8 +67,6 @@ public class DirectPublication implements DriverManagedResource
         this.rawLog = rawLog;
         this.publisherLimit = publisherLimit;
         this.tripGain = this.termWindowLength / 8;
-
-        this.publisherLimit.setOrdered(0);
     }
 
     public int sessionId()

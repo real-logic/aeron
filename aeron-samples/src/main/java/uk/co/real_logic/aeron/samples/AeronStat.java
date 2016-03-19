@@ -177,9 +177,9 @@ public class AeronStat
         out.println("=========================");
 
         counters.forEach(
-            (counterId, typeId, key, label) ->
+            (counterId, typeId, keyBuffer, label) ->
             {
-                if (filter(typeId, key))
+                if (filter(typeId, keyBuffer))
                 {
                     final long value = counters.getCounterValue(counterId);
                     out.format("%3d: %,20d - %s\n", counterId, value, label);
@@ -227,14 +227,14 @@ public class AeronStat
         return new CountersReader(labelsBuffer, valuesBuffer);
     }
 
-    private boolean filter(final int typeId, final DirectBuffer key)
+    private boolean filter(final int typeId, final DirectBuffer keyBuffer)
     {
         if (!match(typeFilter, "" + typeId))
         {
             return false;
         }
 
-        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, "" + key.getInt(0)))
+        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, "" + keyBuffer.getInt(0)))
         {
             return false;
         }
@@ -242,10 +242,10 @@ public class AeronStat
         {
             if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= SUBSCRIBER_POSITION_TYPE_ID)
             {
-                if (!match(identityFilter, "" + key.getLong(REGISTRATION_ID_OFFSET)) ||
-                    !match(sessionFilter, "" + key.getInt(SESSION_ID_OFFSET)) ||
-                    !match(streamFilter, "" + key.getInt(STREAM_ID_OFFSET)) ||
-                    !match(channelFilter, key.getStringUtf8(CHANNEL_OFFSET)))
+                if (!match(identityFilter, "" + keyBuffer.getLong(REGISTRATION_ID_OFFSET)) ||
+                    !match(sessionFilter, "" + keyBuffer.getInt(SESSION_ID_OFFSET)) ||
+                    !match(streamFilter, "" + keyBuffer.getInt(STREAM_ID_OFFSET)) ||
+                    !match(channelFilter, keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
                 {
                     return false;
                 }

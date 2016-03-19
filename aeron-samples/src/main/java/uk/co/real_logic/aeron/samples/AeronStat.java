@@ -230,12 +230,12 @@ public class AeronStat
 
     private boolean filter(final int typeId, final DirectBuffer keyBuffer)
     {
-        if (!match(typeFilter, "" + typeId))
+        if (!match(typeFilter, Integer.toString(typeId)))
         {
             return false;
         }
 
-        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, "" + keyBuffer.getInt(0)))
+        if (SYSTEM_COUNTER_TYPE_ID == typeId && !match(identityFilter, Integer.toString(keyBuffer.getInt(0))))
         {
             return false;
         }
@@ -243,9 +243,9 @@ public class AeronStat
         {
             if (typeId >= PUBLISHER_LIMIT_TYPE_ID && typeId <= SUBSCRIBER_POSITION_TYPE_ID)
             {
-                if (!match(identityFilter, "" + keyBuffer.getLong(REGISTRATION_ID_OFFSET)) ||
-                    !match(sessionFilter, "" + keyBuffer.getInt(SESSION_ID_OFFSET)) ||
-                    !match(streamFilter, "" + keyBuffer.getInt(STREAM_ID_OFFSET)) ||
+                if (!match(identityFilter, Long.toString(keyBuffer.getLong(REGISTRATION_ID_OFFSET))) ||
+                    !match(sessionFilter, Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||
+                    !match(streamFilter, Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) ||
                     !match(channelFilter, keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
                 {
                     return false;

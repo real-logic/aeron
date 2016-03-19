@@ -157,7 +157,7 @@ public class AeronStat
         }
 
         final AeronStat aeronStat = new AeronStat(
-            setupCounters(), typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
+            mapCounters(), typeFilter, identityFilter, sessionFilter, streamFilter, channelFilter);
         final AtomicBoolean running = new AtomicBoolean(true);
         SigInt.register(() -> running.set(false));
 
@@ -207,7 +207,7 @@ public class AeronStat
         }
     }
 
-    private static CountersReader setupCounters()
+    private static CountersReader mapCounters()
     {
         final File cncFile = CommonContext.newDefaultCncFile();
         System.out.println("Command `n Control file " + cncFile);

@@ -103,6 +103,35 @@ public class AeronStat
         this.channelFilter = channelFilter;
     }
 
+    public AeronStat(final CountersReader counters)
+    {
+        this.counters = counters;
+        this.typeFilter = null;
+        this.identityFilter = null;
+        this.sessionFilter = null;
+        this.streamFilter = null;
+        this.channelFilter = null;
+    }
+
+    public static CountersReader mapCounters()
+    {
+        final File cncFile = CommonContext.newDefaultCncFile();
+        System.out.println("Command `n Control file " + cncFile);
+
+        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
+        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
+        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
+
+        if (CncFileDescriptor.CNC_VERSION != cncVersion)
+        {
+            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
+        }
+
+        return new CountersReader(
+            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
+    }
+
     public static void main(final String[] args) throws Exception
     {
         Pattern typeFilter = null;
@@ -206,25 +235,6 @@ public class AeronStat
                 System.exit(0);
             }
         }
-    }
-
-    private static CountersReader mapCounters()
-    {
-        final File cncFile = CommonContext.newDefaultCncFile();
-        System.out.println("Command `n Control file " + cncFile);
-
-        final MappedByteBuffer cncByteBuffer = IoUtil.mapExistingFile(cncFile, "cnc");
-        final DirectBuffer cncMetaData = createMetaDataBuffer(cncByteBuffer);
-        final int cncVersion = cncMetaData.getInt(cncVersionOffset(0));
-
-        if (CncFileDescriptor.CNC_VERSION != cncVersion)
-        {
-            throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
-        }
-
-        return new CountersReader(
-            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
-            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
     }
 
     private boolean filter(final int typeId, final DirectBuffer keyBuffer)

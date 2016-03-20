@@ -98,4 +98,31 @@ public class StreamPositionCounter
 
         return new UnsafeBufferPosition((UnsafeBuffer)countersManager.valuesBuffer(), counterId, countersManager);
     }
+
+    /**
+     * Return the label name for a counter type identifier.
+     *
+     * @param typeId of the counter.
+     * @return the label name as a String.
+     */
+    public static String labelName(final int typeId)
+    {
+        switch (typeId)
+        {
+            case PublisherLimit.PUBLISHER_LIMIT_TYPE_ID:
+                return PublisherLimit.NAME;
+
+            case SenderPos.SENDER_POSITION_TYPE_ID:
+                return SenderPos.NAME;
+
+            case ReceiverHwm.RECEIVER_HWM_TYPE_ID:
+                return ReceiverHwm.NAME;
+
+            case SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID:
+                return SubscriberPos.NAME;
+
+            default:
+                return "<unknown>";
+        }
+    }
 }

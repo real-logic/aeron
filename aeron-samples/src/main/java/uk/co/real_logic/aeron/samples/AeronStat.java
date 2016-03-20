@@ -27,7 +27,6 @@ import uk.co.real_logic.aeron.CncFileDescriptor;
 import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
 import uk.co.real_logic.agrona.concurrent.status.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
@@ -223,10 +222,9 @@ public class AeronStat
             throw new IllegalStateException("CnC version not supported: file version=" + cncVersion);
         }
 
-        final AtomicBuffer labelsBuffer = createCountersMetaDataBuffer(cncByteBuffer, cncMetaData);
-        final AtomicBuffer valuesBuffer = createCountersValuesBuffer(cncByteBuffer, cncMetaData);
-
-        return new CountersReader(labelsBuffer, valuesBuffer);
+        return new CountersReader(
+            createCountersMetaDataBuffer(cncByteBuffer, cncMetaData),
+            createCountersValuesBuffer(cncByteBuffer, cncMetaData));
     }
 
     private boolean filter(final int typeId, final DirectBuffer keyBuffer)

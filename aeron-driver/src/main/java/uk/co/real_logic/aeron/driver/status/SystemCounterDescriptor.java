@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.stats;
+package uk.co.real_logic.aeron.driver.status;
 
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.CountersManager;
 
 /**
  * System wide counters for monitoring. These are separate from counters used for position tracking on streams.

@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.stats.SystemCounters;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.aeron.driver.status.SystemCounters;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
 
 /**
  * Tracks a aeron client interest registration in a {@link NetworkPublication}.

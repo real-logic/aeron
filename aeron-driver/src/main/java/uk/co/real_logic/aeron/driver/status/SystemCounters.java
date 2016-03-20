@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.stats;
+package uk.co.real_logic.aeron.driver.status;
 
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.CountersManager;
 
 import java.util.EnumMap;
 
 /**
- * Aggregate entry point for managing counters of system stats.
+ * Aggregate entry point for managing counters of system status.
  */
 public class SystemCounters implements AutoCloseable
 {

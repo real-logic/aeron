@@ -25,16 +25,16 @@ import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.aeron.driver.media.ControlTransportPoller;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
-import uk.co.real_logic.aeron.driver.stats.SystemCounters;
+import uk.co.real_logic.aeron.driver.status.SystemCounters;
 import uk.co.real_logic.aeron.logbuffer.HeaderWriter;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 

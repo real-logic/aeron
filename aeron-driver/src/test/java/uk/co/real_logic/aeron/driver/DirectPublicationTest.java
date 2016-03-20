@@ -20,10 +20,11 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.aeron.DriverProxy;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
-import uk.co.real_logic.aeron.driver.stats.SystemCounters;
+import uk.co.real_logic.aeron.driver.status.SystemCounters;
 import uk.co.real_logic.agrona.concurrent.*;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import uk.co.real_logic.agrona.concurrent.status.CountersManager;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
 

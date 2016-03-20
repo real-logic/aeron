@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.stats;
+package uk.co.real_logic.aeron.driver.status;
 
-import uk.co.real_logic.agrona.concurrent.CountersManager;
+import uk.co.real_logic.agrona.concurrent.status.CountersManager;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 
-public class SenderPos
+public class SubscriberPos
 {
     /**
-     * Type id of a sender position counter.
+     * Type id of a subscriber position counter.
      */
-    public static final int SENDER_POSITION_TYPE_ID = 2;
+    public static final int SUBSCRIBER_POSITION_TYPE_ID = 4;
 
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "Snd-pos";
+    public static final String NAME = "Sub-pos";
 
     public static Position allocate(
         final CountersManager countersManager,
@@ -38,6 +38,6 @@ public class SenderPos
         final String channel)
     {
         return StreamPositionCounter.allocate(
-            NAME, SENDER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
+            NAME, SUBSCRIBER_POSITION_TYPE_ID, countersManager, registrationId, sessionId, streamId, channel);
     }
 }

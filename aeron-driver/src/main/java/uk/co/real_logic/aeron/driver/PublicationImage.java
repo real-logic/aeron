@@ -17,11 +17,11 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.stats.SystemCounters;
+import uk.co.real_logic.aeron.driver.status.SystemCounters;
 import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.agrona.UnsafeAccess;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
@@ -31,7 +31,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import static uk.co.real_logic.aeron.driver.PublicationImage.Status.ACTIVE;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.*;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 
 class PublicationImagePadding1

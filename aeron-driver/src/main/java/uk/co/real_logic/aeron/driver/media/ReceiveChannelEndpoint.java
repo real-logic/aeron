@@ -17,12 +17,12 @@ package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.aeron.driver.*;
 import uk.co.real_logic.aeron.driver.exceptions.ConfigurationException;
-import uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor;
+import uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor;
 import uk.co.real_logic.aeron.protocol.*;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
 import uk.co.real_logic.agrona.collections.MutableInteger;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;

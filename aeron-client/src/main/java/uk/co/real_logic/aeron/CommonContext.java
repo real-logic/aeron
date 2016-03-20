@@ -37,7 +37,7 @@ import static java.lang.System.getProperty;
  * <p>
  * Properties
  * <ul>
- * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and stats.</li>
+ * <li><code>aeron.dir</code>: Use value as directory name for Aeron buffers and status.</li>
  * </ul>
  */
 public class CommonContext implements AutoCloseable

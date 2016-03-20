@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
 import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
@@ -30,9 +30,9 @@ import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.INVALID_PACKETS;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;

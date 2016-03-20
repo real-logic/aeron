@@ -19,13 +19,13 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import uk.co.real_logic.aeron.driver.media.*;
-import uk.co.real_logic.aeron.driver.stats.SystemCounters;
+import uk.co.real_logic.aeron.driver.status.SystemCounters;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
 import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;

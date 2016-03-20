@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.stats;
+package uk.co.real_logic.aeron.driver.status;
 
-import uk.co.real_logic.agrona.concurrent.CountersManager;
-import uk.co.real_logic.agrona.concurrent.CountersReader;
+import uk.co.real_logic.agrona.concurrent.status.CountersManager;
+import uk.co.real_logic.agrona.concurrent.status.CountersReader;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.status.Position;
 import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;

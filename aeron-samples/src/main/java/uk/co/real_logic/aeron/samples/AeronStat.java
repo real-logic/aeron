@@ -28,14 +28,14 @@ import uk.co.real_logic.aeron.CommonContext;
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.IoUtil;
 import uk.co.real_logic.agrona.concurrent.AtomicBuffer;
-import uk.co.real_logic.agrona.concurrent.CountersReader;
+import uk.co.real_logic.agrona.concurrent.status.CountersReader;
 import uk.co.real_logic.agrona.concurrent.SigInt;
 
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
-import static uk.co.real_logic.aeron.driver.stats.StreamPositionCounter.*;
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
-import static uk.co.real_logic.aeron.driver.stats.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
-import static uk.co.real_logic.aeron.driver.stats.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
+import static uk.co.real_logic.aeron.driver.status.StreamPositionCounter.*;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
+import static uk.co.real_logic.aeron.driver.status.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
+import static uk.co.real_logic.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 
 /**
  * Tool for printing out Aeron counters. A command-and-control (cnc) file is maintained by media driver

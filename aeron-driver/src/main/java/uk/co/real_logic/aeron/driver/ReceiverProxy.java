@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.*;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 
 import java.util.Queue;
 

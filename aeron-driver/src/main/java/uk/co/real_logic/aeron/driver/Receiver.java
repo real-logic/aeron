@@ -18,14 +18,14 @@ package uk.co.real_logic.aeron.driver;
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.media.*;
 import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.BYTES_RECEIVED;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
 
 /**
  * Receiver agent for JVM based media driver, uses an event loop with command buffer

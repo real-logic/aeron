@@ -19,13 +19,13 @@ import uk.co.real_logic.aeron.driver.cmd.SenderCmd;
 import uk.co.real_logic.aeron.driver.media.*;
 import uk.co.real_logic.agrona.collections.ArrayUtil;
 import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.AtomicCounter;
+import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
 import uk.co.real_logic.agrona.concurrent.NanoClock;
 import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.function.Consumer;
 
-import static uk.co.real_logic.aeron.driver.stats.SystemCounterDescriptor.BYTES_SENT;
+import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 
 /**
  * Agent that iterates over networkPublications for sending them to registered subscribers.

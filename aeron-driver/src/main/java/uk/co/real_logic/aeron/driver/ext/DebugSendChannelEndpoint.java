@@ -16,7 +16,6 @@
 package uk.co.real_logic.aeron.driver.ext;
 
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -34,7 +33,6 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
-    private final EventLogger logger = EventLogger.LOGGER;
 
     public DebugSendChannelEndpoint(final UdpChannel udpChannel, final MediaDriver.Context context)
     {
@@ -61,14 +59,8 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
         int result = buffer.remaining();
 
         dataBuffer.wrap(buffer, buffer.position(), buffer.remaining());
-        if (dataLossGenerator.shouldDropFrame(connectAddress, dataBuffer, buffer.remaining()))
+        if (!dataLossGenerator.shouldDropFrame(connectAddress, dataBuffer, buffer.remaining()))
         {
-            logger.logFrameOutDropped(buffer, buffer.position(), buffer.remaining(), connectAddress);
-        }
-        else
-        {
-            logger.logFrameOut(buffer, connectAddress);
-
             result = super.send(buffer);
         }
 
@@ -79,14 +71,8 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
     {
         int result = 0;
 
-        if (controlLossGenerator.shouldDropFrame(srcAddress, buffer, length))
+        if (!controlLossGenerator.shouldDropFrame(srcAddress, buffer, length))
         {
-            logger.logFrameInDropped(receiveByteBuffer, 0, length, srcAddress);
-        }
-        else
-        {
-            logger.logFrameIn(receiveByteBuffer, 0, length, srcAddress);
-
             result = super.dispatch(buffer, length, srcAddress);
         }
 

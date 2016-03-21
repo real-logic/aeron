@@ -17,7 +17,6 @@ package uk.co.real_logic.aeron.driver.ext;
 
 import uk.co.real_logic.aeron.driver.DataPacketDispatcher;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
@@ -35,7 +34,6 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     private final LossGenerator dataLossGenerator;
     private final LossGenerator controlLossGenerator;
     private final UnsafeBuffer controlBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
-    private final EventLogger logger = EventLogger.LOGGER;
 
     public DebugReceiveChannelEndpoint(
         final UdpChannel udpChannel,
@@ -68,14 +66,8 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         int result = buffer.remaining();
 
         controlBuffer.wrap(buffer, buffer.position(), buffer.remaining());
-        if (controlLossGenerator.shouldDropFrame(remoteAddress, controlBuffer, buffer.remaining()))
+        if (!controlLossGenerator.shouldDropFrame(remoteAddress, controlBuffer, buffer.remaining()))
         {
-            logger.logFrameOutDropped(buffer, buffer.position(), buffer.remaining(), remoteAddress);
-        }
-        else
-        {
-            logger.logFrameOut(buffer, remoteAddress);
-
             result = super.sendTo(buffer, remoteAddress);
         }
 
@@ -86,14 +78,8 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
     {
         int result = 0;
 
-        if (dataLossGenerator.shouldDropFrame(srcAddress, buffer, length))
+        if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, length))
         {
-            logger.logFrameInDropped(receiveByteBuffer, 0, length, srcAddress);
-        }
-        else
-        {
-            logger.logFrameIn(receiveByteBuffer, 0, length, srcAddress);
-
             result = super.dispatch(buffer, length, srcAddress);
         }
 

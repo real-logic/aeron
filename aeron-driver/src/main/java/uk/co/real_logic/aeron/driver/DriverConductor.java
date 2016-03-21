@@ -23,7 +23,6 @@ import uk.co.real_logic.aeron.driver.MediaDriver.Context;
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.driver.buffer.RawLogFactory;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.exceptions.ControlProtocolException;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
@@ -97,7 +96,6 @@ public class DriverConductor implements Agent
     private final EpochClock epochClock;
     private final NanoClock nanoClock;
 
-    private final EventLogger logger;
     private final DistinctErrorLog errorLog;
     private final Consumer<DriverConductorCmd> onDriverConductorCmdFunc = this::onDriverConductorCmd;
     private final MessageHandler onClientCommandFunc = this::onClientCommand;
@@ -122,7 +120,6 @@ public class DriverConductor implements Agent
         toDriverCommands = ctx.toDriverCommands();
         clientProxy = ctx.clientProxy();
         fromReceiverConductorProxy = ctx.fromReceiverDriverConductorProxy();
-        logger = EventLogger.LOGGER;
         errorLog = ctx.errorLog();
 
         countersManager = context.countersManager();
@@ -275,9 +272,6 @@ public class DriverConductor implements Agent
     {
         final SendChannelEndpoint channelEndpoint = publication.sendChannelEndpoint();
 
-        logger.logPublicationRemoval(
-            channelEndpoint.originalUriString(), publication.sessionId(), publication.streamId());
-
         senderProxy.removeNetworkPublication(publication);
 
         if (channelEndpoint.sessionCount() == 0)
@@ -294,9 +288,6 @@ public class DriverConductor implements Agent
         if (null != channelEndpoint)
         {
             final int streamId = link.streamId();
-
-            logger.logSubscriptionRemoval(
-                channelEndpoint.originalUriString(), link.streamId(), link.registrationId());
 
             if (0 == channelEndpoint.decRefToStream(link.streamId()))
             {

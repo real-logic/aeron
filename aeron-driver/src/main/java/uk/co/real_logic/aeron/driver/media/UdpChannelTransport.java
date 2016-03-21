@@ -148,6 +148,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveDatagramChannel;
     }
 
+    public InetSocketAddress connectAddress()
+    {
+        return connectAddress;
+    }
+
+    public ByteBuffer receiveByteBuffer()
+    {
+        return receiveByteBuffer;
+    }
+
     /**
      * Close transport, canceling any pending read operations and closing channel
      */

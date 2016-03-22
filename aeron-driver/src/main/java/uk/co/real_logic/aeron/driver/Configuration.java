@@ -93,6 +93,11 @@ public class Configuration
     public static final String SOCKET_SNDBUF_LENGTH_PROP_NAME = "aeron.socket.so_sndbuf";
 
     /**
+     * Property name for IP_MULTICAST_TTL setting on UDP sockets.
+     */
+    public static final String SOCKET_MULTICAST_TTL_PROP_NAME = "aeron.socket.multicast.ttl";
+
+    /**
      * Property name for linger timeout on {@link uk.co.real_logic.aeron.Publication}s.
      */
     public static final String PUBLICATION_LINGER_PROP_NAME = "aeron.publication.linger.timeout";
@@ -271,6 +276,12 @@ public class Configuration
      */
     public static final int SOCKET_SNDBUF_LENGTH_DEFAULT = 0;
     public static final int SOCKET_SNDBUF_LENGTH = getInteger(SOCKET_SNDBUF_LENGTH_PROP_NAME, SOCKET_SNDBUF_LENGTH_DEFAULT);
+
+    /**
+     * 0 means use OS default.
+     */
+    public static final int SOCKET_MULTICAST_TTL_DEFAULT = 0;
+    public static final int SOCKET_MULTICAST_TTL = getInteger(SOCKET_MULTICAST_TTL_PROP_NAME, SOCKET_MULTICAST_TTL_DEFAULT);
 
     /**
      * Time for {@link uk.co.real_logic.aeron.Publication}s to linger before cleanup.

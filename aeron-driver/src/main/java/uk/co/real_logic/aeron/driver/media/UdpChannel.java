@@ -16,6 +16,7 @@
 package uk.co.real_logic.aeron.driver.media;
 
 import uk.co.real_logic.aeron.ErrorCode;
+import uk.co.real_logic.aeron.driver.Configuration;
 import uk.co.real_logic.aeron.driver.uri.UriUtil;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.aeron.driver.uri.AeronUri;
@@ -50,6 +51,7 @@ public final class UdpChannel
     private static final String INTERFACE_KEY = "interface";
     private static final String GROUP_KEY = "group";
     private static final String ENDPOINT_KEY = "endpoint";
+    private static final String MULTICAST_TTL_KEY = "ttl";
 
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
@@ -60,6 +62,7 @@ public final class UdpChannel
     private final String canonicalForm;
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
+    private final int multicastTtl;
 
     /**
      * Parse URI and create channel
@@ -101,11 +104,14 @@ public final class UdpChannel
 
                 final ProtocolFamily protocolFamily = getProtocolFamily(endpointAddress.getAddress());
 
+                final int multicastTtl = getMulticastTtl(uri);
+
                 context.localControlAddress(localAddress)
                     .remoteControlAddress(controlAddress)
                     .localDataAddress(localAddress)
                     .remoteDataAddress(endpointAddress)
                     .localInterface(localInterface)
+                    .multicastTtl(multicastTtl)
                     .protocolFamily(protocolFamily)
                     .canonicalForm(canonicalise(localAddress, endpointAddress));
             }
@@ -186,6 +192,22 @@ public final class UdpChannel
         }
 
         return endpointAddress;
+    }
+
+    private static int getMulticastTtl(final AeronUri uri)
+    {
+        final int ttl;
+
+        if (uri.containsKey(MULTICAST_TTL_KEY))
+        {
+            ttl = Integer.parseInt(uri.get(MULTICAST_TTL_KEY));
+        }
+        else
+        {
+            ttl = Configuration.SOCKET_MULTICAST_TTL;
+        }
+
+        return ttl;
     }
 
     private static void validateDataAddress(final byte[] addressAsBytes)
@@ -349,6 +371,16 @@ public final class UdpChannel
         return localControl;
     }
 
+    /**
+     * Multicast TTL information
+     *
+     * @return multicast TTL value
+     */
+    public int multicastTtl()
+    {
+        return multicastTtl;
+    }
+
     private UdpChannel(final Context context)
     {
         this.remoteData = context.remoteData;
@@ -359,6 +391,7 @@ public final class UdpChannel
         this.canonicalForm = context.canonicalForm;
         this.localInterface = context.localInterface;
         this.protocolFamily = context.protocolFamily;
+        this.multicastTtl = context.multicastTtl;
     }
 
     /**
@@ -476,6 +509,7 @@ public final class UdpChannel
         private String canonicalForm;
         private NetworkInterface localInterface;
         private ProtocolFamily protocolFamily;
+        private int multicastTtl;
 
         public Context uriStr(final String uri)
         {
@@ -524,6 +558,12 @@ public final class UdpChannel
             this.protocolFamily = protocolFamily;
             return this;
         }
+
+        public Context multicastTtl(final int multicastTtl)
+        {
+            this.multicastTtl = multicastTtl;
+            return this;
+        }
     }
 
     private static String errorNoMatchingInterfaces(
@@ -569,7 +609,8 @@ public final class UdpChannel
 
         builder
             .append("localData: ").append(localData)
-            .append(", remoteData: ").append(remoteData);
+            .append(", remoteData: ").append(remoteData)
+            .append(", ttl: ").append(multicastTtl);
 
         return builder.toString();
     }

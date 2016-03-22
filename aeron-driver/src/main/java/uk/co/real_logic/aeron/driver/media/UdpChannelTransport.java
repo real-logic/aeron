@@ -83,6 +83,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
                 receiveDatagramChannel.join(endPointAddress.getAddress(), localInterface);
                 sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_IF, localInterface);
 
+                if (0 != udpChannel.multicastTtl())
+                {
+                    sendDatagramChannel.setOption(StandardSocketOptions.IP_MULTICAST_TTL, udpChannel.multicastTtl());
+                }
+
                 if (null != connectAddress)
                 {
                     sendDatagramChannel.connect(connectAddress);
@@ -156,6 +161,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
     public ByteBuffer receiveByteBuffer()
     {
         return receiveByteBuffer;
+    }
+
+    public int multicastTtl()
+    {
+        return udpChannel.multicastTtl();
     }
 
     /**

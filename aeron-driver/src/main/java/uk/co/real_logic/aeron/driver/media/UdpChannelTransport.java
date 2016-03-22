@@ -258,7 +258,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return isFrameValid;
     }
 
-    protected final InetSocketAddress receive()
+    protected InetSocketAddress receive()
     {
         receiveByteBuffer.clear();
 

@@ -415,6 +415,7 @@ public class NetworkPublication
             .termOffset(0)
             .termLength(termLength)
             .mtuLength(mtuLength)
+            .ttl(channelEndpoint.multicastTtl())
             .version(HeaderFlyweight.CURRENT_VERSION)
             .flags((byte)0)
             .headerType(HeaderFlyweight.HDR_TYPE_SETUP)

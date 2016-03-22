@@ -44,6 +44,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusMessageShortSends;
     private final AtomicCounter nakMessageShortSends;
     private final AtomicCounter invalidPackets;
+    private final AtomicCounter possibleTtlAsymmetry;
 
     private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
     private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight(smBuffer);
@@ -85,6 +86,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         statusMessageShortSends = context.systemCounters().get(SystemCounterDescriptor.STATUS_MESSAGE_SHORT_SENDS);
         nakMessageShortSends = context.systemCounters().get(SystemCounterDescriptor.NAK_MESSAGE_SHORT_SENDS);
         invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
+        possibleTtlAsymmetry = context.systemCounters().get(SystemCounterDescriptor.POSSIBLE_TTL_ASYMMETRY);
     }
 
     /**
@@ -133,6 +135,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public DataPacketDispatcher dispatcher()
     {
         return dispatcher;
+    }
+
+    public void possibleTtlAssymetryEncountered()
+    {
+        possibleTtlAsymmetry.orderedIncrement();
     }
 
     public int incRefToStream(final int streamId)

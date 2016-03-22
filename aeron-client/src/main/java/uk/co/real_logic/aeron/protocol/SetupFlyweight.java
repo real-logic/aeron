@@ -29,7 +29,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 public class SetupFlyweight extends HeaderFlyweight
 {
     /** Size of the Setup Header */
-    public static final int HEADER_LENGTH = 36;
+    public static final int HEADER_LENGTH = 40;
 
     private static final int TERM_OFFSET_FIELD_OFFSET = 8;
     private static final int SESSION_ID_FIELD_OFFSET = 12;
@@ -38,6 +38,7 @@ public class SetupFlyweight extends HeaderFlyweight
     private static final int ACTIVE_TERM_ID_FIELD_OFFSET = 24;
     private static final int TERM_LENGTH_FIELD_OFFSET = 28;
     private static final int MTU_LENGTH_FIELD_OFFSET = 32;
+    private static final int TTL_FIELD_OFFSET = 36;
 
     public SetupFlyweight()
     {
@@ -208,6 +209,29 @@ public class SetupFlyweight extends HeaderFlyweight
     public SetupFlyweight mtuLength(final int mtuLength)
     {
         putInt(MTU_LENGTH_FIELD_OFFSET, mtuLength, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
+     * Return the TTL field
+     *
+     * @return TTL field value
+     */
+    public int ttl()
+    {
+        return getInt(TTL_FIELD_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Set the TTL field
+     *
+     * @param ttl field value
+     * @return flyweight
+     */
+    public SetupFlyweight ttl(final int ttl)
+    {
+        putInt(TTL_FIELD_OFFSET, ttl, LITTLE_ENDIAN);
 
         return this;
     }

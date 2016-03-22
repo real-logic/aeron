@@ -28,6 +28,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
+import static java.net.StandardSocketOptions.IP_MULTICAST_TTL;
 import static java.net.StandardSocketOptions.SO_RCVBUF;
 import static java.net.StandardSocketOptions.SO_SNDBUF;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameVersion;
@@ -155,7 +156,24 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
     public int multicastTtl()
     {
-        return udpChannel.multicastTtl();
+        int result = udpChannel.multicastTtl();
+
+        if (isMulticast())
+        {
+            if (0 == udpChannel.multicastTtl())
+            {
+                try
+                {
+                    result = sendDatagramChannel.getOption(IP_MULTICAST_TTL);
+                }
+                catch (final Exception ignore)
+                {
+                    // ignore
+                }
+            }
+        }
+
+        return result;
     }
 
     /**

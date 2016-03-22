@@ -282,7 +282,7 @@ public class EventDissector
     private static String dissect(final SetupFlyweight msg)
     {
         return String.format(
-            "SETUP 0x%x len %d %d:%d:%d %d @%x %d MTU %d",
+            "SETUP 0x%x len %d %d:%d:%d %d @%x %d MTU %d TTL %d",
             msg.flags(),
             msg.frameLength(),
             msg.sessionId(),
@@ -291,7 +291,8 @@ public class EventDissector
             msg.initialTermId(),
             msg.termOffset(),
             msg.termLength(),
-            msg.mtuLength());
+            msg.mtuLength(),
+            msg.ttl());
     }
 
     private static String dissect(final PublicationMessageFlyweight msg)

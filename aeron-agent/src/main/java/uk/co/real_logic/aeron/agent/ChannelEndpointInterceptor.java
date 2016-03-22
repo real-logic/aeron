@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import net.bytebuddy.implementation.bind.annotation.This;
 import uk.co.real_logic.aeron.driver.event.EventCode;
 import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
@@ -59,38 +58,29 @@ public class ChannelEndpointInterceptor
 
     public static class SendChannelEndpointInterceptor
     {
-        public static void send(@This SendChannelEndpoint channelEndpoint, final ByteBuffer buffer)
+        public static void presend(final ByteBuffer buffer, final InetSocketAddress address)
         {
-            EventLogger.LOGGER.logFrameOut(buffer, channelEndpoint.connectAddress());
+            EventLogger.LOGGER.logFrameOut(buffer, address);
         }
 
-        public static void dispatch(
-            @This SendChannelEndpoint channelEndpoint,
-            final UnsafeBuffer buffer,
-            final int length,
-            final InetSocketAddress srcAddress)
+        public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
         {
-            EventLogger.LOGGER.logFrameIn(channelEndpoint.receiveByteBuffer(), 0, length, srcAddress);
+            EventLogger.LOGGER.logFrameIn(buffer, 0, length, srcAddress);
         }
     }
 
     public static class ReceiveChannelEndpointInterceptor
     {
         public static void sendTo(
-            @This ReceiveChannelEndpoint channelEndpoint,
             final ByteBuffer buffer,
             final InetSocketAddress address)
         {
             EventLogger.LOGGER.logFrameOut(buffer, address);
         }
 
-        public static void dispatch(
-            @This ReceiveChannelEndpoint channelEndpoint,
-            final UnsafeBuffer buffer,
-            final int length, final
-            InetSocketAddress srcAddress)
+        public static void dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
         {
-            EventLogger.LOGGER.logFrameIn(channelEndpoint.receiveByteBuffer(), 0, length, srcAddress);
+            EventLogger.LOGGER.logFrameIn(buffer, 0, length, srcAddress);
         }
     }
 }

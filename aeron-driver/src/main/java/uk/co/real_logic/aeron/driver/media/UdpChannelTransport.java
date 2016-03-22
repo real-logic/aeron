@@ -153,16 +153,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveDatagramChannel;
     }
 
-    public InetSocketAddress connectAddress()
-    {
-        return connectAddress;
-    }
-
-    public ByteBuffer receiveByteBuffer()
-    {
-        return receiveByteBuffer;
-    }
-
     public int multicastTtl()
     {
         return udpChannel.multicastTtl();

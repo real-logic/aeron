@@ -37,6 +37,7 @@ import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.*;
  * Aggregator of multiple subscriptions onto a single transport session for receiving of data and setup frames
  * plus sending status and NAK frames.
  */
+@EventLog
 public class ReceiveChannelEndpoint extends UdpChannelTransport
 {
     private final DataPacketDispatcher dispatcher;

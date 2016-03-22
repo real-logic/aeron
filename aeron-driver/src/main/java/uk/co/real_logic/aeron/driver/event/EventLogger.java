@@ -80,7 +80,7 @@ public class EventLogger
     }
 
     public void logFrameIn(
-        final ByteBuffer buffer,
+        final DirectBuffer buffer,
         final int offset,
         final int length,
         final InetSocketAddress dstAddress)
@@ -94,21 +94,6 @@ public class EventLogger
         }
     }
 
-    public void logFrameInDropped(
-        final ByteBuffer buffer,
-        final int offset,
-        final int length,
-        final InetSocketAddress dstAddress)
-    {
-        if (IS_FRAME_IN_DROPPED_ENABLED)
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
-
-            ringBuffer.write(FRAME_IN_DROPPED.id(), encodedBuffer, 0, encodedLength);
-        }
-    }
-
     public void logFrameOut(final ByteBuffer buffer, final InetSocketAddress dstAddress)
     {
         if (IS_FRAME_OUT_ENABLED)
@@ -118,21 +103,6 @@ public class EventLogger
                 EventEncoder.encode(encodedBuffer, buffer, buffer.position(), buffer.remaining(), dstAddress);
 
             ringBuffer.write(FRAME_OUT.id(), encodedBuffer, 0, encodedLength);
-        }
-    }
-
-    public void logFrameOutDropped(
-        final ByteBuffer buffer,
-        final int offset,
-        final int length,
-        final InetSocketAddress dstAddress)
-    {
-        if (IS_FRAME_OUT_DROPPED_ENABLED)
-        {
-            final MutableDirectBuffer encodedBuffer = ENCODING_BUFFER.get();
-            final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length, dstAddress);
-
-            ringBuffer.write(FRAME_IN_DROPPED.id(), encodedBuffer, 0, encodedLength);
         }
     }
 

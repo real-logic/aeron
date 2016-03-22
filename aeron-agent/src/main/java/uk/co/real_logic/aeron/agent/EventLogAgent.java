@@ -21,17 +21,14 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
 import net.bytebuddy.matcher.BooleanMatcher;
+import uk.co.real_logic.aeron.driver.EventLog;
 import uk.co.real_logic.aeron.driver.event.EventConfiguration;
-import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.agrona.concurrent.AgentRunner;
 import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
 
 import java.lang.instrument.Instrumentation;
 
-import static net.bytebuddy.matcher.ElementMatchers.isSubTypeOf;
-import static net.bytebuddy.matcher.ElementMatchers.nameEndsWith;
-import static net.bytebuddy.matcher.ElementMatchers.named;
+import static net.bytebuddy.matcher.ElementMatchers.*;
 
 public class EventLogAgent
 {
@@ -127,20 +124,13 @@ public class EventLogAgent
                             .method(named("closeReceiveChannelEndpoint"))
                             .intercept(MethodDelegation.to(ChannelEndpointInterceptor.ReceiverProxyInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE)))
-                .type(isSubTypeOf(SendChannelEndpoint.class))
+                .type(inheritsAnnotation(EventLog.class))
                 .transform(
                     (builder, typeDescription, classLoader) ->
                         builder
-                            .method(named("send"))
+                            .method(named("presend"))
                             .intercept(MethodDelegation.to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE))
-                            .method(named("dispatch"))
-                            .intercept(MethodDelegation.to(ChannelEndpointInterceptor.SendChannelEndpointInterceptor.class)
-                                .andThen(SuperMethodCall.INSTANCE)))
-                .type(isSubTypeOf(ReceiveChannelEndpoint.class))
-                .transform(
-                    (builder, typeDescription, classLoader) ->
-                        builder
                             .method(named("sendTo"))
                             .intercept(MethodDelegation.to(ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.class)
                                 .andThen(SuperMethodCall.INSTANCE))

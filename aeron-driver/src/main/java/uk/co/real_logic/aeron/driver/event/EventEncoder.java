@@ -63,6 +63,23 @@ public class EventEncoder
         return relativeOffset;
     }
 
+    public static int encode(
+        final MutableDirectBuffer encodingBuffer,
+        final DirectBuffer buffer,
+        final int offset,
+        final int bufferLength,
+        final InetSocketAddress dstAddress)
+    {
+        final int captureLength = determineCaptureLength(bufferLength);
+        int relativeOffset = encodeLogHeader(encodingBuffer, captureLength, bufferLength);
+
+        relativeOffset += encodeSocketAddress(encodingBuffer, relativeOffset, dstAddress);
+        encodingBuffer.putBytes(relativeOffset, buffer, offset, captureLength);
+        relativeOffset += captureLength;
+
+        return relativeOffset;
+    }
+
     public static int encode(final MutableDirectBuffer encodingBuffer, final String value)
     {
         final int length = encodingBuffer.putStringUtf8(LOG_HEADER_LENGTH, value, LITTLE_ENDIAN);

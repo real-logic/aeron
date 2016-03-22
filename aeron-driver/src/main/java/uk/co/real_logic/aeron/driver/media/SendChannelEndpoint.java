@@ -42,6 +42,7 @@ import static uk.co.real_logic.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_
  * Aggregator of multiple {@link NetworkPublication}s onto a single transport session for
  * sending data and setup frames plus the receiving of status and NAK frames.
  */
+@EventLog
 public class SendChannelEndpoint extends UdpChannelTransport
 {
     private final NakFlyweight nakMessage;
@@ -158,6 +159,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         int byteSent = 0;
         try
         {
+            presend(buffer, connectAddress);
             byteSent = sendDatagramChannel.write(buffer);
         }
         catch (final PortUnreachableException | ClosedChannelException ex)
@@ -170,6 +172,13 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
 
         return byteSent;
+    }
+
+    /*
+     * Method used as a hook for logging.
+     */
+    protected void presend(final ByteBuffer buffer, final InetSocketAddress address)
+    {
     }
 
     public int pollForData()

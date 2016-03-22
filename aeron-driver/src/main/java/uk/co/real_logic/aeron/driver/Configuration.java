@@ -15,7 +15,6 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.agrona.BitUtil;
 import uk.co.real_logic.agrona.LangUtil;
 import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
@@ -398,8 +397,6 @@ public class Configuration
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.SendChannelEndpoint.supplier";
 
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
-        EventLogger.IS_FRAME_LOGGING_ENABLED ?
-            "uk.co.real_logic.aeron.driver.ext.DebugSendChannelEndpointSupplier" :
             "uk.co.real_logic.aeron.driver.DefaultSendChannelEndpointSupplier";
 
     public static final String SEND_CHANNEL_ENDPOINT_SUPPLIER = getProperty(
@@ -408,8 +405,6 @@ public class Configuration
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME = "aeron.ReceiveChannelEndpoint.supplier";
 
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT =
-        EventLogger.IS_FRAME_LOGGING_ENABLED ?
-            "uk.co.real_logic.aeron.driver.ext.DebugReceiveChannelEndpointSupplier" :
             "uk.co.real_logic.aeron.driver.DefaultReceiveChannelEndpointSupplier";
 
     public static final String RECEIVE_CHANNEL_ENDPOINT_SUPPLIER = getProperty(

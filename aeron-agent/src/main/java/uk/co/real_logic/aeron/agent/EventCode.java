@@ -41,8 +41,6 @@ public enum EventCode
 
     REMOVE_IMAGE_CLEANUP(16, EventDissector::dissectAsString),
     CMD_OUT_ON_UNAVAILABLE_IMAGE(17, EventDissector::dissectAsCommand),
-    FRAME_IN_DROPPED(18, EventDissector::dissectAsFrame),
-    FRAME_OUT_DROPPED(19, EventDissector::dissectAsFrame),
 
     SEND_CHANNEL_CREATION(23, EventDissector::dissectAsString),
     RECEIVE_CHANNEL_CREATION(24, EventDissector::dissectAsString),

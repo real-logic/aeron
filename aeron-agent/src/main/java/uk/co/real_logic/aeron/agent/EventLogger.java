@@ -20,7 +20,6 @@ import uk.co.real_logic.agrona.MutableDirectBuffer;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
 import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
 
-import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
@@ -36,17 +35,8 @@ public class EventLogger
     public static final boolean IS_FRAME_IN_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_IN.tagBit()) == FRAME_IN.tagBit();
 
-    public static final boolean IS_FRAME_IN_DROPPED_ENABLED =
-        (ENABLED_EVENT_CODES & FRAME_IN_DROPPED.tagBit()) == FRAME_IN_DROPPED.tagBit();
-
     public static final boolean IS_FRAME_OUT_ENABLED =
         (ENABLED_EVENT_CODES & FRAME_OUT.tagBit()) == FRAME_OUT.tagBit();
-
-    public static final boolean IS_FRAME_OUT_DROPPED_ENABLED =
-        (ENABLED_EVENT_CODES & FRAME_OUT_DROPPED.tagBit()) == FRAME_OUT_DROPPED.tagBit();
-
-    public static final boolean IS_FRAME_LOGGING_ENABLED =
-        IS_FRAME_IN_ENABLED || IS_FRAME_IN_DROPPED_ENABLED || IS_FRAME_OUT_ENABLED || IS_FRAME_OUT_DROPPED_ENABLED;
 
     public static final EventLogger LOGGER = new EventLogger(EventConfiguration.EVENT_RING_BUFFER);
 
@@ -68,14 +58,6 @@ public class EventLogger
             final int encodedLength = EventEncoder.encode(encodedBuffer, buffer, offset, length);
 
             ringBuffer.write(code.id(), encodedBuffer, 0, encodedLength);
-        }
-    }
-
-    public void log(final EventCode code, final File file)
-    {
-        if (isEnabled(code, ENABLED_EVENT_CODES))
-        {
-            logString(code, file.toString());
         }
     }
 

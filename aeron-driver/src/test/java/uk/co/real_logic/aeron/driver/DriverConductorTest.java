@@ -115,8 +115,8 @@ public class DriverConductorTest
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
-            .unicastFlowControlSupplier(UnicastFlowControl::new)
-            .multicastFlowControlSupplier(MaxMulticastFlowControl::new)
+            .unicastFlowControlSupplier(Configuration.unicastFlowControlSupplier())
+            .multicastFlowControlSupplier(Configuration.multicastFlowControlSupplier())
                 // TODO: remove
             .toConductorFromReceiverCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))
             .toConductorFromSenderCommandQueue(new OneToOneConcurrentArrayQueue<>(1024))

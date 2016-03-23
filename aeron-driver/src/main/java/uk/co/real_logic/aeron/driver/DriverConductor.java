@@ -520,6 +520,11 @@ public class DriverConductor implements Agent
                 initialTermId,
                 context.publicationTermBufferLength());
 
+            final FlowControl flowControl =
+                udpChannel.isMulticast() ?
+                    context.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
+                    context.unicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId);
+
             publication = new NetworkPublication(
                 channelEndpoint,
                 nanoClock,
@@ -532,8 +537,7 @@ public class DriverConductor implements Agent
                 initialTermId,
                 context.mtuLength(),
                 context.systemCounters(),
-                udpChannel.isMulticast() ?
-                    context.multicastFlowControlSupplier().get() : context.unicastFlowControlSupplier().get(),
+                flowControl,
                 retransmitHandler);
 
             channelEndpoint.addPublication(publication);

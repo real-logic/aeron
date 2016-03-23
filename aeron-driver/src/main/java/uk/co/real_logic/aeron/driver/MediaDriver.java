@@ -47,7 +47,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static java.lang.Boolean.getBoolean;
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
@@ -431,8 +430,8 @@ public final class MediaDriver implements AutoCloseable
         private RawLogFactory rawLogFactory;
         private DataTransportPoller dataTransportPoller;
         private ControlTransportPoller controlTransportPoller;
-        private Supplier<FlowControl> unicastFlowControlSupplier;
-        private Supplier<FlowControl> multicastFlowControlSupplier;
+        private FlowControlSupplier unicastFlowControlSupplier;
+        private FlowControlSupplier multicastFlowControlSupplier;
         private EpochClock epochClock;
         private NanoClock nanoClock;
         private OneToOneConcurrentArrayQueue<DriverConductorCmd> toConductorFromReceiverCommandQueue;
@@ -589,12 +588,12 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == unicastFlowControlSupplier)
             {
-                unicastFlowControlSupplier = Configuration::unicastFlowControlSupplier;
+                unicastFlowControlSupplier = Configuration.unicastFlowControlSupplier();
             }
 
             if (null == multicastFlowControlSupplier)
             {
-                multicastFlowControlSupplier = Configuration::multicastFlowControlSupplier;
+                multicastFlowControlSupplier = Configuration.multicastFlowControlSupplier();
             }
 
             if (0 == ipcPublicationTermBufferLength)
@@ -677,13 +676,13 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context unicastFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
+        public Context unicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
         {
             this.unicastFlowControlSupplier = senderFlowControl;
             return this;
         }
 
-        public Context multicastFlowControlSupplier(final Supplier<FlowControl> senderFlowControl)
+        public Context multicastFlowControlSupplier(final FlowControlSupplier senderFlowControl)
         {
             this.multicastFlowControlSupplier = senderFlowControl;
             return this;
@@ -919,12 +918,12 @@ public final class MediaDriver implements AutoCloseable
             return controlTransportPoller;
         }
 
-        public Supplier<FlowControl> unicastFlowControlSupplier()
+        public FlowControlSupplier unicastFlowControlSupplier()
         {
             return unicastFlowControlSupplier;
         }
 
-        public Supplier<FlowControl> multicastFlowControlSupplier()
+        public FlowControlSupplier multicastFlowControlSupplier()
         {
             return multicastFlowControlSupplier;
         }

@@ -380,6 +380,21 @@ public class Configuration
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY = getProperty(
         MULTICAST_FLOW_CONTROL_STRATEGY_PROP_NAME, "uk.co.real_logic.aeron.driver.MaxMulticastFlowControl");
 
+
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME =
+        "aeron.unicast.FlowControl.supplier";
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT =
+        "uk.co.real_logic.aeron.driver.DefaultUnicastFlowControlSupplier";
+    public static final String UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
+        UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT);
+
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME =
+        "aeron.multicast.FlowControl.supplier";
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT =
+        "uk.co.real_logic.aeron.driver.DefaultMulticastFlowControlSupplier";
+    public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
+        MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT);
+
     /** Length of the maximum transmission unit of the media driver's protocol */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
     public static final int MTU_LENGTH_DEFAULT = 4096;
@@ -497,36 +512,6 @@ public class Configuration
         return agentIdleStrategy(SHARED_IDLE_STRATEGY);
     }
 
-    public static FlowControl unicastFlowControlSupplier()
-    {
-        FlowControl flowControl = null;
-        try
-        {
-            flowControl = (FlowControl)Class.forName(UNICAST_FLOW_CONTROL_STRATEGY).newInstance();
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return flowControl;
-    }
-
-    public static FlowControl multicastFlowControlSupplier()
-    {
-        FlowControl flowControl = null;
-        try
-        {
-            flowControl = (FlowControl)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY).newInstance();
-        }
-        catch (final Exception ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
-        }
-
-        return flowControl;
-    }
-
     public static int termBufferLength()
     {
         return getInteger(TERM_BUFFER_LENGTH_PROP_NAME, TERM_BUFFER_LENGTH_DEFAULT);
@@ -607,6 +592,48 @@ public class Configuration
         try
         {
             supplier = (ReceiveChannelEndpointSupplier)Class.forName(RECEIVE_CHANNEL_ENDPOINT_SUPPLIER).newInstance();
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return supplier;
+    }
+
+    /**
+     * Get the supplier of {@link FlowControl}s which can be used for changing behavior of flow control for unicast
+     * publications.
+     *
+     * @return the {@link FlowControlSupplier}.
+     */
+    public static FlowControlSupplier unicastFlowControlSupplier()
+    {
+        FlowControlSupplier supplier = null;
+        try
+        {
+            supplier = (FlowControlSupplier) Class.forName(UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER).newInstance();
+        }
+        catch (final Exception ex)
+        {
+            LangUtil.rethrowUnchecked(ex);
+        }
+
+        return supplier;
+    }
+
+    /**
+     * Get the supplier of {@link FlowControl}s which can be used for changing behavior of flow control for unicast
+     * publications.
+     *
+     * @return the {@link FlowControlSupplier}.
+     */
+    public static FlowControlSupplier multicastFlowControlSupplier()
+    {
+        FlowControlSupplier supplier = null;
+        try
+        {
+            supplier = (FlowControlSupplier) Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {

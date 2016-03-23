@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import uk.co.real_logic.aeron.driver.event.EventCode;
-import uk.co.real_logic.aeron.driver.event.EventConfiguration;
 import uk.co.real_logic.agrona.concurrent.Agent;
 import uk.co.real_logic.agrona.concurrent.MessageHandler;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.event;
+package uk.co.real_logic.aeron.agent;
 
 import uk.co.real_logic.agrona.DirectBuffer;
 import uk.co.real_logic.agrona.MutableDirectBuffer;
@@ -24,7 +24,7 @@ import java.io.File;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.aeron.driver.event.EventCode.*;
+import static uk.co.real_logic.aeron.agent.EventCode.*;
 
 /**
  * Event logger interface for applications/libraries

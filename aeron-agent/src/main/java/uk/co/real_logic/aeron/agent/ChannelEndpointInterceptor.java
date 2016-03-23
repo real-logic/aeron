@@ -15,8 +15,6 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import uk.co.real_logic.aeron.driver.event.EventCode;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
 import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;

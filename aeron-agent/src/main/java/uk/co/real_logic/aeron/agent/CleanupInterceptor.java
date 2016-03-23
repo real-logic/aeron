@@ -18,7 +18,6 @@ package uk.co.real_logic.aeron.agent;
 import uk.co.real_logic.aeron.driver.NetworkPublication;
 import uk.co.real_logic.aeron.driver.PublicationImage;
 import uk.co.real_logic.aeron.driver.SubscriptionLink;
-import uk.co.real_logic.aeron.driver.event.EventLogger;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 
 public class CleanupInterceptor

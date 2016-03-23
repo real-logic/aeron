@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package uk.co.real_logic.aeron.driver.event;
+package uk.co.real_logic.aeron.agent;
 
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 import java.util.EnumSet;
@@ -22,16 +23,16 @@ import java.util.Set;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
-import static uk.co.real_logic.aeron.driver.event.EventCode.FRAME_IN;
-import static uk.co.real_logic.aeron.driver.event.EventCode.FRAME_OUT;
-import static uk.co.real_logic.aeron.driver.event.EventConfiguration.*;
+import static uk.co.real_logic.aeron.agent.EventCode.FRAME_IN;
+import static uk.co.real_logic.aeron.agent.EventCode.FRAME_OUT;
+import static uk.co.real_logic.aeron.agent.EventConfiguration.*;
 
 public class EventConfigurationTest
 {
     @Test
     public void nullPropertyShouldDefaultToProductionEventCodes()
     {
-        assertThat(getEnabledEventCodes(null), is(EnumSet.noneOf(EventCode.class)));
+        assertThat(getEnabledEventCodes(null), Matchers.is(EnumSet.noneOf(EventCode.class)));
     }
 
     @Test(expected = IllegalArgumentException.class)

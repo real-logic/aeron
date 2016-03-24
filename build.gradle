@@ -391,6 +391,48 @@ project(':aeron-agent') {
         }
     }
 
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+    }
+
+    uploadShadow {
+        repositories {
+            mavenDeployer {
+                beforeDeployment {
+                    MavenDeployment deployment -> signing.signPom(deployment)
+                }
+
+                repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                snapshotRepository(url: "https://oss.sonatype.org/content/repositories/snapshots/") {
+                    authentication(userName: ossrhUsername, password: ossrhPassword)
+                }
+
+                pom.project(projectPom)
+            }
+        }
+
+        mustRunAfter 'uploadArchives'
+    }
+
     task sourcesJar(type: Jar) {
         classifier = 'sources'
         from sourceSets.main.allSource
@@ -480,7 +522,8 @@ project(':aeron-all') {
 
 task uploadToMavenCentral {
     dependsOn 'aeron-client:uploadArchives', 'aeron-driver:uploadArchives', 'aeron-samples:uploadArchives',
-            'aeron-system-tests:uploadArchives', 'aeron-all:uploadArchives', 'aeron-all:uploadShadow'
+            'aeron-system-tests:uploadArchives', 'aeron-all:uploadArchives', 'aeron-all:uploadShadow',
+            'aeron-agent:uploadArchives', 'aeron-agent:uploadShadow'
 }
 
 task wrapper(type: Wrapper) {

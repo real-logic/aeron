@@ -387,7 +387,7 @@ project(':aeron-agent') {
         dependencies {
             exclude(project(':aeron-client'))
             exclude(project(':aeron-driver'))
-            exclude(dependency('uk.co.real-logic:Agrona'))
+            exclude(dependency('org.agrona:Agrona'))
         }
     }
 

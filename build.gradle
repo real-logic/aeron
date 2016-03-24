@@ -20,7 +20,7 @@ plugins {
 
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
-def aeronGroup = 'uk.co.real-logic'
+def aeronGroup = 'io.aeron'
 def aeronVersion = '0.9.5-SNAPSHOT'
 
 group = aeronGroup
@@ -213,7 +213,7 @@ project(':aeron-client') {
 project(':aeron-driver') {
     apply plugin: 'application'
 
-    mainClassName = 'uk.co.real_logic.aeron.driver.MediaDriver'
+    mainClassName = 'io.aeron.driver.MediaDriver'
 
     dependencies {
         compile project(':aeron-client')
@@ -376,8 +376,8 @@ project(':aeron-agent') {
     jar {
         manifest {
             attributes(
-                "Premain-Class" : "uk.co.real_logic.aeron.agent.EventLogAgent",
-                "Agent-Class" : "uk.co.real_logic.aeron.agent.EventLogAgent",
+                "Premain-Class" : "io.aeron.agent.EventLogAgent",
+                "Agent-Class" : "io.aeron.agent.EventLogAgent",
                 "Can-Redefine-Classes" : "true",
                 "Can-Retransform-Classes" : "true")
         }

@@ -36,7 +36,7 @@ The latest release and **downloads** can be found in [Maven Central](http://sear
 
 License (See LICENSE file for full license)
 -------------------------------------------
-Copyright 2014 - 2015 Real Logic Limited
+Copyright 2014 - 2016 Real Logic Limited
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -124,23 +124,23 @@ Running Samples
 
 Start up a media driver which will create the data and conductor directories. On Linux, this will probably be in `/dev/shm/aeron` or `/tmp/aeron`.
 
-    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.driver.MediaDriver
+    $ java -cp aeron-samples/build/libs/samples.jar MediaDriver
 
 Alternatively, specify the data and conductor directories. The following example uses the shared memory 'directory' on Linux, but you could just as easily point to the regular filesystem.
 
-    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir=/dev/shm/aeron uk.co.real_logic.aeron.driver.MediaDriver
+    $ java -cp aeron-samples/build/libs/samples.jar -Daeron.dir=/dev/shm/aeron MediaDriver
 
 You can run the `BasicSubscriber` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 
-    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.samples.BasicSubscriber
+    $ java -cp aeron-samples/build/libs/samples.jar BasicSubscriber
     
 You can run the `BasicPublisher` from a command line. On Linux, this will be pointing to the `/dev/shm` shared memory directory, so be sure your `MediaDriver` is doing the same!
 
-    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.samples.BasicPublisher
+    $ java -cp aeron-samples/build/libs/samples.jar BasicPublisher
 
 You can run the `AeronStat` utility to read system counters from a command line
     
-    $ java -cp aeron-samples/build/libs/samples.jar uk.co.real_logic.aeron.samples.AeronStat
+    $ java -cp aeron-samples/build/libs/samples.jar AeronStat
 
 
 Media Driver Packaging

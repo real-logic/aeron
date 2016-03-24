@@ -25,15 +25,14 @@ import java.util.regex.Pattern;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
-import io.aeron.driver.status.*;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.SigInt;
 
 import static io.aeron.CncFileDescriptor.*;
-import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.StreamPositionCounter.*;
+import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
 import static io.aeron.driver.status.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 
@@ -45,7 +44,7 @@ import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE
  * This tool accepts filters on the command line, e.g. for connections only see example below:
  *
  * <code>
- *     java -cp aeron-samples/build/libs/samples.jar AeronStat type=[1-4] identity=12345
+ *     java -cp aeron-samples/build/libs/samples.jar io.aeron.samples.AeronStat type=[1-4] identity=12345
  * </code>
  */
 public class AeronStat

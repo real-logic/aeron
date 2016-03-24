@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 

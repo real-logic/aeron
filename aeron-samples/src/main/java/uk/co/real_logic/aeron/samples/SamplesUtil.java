@@ -19,9 +19,9 @@ import uk.co.real_logic.aeron.Image;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;

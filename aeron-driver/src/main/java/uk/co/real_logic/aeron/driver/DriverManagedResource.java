@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.ManagedResource;
+import org.agrona.ManagedResource;
 
 public interface DriverManagedResource extends ManagedResource
 {

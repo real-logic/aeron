@@ -19,10 +19,10 @@ import org.junit.After;
 import org.junit.Test;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.collections.MutableInteger;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.BitUtil;
+import org.agrona.LangUtil;
+import org.agrona.collections.MutableInteger;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

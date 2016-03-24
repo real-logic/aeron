@@ -18,8 +18,8 @@ package uk.co.real_logic.aeron.samples;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.CloseHelper;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples.raw;
 
-import uk.co.real_logic.agrona.concurrent.SigInt;
+import org.agrona.concurrent.SigInt;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static uk.co.real_logic.aeron.driver.Configuration.MTU_LENGTH_DEFAULT;
 import static uk.co.real_logic.aeron.samples.raw.Common.init;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Benchmark used to calculate latency of underlying system.

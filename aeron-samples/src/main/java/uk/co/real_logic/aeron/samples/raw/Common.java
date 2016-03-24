@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.samples.raw;
 
-import uk.co.real_logic.agrona.nio.NioSelectedKeySet;
-import uk.co.real_logic.agrona.IoUtil;
+import org.agrona.nio.NioSelectedKeySet;
+import org.agrona.IoUtil;
 
 import java.io.File;
 import java.io.IOException;

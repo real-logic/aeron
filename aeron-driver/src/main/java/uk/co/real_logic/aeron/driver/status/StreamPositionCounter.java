@@ -15,16 +15,16 @@
  */
 package uk.co.real_logic.aeron.driver.status;
 
-import uk.co.real_logic.agrona.concurrent.status.CountersManager;
-import uk.co.real_logic.agrona.concurrent.status.CountersReader;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.UnsafeBufferPosition;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.nio.charset.StandardCharsets;
 
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Allocates {@link Position} counters on a stream of messages.

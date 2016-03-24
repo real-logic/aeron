@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron.logbuffer;
 
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.BitUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;

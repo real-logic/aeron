@@ -25,8 +25,8 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.BitUtil;
+import org.agrona.LangUtil;
 
 import java.net.*;
 import java.util.HashMap;

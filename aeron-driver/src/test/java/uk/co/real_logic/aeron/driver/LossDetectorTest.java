@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static org.agrona.BitUtil.align;
 
 public class LossDetectorTest
 {

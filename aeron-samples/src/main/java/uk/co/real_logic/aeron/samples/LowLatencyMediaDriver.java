@@ -17,9 +17,9 @@ package uk.co.real_logic.aeron.samples;
 
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.SigIntBarrier;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.SigIntBarrier;
 
 /**
  * Sample setup for a {@link MediaDriver} that is configured for low latency communications.

@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver.status;
 
-import uk.co.real_logic.agrona.concurrent.status.CountersManager;
-import uk.co.real_logic.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.Position;
 
 public class SubscriberPos
 {

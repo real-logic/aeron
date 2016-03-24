@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 /**
  * Function for handling a block of message fragments scanned from the log.

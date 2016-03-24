@@ -17,11 +17,11 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.*;
 import uk.co.real_logic.aeron.logbuffer.ControlledFragmentHandler.Action;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.ManagedResource;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.Position;
+import org.agrona.BitUtil;
+import org.agrona.ErrorHandler;
+import org.agrona.ManagedResource;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 
 import java.nio.channels.FileChannel;
 

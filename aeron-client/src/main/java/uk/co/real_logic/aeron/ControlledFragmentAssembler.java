@@ -17,8 +17,8 @@ package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.ControlledFragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.function.IntFunction;
 

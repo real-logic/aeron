@@ -17,9 +17,9 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.ErrorCode;
 import uk.co.real_logic.aeron.command.*;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.broadcast.BroadcastTransmitter;
 
 import java.nio.ByteBuffer;
 import java.util.List;

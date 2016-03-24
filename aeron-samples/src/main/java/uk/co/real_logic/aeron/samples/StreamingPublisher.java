@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.samples;
 
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
@@ -27,10 +27,10 @@ import java.util.function.IntSupplier;
 import uk.co.real_logic.aeron.Aeron;
 import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
+import org.agrona.CloseHelper;
+import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.console.ContinueBarrier;
 
 /**
  * Publisher that sends as fast as possible a given number of messages at a given length.

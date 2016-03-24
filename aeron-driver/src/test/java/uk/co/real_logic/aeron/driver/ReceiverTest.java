@@ -35,14 +35,14 @@ import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.NanoClock;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
-import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -58,7 +58,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.driver.LogBufferHelper.newTestLogBuffers;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static org.agrona.BitUtil.align;
 
 public class ReceiverTest
 {

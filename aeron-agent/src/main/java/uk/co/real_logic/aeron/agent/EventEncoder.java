@@ -15,15 +15,15 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Encoding of event types to a buffer for logging.

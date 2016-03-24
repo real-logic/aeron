@@ -24,8 +24,8 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;

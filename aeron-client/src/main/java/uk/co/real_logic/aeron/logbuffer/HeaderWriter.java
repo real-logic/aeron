@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.UnsafeAccess;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.UnsafeAccess;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 

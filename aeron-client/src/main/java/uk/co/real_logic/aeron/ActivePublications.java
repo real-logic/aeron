@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.*;
 
 import static java.util.stream.Collectors.toList;
-import static uk.co.real_logic.agrona.collections.CollectionUtil.getOrDefault;
+import static org.agrona.collections.CollectionUtil.getOrDefault;
 
 /**
  * Map for navigating to active {@link Publication}s.

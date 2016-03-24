@@ -24,9 +24,9 @@ import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.StatusMessageFlyweight;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.BitUtil;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

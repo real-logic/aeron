@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 
 /**
  * Event types and encoding/decoding

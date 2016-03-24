@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.collections.ArrayUtil;
+import org.agrona.LangUtil;
+import org.agrona.collections.ArrayUtil;
 
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;

@@ -15,10 +15,10 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

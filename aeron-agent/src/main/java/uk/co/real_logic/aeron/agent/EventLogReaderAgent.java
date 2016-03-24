@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.agent;
 
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.MessageHandler;
 
 import java.util.function.Consumer;
 

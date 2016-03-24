@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.BitUtil;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;

@@ -25,10 +25,10 @@ import java.util.regex.Pattern;
 
 import uk.co.real_logic.aeron.CncFileDescriptor;
 import uk.co.real_logic.aeron.CommonContext;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.status.CountersReader;
-import uk.co.real_logic.agrona.concurrent.SigInt;
+import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.status.CountersReader;
+import org.agrona.concurrent.SigInt;
 
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
 import static uk.co.real_logic.aeron.driver.status.StreamPositionCounter.*;

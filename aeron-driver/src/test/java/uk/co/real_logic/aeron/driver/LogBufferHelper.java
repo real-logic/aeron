@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.stream.Stream;

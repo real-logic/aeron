@@ -32,8 +32,8 @@ import uk.co.real_logic.aeron.driver.ext.LossGenerator;
 import uk.co.real_logic.aeron.logbuffer.FileBlockHandler;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.BitUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.channels.FileChannel;
 import java.util.concurrent.CountDownLatch;
@@ -45,7 +45,7 @@ import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_INT;
 
 /**
  * Test that has a publisher and subscriber and single media driver for unicast and multicast cases

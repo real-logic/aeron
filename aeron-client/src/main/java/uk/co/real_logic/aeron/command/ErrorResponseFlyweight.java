@@ -16,8 +16,8 @@
 package uk.co.real_logic.aeron.command;
 
 import uk.co.real_logic.aeron.ErrorCode;
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.BitUtil;
+import org.agrona.MutableDirectBuffer;
 
 /**
  * Control message flyweight for any errors sent from driver to clients

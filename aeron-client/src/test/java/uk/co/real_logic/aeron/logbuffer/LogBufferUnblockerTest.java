@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.logbuffer;
 
 import org.junit.Before;
 import org.junit.Test;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 

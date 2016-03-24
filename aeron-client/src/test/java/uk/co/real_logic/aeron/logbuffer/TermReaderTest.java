@@ -20,15 +20,15 @@ import org.junit.Test;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static org.agrona.BitUtil.align;
 
 public class TermReaderTest
 {

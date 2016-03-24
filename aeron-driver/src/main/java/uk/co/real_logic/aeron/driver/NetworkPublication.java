@@ -24,11 +24,11 @@ import uk.co.real_logic.aeron.logbuffer.LogBufferUnblocker;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.EpochClock;
-import uk.co.real_logic.agrona.concurrent.NanoClock;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.EpochClock;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

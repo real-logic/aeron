@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron.protocol;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_SHORT;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 /**
  * Flyweight for general Aeron network protocol header

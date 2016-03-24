@@ -16,10 +16,10 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.command.*;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
-import uk.co.real_logic.agrona.collections.Long2LongHashMap;
-import uk.co.real_logic.agrona.concurrent.MessageHandler;
-import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.Long2LongHashMap;
+import org.agrona.concurrent.MessageHandler;
+import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 
 import static uk.co.real_logic.aeron.command.ControlProtocolEvents.*;
 

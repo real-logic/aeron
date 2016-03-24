@@ -19,7 +19,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
@@ -32,7 +32,7 @@ import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DAT
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 import static uk.co.real_logic.aeron.logbuffer.TermAppender.TRIPPED;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 public class TermAppenderTest
 {

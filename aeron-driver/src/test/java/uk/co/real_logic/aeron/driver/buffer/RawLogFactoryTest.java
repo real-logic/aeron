@@ -21,9 +21,9 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.driver.Configuration;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.errors.DistinctErrorLog;
 
 import java.io.File;
 import java.io.IOException;

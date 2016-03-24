@@ -17,10 +17,10 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.cmd.ReceiverCmd;
 import uk.co.real_logic.aeron.driver.media.*;
-import uk.co.real_logic.agrona.concurrent.Agent;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.NanoClock;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.Agent;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;

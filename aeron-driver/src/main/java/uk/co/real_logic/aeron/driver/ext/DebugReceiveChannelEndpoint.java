@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.driver.DataPacketDispatcher;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

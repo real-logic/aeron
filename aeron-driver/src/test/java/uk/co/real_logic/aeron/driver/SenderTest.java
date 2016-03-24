@@ -32,11 +32,11 @@ import uk.co.real_logic.aeron.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
-import uk.co.real_logic.agrona.concurrent.OneToOneConcurrentArrayQueue;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.status.AtomicLongPosition;
-import uk.co.real_logic.agrona.concurrent.status.Position;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.AtomicLongPosition;
+import org.agrona.concurrent.status.Position;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -49,7 +49,7 @@ import static org.hamcrest.core.Is.is;
 import static org.mockito.Mockito.*;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static org.agrona.BitUtil.align;
 
 public class SenderTest
 {

@@ -22,8 +22,8 @@ import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
 import net.bytebuddy.matcher.BooleanMatcher;
 import uk.co.real_logic.aeron.driver.EventLog;
-import uk.co.real_logic.agrona.concurrent.AgentRunner;
-import uk.co.real_logic.agrona.concurrent.SleepingIdleStrategy;
+import org.agrona.concurrent.AgentRunner;
+import org.agrona.concurrent.SleepingIdleStrategy;
 
 import java.lang.instrument.Instrumentation;
 

@@ -16,18 +16,18 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.exceptions.DriverTimeoutException;
-import uk.co.real_logic.agrona.*;
-import uk.co.real_logic.agrona.concurrent.*;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastReceiver;
-import uk.co.real_logic.agrona.concurrent.broadcast.CopyBroadcastReceiver;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.*;
+import org.agrona.concurrent.*;
+import org.agrona.concurrent.broadcast.BroadcastReceiver;
+import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.nio.MappedByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static uk.co.real_logic.agrona.IoUtil.mapExistingFile;
+import static org.agrona.IoUtil.mapExistingFile;
 
 /**
  * Aeron entry point for communicating to the Media Driver for creating {@link Publication}s and {@link Subscription}s.

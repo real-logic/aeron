@@ -27,16 +27,16 @@ import uk.co.real_logic.aeron.driver.media.ControlTransportPoller;
 import uk.co.real_logic.aeron.driver.media.DataTransportPoller;
 import uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor;
 import uk.co.real_logic.aeron.driver.status.SystemCounters;
-import uk.co.real_logic.agrona.ErrorHandler;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.*;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.status.CountersManager;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastTransmitter;
-import uk.co.real_logic.agrona.concurrent.errors.DistinctErrorLog;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBuffer;
+import org.agrona.ErrorHandler;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.*;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.broadcast.BroadcastTransmitter;
+import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
+import org.agrona.concurrent.ringbuffer.RingBuffer;
 
 import java.io.*;
 import java.net.StandardSocketOptions;
@@ -52,7 +52,7 @@ import static java.lang.Boolean.getBoolean;
 import static uk.co.real_logic.aeron.CncFileDescriptor.*;
 import static uk.co.real_logic.aeron.driver.Configuration.*;
 import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.*;
-import static uk.co.real_logic.agrona.IoUtil.mapNewFile;
+import static org.agrona.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based media driver

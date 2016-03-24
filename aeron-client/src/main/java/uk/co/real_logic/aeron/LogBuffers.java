@@ -15,9 +15,9 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.CloseHelper;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.nio.MappedByteBuffer;

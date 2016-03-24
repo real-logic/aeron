@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthOrdered;

@@ -15,11 +15,11 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameLengthVolatile;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static org.agrona.BitUtil.align;
 
 /**
  * Scan a term buffer for a block of messages including padding. The block must include complete messages.

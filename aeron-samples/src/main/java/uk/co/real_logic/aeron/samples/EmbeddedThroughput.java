@@ -28,9 +28,9 @@ import uk.co.real_logic.aeron.Publication;
 import uk.co.real_logic.aeron.Subscription;
 import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
-import uk.co.real_logic.agrona.concurrent.BusySpinIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
+import org.agrona.concurrent.BusySpinIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.console.ContinueBarrier;
 
 public class EmbeddedThroughput
 {

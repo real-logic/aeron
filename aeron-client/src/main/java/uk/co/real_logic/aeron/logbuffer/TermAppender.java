@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
 import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
@@ -28,7 +28,7 @@ import static uk.co.real_logic.aeron.logbuffer.FrameDescriptor.frameType;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_STATUS_OFFSET;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.*;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static org.agrona.BitUtil.align;
 
 /**
  * Term buffer appender which supports many producers concurrently writing an append-only log.

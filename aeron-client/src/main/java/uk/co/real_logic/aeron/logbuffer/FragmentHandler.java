@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.DirectBuffer;
+import org.agrona.DirectBuffer;
 
 /**
  * Handler for reading data that is coming from a log buffer. The frame will either contain a whole message

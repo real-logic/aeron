@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.media;
 
-import uk.co.real_logic.agrona.nio.TransportPoller;
+import org.agrona.nio.TransportPoller;
 
 import java.nio.channels.SelectionKey;
 

@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
+import org.agrona.collections.Int2ObjectHashMap;
 
 import java.util.ArrayList;
 import java.util.Collection;

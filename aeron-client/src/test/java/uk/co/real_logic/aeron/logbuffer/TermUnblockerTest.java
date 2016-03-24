@@ -18,7 +18,7 @@ package uk.co.real_logic.aeron.logbuffer;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.InOrder;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.Matchers.is;

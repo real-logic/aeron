@@ -18,13 +18,13 @@ package uk.co.real_logic.aeron.agent;
 import uk.co.real_logic.aeron.command.*;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 import uk.co.real_logic.aeron.protocol.*;
-import uk.co.real_logic.agrona.MutableDirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
 import java.net.InetAddress;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Dissect encoded log events. The event consumer of the log should be single threaded.

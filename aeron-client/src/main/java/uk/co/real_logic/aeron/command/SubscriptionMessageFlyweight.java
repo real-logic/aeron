@@ -15,8 +15,8 @@
  */
 package uk.co.real_logic.aeron.command;
 
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_INT;
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message for adding or removing a subscription.

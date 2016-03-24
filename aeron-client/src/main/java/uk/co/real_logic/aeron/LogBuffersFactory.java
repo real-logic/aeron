@@ -21,7 +21,7 @@ package uk.co.real_logic.aeron;
 interface LogBuffersFactory
 {
     /**
-     * Map a log file into memory and wrap each section with a {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer}.
+     * Map a log file into memory and wrap each section with a {@link org.agrona.concurrent.UnsafeBuffer}.
      *
      * @param logFileName to be mapped into memory.
      * @return a representation of the mapped log buffer.

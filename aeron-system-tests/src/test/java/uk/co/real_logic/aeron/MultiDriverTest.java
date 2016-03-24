@@ -22,8 +22,8 @@ import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.IoUtil;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.File;
 import java.util.UUID;

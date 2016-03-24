@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.Position;
 
 /**
  * Consumption position a subscriber has got to within a {@link SubscriptionLink}.

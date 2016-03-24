@@ -21,7 +21,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static java.lang.Integer.parseInt;
-import static uk.co.real_logic.agrona.Strings.parseIntOrDefault;
+import static org.agrona.Strings.parseIntOrDefault;
 
 public class SocketAddressUtil
 {

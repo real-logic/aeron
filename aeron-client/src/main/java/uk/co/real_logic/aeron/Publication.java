@@ -16,10 +16,10 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.*;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.ManagedResource;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
+import org.agrona.DirectBuffer;
+import org.agrona.ManagedResource;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.ReadablePosition;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;

@@ -20,12 +20,12 @@ import uk.co.real_logic.aeron.*;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
 import uk.co.real_logic.aeron.driver.MediaDriver;
-import uk.co.real_logic.agrona.CloseHelper;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.console.ContinueBarrier;
+import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.console.ContinueBarrier;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;

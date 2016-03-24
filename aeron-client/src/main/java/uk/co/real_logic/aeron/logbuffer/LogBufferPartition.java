@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.logbuffer;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.*;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.TERM_TAIL_COUNTER_OFFSET;
@@ -85,7 +85,7 @@ public class LogBufferPartition
 
     /**
      * Get the current tail value in a volatile memory ordering fashion. If raw tail is greater than
-     * {@link #termBuffer()}.{@link uk.co.real_logic.agrona.DirectBuffer#capacity()} then capacity will be returned.
+     * {@link #termBuffer()}.{@link org.agrona.DirectBuffer#capacity()} then capacity will be returned.
      *
      * @return the current tail value.
      */

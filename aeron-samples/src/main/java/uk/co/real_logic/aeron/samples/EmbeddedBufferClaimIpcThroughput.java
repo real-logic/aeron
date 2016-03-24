@@ -21,14 +21,14 @@ import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.NoOpIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.SigInt;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.NoOpIdleStrategy;
+import org.agrona.concurrent.SigInt;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 public class EmbeddedBufferClaimIpcThroughput
 {

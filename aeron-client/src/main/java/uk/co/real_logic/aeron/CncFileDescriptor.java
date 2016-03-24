@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 
-import static uk.co.real_logic.agrona.BitUtil.*;
+import static org.agrona.BitUtil.*;
 
 /**
  * Description of the command and control file used between driver and clients

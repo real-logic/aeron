@@ -28,7 +28,7 @@ import uk.co.real_logic.aeron.logbuffer.TermAppender;
 import uk.co.real_logic.aeron.logbuffer.TermRebuilder;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.HeaderFlyweight;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 import static org.mockito.Mockito.*;
-import static uk.co.real_logic.agrona.BitUtil.align;
+import static org.agrona.BitUtil.align;
 
 @RunWith(Theories.class)
 public class RetransmitHandlerTest

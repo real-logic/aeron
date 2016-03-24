@@ -15,12 +15,12 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.BitUtil;
-import uk.co.real_logic.agrona.LangUtil;
-import uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy;
-import uk.co.real_logic.agrona.concurrent.IdleStrategy;
-import uk.co.real_logic.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
-import uk.co.real_logic.agrona.concurrent.ringbuffer.RingBufferDescriptor;
+import org.agrona.BitUtil;
+import org.agrona.LangUtil;
+import org.agrona.concurrent.BackoffIdleStrategy;
+import org.agrona.concurrent.IdleStrategy;
+import org.agrona.concurrent.broadcast.BroadcastBufferDescriptor;
+import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.util.concurrent.TimeUnit;
 
@@ -34,7 +34,7 @@ import static uk.co.real_logic.aeron.driver.ThreadingMode.DEDICATED;
  */
 public class Configuration
 {
-    private static final String DEFAULT_IDLE_STRATEGY = "uk.co.real_logic.agrona.concurrent.BackoffIdleStrategy";
+    private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
     /**
      * Byte buffer length (in bytes) for reads.

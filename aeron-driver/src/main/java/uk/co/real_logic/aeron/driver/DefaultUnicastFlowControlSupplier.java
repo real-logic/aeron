@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.media.UdpChannel;
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.LangUtil;
 
 public class DefaultUnicastFlowControlSupplier implements FlowControlSupplier
 {

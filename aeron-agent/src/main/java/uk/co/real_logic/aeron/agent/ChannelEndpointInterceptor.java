@@ -17,7 +17,7 @@ package uk.co.real_logic.aeron.agent;
 
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.driver.media.SendChannelEndpoint;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;

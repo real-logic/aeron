@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron;
 
-import uk.co.real_logic.agrona.collections.Long2LongHashMap;
+import org.agrona.collections.Long2LongHashMap;
 
 /**
  * Callback interface for receiving messages from the driver.

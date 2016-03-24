@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.command;
 
-import static uk.co.real_logic.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
  * Control message for removing a Publication or Subscription.

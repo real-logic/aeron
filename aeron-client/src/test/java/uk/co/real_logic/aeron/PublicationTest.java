@@ -20,8 +20,8 @@ import org.junit.Test;
 import uk.co.real_logic.aeron.logbuffer.BufferClaim;
 import uk.co.real_logic.aeron.logbuffer.FrameDescriptor;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.ReadablePosition;
 
 import java.nio.ByteBuffer;
 

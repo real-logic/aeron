@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver.buffer;
 
-import uk.co.real_logic.agrona.IoUtil;
+import org.agrona.IoUtil;
 
 import java.io.File;
 

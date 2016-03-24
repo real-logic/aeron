@@ -19,9 +19,9 @@ import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
 import uk.co.real_logic.aeron.protocol.SetupFlyweight;
 import uk.co.real_logic.aeron.driver.exceptions.UnknownSubscriptionException;
-import uk.co.real_logic.agrona.collections.BiInt2ObjectMap;
-import uk.co.real_logic.agrona.collections.Int2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.collections.BiInt2ObjectMap;
+import org.agrona.collections.Int2ObjectHashMap;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.net.InetSocketAddress;
 

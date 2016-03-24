@@ -17,9 +17,9 @@ package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.status.SystemCounters;
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.collections.Long2ObjectHashMap;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
-import uk.co.real_logic.agrona.concurrent.NanoClock;
+import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.NanoClock;
 
 import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;

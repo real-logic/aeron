@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver.media;
 
 import org.junit.Test;
-import uk.co.real_logic.agrona.LangUtil;
+import org.agrona.LangUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;

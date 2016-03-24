@@ -21,7 +21,7 @@ import uk.co.real_logic.aeron.driver.uri.UriUtil;
 import uk.co.real_logic.aeron.driver.exceptions.InvalidChannelException;
 import uk.co.real_logic.aeron.driver.uri.AeronUri;
 import uk.co.real_logic.aeron.driver.uri.InterfaceSearchAddress;
-import uk.co.real_logic.agrona.BitUtil;
+import org.agrona.BitUtil;
 
 import java.net.*;
 import java.util.Collection;
@@ -31,8 +31,8 @@ import java.util.Map;
 import static java.lang.System.lineSeparator;
 import static java.net.InetAddress.getByAddress;
 import static uk.co.real_logic.aeron.driver.media.NetworkUtil.*;
-import static uk.co.real_logic.agrona.BitUtil.toHex;
-import static uk.co.real_logic.agrona.Strings.isEmpty;
+import static org.agrona.BitUtil.toHex;
+import static org.agrona.Strings.isEmpty;
 
 /**
  * Encapsulation of UDP Channels

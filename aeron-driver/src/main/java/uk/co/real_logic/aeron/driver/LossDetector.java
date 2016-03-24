@@ -15,7 +15,7 @@
  */
 package uk.co.real_logic.aeron.driver;
 
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static uk.co.real_logic.aeron.logbuffer.TermGapScanner.GapHandler;
 import static uk.co.real_logic.aeron.logbuffer.TermGapScanner.scanForGap;

@@ -20,14 +20,14 @@ import uk.co.real_logic.aeron.driver.MediaDriver;
 import uk.co.real_logic.aeron.driver.ThreadingMode;
 import uk.co.real_logic.aeron.logbuffer.FragmentHandler;
 import uk.co.real_logic.aeron.logbuffer.Header;
-import uk.co.real_logic.agrona.DirectBuffer;
-import uk.co.real_logic.agrona.concurrent.*;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.*;
 
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-import static uk.co.real_logic.agrona.UnsafeAccess.UNSAFE;
+import static org.agrona.UnsafeAccess.UNSAFE;
 
 public class EmbeddedIpcThroughput
 {

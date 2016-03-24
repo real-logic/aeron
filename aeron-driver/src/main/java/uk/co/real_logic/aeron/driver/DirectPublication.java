@@ -19,9 +19,9 @@ import uk.co.real_logic.aeron.driver.buffer.RawLog;
 import uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor;
 import uk.co.real_logic.aeron.logbuffer.LogBufferPartition;
 import uk.co.real_logic.aeron.logbuffer.LogBufferUnblocker;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
-import uk.co.real_logic.agrona.concurrent.status.Position;
-import uk.co.real_logic.agrona.concurrent.status.ReadablePosition;
+import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.ReadablePosition;
 
 import java.util.ArrayList;
 import java.util.List;

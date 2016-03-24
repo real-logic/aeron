@@ -19,7 +19,7 @@ import uk.co.real_logic.aeron.driver.cmd.CloseNetworkPublicationCmd;
 import uk.co.real_logic.aeron.driver.cmd.CreatePublicationImageCmd;
 import uk.co.real_logic.aeron.driver.cmd.DriverConductorCmd;
 import uk.co.real_logic.aeron.driver.media.ReceiveChannelEndpoint;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 import java.util.Queue;

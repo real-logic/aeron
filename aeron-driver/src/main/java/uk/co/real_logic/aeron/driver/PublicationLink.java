@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.driver;
 
 import uk.co.real_logic.aeron.driver.status.SystemCounters;
-import uk.co.real_logic.agrona.concurrent.status.AtomicCounter;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import static uk.co.real_logic.aeron.driver.status.SystemCounterDescriptor.UNBLOCKED_PUBLICATIONS;
 

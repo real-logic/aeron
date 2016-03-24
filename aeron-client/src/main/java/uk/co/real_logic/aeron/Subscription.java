@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron;
 
 import uk.co.real_logic.aeron.logbuffer.*;
-import uk.co.real_logic.agrona.collections.ArrayUtil;
+import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.List;

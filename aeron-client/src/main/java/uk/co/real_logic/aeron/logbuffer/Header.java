@@ -16,7 +16,7 @@
 package uk.co.real_logic.aeron.logbuffer;
 
 import uk.co.real_logic.aeron.protocol.DataHeaderFlyweight;
-import uk.co.real_logic.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static uk.co.real_logic.aeron.logbuffer.LogBufferDescriptor.computePosition;
@@ -121,9 +121,9 @@ public class Header
     }
 
     /**
-     * The {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
+     * The {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
      *
-     * @return {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
+     * @return {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
      */
     public final UnsafeBuffer buffer()
     {
@@ -131,9 +131,9 @@ public class Header
     }
 
     /**
-     * The {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
+     * The {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
      *
-     * @param buffer {@link uk.co.real_logic.agrona.concurrent.UnsafeBuffer} containing the header.
+     * @param buffer {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
      */
     public final void buffer(final UnsafeBuffer buffer)
     {

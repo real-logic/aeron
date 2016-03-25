@@ -13,16 +13,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_SYSTEMCOUNTERDESCRIPTOR_H
-#define AERON_SYSTEMCOUNTERDESCRIPTOR_H
+#ifndef AERON_STREAMPOSITIONCOUNTER_H
+#define AERON_STREAMPOSITIONCOUNTER_H
 
 #include <cstdint>
 
 namespace aeron { namespace concurrent {
 
-namespace SystemCounterDescriptor {
+namespace StreamPositionCounter {
 
-static const std::int32_t SYSTEM_COUNTER_TYPE_ID = 0;
+static const std::int32_t PUBLISHER_LIMIT_TYPE_ID = 1;
+static const std::int32_t SENDER_POSITION_TYPE_ID = 2;
+static const std::int32_t RECEIVER_HWM_TYPE_ID = 3;
+static const std::int32_t SUBSCRIBER_POSITION_TYPE_ID = 4;
+
+#pragma pack(push)
+#pragma pack(4)
+struct StreamPositionCounterKeyMetaDataDefn
+{
+    std::int64_t registrationId;
+    std::int32_t sessionId;
+    std::int32_t streamId;
+    struct
+    {
+        std::int32_t channelLength;
+        std::int8_t  channelData[1];
+    } channel;
+};
+#pragma pack(pop)
 
 }}}
 

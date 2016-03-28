@@ -30,6 +30,7 @@ using namespace aeron;
 #define TERM_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
 #define META_DATA_BUFFER_CAPACITY (LogBufferDescriptor::TERM_META_DATA_LENGTH)
 #define MAX_FRAME_LENGTH (1024)
+
 #define MAX_PAYLOAD_LENGTH ((MAX_FRAME_LENGTH - DataFrameHeader::LENGTH))
 #define SRC_BUFFER_CAPACITY (2 * 1024)
 #define TERM_ID (101)

@@ -41,7 +41,7 @@ public:
     {
         m_toDriver.fill(0);
         m_toClients.fill(0);
-        MemoryMappedFile::createNew(m_logFileName.c_str(), LOG_FILE_LENGTH);
+        MemoryMappedFile::createNew(m_logFileName.c_str(), 0, LOG_FILE_LENGTH);
         m_manyToOneRingBuffer.consumerHeartbeatTime(m_currentTime);
     }
 

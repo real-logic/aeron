@@ -32,7 +32,7 @@ class MemoryMappedFile
 public:
     typedef std::shared_ptr<MemoryMappedFile> ptr_t;
 
-    static ptr_t createNew(const char* filename, size_t length);
+    static ptr_t createNew(const char* filename, off_t offset, size_t length);
     static ptr_t mapExisting(const char* filename);
     static ptr_t mapExisting(const char *filename, size_t offset, size_t length);
 
@@ -49,10 +49,6 @@ public:
     static std::int64_t getFileSize(const char *filename);
 
 private:
-    MemoryMappedFile(const char* filename, size_t length);
-    MemoryMappedFile(const char* filename);
-    MemoryMappedFile(const char* filename, size_t offset, size_t length);
-
     struct FileHandle
     {
 #ifdef _WIN32
@@ -62,7 +58,8 @@ private:
 #endif
     };
 
-    bool fill(FileHandle fd, size_t sz, std::uint8_t);
+    MemoryMappedFile(const FileHandle fd, off_t offset, size_t length);
+
     uint8_t* doMapping(size_t size, FileHandle fd, size_t offset);
 
     std::uint8_t* m_memory = 0;
@@ -70,6 +67,7 @@ private:
 #if !defined(PAGE_SIZE)
     static size_t PAGE_SIZE;
 #endif
+    static bool fill(FileHandle fd, size_t sz, std::uint8_t);
 
 #ifdef _WIN32
     HANDLE m_file = NULL;

@@ -249,7 +249,7 @@ public:
 
     bool isMulticast() const
     {
-        return m_socketAddress.sin6_addr.__u6_addr.__u6_addr8[0] == 0xFF;
+        return m_socketAddress.sin6_addr.s6_addr[0] == 0xFF;
     }
 
     bool isEven() const;

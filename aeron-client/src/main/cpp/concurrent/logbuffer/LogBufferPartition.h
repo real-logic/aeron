@@ -27,6 +27,17 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class LogBufferPartition
 {
 public:
+    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer) :
+        m_termBuffer(termBuffer), m_metaDataBuffer(metaDataBuffer)
+    {
+        LogBufferDescriptor::checkTermLength(termBuffer.capacity());
+        LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
+    }
+
+    inline LogBufferPartition() :
+        m_termBuffer(*(new AtomicBuffer())), m_metaDataBuffer(*(new AtomicBuffer()))
+    {
+    }
 
     inline AtomicBuffer& termBuffer() const
     {
@@ -72,12 +83,15 @@ public:
             m_termBuffer.capacity());
     }
 
-protected:
-    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer) :
-        m_termBuffer(termBuffer), m_metaDataBuffer(metaDataBuffer)
+    inline LogBufferPartition& operator=(LogBufferPartition&& other)
     {
-        LogBufferDescriptor::checkTermLength(termBuffer.capacity());
-        LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
+        delete &m_termBuffer;
+        delete &m_metaDataBuffer;
+
+        m_termBuffer = other.m_termBuffer;
+        m_metaDataBuffer = other.m_metaDataBuffer;
+
+        return *this;
     }
 
 private:

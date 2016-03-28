@@ -35,6 +35,7 @@ aeron_driver_test(interfaceSearchAddressTest media/InterfaceSearchAddressTest.cp
 aeron_driver_test(udpChannelTransportTest media/UdpChannelTransportTest.cpp)
 aeron_driver_test(channelEndpointTest media/ChannelEndpointTest.cpp)
 aeron_driver_test(dataPacketDispatcherTest DataPacketDispatcherTest.cpp)
+aeron_driver_test(mappedRawLogTest buffer/MappedRawLogTest.cpp)
 
 function(aeron_driver_benchmark name file)
     add_executable(${name} ${file})

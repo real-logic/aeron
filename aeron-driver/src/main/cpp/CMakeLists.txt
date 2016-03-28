@@ -24,7 +24,8 @@ SET(SOURCE
     media/NetworkInterface.cpp
     media/ReceiveChannelEndpoint.cpp
     media/SendChannelEndpoint.cpp
-    DataPacketDispatcher.cpp)
+    DataPacketDispatcher.cpp
+    buffer/MappedRawLog.cpp)
 
 SET(HEADERS
     concurrent/OneToOneConcurrentArrayQueue.h
@@ -40,7 +41,8 @@ SET(HEADERS
     DataPacketDispatcher.h
     PublicationImage.h
     Receiver.h
-    DriverConductorProxy.h)
+    DriverConductorProxy.h
+    buffer/MappedRawLog.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

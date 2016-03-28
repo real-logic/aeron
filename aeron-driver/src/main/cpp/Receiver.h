@@ -24,8 +24,7 @@
 using namespace aeron::driver;
 using namespace aeron::driver::media;
 
-namespace aeron { namespace driver
-{
+namespace aeron { namespace driver {
 
 class Receiver
 {

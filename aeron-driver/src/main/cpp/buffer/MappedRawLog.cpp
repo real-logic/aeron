@@ -40,8 +40,9 @@ MappedRawLog::MappedRawLog(
             const index_t termOffset = (i * termLength);
             const index_t metaDataOffset = metaDataSectionOffset + (i * LogBufferDescriptor::TERM_META_DATA_LENGTH);
 
-            m_partitions[i].termBuffer().wrap(basePtr + termOffset, termLength);
-            m_partitions[i].metaDataBuffer().wrap(basePtr + metaDataOffset, LogBufferDescriptor::TERM_META_DATA_LENGTH);
+            m_partitions[i].wrap(
+                AtomicBuffer{basePtr + termOffset, termLength},
+                AtomicBuffer{basePtr + metaDataOffset, LogBufferDescriptor::TERM_META_DATA_LENGTH});
         }
 
         m_logMetaDataBuffer.wrap(
@@ -66,10 +67,13 @@ MappedRawLog::MappedRawLog(
 
             std::uint8_t *basePtr = m_memoryMappedFiles[i + 1]->getMemoryPtr();
 
-            m_partitions[i].termBuffer().wrap(basePtr, termLength);
-            m_partitions[i].metaDataBuffer().wrap(
-                metaDataBasePtr + (i * LogBufferDescriptor::TERM_META_DATA_LENGTH),
-                LogBufferDescriptor::TERM_META_DATA_LENGTH);
+            m_partitions[i].wrap(
+                AtomicBuffer{basePtr, termLength},
+                AtomicBuffer{
+                    metaDataBasePtr + (i * LogBufferDescriptor::TERM_META_DATA_LENGTH),
+                    LogBufferDescriptor::TERM_META_DATA_LENGTH
+                }
+            );
         }
 
         m_logMetaDataBuffer.wrap(

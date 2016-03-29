@@ -27,24 +27,34 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class LogBufferPartition
 {
 public:
-    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer) :
-        m_termBuffer(termBuffer), m_metaDataBuffer(metaDataBuffer)
+    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer)
     {
         LogBufferDescriptor::checkTermLength(termBuffer.capacity());
         LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
+
+        m_termBuffer.wrap(termBuffer);
+        m_metaDataBuffer.wrap(metaDataBuffer);
     }
 
-    inline LogBufferPartition() :
-        m_termBuffer(*(new AtomicBuffer())), m_metaDataBuffer(*(new AtomicBuffer()))
+    inline LogBufferPartition()
     {
     }
 
-    inline AtomicBuffer& termBuffer() const
+    inline void wrap(AtomicBuffer&& termBuffer, AtomicBuffer&& metaDataBuffer)
+    {
+        LogBufferDescriptor::checkTermLength(termBuffer.capacity());
+        LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
+
+        m_termBuffer.wrap(termBuffer);
+        m_metaDataBuffer.wrap(metaDataBuffer);
+    }
+
+    inline AtomicBuffer& termBuffer()
     {
         return m_termBuffer;
     }
 
-    inline AtomicBuffer& metaDataBuffer() const
+    inline AtomicBuffer& metaDataBuffer()
     {
         return m_metaDataBuffer;
     }
@@ -83,20 +93,9 @@ public:
             m_termBuffer.capacity());
     }
 
-    inline LogBufferPartition& operator=(LogBufferPartition&& other)
-    {
-        delete &m_termBuffer;
-        delete &m_metaDataBuffer;
-
-        m_termBuffer = other.m_termBuffer;
-        m_metaDataBuffer = other.m_metaDataBuffer;
-
-        return *this;
-    }
-
 private:
-    AtomicBuffer& m_termBuffer;
-    AtomicBuffer& m_metaDataBuffer;
+    AtomicBuffer m_termBuffer;
+    AtomicBuffer m_metaDataBuffer;
 };
 
 }}}

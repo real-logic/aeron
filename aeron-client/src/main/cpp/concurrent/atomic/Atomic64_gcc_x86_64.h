@@ -127,6 +127,15 @@ inline void putInt64Volatile(volatile std::int64_t*  address, std::int64_t value
     *reinterpret_cast<volatile std::int64_t *>(address) = value;
 }
 
+template<typename T>
+inline void putValueVolatile(volatile T* address, T value)
+{
+    static_assert(sizeof(T) <= 8, "Requires size <= 8 bytes");
+
+    thread_fence();
+    *reinterpret_cast<volatile std::int64_t *>(address) = value;
+}
+
 /**
 * Put a 64 bit int with ordered semantics.
 */

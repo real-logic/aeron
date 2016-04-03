@@ -13,17 +13,36 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef AERON_SYSTEMCOUNTERDESCRIPTOR_H
-#define AERON_SYSTEMCOUNTERDESCRIPTOR_H
 
-#include <cstdint>
+#include <gtest/gtest.h>
+#include <buffer/MappedRawLog.h>
 
-namespace aeron { namespace concurrent {
+//#include <sys/types.h>
+//#include <sys/stat.h>
+//#include <unistd.h>
 
-namespace SystemCounterDescriptor {
 
-static const std::int32_t SYSTEM_COUNTER_TYPE_ID = 0;
+using namespace aeron::driver::buffer;
 
-}}}
+class MappedRawLogTest : public testing::Test
+{
+};
 
-#endif
+TEST_F(MappedRawLogTest, shouldCreate)
+{
+    const char* location = "./file.map";
+    struct stat buf;
+
+    MappedRawLog* log = new MappedRawLog{location, true, 1 << 16};
+
+    int rc = ::stat(location, &buf);
+
+    EXPECT_EQ(0, rc);
+
+    delete log;
+
+    rc = ::stat(location, &buf);
+
+    EXPECT_EQ(-1, rc);
+    EXPECT_EQ(ENOENT, errno);
+}

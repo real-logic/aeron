@@ -32,6 +32,7 @@ set(aeron_VERSION_MINOR 1)
 set(aeron_VERSION_PATCH 0)
 
 enable_testing()
+include(CTest)
 
 # default built type is Release
 if(NOT CMAKE_BUILD_TYPE)

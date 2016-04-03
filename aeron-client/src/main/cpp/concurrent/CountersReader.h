@@ -153,6 +153,7 @@ public:
     static const util::index_t LABEL_LENGTH_OFFSET = offsetof(CounterMetaDataDefn, labelLength);
 
     static const std::int32_t MAX_LABEL_LENGTH = sizeof(CounterMetaDataDefn::label);
+    static const std::int32_t MAX_KEY_LENGTH = sizeof(CounterMetaDataDefn::key);
 
 protected:
     AtomicBuffer m_metadataBuffer;

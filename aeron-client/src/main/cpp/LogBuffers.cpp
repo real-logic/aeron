@@ -21,8 +21,6 @@ namespace aeron {
 using namespace aeron::util;
 using namespace aeron::concurrent::logbuffer;
 
-#define MAX_SINGLE_MAPPING_SIZE (0x7FFFFFFF)
-
 LogBuffers::LogBuffers(const char *filename)
 {
     const std::int64_t logLength = MemoryMappedFile::getFileSize(filename);
@@ -30,7 +28,7 @@ LogBuffers::LogBuffers(const char *filename)
 
     LogBufferDescriptor::checkTermLength(termLength);
 
-    if (logLength < MAX_SINGLE_MAPPING_SIZE)
+    if (logLength < LogBufferDescriptor::MAX_SINGLE_MAPPING_SIZE)
     {
         m_memoryMappedFiles.push_back(MemoryMappedFile::mapExisting(filename));
 

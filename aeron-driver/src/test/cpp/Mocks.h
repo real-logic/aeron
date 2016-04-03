@@ -1,4 +1,3 @@
-
 #ifndef INCLUDED_AERON_DRIVER_MOCKS__
 #define INCLUDED_AERON_DRIVER_MOCKS__
 
@@ -33,6 +32,14 @@ namespace aeron { namespace driver {
 class MockPublicationImage : public PublicationImage
 {
 public:
+    MockPublicationImage() : PublicationImage(
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        std::unique_ptr<MappedRawLog>(nullptr),
+        std::shared_ptr<InetAddress>(nullptr),
+        std::shared_ptr<InetAddress>(nullptr),
+        std::shared_ptr<ReceiveChannelEndpoint>(nullptr)
+    ){}
+
     virtual ~MockPublicationImage() = default;
 
     MOCK_METHOD0(sessionId, std::int32_t());

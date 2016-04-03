@@ -32,19 +32,131 @@
 
 namespace aeron { namespace util {
 
-MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, size_t size)
+#ifdef _WIN32
+bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
 {
-    return std::shared_ptr<MemoryMappedFile>(new MemoryMappedFile(filename, size));
+    uint8_t buffer[8196];
+    memset(buffer, value, PAGE_SIZE);
+
+    DWORD written = 0;
+
+    while (size >= PAGE_SIZE)
+    {
+        if (!WriteFile(fd.handle, buffer, PAGE_SIZE, &written, NULL))
+        {
+            return false;
+        }
+
+        size -= written;
+    }
+
+    if (size)
+    {
+        if (!WriteFile(fd.handle, buffer, size, &written, NULL))
+        {
+            return false;
+        }
+    }
+    return true;
 }
 
-MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename)
+MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t offset, size_t size)
 {
-    return std::shared_ptr<MemoryMappedFile>(new MemoryMappedFile(filename));
+    FileHandle fd;
+    fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (fd.handle == INVALID_HANDLE_VALUE)
+    {
+        throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+    }
+
+    if (!fill(fd, size, 0))
+    {
+        CloseHandle(fd.handle);
+        throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+    }
+
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
+}
+
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, off_t offset, size_t size)
+{
+    FileHandle fd;
+    fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+
+    if (fd.handle == INVALID_HANDLE_VALUE)
+    {
+        throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
+    }
+
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
+}
+#else
+bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
+{
+    uint8_t buffer[PAGE_SIZE];
+    memset(buffer, value, PAGE_SIZE);
+
+    while (size >= PAGE_SIZE)
+    {
+        if (static_cast<size_t>(write(fd.handle, buffer, PAGE_SIZE)) != PAGE_SIZE)
+        {
+            return false;
+        }
+
+        size -= PAGE_SIZE;
+    }
+
+    if (size)
+    {
+        if (static_cast<size_t>(write(fd.handle, buffer, size)) != size)
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+MemoryMappedFile::ptr_t MemoryMappedFile::createNew(const char *filename, off_t offset, size_t size)
+{
+    FileHandle fd;
+    fd.handle = open(filename, O_RDWR|O_CREAT, 0666);
+
+    if (fd.handle < 0)
+    {
+        throw IOException(std::string("Failed to create file: ") + filename, SOURCEINFO);
+    }
+
+    OnScopeExit tidy ([&]()
+    {
+        close(fd.handle);
+    });
+
+    if (!fill(fd, size, 0))
+    {
+        throw IOException(std::string("Failed to write to file: ") + filename, SOURCEINFO);
+    }
+
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, size));
 }
 
 MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename, size_t offset, size_t length)
 {
-    return std::shared_ptr<MemoryMappedFile>(new MemoryMappedFile(filename, offset, length));
+    FileHandle fd;
+    fd.handle = ::open(filename, O_RDWR, 0666);
+
+    if (fd.handle < 0)
+    {
+        throw IOException(std::string("Failed to open existing file: ") + filename, SOURCEINFO);
+    }
+
+    return MemoryMappedFile::ptr_t(new MemoryMappedFile(fd, offset, length));
+}
+#endif
+
+MemoryMappedFile::ptr_t MemoryMappedFile::mapExisting(const char *filename)
+{
+    return mapExisting(filename, 0, 0);
 }
 
 uint8_t* MemoryMappedFile::getMemoryPtr() const
@@ -59,50 +171,9 @@ size_t MemoryMappedFile::getMemorySize() const
 
 size_t MemoryMappedFile::PAGE_SIZE = getPageSize();
 
-MemoryMappedFile::MemoryMappedFile(const char *filename)
-    : MemoryMappedFile(filename, 0, 0)
-{
-}
-
 #ifdef _WIN32
-MemoryMappedFile::MemoryMappedFile(const char *filename, size_t size)
-    : m_file(NULL), m_mapping(NULL), m_memory(NULL)
+MemoryMappedFile::MemoryMappedFile(FileHandle handle, off_t offset, size_t length)
 {
-    FileHandle fd;
-    fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (fd.handle == INVALID_HANDLE_VALUE)
-    {
-        throw IOException(std::string("Failed to create file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
-    }
-
-    if (!fill(fd, size, 0))
-    {
-        cleanUp();
-        throw IOException(std::string("Failed to write to file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
-    }
-
-    m_memorySize = size;
-    m_memory = doMapping(m_memorySize, fd, 0);
-
-    if (!m_memory)
-    {
-        cleanUp();
-        throw IOException(std::string("Failed to Map Memory: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
-    }
-}
-
-MemoryMappedFile::MemoryMappedFile(const char *filename, size_t offset, size_t length)
-    : m_file(NULL), m_mapping(NULL)
-{
-    FileHandle fd;
-    fd.handle = CreateFile(filename, GENERIC_READ | GENERIC_WRITE, FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-    if (fd.handle == INVALID_HANDLE_VALUE)
-    {
-        throw IOException(std::string("Failed to open existing file: ") + filename + " " + toString(GetLastError()), SOURCEINFO);
-    }
-
     if (0 == length && 0 == offset)
     {
         LARGE_INTEGER fileSize;
@@ -155,33 +226,6 @@ uint8_t* MemoryMappedFile::doMapping(size_t size, FileHandle fd, size_t offset)
     return static_cast<uint8_t*>(memory);
 }
 
-bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
-{
-    uint8_t buffer[8196];
-    memset(buffer, value, PAGE_SIZE);
-
-    DWORD written = 0;
-
-    while (size >= PAGE_SIZE)
-    {
-        if (!WriteFile(fd.handle, buffer, PAGE_SIZE, &written, NULL))
-        {
-            return false;
-        }
-
-        size -= written;
-    }
-
-    if (size)
-    {
-        if (!WriteFile(fd.handle, buffer, size, &written, NULL))
-        {
-            return false;
-        }
-    }
-    return true;
-}
-
 size_t MemoryMappedFile::getPageSize()
 {
     SYSTEM_INFO sinfo;
@@ -203,44 +247,8 @@ std::int64_t MemoryMappedFile::getFileSize(const char *filename)
 }
 
 #else
-MemoryMappedFile::MemoryMappedFile(const char *filename, size_t length)
+MemoryMappedFile::MemoryMappedFile(FileHandle fd, off_t offset, size_t length)
 {
-    FileHandle fd;
-    fd.handle = open(filename, O_RDWR|O_CREAT, 0666);
-    if (fd.handle < 0)
-    {
-        throw IOException(std::string("Failed to create file: ") + filename, SOURCEINFO);
-    }
-
-    m_memorySize = length;
-
-    OnScopeExit tidy ([&]()
-    {
-        close(fd.handle);
-    });
-
-    if (!fill(fd, length, 0))
-    {
-        throw IOException(std::string("Failed to write to file: ") + filename, SOURCEINFO);
-    }
-
-    m_memory = doMapping(length, fd, 0);
-}
-
-MemoryMappedFile::MemoryMappedFile(const char *filename, size_t length, size_t offset)
-{
-    FileHandle fd;
-    fd.handle = ::open(filename, O_RDWR, 0666);
-    if (fd.handle < 0)
-    {
-        throw IOException(std::string("Failed to open existing file: ") + filename, SOURCEINFO);
-    }
-
-    OnScopeExit tidy([&]()
-    {
-        close(fd.handle);
-    });
-
     if (0 == length && 0 == offset)
     {
         struct stat statInfo;
@@ -270,31 +278,6 @@ uint8_t* MemoryMappedFile::doMapping(size_t length, FileHandle fd, size_t offset
     }
 
     return static_cast<uint8_t*>(memory);
-}
-
-bool MemoryMappedFile::fill(FileHandle fd, size_t size, uint8_t value)
-{
-    uint8_t buffer[PAGE_SIZE];
-    memset(buffer, value, PAGE_SIZE);
-
-    while (size >= PAGE_SIZE)
-    {
-        if (static_cast<size_t>(write(fd.handle, buffer, PAGE_SIZE)) != PAGE_SIZE)
-        {
-            return false;
-        }
-
-        size -= PAGE_SIZE;
-    }
-
-    if (size)
-    {
-        if (static_cast<size_t>(write(fd.handle, buffer, size)) != size)
-        {
-            return false;
-        }
-    }
-    return true;
 }
 
 size_t MemoryMappedFile::getPageSize()

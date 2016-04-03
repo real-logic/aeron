@@ -32,7 +32,7 @@ import java.util.List;
  * receive whole messages, whether or not they were fragmented, then the Subscriber
  * should be created with a {@link FragmentAssembler} or a custom implementation.
  * <p>
- * It is an applications responsibility to {@link #poll} the Subscriber for new messages.
+ * It is an application's responsibility to {@link #poll} the Subscriber for new messages.
  * <p>
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  *
@@ -83,7 +83,7 @@ public class Subscription implements AutoCloseable
      * Poll the {@link Image}s under the subscription for available message fragments.
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
-     * as a series of fragments ordered withing a session.
+     * as a series of fragments ordered within a session.
      *
      * To assemble messages that span multiple fragments then use {@link FragmentAssembler}.
      *
@@ -122,7 +122,7 @@ public class Subscription implements AutoCloseable
      * they will even if BREAK or ABORT is returned from the fragment handler.
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
-     * as a series of fragments ordered withing a session.
+     * as a series of fragments ordered within a session.
      *
      * To assemble messages that span multiple fragments then use {@link ControlledFragmentAssembler}.
      *

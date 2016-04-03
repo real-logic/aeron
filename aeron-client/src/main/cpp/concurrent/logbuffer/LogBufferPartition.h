@@ -27,13 +27,34 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 class LogBufferPartition
 {
 public:
+    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer)
+    {
+        LogBufferDescriptor::checkTermLength(termBuffer.capacity());
+        LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
 
-    inline AtomicBuffer& termBuffer() const
+        m_termBuffer.wrap(termBuffer);
+        m_metaDataBuffer.wrap(metaDataBuffer);
+    }
+
+    inline LogBufferPartition()
+    {
+    }
+
+    inline void wrap(AtomicBuffer&& termBuffer, AtomicBuffer&& metaDataBuffer)
+    {
+        LogBufferDescriptor::checkTermLength(termBuffer.capacity());
+        LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
+
+        m_termBuffer.wrap(termBuffer);
+        m_metaDataBuffer.wrap(metaDataBuffer);
+    }
+
+    inline AtomicBuffer& termBuffer()
     {
         return m_termBuffer;
     }
 
-    inline AtomicBuffer& metaDataBuffer() const
+    inline AtomicBuffer& metaDataBuffer()
     {
         return m_metaDataBuffer;
     }
@@ -72,17 +93,9 @@ public:
             m_termBuffer.capacity());
     }
 
-protected:
-    inline LogBufferPartition(AtomicBuffer& termBuffer, AtomicBuffer& metaDataBuffer) :
-        m_termBuffer(termBuffer), m_metaDataBuffer(metaDataBuffer)
-    {
-        LogBufferDescriptor::checkTermLength(termBuffer.capacity());
-        LogBufferDescriptor::checkMetaDataBuffer(metaDataBuffer);
-    }
-
 private:
-    AtomicBuffer& m_termBuffer;
-    AtomicBuffer& m_metaDataBuffer;
+    AtomicBuffer m_termBuffer;
+    AtomicBuffer m_metaDataBuffer;
 };
 
 }}}

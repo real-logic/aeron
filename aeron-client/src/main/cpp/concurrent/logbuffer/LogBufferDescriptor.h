@@ -31,8 +31,8 @@ namespace LogBufferDescriptor {
 
 static const std::int32_t CLEAN = 0;
 static const std::int32_t NEEDS_CLEANING = 1;
-
 static const util::index_t TERM_MIN_LENGTH = 64 * 1024;
+static const std::int64_t MAX_SINGLE_MAPPING_SIZE = 0x7FFFFFFF;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
 constexpr static const int PARTITION_COUNT = 3;

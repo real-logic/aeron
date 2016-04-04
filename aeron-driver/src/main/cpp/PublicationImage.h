@@ -19,6 +19,8 @@
 
 #include <cstdint>
 #include <concurrent/AtomicBuffer.h>
+#include <concurrent/status/ReadablePosition.h>
+#include <concurrent/status/UnsafeBufferPosition.h>
 #include <util/MacroUtil.h>
 #include "buffer/MappedRawLog.h"
 #include "media/InetAddress.h"
@@ -26,6 +28,7 @@
 namespace aeron { namespace driver {
 
 using namespace aeron::concurrent;
+using namespace aeron::concurrent::status;
 using namespace aeron::driver::buffer;
 using namespace aeron::driver::media;
 
@@ -53,13 +56,16 @@ public:
         std::unique_ptr<MappedRawLog> rawLog,
         std::shared_ptr<InetAddress> sourceAddress,
         std::shared_ptr<InetAddress> controlAddress,
-        std::shared_ptr<ReceiveChannelEndpoint> channelEndpoint
+        std::shared_ptr<ReceiveChannelEndpoint> channelEndpoint,
+        std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>> subscriberPositions,
+        std::unique_ptr<Position<UnsafeBufferPosition>> hwmPosition
     )
         : m_correlationId(correlationId), m_imageLivenessTimeoutNs(imageLivenessTimeoutNs),
         m_sessionId(sessionId), m_streamId(streamId), m_positionBitsToShift(positionBitsToShift),
         m_termLengthMask(termLengthMask), m_initialTermId(initialTermId),
         m_currentWindowLength(currentWindowLength), m_currentGain(currentGain), m_rawLog(std::move(rawLog)),
-        m_sourceAddress(sourceAddress), m_controlAddress(controlAddress), m_channelEndpoint(channelEndpoint)
+        m_sourceAddress(sourceAddress), m_controlAddress(controlAddress), m_channelEndpoint(channelEndpoint),
+        m_subscriberPositions(std::move(subscriberPositions)), m_hwmPosition(std::move(hwmPosition))
     { }
 
     virtual ~PublicationImage(){}
@@ -131,6 +137,8 @@ private:
     std::shared_ptr<InetAddress> m_sourceAddress;
     std::shared_ptr<InetAddress> m_controlAddress;
     std::shared_ptr<ReceiveChannelEndpoint> m_channelEndpoint;
+    std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>> m_subscriberPositions;
+    std::unique_ptr<Position<UnsafeBufferPosition>> m_hwmPosition;
 };
 
 }};

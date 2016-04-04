@@ -37,7 +37,9 @@ public:
         std::unique_ptr<MappedRawLog>(nullptr),
         std::shared_ptr<InetAddress>(nullptr),
         std::shared_ptr<InetAddress>(nullptr),
-        std::shared_ptr<ReceiveChannelEndpoint>(nullptr)
+        std::shared_ptr<ReceiveChannelEndpoint>(nullptr),
+        std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>>(nullptr),
+        std::unique_ptr<Position<UnsafeBufferPosition>>(nullptr)
     ){}
 
     virtual ~MockPublicationImage() = default;

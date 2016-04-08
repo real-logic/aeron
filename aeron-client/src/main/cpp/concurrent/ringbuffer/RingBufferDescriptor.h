@@ -17,6 +17,7 @@
 #ifndef INCLUDED_AERON_CONCURRENT_RINGBUFFER_RING_BUFFER_DESCRIPTOR__
 #define INCLUDED_AERON_CONCURRENT_RINGBUFFER_RING_BUFFER_DESCRIPTOR__
 
+#include <functional>
 #include <util/Index.h>
 #include <util/BitUtil.h>
 #include <util/Exceptions.h>

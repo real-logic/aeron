@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef INCLUDED_AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
-#define INCLUDED_AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
+#ifndef AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
+#define AERON_CONCURRENT_RINGBUFFER_MANY_TO_ONE_RING_BUFFER__
 
 #include <limits.h>
 #include <functional>
@@ -29,9 +29,6 @@
 
 namespace aeron { namespace concurrent { namespace ringbuffer {
 
-/** The read handler function signature */
-typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> handler_t;
-
 class ManyToOneRingBuffer
 {
 public:
@@ -42,7 +39,6 @@ public:
 
         RingBufferDescriptor::checkCapacity(m_capacity);
 
-        m_mask = m_capacity - 1;
         m_maxMsgLength = m_capacity / 8;
 
         m_tailPositionIndex = m_capacity + RingBufferDescriptor::TAIL_POSITION_OFFSET;
@@ -85,8 +81,8 @@ public:
 
     int read(const handler_t& handler, int messageCountLimit)
     {
-        const std::int64_t head = m_buffer.getInt64Volatile(m_headPositionIndex);
-        const std::int32_t headIndex = (std::int32_t)head & m_mask;
+        const std::int64_t head = m_buffer.getInt64(m_headPositionIndex);
+        const std::int32_t headIndex = (std::int32_t)head & (m_capacity - 1);
         const std::int32_t contiguousBlockLength = m_capacity - headIndex;
         int messagesRead = 0;
         int bytesRead = 0;
@@ -183,8 +179,9 @@ public:
 
     bool unblock()
     {
-        const std::int32_t consumerIndex = (std::int32_t)(m_buffer.getInt64Volatile(m_headPositionIndex) & m_mask);
-        const std::int32_t producerIndex = (std::int32_t)(m_buffer.getInt64Volatile(m_tailPositionIndex) & m_mask);
+        const util::index_t mask = m_capacity - 1;
+        const std::int32_t consumerIndex = (std::int32_t)(m_buffer.getInt64Volatile(m_headPositionIndex) & mask);
+        const std::int32_t producerIndex = (std::int32_t)(m_buffer.getInt64Volatile(m_tailPositionIndex) & mask);
 
         if (producerIndex == consumerIndex)
         {
@@ -231,7 +228,6 @@ private:
 
     concurrent::AtomicBuffer &m_buffer;
     util::index_t m_capacity;
-    util::index_t m_mask;
     util::index_t m_maxMsgLength;
     util::index_t m_headPositionIndex;
     util::index_t m_headCachePositionIndex;
@@ -241,6 +237,7 @@ private:
 
     util::index_t claimCapacity(util::index_t requiredCapacity)
     {
+        const util::index_t mask = m_capacity - 1;
         std::int64_t head = m_buffer.getInt64Volatile(m_headCachePositionIndex);
 
         std::int64_t tail;
@@ -264,17 +261,17 @@ private:
             }
 
             padding = 0;
-            tailIndex = (util::index_t)tail & m_mask;
+            tailIndex = (util::index_t)tail & mask;
             const util::index_t toBufferEndLength = m_capacity - tailIndex;
 
             if (requiredCapacity > toBufferEndLength)
             {
-                std::int32_t headIndex = (std::int32_t)head & m_mask;
+                std::int32_t headIndex = (std::int32_t)head & mask;
 
                 if (requiredCapacity > headIndex)
                 {
                     head = m_buffer.getInt64Volatile(m_headPositionIndex);
-                    headIndex = (std::int32_t)head & m_mask;
+                    headIndex = (std::int32_t)head & mask;
 
                     if (requiredCapacity > headIndex)
                     {

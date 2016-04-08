@@ -24,6 +24,9 @@
 
 namespace aeron { namespace concurrent { namespace ringbuffer {
 
+/** The read handler function signature */
+typedef std::function<void(std::int32_t, concurrent::AtomicBuffer&, util::index_t, util::index_t)> handler_t;
+
 using namespace aeron::util::BitUtil;
 
 namespace RingBufferDescriptor {

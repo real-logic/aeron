@@ -22,8 +22,8 @@ import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
@@ -52,7 +52,7 @@ public class Ping
     private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch LATCH = new CountDownLatch(1);
-    private static final IdleStrategy POLLING_IDLE_STRATEGY = new NoOpIdleStrategy();
+    private static final IdleStrategy POLLING_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     public static void main(final String[] args) throws Exception
     {

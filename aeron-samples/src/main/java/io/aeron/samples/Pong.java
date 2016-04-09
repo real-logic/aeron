@@ -24,8 +24,8 @@ import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NoOpIdleStrategy;
 import org.agrona.concurrent.SigInt;
 
 /**
@@ -43,7 +43,7 @@ public class Pong
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final boolean INFO_FLAG = SampleConfiguration.INFO_FLAG;
 
-    private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = new NoOpIdleStrategy();
+    private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     public static void main(final String[] args) throws Exception
     {
@@ -61,7 +61,7 @@ public class Pong
             ctx.unavailableImageHandler(SamplesUtil::printUnavailableImage);
         }
 
-        final IdleStrategy idleStrategy = new NoOpIdleStrategy();
+        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
         System.out.println("Subscribing Ping at " + PING_CHANNEL + " on stream Id " + PING_STREAM_ID);
         System.out.println("Publishing Pong at " + PONG_CHANNEL + " on stream Id " + PONG_STREAM_ID);

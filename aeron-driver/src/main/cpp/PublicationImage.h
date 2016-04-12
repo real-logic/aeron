@@ -27,6 +27,8 @@
 
 namespace aeron { namespace driver {
 
+typedef std::function<long()> nano_clock_t;
+
 using namespace aeron::concurrent;
 using namespace aeron::concurrent::status;
 using namespace aeron::driver::buffer;
@@ -58,14 +60,16 @@ public:
         std::shared_ptr<InetAddress> controlAddress,
         std::shared_ptr<ReceiveChannelEndpoint> channelEndpoint,
         std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>> subscriberPositions,
-        std::unique_ptr<Position<UnsafeBufferPosition>> hwmPosition
+        std::unique_ptr<Position<UnsafeBufferPosition>> hwmPosition,
+        nano_clock_t nanoClock
     )
         : m_correlationId(correlationId), m_imageLivenessTimeoutNs(imageLivenessTimeoutNs),
         m_sessionId(sessionId), m_streamId(streamId), m_positionBitsToShift(positionBitsToShift),
         m_termLengthMask(termLengthMask), m_initialTermId(initialTermId),
         m_currentWindowLength(currentWindowLength), m_currentGain(currentGain), m_rawLog(std::move(rawLog)),
         m_sourceAddress(sourceAddress), m_controlAddress(controlAddress), m_channelEndpoint(channelEndpoint),
-        m_subscriberPositions(std::move(subscriberPositions)), m_hwmPosition(std::move(hwmPosition))
+        m_subscriberPositions(std::move(subscriberPositions)), m_hwmPosition(std::move(hwmPosition)),
+        m_nanoClock(nanoClock)
     { }
 
     virtual ~PublicationImage(){}
@@ -139,6 +143,8 @@ private:
     std::shared_ptr<ReceiveChannelEndpoint> m_channelEndpoint;
     std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>> m_subscriberPositions;
     std::unique_ptr<Position<UnsafeBufferPosition>> m_hwmPosition;
+
+    nano_clock_t m_nanoClock;
 };
 
 }};

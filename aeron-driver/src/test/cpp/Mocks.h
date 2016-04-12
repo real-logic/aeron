@@ -39,7 +39,8 @@ public:
         std::shared_ptr<InetAddress>(nullptr),
         std::shared_ptr<ReceiveChannelEndpoint>(nullptr),
         std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>>(nullptr),
-        std::unique_ptr<Position<UnsafeBufferPosition>>(nullptr)
+        std::unique_ptr<Position<UnsafeBufferPosition>>(nullptr),
+        mockCurrentTime
     ){}
 
     virtual ~MockPublicationImage() = default;
@@ -49,6 +50,11 @@ public:
     MOCK_METHOD4(insertPacket, std::int32_t(std::int32_t termId, std::int32_t termOffset, AtomicBuffer& buffer, std::int32_t length));
     MOCK_METHOD0(ifActiveGoInactive, void());
     MOCK_METHOD1(status, void(PublicationImageStatus status));
+
+    static long mockCurrentTime()
+    {
+        return 0;
+    }
 };
 
 class MockReceiver : public Receiver

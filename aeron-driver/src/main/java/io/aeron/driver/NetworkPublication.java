@@ -33,6 +33,8 @@ import org.agrona.concurrent.status.Position;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
+import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.logbuffer.TermScanner.*;
@@ -144,8 +146,8 @@ public class NetworkPublication
         termLengthMask = termLength - 1;
         flowControl.initialize(initialTermId, termLength);
 
-        timeOfLastSendOrHeartbeat = nanoClock.nanoTime() - Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
-        timeOfLastSetup = nanoClock.nanoTime() - Configuration.PUBLICATION_SETUP_TIMEOUT_NS - 1;
+        timeOfLastSendOrHeartbeat = nanoClock.nanoTime() - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        timeOfLastSetup = nanoClock.nanoTime() - PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -363,7 +365,7 @@ public class NetworkPublication
 
     private void setupMessageCheck(final long now, final int activeTermId, final int termOffset)
     {
-        if (now > (timeOfLastSetup + Configuration.PUBLICATION_SETUP_TIMEOUT_NS))
+        if (now > (timeOfLastSetup + PUBLICATION_SETUP_TIMEOUT_NS))
         {
             setupFrameBuffer.clear();
             setupHeader.activeTermId(activeTermId).termOffset(termOffset);
@@ -386,7 +388,7 @@ public class NetworkPublication
 
     private void heartbeatMessageCheck(final long now, final int activeTermId, final int termOffset)
     {
-        if (now > (timeOfLastSendOrHeartbeat + Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS))
+        if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
             heartbeatFrameBuffer.clear();
             dataHeader.termId(activeTermId).termOffset(termOffset);

@@ -62,9 +62,9 @@ public class DirectPublication implements DriverManagedResource
         this.logPartitions = rawLog.partitions();
 
         final int termLength = rawLog.termLength();
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.termWindowLength = Configuration.ipcPublicationTermWindowLength(termLength);
         this.tripGain = termWindowLength / 8;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.publisherLimit = publisherLimit;
         this.rawLog = rawLog;
     }

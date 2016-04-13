@@ -83,6 +83,7 @@ SET(HEADERS
     concurrent/ringbuffer/ManyToOneRingBuffer.h
     concurrent/ringbuffer/RecordDescriptor.h
     concurrent/ringbuffer/RingBufferDescriptor.h
+    concurrent/ringbuffer/OneToOneRingBuffer.h
     concurrent/status/ReadablePosition.h
     concurrent/status/Position.h
     concurrent/status/UnsafeBufferPosition.h

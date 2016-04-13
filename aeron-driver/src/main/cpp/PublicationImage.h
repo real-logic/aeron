@@ -27,6 +27,8 @@
 
 namespace aeron { namespace driver {
 
+typedef std::function<long()> nano_clock_t;
+
 using namespace aeron::concurrent;
 using namespace aeron::concurrent::status;
 using namespace aeron::driver::buffer;
@@ -48,25 +50,46 @@ public:
         const int64_t imageLivenessTimeoutNs,
         const int32_t sessionId,
         const int32_t streamId,
-        const int32_t positionBitsToShift,
-        const int32_t termLengthMask,
         const int32_t initialTermId,
-        const int32_t currentWindowLength,
+        const int32_t activeTermId,
+        const int32_t initialTermOffset,
+        const int32_t initialWindowLength,
         const int32_t currentGain,
         std::unique_ptr<MappedRawLog> rawLog,
         std::shared_ptr<InetAddress> sourceAddress,
         std::shared_ptr<InetAddress> controlAddress,
         std::shared_ptr<ReceiveChannelEndpoint> channelEndpoint,
         std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>> subscriberPositions,
-        std::unique_ptr<Position<UnsafeBufferPosition>> hwmPosition
+        std::unique_ptr<Position<UnsafeBufferPosition>> hwmPosition,
+        nano_clock_t nanoClock
     )
         : m_correlationId(correlationId), m_imageLivenessTimeoutNs(imageLivenessTimeoutNs),
-        m_sessionId(sessionId), m_streamId(streamId), m_positionBitsToShift(positionBitsToShift),
-        m_termLengthMask(termLengthMask), m_initialTermId(initialTermId),
-        m_currentWindowLength(currentWindowLength), m_currentGain(currentGain), m_rawLog(std::move(rawLog)),
+        m_sessionId(sessionId), m_streamId(streamId), m_initialTermId(initialTermId),
+        m_currentGain(currentGain), m_rawLog(std::move(rawLog)),
         m_sourceAddress(sourceAddress), m_controlAddress(controlAddress), m_channelEndpoint(channelEndpoint),
-        m_subscriberPositions(std::move(subscriberPositions)), m_hwmPosition(std::move(hwmPosition))
-    { }
+        m_subscriberPositions(std::move(subscriberPositions)), m_hwmPosition(std::move(hwmPosition)),
+        m_nanoClock(nanoClock)
+    {
+        std::int32_t termLength = m_rawLog->termLength();
+
+        long time = m_nanoClock();
+        m_timeOfLastStatusChange = time;
+        m_lastPacketTimestamp = time;
+
+        m_currentWindowLength = termLength < initialWindowLength ? termLength : initialWindowLength;
+        m_currentGain = m_currentWindowLength / 4;
+
+        m_termLengthMask = termLength - 1;
+        m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(termLength);
+
+        std::int64_t initialPosition =
+            LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, m_positionBitsToShift, initialTermId);
+
+        m_lastStatusMessagePosition = initialPosition - (currentGain - 1);
+        m_newStatusMessagePosition = m_lastStatusMessagePosition;
+        m_rebuildPosition = initialPosition;
+        m_hwmPosition->setOrdered(initialPosition);
+    }
 
     virtual ~PublicationImage(){}
 
@@ -118,7 +141,7 @@ private:
 
     // -- Cache-line padding
 
-    volatile std::int64_t newStatusMessagePosition;
+    volatile std::int64_t m_newStatusMessagePosition;
     volatile PublicationImageStatus m_status = PublicationImageStatus::INIT;
 
     // -- Cache-line padding
@@ -127,11 +150,11 @@ private:
     const std::int64_t m_imageLivenessTimeoutNs;
     const std::int32_t m_sessionId;
     const std::int32_t m_streamId;
-    const std::int32_t m_positionBitsToShift;
-    const std::int32_t m_termLengthMask;
+    std::int32_t m_positionBitsToShift;
+    std::int32_t m_termLengthMask;
     const std::int32_t m_initialTermId;
-    const std::int32_t m_currentWindowLength;
-    const std::int32_t m_currentGain;
+    std::int32_t m_currentWindowLength;
+    std::int32_t m_currentGain;
 
     std::unique_ptr<MappedRawLog> m_rawLog;
     std::shared_ptr<InetAddress> m_sourceAddress;
@@ -139,6 +162,8 @@ private:
     std::shared_ptr<ReceiveChannelEndpoint> m_channelEndpoint;
     std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>> m_subscriberPositions;
     std::unique_ptr<Position<UnsafeBufferPosition>> m_hwmPosition;
+
+    nano_clock_t m_nanoClock;
 };
 
 }};

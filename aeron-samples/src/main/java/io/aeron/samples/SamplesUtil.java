@@ -20,8 +20,8 @@ import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.IdleStrategy;
-import org.agrona.concurrent.NoOpIdleStrategy;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -42,7 +42,7 @@ public class SamplesUtil
     public static Consumer<Subscription> subscriberLoop(
         final FragmentHandler fragmentHandler, final int limit, final AtomicBoolean running)
     {
-        final IdleStrategy idleStrategy = new NoOpIdleStrategy();
+        final IdleStrategy idleStrategy = new BusySpinIdleStrategy();
 
         return subscriberLoop(fragmentHandler, limit, running, idleStrategy);
     }

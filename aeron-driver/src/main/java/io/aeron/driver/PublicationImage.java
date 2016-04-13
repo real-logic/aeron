@@ -160,10 +160,10 @@ public class PublicationImage
         flowControlUnderRuns = systemCounters.get(SystemCounterDescriptor.FLOW_CONTROL_UNDER_RUNS);
         flowControlOverRuns = systemCounters.get(SystemCounterDescriptor.FLOW_CONTROL_OVER_RUNS);
 
-        this.clock = clock;
         final long time = clock.nanoTime();
-        this.timeOfLastStatusChange = time;
-        this.lastPacketTimestamp = time;
+        this.clock = clock;
+        timeOfLastStatusChange = time;
+        lastPacketTimestamp = time;
 
         for (int i = 0; i < PARTITION_COUNT; i++)
         {
@@ -173,10 +173,8 @@ public class PublicationImage
         lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
         final int termLength = rawLog.termLength();
-
         currentWindowLength = Math.min(termLength, initialWindowLength);
         currentGain = currentWindowLength / 4;
-
         termLengthMask = termLength - 1;
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
 

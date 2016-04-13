@@ -152,6 +152,7 @@ public class PublicationImage
         this.subscriberPositions = subscriberPositions;
         this.hwmPosition = hwmPosition;
         this.sourceAddress = sourceAddress;
+        this.initialTermId = initialTermId;
 
         heartbeatsReceived = systemCounters.get(SystemCounterDescriptor.HEARTBEATS_RECEIVED);
         statusMessagesSent = systemCounters.get(SystemCounterDescriptor.STATUS_MESSAGES_SENT);
@@ -169,22 +170,21 @@ public class PublicationImage
             termBuffers[i] = rawLog.partitions()[i].termBuffer();
         }
 
-        this.lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
+        lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
         final int termLength = rawLog.termLength();
 
-        this.currentWindowLength = Math.min(termLength, initialWindowLength);
-        this.currentGain = Math.min(currentWindowLength / 4, termLength / 4);
+        currentWindowLength = Math.min(termLength, initialWindowLength);
+        currentGain = currentWindowLength / 4;
 
-        this.termLengthMask = termLength - 1;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        this.initialTermId = initialTermId;
+        termLengthMask = termLength - 1;
+        positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
 
         final long initialPosition = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
-        this.lastStatusMessagePosition = initialPosition - (currentGain + 1);
-        this.newStatusMessagePosition = this.lastStatusMessagePosition;
-        this.rebuildPosition = initialPosition;
-        this.hwmPosition.setOrdered(initialPosition);
+        lastStatusMessagePosition = initialPosition - (currentGain + 1);
+        newStatusMessagePosition = lastStatusMessagePosition;
+        rebuildPosition = initialPosition;
+        hwmPosition.setOrdered(initialPosition);
     }
 
     /**

@@ -125,6 +125,11 @@ public:
         return counterId * METADATA_LENGTH;
     }
 
+    inline AtomicBuffer valuesBuffer()
+    {
+        return m_valuesBuffer;
+    }
+
 #pragma pack(push)
 #pragma pack(4)
     struct CounterValueDefn

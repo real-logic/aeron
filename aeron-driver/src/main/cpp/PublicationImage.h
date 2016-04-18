@@ -70,25 +70,26 @@ public:
         m_subscriberPositions(std::move(subscriberPositions)), m_hwmPosition(std::move(hwmPosition)),
         m_nanoClock(nanoClock)
     {
-        std::int32_t termLength = m_rawLog->termLength();
-
-        long time = m_nanoClock();
-        m_timeOfLastStatusChange = time;
-        m_lastPacketTimestamp = time;
-
-        m_currentWindowLength = termLength < initialWindowLength ? termLength : initialWindowLength;
-        m_currentGain = m_currentWindowLength / 4;
-
-        m_termLengthMask = termLength - 1;
-        m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(termLength);
-
-        std::int64_t initialPosition =
-            LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, m_positionBitsToShift, initialTermId);
-
-        m_lastStatusMessagePosition = initialPosition - (currentGain - 1);
-        m_newStatusMessagePosition = m_lastStatusMessagePosition;
-        m_rebuildPosition = initialPosition;
-        m_hwmPosition->setOrdered(initialPosition);
+        // TODO: uncomment when we figure out how to mock MappedRawLog and UnsafeBufferPosition
+//        std::int32_t termLength = m_rawLog->termLength();
+//
+//        long time = m_nanoClock();
+//        m_timeOfLastStatusChange = time;
+//        m_lastPacketTimestamp = time;
+//
+//        m_currentWindowLength = termLength < initialWindowLength ? termLength : initialWindowLength;
+//        m_currentGain = m_currentWindowLength / 4;
+//
+//        m_termLengthMask = termLength - 1;
+//        m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(termLength);
+//
+//        std::int64_t initialPosition =
+//            LogBufferDescriptor::computePosition(activeTermId, initialTermOffset, m_positionBitsToShift, initialTermId);
+//
+//        m_lastStatusMessagePosition = initialPosition - (currentGain - 1);
+//        m_newStatusMessagePosition = m_lastStatusMessagePosition;
+//        m_rebuildPosition = initialPosition;
+//        m_hwmPosition->setOrdered(initialPosition);
     }
 
     virtual ~PublicationImage(){}

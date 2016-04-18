@@ -18,7 +18,7 @@
 
 #include <cstdint>
 
-namespace aeron { namespace concurrent {
+namespace aeron { namespace driver { namespace status {
 
 namespace StreamPositionCounter {
 
@@ -41,6 +41,8 @@ struct StreamPositionCounterKeyMetaDataDefn
     } channel;
 };
 #pragma pack(pop)
+
+}
 
 }}}
 

@@ -65,14 +65,15 @@ TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv4)
     EXPECT_STREQ(message, receiveBuffer);
 }
 
-TEST_F(UdpChannelTransportTest, sendAndReceiveMulticastIPv6)
+// TODO: Disable as ipv6 doesn't work on some setups
+TEST_F(UdpChannelTransportTest, DISABLED_sendAndReceiveMulticastIPv6)
 {
     const char* message = "Hello World!";
     char receiveBuffer[512];
     memset(receiveBuffer, 0, sizeof(receiveBuffer));
     timeval timeout{5, 0};
 
-    std::unique_ptr<UdpChannel> channel = UdpChannel::parse("aeron:udp?endpoint=[ff02::3]:9877|interface=localhost", PF_INET6);
+    std::unique_ptr<UdpChannel> channel = UdpChannel::parse("aeron:udp?endpoint=[ff02::3]:9877|interface=[::1]", PF_INET6);
 
     Inet6Address* bindAddress = new Inet6Address{in6addr_any, channel->remoteData().port()};
     UdpChannelTransport transport{channel, &channel->remoteData(), bindAddress, &channel->localData()};
@@ -118,7 +119,7 @@ TEST_F(UdpChannelTransportTest, sendAndReceiveUnicastIPv6)
     timeval timeout{5, 0};
 
     std::unique_ptr<UdpChannel> channel = UdpChannel::parse(
-        "aeron:udp?endpoint=localhost:40127|interface=localhost:40123", PF_INET6);
+        "aeron:udp?endpoint=[::1]:40127|interface=[::1]:40123", PF_INET6);
 
     Inet6Address* bindAddress = new Inet6Address{in6addr_any, channel->remoteData().port()};
     UdpChannelTransport transport{channel, &channel->remoteData(), bindAddress, &channel->localData()};

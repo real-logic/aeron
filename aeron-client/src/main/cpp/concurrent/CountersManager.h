@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <deque>
 #include <memory>
+#include <iostream>
 
 #include <util/Exceptions.h>
 #include <util/StringUtil.h>

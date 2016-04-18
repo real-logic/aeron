@@ -42,7 +42,9 @@ SET(HEADERS
     PublicationImage.h
     Receiver.h
     DriverConductorProxy.h
-    buffer/MappedRawLog.h)
+    buffer/MappedRawLog.h
+    status/SystemCounterDescriptor.h
+    status/SystemCounters.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

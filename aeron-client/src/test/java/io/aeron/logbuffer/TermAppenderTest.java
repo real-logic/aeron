@@ -150,29 +150,6 @@ public class TermAppenderTest
     }
 
     @Test
-    public void shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacityIncludingHeader()
-    {
-        final int headerLength = DEFAULT_HEADER.capacity();
-        final int msgLength = 120;
-        final int requiredFrameSize = align(headerLength + msgLength, FRAME_ALIGNMENT);
-        final int tailValue = TERM_BUFFER_LENGTH - (requiredFrameSize + (headerLength - FRAME_ALIGNMENT));
-        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[128]);
-        final int frameLength = TERM_BUFFER_LENGTH - tailValue;
-
-        when(metaDataBuffer.getAndAddLong(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
-            .thenReturn(TermAppender.pack(TERM_ID, tailValue));
-
-        final long expectResult = TermAppender.pack(TERM_ID, TRIPPED);
-        assertThat(termAppender.appendUnfragmentedMessage(headerWriter, buffer, 0, msgLength), is(expectResult));
-
-        final InOrder inOrder = inOrder(termBuffer, metaDataBuffer, headerWriter);
-        inOrder.verify(metaDataBuffer, times(1)).getAndAddLong(TERM_TAIL_COUNTER_OFFSET, requiredFrameSize);
-        inOrder.verify(headerWriter, times(1)).write(termBuffer, tailValue, frameLength, TERM_ID);
-        inOrder.verify(termBuffer, times(1)).putShort(typeOffset(tailValue), (short)PADDING_FRAME_TYPE, LITTLE_ENDIAN);
-        inOrder.verify(termBuffer, times(1)).putIntOrdered(tailValue, frameLength);
-    }
-
-    @Test
     public void shouldFragmentMessageOverTwoFrames()
     {
         final int msgLength = MAX_PAYLOAD_LENGTH + 1;

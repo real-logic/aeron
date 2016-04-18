@@ -32,7 +32,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     /**
      * Length of the Data Header
      */
-    public static final int HEADER_LENGTH = 24;
+    public static final int HEADER_LENGTH = 32;
 
     /**
      * Begin Flag
@@ -53,7 +53,8 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     public static final int SESSION_ID_FIELD_OFFSET = 12;
     public static final int STREAM_ID_FIELD_OFFSET = 16;
     public static final int TERM_ID_FIELD_OFFSET = 20;
-    public static final int DATA_OFFSET = 24;
+    public static final int RESERVED_SPACE_OFFSET = 24;
+    public static final int DATA_OFFSET = HEADER_LENGTH;
 
     public DataHeaderFlyweight()
     {
@@ -162,6 +163,29 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
+     * Get the reserved value in LITTLE_ENDIAN format.
+     *
+     * @return value of the reserved value.
+     */
+    public long reservedValue()
+    {
+        return getLong(RESERVED_SPACE_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Set the reserved value in LITTLE_ENDIAN format.
+     *
+     * @param reservedValue to be stored
+     * @return flyweight
+     */
+    public DataHeaderFlyweight reservedValue(final int reservedValue)
+    {
+        putLong(TERM_OFFSET_FIELD_OFFSET, reservedValue, LITTLE_ENDIAN);
+
+        return this;
+    }
+
+    /**
      * Return offset in buffer for data
      *
      * @return offset of data in the buffer
@@ -208,6 +232,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
             .append(" session_id=").append(sessionId())
             .append(" stream_id=").append(streamId())
             .append(" term_id=").append(termId())
+            .append(" reserved value=").append(reservedValue())
             .append("}");
 
         return sb.toString();

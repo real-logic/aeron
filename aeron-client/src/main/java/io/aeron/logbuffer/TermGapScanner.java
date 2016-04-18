@@ -15,6 +15,7 @@
  */
 package io.aeron.logbuffer;
 
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
@@ -75,20 +76,20 @@ public class TermGapScanner
         final int gapBeginOffset = rebuildOffset;
         if (rebuildOffset < hwmOffset)
         {
-            final int limit = hwmOffset - HEADER_LENGTH;
-
+            final int alignedHeaderLength = BitUtil.align(HEADER_LENGTH, FRAME_ALIGNMENT);
+            final int limit = hwmOffset - alignedHeaderLength;
             while (rebuildOffset < limit)
             {
                 rebuildOffset += FRAME_ALIGNMENT;
 
                 if (0 != termBuffer.getIntVolatile(rebuildOffset))
                 {
-                    rebuildOffset -= HEADER_LENGTH;
+                    rebuildOffset -= alignedHeaderLength;
                     break;
                 }
             }
 
-            final int gapLength = (rebuildOffset - gapBeginOffset) + HEADER_LENGTH;
+            final int gapLength = (rebuildOffset - gapBeginOffset) + alignedHeaderLength;
             handler.onGap(termId, termBuffer, gapBeginOffset, gapLength);
         }
 

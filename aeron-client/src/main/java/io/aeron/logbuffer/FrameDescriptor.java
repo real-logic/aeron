@@ -55,7 +55,7 @@ public class FrameDescriptor
     /**
      * Alignment as a multiple of bytes for each frame. The length field will store the unaligned length in bytes.
      */
-    public static final int FRAME_ALIGNMENT = 8;
+    public static final int FRAME_ALIGNMENT = 32;
 
     /**
      * Beginning fragment of a frame.

@@ -20,6 +20,8 @@ import org.junit.Test;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
+import static org.agrona.BitUtil.align;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.*;
@@ -42,8 +44,8 @@ public class TermGapScannerTest
     @Test
     public void shouldReportGapAtBeginningOfBuffer()
     {
-        final int frameOffset = HEADER_LENGTH * 3;
-        final int highWaterMark = frameOffset + HEADER_LENGTH;
+        final int frameOffset = align(HEADER_LENGTH * 3, FRAME_ALIGNMENT);
+        final int highWaterMark = frameOffset + align(HEADER_LENGTH, FRAME_ALIGNMENT);
 
         when(termBuffer.getIntVolatile(frameOffset)).thenReturn(HEADER_LENGTH);
 
@@ -55,37 +57,37 @@ public class TermGapScannerTest
     @Test
     public void shouldReportSingleGapWhenBufferNotFull()
     {
-        final int tail = HEADER_LENGTH;
-        final int highWaterMark = HEADER_LENGTH * 3;
+        final int tail = align(HEADER_LENGTH, FRAME_ALIGNMENT);
+        final int highWaterMark = FRAME_ALIGNMENT * 3;
 
-        when(termBuffer.getIntVolatile(tail - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(tail - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
         when(termBuffer.getIntVolatile(tail)).thenReturn(0);
-        when(termBuffer.getIntVolatile(highWaterMark - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
-        verify(gapHandler).onGap(TERM_ID, termBuffer, tail, HEADER_LENGTH);
+        verify(gapHandler).onGap(TERM_ID, termBuffer, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
     }
 
     @Test
     public void shouldReportSingleGapWhenBufferIsFull()
     {
-        final int tail = LOG_BUFFER_CAPACITY - (HEADER_LENGTH * 2);
+        final int tail = LOG_BUFFER_CAPACITY - (align(HEADER_LENGTH, FRAME_ALIGNMENT) * 2);
         final int highWaterMark = LOG_BUFFER_CAPACITY;
 
-        when(termBuffer.getIntVolatile(tail - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(tail - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
         when(termBuffer.getIntVolatile(tail)).thenReturn(0);
-        when(termBuffer.getIntVolatile(highWaterMark - HEADER_LENGTH)).thenReturn(HEADER_LENGTH);
+        when(termBuffer.getIntVolatile(highWaterMark - align(HEADER_LENGTH, FRAME_ALIGNMENT))).thenReturn(HEADER_LENGTH);
 
         assertThat(TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler), is(tail));
 
-        verify(gapHandler).onGap(TERM_ID, termBuffer, tail, HEADER_LENGTH);
+        verify(gapHandler).onGap(TERM_ID, termBuffer, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
     }
 
     @Test
     public void shouldReportNoGapWhenHwmIsInPadding()
     {
-        final int paddingLength = HEADER_LENGTH * 2;
+        final int paddingLength = align(HEADER_LENGTH, FRAME_ALIGNMENT) * 2;
         final int tail = LOG_BUFFER_CAPACITY - paddingLength;
         final int highWaterMark = LOG_BUFFER_CAPACITY - paddingLength + HEADER_LENGTH;
 

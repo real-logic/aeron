@@ -289,7 +289,7 @@ public class LossDetectorTest
 
         handler.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int) rebuildPosition);
+        verify(nakMessageSender).onLossDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)rebuildPosition);
     }
 
     @Test

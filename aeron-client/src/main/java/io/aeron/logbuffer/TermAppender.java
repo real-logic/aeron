@@ -140,7 +140,7 @@ public class TermAppender
         final int termLength = termBuffer.capacity();
 
         long resultingOffset = termOffset + alignedLength;
-        if (resultingOffset > (termLength - HEADER_LENGTH))
+        if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
         }
@@ -176,7 +176,7 @@ public class TermAppender
         final int termLength = termBuffer.capacity();
 
         long resultingOffset = termOffset + alignedLength;
-        if (resultingOffset > (termLength - HEADER_LENGTH))
+        if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId(rawTail));
         }
@@ -222,7 +222,7 @@ public class TermAppender
         final int termLength = termBuffer.capacity();
 
         long resultingOffset = termOffset + requiredLength;
-        if (resultingOffset > (termLength - HEADER_LENGTH))
+        if (resultingOffset > termLength)
         {
             resultingOffset = handleEndOfLogCondition(termBuffer, termOffset, header, termLength, termId);
         }
@@ -306,15 +306,18 @@ public class TermAppender
     {
         int resultingOffset = FAILED;
 
-        if (termOffset <= (termLength - HEADER_LENGTH))
+        if (termOffset <= termLength)
         {
-            final int offset = (int)termOffset;
-            final int paddingLength = termLength - offset;
-            header.write(termBuffer, offset, paddingLength, termId);
-            frameType(termBuffer, offset, PADDING_FRAME_TYPE);
-            frameLengthOrdered(termBuffer, offset, paddingLength);
-
             resultingOffset = TRIPPED;
+
+            if (termOffset < termLength)
+            {
+                final int offset = (int)termOffset;
+                final int paddingLength = termLength - offset;
+                header.write(termBuffer, offset, paddingLength, termId);
+                frameType(termBuffer, offset, PADDING_FRAME_TYPE);
+                frameLengthOrdered(termBuffer, offset, paddingLength);
+            }
         }
 
         return pack(termId, resultingOffset);

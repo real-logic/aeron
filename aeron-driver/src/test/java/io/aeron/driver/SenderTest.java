@@ -62,7 +62,8 @@ public class SenderTest
 
     private static final UnsafeBuffer HEADER =
         DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
-    private static final int ALIGNED_FRAME_LENGTH = align(HEADER.capacity() + PAYLOAD.length, FRAME_ALIGNMENT);
+    public static final int FRAME_LENGTH = HEADER.capacity() + PAYLOAD.length;
+    private static final int ALIGNED_FRAME_LENGTH = align(FRAME_LENGTH, FRAME_ALIGNMENT);
 
     private final ControlTransportPoller mockTransportPoller = mock(ControlTransportPoller.class);
 
@@ -251,7 +252,7 @@ public class SenderTest
         assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -281,7 +282,7 @@ public class SenderTest
         assertThat(setupHeader.headerType(), is(HeaderFlyweight.HDR_TYPE_SETUP));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -291,7 +292,7 @@ public class SenderTest
         assertThat(dataHeader.version(), is((short)HeaderFlyweight.CURRENT_VERSION));
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -321,7 +322,7 @@ public class SenderTest
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
 
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));
@@ -346,7 +347,7 @@ public class SenderTest
         receivedFrames.remove();                   // skip setup
 
         dataHeader.wrap(new UnsafeBuffer(receivedFrames.remove()));
-        assertThat(dataHeader.frameLength(), is(ALIGNED_FRAME_LENGTH));
+        assertThat(dataHeader.frameLength(), is(FRAME_LENGTH));
         assertThat(dataHeader.termId(), is(INITIAL_TERM_ID));
         assertThat(dataHeader.streamId(), is(STREAM_ID));
         assertThat(dataHeader.sessionId(), is(SESSION_ID));

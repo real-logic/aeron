@@ -49,6 +49,8 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      */
     public static final short BEGIN_AND_END_FLAGS = BEGIN_FLAG | END_FLAG;
 
+    public static final long DEFAULT_RESERVE_VALUE = 0L;
+
     public static final int TERM_OFFSET_FIELD_OFFSET = 8;
     public static final int SESSION_ID_FIELD_OFFSET = 12;
     public static final int STREAM_ID_FIELD_OFFSET = 16;
@@ -213,6 +215,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
         buffer.putInt(SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
         buffer.putInt(TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putLong(RESERVED_SPACE_OFFSET, DEFAULT_RESERVE_VALUE);
 
         return buffer;
     }

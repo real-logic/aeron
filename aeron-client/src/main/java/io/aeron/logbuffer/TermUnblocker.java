@@ -128,7 +128,7 @@ public class TermUnblocker
         frameLengthOrdered(termBuffer, termOffset, frameLength);
     }
 
-    public static boolean scanBackToConfirmZeroed(final UnsafeBuffer buffer, final int from, final int limit)
+    private static boolean scanBackToConfirmZeroed(final UnsafeBuffer buffer, final int from, final int limit)
     {
         int i = from - FRAME_ALIGNMENT;
         boolean allZeros = true;

@@ -60,9 +60,8 @@ public class SenderTest
     private static final int INITIAL_TERM_ID = 3;
     private static final byte[] PAYLOAD = "Payload is here!".getBytes();
 
-    private static final UnsafeBuffer HEADER =
-        DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
-    public static final int FRAME_LENGTH = HEADER.capacity() + PAYLOAD.length;
+    private static final UnsafeBuffer HEADER = DataHeaderFlyweight.createDefaultHeader(SESSION_ID, STREAM_ID, INITIAL_TERM_ID);
+    private static final int FRAME_LENGTH = HEADER.capacity() + PAYLOAD.length;
     private static final int ALIGNED_FRAME_LENGTH = align(FRAME_LENGTH, FRAME_ALIGNMENT);
 
     private final ControlTransportPoller mockTransportPoller = mock(ControlTransportPoller.class);

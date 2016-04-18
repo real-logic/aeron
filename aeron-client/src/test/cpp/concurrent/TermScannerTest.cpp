@@ -68,7 +68,7 @@ TEST_F(TermScannerTest, shouldPackPaddingAndOffsetIntoResultingStatus)
 TEST_F(TermScannerTest, shouldScanSingleMessage)
 {
     const std::int32_t msgLength = 1;
-    const std::int32_t frameLength = FrameDescriptor::HEADER_LENGTH + msgLength;
+    const std::int32_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const std::int32_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOffset = 0;
     testing::Sequence sequence;
@@ -90,7 +90,7 @@ TEST_F(TermScannerTest, shouldScanSingleMessage)
 TEST_F(TermScannerTest, shouldFailToScanMessageLargerThanMaxLength)
 {
     const std::int32_t msgLength = 1;
-    const std::int32_t frameLength = FrameDescriptor::HEADER_LENGTH + msgLength;
+    const std::int32_t frameLength = DataFrameHeader::LENGTH + msgLength;
     const std::int32_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t maxLength = alignedFrameLength - 1;
     const std::int32_t frameOffset = 0;
@@ -141,7 +141,7 @@ static std::int32_t expectScanTwoMessages(
 TEST_F(TermScannerTest, shouldScanTwoMessagesThatFitInSingleMtu)
 {
     const std::int32_t msgLength = 100;
-    const std::int32_t frameLength = FrameDescriptor::HEADER_LENGTH + msgLength;
+    const std::int32_t frameLength = DataFrameHeader::LENGTH + msgLength;
 
     const std::int32_t totalLength = expectScanTwoMessages(m_termBuffer, frameLength, frameLength);
     EXPECT_CALL(m_termBuffer, getInt32Volatile(totalLength)).WillRepeatedly(testing::Return(0));
@@ -155,7 +155,7 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesThatFitInSingleMtu)
 TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtMtuBoundary)
 {
     const std::int32_t frameTwoLength =
-        util::BitUtil::align(FrameDescriptor::HEADER_LENGTH + 1, FrameDescriptor::FRAME_ALIGNMENT);
+        util::BitUtil::align(DataFrameHeader::LENGTH + 1, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOneLength =
         util::BitUtil::align(MTU_LENGTH - frameTwoLength, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOffset = 0;
@@ -171,7 +171,7 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtMtuBoundary)
 TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtSecondThatSpansMtu)
 {
     const std::int32_t frameTwoLength =
-        util::BitUtil::align(FrameDescriptor::HEADER_LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
+        util::BitUtil::align(DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOneLength = MTU_LENGTH - (frameTwoLength / 2);
     const std::int32_t frameOffset = 0;
 
@@ -187,7 +187,7 @@ TEST_F(TermScannerTest, shouldScanTwoMessagesAndStopAtSecondThatSpansMtu)
 TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
 {
     const std::int32_t alignedFrameLength =
-        util::BitUtil::align(FrameDescriptor::HEADER_LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
+        util::BitUtil::align(DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOffset = TERM_BUFFER_CAPACITY - alignedFrameLength;
 
     EXPECT_CALL(m_termBuffer, getInt32Volatile(frameOffset))
@@ -204,9 +204,9 @@ TEST_F(TermScannerTest, shouldScanLastFrameInBuffer)
 TEST_F(TermScannerTest, shouldScanLastMessageInBufferPlusPadding)
 {
     const std::int32_t alignedFrameLength =
-        util::BitUtil::align(FrameDescriptor::HEADER_LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
+        util::BitUtil::align(DataFrameHeader::LENGTH * 2, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t paddingFrameLength =
-        util::BitUtil::align(FrameDescriptor::HEADER_LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
+        util::BitUtil::align(DataFrameHeader::LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOffset = TERM_BUFFER_CAPACITY - (alignedFrameLength + paddingFrameLength);
 
     expectScanTwoMessages(
@@ -215,17 +215,17 @@ TEST_F(TermScannerTest, shouldScanLastMessageInBufferPlusPadding)
 
     const std::int64_t scanOutcome = TermScanner::scanForAvailability(m_termBuffer, frameOffset, MTU_LENGTH);
 
-    EXPECT_EQ(alignedFrameLength + FrameDescriptor::HEADER_LENGTH, TermScanner::available(scanOutcome));
-    EXPECT_EQ(paddingFrameLength - FrameDescriptor::HEADER_LENGTH, TermScanner::padding(scanOutcome));
+    EXPECT_EQ(alignedFrameLength + DataFrameHeader::LENGTH, TermScanner::available(scanOutcome));
+    EXPECT_EQ(paddingFrameLength - DataFrameHeader::LENGTH, TermScanner::padding(scanOutcome));
 }
 
 TEST_F(TermScannerTest, shouldScanLastMessageInBufferMinusPaddingLimitedByMtu)
 {
     const std::int32_t alignedFrameLength =
-        util::BitUtil::align(FrameDescriptor::HEADER_LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+        util::BitUtil::align(DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t frameOffset =
         TERM_BUFFER_CAPACITY - util::BitUtil::align(
-            FrameDescriptor::HEADER_LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
+            DataFrameHeader::LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
     const std::int32_t mtu = alignedFrameLength + 8;
 
     expectScanTwoMessages(

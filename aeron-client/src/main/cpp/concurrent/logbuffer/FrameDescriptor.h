@@ -54,13 +54,13 @@ namespace aeron { namespace concurrent { namespace logbuffer {
 
 namespace FrameDescriptor {
 
-static const util::index_t FRAME_ALIGNMENT = 8;
+static const util::index_t FRAME_ALIGNMENT = 32;
 
 static const std::uint8_t BEGIN_FRAG = 0x80;
 static const std::uint8_t END_FRAG = 0x40;
 static const std::uint8_t UNFRAGMENTED = BEGIN_FRAG | END_FRAG;
 
-static const util::index_t HEADER_LENGTH = 24;
+static const util::index_t ALIGNED_HEADER_LENGTH = 32;
 
 static const util::index_t VERSION_OFFSET = 4;
 static const util::index_t FLAGS_OFFSET = 5;

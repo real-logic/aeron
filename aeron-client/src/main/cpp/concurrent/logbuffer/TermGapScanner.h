@@ -43,7 +43,7 @@ inline std::int32_t scanForGap(
     const std::int32_t gapBeginOffset = rebuildOffset;
     if (rebuildOffset < hwmOffset)
     {
-        const std::int32_t limit = hwmOffset - FrameDescriptor::HEADER_LENGTH;
+        const std::int32_t limit = hwmOffset - FrameDescriptor::ALIGNED_HEADER_LENGTH;
 
         while (rebuildOffset < limit)
         {
@@ -51,12 +51,12 @@ inline std::int32_t scanForGap(
 
             if (0 != termBuffer.getInt32Volatile(rebuildOffset))
             {
-                rebuildOffset -= FrameDescriptor::HEADER_LENGTH;
+                rebuildOffset -= FrameDescriptor::ALIGNED_HEADER_LENGTH;
                 break;
             }
         }
 
-        const std::int32_t gapLength = (rebuildOffset - gapBeginOffset) + FrameDescriptor::HEADER_LENGTH;
+        const std::int32_t gapLength = (rebuildOffset - gapBeginOffset) + FrameDescriptor::ALIGNED_HEADER_LENGTH;
         handler(termId, termBuffer, gapBeginOffset, gapLength);
     }
 
@@ -67,4 +67,4 @@ inline std::int32_t scanForGap(
 
 }}};
 
-#endif //INCLUDED_AERON_CONCURRENT_LOGBUFFER_TERMGAPSCANNER__
+#endif

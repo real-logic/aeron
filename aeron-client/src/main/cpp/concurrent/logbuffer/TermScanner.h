@@ -79,8 +79,8 @@ inline std::int64_t scanForAvailability(AtomicBuffer& termBuffer, std::int32_t o
         util::index_t alignedFrameLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
         if (FrameDescriptor::isPaddingFrame(termBuffer, frameOffset))
         {
-            padding = alignedFrameLength - FrameDescriptor::HEADER_LENGTH;
-            alignedFrameLength = FrameDescriptor::HEADER_LENGTH;
+            padding = alignedFrameLength - DataFrameHeader::LENGTH;
+            alignedFrameLength = DataFrameHeader::LENGTH;
         }
 
         available += alignedFrameLength;

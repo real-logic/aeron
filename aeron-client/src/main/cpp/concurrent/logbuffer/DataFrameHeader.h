@@ -36,6 +36,7 @@ struct DataFrameHeaderDefn
     std::int32_t sessionId;
     std::int32_t streamId;
     std::int32_t termId;
+    std::int64_t reservedValue;
 };
 #pragma pack(pop)
 
@@ -47,6 +48,7 @@ static const util::index_t TERM_OFFSET_FIELD_OFFSET = offsetof(DataFrameHeaderDe
 static const util::index_t SESSION_ID_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, sessionId);
 static const util::index_t STREAM_ID_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, streamId);
 static const util::index_t TERM_ID_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, termId);
+static const util::index_t RESERVED_VALUE_FIELD_OFFSET = offsetof(DataFrameHeaderDefn, reservedValue);
 static const util::index_t DATA_OFFSET = sizeof(DataFrameHeaderDefn);
 
 static const util::index_t LENGTH = DATA_OFFSET;

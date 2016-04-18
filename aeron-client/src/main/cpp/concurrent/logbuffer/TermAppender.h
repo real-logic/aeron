@@ -81,7 +81,7 @@ public:
 
         result.termId = LogBufferDescriptor::termId(rawTail);
         result.termOffset = termOffset + alignedLength;
-        if (result.termOffset > (termLength - DataFrameHeader::LENGTH))
+        if (result.termOffset > termLength)
         {
             handleEndOfLogCondition(result, m_termBuffer, static_cast<std::int32_t>(termOffset), header, termLength);
         }
@@ -109,7 +109,7 @@ public:
 
         result.termId = LogBufferDescriptor::termId(rawTail);
         result.termOffset = termOffset + alignedLength;
-        if (result.termOffset > (termLength - DataFrameHeader::LENGTH))
+        if (result.termOffset > termLength)
         {
             handleEndOfLogCondition(result, m_termBuffer, static_cast<std::int32_t>(termOffset), header, termLength);
         }
@@ -143,7 +143,7 @@ public:
 
         result.termId = LogBufferDescriptor::termId(rawTail);
         result.termOffset = termOffset + requiredLength;
-        if (result.termOffset > (termLength - DataFrameHeader::LENGTH))
+        if (result.termOffset > termLength)
         {
             handleEndOfLogCondition(result, m_termBuffer, static_cast<std::int32_t>(termOffset), header, termLength);
         }
@@ -195,14 +195,17 @@ private:
     {
         result.termOffset = TERM_APPENDER_FAILED;
 
-        if (termOffset <= (termLength - DataFrameHeader::LENGTH))
+        if (termOffset <= termLength)
         {
-            const std::int32_t paddingLength = termLength - termOffset;
-            header.write(termBuffer, termOffset, paddingLength, result.termId);
-            FrameDescriptor::frameType(termBuffer, termOffset, DataFrameHeader::HDR_TYPE_PAD);
-            FrameDescriptor::frameLengthOrdered(termBuffer, termOffset, paddingLength);
-
             result.termOffset = TERM_APPENDER_TRIPPED;
+
+            if (termOffset < termLength)
+            {
+                const std::int32_t paddingLength = termLength - termOffset;
+                header.write(termBuffer, termOffset, paddingLength, result.termId);
+                FrameDescriptor::frameType(termBuffer, termOffset, DataFrameHeader::HDR_TYPE_PAD);
+                FrameDescriptor::frameLengthOrdered(termBuffer, termOffset, paddingLength);
+            }
         }
     }
 

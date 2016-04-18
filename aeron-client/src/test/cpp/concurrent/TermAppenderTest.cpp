@@ -186,34 +186,6 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
     EXPECT_EQ(result.termOffset, TERM_APPENDER_TRIPPED);
 }
 
-TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemainingCapacityIncludingHeader)
-{
-    const util::index_t msgLength = 120;
-    const util::index_t requiredFrameSize = util::BitUtil::align(DataFrameHeader::LENGTH + msgLength, FrameDescriptor::FRAME_ALIGNMENT);
-    const util::index_t tailValue = TERM_BUFFER_CAPACITY - (requiredFrameSize + (DataFrameHeader::LENGTH - FrameDescriptor::FRAME_ALIGNMENT));
-    const util::index_t frameLength = TERM_BUFFER_CAPACITY - tailValue;
-    testing::Sequence sequence;
-
-    EXPECT_CALL(m_metaDataBuffer, getAndAddInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, requiredFrameSize))
-        .Times(1)
-        .WillOnce(testing::Return(packRawTail(TERM_ID, tailValue)));
-
-    EXPECT_CALL(m_termBuffer, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), -frameLength))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_termBuffer, putUInt16(FrameDescriptor::typeOffset(tailValue), DataFrameHeader::HDR_TYPE_PAD))
-        .Times(1)
-        .InSequence(sequence);
-    EXPECT_CALL(m_termBuffer, putInt32Ordered(FrameDescriptor::lengthOffset(tailValue), frameLength))
-        .Times(1)
-        .InSequence(sequence);
-
-    TermAppender::Result result;
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength);
-    EXPECT_EQ(result.termId, TERM_ID);
-    EXPECT_EQ(result.termOffset, TERM_APPENDER_TRIPPED);
-}
-
 TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
 {
     const util::index_t msgLength = MAX_PAYLOAD_LENGTH + 1;

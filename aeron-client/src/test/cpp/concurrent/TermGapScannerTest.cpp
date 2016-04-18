@@ -25,6 +25,7 @@
 using namespace aeron::concurrent::logbuffer;
 using namespace aeron::concurrent::mock;
 using namespace aeron::concurrent;
+using namespace aeron::util;
 using namespace aeron;
 
 #define LOG_BUFFER_CAPACITY (LogBufferDescriptor::TERM_MIN_LENGTH)
@@ -54,13 +55,13 @@ protected:
 TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
 {
     bool called = false;
-    const util::index_t frameOffset = FrameDescriptor::HEADER_LENGTH * 3;
-    const util::index_t highWaterMark = frameOffset + FrameDescriptor::HEADER_LENGTH;
+    const util::index_t frameOffset = BitUtil::align(DataFrameHeader::LENGTH * 3, FrameDescriptor::FRAME_ALIGNMENT);
+    const util::index_t highWaterMark = frameOffset + FrameDescriptor::ALIGNED_HEADER_LENGTH;
 
     EXPECT_CALL(m_termBuffer, getInt32Volatile(testing::_))
         .WillRepeatedly(testing::Return(0));
     EXPECT_CALL(m_termBuffer, getInt32Volatile(frameOffset))
-        .WillOnce(testing::Return(FrameDescriptor::HEADER_LENGTH));
+        .WillOnce(testing::Return(DataFrameHeader::LENGTH));
 
     auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
     {
@@ -78,22 +79,22 @@ TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
 TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferNotFull)
 {
     bool called = false;
-    const std::int32_t tail = FrameDescriptor::HEADER_LENGTH;
-    const std::int32_t highWaterMark = FrameDescriptor::HEADER_LENGTH * 3;
+    const std::int32_t tail = BitUtil::align(DataFrameHeader::LENGTH, FrameDescriptor::FRAME_ALIGNMENT);
+    const std::int32_t highWaterMark = FrameDescriptor::FRAME_ALIGNMENT * 3;
 
     EXPECT_CALL(m_termBuffer, getInt32Volatile(testing::_)).WillRepeatedly(testing::Return(0));
-    EXPECT_CALL(m_termBuffer, getInt32Volatile(tail - FrameDescriptor::HEADER_LENGTH))
-        .WillRepeatedly(testing::Return(FrameDescriptor::HEADER_LENGTH));
+    EXPECT_CALL(m_termBuffer, getInt32Volatile(tail - FrameDescriptor::ALIGNED_HEADER_LENGTH))
+        .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
     EXPECT_CALL(m_termBuffer, getInt32Volatile(tail))
         .WillRepeatedly(testing::Return(0));
-    EXPECT_CALL(m_termBuffer, getInt32Volatile(highWaterMark - FrameDescriptor::HEADER_LENGTH))
-        .WillRepeatedly(testing::Return(FrameDescriptor::HEADER_LENGTH));
+    EXPECT_CALL(m_termBuffer, getInt32Volatile(highWaterMark - FrameDescriptor::ALIGNED_HEADER_LENGTH))
+        .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
 
     auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
     {
         EXPECT_EQ(TERM_ID, termId);
         EXPECT_EQ(tail, offset);
-        EXPECT_EQ(FrameDescriptor::HEADER_LENGTH, length);
+        EXPECT_EQ(FrameDescriptor::ALIGNED_HEADER_LENGTH, length);
         called = true;
     };
 
@@ -105,23 +106,23 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferNotFull)
 TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferIsFull)
 {
     bool called = false;
-    const std::int32_t tail = LOG_BUFFER_CAPACITY - (FrameDescriptor::HEADER_LENGTH * 2);
+    const std::int32_t tail = LOG_BUFFER_CAPACITY - (FrameDescriptor::ALIGNED_HEADER_LENGTH * 2);
     const std::int32_t highWaterMark = LOG_BUFFER_CAPACITY;
 
     EXPECT_CALL(m_termBuffer, getInt32Volatile(testing::_)).WillRepeatedly(testing::Return(0));
 
-    EXPECT_CALL(m_termBuffer, getInt32Volatile(tail - FrameDescriptor::HEADER_LENGTH))
-        .WillRepeatedly(testing::Return(FrameDescriptor::HEADER_LENGTH));
+    EXPECT_CALL(m_termBuffer, getInt32Volatile(tail - FrameDescriptor::ALIGNED_HEADER_LENGTH))
+        .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
     EXPECT_CALL(m_termBuffer, getInt32Volatile(tail))
         .WillRepeatedly(testing::Return(0));
-    EXPECT_CALL(m_termBuffer, getInt32Volatile(highWaterMark - FrameDescriptor::HEADER_LENGTH))
-        .WillRepeatedly(testing::Return(FrameDescriptor::HEADER_LENGTH));
+    EXPECT_CALL(m_termBuffer, getInt32Volatile(highWaterMark - FrameDescriptor::ALIGNED_HEADER_LENGTH))
+        .WillRepeatedly(testing::Return(DataFrameHeader::LENGTH));
 
     auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)
     {
         EXPECT_EQ(TERM_ID, termId);
         EXPECT_EQ(tail, offset);
-        EXPECT_EQ(FrameDescriptor::HEADER_LENGTH, length);
+        EXPECT_EQ(FrameDescriptor::ALIGNED_HEADER_LENGTH, length);
         called = true;
     };
 
@@ -133,13 +134,13 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferIsFull)
 TEST_F(TermGapScannerTest, shouldReportNoGapWhenHwmIsInPadding)
 {
     bool called = false;
-    const std::int32_t paddingLength = FrameDescriptor::HEADER_LENGTH * 2;
+    const std::int32_t paddingLength = FrameDescriptor::ALIGNED_HEADER_LENGTH * 2;
     const std::int32_t tail = LOG_BUFFER_CAPACITY - paddingLength;
-    const std::int32_t highWaterMark = LOG_BUFFER_CAPACITY - paddingLength + FrameDescriptor::HEADER_LENGTH;
+    const std::int32_t highWaterMark = LOG_BUFFER_CAPACITY - paddingLength + DataFrameHeader::LENGTH;
 
     EXPECT_CALL(m_termBuffer, getInt32Volatile(tail))
         .WillRepeatedly(testing::Return(paddingLength));
-    EXPECT_CALL(m_termBuffer, getInt32Volatile(tail + FrameDescriptor::HEADER_LENGTH))
+    EXPECT_CALL(m_termBuffer, getInt32Volatile(tail + DataFrameHeader::LENGTH))
         .WillRepeatedly(testing::Return(0));
 
     auto f = [&] (std::int32_t termId, AtomicBuffer& buffer, std::int32_t offset, std::int32_t length)

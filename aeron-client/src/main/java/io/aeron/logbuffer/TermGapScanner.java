@@ -31,6 +31,8 @@ import static org.agrona.BitUtil.align;
  */
 public class TermGapScanner
 {
+    private static final int ALIGNED_HEADER_LENGTH = BitUtil.align(HEADER_LENGTH, FRAME_ALIGNMENT);
+
     /**
      * Handler for notifying of gaps in the log.
      */
@@ -76,20 +78,19 @@ public class TermGapScanner
         final int gapBeginOffset = rebuildOffset;
         if (rebuildOffset < hwmOffset)
         {
-            final int alignedHeaderLength = BitUtil.align(HEADER_LENGTH, FRAME_ALIGNMENT);
-            final int limit = hwmOffset - alignedHeaderLength;
+            final int limit = hwmOffset - ALIGNED_HEADER_LENGTH;
             while (rebuildOffset < limit)
             {
                 rebuildOffset += FRAME_ALIGNMENT;
 
                 if (0 != termBuffer.getIntVolatile(rebuildOffset))
                 {
-                    rebuildOffset -= alignedHeaderLength;
+                    rebuildOffset -= ALIGNED_HEADER_LENGTH;
                     break;
                 }
             }
 
-            final int gapLength = (rebuildOffset - gapBeginOffset) + alignedHeaderLength;
+            final int gapLength = (rebuildOffset - gapBeginOffset) + ALIGNED_HEADER_LENGTH;
             handler.onGap(termId, termBuffer, gapBeginOffset, gapLength);
         }
 

@@ -20,6 +20,7 @@ The latest release and **downloads** can be found in [Maven Central](http://sear
 1. [Java Programming Guide](https://github.com/real-logic/Aeron/wiki/Java-Programming-Guide)
 1. [C++11 Programming Guide](https://github.com/real-logic/Aeron/wiki/Cpp-Programming-Guide)
 1. [Best Practices Guide](https://github.com/real-logic/Aeron/wiki/Best-Practices-Guide)
+1. [Monitoring and Debugging](https://github.com/real-logic/Aeron/wiki/Monitoring-and-Debugging)
 
 ### How does Aeron work?
 

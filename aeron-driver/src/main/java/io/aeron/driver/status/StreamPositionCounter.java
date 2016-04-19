@@ -27,7 +27,13 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Allocates {@link Position} counters on a stream of messages.
+ * Allocates {@link Position} counters on a stream of messages. Positions tracked in bytes include:
+ * <ul>
+ *     <li>{@link PublisherLimit}: Limit for flow controlling {@link io.aeron.Publication}s</li>
+ *     <li>{@link SenderPos}: Highest position on a stream sent to the media.</li>
+ *     <li>{@link ReceiverHwm}: Highest position on a stream being rebuild by the Receiver.</li>
+ *     <li>{@link SubscriberPos}: Consumption position for each Subscriber on a stream.</li>
+ * </ul>
  */
 public class StreamPositionCounter
 {

@@ -18,6 +18,9 @@ package io.aeron.driver.status;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
 
+/**
+ * The position the Sender has reached for sending data to the media on a session-channel-stream tuple.
+ */
 public class SenderPos
 {
     /**
@@ -28,7 +31,7 @@ public class SenderPos
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "Snd-pos";
+    public static final String NAME = "snd-pos";
 
     public static Position allocate(
         final CountersManager countersManager,

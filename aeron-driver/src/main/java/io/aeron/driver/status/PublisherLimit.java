@@ -18,6 +18,10 @@ package io.aeron.driver.status;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
 
+/**
+ * The limit as a position in bytes applied to publishers on a session-channel-stream tuple. Publishers will experience
+ * back pressure when this position is passed as a means of flow control.
+ */
 public class PublisherLimit
 {
     /**
@@ -28,7 +32,7 @@ public class PublisherLimit
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "Pub-lmt";
+    public static final String NAME = "pub-lmt";
 
     public static Position allocate(
         final CountersManager countersManager,

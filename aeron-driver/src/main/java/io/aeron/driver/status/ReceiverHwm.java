@@ -18,6 +18,10 @@ package io.aeron.driver.status;
 import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.Position;
 
+/**
+ * The highest position the Receiver has observed on a session-channel-stream tuple while rebuilding the stream.
+ * It is possible the stream is not complete to this point if the stream has experienced loss.
+ */
 public class ReceiverHwm
 {
     /**
@@ -28,7 +32,7 @@ public class ReceiverHwm
     /**
      * Human readable name for the counter.
      */
-    public static final String NAME = "Rcv-hwm";
+    public static final String NAME = "rcv-hwm";
 
     public static Position allocate(
         final CountersManager countersManager,

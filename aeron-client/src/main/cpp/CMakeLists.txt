@@ -104,12 +104,7 @@ SET(HEADERS
     protocol/SetupFlyweight.h
     protocol/DataHeaderFlyweight.h)
 
-#if (CMAKE_BUILD_TYPE EQUAL "RELEASE")
-#    add_definitions(-DDISABLE_BOUNDS_CHECKS)
-#endif()
-
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
-
 
 # static library
 add_library(aeron_client STATIC ${SOURCE} ${HEADERS})

@@ -158,7 +158,7 @@ inline std::int64_t rawTailValue(std::int32_t termId, std::int64_t position)
 TEST_F(PublicationTest, shouldFailToOfferWhenAppendFails)
 {
     const int activeIndex = LogBufferDescriptor::indexByTerm(TERM_ID_1, TERM_ID_1);
-    const std::int64_t initialPosition = TERM_LENGTH - 1;
+    const std::int64_t initialPosition = TERM_LENGTH;
     m_metaDataBuffers[activeIndex].putInt64(LogBufferDescriptor::TERM_TAIL_COUNTER_OFFSET, rawTailValue(TERM_ID_1, initialPosition));
     m_publicationLimit.set(LONG_MAX);
 

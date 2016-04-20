@@ -24,10 +24,10 @@ import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
 
 import java.net.InetSocketAddress;
@@ -47,9 +47,9 @@ class NetworkPublicationPadding1
 
 class NetworkPublicationConductorFields extends NetworkPublicationPadding1
 {
-    long timeOfFlush = 0;
+    long timeOfLastActivity = 0;
+    long lastSenderPosition = 0;
     int refCount = 0;
-    boolean isActive = true;
 }
 
 class NetworkPublicationPadding2 extends NetworkPublicationConductorFields
@@ -432,28 +432,29 @@ public class NetworkPublication
             .frameLength(0);
     }
 
-    private boolean isUnreferencedAndFlushed(final long now)
+    private boolean isUnreferencedAndPotentiallyInactive(final long now)
     {
-        boolean isFlushed = false;
+        boolean result = false;
+
         if (0 == refCount)
         {
             final long senderPosition = this.senderPosition.getVolatile();
-            final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-            isFlushed = (int)(senderPosition & termLengthMask) >= logPartitions[activeIndex].tailOffsetVolatile();
 
-            if (isActive && isFlushed)
-            {
-                timeOfFlush = now;
-                isActive = false;
-            }
+            timeOfLastActivity = (senderPosition == lastSenderPosition) ? timeOfLastActivity : now;
+            lastSenderPosition = senderPosition;
+            result = true;
+        }
+        else
+        {
+            timeOfLastActivity = now;
         }
 
-        return isFlushed;
+        return result;
     }
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        if (isUnreferencedAndFlushed(time) && time > (timeOfFlush + Configuration.PUBLICATION_LINGER_NS))
+        if (isUnreferencedAndPotentiallyInactive(time) && time > (timeOfLastActivity + Configuration.PUBLICATION_LINGER_NS))
         {
             reachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);
@@ -471,7 +472,7 @@ public class NetworkPublication
 
     public long timeOfLastStateChange()
     {
-        return timeOfFlush;
+        return timeOfLastActivity;
     }
 
     public void delete()

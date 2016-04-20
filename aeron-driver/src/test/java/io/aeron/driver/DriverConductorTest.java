@@ -417,8 +417,6 @@ public class DriverConductorTest
 
         final NetworkPublication publication = captor.getValue();
 
-        // create an unflushed publication
-
         final int termId = 101;
         final int index = LogBufferDescriptor.indexByTerm(termId, termId);
         final LogBufferPartition[] partitions = publication.rawLog().partitions();
@@ -434,14 +432,10 @@ public class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
-        // this will stay around forever as it will be unreferenced, but unflushed.
+        assertTrue(publication.hasReachedEndOfLife());
 
-        // TODO: flush after a longer time period if unreferenced, but not flushed
-
-        assertFalse(publication.hasReachedEndOfLife());
-
-        verify(senderProxy, never()).removeNetworkPublication(eq(publication));
-        assertNotNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
+        verify(senderProxy).removeNetworkPublication(eq(publication));
+        assertNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
     @Test

@@ -14,6 +14,8 @@
 # limitations under the License.
 #
 
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDISABLE_BOUNDS_CHECKS")
+
 set(HEADERS
     Configuration.h
     RateReporter.h)

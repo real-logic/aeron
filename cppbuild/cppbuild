@@ -9,7 +9,7 @@ case "`uname`" in
     ncpus=`sysctl -n hw.ncpu`
     ;;
   Linux*)
-    ncpus=$(lscpu -p | egrep '^#' | wc -l)
+    ncpus=$(lscpu -p | egrep -v '^#' | wc -l)
     ;;
 esac
 

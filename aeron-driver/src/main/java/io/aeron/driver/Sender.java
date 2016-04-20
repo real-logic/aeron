@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.SendChannelEndpoint;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.cmd.SenderCmd;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.Agent;
@@ -26,6 +25,8 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.function.Consumer;
+
+import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_SENT;
 
 /**
  * Agent that iterates over networkPublications for sending them to registered subscribers.
@@ -48,7 +49,7 @@ public class Sender implements Agent, Consumer<SenderCmd>
         this.controlTransportPoller = ctx.controlTransportPoller();
         this.commandQueue = ctx.senderCommandQueue();
         this.conductorProxy = ctx.fromSenderDriverConductorProxy();
-        this.totalBytesSent = ctx.systemCounters().get(SystemCounterDescriptor.BYTES_SENT);
+        this.totalBytesSent = ctx.systemCounters().get(BYTES_SENT);
         this.nanoClock = ctx.nanoClock();
     }
 

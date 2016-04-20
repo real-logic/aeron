@@ -18,7 +18,6 @@ package io.aeron.driver;
 import io.aeron.driver.cmd.ReceiverCmd;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
@@ -26,6 +25,9 @@ import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
+
+import static io.aeron.driver.Configuration.PENDING_SETUPS_TIMEOUT_NS;
+import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_RECEIVED;
 
 /**
  * Receiver agent for JVM based media driver, uses an event loop with command buffer
@@ -45,7 +47,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         statusMessageTimeout = ctx.statusMessageTimeout();
         dataTransportPoller = ctx.dataTransportPoller();
         commandQueue = ctx.receiverCommandQueue();
-        totalBytesReceived = ctx.systemCounters().get(SystemCounterDescriptor.BYTES_RECEIVED);
+        totalBytesReceived = ctx.systemCounters().get(BYTES_RECEIVED);
         clock = ctx.nanoClock();
     }
 
@@ -91,18 +93,18 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onAddSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        channelEndpoint.dispatcher().addSubscription(streamId);
+        channelEndpoint.addSubscription(streamId);
     }
 
     public void onRemoveSubscription(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
-        channelEndpoint.dispatcher().removeSubscription(streamId);
+        channelEndpoint.removeSubscription(streamId);
     }
 
     public void onNewPublicationImage(final ReceiveChannelEndpoint channelEndpoint, final PublicationImage image)
     {
         publicationImages.add(image);
-        channelEndpoint.dispatcher().addPublicationImage(image);
+        channelEndpoint.addPublicationImage(image);
     }
 
     public void onRegisterReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
@@ -118,7 +120,7 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
 
     public void onRemoveCoolDown(final ReceiveChannelEndpoint channelEndpoint, final int sessionId, final int streamId)
     {
-        channelEndpoint.dispatcher().removeCoolDown(sessionId, streamId);
+        channelEndpoint.removeCoolDown(sessionId, streamId);
     }
 
     public void accept(final ReceiverCmd cmd)
@@ -132,10 +134,10 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
         {
             final PendingSetupMessageFromSource cmd = pendingSetupMessages.get(i);
 
-            if (now > (cmd.timeOfStatusMessage() + Configuration.PENDING_SETUPS_TIMEOUT_NS))
+            if (now > (cmd.timeOfStatusMessage() + PENDING_SETUPS_TIMEOUT_NS))
             {
                 pendingSetupMessages.remove(i);
-                cmd.channelEndpoint().dispatcher().removePendingSetup(cmd.sessionId(), cmd.streamId());
+                cmd.removeFromDataPacketDispatcher();
             }
         }
     }

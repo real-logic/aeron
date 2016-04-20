@@ -167,7 +167,7 @@ public class DataPacketDispatcher implements DataPacketHandler, SetupMessageHand
             {
                 if (channelEndpoint.isMulticast() && channelEndpoint.multicastTtl() < header.ttl())
                 {
-                    channelEndpoint.possibleTtlAssymetryEncountered();
+                    channelEndpoint.possibleTelAsymmetryEncountered();
                 }
 
                 createPublicationImage(

@@ -10,6 +10,7 @@
 #include <PublicationImage.h>
 #include <Receiver.h>
 #include <DriverConductorProxy.h>
+#include <FeedbackDelayGenerator.h>
 
 namespace aeron { namespace driver { namespace media {
 
@@ -40,6 +41,7 @@ public:
         std::shared_ptr<ReceiveChannelEndpoint>(nullptr),
         std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>>(nullptr),
         std::unique_ptr<Position<UnsafeBufferPosition>>(nullptr),
+        m_delayGenerator,
         mockCurrentTime
     ){}
 
@@ -55,6 +57,8 @@ public:
     {
         return 0;
     }
+private:
+    StaticFeedbackDelayGenerator m_delayGenerator{0, true};
 };
 
 class MockReceiver : public Receiver

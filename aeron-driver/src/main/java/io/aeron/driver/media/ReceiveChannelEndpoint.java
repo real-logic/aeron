@@ -17,7 +17,6 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.*;
 import io.aeron.driver.exceptions.ConfigurationException;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.protocol.*;
 import org.agrona.LangUtil;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -30,8 +29,10 @@ import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.HeaderFlyweight.*;
+import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
  * Aggregator of multiple subscriptions onto a single transport session for receiving of data and setup frames
@@ -83,10 +84,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         setupHeader = new SetupFlyweight(receiveBuffer);
 
         this.dispatcher = dispatcher;
-        statusMessageShortSends = context.systemCounters().get(SystemCounterDescriptor.STATUS_MESSAGE_SHORT_SENDS);
-        nakMessageShortSends = context.systemCounters().get(SystemCounterDescriptor.NAK_MESSAGE_SHORT_SENDS);
-        invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
-        possibleTtlAsymmetry = context.systemCounters().get(SystemCounterDescriptor.POSSIBLE_TTL_ASYMMETRY);
+        statusMessageShortSends = context.systemCounters().get(STATUS_MESSAGE_SHORT_SENDS);
+        nakMessageShortSends = context.systemCounters().get(NAK_MESSAGE_SHORT_SENDS);
+        invalidPackets = context.systemCounters().get(INVALID_PACKETS);
+        possibleTtlAsymmetry = context.systemCounters().get(POSSIBLE_TTL_ASYMMETRY);
     }
 
     /**
@@ -132,12 +133,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         openDatagramChannel();
     }
 
-    public DataPacketDispatcher dispatcher()
-    {
-        return dispatcher;
-    }
-
-    public void possibleTtlAssymetryEncountered()
+    public void possibleTelAsymmetryEncountered()
     {
         possibleTtlAsymmetry.orderedIncrement();
     }
@@ -194,7 +190,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public void sendSetupElicitingStatusMessage(final InetSocketAddress controlAddress, final int sessionId, final int streamId)
     {
-        sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, StatusMessageFlyweight.SEND_SETUP_FLAG);
+        sendStatusMessage(controlAddress, sessionId, streamId, 0, 0, 0, SEND_SETUP_FLAG);
     }
 
     public void validateWindowMaxLength(final int windowMaxLength)
@@ -309,6 +305,36 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
 
         return bytesReceived;
+    }
+
+    public void removePendingSetup(final int sessionId, final int streamId)
+    {
+        dispatcher.removePendingSetup(sessionId, streamId);
+    }
+
+    public void removePublicationImage(final PublicationImage publicationImage)
+    {
+        dispatcher.removePublicationImage(publicationImage);
+    }
+
+    public void addSubscription(final int streamId)
+    {
+        dispatcher.addSubscription(streamId);
+    }
+
+    public void removeSubscription(final int streamId)
+    {
+        dispatcher.removeSubscription(streamId);
+    }
+
+    public void addPublicationImage(final PublicationImage image)
+    {
+        dispatcher.addPublicationImage(image);
+    }
+
+    public void removeCoolDown(final int sessionId, final int streamId)
+    {
+        dispatcher.removeCoolDown(sessionId, streamId);
     }
 
     protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)

@@ -25,7 +25,6 @@ import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.DataTransportPoller;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -49,9 +48,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static io.aeron.driver.Configuration.*;
-import static io.aeron.driver.status.SystemCounterDescriptor.CONDUCTOR_PROXY_FAILS;
-import static io.aeron.driver.status.SystemCounterDescriptor.RECEIVER_PROXY_FAILS;
-import static io.aeron.driver.status.SystemCounterDescriptor.SENDER_PROXY_FAILS;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static java.lang.Boolean.getBoolean;
 import static io.aeron.CncFileDescriptor.*;
 import static org.agrona.IoUtil.mapNewFile;
@@ -177,7 +174,7 @@ public final class MediaDriver implements AutoCloseable
         context.fromSenderDriverConductorProxy().driverConductor(conductor);
         context.toDriverCommands().consumerHeartbeatTime(context.epochClock().time());
 
-        final AtomicCounter errorCounter = context.systemCounters().get(SystemCounterDescriptor.ERRORS);
+        final AtomicCounter errorCounter = context.systemCounters().get(ERRORS);
         final ErrorHandler errorHandler = context.errorHandler();
 
         switch (context.threadingMode)

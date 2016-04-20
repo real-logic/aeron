@@ -59,4 +59,9 @@ public class PendingSetupMessageFromSource
     {
         timeOfStatusMessage = now;
     }
+
+    public void removeFromDataPacketDispatcher()
+    {
+        channelEndpoint.removePendingSetup(sessionId, streamId);
+    }
 }

@@ -44,7 +44,8 @@ SET(HEADERS
     DriverConductorProxy.h
     buffer/MappedRawLog.h
     status/SystemCounterDescriptor.h
-    status/SystemCounters.h)
+    status/SystemCounters.h
+    FeedbackDelayGenerator.h)
 
 add_library(aeron_driver ${SOURCE} ${HEADERS})
 add_executable(MediaDriver MediaDriverMain.cpp)

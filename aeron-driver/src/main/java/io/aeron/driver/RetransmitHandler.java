@@ -15,29 +15,25 @@
  */
 package io.aeron.driver;
 
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 
+import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
+import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Tracking and handling of retransmit request, NAKs, for senders and receivers
  * <p>
- * A max number of retransmits is permitted by {@link #MAX_RETRANSMITS}. Additional received NAKs will be
+ * A max number of retransmits is permitted by {@link Configuration#MAX_RETRANSMITS_DEFAULT}. Additional received NAKs will be
  * ignored if this maximum is reached.
  */
 public class RetransmitHandler
 {
-    /**
-     * Maximum number of concurrent retransmits
-     */
-    public static final int MAX_RETRANSMITS = Configuration.MAX_RETRANSMITS_DEFAULT;
-
-    private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS];
+    private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS_DEFAULT];
     private final Long2ObjectHashMap<RetransmitAction> activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
     private final NanoClock nanoClock;
     private final AtomicCounter invalidPackets;
@@ -66,14 +62,14 @@ public class RetransmitHandler
         final int capacity)
     {
         this.nanoClock = nanoClock;
-        this.invalidPackets = systemCounters.get(SystemCounterDescriptor.INVALID_PACKETS);
+        this.invalidPackets = systemCounters.get(INVALID_PACKETS);
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
         this.initialTermId = initialTermId;
         this.capacity = capacity;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
 
-        for (int i = 0; i < MAX_RETRANSMITS; i++)
+        for (int i = 0; i < MAX_RETRANSMITS_DEFAULT; i++)
         {
             retransmitActionPool[i] = new RetransmitAction();
         }
@@ -93,7 +89,7 @@ public class RetransmitHandler
         {
             final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
 
-            if (activeRetransmitByPositionMap.size() < MAX_RETRANSMITS &&
+            if (activeRetransmitByPositionMap.size() < MAX_RETRANSMITS_DEFAULT &&
                 null == activeRetransmitByPositionMap.get(position))
             {
                 final RetransmitAction action = assignRetransmitAction();

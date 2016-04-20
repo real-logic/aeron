@@ -24,6 +24,7 @@
 #include <util/MacroUtil.h>
 #include "buffer/MappedRawLog.h"
 #include "media/InetAddress.h"
+#include "FeedbackDelayGenerator.h"
 
 namespace aeron { namespace driver {
 
@@ -61,6 +62,7 @@ public:
         std::shared_ptr<ReceiveChannelEndpoint> channelEndpoint,
         std::unique_ptr<std::vector<ReadablePosition<UnsafeBufferPosition>>> subscriberPositions,
         std::unique_ptr<Position<UnsafeBufferPosition>> hwmPosition,
+        FeedbackDelayGenerator& feedbackDelayGenerator,
         nano_clock_t nanoClock
     )
         : m_correlationId(correlationId), m_imageLivenessTimeoutNs(imageLivenessTimeoutNs),

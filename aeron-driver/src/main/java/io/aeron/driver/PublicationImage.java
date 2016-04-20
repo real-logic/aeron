@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -32,6 +31,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import static io.aeron.driver.PublicationImage.Status.ACTIVE;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 
 class PublicationImagePadding1
@@ -154,11 +154,11 @@ public class PublicationImage
         this.sourceAddress = sourceAddress;
         this.initialTermId = initialTermId;
 
-        heartbeatsReceived = systemCounters.get(SystemCounterDescriptor.HEARTBEATS_RECEIVED);
-        statusMessagesSent = systemCounters.get(SystemCounterDescriptor.STATUS_MESSAGES_SENT);
-        nakMessagesSent = systemCounters.get(SystemCounterDescriptor.NAK_MESSAGES_SENT);
-        flowControlUnderRuns = systemCounters.get(SystemCounterDescriptor.FLOW_CONTROL_UNDER_RUNS);
-        flowControlOverRuns = systemCounters.get(SystemCounterDescriptor.FLOW_CONTROL_OVER_RUNS);
+        heartbeatsReceived = systemCounters.get(HEARTBEATS_RECEIVED);
+        statusMessagesSent = systemCounters.get(STATUS_MESSAGES_SENT);
+        nakMessagesSent = systemCounters.get(NAK_MESSAGES_SENT);
+        flowControlUnderRuns = systemCounters.get(FLOW_CONTROL_UNDER_RUNS);
+        flowControlOverRuns = systemCounters.get(FLOW_CONTROL_OVER_RUNS);
 
         final long time = clock.nanoTime();
         this.clock = clock;
@@ -256,7 +256,7 @@ public class PublicationImage
      */
     void removeFromDispatcher()
     {
-        channelEndpoint.dispatcher().removePublicationImage(this);
+        channelEndpoint.removePublicationImage(this);
     }
 
     /**

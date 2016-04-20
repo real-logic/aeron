@@ -16,7 +16,6 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.*;
-import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
@@ -31,6 +30,9 @@ import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 
+import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
+import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
+import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
@@ -62,9 +64,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
             udpChannel.remoteData(),
             context.errorLog());
 
-        nakMessagesReceived = context.systemCounters().get(SystemCounterDescriptor.NAK_MESSAGES_RECEIVED);
-        statusMessagesReceived = context.systemCounters().get(SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED);
-        invalidPackets = context.systemCounters().get(SystemCounterDescriptor.INVALID_PACKETS);
+        nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
+        statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
+        invalidPackets = context.systemCounters().get(INVALID_PACKETS);
 
         nakMessage = new NakFlyweight(receiveBuffer);
         statusMessage = new StatusMessageFlyweight(receiveBuffer);

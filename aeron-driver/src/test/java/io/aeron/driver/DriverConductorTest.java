@@ -15,36 +15,45 @@
  */
 package io.aeron.driver;
 
+import io.aeron.DriverProxy;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.SystemCounters;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.*;
-import org.mockito.stubbing.Answer;
-import io.aeron.DriverProxy;
-import org.agrona.concurrent.*;
+import io.aeron.logbuffer.HeaderWriter;
+import io.aeron.logbuffer.LogBufferDescriptor;
+import io.aeron.logbuffer.LogBufferPartition;
+import io.aeron.logbuffer.TermAppender;
+import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.concurrent.NanoClock;
+import org.agrona.concurrent.OneToOneConcurrentArrayQueue;
+import org.agrona.concurrent.SystemEpochClock;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
+import org.mockito.stubbing.Answer;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 
+import static io.aeron.ErrorCode.*;
 import static io.aeron.driver.Configuration.*;
+import static io.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.*;
-import static io.aeron.ErrorCode.*;
-import static io.aeron.logbuffer.LogBufferDescriptor.TERM_META_DATA_LENGTH;
 
 public class DriverConductorTest
 {
@@ -394,6 +403,45 @@ public class DriverConductorTest
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
         verify(senderProxy, never()).removeNetworkPublication(eq(publication));
+    }
+
+    @Test
+    public void shouldTimeoutPublicationWithNoKeepaliveButNotFlushed() throws Exception
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+
+        final NetworkPublication publication = captor.getValue();
+
+        // create an unflushed publication
+
+        final int termId = 101;
+        final int index = LogBufferDescriptor.indexByTerm(termId, termId);
+        final LogBufferPartition[] partitions = publication.rawLog().partitions();
+        final TermAppender appender =
+            new TermAppender(partitions[index].termBuffer(), partitions[index].metaDataBuffer());
+        final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[256]);
+        final HeaderWriter headerWriter =
+            new HeaderWriter(DataHeaderFlyweight.createDefaultHeader(publication.sessionId(), STREAM_ID_1, termId));
+
+        publication.onStatusMessage(termId, 0, 10, new InetSocketAddress("localhost", 4059));
+
+        appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256);
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        // this will stay around forever as it will be unreferenced, but unflushed.
+
+        // TODO: flush after a longer time period if unreferenced, but not flushed
+
+        assertFalse(publication.hasReachedEndOfLife());
+
+        verify(senderProxy, never()).removeNetworkPublication(eq(publication));
+        assertNotNull(driverConductor.senderChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
     }
 
     @Test

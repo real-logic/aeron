@@ -55,13 +55,13 @@ public class ErrorStat
             buffer,
             (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
                 System.out.format(
-                    "***\n%d observations from %s to %s for:\n %s\n",
+                    "***%n%d observations from %s to %s for:%n %s%n",
                     observationCount,
                     dateFormat.format(new Date(firstObservationTimestamp)),
                     dateFormat.format(new Date(lastObservationTimestamp)),
                     encodedException
                 ));
 
-        System.out.format("\n%d distinct errors observed.\n", distinctErrorCount);
+        System.out.format("%n%d distinct errors observed.%n", distinctErrorCount);
     }
 }

@@ -62,15 +62,15 @@ public class LogInspector
 
             final UnsafeBuffer logMetaDataBuffer = atomicBuffers[LOG_META_DATA_SECTION_INDEX];
 
-            out.format("Initial term id: %d\n", initialTermId(logMetaDataBuffer));
-            out.format("   Active index: %d\n", activePartitionIndex(logMetaDataBuffer));
-            out.format("    Term length: %d\n", termLength);
-            out.format("     MTU length: %d\n\n", mtuLength(logMetaDataBuffer));
+            out.format("Initial term id: %d%n", initialTermId(logMetaDataBuffer));
+            out.format("   Active index: %d%n", activePartitionIndex(logMetaDataBuffer));
+            out.format("    Term length: %d%n", termLength);
+            out.format("     MTU length: %d%n%n", mtuLength(logMetaDataBuffer));
 
             if (!SKIP_DEFAULT_HEADER)
             {
                 dataHeaderFlyweight.wrap(defaultFrameHeader(logMetaDataBuffer));
-                out.format("default %s\n", dataHeaderFlyweight);
+                out.format("default %s%n", dataHeaderFlyweight);
             }
 
             out.println();
@@ -79,7 +79,7 @@ public class LogInspector
             {
                 final UnsafeBuffer metaDataBuffer = atomicBuffers[i + PARTITION_COUNT];
                 out.format(
-                    "Index %d Term Meta Data status=%s tail=%d\n",
+                    "Index %d Term Meta Data status=%s tail=%d%n",
                     i,
                     termStatus(metaDataBuffer),
                     metaDataBuffer.getLong(TERM_TAIL_COUNTER_OFFSET) & 0xFFFF_FFFFL);
@@ -88,7 +88,7 @@ public class LogInspector
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
                 out.println("\n======================================================================");
-                out.format("Index %d Term Data\n\n", i);
+                out.format("Index %d Term Data%n%n", i);
 
                 final UnsafeBuffer termBuffer = logBuffers.atomicBuffers()[i];
                 dataHeaderFlyweight.wrap(termBuffer);
@@ -109,7 +109,7 @@ public class LogInspector
                         }
                         catch (final Exception ex)
                         {
-                            System.out.printf("frameLength=%d offset=%d\n", frameLength, offset);
+                            System.out.printf("frameLength=%d offset=%d%n", frameLength, offset);
                             ex.printStackTrace();
                         }
 

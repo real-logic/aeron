@@ -194,7 +194,7 @@ public class AeronStat
         {
             System.out.print("\033[H\033[2J");
 
-            System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat\n", new Date());
+            System.out.format("%1$tH:%1$tM:%1$tS - Aeron Stat%n", new Date());
             System.out.println("=========================");
 
             aeronStat.print(System.out);
@@ -212,7 +212,7 @@ public class AeronStat
                 if (filter(typeId, keyBuffer))
                 {
                     final long value = counters.getCounterValue(counterId);
-                    out.format("%3d: %,20d - %s\n", counterId, value, label);
+                    out.format("%3d: %,20d - %s%n", counterId, value, label);
                 }
             });
     }
@@ -224,13 +224,13 @@ public class AeronStat
             if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg))
             {
                 System.out.println(
-                    "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat\n" +
-                        "\tfilter by optional regex patterns:\n" +
-                        "\t[type=<pattern>]\n" +
-                        "\t[identity=<pattern>]\n" +
-                        "\t[sessionId=<pattern>]\n" +
-                        "\t[streamId=<pattern>]\n" +
-                        "\t[channel=<pattern>]\n");
+                    "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n" +
+                        "\tfilter by optional regex patterns:%n" +
+                        "\t[type=<pattern>]%n" +
+                        "\t[identity=<pattern>]%n" +
+                        "\t[sessionId=<pattern>]%n" +
+                        "\t[streamId=<pattern>]%n" +
+                        "\t[channel=<pattern>]%n");
 
                 System.exit(0);
             }

@@ -18,6 +18,11 @@ package io.aeron.logbuffer;
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.nio.ByteOrder;
+
+import static io.aeron.protocol.DataHeaderFlyweight.*;
+import static io.aeron.protocol.HeaderFlyweight.FLAGS_FIELD_OFFSET;
+import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
@@ -157,7 +162,7 @@ public class Header
      */
     public final int sessionId()
     {
-        return buffer.getInt(offset + DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + SESSION_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -167,7 +172,7 @@ public class Header
      */
     public final int streamId()
     {
-        return buffer.getInt(offset + DataHeaderFlyweight.STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + STREAM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -177,7 +182,7 @@ public class Header
      */
     public final int termId()
     {
-        return buffer.getInt(offset + DataHeaderFlyweight.TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
+        return buffer.getInt(offset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
     }
 
     /**
@@ -197,7 +202,7 @@ public class Header
      */
     public final int type()
     {
-        return buffer.getShort(offset + DataHeaderFlyweight.TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
+        return buffer.getShort(offset + TYPE_FIELD_OFFSET, LITTLE_ENDIAN) & 0xFFFF;
     }
 
     /**
@@ -209,6 +214,19 @@ public class Header
      */
     public byte flags()
     {
-        return buffer.getByte(offset + DataHeaderFlyweight.FLAGS_FIELD_OFFSET);
+        return buffer.getByte(offset + FLAGS_FIELD_OFFSET);
+    }
+
+    /**
+     * Get the value stored in the reserve space at the end of a data frame header.
+     *
+     * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
+     *
+     * @return the value stored in the reserve space at the end of a data frame header.
+     * @see DataHeaderFlyweight
+     */
+    public long reservedValue()
+    {
+        return buffer.getLong(offset + RESERVED_VALUE_OFFSET, LITTLE_ENDIAN);
     }
 }

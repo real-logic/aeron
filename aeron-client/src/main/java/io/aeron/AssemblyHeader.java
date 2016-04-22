@@ -20,6 +20,9 @@ import io.aeron.protocol.DataHeaderFlyweight;
 
 import static io.aeron.logbuffer.FrameDescriptor.UNFRAGMENTED;
 
+/**
+ * Extends the base header to allow for a message to be reassembled from fragmented frames.
+ */
 public class AssemblyHeader extends Header
 {
     private int frameLength;

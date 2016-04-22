@@ -27,11 +27,13 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 @RunWith(Theories.class)
-public class AbortedMessageTest
+public class BufferClaimMessageTest
 {
     @DataPoint
     public static final String UNICAST_CHANNEL = "aeron:udp?endpoint=localhost:54325";
@@ -47,7 +49,7 @@ public class AbortedMessageTest
 
     @Theory
     @Test(timeout = 10000)
-    public void shouldReceivePublishedMessage(final String channel) throws Exception
+    public void shouldReceivePublishedMessageWithInterleavedAbort(final String channel) throws Exception
     {
         final BufferClaim bufferClaim = new BufferClaim();
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(new byte[MESSAGE_LENGTH]);
@@ -86,7 +88,48 @@ public class AbortedMessageTest
         }
     }
 
-    public static void publishMessage(final UnsafeBuffer srcBuffer, final Publication publication)
+    @Theory
+    @Test(timeout = 10000)
+    public void shouldTransferReservedValue(final String channel) throws Exception
+    {
+        final BufferClaim bufferClaim = new BufferClaim();
+        final MediaDriver.Context ctx = new MediaDriver.Context();
+
+        try (final MediaDriver ignore = MediaDriver.launch(ctx);
+             final Aeron aeron = Aeron.connect();
+             final Publication publication = aeron.addPublication(channel, STREAM_ID);
+             final Subscription subscription = aeron.addSubscription(channel, STREAM_ID))
+        {
+            while (publication.tryClaim(MESSAGE_LENGTH, bufferClaim) < 0L)
+            {
+                Thread.yield();
+            }
+
+            final long reservedValue = 1234567L;
+            bufferClaim.reservedValue(reservedValue);
+            bufferClaim.commit();
+
+            final boolean[] done = new boolean[1];
+            while (!done[0])
+            {
+                subscription.poll(
+                    (buffer, offset, length, header) ->
+                    {
+                        assertThat(length, is(MESSAGE_LENGTH));
+                        assertThat(header.reservedValue(), is(reservedValue));
+
+                        done[0] = true;
+                    },
+                    FRAGMENT_COUNT_LIMIT);
+            }
+        }
+        finally
+        {
+            ctx.deleteAeronDirectory();
+        }
+    }
+
+    private static void publishMessage(final UnsafeBuffer srcBuffer, final Publication publication)
     {
         while (publication.offer(srcBuffer, 0, MESSAGE_LENGTH) < 0L)
         {

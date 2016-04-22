@@ -22,6 +22,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
+import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static io.aeron.protocol.DataHeaderFlyweight.RESERVED_VALUE_OFFSET;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static io.aeron.protocol.HeaderFlyweight.FRAME_LENGTH_FIELD_OFFSET;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -68,7 +70,7 @@ public class BufferClaim
      */
     public int offset()
     {
-        return DataHeaderFlyweight.HEADER_LENGTH;
+        return HEADER_LENGTH;
     }
 
     /**
@@ -78,7 +80,35 @@ public class BufferClaim
      */
     public int length()
     {
-        return buffer.capacity() - DataHeaderFlyweight.HEADER_LENGTH;
+        return buffer.capacity() - HEADER_LENGTH;
+    }
+
+    /**
+     * Get the value stored in the reserve space at the end of a data frame header.
+     *
+     * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
+     *
+     * @return the value stored in the reserve space at the end of a data frame header.
+     * @see DataHeaderFlyweight
+     */
+    public long reservedValue()
+    {
+        return buffer.getLong(RESERVED_VALUE_OFFSET, LITTLE_ENDIAN);
+    }
+
+    /**
+     * Write the provided value into the reserved space at the end of the data frame header.
+     *
+     * Note: The value will be written in {@link ByteOrder#LITTLE_ENDIAN} format.
+     *
+     * @param value to be stored in the reserve space at the end of a data frame header.
+     * @return this for fluent API semantics.
+     * @see DataHeaderFlyweight
+     */
+    public BufferClaim reservedValue(final long value)
+    {
+        buffer.putLong(RESERVED_VALUE_OFFSET, value, LITTLE_ENDIAN);
+        return this;
     }
 
     /**
@@ -96,7 +126,7 @@ public class BufferClaim
     }
 
     /**
-     * Abort a claim of the message space to the log buffer so that log can progress ignoring this claim.
+     * Abort a claim of the message space to the log buffer so that the log can progress by ignoring this claim.
      */
     public void abort()
     {

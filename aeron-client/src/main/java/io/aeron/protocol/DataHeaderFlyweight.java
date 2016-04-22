@@ -235,7 +235,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
             .append(" session_id=").append(sessionId())
             .append(" stream_id=").append(streamId())
             .append(" term_id=").append(termId())
-            .append(" reserved value=").append(reservedValue())
+            .append(" reserved_value=").append(reservedValue())
             .append("}");
 
         return sb.toString();

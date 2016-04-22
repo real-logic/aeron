@@ -91,7 +91,7 @@ public class LogInspector
                 out.println("\n======================================================================");
                 out.format("Index %d Term Data%n%n", i);
 
-                final UnsafeBuffer termBuffer = logBuffers.atomicBuffers()[i];
+                final UnsafeBuffer termBuffer = atomicBuffers[i];
                 dataHeaderFlyweight.wrap(termBuffer);
 
                 int offset = 0;

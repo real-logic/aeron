@@ -105,7 +105,7 @@ public class BufferClaimMessageTest
                 Thread.yield();
             }
 
-            final long reservedValue = 1234567L;
+            final long reservedValue = System.currentTimeMillis();
             bufferClaim.reservedValue(reservedValue);
             bufferClaim.commit();
 

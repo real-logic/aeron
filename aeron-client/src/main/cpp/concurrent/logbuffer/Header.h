@@ -170,6 +170,16 @@ public:
         return LogBufferDescriptor::computePosition(termId(), termOffset() + frameLength(), m_positionBitsToShift, m_initialTermId);
     }
 
+    /**
+     * Get the value stored in the reserve space at the end of a data frame header.
+     *
+     * @return the value stored in the reserve space at the end of a data frame header.
+     */
+    inline std::int64_t reservedValue() const
+    {
+        return m_buffer.getInt64(m_offset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET);
+    }
+
 private:
     AtomicBuffer m_buffer;
     util::index_t m_offset;

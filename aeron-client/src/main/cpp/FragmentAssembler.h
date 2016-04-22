@@ -131,6 +131,7 @@ private:
                             frame.flags = FrameDescriptor::UNFRAGMENTED;
                             frame.type = DataFrameHeader::HDR_TYPE_DATA;
                             frame.termOffset = header.termOffset() - (frame.frameLength - header.frameLength());
+                            frame.reservedValue = header.reservedValue();
 
                             m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, assemblyHeader);
 

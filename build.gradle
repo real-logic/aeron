@@ -21,7 +21,7 @@ plugins {
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
 def aeronGroup = 'io.aeron'
-def aeronVersion = '0.9.6-SNAPSHOT'
+def aeronVersion = '0.9.6'
 
 group = aeronGroup
 version = aeronVersion
@@ -171,7 +171,7 @@ subprojects {
 
 project(':aeron-client') {
     dependencies {
-        compile 'org.agrona:Agrona:0.4.14-SNAPSHOT'
+        compile 'org.agrona:Agrona:0.5'
     }
 
     uploadArchives {

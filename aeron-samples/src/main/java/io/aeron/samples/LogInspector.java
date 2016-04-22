@@ -27,6 +27,7 @@ import java.util.Date;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
+import static java.lang.Math.min;
 
 /**
  * Command line utility for inspecting a log buffer to see what terms and messages it contains.
@@ -53,7 +54,7 @@ public class LogInspector
         try (final LogBuffers logBuffers = new LogBuffers(logFileName))
         {
             out.println("======================================================================");
-            out.format("%s Inspection dump for %s\n", new Date(), logFileName);
+            out.format("%s Inspection dump for %s%n", new Date(), logFileName);
             out.println("======================================================================");
 
             final UnsafeBuffer[] atomicBuffers = logBuffers.atomicBuffers();
@@ -88,12 +89,10 @@ public class LogInspector
 
             for (int i = 0; i < PARTITION_COUNT; i++)
             {
-                out.println("\n======================================================================");
+                out.println("%n======================================================================");
                 out.format("Index %d Term Data%n%n", i);
 
                 final UnsafeBuffer termBuffer = atomicBuffers[i];
-                dataHeaderFlyweight.wrap(termBuffer);
-
                 int offset = 0;
                 do
                 {
@@ -105,7 +104,7 @@ public class LogInspector
                     {
                         try
                         {
-                            final int limit = Math.min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
+                            final int limit = min(termLength - (offset + HEADER_LENGTH), messageDumpLimit);
                             out.println(formatBytes(termBuffer, offset + HEADER_LENGTH, limit));
                         }
                         catch (final Exception ex)
@@ -117,7 +116,7 @@ public class LogInspector
                         break;
                     }
 
-                    final int limit = Math.min(frameLength - HEADER_LENGTH, messageDumpLimit);
+                    final int limit = min(frameLength - HEADER_LENGTH, messageDumpLimit);
                     out.println(formatBytes(termBuffer, offset + HEADER_LENGTH, limit));
 
                     offset += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);

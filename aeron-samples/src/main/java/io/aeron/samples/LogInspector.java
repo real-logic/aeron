@@ -62,6 +62,7 @@ public class LogInspector
 
             final UnsafeBuffer logMetaDataBuffer = atomicBuffers[LOG_META_DATA_SECTION_INDEX];
 
+            out.format("Time of last SM: %s%n", new Date(timeOfLastStatusMessage(logMetaDataBuffer)));
             out.format("Initial term id: %d%n", initialTermId(logMetaDataBuffer));
             out.format("   Active index: %d%n", activePartitionIndex(logMetaDataBuffer));
             out.format("    Term length: %d%n", termLength);

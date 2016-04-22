@@ -180,7 +180,7 @@ public class LogBufferDescriptor
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
-     *  |                       Time of Last SM                         |
+     *  |                 Time of Last Status Message                   |
      *  |                                                               |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...

@@ -17,6 +17,8 @@
 #ifndef AERON_SYSTEMCOUNTERS_H
 #define AERON_SYSTEMCOUNTERS_H
 
+#include <unordered_map>
+
 #include <concurrent/AtomicCounter.h>
 #include <concurrent/CountersManager.h>
 #include <util/Exceptions.h>
@@ -43,7 +45,7 @@ public:
                     SOURCEINFO);
             }
 
-            counts[i++] = descriptor.newCounter(counterManager);
+            counts[descriptor.id()] = descriptor.newCounter(counterManager);
         }
     }
 

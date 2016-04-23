@@ -187,22 +187,21 @@ public:
     }
 
     /**
-     * Get a std::vector of active {@link Image}s that match this subscription.
+     * Iterate over Image list and call passed in function.
      *
-     * @return a std::vector of active {@link Image}s that match this subscription.
+     * @return length of Image list
      */
-    inline std::shared_ptr<std::vector<Image>> images()
+    inline int forEachImage(const std::function<void(Image&)> func)
     {
         const int length = std::atomic_load(&m_imagesLength);
-        Image *images = std::atomic_load(&m_images);
-        std::shared_ptr<std::vector<Image>> result(new std::vector<Image>(length));
+        Image* images = std::atomic_load(&m_images);
 
         for (int i = 0; i < length; i++)
         {
-            (*result)[i] = images[i];
+            func(images[i]);
         }
 
-        return result;
+        return length;
     }
 
     /**

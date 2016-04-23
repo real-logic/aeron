@@ -117,23 +117,8 @@ private:
                         {
                             const util::index_t msgLength = builder.limit() - DataFrameHeader::LENGTH;
                             AtomicBuffer msgBuffer(builder.buffer(), builder.limit());
-                            Header assemblyHeader(header);
 
-                            assemblyHeader.buffer(msgBuffer);
-                            assemblyHeader.offset(0);
-                            DataFrameHeader::DataFrameHeaderDefn& frame(
-                                msgBuffer.overlayStruct<DataFrameHeader::DataFrameHeaderDefn>());
-
-                            frame.frameLength = DataFrameHeader::LENGTH + msgLength;
-                            frame.sessionId = header.sessionId();
-                            frame.streamId = header.streamId();
-                            frame.termId = header.termId();
-                            frame.flags = FrameDescriptor::UNFRAGMENTED;
-                            frame.type = DataFrameHeader::HDR_TYPE_DATA;
-                            frame.termOffset = header.termOffset() - (frame.frameLength - header.frameLength());
-                            frame.reservedValue = header.reservedValue();
-
-                            m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, assemblyHeader);
+                            m_delegate(msgBuffer, DataFrameHeader::LENGTH, msgLength, header);
 
                             builder.reset();
                         }

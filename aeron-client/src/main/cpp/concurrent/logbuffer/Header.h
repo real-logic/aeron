@@ -167,7 +167,8 @@ public:
      */
     inline std::int64_t position() const
     {
-        return LogBufferDescriptor::computePosition(termId(), termOffset() + frameLength(), m_positionBitsToShift, m_initialTermId);
+        const std::int32_t resultingOffset = util::BitUtil::align(termOffset() + frameLength(), FrameDescriptor::FRAME_ALIGNMENT);
+        return LogBufferDescriptor::computePosition(termId(), resultingOffset, m_positionBitsToShift, m_initialTermId);
     }
 
     /**

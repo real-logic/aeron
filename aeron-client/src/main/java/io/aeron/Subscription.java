@@ -20,6 +20,7 @@ import org.agrona.collections.ArrayUtil;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Aeron Subscriber API for receiving a reconstructed {@link Image} for a stream of messages from publishers on
@@ -84,7 +85,7 @@ public class Subscription implements AutoCloseable
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered within a session.
-     *
+     * <p>
      * To assemble messages that span multiple fragments then use {@link FragmentAssembler}.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
@@ -123,7 +124,7 @@ public class Subscription implements AutoCloseable
      * <p>
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered within a session.
-     *
+     * <p>
      * To assemble messages that span multiple fragments then use {@link ControlledFragmentAssembler}.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
@@ -150,7 +151,7 @@ public class Subscription implements AutoCloseable
 
         for (int i = 0; i < startingIndex && fragmentsRead < fragmentLimit; i++)
         {
-            fragmentsRead += images[i]. controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
+            fragmentsRead += images[i].controlledPoll(fragmentHandler, fragmentLimit - fragmentsRead);
         }
 
         return fragmentsRead;
@@ -158,7 +159,7 @@ public class Subscription implements AutoCloseable
 
     /**
      * Poll the {@link Image}s under the subscription for available message fragments in blocks.
-     *
+     * <p>
      * This method is useful for operations like bulk archiving and messaging indexing.
      *
      * @param blockHandler     to receive a block of fragments from each {@link Image}.
@@ -178,7 +179,7 @@ public class Subscription implements AutoCloseable
 
     /**
      * Poll the {@link Image}s under the subscription for available message fragments in blocks.
-     *
+     * <p>
      * This method is useful for operations like bulk archiving a stream to file.
      *
      * @param fileBlockHandler to receive a block of fragments from each {@link Image}.
@@ -239,7 +240,20 @@ public class Subscription implements AutoCloseable
     }
 
     /**
-     * Close the Subscription so that associated {@link Image} can be released.
+     * Iterate over the {@link Image}s for this subscription.
+     *
+     * @param imageConsumer to handle each {@link Image}.
+     */
+    public void forEachImage(final Consumer<Image> imageConsumer)
+    {
+        for (final Image image : images)
+        {
+            imageConsumer.accept(image);
+        }
+    }
+
+    /**
+     * Close the Subscription so that associated {@link Image}s can be released.
      * <p>
      * This method is idempotent.
      */

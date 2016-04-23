@@ -38,7 +38,6 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 public class FragmentAssembler implements FragmentHandler
 {
     private final FragmentHandler delegate;
-    private final AssemblyHeader assemblyHeader = new AssemblyHeader();
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
     private final IntFunction<BufferBuilder> builderFunc;
 
@@ -97,7 +96,7 @@ public class FragmentAssembler implements FragmentHandler
                     if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
                         final int msgLength = builder.limit();
-                        delegate.onFragment(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
+                        delegate.onFragment(builder.buffer(), 0, msgLength, header);
                         builder.reset();
                     }
                 }

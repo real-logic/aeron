@@ -48,13 +48,13 @@ public class Header
     /**
      * Construct a header that references a buffer for the log.
      *
-     * @param initialTermId this stream started at.
-     * @param termCapacity for each term in the log buffer.
+     * @param initialTermId       this stream started at.
+     * @param positionBitsToShift for calculating positions.
      */
-    public Header(final int initialTermId, final int termCapacity)
+    public Header(final int initialTermId, final int positionBitsToShift)
     {
         this.initialTermId = initialTermId;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(termCapacity);
+        this.positionBitsToShift = positionBitsToShift;
     }
 
     /**
@@ -66,26 +66,6 @@ public class Header
     {
         final int resultingOffset = BitUtil.align(termOffset() + frameLength(), FRAME_ALIGNMENT);
         return computePosition(termId(), resultingOffset, positionBitsToShift, initialTermId);
-    }
-
-    /**
-     * Get the number of bits the number of terms need to be shifted to get the position.
-     *
-     * @return the number of bits the number of terms need to be shifted to get the position.
-     */
-    public final int positionBitsToShift()
-    {
-        return positionBitsToShift;
-    }
-
-    /**
-     * Set the number of bits the number of terms need to be shifted to get the position.
-     *
-     * @param positionBitsToShift the number of bits the number of terms need to be shifted to get the position.
-     */
-    public final void positionBitsToShift(final int positionBitsToShift)
-    {
-        this.positionBitsToShift = positionBitsToShift;
     }
 
     /**
@@ -222,7 +202,7 @@ public class Header
 
     /**
      * Get the value stored in the reserve space at the end of a data frame header.
-     *
+     * <p>
      * Note: The value is in {@link ByteOrder#LITTLE_ENDIAN} format.
      *
      * @return the value stored in the reserve space at the end of a data frame header.

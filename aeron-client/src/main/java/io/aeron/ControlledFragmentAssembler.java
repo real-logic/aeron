@@ -38,7 +38,6 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 public class ControlledFragmentAssembler implements ControlledFragmentHandler
 {
     private final ControlledFragmentHandler delegate;
-    private final AssemblyHeader assemblyHeader = new AssemblyHeader();
     private final Int2ObjectHashMap<BufferBuilder> builderBySessionIdMap = new Int2ObjectHashMap<>();
     private final IntFunction<BufferBuilder> builderFunc;
 
@@ -100,7 +99,7 @@ public class ControlledFragmentAssembler implements ControlledFragmentHandler
                     if ((flags & END_FRAG_FLAG) == END_FRAG_FLAG)
                     {
                         final int msgLength = builder.limit();
-                        action = delegate.onFragment(builder.buffer(), 0, msgLength, assemblyHeader.reset(header, msgLength));
+                        action = delegate.onFragment(builder.buffer(), 0, msgLength, header);
 
                         if (Action.ABORT == action)
                         {

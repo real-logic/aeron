@@ -15,23 +15,24 @@
  */
 package io.aeron;
 
-import io.aeron.driver.MediaDriver;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.agrona.concurrent.UnsafeBuffer;
+import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
-import org.agrona.concurrent.UnsafeBuffer;
 
+import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
-import static io.aeron.logbuffer.FrameDescriptor.UNFRAGMENTED;
+
 
 @RunWith(Theories.class)
 public class FragmentedMessageTest
@@ -104,7 +105,7 @@ public class FragmentedMessageTest
                 assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));
             }
 
-            assertThat(headerArg.getValue().flags(), is(UNFRAGMENTED));
+            assertThat(headerArg.getValue().flags(), is(END_FRAG_FLAG));
         }
         finally
         {

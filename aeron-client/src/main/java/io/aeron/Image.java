@@ -89,7 +89,7 @@ public class Image
         final int termLength = logBuffers.termLength();
         this.termLengthMask = termLength - 1;
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
-        header = new Header(LogBufferDescriptor.initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]), termLength);
+        header = new Header(LogBufferDescriptor.initialTermId(buffers[LOG_META_DATA_SECTION_INDEX]), positionBitsToShift);
     }
 
     /**

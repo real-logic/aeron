@@ -16,10 +16,12 @@
 package io.aeron.logbuffer;
 
 import io.aeron.protocol.DataHeaderFlyweight;
+import org.agrona.BitUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteOrder;
 
+import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static io.aeron.protocol.HeaderFlyweight.FLAGS_FIELD_OFFSET;
 import static io.aeron.protocol.HeaderFlyweight.TYPE_FIELD_OFFSET;
@@ -62,7 +64,8 @@ public class Header
      */
     public final long position()
     {
-        return computePosition(termId(), termOffset() + frameLength(), positionBitsToShift, initialTermId);
+        final int resultingOffset = BitUtil.align(termOffset() + frameLength(), FRAME_ALIGNMENT);
+        return computePosition(termId(), resultingOffset, positionBitsToShift, initialTermId);
     }
 
     /**

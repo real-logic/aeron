@@ -17,7 +17,7 @@ package io.aeron.logbuffer;
 
 import io.aeron.protocol.DataHeaderFlyweight;
 import org.agrona.BitUtil;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
 
 import java.nio.ByteOrder;
 
@@ -36,14 +36,7 @@ public class Header
     private int positionBitsToShift;
     private int initialTermId;
     private int offset = 0;
-    private UnsafeBuffer buffer;
-
-    /**
-     * Default constructor to enable inheritance.
-     */
-    protected Header()
-    {
-    }
+    private DirectBuffer buffer;
 
     /**
      * Construct a header that references a buffer for the log.
@@ -109,21 +102,21 @@ public class Header
     }
 
     /**
-     * The {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
+     * The {@link org.agrona.DirectBuffer} containing the header.
      *
-     * @return {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
+     * @return {@link org.agrona.DirectBuffer} containing the header.
      */
-    public final UnsafeBuffer buffer()
+    public final DirectBuffer buffer()
     {
         return buffer;
     }
 
     /**
-     * The {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
+     * The {@link org.agrona.DirectBuffer} containing the header.
      *
-     * @param buffer {@link org.agrona.concurrent.UnsafeBuffer} containing the header.
+     * @param buffer {@link org.agrona.DirectBuffer} containing the header.
      */
-    public final void buffer(final UnsafeBuffer buffer)
+    public final void buffer(final DirectBuffer buffer)
     {
         this.buffer = buffer;
     }

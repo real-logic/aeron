@@ -15,6 +15,8 @@ For the latest version information and changes see the [Change Log](https://gith
 
 The latest release and **downloads** can be found in [Maven Central](http://search.maven.org/#search%7Cga%7C1%7CAeron).
 
+Many of the data structures used in the creation of Aeron have been factored out the the [Agrona](https://github.com/real-logic/Agrona) project.
+
 ### How do I use Aeron?
 
 1. [Java Programming Guide](https://github.com/real-logic/Aeron/wiki/Java-Programming-Guide)

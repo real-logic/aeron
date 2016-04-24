@@ -82,7 +82,7 @@ public:
         m_length = length;
     }
 
-    inline void wrap(AtomicBuffer& buffer)
+    inline void wrap(const AtomicBuffer& buffer)
     {
         m_buffer = buffer.m_buffer;
         m_length = buffer.m_length;

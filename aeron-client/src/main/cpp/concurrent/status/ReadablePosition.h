@@ -27,7 +27,7 @@ public:
     {
     }
 
-    inline void wrap(ReadablePosition<X>& position)
+    inline void wrap(const ReadablePosition<X>& position)
     {
         m_impl.wrap(position.m_impl);
     }

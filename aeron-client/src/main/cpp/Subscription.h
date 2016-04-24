@@ -187,6 +187,24 @@ public:
     }
 
     /**
+     * Get a std::vector of active {@link Image}s that match this subscription.
+     *
+     * @return a std::vector of active {@link Image}s that match this subscription.
+     */
+    inline std::shared_ptr<std::vector<Image>> images()
+    {
+        std::shared_ptr<std::vector<Image>> result(new std::vector<Image>());
+
+        forEachImage(
+            [&](Image& image)
+            {
+                result->push_back(Image(image));
+            });
+
+        return result;
+    }
+
+    /**
      * Iterate over Image list and call passed in function.
      *
      * @return length of Image list

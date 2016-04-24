@@ -33,7 +33,7 @@ public:
     {
     }
 
-    UnsafeBufferPosition(UnsafeBufferPosition& position)
+    UnsafeBufferPosition(const UnsafeBufferPosition& position)
     {
         m_buffer.wrap(position.m_buffer);
         m_id = position.m_id;
@@ -46,7 +46,7 @@ public:
     {
     }
 
-    inline void wrap(UnsafeBufferPosition& position)
+    inline void wrap(const UnsafeBufferPosition& position)
     {
         m_buffer.wrap(position.m_buffer);
         m_id = position.m_id;

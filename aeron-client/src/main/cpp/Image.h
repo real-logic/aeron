@@ -136,7 +136,7 @@ public:
         m_positionBitsToShift = BitUtil::numberOfTrailingZeroes(capacity);
     }
 
-    Image(Image& image) :
+    Image(const Image& image) :
         m_header(image.m_header),
         m_subscriberPosition(image.m_subscriberPosition),
         m_sourceIdentity(image.m_sourceIdentity),

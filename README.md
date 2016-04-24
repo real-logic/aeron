@@ -4,16 +4,14 @@ Aeron
 
 Efficient reliable UDP unicast, UDP multicast, and IPC message transport.
 
-Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable latency possible of any messaging system. Aeron supports close integration with [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible message encoding and decoding performance.
+Performance is the key focus. Aeron is designed to be the highest throughput with the lowest and most predictable latency possible of any messaging system. Aeron integrates with [Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible performance in message encoding and decoding. Many of the data structures used in the creation of Aeron have been factored out to the [Agrona](https://github.com/real-logic/Agrona) project.
 
 For details of usage, protocol specification, FAQ, etc. please check out the
 [Wiki](https://github.com/real-logic/Aeron/wiki).
 
 For those who prefer to watch a video then try [Aeron Messaging](https://www.youtube.com/watch?v=tM4YskS94b0) from StrangeLoop 2014. Things have moved on quite a bit with performance and some features but the basic design still applies.
 
-For the latest version information and changes see the [Change Log](https://github.com/real-logic/Aeron/wiki/Change-Log). 
-
-The latest release and **downloads** can be found in [Maven Central](http://search.maven.org/#search%7Cga%7C1%7CAeron).
+For the latest version information and changes see the [Change Log](https://github.com/real-logic/Aeron/wiki/Change-Log) with **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7CAeron).
 
 ### How do I use Aeron?
 

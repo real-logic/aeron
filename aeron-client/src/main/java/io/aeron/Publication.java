@@ -60,18 +60,19 @@ public class Publication implements AutoCloseable
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
+    private final int maxMessageLength;
     private final int maxPayloadLength;
     private final int positionBitsToShift;
-    private final ReadablePosition positionLimit;
+    private int refCount = 0;
+    private volatile boolean isClosed = false;
+
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];
+    private final ReadablePosition positionLimit;
     private final UnsafeBuffer logMetaDataBuffer;
     private final HeaderWriter headerWriter;
     private final LogBuffers logBuffers;
     private final ClientConductor clientConductor;
     private final String channel;
-
-    private volatile boolean isClosed = false;
-    private int refCount = 0;
 
     Publication(
         final ClientConductor clientConductor,
@@ -90,7 +91,9 @@ public class Publication implements AutoCloseable
             termAppenders[i] = new TermAppender(buffers[i], buffers[i + PARTITION_COUNT]);
         }
 
+        final int termLength = logBuffers.termLength();
         this.maxPayloadLength = mtuLength(logMetaDataBuffer) - HEADER_LENGTH;
+        this.maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
         this.clientConductor = clientConductor;
         this.channel = channel;
         this.streamId = streamId;
@@ -100,7 +103,7 @@ public class Publication implements AutoCloseable
         this.registrationId = registrationId;
         this.positionLimit = positionLimit;
         this.logBuffers = logBuffers;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(logBuffers.termLength());
+        this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         this.headerWriter = new HeaderWriter(defaultFrameHeader(logMetaDataBuffer));
     }
 
@@ -162,7 +165,7 @@ public class Publication implements AutoCloseable
      */
     public int maxMessageLength()
     {
-        return FrameDescriptor.computeMaxMessageLength(logBuffers.termLength());
+        return maxMessageLength;
     }
 
     /**
@@ -428,7 +431,6 @@ public class Publication implements AutoCloseable
 
     private void checkForMaxMessageLength(final int length)
     {
-        final int maxMessageLength = maxMessageLength();
         if (length > maxMessageLength)
         {
             throw new IllegalArgumentException(String.format(

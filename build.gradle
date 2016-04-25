@@ -21,7 +21,7 @@ plugins {
 defaultTasks 'clean', 'build', 'shadowJar', 'install'
 
 def aeronGroup = 'io.aeron'
-def aeronVersion = '0.9.7-SNAPSHOT'
+def aeronVersion = '0.9.7'
 
 group = aeronGroup
 version = aeronVersion

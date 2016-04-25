@@ -57,13 +57,13 @@ public class Publication implements AutoCloseable
     public static final long CLOSED = -4;
 
     private final long registrationId;
+    private int refCount = 0;
     private final int streamId;
     private final int sessionId;
     private final int initialTermId;
     private final int maxMessageLength;
     private final int maxPayloadLength;
     private final int positionBitsToShift;
-    private int refCount = 0;
     private volatile boolean isClosed = false;
 
     private final TermAppender[] termAppenders = new TermAppender[PARTITION_COUNT];

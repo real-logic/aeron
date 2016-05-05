@@ -52,7 +52,7 @@ public final class Aeron implements AutoCloseable
             throwable.printStackTrace();
             if (throwable instanceof DriverTimeoutException)
             {
-                System.err.printf("\n***\n*** Timeout from the Media Driver - is it currently running? Exiting.\n***\n");
+                System.err.printf("%n***%n*** Timeout from the Media Driver - is it currently running? Exiting.%n***%n");
                 System.exit(-1);
             }
         };
@@ -274,7 +274,7 @@ public final class Aeron implements AutoCloseable
             }
             catch (final Exception ex)
             {
-                System.err.printf("\n***\n*** Failed to connect to the Media Driver - is it currently running?\n***\n");
+                System.err.printf("%n***%n*** Failed to connect to the Media Driver - is it currently running?%n***%n");
 
                 throw new IllegalStateException("Could not initialise communication buffers", ex);
             }

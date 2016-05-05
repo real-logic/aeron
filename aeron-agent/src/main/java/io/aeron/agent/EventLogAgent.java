@@ -40,22 +40,23 @@ public class EventLogAgent
 
     private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
-        public void onTransformation(final TypeDescription typeDescription, final DynamicType dynamicType)
+        public void onTransformation(
+            final TypeDescription typeDescription, final ClassLoader classLoader, final DynamicType dynamicType)
         {
             System.out.format("TRANSFORM %s\n", typeDescription.getName());
         }
 
-        public void onIgnored(final TypeDescription typeDescription)
+        public void onIgnored(final TypeDescription typeDescription, final ClassLoader classLoader)
         {
         }
 
-        public void onError(final String typeName, final Throwable throwable)
+        public void onError(final String typeName, final ClassLoader classLoader, final Throwable throwable)
         {
             System.out.format("ERROR %s\n", typeName);
             throwable.printStackTrace(System.out);
         }
 
-        public void onComplete(final String typeName)
+        public void onComplete(final String typeName, final ClassLoader classLoader)
         {
         }
     };

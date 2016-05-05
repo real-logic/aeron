@@ -20,6 +20,9 @@ import org.agrona.concurrent.MessageHandler;
 
 import java.util.function.Consumer;
 
+import static io.aeron.agent.EventConfiguration.EVENT_READER_FRAME_LIMIT;
+import static io.aeron.agent.EventConfiguration.EVENT_RING_BUFFER;
+
 public class EventLogReaderAgent implements Agent
 {
     final Consumer<String> eventConsumer = System.out::println;
@@ -28,7 +31,7 @@ public class EventLogReaderAgent implements Agent
 
     public int doWork() throws Exception
     {
-        return EventConfiguration.EVENT_RING_BUFFER.read(onEventFunc, EventConfiguration.EVENT_READER_FRAME_LIMIT);
+        return EVENT_RING_BUFFER.read(onEventFunc, EVENT_READER_FRAME_LIMIT);
     }
 
     public String roleName()

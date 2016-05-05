@@ -43,7 +43,7 @@ public class EventLogAgent
         public void onTransformation(
             final TypeDescription typeDescription, final ClassLoader classLoader, final DynamicType dynamicType)
         {
-            System.out.format("TRANSFORM %s\n", typeDescription.getName());
+            System.out.format("TRANSFORM %s%n", typeDescription.getName());
         }
 
         public void onIgnored(final TypeDescription typeDescription, final ClassLoader classLoader)
@@ -52,7 +52,7 @@ public class EventLogAgent
 
         public void onError(final String typeName, final ClassLoader classLoader, final Throwable throwable)
         {
-            System.out.format("ERROR %s\n", typeName);
+            System.out.format("ERROR %s%n", typeName);
             throwable.printStackTrace(System.out);
         }
 

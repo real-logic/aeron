@@ -17,6 +17,8 @@ package io.aeron.agent;
 
 import org.agrona.DirectBuffer;
 
+import static io.aeron.agent.EventCode.*;
+import static io.aeron.agent.EventLogger.LOGGER;
 import static io.aeron.command.ControlProtocolEvents.*;
 
 public class CmdInterceptor
@@ -26,27 +28,27 @@ public class CmdInterceptor
         switch (msgTypeId)
         {
             case ADD_PUBLICATION:
-                EventLogger.LOGGER.log(EventCode.CMD_IN_ADD_PUBLICATION, buffer, index, length);
+                LOGGER.log(CMD_IN_ADD_PUBLICATION, buffer, index, length);
                 break;
 
             case REMOVE_PUBLICATION:
-                EventLogger.LOGGER.log(EventCode.CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
+                LOGGER.log(CMD_IN_REMOVE_PUBLICATION, buffer, index, length);
                 break;
 
             case ADD_SUBSCRIPTION:
-                EventLogger.LOGGER.log(EventCode.CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
+                LOGGER.log(CMD_IN_ADD_SUBSCRIPTION, buffer, index, length);
                 break;
 
             case REMOVE_SUBSCRIPTION:
-                EventLogger.LOGGER.log(EventCode.CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
+                LOGGER.log(CMD_IN_REMOVE_SUBSCRIPTION, buffer, index, length);
                 break;
 
             case CLIENT_KEEPALIVE:
-                EventLogger.LOGGER.log(EventCode.CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
+                LOGGER.log(CMD_IN_KEEPALIVE_CLIENT, buffer, index, length);
                 break;
 
             case ON_AVAILABLE_IMAGE:
-                EventLogger.LOGGER.log(EventCode.CMD_OUT_AVAILABLE_IMAGE, buffer, index, length);
+                LOGGER.log(CMD_OUT_AVAILABLE_IMAGE, buffer, index, length);
                 break;
 
             case ON_ERROR:
@@ -54,15 +56,15 @@ public class CmdInterceptor
                 break;
 
             case ON_OPERATION_SUCCESS:
-                EventLogger.LOGGER.log(EventCode.CMD_OUT_ON_OPERATION_SUCCESS, buffer, index, length);
+                LOGGER.log(CMD_OUT_ON_OPERATION_SUCCESS, buffer, index, length);
                 break;
 
             case ON_PUBLICATION_READY:
-                EventLogger.LOGGER.log(EventCode.CMD_OUT_PUBLICATION_READY, buffer, index, length);
+                LOGGER.log(CMD_OUT_PUBLICATION_READY, buffer, index, length);
                 break;
 
             case ON_UNAVAILABLE_IMAGE:
-                EventLogger.LOGGER.log(EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE, buffer, index, length);
+                LOGGER.log(CMD_OUT_ON_UNAVAILABLE_IMAGE, buffer, index, length);
                 break;
         }
     }

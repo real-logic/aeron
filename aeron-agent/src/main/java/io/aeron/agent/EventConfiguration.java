@@ -25,6 +25,8 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static io.aeron.agent.EventCode.*;
+
 /**
  * Common configuration elements between event loggers and event reader side
  */
@@ -46,22 +48,22 @@ public class EventConfiguration
     public static final String ENABLED_LOGGER_EVENT_CODES_PROPERTY_NAME = "aeron.event.log";
 
     public static final Set<EventCode> ADMIN_ONLY_EVENT_CODES = EnumSet.of(
-        EventCode.CMD_IN_ADD_PUBLICATION,
-        EventCode.CMD_IN_ADD_SUBSCRIPTION,
-        EventCode.CMD_IN_KEEPALIVE_CLIENT,
-        EventCode.CMD_IN_REMOVE_PUBLICATION,
-        EventCode.CMD_IN_REMOVE_SUBSCRIPTION,
-        EventCode.REMOVE_IMAGE_CLEANUP,
-        EventCode.REMOVE_PUBLICATION_CLEANUP,
-        EventCode.REMOVE_SUBSCRIPTION_CLEANUP,
-        EventCode.CMD_OUT_PUBLICATION_READY,
-        EventCode.CMD_OUT_AVAILABLE_IMAGE,
-        EventCode.CMD_OUT_ON_UNAVAILABLE_IMAGE,
-        EventCode.CMD_OUT_ON_OPERATION_SUCCESS,
-        EventCode.SEND_CHANNEL_CREATION,
-        EventCode.RECEIVE_CHANNEL_CREATION,
-        EventCode.SEND_CHANNEL_CLOSE,
-        EventCode.RECEIVE_CHANNEL_CLOSE);
+        CMD_IN_ADD_PUBLICATION,
+        CMD_IN_ADD_SUBSCRIPTION,
+        CMD_IN_KEEPALIVE_CLIENT,
+        CMD_IN_REMOVE_PUBLICATION,
+        CMD_IN_REMOVE_SUBSCRIPTION,
+        REMOVE_IMAGE_CLEANUP,
+        REMOVE_PUBLICATION_CLEANUP,
+        REMOVE_SUBSCRIPTION_CLEANUP,
+        CMD_OUT_PUBLICATION_READY,
+        CMD_OUT_AVAILABLE_IMAGE,
+        CMD_OUT_ON_UNAVAILABLE_IMAGE,
+        CMD_OUT_ON_OPERATION_SUCCESS,
+        SEND_CHANNEL_CREATION,
+        RECEIVE_CHANNEL_CREATION,
+        SEND_CHANNEL_CLOSE,
+        RECEIVE_CHANNEL_CLOSE);
 
     public static final Set<EventCode> ALL_LOGGER_EVENT_CODES = EnumSet.allOf(EventCode.class);
 
@@ -90,7 +92,7 @@ public class EventConfiguration
      */
     public static final ManyToOneRingBuffer EVENT_RING_BUFFER;
 
-    private static final Pattern COMMA = Pattern.compile(",");
+    private static final Pattern COMMA_PATTERN = Pattern.compile(",");
 
     static
     {
@@ -141,7 +143,7 @@ public class EventConfiguration
                 return ADMIN_ONLY_EVENT_CODES;
 
             default:
-                return COMMA
+                return COMMA_PATTERN
                     .splitAsStream(enabledLoggerEventCodes)
                     .map(EventCode::valueOf)
                     .collect(Collectors.toSet());

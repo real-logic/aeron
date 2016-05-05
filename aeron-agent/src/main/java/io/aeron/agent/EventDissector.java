@@ -319,7 +319,7 @@ public class EventDissector
     private static String dissect(final PublicationBuffersReadyFlyweight msg)
     {
         return String.format(
-            "%d:%d %d [%d]\n    %s",
+            "%d:%d %d [%d]%n    %s",
             msg.sessionId(),
             msg.streamId(),
             msg.publicationLimitCounterId(),
@@ -341,7 +341,7 @@ public class EventDissector
         }
 
         return String.format(
-            "%d:%d %s \"%s\" [%d]\n    %s",
+            "%d:%d %s \"%s\" [%d]%n    %s",
             msg.sessionId(),
             msg.streamId(),
             positions.toString(),

@@ -21,6 +21,7 @@ import org.agrona.MutableDirectBuffer;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -179,6 +180,6 @@ public class EventEncoder
 
     private static int determineCaptureLength(final int bufferLength)
     {
-        return Math.min(bufferLength, EventConfiguration.MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - SOCKET_ADDRESS_MAX_LENGTH);
+        return Math.min(bufferLength, MAX_EVENT_LENGTH - LOG_HEADER_LENGTH - SOCKET_ADDRESS_MAX_LENGTH);
     }
 }

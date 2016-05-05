@@ -26,15 +26,17 @@ import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingIdleStrategy;
 
 import java.lang.instrument.Instrumentation;
+import java.util.concurrent.TimeUnit;
 
 import static net.bytebuddy.matcher.ElementMatchers.*;
 
 public class EventLogAgent
 {
+    private static final long SLEEP_PERIOD_NS = TimeUnit.MILLISECONDS.toNanos(1);
     private static final EventLogReaderAgent EVENT_LOG_READER_AGENT = new EventLogReaderAgent();
 
     private static final AgentRunner EVENT_LOG_READER_AGENT_RUNNER =
-        new AgentRunner(new SleepingIdleStrategy(1), EventLogAgent::errorHandler, null, EVENT_LOG_READER_AGENT);
+        new AgentRunner(new SleepingIdleStrategy(SLEEP_PERIOD_NS), EventLogAgent::errorHandler, null, EVENT_LOG_READER_AGENT);
 
     private static final Thread EVENT_LOG_READER_THREAD = new Thread(EVENT_LOG_READER_AGENT_RUNNER);
 

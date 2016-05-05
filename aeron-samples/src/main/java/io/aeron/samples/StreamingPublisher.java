@@ -83,7 +83,7 @@ public class StreamingPublisher
                 printingActive = true;
 
                 System.out.format(
-                    "\nStreaming %,d messages of%s size %d bytes to %s on stream Id %d\n",
+                    "%nStreaming %,d messages of%s size %d bytes to %s on stream Id %d%n",
                     NUMBER_OF_MESSAGES,
                     (RANDOM_MESSAGE_LENGTH) ? " random" : "",
                     MESSAGE_LENGTH,
@@ -134,7 +134,7 @@ public class StreamingPublisher
         if (printingActive)
         {
             System.out.format(
-                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB\n",
+                "%.02g msgs/sec, %.02g bytes/sec, totals %d messages %d MB%n",
                 messagesPerSec, bytesPerSec, totalFragments, totalBytes / (1024 * 1024));
         }
     }

@@ -98,7 +98,7 @@ public class EmbeddedIpcThroughput
                 final long bytesTransferred = newTotalBytes - lastTotalBytes;
 
                 System.out.format(
-                    "Duration %dms - %,d messages - %,d bytes\n",
+                    "Duration %dms - %,d messages - %,d bytes%n",
                     duration, bytesTransferred / MESSAGE_LENGTH, bytesTransferred);
 
                 lastTimeStamp = newTimeStamp;
@@ -144,7 +144,7 @@ public class EmbeddedIpcThroughput
             }
 
             final double backPressureRatio = backPressureCount / (double)totalMessageCount;
-            System.out.format("Publisher back pressure ratio: %f\n", backPressureRatio);
+            System.out.format("Publisher back pressure ratio: %f%n", backPressureRatio);
         }
     }
 
@@ -206,7 +206,7 @@ public class EmbeddedIpcThroughput
             }
 
             final double failureRatio = failedPolls / (double)(successfulPolls + failedPolls);
-            System.out.format("Subscriber poll failure ratio: %f\n", failureRatio);
+            System.out.format("Subscriber poll failure ratio: %f%n", failureRatio);
         }
 
         public void onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)

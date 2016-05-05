@@ -135,7 +135,7 @@ public class Ping
     {
         final Subscription subscription = image.subscription();
         System.out.format(
-            "Available image: channel=%s streamId=%d session=%d\n",
+            "Available image: channel=%s streamId=%d session=%d%n",
             subscription.channel(), subscription.streamId(), image.sessionId());
 
         if (PONG_STREAM_ID == subscription.streamId() && PONG_CHANNEL.equals(subscription.channel()))

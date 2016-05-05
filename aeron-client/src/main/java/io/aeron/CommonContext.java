@@ -338,14 +338,14 @@ public class CommonContext implements AutoCloseable
                         buffer,
                         (observationCount, firstObservationTimestamp, lastObservationTimestamp, encodedException) ->
                             stream.format(
-                                "***\n%d observations from %s to %s for:\n %s\n",
+                                "***%n%d observations from %s to %s for:%n %s%n",
                                 observationCount,
                                 dateFormat.format(new Date(firstObservationTimestamp)),
                                 dateFormat.format(new Date(lastObservationTimestamp)),
                                 encodedException
                             ));
 
-                    stream.format("\n%d distinct errors observed.\n", distinctErrorCount);
+                    stream.format("%n%d distinct errors observed.%n", distinctErrorCount);
 
                     result = distinctErrorCount;
                 }

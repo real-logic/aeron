@@ -20,5 +20,5 @@ version=`cat version.txt`
 ${JAVA_HOME}/bin/java \
     -cp aeron-samples/build/libs/samples.jar \
     -javaagent:aeron-agent/build/libs/aeron-agent-${version}-all.jar \
-    -Daeron.event.log=all \
+    -Daeron.event.log=admin,FRAME_IN \
     io.aeron.driver.MediaDriver

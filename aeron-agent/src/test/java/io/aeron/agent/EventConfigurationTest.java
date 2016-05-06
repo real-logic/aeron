@@ -34,10 +34,11 @@ public class EventConfigurationTest
         assertThat(getEnabledEventCodes(null), Matchers.is(EnumSet.noneOf(EventCode.class)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void malformedPropertyShouldDefaultToProductionEventCodes()
     {
-        getEnabledEventCodes("list of invalid options");
+        final Set<EventCode> enabledEventCodes = getEnabledEventCodes("list of invalid options");
+        assertThat(enabledEventCodes.size(), is(0));
     }
 
     @Test

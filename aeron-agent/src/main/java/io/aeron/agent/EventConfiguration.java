@@ -20,10 +20,8 @@ import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 
 import java.nio.ByteBuffer;
-import java.util.EnumSet;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static io.aeron.agent.EventCode.*;
 
@@ -124,7 +122,7 @@ public class EventConfiguration
     /**
      * Get the {@link Set} of {@link EventCode}s that are enabled for the logger.
      *
-     * @param enabledLoggerEventCodes that can be "all", "prod" or a comma separated list.
+     * @param enabledLoggerEventCodes that can be "all", "prod", or a comma separated list of Event Code ids.
      * @return the {@link Set} of {@link EventCode}s that are enabled for the logger.
      */
     static Set<EventCode> getEnabledEventCodes(final String enabledLoggerEventCodes)
@@ -134,19 +132,52 @@ public class EventConfiguration
             return EnumSet.noneOf(EventCode.class);
         }
 
-        switch (enabledLoggerEventCodes)
+        final Set<EventCode> eventCodeSet = new HashSet<>();
+        final String[] codeIds = COMMA_PATTERN.split(enabledLoggerEventCodes);
+
+        for (final String codeId : codeIds)
         {
-            case "all":
-                return ALL_LOGGER_EVENT_CODES;
+            switch (codeId)
+            {
+                case "all":
+                    eventCodeSet.addAll(ALL_LOGGER_EVENT_CODES);
+                    break;
 
-            case "admin":
-                return ADMIN_ONLY_EVENT_CODES;
+                case "admin":
+                    eventCodeSet.addAll(ADMIN_ONLY_EVENT_CODES);
+                    break;
 
-            default:
-                return COMMA_PATTERN
-                    .splitAsStream(enabledLoggerEventCodes)
-                    .map(EventCode::valueOf)
-                    .collect(Collectors.toSet());
+                default:
+                {
+                    EventCode code = null;
+                    try
+                    {
+                        code = EventCode.get(Integer.parseInt(codeId));
+                    }
+                    catch (final IllegalArgumentException ignore)
+                    {
+                    }
+
+                    try
+                    {
+                        code = EventCode.valueOf(codeId);
+                    }
+                    catch (final IllegalArgumentException ignore)
+                    {
+                    }
+
+                    if (null != code)
+                    {
+                        eventCodeSet.add(code);
+                    }
+                    else
+                    {
+                        System.err.println("Unknown event code: " + codeId);
+                    }
+                }
+            }
         }
+
+        return eventCodeSet;
     }
 }

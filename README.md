@@ -1,6 +1,5 @@
 Aeron
 =====
-[![][mavenbadge img]][mavenbadge]
 
 [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/real-logic/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) To chat with other Aeron users and the contributors.
 

@@ -20,6 +20,8 @@ For the latest version information and changes see the [Change Log](https://gith
 1. [C++11 Programming Guide](https://github.com/real-logic/Aeron/wiki/Cpp-Programming-Guide)
 1. [Best Practices Guide](https://github.com/real-logic/Aeron/wiki/Best-Practices-Guide)
 1. [Monitoring and Debugging](https://github.com/real-logic/Aeron/wiki/Monitoring-and-Debugging)
+1. [Configuration Options](https://github.com/real-logic/Aeron/wiki/Configuration-Options)
+1. [Channel Specific Configuration](https://github.com/real-logic/Aeron/wiki/Channel-Configuration)
 
 ### How does Aeron work?
 

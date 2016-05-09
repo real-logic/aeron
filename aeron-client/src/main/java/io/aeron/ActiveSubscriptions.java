@@ -28,34 +28,30 @@ class ActiveSubscriptions
 {
     private final Int2ObjectHashMap<List<Subscription>> subscriptionsByStreamIdMap = new Int2ObjectHashMap<>();
 
-    public void forEach(final int streamId, final Consumer<Subscription> handler)
+    public void forEach(final int streamId, final Consumer<Subscription> consumer)
     {
         final List<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
         if (null != subscriptions)
         {
-            subscriptions.forEach(handler);
+            subscriptions.forEach(consumer);
         }
     }
 
     public void add(final Subscription subscription)
     {
-        final List<Subscription> subscriptions = subscriptionsByStreamIdMap.computeIfAbsent(
-            subscription.streamId(), (ignore) -> new ArrayList<>());
-
-        subscriptions.add(subscription);
+        subscriptionsByStreamIdMap
+            .computeIfAbsent(subscription.streamId(), (ignore) -> new ArrayList<>())
+            .add(subscription);
     }
 
     public void remove(final Subscription subscription)
     {
         final int streamId = subscription.streamId();
         final List<Subscription> subscriptions = subscriptionsByStreamIdMap.get(streamId);
-        if (subscriptions.remove(subscription) && subscriptions.isEmpty())
+
+        if (null != subscriptions && subscriptions.remove(subscription) && subscriptions.isEmpty())
         {
             subscriptionsByStreamIdMap.remove(streamId);
-            if (subscriptionsByStreamIdMap.isEmpty())
-            {
-                subscriptionsByStreamIdMap.remove(streamId);
-            }
         }
     }
 

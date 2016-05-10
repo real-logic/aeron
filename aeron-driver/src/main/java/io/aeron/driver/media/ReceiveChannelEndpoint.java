@@ -65,7 +65,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final MediaDriver.Context context)
     {
         super(
-            Configuration.RECEIVE_BYTE_BUFFER_LENGTH,
+            context.receiverByteBuffer(),
+            new UnsafeBuffer(context.receiverByteBuffer()),
             udpChannel,
             udpChannel.remoteData(),
             udpChannel.remoteData(),

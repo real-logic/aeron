@@ -15,11 +15,11 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.driver.Configuration;
+import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
-import io.aeron.driver.Configuration;
-import io.aeron.protocol.HeaderFlyweight;
 
 import java.io.IOException;
 import java.net.*;
@@ -28,11 +28,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
-import static java.net.StandardSocketOptions.IP_MULTICAST_TTL;
-import static java.net.StandardSocketOptions.SO_RCVBUF;
-import static java.net.StandardSocketOptions.SO_SNDBUF;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static io.aeron.logbuffer.FrameDescriptor.frameVersion;
+import static java.net.StandardSocketOptions.*;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
@@ -49,16 +46,16 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected DatagramChannel receiveDatagramChannel;
 
     public UdpChannelTransport(
-        final int receiveByteBufferLength,
+        final ByteBuffer receiveByteBuffer,
+        final UnsafeBuffer receiveBuffer,
         final UdpChannel udpChannel,
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
         final DistinctErrorLog errorLog)
     {
-        receiveByteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(receiveByteBufferLength, CACHE_LINE_LENGTH * 2);
-        receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
-
+        this.receiveByteBuffer = receiveByteBuffer;
+        this.receiveBuffer = receiveBuffer;
         this.udpChannel = udpChannel;
         this.errorLog = errorLog;
         this.endPointAddress = endPointAddress;

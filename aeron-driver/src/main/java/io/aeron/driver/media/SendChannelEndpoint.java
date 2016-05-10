@@ -58,7 +58,8 @@ public class SendChannelEndpoint extends UdpChannelTransport
     public SendChannelEndpoint(final UdpChannel udpChannel, final MediaDriver.Context context)
     {
         super(
-            Math.max(NakFlyweight.HEADER_LENGTH, StatusMessageFlyweight.HEADER_LENGTH),
+            context.senderByteBuffer(),
+            new UnsafeBuffer(context.senderByteBuffer()),
             udpChannel,
             udpChannel.remoteControl(),
             udpChannel.localControl(),

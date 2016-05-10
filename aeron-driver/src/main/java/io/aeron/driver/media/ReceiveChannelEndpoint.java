@@ -18,6 +18,7 @@ package io.aeron.driver.media;
 import io.aeron.driver.*;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.protocol.*;
+import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.MutableInteger;
@@ -47,10 +48,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter invalidPackets;
     private final AtomicCounter possibleTtlAsymmetry;
 
-    private final ByteBuffer smBuffer = ByteBuffer.allocateDirect(StatusMessageFlyweight.HEADER_LENGTH);
-    private final StatusMessageFlyweight smHeader = new StatusMessageFlyweight(smBuffer);
-    private final ByteBuffer nakBuffer = ByteBuffer.allocateDirect(NakFlyweight.HEADER_LENGTH);
-    private final NakFlyweight nakHeader = new NakFlyweight(nakBuffer);
+    private final ByteBuffer smBuffer;
+    private final StatusMessageFlyweight smHeader;
+    private final ByteBuffer nakBuffer;
+    private final NakFlyweight nakHeader;
 
     private final SetupFlyweight setupHeader;
     private final DataHeaderFlyweight dataHeader;
@@ -69,6 +70,19 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             udpChannel.remoteData(),
             null,
             context.errorLog());
+
+        final ByteBuffer outboundBuffer =
+            NetworkUtil.allocateDirectAlignedAndPadded(
+                StatusMessageFlyweight.HEADER_LENGTH + NakFlyweight.HEADER_LENGTH,
+                BitUtil.CACHE_LINE_LENGTH);
+
+        outboundBuffer.position(StatusMessageFlyweight.HEADER_LENGTH);
+        nakBuffer = outboundBuffer.slice();
+        nakHeader = new NakFlyweight(nakBuffer);
+
+        outboundBuffer.position(0).limit(StatusMessageFlyweight.HEADER_LENGTH);
+        smBuffer = outboundBuffer.slice();
+        smHeader = new StatusMessageFlyweight(smBuffer);
 
         smHeader
             .version(HeaderFlyweight.CURRENT_VERSION)

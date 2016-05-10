@@ -15,7 +15,10 @@
  */
 package io.aeron.driver.media;
 
+import org.agrona.BufferUtil;
+
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -210,5 +213,20 @@ public class NetworkUtil
                 return compare(isLoopback, other.isLoopback);
             }
         }
+    }
+
+    /**
+     * Allocate a direct {@link ByteBuffer} that is padded at the end with at least alignment bytes.
+     *
+     * @param capacity for the buffer.
+     * @param alignment for the buffer.
+     * @return the direct {@link ByteBuffer}.
+     */
+    public static ByteBuffer allocateDirectAlignedAndPadded(final int capacity, final int alignment)
+    {
+        final ByteBuffer buffer = BufferUtil.allocateDirectAligned(capacity + alignment, alignment);
+
+        buffer.limit(buffer.limit() - alignment);
+        return buffer.slice();
     }
 }

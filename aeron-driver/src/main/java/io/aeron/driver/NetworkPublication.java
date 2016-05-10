@@ -16,6 +16,7 @@
 package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.media.NetworkUtil;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -24,6 +25,7 @@ import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
+import org.agrona.BitUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -94,10 +96,10 @@ public class NetworkPublication
     private final Position publisherLimit;
     private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
-    private final ByteBuffer heartbeatFrameBuffer = ByteBuffer.allocateDirect(DataHeaderFlyweight.HEADER_LENGTH);
-    private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight(heartbeatFrameBuffer);
-    private final ByteBuffer setupFrameBuffer = ByteBuffer.allocateDirect(SetupFlyweight.HEADER_LENGTH);
-    private final SetupFlyweight setupHeader = new SetupFlyweight(setupFrameBuffer);
+    private final ByteBuffer heartbeatFrameBuffer;
+    private final DataHeaderFlyweight dataHeader;
+    private final ByteBuffer setupFrameBuffer;
+    private final SetupFlyweight setupHeader;
     private final FlowControl flowControl;
     private final EpochClock epochClock;
     private final RetransmitHandler retransmitHandler;
@@ -132,6 +134,18 @@ public class NetworkPublication
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
         this.initialTermId = initialTermId;
+
+        final ByteBuffer outboundBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
+            DataHeaderFlyweight.HEADER_LENGTH + SetupFlyweight.HEADER_LENGTH,
+            BitUtil.CACHE_LINE_LENGTH);
+
+        outboundBuffer.position(DataHeaderFlyweight.HEADER_LENGTH);
+        setupFrameBuffer = outboundBuffer.slice();
+        setupHeader = new SetupFlyweight(setupFrameBuffer);
+
+        outboundBuffer.position(0).limit(DataHeaderFlyweight.HEADER_LENGTH);
+        heartbeatFrameBuffer = outboundBuffer.slice();
+        dataHeader = new DataHeaderFlyweight(heartbeatFrameBuffer);
 
         heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
         dataPacketShortSends = systemCounters.get(DATA_PACKET_SHORT_SENDS);

@@ -55,16 +55,15 @@ public final class UdpChannel
     private static final String ENDPOINT_KEY = "endpoint";
     private static final String MULTICAST_TTL_KEY = "ttl";
 
+    private final int multicastTtl;
     private final InetSocketAddress remoteData;
     private final InetSocketAddress localData;
     private final InetSocketAddress remoteControl;
     private final InetSocketAddress localControl;
-
     private final String uriStr;
     private final String canonicalForm;
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
-    private final int multicastTtl;
 
     /**
      * Parse URI and create channel
@@ -503,6 +502,7 @@ public final class UdpChannel
 
     private static class Context
     {
+        private int multicastTtl;
         private InetSocketAddress remoteData;
         private InetSocketAddress localData;
         private InetSocketAddress remoteControl;
@@ -511,7 +511,6 @@ public final class UdpChannel
         private String canonicalForm;
         private NetworkInterface localInterface;
         private ProtocolFamily protocolFamily;
-        private int multicastTtl;
 
         public Context uriStr(final String uri)
         {

@@ -158,6 +158,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return receiveDatagramChannel;
     }
 
+    /**
+     * Get the multicast TTL value for sending datagrams on the channel.
+     *
+     * @return the multicast TTL value for sending datagrams on the channel.
+     */
     public int multicastTtl()
     {
         int result = udpChannel.multicastTtl();
@@ -264,6 +269,14 @@ public abstract class UdpChannelTransport implements AutoCloseable
      */
     public abstract int pollForData();
 
+    /**
+     * Is the received frame valid. This method will do some basic checks on the header and can be
+     * overridden in a subclass for further validation.
+     *
+     * @param receiveBuffer containing the frame.
+     * @param length        of the frame.
+     * @return true if the frame is believed valid otherwise false.
+     */
     public boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)
     {
         boolean isFrameValid = true;
@@ -280,6 +293,11 @@ public abstract class UdpChannelTransport implements AutoCloseable
         return isFrameValid;
     }
 
+    /**
+     * Receive a datagram from the media layer into the {@link #receiveByteBuffer}.
+     *
+     * @return the source address of the datagram if one is available otherwise false.
+     */
     protected InetSocketAddress receive()
     {
         receiveByteBuffer.clear();

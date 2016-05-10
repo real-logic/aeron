@@ -454,7 +454,7 @@ public class NetworkPublication
         {
             final long senderPosition = this.senderPosition.getVolatile();
 
-            timeOfLastActivity = (senderPosition == lastSenderPosition) ? timeOfLastActivity : now;
+            timeOfLastActivity = senderPosition == lastSenderPosition ? timeOfLastActivity : now;
             lastSenderPosition = senderPosition;
             result = true;
         }

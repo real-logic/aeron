@@ -59,10 +59,11 @@ public class AeronUriTest
     public void shouldParseWithMultipleParameters() throws Exception
     {
         assertParseWithParams(
-            "aeron:udp?address=224.10.9.8|port=4567|interface=192.168.0.3",
+            "aeron:udp?address=224.10.9.8|port=4567|interface=192.168.0.3|ttl=16",
             "address", "224.10.9.8",
             "port", "4567",
-            "interface", "192.168.0.3");
+            "interface", "192.168.0.3",
+            "ttl", "16");
     }
 
     @Test
@@ -73,7 +74,7 @@ public class AeronUriTest
         assertThat(uri.get("interface", "192.168.0.0"), is("192.168.0.0"));
     }
 
-    private void assertParseWithParams(String uriStr, String...params)
+    private void assertParseWithParams(final String uriStr, final String...params)
     {
         if (params.length % 2 != 0)
         {
@@ -88,14 +89,14 @@ public class AeronUriTest
         }
     }
 
-    private void assertParseWithMedia(String uriStr, String media)
+    private void assertParseWithMedia(final String uriStr, final String media)
     {
         final AeronUri uri = AeronUri.parse(uriStr);
         assertThat(uri.scheme(), is("aeron"));
         assertThat(uri.media(), is(media));
     }
 
-    private static void assertInvalid(String string)
+    private static void assertInvalid(final String string)
     {
         try
         {

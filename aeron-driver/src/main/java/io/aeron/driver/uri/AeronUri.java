@@ -196,7 +196,7 @@ public class AeronUri
                     break;
 
                 default:
-                    throw new IllegalStateException("Que?  State = " + state);
+                    throw new IllegalStateException("Que? State = " + state);
             }
         }
 

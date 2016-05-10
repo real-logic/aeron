@@ -218,7 +218,7 @@ public class NetworkUtil
     /**
      * Allocate a direct {@link ByteBuffer} that is padded at the end with at least alignment bytes.
      *
-     * @param capacity for the buffer.
+     * @param capacity  for the buffer.
      * @param alignment for the buffer.
      * @return the direct {@link ByteBuffer}.
      */

@@ -15,7 +15,6 @@
  */
 package io.aeron.driver.media;
 
-import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
@@ -29,12 +28,11 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.DatagramChannel;
 import java.nio.channels.SelectionKey;
 
-import static io.aeron.driver.Configuration.RECEIVE_BYTE_BUFFER_LENGTH;
 import static java.net.StandardSocketOptions.IP_MULTICAST_TTL;
 import static java.net.StandardSocketOptions.SO_RCVBUF;
 import static java.net.StandardSocketOptions.SO_SNDBUF;
-import static io.aeron.logbuffer.FrameDescriptor.frameVersion;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
+import static io.aeron.logbuffer.FrameDescriptor.frameVersion;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
@@ -45,19 +43,22 @@ public abstract class UdpChannelTransport implements AutoCloseable
     protected UdpTransportPoller transportPoller;
     protected final UdpChannel udpChannel;
     protected final DistinctErrorLog errorLog;
-    protected final ByteBuffer receiveByteBuffer =
-        BufferUtil.allocateDirectAligned(RECEIVE_BYTE_BUFFER_LENGTH, CACHE_LINE_LENGTH * 2);
-    protected final UnsafeBuffer receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
+    protected final ByteBuffer receiveByteBuffer;
+    protected final UnsafeBuffer receiveBuffer;
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
 
     public UdpChannelTransport(
+        final int receiveByteBufferLength,
         final UdpChannel udpChannel,
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
         final DistinctErrorLog errorLog)
     {
+        receiveByteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(receiveByteBufferLength, CACHE_LINE_LENGTH * 2);
+        receiveBuffer = new UnsafeBuffer(receiveByteBuffer);
+
         this.udpChannel = udpChannel;
         this.errorLog = errorLog;
         this.endPointAddress = endPointAddress;

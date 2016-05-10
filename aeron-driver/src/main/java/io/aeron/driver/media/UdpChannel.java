@@ -37,12 +37,9 @@ import static org.agrona.BitUtil.toHex;
 import static org.agrona.Strings.isEmpty;
 
 /**
- * Encapsulation of UDP Channels
- * <p>
- * Format of URI:
- * <code>
- * udp://[interface[:port]@]ip:port
- * </code>
+ * Encapsulation of UDP Channels.
+ *
+ * Format of URI as in {@link AeronUri}.
  */
 public final class UdpChannel
 {
@@ -264,7 +261,7 @@ public final class UdpChannel
 
         if (hostAddress.isMulticastAddress())
         {
-            final String group = uri.getHost() + ":" + uriPort;
+            final String group = uri.getHost() + ':' + uriPort;
             final String inf = interfaceStringOf(userInfo, params.get("subnetPrefix"));
 
             return AeronUri.builder()
@@ -275,7 +272,7 @@ public final class UdpChannel
         }
         else
         {
-            final String remote = uri.getHost() + ":" + uriPort;
+            final String remote = uri.getHost() + ':' + uriPort;
 
             return AeronUri.builder()
                 .media(UDP_MEDIA_ID)
@@ -297,7 +294,7 @@ public final class UdpChannel
             return userInfo;
         }
 
-        return userInfo + "/" + subnetPrefix;
+        return userInfo + '/' + subnetPrefix;
     }
 
     private static InetSocketAddress resolveToAddressOfInterface(
@@ -456,12 +453,15 @@ public final class UdpChannel
      */
     public static String canonicalise(final InetSocketAddress localData, final InetSocketAddress remoteData)
     {
-        return String.format(
-            "UDP-%1$s-%2$d-%3$s-%4$d",
-            toHex(localData.getAddress().getAddress()),
-            localData.getPort(),
-            toHex(remoteData.getAddress().getAddress()),
-            remoteData.getPort());
+        return
+            "UDP-" +
+            toHex(localData.getAddress().getAddress()) +
+            '-' +
+            localData.getPort() +
+            '-' +
+            toHex(remoteData.getAddress().getAddress()) +
+            '-' +
+            remoteData.getPort();
     }
 
     /**
@@ -475,7 +475,7 @@ public final class UdpChannel
     }
 
     /**
-     * Local interface to be used by the channel
+     * Local interface to be used by the channel.
      *
      * @return {@link NetworkInterface} for the local interface used by the channel
      * @throws SocketException if an error occurs
@@ -575,7 +575,7 @@ public final class UdpChannel
         final StringBuilder builder = new StringBuilder();
         builder.append("Unable to find multicast interface matching criteria: ")
             .append(address.getAddress())
-            .append("/")
+            .append('/')
             .append(address.getSubnetPrefix());
 
         if (filteredIfcs.size() > 0)

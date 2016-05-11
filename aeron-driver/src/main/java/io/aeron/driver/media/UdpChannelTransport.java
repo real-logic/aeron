@@ -16,10 +16,12 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.Configuration;
+import io.aeron.driver.status.ChannelEndpointStatusIndicator;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.errors.DistinctErrorLog;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
 import java.net.*;
@@ -65,8 +67,10 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
     /**
      * Create the underlying channel for reading and writing.
+     *
+     * @param statusIndicator to set for status
      */
-    public void openDatagramChannel()
+    public void openDatagramChannel(final AtomicCounter statusIndicator)
     {
         try
         {
@@ -121,6 +125,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
         catch (final IOException ex)
         {
+            statusIndicator.setOrdered(ChannelEndpointStatusIndicator.STATUS_ERRORED);
             throw new RuntimeException(String.format("channel \"%s\" : %s", udpChannel.originalUriString(), ex), ex);
         }
     }

@@ -16,6 +16,7 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.*;
+import io.aeron.driver.status.ChannelEndpointStatusIndicator;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
@@ -54,8 +55,10 @@ public class SendChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
     private final AtomicCounter invalidPackets;
+    private final AtomicCounter statusIndicator;
 
-    public SendChannelEndpoint(final UdpChannel udpChannel, final MediaDriver.Context context)
+    public SendChannelEndpoint(
+        final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {
         super(
             context.senderByteBuffer(),
@@ -69,6 +72,9 @@ public class SendChannelEndpoint extends UdpChannelTransport
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         invalidPackets = context.systemCounters().get(INVALID_PACKETS);
+        this.statusIndicator = statusIndicator;
+
+        statusIndicator.setOrdered(ChannelEndpointStatusIndicator.STATUS_INITIALIZING);
 
         nakMessage = new NakFlyweight(receiveBuffer);
         statusMessage = new StatusMessageFlyweight(receiveBuffer);
@@ -79,12 +85,17 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public void openChannel()
     {
-        openDatagramChannel();
+        openDatagramChannel(statusIndicator);
     }
 
     public String originalUriString()
     {
         return udpChannel().originalUriString();
+    }
+
+    public AtomicCounter statusIndicator()
+    {
+        return statusIndicator;
     }
 
     /**

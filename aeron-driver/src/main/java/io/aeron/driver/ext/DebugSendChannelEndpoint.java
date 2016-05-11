@@ -19,6 +19,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.media.SendChannelEndpoint;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -32,9 +33,12 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
     private final LossGenerator controlLossGenerator;
     private final UnsafeBuffer dataBuffer = new UnsafeBuffer(ByteBuffer.allocate(0));
 
-    public DebugSendChannelEndpoint(final UdpChannel udpChannel, final MediaDriver.Context context)
+    public DebugSendChannelEndpoint(
+        final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {
-        this(udpChannel,
+        this(
+            udpChannel,
+            statusIndicator,
             context,
             DebugChannelEndpointConfiguration.sendDataLossGeneratorSupplier(),
             DebugChannelEndpointConfiguration.sendControlLossGeneratorSupplier());
@@ -42,11 +46,12 @@ public class DebugSendChannelEndpoint extends SendChannelEndpoint
 
     public DebugSendChannelEndpoint(
         final UdpChannel udpChannel,
+        final AtomicCounter statusIndicator,
         final MediaDriver.Context context,
         final LossGenerator dataLossGenerator,
         final LossGenerator controlLossGenerator)
     {
-        super(udpChannel, context);
+        super(udpChannel, statusIndicator, context);
 
         this.dataLossGenerator = dataLossGenerator;
         this.controlLossGenerator = controlLossGenerator;

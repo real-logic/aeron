@@ -58,6 +58,8 @@ public class SelectorAndTransportTest
 
     private final SystemCounters mockSystemCounters = mock(SystemCounters.class);
     private final AtomicCounter mockStatusMessagesReceivedCounter = mock(AtomicCounter.class);
+    private final AtomicCounter mockSendStatusIndicator = mock(AtomicCounter.class);
+    private final AtomicCounter mockReceiveStatusIndicator = mock(AtomicCounter.class);
 
     private final DataPacketDispatcher mockDispatcher = mock(DataPacketDispatcher.class);
     private final NetworkPublication mockPublication = mock(NetworkPublication.class);
@@ -111,12 +113,12 @@ public class SelectorAndTransportTest
     @Test(timeout = 1000)
     public void shouldHandleBasicSetupAndTearDown() throws Exception
     {
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
-        receiveChannelEndpoint.openDatagramChannel();
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel();
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         processLoop(dataTransportPoller, 5);
@@ -140,12 +142,12 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
-        receiveChannelEndpoint.openDatagramChannel();
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel();
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         encodeDataHeader.wrap(buffer);
@@ -188,12 +190,12 @@ public class SelectorAndTransportTest
             anyInt(),
             any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
 
-        receiveChannelEndpoint.openDatagramChannel();
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel();
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         encodeDataHeader.wrap(buffer);
@@ -244,13 +246,13 @@ public class SelectorAndTransportTest
             })
             .when(mockPublication).onStatusMessage(anyInt(), anyInt(), anyInt(), any(InetSocketAddress.class));
 
-        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, context);
-        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, context);
+        receiveChannelEndpoint = new ReceiveChannelEndpoint(RCV_DST, mockDispatcher, mockReceiveStatusIndicator, context);
+        sendChannelEndpoint = new SendChannelEndpoint(SRC_DST, mockSendStatusIndicator, context);
         sendChannelEndpoint.registerForSend(mockPublication);
 
-        receiveChannelEndpoint.openDatagramChannel();
+        receiveChannelEndpoint.openDatagramChannel(mockReceiveStatusIndicator);
         receiveChannelEndpoint.registerForRead(dataTransportPoller);
-        sendChannelEndpoint.openDatagramChannel();
+        sendChannelEndpoint.openDatagramChannel(mockSendStatusIndicator);
         sendChannelEndpoint.registerForRead(controlTransportPoller);
 
         statusMessage.wrap(buffer);

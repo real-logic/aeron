@@ -17,14 +17,16 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
+import org.agrona.concurrent.status.AtomicCounter;
 
 /**
  * Supply the default implementation of the {@link SendChannelEndpoint}.
  */
 public class DefaultSendChannelEndpointSupplier implements SendChannelEndpointSupplier
 {
-    public SendChannelEndpoint newInstance(final UdpChannel udpChannel, final MediaDriver.Context context)
+    public SendChannelEndpoint newInstance(
+        final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {
-        return new SendChannelEndpoint(udpChannel, context);
+        return new SendChannelEndpoint(udpChannel, statusIndicator, context);
     }
 }

@@ -155,6 +155,7 @@ public class ReceiverTest
         receiveChannelEndpoint = new ReceiveChannelEndpoint(
             UdpChannel.parse(URI),
             new DataPacketDispatcher(driverConductorProxy, receiver),
+            mock(AtomicCounter.class),
             context);
     }
 

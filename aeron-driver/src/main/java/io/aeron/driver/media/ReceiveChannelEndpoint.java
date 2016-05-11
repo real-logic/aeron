@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.*;
 import io.aeron.driver.exceptions.ConfigurationException;
+import io.aeron.driver.status.ChannelEndpointStatusIndicator;
 import io.aeron.protocol.*;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
@@ -47,6 +48,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     private final AtomicCounter nakMessageShortSends;
     private final AtomicCounter invalidPackets;
     private final AtomicCounter possibleTtlAsymmetry;
+    private final AtomicCounter statusIndicator;
 
     private final ByteBuffer smBuffer;
     private final StatusMessageFlyweight smHeader;
@@ -62,6 +64,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public ReceiveChannelEndpoint(
         final UdpChannel udpChannel,
         final DataPacketDispatcher dispatcher,
+        final AtomicCounter statusIndicator,
         final MediaDriver.Context context)
     {
         super(
@@ -100,6 +103,10 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         setupHeader = new SetupFlyweight(receiveBuffer);
 
         this.dispatcher = dispatcher;
+        this.statusIndicator = statusIndicator;
+
+        statusIndicator.setOrdered(ChannelEndpointStatusIndicator.STATUS_INITIALIZING);
+
         statusMessageShortSends = context.systemCounters().get(STATUS_MESSAGE_SHORT_SENDS);
         nakMessageShortSends = context.systemCounters().get(NAK_MESSAGE_SHORT_SENDS);
         invalidPackets = context.systemCounters().get(INVALID_PACKETS);
@@ -133,6 +140,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         return udpChannel().originalUriString();
     }
 
+    public AtomicCounter statusIndicator()
+    {
+        return statusIndicator;
+    }
+
     public void close()
     {
         super.close();
@@ -146,7 +158,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
     public void openChannel()
     {
-        openDatagramChannel();
+        openDatagramChannel(statusIndicator);
     }
 
     public void possibleTelAsymmetryEncountered()

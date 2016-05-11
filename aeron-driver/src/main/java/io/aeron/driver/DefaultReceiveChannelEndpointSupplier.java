@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
+import org.agrona.concurrent.status.AtomicCounter;
 
 /**
  * Supply the default implementation of the {@link ReceiveChannelEndpoint}.
@@ -24,8 +25,11 @@ import io.aeron.driver.media.UdpChannel;
 public class DefaultReceiveChannelEndpointSupplier implements ReceiveChannelEndpointSupplier
 {
     public ReceiveChannelEndpoint newInstance(
-        final UdpChannel udpChannel, final DataPacketDispatcher dispatcher, final MediaDriver.Context context)
+        final UdpChannel udpChannel,
+        final DataPacketDispatcher dispatcher,
+        final AtomicCounter statusIndicator,
+        final MediaDriver.Context context)
     {
-        return new ReceiveChannelEndpoint(udpChannel, dispatcher, context);
+        return new ReceiveChannelEndpoint(udpChannel, dispatcher, statusIndicator, context);
     }
 }

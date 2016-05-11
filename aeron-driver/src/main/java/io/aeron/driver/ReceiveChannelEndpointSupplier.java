@@ -17,11 +17,13 @@ package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
+import org.agrona.concurrent.status.AtomicCounter;
 
 public interface ReceiveChannelEndpointSupplier
 {
     ReceiveChannelEndpoint newInstance(
         UdpChannel udpChannel,
         DataPacketDispatcher dispatcher,
+        AtomicCounter statusIndicator,
         MediaDriver.Context context);
 }

@@ -27,10 +27,7 @@ import io.aeron.driver.exceptions.ControlProtocolException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
-import io.aeron.driver.status.PublisherLimit;
-import io.aeron.driver.status.ReceiverHwm;
-import io.aeron.driver.status.SenderPos;
-import io.aeron.driver.status.SubscriberPos;
+import io.aeron.driver.status.*;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
@@ -665,7 +662,10 @@ public class DriverConductor implements Agent
         SendChannelEndpoint channelEndpoint = sendChannelEndpointByChannelMap.get(udpChannel.canonicalForm());
         if (null == channelEndpoint)
         {
-            channelEndpoint = context.sendChannelEndpointSupplier().newInstance(udpChannel, context);
+            channelEndpoint = context.sendChannelEndpointSupplier().newInstance(
+                udpChannel,
+                SendChannelStatus.allocate(countersManager, udpChannel.originalUriString()),
+                context);
 
             sendChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);
             senderProxy.registerSendChannelEndpoint(channelEndpoint);
@@ -777,6 +777,7 @@ public class DriverConductor implements Agent
             channelEndpoint = context.receiveChannelEndpointSupplier().newInstance(
                 udpChannel,
                 new DataPacketDispatcher(fromReceiverConductorProxy, receiverProxy.receiver()),
+                ReceiveChannelStatus.allocate(countersManager, udpChannel.originalUriString()),
                 context);
 
             receiveChannelEndpointByChannelMap.put(udpChannel.canonicalForm(), channelEndpoint);

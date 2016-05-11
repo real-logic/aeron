@@ -13,13 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.aeron.driver;
+package io.aeron.driver.cmd;
 
-import io.aeron.driver.media.SendChannelEndpoint;
-import io.aeron.driver.media.UdpChannel;
-import org.agrona.concurrent.status.AtomicCounter;
+import io.aeron.driver.DriverConductor;
+import org.agrona.LangUtil;
 
-public interface SendChannelEndpointSupplier
+public class CloseAutoCloseableCmd implements DriverConductorCmd
 {
-    SendChannelEndpoint newInstance(UdpChannel udpChannel, AtomicCounter statusIndicator, MediaDriver.Context context);
+    private final AutoCloseable closeable;
+
+    public CloseAutoCloseableCmd(final AutoCloseable closeable)
+    {
+        this.closeable = closeable;
+    }
+
+    public void execute(DriverConductor conductor)
+    {
+        try
+        {
+            closeable.close();
+        }
+        catch (final Throwable throwable)
+        {
+            LangUtil.rethrowUnchecked(throwable);
+        }
+    }
 }

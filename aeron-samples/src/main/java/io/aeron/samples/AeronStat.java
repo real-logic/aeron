@@ -15,6 +15,14 @@
  */
 package io.aeron.samples;
 
+import io.aeron.CncFileDescriptor;
+import io.aeron.CommonContext;
+import io.aeron.driver.status.ChannelEndpointStatusIndicator;
+import org.agrona.DirectBuffer;
+import org.agrona.IoUtil;
+import org.agrona.concurrent.SigInt;
+import org.agrona.concurrent.status.CountersReader;
+
 import java.io.File;
 import java.io.PrintStream;
 import java.nio.MappedByteBuffer;
@@ -23,16 +31,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
-import io.aeron.CncFileDescriptor;
-import io.aeron.CommonContext;
-import org.agrona.DirectBuffer;
-import org.agrona.IoUtil;
-import org.agrona.concurrent.status.CountersReader;
-import org.agrona.concurrent.SigInt;
-
 import static io.aeron.CncFileDescriptor.*;
-import static io.aeron.driver.status.StreamPositionCounter.*;
 import static io.aeron.driver.status.PublisherLimit.PUBLISHER_LIMIT_TYPE_ID;
+import static io.aeron.driver.status.ReceiveChannelStatus.RECEIVE_CHANNEL_STATUS_TYPE_ID;
+import static io.aeron.driver.status.SendChannelStatus.SEND_CHANNEL_STATUS_TYPE_ID;
+import static io.aeron.driver.status.StreamPositionCounter.*;
 import static io.aeron.driver.status.SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID;
 import static io.aeron.driver.status.SystemCounterDescriptor.SYSTEM_COUNTER_TYPE_ID;
 
@@ -254,6 +257,13 @@ public class AeronStat
                 !match(sessionFilter, () -> Integer.toString(keyBuffer.getInt(SESSION_ID_OFFSET))) ||
                 !match(streamFilter, () -> Integer.toString(keyBuffer.getInt(STREAM_ID_OFFSET))) ||
                 !match(channelFilter, () -> keyBuffer.getStringUtf8(CHANNEL_OFFSET)))
+            {
+                return false;
+            }
+        }
+        else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
+        {
+            if (!match(channelFilter, () -> keyBuffer.getStringUtf8(ChannelEndpointStatusIndicator.CHANNEL_OFFSET)))
             {
                 return false;
             }

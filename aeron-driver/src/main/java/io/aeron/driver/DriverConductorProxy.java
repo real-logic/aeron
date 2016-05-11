@@ -15,10 +15,12 @@
  */
 package io.aeron.driver;
 
+import io.aeron.driver.cmd.CloseAutoCloseableCmd;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.cmd.CloseNetworkPublicationCmd;
 import io.aeron.driver.cmd.CreatePublicationImageCmd;
 import io.aeron.driver.cmd.DriverConductorCmd;
+import org.agrona.LangUtil;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.net.InetSocketAddress;
@@ -101,6 +103,25 @@ public class DriverConductorProxy
         else
         {
             offer(new CloseNetworkPublicationCmd(publication));
+        }
+    }
+
+    public void closeAutoCloseable(final AutoCloseable closeable)
+    {
+        if (isShared())
+        {
+            try
+            {
+                closeable.close();
+            }
+            catch (final Throwable throwable)
+            {
+                LangUtil.rethrowUnchecked(throwable);
+            }
+        }
+        else
+        {
+            offer(new CloseAutoCloseableCmd(closeable));
         }
     }
 

@@ -226,7 +226,7 @@ public class AeronStat
         {
             if ("-?".equals(arg) || "-h".equals(arg) || "-help".equals(arg))
             {
-                System.out.println(
+                System.out.format(
                     "Usage: [-Daeron.dir=<directory containing CnC file>] AeronStat%n" +
                         "\tfilter by optional regex patterns:%n" +
                         "\t[type=<pattern>]%n" +

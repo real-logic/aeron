@@ -15,8 +15,8 @@
 ::
 
 @echo off
-%JAVA_HOME%\bin\java ^
-    -cp aeron-samples/build/libs/samples.jar ^
+"%JAVA_HOME%\bin\java" ^
+    -cp ..\build\libs\samples.jar ^
     -XX:+UnlockDiagnosticVMOptions ^
     -XX:GuaranteedSafepointInterval=300000 ^
     -Daeron.sample.messages=100000 ^

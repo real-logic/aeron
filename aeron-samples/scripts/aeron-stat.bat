@@ -15,6 +15,6 @@
 ::
 
 @echo off
-%JAVA_HOME%\bin\java ^
-    -cp aeron-samples/build/libs/samples.jar ^
+"%JAVA_HOME%\bin\java" ^
+    -cp ..\build\libs\samples.jar ^
     io.aeron.samples.AeronStat %*

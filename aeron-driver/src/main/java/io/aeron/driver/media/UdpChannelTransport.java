@@ -218,7 +218,6 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            ex.printStackTrace();
             errorLog.record(ex);
         }
     }

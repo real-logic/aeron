@@ -32,6 +32,7 @@ import java.nio.ByteBuffer;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
  * Aggregator of multiple subscriptions onto a single transport session for receiving of data and setup frames
@@ -40,10 +41,34 @@ import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 @EventLog
 public class ReceiveChannelEndpoint extends UdpChannelTransport
 {
-    private final ByteBuffer smBuffer;
-    private final StatusMessageFlyweight smHeader;
-    private final ByteBuffer nakBuffer;
-    private final NakFlyweight nakHeader;
+    private static final ByteBuffer SM_BUFFER;
+    private static final StatusMessageFlyweight STATUS_MESSAGE_FLYWEIGHT;
+    private static final ByteBuffer NAK_BUFFER;
+    private static final NakFlyweight NAK_FLYWEIGHT;
+
+    static
+    {
+        final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(64, CACHE_LINE_LENGTH);
+
+        byteBuffer.limit(StatusMessageFlyweight.HEADER_LENGTH);
+        SM_BUFFER = byteBuffer.slice();
+        STATUS_MESSAGE_FLYWEIGHT = new StatusMessageFlyweight(SM_BUFFER);
+
+        final int nakMessageOffset = BitUtil.align(StatusMessageFlyweight.HEADER_LENGTH, 32);
+        byteBuffer.limit(nakMessageOffset + NakFlyweight.HEADER_LENGTH).position(nakMessageOffset);
+        NAK_BUFFER = byteBuffer.slice();
+        NAK_FLYWEIGHT = new NakFlyweight(NAK_BUFFER);
+
+        STATUS_MESSAGE_FLYWEIGHT
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .headerType(HeaderFlyweight.HDR_TYPE_SM)
+            .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
+
+        NAK_FLYWEIGHT
+            .version(HeaderFlyweight.CURRENT_VERSION)
+            .headerType(HeaderFlyweight.HDR_TYPE_NAK)
+            .frameLength(NakFlyweight.HEADER_LENGTH);
+    }
 
     private final DataPacketDispatcher dispatcher;
     private final AtomicCounter statusMessageShortSends;
@@ -68,29 +93,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             null,
             context.errorLog(),
             context.systemCounters().get(INVALID_PACKETS));
-
-        final ByteBuffer outboundBuffer =
-            NetworkUtil.allocateDirectAlignedAndPadded(
-                StatusMessageFlyweight.HEADER_LENGTH + NakFlyweight.HEADER_LENGTH,
-                BitUtil.CACHE_LINE_LENGTH);
-
-        outboundBuffer.position(StatusMessageFlyweight.HEADER_LENGTH);
-        nakBuffer = outboundBuffer.slice();
-        nakHeader = new NakFlyweight(nakBuffer);
-
-        outboundBuffer.position(0).limit(StatusMessageFlyweight.HEADER_LENGTH);
-        smBuffer = outboundBuffer.slice();
-        smHeader = new StatusMessageFlyweight(smBuffer);
-
-        smHeader
-            .version(HeaderFlyweight.CURRENT_VERSION)
-            .headerType(HeaderFlyweight.HDR_TYPE_SM)
-            .frameLength(StatusMessageFlyweight.HEADER_LENGTH);
-
-        nakHeader
-            .version(HeaderFlyweight.CURRENT_VERSION)
-            .headerType(HeaderFlyweight.HDR_TYPE_NAK)
-            .frameLength(NakFlyweight.HEADER_LENGTH);
 
         this.dispatcher = dispatcher;
         this.statusIndicator = statusIndicator;
@@ -256,8 +258,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (!isClosed)
         {
-            smBuffer.clear();
-            smHeader
+            SM_BUFFER.clear();
+            STATUS_MESSAGE_FLYWEIGHT
                 .sessionId(sessionId)
                 .streamId(streamId)
                 .consumptionTermId(termId)
@@ -265,7 +267,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 .receiverWindowLength(window)
                 .flags(flags);
 
-            final int bytesSent = sendTo(smBuffer, controlAddress);
+            final int bytesSent = sendTo(SM_BUFFER, controlAddress);
             if (StatusMessageFlyweight.HEADER_LENGTH != bytesSent)
             {
                 statusMessageShortSends.orderedIncrement();
@@ -283,15 +285,15 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         if (!isClosed)
         {
-            nakBuffer.clear();
-            nakHeader
+            NAK_BUFFER.clear();
+            NAK_FLYWEIGHT
                 .streamId(streamId)
                 .sessionId(sessionId)
                 .termId(termId)
                 .termOffset(termOffset)
                 .length(length);
 
-            final int bytesSent = sendTo(nakBuffer, controlAddress);
+            final int bytesSent = sendTo(NAK_BUFFER, controlAddress);
             if (NakFlyweight.HEADER_LENGTH != bytesSent)
             {
                 nakMessageShortSends.orderedIncrement();

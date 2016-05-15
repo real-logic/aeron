@@ -17,7 +17,6 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.*;
 import io.aeron.driver.exceptions.ConfigurationException;
-import io.aeron.driver.status.ChannelEndpointStatusIndicator;
 import io.aeron.protocol.*;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
@@ -95,8 +94,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         this.dispatcher = dispatcher;
         this.statusIndicator = statusIndicator;
-
-        statusIndicator.setOrdered(ChannelEndpointStatusIndicator.STATUS_INITIALIZING);
 
         statusMessageShortSends = context.systemCounters().get(STATUS_MESSAGE_SHORT_SENDS);
         nakMessageShortSends = context.systemCounters().get(NAK_MESSAGE_SHORT_SENDS);

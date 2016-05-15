@@ -32,8 +32,6 @@ import java.net.StandardSocketOptions;
 import java.nio.ByteBuffer;
 
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
-import static io.aeron.logbuffer.FrameDescriptor.frameType;
-import static io.aeron.protocol.HeaderFlyweight.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
@@ -43,20 +41,17 @@ import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 @EventLog
 public class ReceiveChannelEndpoint extends UdpChannelTransport
 {
-    private final DataPacketDispatcher dispatcher;
-    private final AtomicCounter statusMessageShortSends;
-    private final AtomicCounter nakMessageShortSends;
-    private final AtomicCounter invalidPackets;
-    private final AtomicCounter possibleTtlAsymmetry;
-    private final AtomicCounter statusIndicator;
-
     private final ByteBuffer smBuffer;
     private final StatusMessageFlyweight smHeader;
     private final ByteBuffer nakBuffer;
     private final NakFlyweight nakHeader;
 
-    private final SetupFlyweight setupHeader;
-    private final DataHeaderFlyweight dataHeader;
+    private final DataPacketDispatcher dispatcher;
+    private final AtomicCounter statusMessageShortSends;
+    private final AtomicCounter nakMessageShortSends;
+    private final AtomicCounter possibleTtlAsymmetry;
+    private final AtomicCounter statusIndicator;
+
     private final Int2ObjectHashMap<MutableInteger> refCountByStreamIdMap = new Int2ObjectHashMap<>();
 
     private volatile boolean isClosed = false;
@@ -68,13 +63,12 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         final MediaDriver.Context context)
     {
         super(
-            context.receiverByteBuffer(),
-            new UnsafeBuffer(context.receiverByteBuffer()),
             udpChannel,
             udpChannel.remoteData(),
             udpChannel.remoteData(),
             null,
-            context.errorLog());
+            context.errorLog(),
+            context.systemCounters().get(INVALID_PACKETS));
 
         final ByteBuffer outboundBuffer =
             NetworkUtil.allocateDirectAlignedAndPadded(
@@ -99,9 +93,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             .headerType(HeaderFlyweight.HDR_TYPE_NAK)
             .frameLength(NakFlyweight.HEADER_LENGTH);
 
-        dataHeader = new DataHeaderFlyweight(receiveBuffer);
-        setupHeader = new SetupFlyweight(receiveBuffer);
-
         this.dispatcher = dispatcher;
         this.statusIndicator = statusIndicator;
 
@@ -109,7 +100,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
 
         statusMessageShortSends = context.systemCounters().get(STATUS_MESSAGE_SHORT_SENDS);
         nakMessageShortSends = context.systemCounters().get(NAK_MESSAGE_SHORT_SENDS);
-        invalidPackets = context.systemCounters().get(INVALID_PACKETS);
         possibleTtlAsymmetry = context.systemCounters().get(POSSIBLE_TTL_ASYMMETRY);
     }
 
@@ -248,14 +238,13 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 soRcvbuf));
         }
 
-        final int capacity = receiveBufferCapacity();
-        if (senderMtuLength > capacity)
+        if (senderMtuLength > Configuration.RECEIVE_BYTE_BUFFER_LENGTH)
         {
             throw new ConfigurationException(String.format(
                 "Sender MTU greater than receive buffer capacity, increase %s to match MTU: senderMtuLength=%d, capacity=%d",
                 Configuration.RECEIVE_BUFFER_LENGTH_PROP_NAME,
                 senderMtuLength,
-                capacity));
+                Configuration.RECEIVE_BYTE_BUFFER_LENGTH));
         }
     }
 
@@ -313,28 +302,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    public int pollForData()
-    {
-        int bytesReceived = 0;
-        final InetSocketAddress srcAddress = receive();
-
-        if (null != srcAddress)
-        {
-            final int length = receiveByteBuffer.position();
-
-            if (isValidFrame(receiveBuffer, length))
-            {
-                bytesReceived = dispatch(receiveBuffer, length, srcAddress);
-            }
-            else
-            {
-                invalidPackets.orderedIncrement();
-            }
-        }
-
-        return bytesReceived;
-    }
-
     public void removePendingSetup(final int sessionId, final int streamId)
     {
         dispatcher.removePendingSetup(sessionId, streamId);
@@ -363,23 +330,5 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     public void removeCoolDown(final int sessionId, final int streamId)
     {
         dispatcher.removeCoolDown(sessionId, streamId);
-    }
-
-    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
-    {
-        int bytesReceived = 0;
-        switch (frameType(buffer, 0))
-        {
-            case HDR_TYPE_PAD:
-            case HDR_TYPE_DATA:
-                bytesReceived = dispatcher.onDataPacket(this, dataHeader, buffer, length, srcAddress);
-                break;
-
-            case HDR_TYPE_SETUP:
-                dispatcher.onSetupMessage(this, setupHeader, buffer, srcAddress);
-                break;
-        }
-
-        return bytesReceived;
     }
 }

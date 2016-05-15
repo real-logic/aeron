@@ -35,34 +35,32 @@ import static java.net.StandardSocketOptions.*;
 
 public abstract class UdpChannelTransport implements AutoCloseable
 {
+    protected final UdpChannel udpChannel;
+    protected final AtomicCounter invalidPackets;
+    protected final DistinctErrorLog errorLog;
+    protected UdpTransportPoller transportPoller;
+
+    protected SelectionKey selectionKey;
     protected InetSocketAddress bindAddress;
     protected InetSocketAddress endPointAddress;
     protected InetSocketAddress connectAddress;
-    protected SelectionKey selectionKey;
-    protected UdpTransportPoller transportPoller;
-    protected final UdpChannel udpChannel;
-    protected final DistinctErrorLog errorLog;
-    protected final ByteBuffer receiveByteBuffer;
-    protected final UnsafeBuffer receiveBuffer;
     protected DatagramChannel sendDatagramChannel;
     protected DatagramChannel receiveDatagramChannel;
 
     public UdpChannelTransport(
-        final ByteBuffer receiveByteBuffer,
-        final UnsafeBuffer receiveBuffer,
         final UdpChannel udpChannel,
         final InetSocketAddress endPointAddress,
         final InetSocketAddress bindAddress,
         final InetSocketAddress connectAddress,
-        final DistinctErrorLog errorLog)
+        final DistinctErrorLog errorLog,
+        final AtomicCounter invalidPackets)
     {
-        this.receiveByteBuffer = receiveByteBuffer;
-        this.receiveBuffer = receiveBuffer;
         this.udpChannel = udpChannel;
         this.errorLog = errorLog;
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;
         this.connectAddress = connectAddress;
+        this.invalidPackets = invalidPackets;
     }
 
     /**
@@ -255,59 +253,45 @@ public abstract class UdpChannelTransport implements AutoCloseable
     }
 
     /**
-     * Return the capacity of the {@link ByteBuffer} used for reception
-     *
-     * @return capacity of receiving byte buffer
-     */
-    public int receiveBufferCapacity()
-    {
-        return receiveByteBuffer.capacity();
-    }
-
-    /**
-     * Attempt to receive waiting data.
-     *
-     * @return number of bytes received.
-     */
-    public abstract int pollForData();
-
-    /**
      * Is the received frame valid. This method will do some basic checks on the header and can be
      * overridden in a subclass for further validation.
      *
-     * @param receiveBuffer containing the frame.
-     * @param length        of the frame.
+     * @param buffer containing the frame.
+     * @param length of the frame.
      * @return true if the frame is believed valid otherwise false.
      */
-    public boolean isValidFrame(final UnsafeBuffer receiveBuffer, final int length)
+    public boolean isValidFrame(final UnsafeBuffer buffer, final int length)
     {
         boolean isFrameValid = true;
 
-        if (frameVersion(receiveBuffer, 0) != HeaderFlyweight.CURRENT_VERSION)
+        if (frameVersion(buffer, 0) != HeaderFlyweight.CURRENT_VERSION)
         {
             isFrameValid = false;
+            invalidPackets.increment();
         }
         else if (length < HeaderFlyweight.HEADER_LENGTH)
         {
             isFrameValid = false;
+            invalidPackets.increment();
         }
 
         return isFrameValid;
     }
 
     /**
-     * Receive a datagram from the media layer into the {@link #receiveByteBuffer}.
+     * Receive a datagram from the media layer.
      *
+     * @param buffer into which the datagram will be received.
      * @return the source address of the datagram if one is available otherwise false.
      */
-    protected InetSocketAddress receive()
+    public InetSocketAddress receive(final ByteBuffer buffer)
     {
-        receiveByteBuffer.clear();
+        buffer.clear();
 
         InetSocketAddress address = null;
         try
         {
-            address = (InetSocketAddress)receiveDatagramChannel.receive(receiveByteBuffer);
+            address = (InetSocketAddress)receiveDatagramChannel.receive(buffer);
         }
         catch (final PortUnreachableException | ClosedChannelException ignored)
         {

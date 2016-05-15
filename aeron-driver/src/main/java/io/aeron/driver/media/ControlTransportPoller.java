@@ -15,19 +15,44 @@
  */
 package io.aeron.driver.media;
 
+import io.aeron.protocol.NakFlyweight;
+import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
+
+import static io.aeron.logbuffer.FrameDescriptor.frameType;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
+import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
 /**
  * Encapsulates the polling of a number of {@link UdpChannelTransport}s using whatever means provides the lowest latency.
  */
 public class ControlTransportPoller extends UdpTransportPoller
 {
+    private final ByteBuffer byteBuffer;
+    private final UnsafeBuffer unsafeBuffer;
+    private final NakFlyweight nakMessage;
+    private final StatusMessageFlyweight statusMessage;
     private SendChannelEndpoint[] transports = new SendChannelEndpoint[0];
+
+    public ControlTransportPoller()
+    {
+        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
+            Math.max(StatusMessageFlyweight.HEADER_LENGTH, NakFlyweight.HEADER_LENGTH),
+            CACHE_LINE_LENGTH * 2);
+
+        unsafeBuffer = new UnsafeBuffer(byteBuffer);
+        nakMessage = new NakFlyweight(unsafeBuffer);
+        statusMessage = new StatusMessageFlyweight(unsafeBuffer);
+    }
 
     public int pollTransports()
     {
@@ -38,7 +63,7 @@ public class ControlTransportPoller extends UdpTransportPoller
             {
                 for (final SendChannelEndpoint transport : transports)
                 {
-                    bytesReceived += transport.pollForData();
+                    bytesReceived += poll(transport);
                 }
             }
             else
@@ -48,7 +73,7 @@ public class ControlTransportPoller extends UdpTransportPoller
                 final SelectionKey[] keys = selectedKeySet.keys();
                 for (int i = 0, length = selectedKeySet.size(); i < length; i++)
                 {
-                    bytesReceived += ((SendChannelEndpoint)keys[i].attachment()).pollForData();
+                    bytesReceived += poll((SendChannelEndpoint)keys[i].attachment());
                 }
 
                 selectedKeySet.reset();
@@ -91,5 +116,31 @@ public class ControlTransportPoller extends UdpTransportPoller
     public void cancelRead(final SendChannelEndpoint transport)
     {
         transports = ArrayUtil.remove(transports, transport);
+    }
+
+    private int poll(final SendChannelEndpoint channelEndpoint)
+    {
+        int byteReceived = 0;
+        final InetSocketAddress srcAddress = channelEndpoint.receive(byteBuffer);
+
+        if (null != srcAddress)
+        {
+            byteReceived = byteBuffer.position();
+            if (channelEndpoint.isValidFrame(unsafeBuffer, byteReceived))
+            {
+                switch (frameType(unsafeBuffer, 0))
+                {
+                    case HDR_TYPE_NAK:
+                        channelEndpoint.onNakMessage(nakMessage, srcAddress);
+                        break;
+
+                    case HDR_TYPE_SM:
+                        channelEndpoint.onStatusMessage(statusMessage, srcAddress);
+                        break;
+                }
+            }
+        }
+
+        return byteReceived;
     }
 }

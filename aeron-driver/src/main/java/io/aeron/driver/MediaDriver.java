@@ -25,10 +25,7 @@ import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.DataTransportPoller;
-import io.aeron.driver.media.NetworkUtil;
 import io.aeron.driver.status.SystemCounters;
-import io.aeron.protocol.NakFlyweight;
-import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.LangUtil;
@@ -43,7 +40,6 @@ import org.agrona.concurrent.status.CountersManager;
 import java.io.*;
 import java.net.StandardSocketOptions;
 import java.net.URL;
-import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.DatagramChannel;
 import java.text.SimpleDateFormat;
@@ -51,12 +47,11 @@ import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
+import static java.lang.Boolean.getBoolean;
+import static org.agrona.IoUtil.mapNewFile;
 import static io.aeron.CncFileDescriptor.*;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
-import static java.lang.Boolean.getBoolean;
-import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
-import static org.agrona.IoUtil.mapNewFile;
 
 /**
  * Main class for JVM-based media driver
@@ -462,9 +457,6 @@ public final class MediaDriver implements AutoCloseable
         private CountersManager countersManager;
         private SystemCounters systemCounters;
 
-        private ByteBuffer senderByteBuffer;
-        private ByteBuffer receiverByteBuffer;
-
         private long imageLivenessTimeoutNs = Configuration.IMAGE_LIVENESS_TIMEOUT_NS;
         private long clientLivenessTimeoutNs = Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
         private long publicationUnblockTimeoutNs = Configuration.PUBLICATION_UNBLOCK_TIMEOUT_NS;
@@ -486,12 +478,6 @@ public final class MediaDriver implements AutoCloseable
 
         public Context()
         {
-            receiverByteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
-                Configuration.RECEIVE_BYTE_BUFFER_LENGTH, CACHE_LINE_LENGTH * 2);
-            senderByteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
-                Math.max(StatusMessageFlyweight.HEADER_LENGTH, NakFlyweight.HEADER_LENGTH),
-                CACHE_LINE_LENGTH * 2);
-
             publicationTermBufferLength(Configuration.termBufferLength());
             maxImageTermBufferLength(Configuration.maxTermBufferLength());
             initialWindowLength(Configuration.initialWindowLength());
@@ -1009,16 +995,6 @@ public final class MediaDriver implements AutoCloseable
         public CountersManager countersManager()
         {
             return countersManager;
-        }
-
-        public ByteBuffer senderByteBuffer()
-        {
-            return senderByteBuffer;
-        }
-
-        public ByteBuffer receiverByteBuffer()
-        {
-            return receiverByteBuffer;
         }
 
         public long imageLivenessTimeoutNs()

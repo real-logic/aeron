@@ -23,7 +23,6 @@ import org.agrona.LangUtil;
 import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.status.AtomicCounter;
-import org.agrona.concurrent.UnsafeBuffer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -34,9 +33,6 @@ import java.nio.channels.ClosedChannelException;
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
 import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
 import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
-import static io.aeron.logbuffer.FrameDescriptor.frameType;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_NAK;
-import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_SM;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 
 /**
@@ -46,38 +42,29 @@ import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 @EventLog
 public class SendChannelEndpoint extends UdpChannelTransport
 {
-    private final NakFlyweight nakMessage;
-    private final StatusMessageFlyweight statusMessage;
-
     private final Int2ObjectHashMap<NetworkPublication> driversPublicationByStreamId = new Int2ObjectHashMap<>();
     private final BiInt2ObjectMap<NetworkPublication> sendersPublicationByStreamAndSessionId = new BiInt2ObjectMap<>();
 
     private final AtomicCounter statusMessagesReceived;
     private final AtomicCounter nakMessagesReceived;
-    private final AtomicCounter invalidPackets;
     private final AtomicCounter statusIndicator;
 
     public SendChannelEndpoint(
         final UdpChannel udpChannel, final AtomicCounter statusIndicator, final MediaDriver.Context context)
     {
         super(
-            context.senderByteBuffer(),
-            new UnsafeBuffer(context.senderByteBuffer()),
             udpChannel,
             udpChannel.remoteControl(),
             udpChannel.localControl(),
             udpChannel.remoteData(),
-            context.errorLog());
+            context.errorLog(),
+            context.systemCounters().get(INVALID_PACKETS));
 
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
-        invalidPackets = context.systemCounters().get(INVALID_PACKETS);
         this.statusIndicator = statusIndicator;
 
         statusIndicator.setOrdered(ChannelEndpointStatusIndicator.STATUS_INITIALIZING);
-
-        nakMessage = new NakFlyweight(receiveBuffer);
-        statusMessage = new StatusMessageFlyweight(receiveBuffer);
     }
 
     /**
@@ -194,48 +181,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
     {
     }
 
-    public int pollForData()
-    {
-        int bytesReceived = 0;
-        final InetSocketAddress srcAddress = receive();
-
-        if (null != srcAddress)
-        {
-            final int length = receiveByteBuffer.position();
-
-            if (isValidFrame(receiveBuffer, length))
-            {
-                bytesReceived = dispatch(receiveBuffer, length, srcAddress);
-            }
-            else
-            {
-                invalidPackets.orderedIncrement();
-            }
-        }
-
-        return bytesReceived;
-    }
-
-    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
-    {
-        int framesRead = 0;
-        switch (frameType(buffer, 0))
-        {
-            case HDR_TYPE_NAK:
-                onNakMessage(nakMessage);
-                framesRead = 1;
-                break;
-
-            case HDR_TYPE_SM:
-                onStatusMessage(statusMessage, srcAddress);
-                framesRead = 1;
-                break;
-        }
-
-        return framesRead;
-    }
-
-    private void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
+    public void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress srcAddress)
     {
         final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
 
@@ -258,7 +204,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
         }
     }
 
-    private void onNakMessage(final NakFlyweight msg)
+    public void onNakMessage(final NakFlyweight msg, final InetSocketAddress srcAddress)
     {
         final NetworkPublication publication = sendersPublicationByStreamAndSessionId.get(msg.sessionId(), msg.streamId());
         if (null != publication)

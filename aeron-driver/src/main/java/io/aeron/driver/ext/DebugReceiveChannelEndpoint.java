@@ -19,6 +19,8 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.DataPacketDispatcher;
 import io.aeron.driver.media.UdpChannel;
+import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.SetupFlyweight;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 
@@ -76,15 +78,24 @@ public class DebugReceiveChannelEndpoint extends ReceiveChannelEndpoint
         return result;
     }
 
-    protected int dispatch(final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
+    public int onDataPacket(
+        final DataHeaderFlyweight header, final UnsafeBuffer buffer, final int length, final InetSocketAddress srcAddress)
     {
         int result = 0;
 
         if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, length))
         {
-            result = super.dispatch(buffer, length, srcAddress);
+            result = super.onDataPacket(header, buffer, length, srcAddress);
         }
 
         return result;
+    }
+
+    public void onSetupMessage(final SetupFlyweight header, final UnsafeBuffer buffer, final InetSocketAddress srcAddress)
+    {
+        if (!dataLossGenerator.shouldDropFrame(srcAddress, buffer, header.frameLength()))
+        {
+            super.onSetupMessage(header, buffer, srcAddress);
+        }
     }
 }

@@ -107,8 +107,7 @@ public class NetworkPublication
     private final AtomicCounter heartbeatsSent;
     private final AtomicCounter retransmitsSent;
     private final AtomicCounter senderFlowControlLimits;
-    private final AtomicCounter dataPacketShortSends;
-    private final AtomicCounter setupMessageShortSends;
+    private final AtomicCounter shortSends;
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -148,10 +147,9 @@ public class NetworkPublication
         dataHeader = new DataHeaderFlyweight(heartbeatFrameBuffer);
 
         heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
-        dataPacketShortSends = systemCounters.get(DATA_PACKET_SHORT_SENDS);
+        shortSends = systemCounters.get(SHORT_SENDS);
         retransmitsSent = systemCounters.get(RETRANSMITS_SENT);
         senderFlowControlLimits = systemCounters.get(SENDER_FLOW_CONTROL_LIMITS);
-        setupMessageShortSends = systemCounters.get(SETUP_MESSAGE_SHORT_SENDS);
 
         logPartitions = rawLog.partitions();
         sendBuffers = rawLog.sliceTerms();
@@ -160,8 +158,9 @@ public class NetworkPublication
         termLengthMask = termLength - 1;
         flowControl.initialize(initialTermId, termLength);
 
-        timeOfLastSendOrHeartbeat = nanoClock.nanoTime() - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
-        timeOfLastSetup = nanoClock.nanoTime() - PUBLICATION_SETUP_TIMEOUT_NS - 1;
+        final long time = nanoClock.nanoTime();
+        timeOfLastSendOrHeartbeat = time - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
+        timeOfLastSetup = time - PUBLICATION_SETUP_TIMEOUT_NS - 1;
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
@@ -275,7 +274,7 @@ public class NetworkPublication
 
                 if (available != channelEndpoint.send(sendBuffer))
                 {
-                    dataPacketShortSends.orderedIncrement();
+                    shortSends.increment();
                     break;
                 }
 
@@ -364,7 +363,7 @@ public class NetworkPublication
                 }
                 else
                 {
-                    dataPacketShortSends.orderedIncrement();
+                    shortSends.increment();
                 }
             }
         }
@@ -387,7 +386,7 @@ public class NetworkPublication
             final int bytesSent = channelEndpoint.send(setupFrameBuffer);
             if (SetupFlyweight.HEADER_LENGTH != bytesSent)
             {
-                setupMessageShortSends.orderedIncrement();
+                shortSends.increment();
             }
 
             timeOfLastSetup = now;
@@ -410,7 +409,7 @@ public class NetworkPublication
             final int bytesSent = channelEndpoint.send(heartbeatFrameBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
-                dataPacketShortSends.orderedIncrement();
+                shortSends.increment();
             }
 
             heartbeatsSent.orderedIncrement();

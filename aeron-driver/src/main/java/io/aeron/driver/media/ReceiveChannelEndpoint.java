@@ -71,8 +71,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     }
 
     private final DataPacketDispatcher dispatcher;
-    private final AtomicCounter statusMessageShortSends;
-    private final AtomicCounter nakMessageShortSends;
+    private final AtomicCounter shortSends;
     private final AtomicCounter possibleTtlAsymmetry;
     private final AtomicCounter statusIndicator;
 
@@ -97,8 +96,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         this.dispatcher = dispatcher;
         this.statusIndicator = statusIndicator;
 
-        statusMessageShortSends = context.systemCounters().get(STATUS_MESSAGE_SHORT_SENDS);
-        nakMessageShortSends = context.systemCounters().get(NAK_MESSAGE_SHORT_SENDS);
+        shortSends = context.systemCounters().get(SHORT_SENDS);
         possibleTtlAsymmetry = context.systemCounters().get(POSSIBLE_TTL_ASYMMETRY);
     }
 
@@ -270,7 +268,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             final int bytesSent = sendTo(SM_BUFFER, controlAddress);
             if (StatusMessageFlyweight.HEADER_LENGTH != bytesSent)
             {
-                statusMessageShortSends.orderedIncrement();
+                shortSends.increment();
             }
         }
     }
@@ -296,7 +294,7 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
             final int bytesSent = sendTo(NAK_BUFFER, controlAddress);
             if (NakFlyweight.HEADER_LENGTH != bytesSent)
             {
-                nakMessageShortSends.orderedIncrement();
+                shortSends.increment();
             }
         }
     }

@@ -40,15 +40,12 @@ public enum SystemCounterDescriptor
     FLOW_CONTROL_OVER_RUNS(13, "Flow control over runs"),
     INVALID_PACKETS(14, "Invalid packets"),
     ERRORS(15, "Errors"),
-    DATA_PACKET_SHORT_SENDS(16, "Data Packet short sends"),
-    SETUP_MESSAGE_SHORT_SENDS(17, "Setup Message short sends"),
-    STATUS_MESSAGE_SHORT_SENDS(18, "Status Message short sends"),
-    NAK_MESSAGE_SHORT_SENDS(19, "NAK Message short sends"),
-    CLIENT_KEEP_ALIVES(20, "Client keep-alives"),
-    SENDER_FLOW_CONTROL_LIMITS(21, "Sender flow control limits applied"),
-    UNBLOCKED_PUBLICATIONS(22, "Unblocked Publications"),
-    UNBLOCKED_COMMANDS(23, "Unblocked Control Commands"),
-    POSSIBLE_TTL_ASYMMETRY(24, "Possible TTL Asymmetry");
+    SHORT_SENDS(16, "Short sends"),
+    CLIENT_KEEP_ALIVES(17, "Client keep-alives"),
+    SENDER_FLOW_CONTROL_LIMITS(18, "Sender flow control limits applied"),
+    UNBLOCKED_PUBLICATIONS(19, "Unblocked Publications"),
+    UNBLOCKED_COMMANDS(20, "Unblocked Control Commands"),
+    POSSIBLE_TTL_ASYMMETRY(21, "Possible TTL Asymmetry");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Others types can exist.

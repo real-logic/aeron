@@ -24,14 +24,14 @@ import java.nio.ByteBuffer;
 
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 
-class ReceiveChannelEndpointThreadLocals
+public class ReceiveChannelEndpointThreadLocals
 {
     private final ByteBuffer smBuffer;
     private final StatusMessageFlyweight statusMessageFlyweight;
     private final ByteBuffer nakBuffer;
     private final NakFlyweight nakFlyweight;
 
-    ReceiveChannelEndpointThreadLocals()
+    public ReceiveChannelEndpointThreadLocals()
     {
         final ByteBuffer byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(64, CACHE_LINE_LENGTH);
 
@@ -55,22 +55,22 @@ class ReceiveChannelEndpointThreadLocals
             .frameLength(NakFlyweight.HEADER_LENGTH);
     }
 
-    ByteBuffer smBuffer()
+    public ByteBuffer smBuffer()
     {
         return smBuffer;
     }
 
-    StatusMessageFlyweight statusMessageFlyweight()
+    public StatusMessageFlyweight statusMessageFlyweight()
     {
         return statusMessageFlyweight;
     }
 
-    ByteBuffer nakBuffer()
+    public ByteBuffer nakBuffer()
     {
         return nakBuffer;
     }
 
-    NakFlyweight nakFlyweight()
+    public NakFlyweight nakFlyweight()
     {
         return nakFlyweight;
     }

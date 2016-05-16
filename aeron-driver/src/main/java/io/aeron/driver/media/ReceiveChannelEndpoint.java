@@ -39,9 +39,6 @@ import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 @EventLog
 public class ReceiveChannelEndpoint extends UdpChannelTransport
 {
-    private static final ThreadLocal<ReceiveChannelEndpointThreadLocals> THREAD_LOCALS =
-        ThreadLocal.withInitial(ReceiveChannelEndpointThreadLocals::new);
-
     private final DataPacketDispatcher dispatcher;
     private final ByteBuffer smBuffer;
     private final StatusMessageFlyweight statusMessageFlyweight;
@@ -75,11 +72,11 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
         shortSends = context.systemCounters().get(SHORT_SENDS);
         possibleTtlAsymmetry = context.systemCounters().get(POSSIBLE_TTL_ASYMMETRY);
 
-        final ReceiveChannelEndpointThreadLocals buffers = THREAD_LOCALS.get();
-        smBuffer = buffers.smBuffer();
-        statusMessageFlyweight = buffers.statusMessageFlyweight();
-        nakBuffer = buffers.nakBuffer();
-        nakFlyweight = buffers.nakFlyweight();
+        final ReceiveChannelEndpointThreadLocals threadLocals = context.receiveChannelEndpointThreadLocals();
+        smBuffer = threadLocals.smBuffer();
+        statusMessageFlyweight = threadLocals.statusMessageFlyweight();
+        nakBuffer = threadLocals.nakBuffer();
+        nakFlyweight = threadLocals.nakFlyweight();
     }
 
     /**

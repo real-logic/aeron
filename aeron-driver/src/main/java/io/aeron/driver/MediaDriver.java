@@ -25,6 +25,7 @@ import io.aeron.driver.exceptions.ActiveDriverException;
 import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.DataTransportPoller;
+import io.aeron.driver.media.ReceiveChannelEndpointThreadLocals;
 import io.aeron.driver.status.SystemCounters;
 import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
@@ -475,6 +476,7 @@ public final class MediaDriver implements AutoCloseable
 
         private SendChannelEndpointSupplier sendChannelEndpointSupplier;
         private ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier;
+        private ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals = new ReceiveChannelEndpointThreadLocals();
 
         public Context()
         {
@@ -1086,6 +1088,11 @@ public final class MediaDriver implements AutoCloseable
         public ReceiveChannelEndpointSupplier receiveChannelEndpointSupplier()
         {
             return receiveChannelEndpointSupplier;
+        }
+
+        public ReceiveChannelEndpointThreadLocals receiveChannelEndpointThreadLocals()
+        {
+            return receiveChannelEndpointThreadLocals;
         }
 
         public void close()

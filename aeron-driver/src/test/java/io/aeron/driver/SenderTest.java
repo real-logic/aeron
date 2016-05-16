@@ -137,7 +137,8 @@ public class SenderTest
             MAX_FRAME_LENGTH,
             mockSystemCounters,
             flowControl,
-            mockRetransmitHandler);
+            mockRetransmitHandler,
+            new NetworkPublicationThreadLocals());
 
         senderCommandQueue.offer(new NewPublicationCmd(publication));
     }

@@ -79,9 +79,6 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource
 {
-    private static final ThreadLocal<NetworkPublicationThreadLocals> THREAD_LOCALS =
-        ThreadLocal.withInitial(NetworkPublicationThreadLocals::new);
-
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
@@ -124,7 +121,8 @@ public class NetworkPublication
         final int mtuLength,
         final SystemCounters systemCounters,
         final FlowControl flowControl,
-        final RetransmitHandler retransmitHandler)
+        final RetransmitHandler retransmitHandler,
+        final NetworkPublicationThreadLocals threadLocals)
     {
         this.channelEndpoint = channelEndpoint;
         this.rawLog = rawLog;
@@ -138,11 +136,10 @@ public class NetworkPublication
         this.sessionId = sessionId;
         this.streamId = streamId;
 
-        final NetworkPublicationThreadLocals buffers = THREAD_LOCALS.get();
-        setupBuffer = buffers.setupBuffer();
-        setupHeader = buffers.setupHeader();
-        heartbeatBuffer = buffers.heartbeatBuffer();
-        dataHeader = buffers.dataHeader();
+        setupBuffer = threadLocals.setupBuffer();
+        setupHeader = threadLocals.setupHeader();
+        heartbeatBuffer = threadLocals.heartbeatBuffer();
+        dataHeader = threadLocals.dataHeader();
 
         heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
         shortSends = systemCounters.get(SHORT_SENDS);

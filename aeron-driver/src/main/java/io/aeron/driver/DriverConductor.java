@@ -69,6 +69,7 @@ public class DriverConductor implements Agent
     private long timeOfLastTimeoutCheck;
     private int nextSessionId = BitUtil.generateRandomisedId();
 
+    private final NetworkPublicationThreadLocals networkPublicationThreadLocals = new NetworkPublicationThreadLocals();
     private final Context context;
     private final RawLogFactory rawLogFactory;
     private final ReceiverProxy receiverProxy;
@@ -537,7 +538,8 @@ public class DriverConductor implements Agent
                 context.mtuLength(),
                 context.systemCounters(),
                 flowControl,
-                retransmitHandler);
+                retransmitHandler,
+                networkPublicationThreadLocals);
 
             channelEndpoint.addPublication(publication);
             networkPublications.add(publication);

@@ -23,14 +23,14 @@ import org.agrona.BufferUtil;
 
 import java.nio.ByteBuffer;
 
-class NetworkPublicationThreadLocals
+public class NetworkPublicationThreadLocals
 {
     private final ByteBuffer heartbeatBuffer;
     private final DataHeaderFlyweight dataHeader;
     private final ByteBuffer setupBuffer;
     private final SetupFlyweight setupHeader;
 
-    NetworkPublicationThreadLocals()
+    public NetworkPublicationThreadLocals()
     {
         final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(128, BitUtil.CACHE_LINE_LENGTH);
 
@@ -54,22 +54,22 @@ class NetworkPublicationThreadLocals
             .frameLength(SetupFlyweight.HEADER_LENGTH);
     }
 
-    ByteBuffer heartbeatBuffer()
+    public ByteBuffer heartbeatBuffer()
     {
         return heartbeatBuffer;
     }
 
-    DataHeaderFlyweight dataHeader()
+    public DataHeaderFlyweight dataHeader()
     {
         return dataHeader;
     }
 
-    ByteBuffer setupBuffer()
+    public ByteBuffer setupBuffer()
     {
         return setupBuffer;
     }
 
-    SetupFlyweight setupHeader()
+    public SetupFlyweight setupHeader()
     {
         return setupHeader;
     }

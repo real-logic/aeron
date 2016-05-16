@@ -36,11 +36,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MultipleSubscribersWithFragmentAssembly
 {
-    private static final String CHANNEL = SampleConfiguration.CHANNEL;
+    private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final int STREAM_ID_1 = SampleConfiguration.STREAM_ID;
     private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
 
-    private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
     public static void main(final String[] args) throws Exception
     {

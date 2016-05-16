@@ -15,7 +15,6 @@
  */
 package io.aeron.samples;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,6 +30,8 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.BitUtil;
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BackoffIdleStrategy;
 import org.agrona.concurrent.BusySpinIdleStrategy;
@@ -43,16 +44,17 @@ public class EmbeddedPingPong
 {
     private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
     private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
-    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
-    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
     private static final int NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final int WARMUP_NUMBER_OF_MESSAGES = SampleConfiguration.WARMUP_NUMBER_OF_MESSAGES;
     private static final int WARMUP_NUMBER_OF_ITERATIONS = SampleConfiguration.WARMUP_NUMBER_OF_ITERATIONS;
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
+    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
 
-    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(
+        BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch PONG_IMAGE_LATCH = new CountDownLatch(1);
     private static final BusySpinIdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();

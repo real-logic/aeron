@@ -20,6 +20,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.BufferUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.*;
 
@@ -27,6 +28,7 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
+import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.UnsafeAccess.UNSAFE;
 
 public class EmbeddedIpcThroughput
@@ -121,7 +123,8 @@ public class EmbeddedIpcThroughput
         public void run()
         {
             final Publication publication = this.publication;
-            final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(publication.maxMessageLength()));
+            final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(publication.maxMessageLength(), CACHE_LINE_LENGTH);
+            final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);
             long backPressureCount = 0;
             long totalMessageCount = 0;
 

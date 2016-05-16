@@ -17,9 +17,9 @@ package io.aeron.samples;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import org.agrona.BitUtil;
+import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
 
 /**
  * A publisher application with multiple publications which send
@@ -33,8 +33,10 @@ public class MultiplePublishersWithFragmentation
     private static final int STREAM_ID_1 = SampleConfiguration.STREAM_ID;
     private static final int STREAM_ID_2 = SampleConfiguration.STREAM_ID + 1;
     private static final String CHANNEL = SampleConfiguration.CHANNEL;
-    private static final UnsafeBuffer BUFFER_1 = new UnsafeBuffer(ByteBuffer.allocateDirect(10000));
-    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(ByteBuffer.allocateDirect(9000));
+    private static final UnsafeBuffer BUFFER_1 = new UnsafeBuffer(
+        BufferUtil.allocateDirectAligned(10000, BitUtil.CACHE_LINE_LENGTH));
+    private static final UnsafeBuffer BUFFER_2 = new UnsafeBuffer(
+        BufferUtil.allocateDirectAligned(9000, BitUtil.CACHE_LINE_LENGTH));
 
     public static void main(final String[] args) throws Exception
     {

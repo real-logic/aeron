@@ -20,6 +20,8 @@ import io.aeron.driver.MediaDriver;
 import org.HdrHistogram.Histogram;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.BitUtil;
+import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.BusySpinIdleStrategy;
@@ -27,7 +29,6 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -38,8 +39,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class Ping
 {
-    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
-    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
     private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
     private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
     private static final int NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
@@ -48,8 +47,11 @@ public class Ping
     private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
+    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
 
-    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(
+        BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final Histogram HISTOGRAM = new Histogram(TimeUnit.SECONDS.toNanos(10), 3);
     private static final CountDownLatch LATCH = new CountDownLatch(1);
     private static final IdleStrategy POLLING_IDLE_STRATEGY = new BusySpinIdleStrategy();

@@ -17,9 +17,9 @@ package io.aeron.samples;
 
 import io.aeron.Aeron;
 import io.aeron.Publication;
+import org.agrona.BitUtil;
+import org.agrona.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-
-import java.nio.ByteBuffer;
 
 /**
  * A very simple Aeron publisher application
@@ -32,7 +32,7 @@ public class SimplePublisher
     {
         // Allocate enough buffer size to hold maximum message length
         // The UnsafeBuffer class is part of the Agrona library and is used for efficient buffer management
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(512));
+        final UnsafeBuffer buffer = new UnsafeBuffer(BufferUtil.allocateDirectAligned(512, BitUtil.CACHE_LINE_LENGTH));
 
         // The channel (an endpoint identifier) to send the message to
         final String channel = "udp://localhost:40123";
@@ -69,7 +69,7 @@ public class SimplePublisher
                 }
                 else if (result == Publication.NOT_CONNECTED)
                 {
-                    System.out.println(" Offer failed because publisher is not yet connected to subscriber");
+                    System.out.println(" Offer failed because publisher is not connected to subscriber");
                 }
                 else if (result == Publication.ADMIN_ACTION)
                 {

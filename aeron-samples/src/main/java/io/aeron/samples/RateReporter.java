@@ -43,14 +43,13 @@ public class RateReporter implements Runnable
 
     private final long reportIntervalNs;
     private final long parkNs;
-    private final Reporter reportingFunc;
-
-    private volatile boolean halt = false;
-    private volatile long totalBytes;
-    private volatile long totalMessages;
     private long lastTotalBytes;
     private long lastTotalMessages;
     private long lastTimestamp;
+    private volatile long totalBytes;
+    private volatile long totalMessages;
+    private volatile boolean halt = false;
+    private final Reporter reportingFunc;
 
     /**
      * Create a rate reporter with the given report interval in nanoseconds and the reporting function.

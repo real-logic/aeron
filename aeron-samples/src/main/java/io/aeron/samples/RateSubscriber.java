@@ -37,9 +37,9 @@ import static io.aeron.samples.SamplesUtil.rateReporterHandler;
 public class RateSubscriber
 {
     private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
-    private static final String CHANNEL = SampleConfiguration.CHANNEL;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
+    private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
     public static void main(final String[] args) throws Exception
     {

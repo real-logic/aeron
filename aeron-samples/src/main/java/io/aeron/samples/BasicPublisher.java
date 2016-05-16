@@ -18,10 +18,10 @@ package io.aeron.samples;
 import io.aeron.Aeron;
 import io.aeron.Publication;
 import io.aeron.driver.MediaDriver;
+import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.UnsafeBuffer;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,7 +42,7 @@ public class BasicPublisher
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
-    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(256));
+    private static final UnsafeBuffer BUFFER = new UnsafeBuffer(BufferUtil.allocateDirectAligned(256, 64));
 
     public static void main(final String[] args) throws Exception
     {

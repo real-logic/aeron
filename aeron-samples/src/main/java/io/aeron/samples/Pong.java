@@ -37,12 +37,11 @@ public class Pong
 {
     private static final int PING_STREAM_ID = SampleConfiguration.PING_STREAM_ID;
     private static final int PONG_STREAM_ID = SampleConfiguration.PONG_STREAM_ID;
-    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
-    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
     private static final int FRAME_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
     private static final boolean EMBEDDED_MEDIA_DRIVER = SampleConfiguration.EMBEDDED_MEDIA_DRIVER;
     private static final boolean INFO_FLAG = SampleConfiguration.INFO_FLAG;
-
+    private static final String PING_CHANNEL = SampleConfiguration.PING_CHANNEL;
+    private static final String PONG_CHANNEL = SampleConfiguration.PONG_CHANNEL;
     private static final IdleStrategy PING_HANDLER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     public static void main(final String[] args) throws Exception

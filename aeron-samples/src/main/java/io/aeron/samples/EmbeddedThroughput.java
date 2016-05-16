@@ -17,7 +17,6 @@ package io.aeron.samples;
 
 import static io.aeron.samples.SamplesUtil.rateReporterHandler;
 
-import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -28,20 +27,23 @@ import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
+import org.agrona.BitUtil;
+import org.agrona.BufferUtil;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.console.ContinueBarrier;
 
 public class EmbeddedThroughput
 {
-    private static final String CHANNEL = SampleConfiguration.CHANNEL;
-    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
-    private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final long NUMBER_OF_MESSAGES = SampleConfiguration.NUMBER_OF_MESSAGES;
     private static final long LINGER_TIMEOUT_MS = SampleConfiguration.LINGER_TIMEOUT_MS;
+    private static final int STREAM_ID = SampleConfiguration.STREAM_ID;
+    private static final int MESSAGE_LENGTH = SampleConfiguration.MESSAGE_LENGTH;
     private static final int FRAGMENT_COUNT_LIMIT = SampleConfiguration.FRAGMENT_COUNT_LIMIT;
+    private static final String CHANNEL = SampleConfiguration.CHANNEL;
 
-    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(ByteBuffer.allocateDirect(MESSAGE_LENGTH));
+    private static final UnsafeBuffer ATOMIC_BUFFER = new UnsafeBuffer(
+        BufferUtil.allocateDirectAligned(MESSAGE_LENGTH, BitUtil.CACHE_LINE_LENGTH));
     private static final BusySpinIdleStrategy OFFER_IDLE_STRATEGY = new BusySpinIdleStrategy();
 
     private static volatile boolean printingActive = true;

@@ -16,16 +16,13 @@
 package io.aeron.driver;
 
 import io.aeron.driver.buffer.RawLog;
-import io.aeron.driver.media.NetworkUtil;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferPartition;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
-import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
-import org.agrona.BitUtil;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -82,11 +79,22 @@ public class NetworkPublication
     extends NetworkPublicationPadding3
     implements RetransmitSender, DriverManagedResource
 {
+    private static final ThreadLocal<NetworkPublicationThreadLocals> THREAD_LOCALS =
+        new ThreadLocal<NetworkPublicationThreadLocals>()
+        {
+            protected NetworkPublicationThreadLocals initialValue()
+            {
+                return new NetworkPublicationThreadLocals();
+            }
+        };
+
     private final int positionBitsToShift;
     private final int initialTermId;
     private final int termLengthMask;
     private final int mtuLength;
     private final int termWindowLength;
+    private final int sessionId;
+    private final int streamId;
 
     private volatile boolean hasStatusMessageBeenReceived = false;
     private boolean reachedEndOfLife = false;
@@ -96,9 +104,9 @@ public class NetworkPublication
     private final Position publisherLimit;
     private final Position senderPosition;
     private final SendChannelEndpoint channelEndpoint;
-    private final ByteBuffer heartbeatFrameBuffer;
+    private final ByteBuffer heartbeatBuffer;
     private final DataHeaderFlyweight dataHeader;
-    private final ByteBuffer setupFrameBuffer;
+    private final ByteBuffer setupBuffer;
     private final SetupFlyweight setupHeader;
     private final FlowControl flowControl;
     private final EpochClock epochClock;
@@ -133,18 +141,14 @@ public class NetworkPublication
         this.publisherLimit = publisherLimit;
         this.mtuLength = mtuLength;
         this.initialTermId = initialTermId;
+        this.sessionId = sessionId;
+        this.streamId = streamId;
 
-        final ByteBuffer outboundBuffer = NetworkUtil.allocateDirectAlignedAndPadded(
-            DataHeaderFlyweight.HEADER_LENGTH + SetupFlyweight.HEADER_LENGTH,
-            BitUtil.CACHE_LINE_LENGTH);
-
-        outboundBuffer.position(DataHeaderFlyweight.HEADER_LENGTH);
-        setupFrameBuffer = outboundBuffer.slice();
-        setupHeader = new SetupFlyweight(setupFrameBuffer);
-
-        outboundBuffer.position(0).limit(DataHeaderFlyweight.HEADER_LENGTH);
-        heartbeatFrameBuffer = outboundBuffer.slice();
-        dataHeader = new DataHeaderFlyweight(heartbeatFrameBuffer);
+        final NetworkPublicationThreadLocals buffers = THREAD_LOCALS.get();
+        setupBuffer = buffers.setupBuffer();
+        setupHeader = buffers.setupHeader();
+        heartbeatBuffer = buffers.heartbeatBuffer();
+        dataHeader = buffers.dataHeader();
 
         heartbeatsSent = systemCounters.get(HEARTBEATS_SENT);
         shortSends = systemCounters.get(SHORT_SENDS);
@@ -164,9 +168,6 @@ public class NetworkPublication
 
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
         termWindowLength = Configuration.publicationTermWindowLength(termLength);
-
-        initSetupFrame(initialTermId, termLength, sessionId, streamId);
-        initHeartBeatFrame(sessionId, streamId);
     }
 
     public void close()
@@ -207,12 +208,12 @@ public class NetworkPublication
 
     public int sessionId()
     {
-        return dataHeader.sessionId();
+        return sessionId;
     }
 
     public int streamId()
     {
-        return dataHeader.streamId();
+        return streamId;
     }
 
     void senderPositionLimit(final long positionLimit)
@@ -380,10 +381,18 @@ public class NetworkPublication
     {
         if (now > (timeOfLastSetup + PUBLICATION_SETUP_TIMEOUT_NS))
         {
-            setupFrameBuffer.clear();
-            setupHeader.activeTermId(activeTermId).termOffset(termOffset);
+            setupBuffer.clear();
+            setupHeader
+                .activeTermId(activeTermId)
+                .termOffset(termOffset)
+                .sessionId(sessionId)
+                .streamId(streamId)
+                .initialTermId(initialTermId)
+                .termLength(termLengthMask + 1)
+                .mtuLength(mtuLength)
+                .ttl(channelEndpoint.multicastTtl());
 
-            final int bytesSent = channelEndpoint.send(setupFrameBuffer);
+            final int bytesSent = channelEndpoint.send(setupBuffer);
             if (SetupFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();
@@ -403,10 +412,14 @@ public class NetworkPublication
     {
         if (now > (timeOfLastSendOrHeartbeat + PUBLICATION_HEARTBEAT_TIMEOUT_NS))
         {
-            heartbeatFrameBuffer.clear();
-            dataHeader.termId(activeTermId).termOffset(termOffset);
+            heartbeatBuffer.clear();
+            dataHeader
+                .sessionId(sessionId)
+                .streamId(streamId)
+                .termId(activeTermId)
+                .termOffset(termOffset);
 
-            final int bytesSent = channelEndpoint.send(heartbeatFrameBuffer);
+            final int bytesSent = channelEndpoint.send(heartbeatBuffer);
             if (DataHeaderFlyweight.HEADER_LENGTH != bytesSent)
             {
                 shortSends.increment();
@@ -415,34 +428,6 @@ public class NetworkPublication
             heartbeatsSent.orderedIncrement();
             timeOfLastSendOrHeartbeat = now;
         }
-    }
-
-    private void initSetupFrame(final int activeTermId, final int termLength, final int sessionId, final int streamId)
-    {
-        setupHeader
-            .sessionId(sessionId)
-            .streamId(streamId)
-            .initialTermId(initialTermId)
-            .activeTermId(activeTermId)
-            .termOffset(0)
-            .termLength(termLength)
-            .mtuLength(mtuLength)
-            .ttl(channelEndpoint.multicastTtl())
-            .version(HeaderFlyweight.CURRENT_VERSION)
-            .flags((byte)0)
-            .headerType(HeaderFlyweight.HDR_TYPE_SETUP)
-            .frameLength(SetupFlyweight.HEADER_LENGTH);
-    }
-
-    private void initHeartBeatFrame(final int sessionId, final int streamId)
-    {
-        dataHeader
-            .sessionId(sessionId)
-            .streamId(streamId)
-            .version(HeaderFlyweight.CURRENT_VERSION)
-            .flags((byte)DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-            .frameLength(0);
     }
 
     private boolean isUnreferencedAndPotentiallyInactive(final long now)
@@ -513,7 +498,6 @@ public class NetworkPublication
     public long producerPosition()
     {
         final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
-        final int initialTermId = initialTermId(logMetaDataBuffer);
         final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
         final int termOffset = termOffset(rawTail, rawLog.termLength());
 

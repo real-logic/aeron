@@ -40,13 +40,7 @@ import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 public class ReceiveChannelEndpoint extends UdpChannelTransport
 {
     private static final ThreadLocal<ReceiveChannelEndpointThreadLocals> THREAD_LOCALS =
-        new ThreadLocal<ReceiveChannelEndpointThreadLocals>()
-        {
-            protected ReceiveChannelEndpointThreadLocals initialValue()
-            {
-                return new ReceiveChannelEndpointThreadLocals();
-            }
-        };
+        ThreadLocal.withInitial(ReceiveChannelEndpointThreadLocals::new);
 
     private final DataPacketDispatcher dispatcher;
     private final ByteBuffer smBuffer;

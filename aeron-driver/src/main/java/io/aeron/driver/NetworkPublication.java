@@ -80,13 +80,7 @@ public class NetworkPublication
     implements RetransmitSender, DriverManagedResource
 {
     private static final ThreadLocal<NetworkPublicationThreadLocals> THREAD_LOCALS =
-        new ThreadLocal<NetworkPublicationThreadLocals>()
-        {
-            protected NetworkPublicationThreadLocals initialValue()
-            {
-                return new NetworkPublicationThreadLocals();
-            }
-        };
+        ThreadLocal.withInitial(NetworkPublicationThreadLocals::new);
 
     private final int positionBitsToShift;
     private final int initialTermId;

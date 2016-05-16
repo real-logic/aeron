@@ -40,6 +40,7 @@ public class DirectPublication implements DriverManagedResource
     private final int streamId;
     private final int termWindowLength;
     private final int positionBitsToShift;
+    private final int initialTermId;
     private final LogBufferPartition[] logPartitions;
     private final ArrayList<ReadablePosition> subscriberPositions = new ArrayList<>();
     private final RawLog rawLog;
@@ -60,6 +61,7 @@ public class DirectPublication implements DriverManagedResource
         this.sessionId = sessionId;
         this.streamId = streamId;
         this.logPartitions = rawLog.partitions();
+        this.initialTermId = initialTermId(rawLog.logMetaData());
 
         final int termLength = rawLog.termLength();
         this.positionBitsToShift = Integer.numberOfTrailingZeros(termLength);
@@ -179,7 +181,6 @@ public class DirectPublication implements DriverManagedResource
     public long producerPosition()
     {
         final UnsafeBuffer logMetaDataBuffer = rawLog.logMetaData();
-        final int initialTermId = initialTermId(logMetaDataBuffer);
         final long rawTail = logPartitions[activePartitionIndex(logMetaDataBuffer)].rawTailVolatile();
         final int termOffset = termOffset(rawTail, rawLog.termLength());
 

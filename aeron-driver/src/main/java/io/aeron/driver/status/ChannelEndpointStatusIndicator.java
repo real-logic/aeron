@@ -77,7 +77,7 @@ public class ChannelEndpointStatusIndicator
         final CountersManager countersManager,
         final String channel)
     {
-        final String label = name + ": " + ' ' + channel;
+        final String label = name + ": " + channel;
 
         return countersManager.newCounter(
             label,

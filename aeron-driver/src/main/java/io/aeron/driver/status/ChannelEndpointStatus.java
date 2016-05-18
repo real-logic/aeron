@@ -30,27 +30,27 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
  *     <li>{@link ReceiveChannelStatus}: Indication of receive channel status.</li>
  * </ul>
  */
-public class ChannelEndpointStatusIndicator
+public class ChannelEndpointStatus
 {
     /**
      * Channel is being initialized.
      */
-    public static final long STATUS_INITIALIZING = 0;
+    public static final long INITIALIZING = 0;
 
     /**
      * Channel has errored. Check error log for information.
      */
-    public static final long STATUS_ERRORED = -1;
+    public static final long ERRORED = -1;
 
     /**
      * Channel has finished initialization successfully and is active.
      */
-    public static final long STATUS_ACTIVE = 1;
+    public static final long ACTIVE = 1;
 
     /**
      * Channel is being closed.
      */
-    public static final long STATUS_CLOSING = 2;
+    public static final long CLOSING = 2;
 
     /**
      * Offset in the key meta data for the channel of the counter.

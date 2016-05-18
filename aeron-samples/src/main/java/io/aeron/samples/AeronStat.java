@@ -17,7 +17,7 @@ package io.aeron.samples;
 
 import io.aeron.CncFileDescriptor;
 import io.aeron.CommonContext;
-import io.aeron.driver.status.ChannelEndpointStatusIndicator;
+import io.aeron.driver.status.ChannelEndpointStatus;
 import org.agrona.DirectBuffer;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.SigInt;
@@ -263,7 +263,7 @@ public class AeronStat
         }
         else if (typeId >= SEND_CHANNEL_STATUS_TYPE_ID && typeId <= RECEIVE_CHANNEL_STATUS_TYPE_ID)
         {
-            if (!match(channelFilter, () -> keyBuffer.getStringUtf8(ChannelEndpointStatusIndicator.CHANNEL_OFFSET)))
+            if (!match(channelFilter, () -> keyBuffer.getStringUtf8(ChannelEndpointStatus.CHANNEL_OFFSET)))
             {
                 return false;
             }

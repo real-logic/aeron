@@ -16,7 +16,7 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.Configuration;
-import io.aeron.driver.status.ChannelEndpointStatusIndicator;
+import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.HeaderFlyweight;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -123,7 +123,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         }
         catch (final IOException ex)
         {
-            statusIndicator.setOrdered(ChannelEndpointStatusIndicator.STATUS_ERRORED);
+            statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
             throw new RuntimeException(String.format("channel \"%s\" : %s", udpChannel.originalUriString(), ex), ex);
         }
     }

@@ -18,7 +18,7 @@ package io.aeron.driver;
 import io.aeron.driver.cmd.ReceiverCmd;
 import io.aeron.driver.media.DataTransportPoller;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.status.ChannelEndpointStatusIndicator;
+import io.aeron.driver.status.ChannelEndpointStatus;
 import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
@@ -114,12 +114,12 @@ public class Receiver implements Agent, Consumer<ReceiverCmd>
     {
         channelEndpoint.openChannel();
         channelEndpoint.registerForRead(dataTransportPoller);
-        channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatusIndicator.STATUS_ACTIVE);
+        channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.ACTIVE);
     }
 
     public void onCloseReceiveChannelEndpoint(final ReceiveChannelEndpoint channelEndpoint)
     {
-        channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatusIndicator.STATUS_CLOSING);
+        channelEndpoint.statusIndicator().setOrdered(ChannelEndpointStatus.CLOSING);
         conductorProxy.closeAutoCloseable(channelEndpoint.statusIndicator());
         channelEndpoint.close();
     }

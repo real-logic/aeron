@@ -37,7 +37,7 @@ public class SendChannelStatus
         final CountersManager countersManager,
         final String channel)
     {
-        return ChannelEndpointStatusIndicator.allocate(
+        return ChannelEndpointStatus.allocate(
             NAME, SEND_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
     }
 }

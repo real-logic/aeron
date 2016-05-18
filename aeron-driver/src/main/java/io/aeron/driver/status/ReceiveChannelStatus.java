@@ -37,7 +37,7 @@ public class ReceiveChannelStatus
         final CountersManager countersManager,
         final String channel)
     {
-        return ChannelEndpointStatusIndicator.allocate(
+        return ChannelEndpointStatus.allocate(
             NAME, RECEIVE_CHANNEL_STATUS_TYPE_ID, countersManager, channel);
     }
 }

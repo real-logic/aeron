@@ -16,7 +16,6 @@
 package io.aeron.driver.media;
 
 import io.aeron.driver.*;
-import io.aeron.driver.status.ChannelEndpointStatus;
 import io.aeron.protocol.NakFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
 import org.agrona.LangUtil;
@@ -63,8 +62,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
         nakMessagesReceived = context.systemCounters().get(NAK_MESSAGES_RECEIVED);
         statusMessagesReceived = context.systemCounters().get(STATUS_MESSAGES_RECEIVED);
         this.statusIndicator = statusIndicator;
-
-        statusIndicator.setOrdered(ChannelEndpointStatus.INITIALIZING);
     }
 
     /**

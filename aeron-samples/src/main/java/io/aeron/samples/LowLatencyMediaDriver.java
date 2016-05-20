@@ -31,6 +31,7 @@ public class LowLatencyMediaDriver
         MediaDriver.loadPropertiesFiles(args);
 
         final MediaDriver.Context ctx = new MediaDriver.Context()
+            .termBufferSparseFile(false)
             .threadingMode(ThreadingMode.DEDICATED)
             .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
             .receiverIdleStrategy(new BusySpinIdleStrategy())

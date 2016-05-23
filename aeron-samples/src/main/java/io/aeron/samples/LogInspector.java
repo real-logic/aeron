@@ -81,7 +81,7 @@ public class LogInspector
             {
                 final UnsafeBuffer metaDataBuffer = atomicBuffers[i + PARTITION_COUNT];
                 final long rawTail = metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET);
-                final int termOffset = (int)(rawTail & 0xFFFF_FFFFL);
+                final long termOffset = rawTail & 0xFFFF_FFFFL;
                 out.format(
                     "Index %d Term Meta Data status=%s termOffset=%d termId=%d%n",
                     i,

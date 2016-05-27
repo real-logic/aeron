@@ -30,7 +30,7 @@ import io.aeron.driver.ext.DebugChannelEndpointConfiguration;
 import io.aeron.driver.ext.DebugReceiveChannelEndpoint;
 import io.aeron.driver.ext.DebugSendChannelEndpoint;
 import io.aeron.driver.ext.LossGenerator;
-import io.aeron.logbuffer.FileBlockHandler;
+import io.aeron.logbuffer.RawBlockHandler;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.BitUtil;
@@ -78,7 +78,7 @@ public class PubAndSubTest
 
     private UnsafeBuffer buffer = new UnsafeBuffer(new byte[8192]);
     private FragmentHandler fragmentHandler = mock(FragmentHandler.class);
-    private FileBlockHandler fileBlockHandler = mock(FileBlockHandler.class);
+    private RawBlockHandler rawBlockHandler = mock(RawBlockHandler.class);
 
     private void launch(final String channel) throws Exception
     {
@@ -168,7 +168,7 @@ public class PubAndSubTest
             () -> fragmentsRead[0] > 0,
             (i) ->
             {
-                fragmentsRead[0] += subscription.filePoll(fileBlockHandler, Integer.MAX_VALUE);
+                fragmentsRead[0] += subscription.rawPoll(rawBlockHandler, Integer.MAX_VALUE);
                 Thread.yield();
             },
             Integer.MAX_VALUE,
@@ -179,9 +179,11 @@ public class PubAndSubTest
         final int expectedLength = BitUtil.align(HEADER_LENGTH + messageSize, FRAME_ALIGNMENT);
 
         final ArgumentCaptor<FileChannel> channelArgumentCaptor = ArgumentCaptor.forClass(FileChannel.class);
-        verify(fileBlockHandler).onBlock(
+        verify(rawBlockHandler).onBlock(
             channelArgumentCaptor.capture(),
             eq(expectedOffset),
+            any(UnsafeBuffer.class),
+            eq((int)expectedOffset),
             eq(expectedLength),
             anyInt(),
             anyInt());

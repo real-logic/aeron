@@ -25,16 +25,16 @@ import java.util.function.Consumer;
 /**
  * Aeron Subscriber API for receiving a reconstructed {@link Image} for a stream of messages from publishers on
  * a given channel and streamId pair.
- * <p>
+ *
  * Subscribers are created via an {@link Aeron} object, and received messages are delivered
  * to the {@link FragmentHandler}.
- * <p>
+ *
  * By default fragmented messages are not reassembled before delivery. If an application must
  * receive whole messages, whether or not they were fragmented, then the Subscriber
  * should be created with a {@link FragmentAssembler} or a custom implementation.
- * <p>
+ *
  * It is an application's responsibility to {@link #poll} the Subscriber for new messages.
- * <p>
+ *
  * Subscriptions are not threadsafe and should not be shared between subscribers.
  *
  * @see FragmentAssembler
@@ -82,10 +82,10 @@ public class Subscription implements AutoCloseable
 
     /**
      * Poll the {@link Image}s under the subscription for available message fragments.
-     * <p>
+     *
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered within a session.
-     * <p>
+     *
      * To assemble messages that span multiple fragments then use {@link FragmentAssembler}.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
@@ -121,10 +121,10 @@ public class Subscription implements AutoCloseable
      * Poll in a controlled manner the {@link Image}s under the subscription for available message fragments.
      * Control is applied to fragments in the stream. If more fragments can be read on another stream
      * they will even if BREAK or ABORT is returned from the fragment handler.
-     * <p>
+     *
      * Each fragment read will be a whole message if it is under MTU length. If larger than MTU then it will come
      * as a series of fragments ordered within a session.
-     * <p>
+     *
      * To assemble messages that span multiple fragments then use {@link ControlledFragmentAssembler}.
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
@@ -159,7 +159,7 @@ public class Subscription implements AutoCloseable
 
     /**
      * Poll the {@link Image}s under the subscription for available message fragments in blocks.
-     * <p>
+     *
      * This method is useful for operations like bulk archiving and messaging indexing.
      *
      * @param blockHandler     to receive a block of fragments from each {@link Image}.
@@ -179,19 +179,19 @@ public class Subscription implements AutoCloseable
 
     /**
      * Poll the {@link Image}s under the subscription for available message fragments in blocks.
-     * <p>
+     *
      * This method is useful for operations like bulk archiving a stream to file.
      *
-     * @param fileBlockHandler to receive a block of fragments from each {@link Image}.
+     * @param rawBlockHandler to receive a block of fragments from each {@link Image}.
      * @param blockLengthLimit for each {@link Image} polled.
      * @return the number of bytes consumed.
      */
-    public long filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
+    public long rawPoll(final RawBlockHandler rawBlockHandler, final int blockLengthLimit)
     {
         long bytesConsumed = 0;
         for (final Image image : images)
         {
-            bytesConsumed += image.filePoll(fileBlockHandler, blockLengthLimit);
+            bytesConsumed += image.rawPoll(rawBlockHandler, blockLengthLimit);
         }
 
         return bytesConsumed;
@@ -254,7 +254,7 @@ public class Subscription implements AutoCloseable
 
     /**
      * Close the Subscription so that associated {@link Image}s can be released.
-     * <p>
+     *
      * This method is idempotent.
      */
     public void close()

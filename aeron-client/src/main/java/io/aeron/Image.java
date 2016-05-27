@@ -339,13 +339,15 @@ public class Image
 
     /**
      * Poll for new messages in a stream. If new messages are found beyond the last consumed position then they
-     * will be delivered to the {@link FileBlockHandler} up to a limited number of bytes.
+     * will be delivered to the {@link RawBlockHandler} up to a limited number of bytes.
      *
-     * @param fileBlockHandler to which block is delivered.
+     * This method is useful for operations like bulk archiving a stream to file.
+     *
+     * @param rawBlockHandler  to which block is delivered.
      * @param blockLengthLimit up to which a block may be in length.
      * @return the number of bytes that have been consumed.
      */
-    public int filePoll(final FileBlockHandler fileBlockHandler, final int blockLengthLimit)
+    public int rawPoll(final RawBlockHandler rawBlockHandler, final int blockLengthLimit)
     {
         if (isClosed)
         {
@@ -360,26 +362,26 @@ public class Image
         final int limit = Math.min(termOffset + blockLengthLimit, capacity);
 
         final int resultingOffset = TermBlockScanner.scan(termBuffer, termOffset, limit);
+        final int length = resultingOffset - termOffset;
 
-        final int bytesConsumed = resultingOffset - termOffset;
         if (resultingOffset > termOffset)
         {
             try
             {
-                final long offset = ((long)capacity * activeIndex) + termOffset;
+                final long fileOffset = ((long)capacity * activeIndex) + termOffset;
                 final int termId = termBuffer.getInt(termOffset + TERM_ID_FIELD_OFFSET, LITTLE_ENDIAN);
 
-                fileBlockHandler.onBlock(logBuffers.fileChannel(), offset, bytesConsumed, sessionId, termId);
+                rawBlockHandler.onBlock(logBuffers.fileChannel(), fileOffset, termBuffer, termOffset, length, sessionId, termId);
             }
             catch (final Throwable t)
             {
                 errorHandler.onError(t);
             }
 
-            subscriberPosition.setOrdered(position + bytesConsumed);
+            subscriberPosition.setOrdered(position + length);
         }
 
-        return bytesConsumed;
+        return length;
     }
 
     private void updatePosition(final long positionBefore, final int offsetBefore, final int offsetAfter)

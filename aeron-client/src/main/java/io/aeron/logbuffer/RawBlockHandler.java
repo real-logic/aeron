@@ -15,23 +15,34 @@
  */
 package io.aeron.logbuffer;
 
+import org.agrona.concurrent.UnsafeBuffer;
+
 import java.nio.channels.FileChannel;
 
 /**
- * Function for handling a block of fragments from the log that are contained in the underlying file.
+ * Function for handling a raw block of fragments from the log that are contained in the underlying file.
  */
 @FunctionalInterface
-public interface FileBlockHandler
+public interface RawBlockHandler
 {
     /**
      * Notification of an available block of fragments.
      *
      * @param fileChannel containing the block of fragments.
-     * @param offset      at which the block begins, including any frame headers.
+     * @param fileOffset  at which the block begins, including any frame headers.
+     * @param termBuffer  mapped over the block of fragments.
+     * @param termOffset  in the termBuffer at which block begins, including any frame headers.
      * @param length      of the block in bytes, including any frame headers that is aligned up to
      *                    {@link io.aeron.logbuffer.FrameDescriptor#FRAME_ALIGNMENT}.
      * @param sessionId   of the stream of fragments.
      * @param termId      of the stream of fragments.
      */
-    void onBlock(FileChannel fileChannel, long offset, int length, int sessionId, int termId);
+    void onBlock(
+        FileChannel fileChannel,
+        long fileOffset,
+        UnsafeBuffer termBuffer,
+        int termOffset,
+        int length,
+        int sessionId,
+        int termId);
 }

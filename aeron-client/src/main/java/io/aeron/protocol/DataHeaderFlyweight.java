@@ -180,7 +180,7 @@ public class DataHeaderFlyweight extends HeaderFlyweight
      * @param reservedValue to be stored
      * @return flyweight
      */
-    public DataHeaderFlyweight reservedValue(final int reservedValue)
+    public DataHeaderFlyweight reservedValue(final long reservedValue)
     {
         putLong(RESERVED_VALUE_OFFSET, reservedValue, LITTLE_ENDIAN);
 

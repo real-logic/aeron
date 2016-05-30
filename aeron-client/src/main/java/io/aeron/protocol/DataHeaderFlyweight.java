@@ -18,7 +18,6 @@ package io.aeron.protocol;
 import org.agrona.concurrent.UnsafeBuffer;
 
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 
@@ -211,10 +210,10 @@ public class DataHeaderFlyweight extends HeaderFlyweight
 
         buffer.putByte(VERSION_FIELD_OFFSET, CURRENT_VERSION);
         buffer.putByte(FLAGS_FIELD_OFFSET, (byte)BEGIN_AND_END_FLAGS);
-        buffer.putShort(TYPE_FIELD_OFFSET, (short)HDR_TYPE_DATA, ByteOrder.LITTLE_ENDIAN);
-        buffer.putInt(SESSION_ID_FIELD_OFFSET, sessionId, ByteOrder.LITTLE_ENDIAN);
-        buffer.putInt(STREAM_ID_FIELD_OFFSET, streamId, ByteOrder.LITTLE_ENDIAN);
-        buffer.putInt(TERM_ID_FIELD_OFFSET, termId, ByteOrder.LITTLE_ENDIAN);
+        buffer.putShort(TYPE_FIELD_OFFSET, (short)HDR_TYPE_DATA, LITTLE_ENDIAN);
+        buffer.putInt(SESSION_ID_FIELD_OFFSET, sessionId, LITTLE_ENDIAN);
+        buffer.putInt(STREAM_ID_FIELD_OFFSET, streamId, LITTLE_ENDIAN);
+        buffer.putInt(TERM_ID_FIELD_OFFSET, termId, LITTLE_ENDIAN);
         buffer.putLong(RESERVED_VALUE_OFFSET, DEFAULT_RESERVE_VALUE);
 
         return buffer;

@@ -333,8 +333,7 @@ public final class MediaDriver implements AutoCloseable
                     maxSoRcvBuf);
             }
 
-            final int soSndBuf =
-                0 == SOCKET_SNDBUF_LENGTH ? defaultSoSndBuf : SOCKET_SNDBUF_LENGTH;
+            final int soSndBuf = 0 == SOCKET_SNDBUF_LENGTH ? defaultSoSndBuf : SOCKET_SNDBUF_LENGTH;
 
             if (ctx.mtuLength() > soSndBuf)
             {
@@ -1061,6 +1060,7 @@ public final class MediaDriver implements AutoCloseable
 
         public CommonContext mtuLength(final int mtuLength)
         {
+            Configuration.validateMtuLength(mtuLength);
             this.mtuLength = mtuLength;
             return this;
         }

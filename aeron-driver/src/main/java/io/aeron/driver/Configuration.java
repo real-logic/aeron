@@ -16,8 +16,10 @@
 package io.aeron.driver;
 
 import io.aeron.*;
+import io.aeron.driver.exceptions.ConfigurationException;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.logbuffer.FrameDescriptor;
 import org.agrona.BitUtil;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.BackoffIdleStrategy;
@@ -640,5 +642,21 @@ public class Configuration
         }
 
         return supplier;
+    }
+
+    /**
+     * Validate the the MTU is an appropriate length. MTU lengths must be a multiple of {@link FrameDescriptor#FRAME_ALIGNMENT}.
+     *
+     * @param mtuLength to be validated.
+     * @throws IllegalArgumentException if the MTU length is not valid.
+     */
+    public static void validateMtuLength(final int mtuLength)
+    {
+        if (((mtuLength & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0))
+        {
+            throw new ConfigurationException(String.format(
+                "mtuLength must be a multiple of %d: mtuLength=%d",
+                FrameDescriptor.FRAME_ALIGNMENT, mtuLength));
+        }
     }
 }

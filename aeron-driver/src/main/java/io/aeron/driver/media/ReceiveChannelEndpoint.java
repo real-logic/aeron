@@ -205,6 +205,8 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
     {
         final int soRcvbuf = getOption(StandardSocketOptions.SO_RCVBUF);
 
+        Configuration.validateMtuLength(senderMtuLength);
+
         if (senderMtuLength > soRcvbuf)
         {
             throw new ConfigurationException(String.format(

@@ -16,6 +16,9 @@
 cmake_minimum_required(VERSION 3.0.2 FATAL_ERROR)
 cmake_policy(VERSION 3.0.2)
 
+file(STRINGS version.txt VERSION_TXT LIMIT_COUNT 1 REGEX "^[0-9]+(\\.[0-9])+")
+string(REGEX REPLACE "^([0-9]+(\\.[0-9])+).*$" "\\1" VERSION_FROM_FILE "${VERSION_TXT}")
+
 if (${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
     message(FATAL_ERROR "In-source builds not allowed. Please make a new directory (called a build directory)"
         "and run CMake from there. You may need to remove CMakeCache.txt.")
@@ -25,12 +28,7 @@ option(BUILD_AERON_DRIVER "Build Aeron driver" OFF)
 
 include(ExternalProject)
 
-project("aeron")
-
-# version info
-set(aeron_VERSION_MAJOR 0)
-set(aeron_VERSION_MINOR 1)
-set(aeron_VERSION_PATCH 0)
+project("aeron" VERSION "${VERSION_FROM_FILE}")
 
 enable_testing()
 include(CTest)

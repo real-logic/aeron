@@ -648,11 +648,11 @@ public class Configuration
      * Validate the the MTU is an appropriate length. MTU lengths must be a multiple of {@link FrameDescriptor#FRAME_ALIGNMENT}.
      *
      * @param mtuLength to be validated.
-     * @throws IllegalArgumentException if the MTU length is not valid.
+     * @throws ConfigurationException if the MTU length is not valid.
      */
     public static void validateMtuLength(final int mtuLength)
     {
-        if (((mtuLength & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0))
+        if ((mtuLength % FrameDescriptor.FRAME_ALIGNMENT) != 0)
         {
             throw new ConfigurationException(String.format(
                 "mtuLength must be a multiple of %d: mtuLength=%d",

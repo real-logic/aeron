@@ -28,8 +28,8 @@ project("aeron")
 
 # version info
 set(aeron_VERSION_MAJOR 0)
-set(aeron_VERSION_MINOR 1)
-set(aeron_VERSION_PATCH 0)
+set(aeron_VERSION_MINOR 9)
+set(aeron_VERSION_PATCH 8)
 
 enable_testing()
 include(CTest)

@@ -52,7 +52,7 @@ public class Configuration
     public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
 
     /**
-     * Length (in bytes) of the log buffers for terms for incoming images.
+     * Length (in bytes) of the log buffers for terms.
      */
     public static final String TERM_BUFFER_MAX_LENGTH_PROP_NAME = "aeron.term.buffer.max.length";
 
@@ -167,9 +167,9 @@ public class Configuration
     public static final int TERM_BUFFER_LENGTH_DEFAULT = 16 * 1024 * 1024;
 
     /**
-     * Default term max buffer length.
+     * Default term max buffer length. The maximum possible term length is 1GB.
      */
-    public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 16 * 1024 * 1024;
+    public static final int TERM_BUFFER_LENGTH_MAX_DEFAULT = 1024 * 1024 * 1024;
 
     /**
      * Default buffer length for conductor buffers between the client and the media driver conductor.

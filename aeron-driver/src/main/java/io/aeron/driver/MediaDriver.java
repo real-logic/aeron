@@ -464,7 +464,7 @@ public final class MediaDriver implements AutoCloseable
         private Boolean termBufferSparseFile;
         private int publicationTermBufferLength;
         private int ipcPublicationTermBufferLength;
-        private int maxImageTermBufferLength;
+        private int maxTermBufferLength;
         private int initialWindowLength;
         private long statusMessageTimeout;
         private int mtuLength;
@@ -480,7 +480,7 @@ public final class MediaDriver implements AutoCloseable
         public Context()
         {
             publicationTermBufferLength(Configuration.termBufferLength());
-            maxImageTermBufferLength(Configuration.maxTermBufferLength());
+            maxTermBufferLength(Configuration.maxTermBufferLength());
             initialWindowLength(Configuration.initialWindowLength());
             statusMessageTimeout(Configuration.statusMessageTimeout());
             mtuLength(Configuration.MTU_LENGTH);
@@ -498,7 +498,24 @@ public final class MediaDriver implements AutoCloseable
             {
                 concludeNullProperties();
 
-                Configuration.validateTermBufferLength(publicationTermBufferLength());
+                Configuration.validateTermBufferLength(maxTermBufferLength);
+                Configuration.validateTermBufferLength(publicationTermBufferLength);
+                Configuration.validateTermBufferLength(ipcPublicationTermBufferLength);
+
+                if (publicationTermBufferLength > maxTermBufferLength)
+                {
+                    throw new ConfigurationException(String.format(
+                        "publication term buffer length %d greater than max length %d",
+                        publicationTermBufferLength, maxTermBufferLength));
+                }
+
+                if (ipcPublicationTermBufferLength > maxTermBufferLength)
+                {
+                    throw new ConfigurationException(String.format(
+                        "IPC publication term buffer length %d greater than max length %d",
+                        ipcPublicationTermBufferLength, maxTermBufferLength));
+                }
+
                 Configuration.validateInitialWindowLength(initialWindowLength(), mtuLength());
 
                 cncByteBuffer = mapNewFile(
@@ -553,9 +570,7 @@ public final class MediaDriver implements AutoCloseable
 
                 rawLogBuffersFactory(new RawLogFactory(
                     aeronDirectoryName(),
-                    publicationTermBufferLength,
-                    maxImageTermBufferLength,
-                    ipcPublicationTermBufferLength,
+                    maxTermBufferLength,
                     termBufferSparseFile,
                     errorLog));
 
@@ -784,9 +799,9 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
-        public Context maxImageTermBufferLength(final int maxTermBufferLength)
+        public Context maxTermBufferLength(final int maxTermBufferLength)
         {
-            this.maxImageTermBufferLength = maxTermBufferLength;
+            this.maxTermBufferLength = maxTermBufferLength;
             return this;
         }
 
@@ -1018,9 +1033,9 @@ public final class MediaDriver implements AutoCloseable
             return publicationTermBufferLength;
         }
 
-        public int maxImageTermBufferLength()
+        public int maxTermBufferLength()
         {
-            return maxImageTermBufferLength;
+            return maxTermBufferLength;
         }
 
         public int ipcTermBufferLength()

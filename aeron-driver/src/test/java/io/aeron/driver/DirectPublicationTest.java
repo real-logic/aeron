@@ -67,7 +67,7 @@ public class DirectPublicationTest
         final CountersManager countersManager = new CountersManager(
             new UnsafeBuffer(ByteBuffer.allocateDirect(BUFFER_LENGTH * 2)), counterBuffer);
 
-        when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong()))
+        when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
 
         final MediaDriver.Context ctx = new MediaDriver.Context()

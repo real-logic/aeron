@@ -110,11 +110,11 @@ public class DriverConductorTest
         // System GC required in order to ensure that the direct byte buffers get cleaned and avoid OOM.
         System.gc();
 
-        when(mockRawLogFactory.newNetworkPublication(anyObject(), anyInt(), anyInt(), anyInt()))
+        when(mockRawLogFactory.newNetworkPublication(anyObject(), anyInt(), anyInt(), anyInt(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
         when(mockRawLogFactory.newNetworkedImage(anyObject(), anyInt(), anyInt(), anyInt(), eq(TERM_BUFFER_LENGTH)))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
-        when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong()))
+        when(mockRawLogFactory.newDirectPublication(anyInt(), anyInt(), anyLong(), anyInt()))
             .thenReturn(LogBufferHelper.newTestLogBuffers(TERM_BUFFER_LENGTH, TERM_META_DATA_LENGTH));
 
         currentTime = 0;

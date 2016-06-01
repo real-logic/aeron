@@ -28,19 +28,14 @@ import static io.aeron.driver.buffer.FileMappingConvention.streamLocation;
 public class RawLogFactory
 {
     private final DistinctErrorLog errorLog;
-    private final int publicationTermBufferLength;
-    private final int imagesTermBufferMaxLength;
-    private final int ipcPublicationTermBufferLength;
+    private final int maxTermBufferLength;
     private final boolean useSparseFiles;
-
     private final File publicationsDir;
     private final File imagesDir;
 
     public RawLogFactory(
         final String dataDirectoryName,
-        final int publicationTermBufferLength,
         final int imagesTermBufferMaxLength,
-        final int ipcPublicationTermBufferLength,
         final boolean useSparseFiles,
         final DistinctErrorLog errorLog)
     {
@@ -54,23 +49,23 @@ public class RawLogFactory
         IoUtil.ensureDirectoryExists(publicationsDir, FileMappingConvention.PUBLICATIONS);
         IoUtil.ensureDirectoryExists(imagesDir, FileMappingConvention.IMAGES);
 
-        this.publicationTermBufferLength = publicationTermBufferLength;
-        this.imagesTermBufferMaxLength = imagesTermBufferMaxLength;
-        this.ipcPublicationTermBufferLength = ipcPublicationTermBufferLength;
+        this.maxTermBufferLength = imagesTermBufferMaxLength;
     }
 
     /**
      * Create new {@link RawLog} in the publications directory for the supplied triplet.
      *
-     * @param channel       address on the media to send to.
-     * @param sessionId     under which transmissions are made.
-     * @param streamId      within the channel address to separate message flows.
-     * @param correlationId to use to distinguish this publication
+     * @param channel          address on the media to send to.
+     * @param sessionId        under which transmissions are made.
+     * @param streamId         within the channel address to separate message flows.
+     * @param correlationId    to use to distinguish this publication
+     * @param termBufferLength length of each term
      * @return the newly allocated {@link RawLog}
      */
-    public RawLog newNetworkPublication(final String channel, final int sessionId, final int streamId, final long correlationId)
+    public RawLog newNetworkPublication(
+        final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
-        return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, publicationTermBufferLength);
+        return newInstance(publicationsDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
 
     /**
@@ -86,26 +81,22 @@ public class RawLogFactory
     public RawLog newNetworkedImage(
         final String channel, final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
-        if (termBufferLength > imagesTermBufferMaxLength)
-        {
-            throw new IllegalArgumentException(
-                "image term buffer larger than max length: " + termBufferLength + " > " + imagesTermBufferMaxLength);
-        }
-
         return newInstance(imagesDir, channel, sessionId, streamId, correlationId, termBufferLength);
     }
 
     /**
      * Create a new {@link RawLog} in the publication directory for the supplied parameters.
      *
-     * @param sessionId     under which publications are made.
-     * @param streamId      within the IPC channel
-     * @param correlationId to use to distinguish this shared log
+     * @param sessionId        under which publications are made.
+     * @param streamId         within the IPC channel
+     * @param correlationId    to use to distinguish this shared log
+     * @param termBufferLength length of the each term
      * @return the newly allocated {@link RawLog}
      */
-    public RawLog newDirectPublication(final int sessionId, final int streamId, final long correlationId)
+    public RawLog newDirectPublication(
+        final int sessionId, final int streamId, final long correlationId, final int termBufferLength)
     {
-        return newInstance(publicationsDir, "ipc", sessionId, streamId, correlationId, ipcPublicationTermBufferLength);
+        return newInstance(publicationsDir, "ipc", sessionId, streamId, correlationId, termBufferLength);
     }
 
     private RawLog newInstance(
@@ -116,8 +107,19 @@ public class RawLogFactory
         final long correlationId,
         final int termBufferLength)
     {
+        validateTermBufferLength(termBufferLength);
+
         final File location = streamLocation(rootDir, channel, sessionId, streamId, correlationId);
 
         return new MappedRawLog(location, useSparseFiles, termBufferLength, errorLog);
+    }
+
+    private void validateTermBufferLength(int termBufferLength)
+    {
+        if (termBufferLength < 0 || termBufferLength > maxTermBufferLength)
+        {
+            throw new IllegalArgumentException(
+                "invalid buffer length: " + termBufferLength + " max is " + maxTermBufferLength);
+        }
     }
 }

@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.CommonContext;
 import io.aeron.driver.buffer.RawLogFactory;
 import io.aeron.command.CorrelatedMessageFlyweight;
 import io.aeron.command.PublicationMessageFlyweight;
@@ -28,6 +29,7 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
+import io.aeron.driver.uri.AeronUri;
 import org.agrona.BitUtil;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.*;
@@ -411,9 +413,9 @@ public class DriverConductor implements Agent
                     final long clientId = publicationMessageFlyweight.clientId();
                     final String channel = publicationMessageFlyweight.channel();
 
-                    if (IPC_CHANNEL.equals(channel))
+                    if (channel.startsWith(CommonContext.IPC_CHANNEL))
                     {
-                        onAddDirectPublication(streamId, correlationId, clientId);
+                        onAddDirectPublication(channel, streamId, correlationId, clientId);
                     }
                     else
                     {
@@ -441,9 +443,9 @@ public class DriverConductor implements Agent
                     final long clientId = subscriptionMessageFlyweight.clientId();
                     final String channel = subscriptionMessageFlyweight.channel();
 
-                    if (IPC_CHANNEL.equals(channel))
+                    if (channel.startsWith(CommonContext.IPC_CHANNEL))
                     {
-                        onAddDirectSubscription(streamId, correlationId, clientId);
+                        onAddDirectSubscription(channel, streamId, correlationId, clientId);
                     }
                     else
                     {
@@ -509,6 +511,14 @@ public class DriverConductor implements Agent
         NetworkPublication publication = channelEndpoint.getPublication(streamId);
         if (null == publication)
         {
+            final String termLengthParam = udpChannel.aeronUri().get(CommonContext.TERM_LENGTH_PARAM_NAME);
+            int termLength = context.publicationTermBufferLength();
+            if (null != termLengthParam)
+            {
+                termLength = Integer.parseInt(termLengthParam);
+                Configuration.validateTermBufferLength(termLength);
+            }
+
             final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
 
@@ -518,7 +528,7 @@ public class DriverConductor implements Agent
                 RETRANSMIT_UNICAST_DELAY_GENERATOR,
                 RETRANSMIT_UNICAST_LINGER_GENERATOR,
                 initialTermId,
-                context.publicationTermBufferLength());
+                termLength);
 
             final FlowControl flowControl =
                 udpChannel.isMulticast() ?
@@ -529,7 +539,7 @@ public class DriverConductor implements Agent
                 channelEndpoint,
                 nanoClock,
                 toDriverCommands::consumerHeartbeatTime,
-                newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId),
+                newNetworkPublicationLog(sessionId, streamId, initialTermId, udpChannel, registrationId, termLength),
                 PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 SenderPos.allocate(countersManager, registrationId, sessionId, streamId, channel),
                 sessionId,
@@ -556,9 +566,9 @@ public class DriverConductor implements Agent
             publication.publisherLimitId());
     }
 
-    private void onAddDirectPublication(final int streamId, final long registrationId, final long clientId)
+    private void onAddDirectPublication(final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final DirectPublication directPublication = getOrAddDirectPublication(streamId);
+        final DirectPublication directPublication = getOrAddDirectPublication(streamId, channel);
         final AeronClient client = getOrAddClient(clientId);
 
         linkPublication(registrationId, directPublication, client);
@@ -593,10 +603,16 @@ public class DriverConductor implements Agent
     }
 
     private RawLog newNetworkPublicationLog(
-        final int sessionId, final int streamId, final int initialTermId, final UdpChannel udpChannel, final long registrationId)
+        final int sessionId,
+        final int streamId,
+        final int initialTermId,
+        final UdpChannel udpChannel,
+        final long registrationId,
+        final int termBufferLength)
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final RawLog rawLog = rawLogFactory.newNetworkPublication(canonicalForm, sessionId, streamId, registrationId);
+        final RawLog rawLog = rawLogFactory.newNetworkPublication(
+            canonicalForm, sessionId, streamId, registrationId, termBufferLength);
 
         final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
@@ -638,9 +654,9 @@ public class DriverConductor implements Agent
     }
 
     private RawLog newDirectPublicationLog(
-        final int sessionId, final int streamId, final int initialTermId, final long registrationId)
+        final int termBufferLength, final int sessionId, final int streamId, final int initialTermId, final long registrationId)
     {
-        final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId);
+        final RawLog rawLog = rawLogFactory.newDirectPublication(sessionId, streamId, registrationId, termBufferLength);
 
         final UnsafeBuffer header = createDefaultHeader(sessionId, streamId, initialTermId);
         final UnsafeBuffer logMetaData = rawLog.logMetaData();
@@ -651,7 +667,7 @@ public class DriverConductor implements Agent
 
         initialTermId(logMetaData, initialTermId);
 
-        final int mtuLength = computeMaxMessageLength(context.ipcTermBufferLength());
+        final int mtuLength = computeMaxMessageLength(termBufferLength);
         mtuLength(logMetaData, mtuLength);
         correlationId(logMetaData, registrationId);
         timeOfLastStatusMessage(logMetaData, 0);
@@ -743,9 +759,9 @@ public class DriverConductor implements Agent
                 });
     }
 
-    private void onAddDirectSubscription(final int streamId, final long registrationId, final long clientId)
+    private void onAddDirectSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final DirectPublication publication = getOrAddDirectPublication(streamId);
+        final DirectPublication publication = getOrAddDirectPublication(streamId, channel);
         final AeronClient client = getOrAddClient(clientId);
 
         final int sessionId = publication.sessionId();
@@ -851,16 +867,25 @@ public class DriverConductor implements Agent
         return client;
     }
 
-    private DirectPublication getOrAddDirectPublication(final int streamId)
+    private DirectPublication getOrAddDirectPublication(final int streamId, final String channel)
     {
         DirectPublication publication = findDirectPublication(directPublications, streamId);
 
         if (null == publication)
         {
+            final AeronUri aeronUri = AeronUri.parse(channel);
+            final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
+            int termLength = context.ipcTermBufferLength();
+            if (null != termLengthParam)
+            {
+                termLength = Integer.parseInt(termLengthParam);
+                Configuration.validateTermBufferLength(termLength);
+            }
+
             final long registrationId = nextImageCorrelationId();
             final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
-            final RawLog rawLog = newDirectPublicationLog(sessionId, streamId, initialTermId, registrationId);
+            final RawLog rawLog = newDirectPublicationLog(termLength, sessionId, streamId, initialTermId, registrationId);
 
             final Position publisherLimit =
                 PublisherLimit.allocate(countersManager, registrationId, sessionId, streamId, IPC_CHANNEL);

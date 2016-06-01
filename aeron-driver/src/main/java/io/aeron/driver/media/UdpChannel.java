@@ -61,6 +61,7 @@ public final class UdpChannel
     private final String canonicalForm;
     private final NetworkInterface localInterface;
     private final ProtocolFamily protocolFamily;
+    private final AeronUri aeronUri;
 
     /**
      * Parse URI and create channel
@@ -72,13 +73,13 @@ public final class UdpChannel
     {
         try
         {
-            final AeronUri uri = parseIntoAeronUri(uriStr);
+            final AeronUri aeronUri = parseIntoAeronUri(uriStr);
 
-            validateConfiguration(uri);
+            validateConfiguration(aeronUri);
 
-            final Context context = new Context().uriStr(uriStr);
+            final Context context = new Context().uriStr(uriStr).aeronUri(aeronUri);
 
-            final InetSocketAddress endpointAddress = getEndpointAddress(uri);
+            final InetSocketAddress endpointAddress = getEndpointAddress(aeronUri);
 
             if (null == endpointAddress)
             {
@@ -95,14 +96,14 @@ public final class UdpChannel
                 final InetSocketAddress controlAddress =
                     new InetSocketAddress(getByAddress(addressAsBytes), endpointAddress.getPort());
 
-                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(uri);
+                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(aeronUri);
 
                 final NetworkInterface localInterface = findInterface(searchAddress);
                 final InetSocketAddress localAddress = resolveToAddressOfInterface(localInterface, searchAddress);
 
                 final ProtocolFamily protocolFamily = getProtocolFamily(endpointAddress.getAddress());
 
-                final int multicastTtl = getMulticastTtl(uri);
+                final int multicastTtl = getMulticastTtl(aeronUri);
 
                 context.localControlAddress(localAddress)
                     .remoteControlAddress(controlAddress)
@@ -115,7 +116,7 @@ public final class UdpChannel
             }
             else
             {
-                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(uri);
+                final InterfaceSearchAddress searchAddress = getInterfaceSearchAddress(aeronUri);
                 final InetSocketAddress localAddress;
                 if (searchAddress.getInetAddress().isAnyLocalAddress())
                 {
@@ -128,7 +129,7 @@ public final class UdpChannel
                 }
 
                 final ProtocolFamily protocolFamily =
-                    !uri.containsKey(LOCAL_KEY)
+                    !aeronUri.containsKey(LOCAL_KEY)
                         ? getProtocolFamily(endpointAddress.getAddress())
                         : getProtocolFamily(localAddress.getAddress());
 
@@ -370,6 +371,16 @@ public final class UdpChannel
     }
 
     /**
+     * Get the {@link AeronUri} for this channel.
+     *
+     * @return the {@link AeronUri} for this channel.
+     */
+    public AeronUri aeronUri()
+    {
+        return aeronUri;
+    }
+
+    /**
      * Multicast TTL information
      *
      * @return multicast TTL value
@@ -390,6 +401,7 @@ public final class UdpChannel
         this.localInterface = context.localInterface;
         this.protocolFamily = context.protocolFamily;
         this.multicastTtl = context.multicastTtl;
+        this.aeronUri = context.aeronUri;
     }
 
     /**
@@ -500,7 +512,7 @@ public final class UdpChannel
         return protocolFamily;
     }
 
-    private static class Context
+    static class Context
     {
         private int multicastTtl;
         private InetSocketAddress remoteData;
@@ -511,6 +523,7 @@ public final class UdpChannel
         private String canonicalForm;
         private NetworkInterface localInterface;
         private ProtocolFamily protocolFamily;
+        private AeronUri aeronUri;
 
         public Context uriStr(final String uri)
         {
@@ -563,6 +576,12 @@ public final class UdpChannel
         public Context multicastTtl(final int multicastTtl)
         {
             this.multicastTtl = multicastTtl;
+            return this;
+        }
+
+        public Context aeronUri(final AeronUri aeronUri)
+        {
+            this.aeronUri = aeronUri;
             return this;
         }
     }

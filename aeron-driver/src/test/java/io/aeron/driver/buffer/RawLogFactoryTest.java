@@ -34,7 +34,7 @@ import static org.mockito.Mockito.mock;
 
 public class RawLogFactoryTest
 {
-    private static final String CHANNEL = "udp://localhost:4321";
+    private static final String CHANNEL = "aeron:udp?endpoint=localhost:4321";
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID = 101;
     private static final int CREATION_ID = 102;

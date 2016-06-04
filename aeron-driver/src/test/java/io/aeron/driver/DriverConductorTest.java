@@ -57,13 +57,13 @@ import static org.mockito.Mockito.*;
 
 public class DriverConductorTest
 {
-    private static final String CHANNEL_4000 = "udp://localhost:4000";
-    private static final String CHANNEL_4001 = "udp://localhost:4001";
-    private static final String CHANNEL_4002 = "udp://localhost:4002";
-    private static final String CHANNEL_4003 = "udp://localhost:4003";
-    private static final String CHANNEL_4004 = "udp://localhost:4004";
+    private static final String CHANNEL_4000 = "aeron:udp?endpoint=localhost:4000";
+    private static final String CHANNEL_4001 = "aeron:udp?endpoint=localhost:4001";
+    private static final String CHANNEL_4002 = "aeron:udp?endpoint=localhost:4002";
+    private static final String CHANNEL_4003 = "aeron:udp?endpoint=localhost:4003";
+    private static final String CHANNEL_4004 = "aeron:udp?endpoint=localhost:4004";
     private static final String CHANNEL_IPC = "aeron:ipc";
-    private static final String INVALID_URI = "udp://";
+    private static final String INVALID_URI = "aeron:udp://";
     private static final int SESSION_ID = 100;
     private static final int STREAM_ID_1 = 10;
     private static final int STREAM_ID_2 = 20;

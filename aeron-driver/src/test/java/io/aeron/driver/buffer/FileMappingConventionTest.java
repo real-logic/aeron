@@ -28,8 +28,8 @@ public class FileMappingConventionTest
     @Test
     public void uriStringsAreValidFiles() throws IOException
     {
-        assertIsValidFile(uriToDir("udp://localhost:40123@localhost:40124"));
-        assertIsValidFile(uriToDir("udp://localhost:40124"));
+        assertIsValidFile(uriToDir("aeron:udp?endpoint=localhost:40123|interface=localhost:40124"));
+        assertIsValidFile(uriToDir("aeron:udp?endpoint=localhost:40124"));
     }
 
     private String uriToDir(final String uri)

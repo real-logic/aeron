@@ -45,8 +45,9 @@ public class SelectorAndTransportTest
     private static final int TERM_ID = 0x99887766;
     private static final int FRAME_LENGTH = 24;
 
-    private static final UdpChannel SRC_DST = UdpChannel.parse("udp://localhost:" + SRC_PORT + "@localhost:" + RCV_PORT);
-    private static final UdpChannel RCV_DST = UdpChannel.parse("udp://localhost:" + RCV_PORT);
+    private static final UdpChannel SRC_DST =
+        UdpChannel.parse("aeron:udp?interface=localhost:" + SRC_PORT + "|endpoint=localhost:" + RCV_PORT);
+    private static final UdpChannel RCV_DST = UdpChannel.parse("aeron:udp?endpoint=localhost:" + RCV_PORT);
 
     private final ByteBuffer byteBuffer = ByteBuffer.allocateDirect(256);
     private final UnsafeBuffer buffer = new UnsafeBuffer(byteBuffer);

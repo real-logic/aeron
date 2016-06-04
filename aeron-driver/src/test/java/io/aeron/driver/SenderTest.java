@@ -79,7 +79,7 @@ public class SenderTest
 
     private final Queue<ByteBuffer> receivedFrames = new ArrayDeque<>();
 
-    private final UdpChannel udpChannel = UdpChannel.parse("udp://localhost:40123");
+    private final UdpChannel udpChannel = UdpChannel.parse("aeron:udp?endpoint=localhost:40123");
     private final InetSocketAddress rcvAddress = udpChannel.remoteData();
     private final DataHeaderFlyweight dataHeader = new DataHeaderFlyweight();
     private final SetupFlyweight setupHeader = new SetupFlyweight();

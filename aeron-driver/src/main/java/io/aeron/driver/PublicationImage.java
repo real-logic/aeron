@@ -173,7 +173,7 @@ public class PublicationImage
         lossDetector = new LossDetector(lossFeedbackDelayGenerator, this);
 
         final int termLength = rawLog.termLength();
-        currentWindowLength = Math.min(termLength, initialWindowLength);
+        currentWindowLength = Math.min(termLength / 2, initialWindowLength);
         currentGain = currentWindowLength / 4;
         termLengthMask = termLength - 1;
         positionBitsToShift = Integer.numberOfTrailingZeros(termLength);

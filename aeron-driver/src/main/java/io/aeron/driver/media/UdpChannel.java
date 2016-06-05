@@ -43,14 +43,14 @@ import static org.agrona.Strings.isEmpty;
  */
 public final class UdpChannel
 {
-    private static final String UDP_MEDIA_ID = "udp";
+    public static final String UDP_MEDIA_ID = "udp";
 
-    private static final String REMOTE_KEY = "remote";
-    private static final String LOCAL_KEY = "local";
-    private static final String INTERFACE_KEY = "interface";
-    private static final String GROUP_KEY = "group";
-    private static final String ENDPOINT_KEY = "endpoint";
-    private static final String MULTICAST_TTL_KEY = "ttl";
+    public static final String REMOTE_KEY = "remote";
+    public static final String LOCAL_KEY = "local";
+    public static final String INTERFACE_KEY = "interface";
+    public static final String GROUP_KEY = "group";
+    public static final String ENDPOINT_KEY = "endpoint";
+    public static final String MULTICAST_TTL_KEY = "ttl";
 
     private final int multicastTtl;
     private final InetSocketAddress remoteData;
@@ -235,6 +235,7 @@ public final class UdpChannel
     {
         if (uriStr.startsWith("udp:"))
         {
+            System.err.println("Warning: deprecated API usage - please use 'aeron:udp' rather than 'udp:'");
             return parseUdpUriToAeronUri(uriStr);
         }
         else if (uriStr.startsWith("aeron:"))

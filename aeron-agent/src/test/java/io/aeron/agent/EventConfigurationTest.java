@@ -18,12 +18,15 @@ package io.aeron.agent;
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.EnumSet;
 import java.util.Set;
 
 import static io.aeron.agent.EventConfiguration.ALL_LOGGER_EVENT_CODES;
 import static io.aeron.agent.EventConfiguration.getEnabledEventCodes;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 
 public class EventConfigurationTest
@@ -37,8 +40,19 @@ public class EventConfigurationTest
     @Test
     public void malformedPropertyShouldDefaultToProductionEventCodes()
     {
-        final Set<EventCode> enabledEventCodes = getEnabledEventCodes("list of invalid options");
-        assertThat(enabledEventCodes.size(), is(0));
+        final PrintStream err = System.err;
+        final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+        System.setErr(new PrintStream(stderr));
+        try
+        {
+            final Set<EventCode> enabledEventCodes = getEnabledEventCodes("list of invalid options");
+            assertThat(enabledEventCodes.size(), is(0));
+            assertThat(stderr.toString(), startsWith("Unknown event code: list of invalid options"));
+        }
+        finally
+        {
+            System.setErr(err);
+        }
     }
 
     @Test

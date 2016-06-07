@@ -16,6 +16,8 @@
 package io.aeron.driver;
 
 import io.aeron.driver.media.ReceiveChannelEndpoint;
+import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.driver.media.UdpChannel;
 import org.agrona.concurrent.status.ReadablePosition;
 
 import java.util.IdentityHashMap;
@@ -34,6 +36,11 @@ public class SubscriptionLink implements DriverManagedResource
     private final DirectPublication directPublication;
     private final ReadablePosition directPublicationSubscriberPosition;
 
+    private final UdpChannel spiedChannel;
+
+    private NetworkPublication spiedPublication = null;
+    private ReadablePosition spiedPosition = null;
+
     private boolean reachedEndOfLife = false;
 
     public SubscriptionLink(
@@ -48,6 +55,7 @@ public class SubscriptionLink implements DriverManagedResource
         this.aeronClient = aeronClient;
         this.directPublication = null;
         this.directPublicationSubscriberPosition = null;
+        this.spiedChannel = null;
     }
 
     public SubscriptionLink(
@@ -64,6 +72,22 @@ public class SubscriptionLink implements DriverManagedResource
         this.directPublication = directPublication;
         directPublication.incRef();
         this.directPublicationSubscriberPosition = subscriberPosition;
+        this.spiedChannel = null;
+    }
+
+    public SubscriptionLink(
+        final long registrationId,
+        final UdpChannel spiedChannel,
+        final int streamId,
+        final AeronClient aeronClient)
+    {
+        this.registrationId = registrationId;
+        this.channelEndpoint = null;
+        this.streamId = streamId;
+        this.aeronClient = aeronClient;
+        this.directPublication = null;
+        this.directPublicationSubscriberPosition = null;
+        this.spiedChannel = spiedChannel;
     }
 
     public long registrationId()
@@ -81,9 +105,28 @@ public class SubscriptionLink implements DriverManagedResource
         return streamId;
     }
 
+    public UdpChannel spiedChannel()
+    {
+        return spiedChannel;
+    }
+
     public boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId)
     {
         return channelEndpoint == this.channelEndpoint && streamId == this.streamId;
+    }
+
+    public boolean matches(final SendChannelEndpoint channelEndpoint, final int streamId)
+    {
+        boolean result = false;
+
+        if (null != spiedChannel)
+        {
+            result =
+                channelEndpoint.udpChannel().canonicalForm().equals(spiedChannel.canonicalForm()) &&
+                    streamId == this.streamId();
+        }
+
+        return result;
     }
 
     public void addImage(final PublicationImage image, final ReadablePosition position)
@@ -96,6 +139,18 @@ public class SubscriptionLink implements DriverManagedResource
         positionByImageMap.remove(image);
     }
 
+    public void addSpiedPublication(final NetworkPublication publication, final ReadablePosition position)
+    {
+        spiedPublication = publication;
+        spiedPosition = position;
+    }
+
+    public void removeSpiedPublication(final NetworkPublication publication)
+    {
+        spiedPublication = null;
+        spiedPosition = null;
+    }
+
     public void close()
     {
         positionByImageMap.forEach(PublicationImage::removeSubscriber);
@@ -104,6 +159,10 @@ public class SubscriptionLink implements DriverManagedResource
         {
             directPublication.removeSubscription(directPublicationSubscriberPosition);
             directPublication.decRef();
+        }
+        else if (null != spiedPublication)
+        {
+            spiedPublication.removeSpyPosition(spiedPosition);
         }
     }
 

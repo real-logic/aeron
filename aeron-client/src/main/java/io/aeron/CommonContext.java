@@ -58,6 +58,11 @@ public class CommonContext implements AutoCloseable
     public static final String IPC_CHANNEL = "aeron:ipc";
 
     /**
+     * URI used for Spy {@link Subscription}s
+     */
+    public static final String SPY_PREFIX = "aeron-spy:";
+
+    /**
      * Timeout in which the driver is expected to respond.
      */
     public static final long DEFAULT_DRIVER_TIMEOUT_MS = 10_000;

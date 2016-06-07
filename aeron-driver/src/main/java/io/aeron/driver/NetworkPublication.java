@@ -28,9 +28,12 @@ import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.Position;
+import org.agrona.concurrent.status.ReadablePosition;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
 import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
@@ -107,6 +110,7 @@ public class NetworkPublication
     private final AtomicCounter retransmitsSent;
     private final AtomicCounter senderFlowControlLimits;
     private final AtomicCounter shortSends;
+    private final ArrayList<ReadablePosition> spyPositions = new ArrayList<>();
 
     public NetworkPublication(
         final SendChannelEndpoint channelEndpoint,
@@ -166,6 +170,7 @@ public class NetworkPublication
         rawLog.close();
         publisherLimit.close();
         senderPosition.close();
+        spyPositions.forEach(ReadablePosition::close);
     }
 
     public int send(final long now)
@@ -303,8 +308,22 @@ public class NetworkPublication
     {
         int workCount = 0;
 
-        final long candidatePublisherLimit =
+        long candidatePublisherLimit =
             hasStatusMessageBeenReceived ? senderPosition.getVolatile() + termWindowLength : 0L;
+
+        if (!spyPositions.isEmpty())
+        {
+            long minSpyPosition = Long.MAX_VALUE;
+
+            final List<ReadablePosition> spyPositions = this.spyPositions;
+            for (int i = 0, size = spyPositions.size(); i < size; i++)
+            {
+                final long position = spyPositions.get(i).getVolatile();
+                minSpyPosition = Math.min(minSpyPosition, position);
+            }
+
+            candidatePublisherLimit = Math.min(candidatePublisherLimit, minSpyPosition + termWindowLength);
+        }
 
         if (publisherLimit.proposeMaxOrdered(candidatePublisherLimit))
         {
@@ -312,6 +331,36 @@ public class NetworkPublication
         }
 
         return workCount;
+    }
+
+    boolean hasSpies()
+    {
+        return !spyPositions.isEmpty();
+    }
+
+    void addSpyPosition(final ReadablePosition spyPosition)
+    {
+        spyPositions.add(spyPosition);
+    }
+
+    void removeSpyPosition(final ReadablePosition spyPosition)
+    {
+        spyPositions.remove(spyPosition);
+        spyPosition.close();
+    }
+
+    long spyJoiningPosition()
+    {
+        long maxSpyPosition = producerPosition();
+
+        final List<ReadablePosition> spyPositions = this.spyPositions;
+        for (int i = 0, size = spyPositions.size(); i < size; i++)
+        {
+            final long position = spyPositions.get(i).getVolatile();
+            maxSpyPosition = Math.max(maxSpyPosition, position);
+        }
+
+        return maxSpyPosition;
     }
 
     public void onNak(final int termId, final int termOffset, final int length)

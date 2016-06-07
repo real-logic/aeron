@@ -276,6 +276,19 @@ public class DriverConductor implements Agent
 
         senderProxy.removeNetworkPublication(publication);
 
+        if (publication.hasSpies())
+        {
+            clientProxy.onUnavailableImage(
+                correlationId(publication.rawLog().logMetaData()),
+                publication.streamId(),
+                publication.sendChannelEndpoint().originalUriString());
+
+            subscriptionLinks
+                .stream()
+                .filter(subscriptionLink -> subscriptionLink.matches(channelEndpoint, publication.streamId()))
+                .forEach(subscriptionLink -> subscriptionLink.removeSpiedPublication(publication));
+        }
+
         if (channelEndpoint.sessionCount() == 0)
         {
             sendChannelEndpointByChannelMap.remove(channelEndpoint.udpChannel().canonicalForm());
@@ -447,6 +460,11 @@ public class DriverConductor implements Agent
                     {
                         onAddDirectSubscription(channel, streamId, correlationId, clientId);
                     }
+                    else if (channel.startsWith(CommonContext.SPY_PREFIX))
+                    {
+                        onAddSpySubscription(
+                            channel.substring(CommonContext.SPY_PREFIX.length()), streamId, correlationId, clientId);
+                    }
                     else
                     {
                         onAddNetworkSubscription(channel, streamId, correlationId, clientId);
@@ -554,6 +572,13 @@ public class DriverConductor implements Agent
             channelEndpoint.addPublication(publication);
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
+
+            final NetworkPublication networkPublication = publication;
+
+            subscriptionLinks
+                .stream()
+                .filter(subscriptionLink -> subscriptionLink.matches(channelEndpoint, streamId))
+                .forEach(subscriptionLink -> linkSpy(networkPublication, subscriptionLink));
         }
 
         linkPublication(registrationId, publication, getOrAddClient(clientId));
@@ -785,6 +810,52 @@ public class DriverConductor implements Agent
             publication.rawLog().logFileName(),
             subscriberPositions,
             IPC_CHANNEL);
+    }
+
+    private void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientid)
+    {
+        final UdpChannel udpChannel = UdpChannel.parse(channel);
+        final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
+        final NetworkPublication publication =
+            (null == channelEndpoint) ? null : channelEndpoint.getPublication(streamId);
+
+        final AeronClient client = getOrAddClient(clientid);
+
+        final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, udpChannel, streamId, client);
+
+        subscriptionLinks.add(subscriptionLink);
+
+        clientProxy.operationSucceeded(registrationId);
+
+        if (null != publication)
+        {
+            linkSpy(publication, subscriptionLink);
+        }
+    }
+
+    private void linkSpy(
+        final NetworkPublication publication, final SubscriptionLink subscriptionLink)
+    {
+        final int streamId = publication.streamId();
+        final int sessionId = publication.sessionId();
+        final String channel = subscriptionLink.spiedChannel().originalUriString();
+        final Position position =
+            SubscriberPos.allocate(countersManager, subscriptionLink.registrationId(), sessionId, streamId, channel);
+        position.setOrdered(publication.spyJoiningPosition());
+
+        final List<SubscriberPosition> subscriberPositions = new ArrayList<>();
+        subscriberPositions.add(new SubscriberPosition(subscriptionLink, position));
+
+        publication.addSpyPosition(position);
+        subscriptionLink.addSpiedPublication(publication, position);
+
+        clientProxy.onAvailableImage(
+            correlationId(publication.rawLog().logMetaData()),
+            streamId,
+            sessionId,
+            publication.rawLog().logFileName(),
+            subscriberPositions,
+            channel);
     }
 
     private ReceiveChannelEndpoint getOrCreateReceiveChannelEndpoint(final UdpChannel udpChannel)

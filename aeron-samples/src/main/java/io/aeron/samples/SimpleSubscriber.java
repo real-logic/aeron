@@ -39,7 +39,7 @@ public class SimpleSubscriber
         final int fragmentLimitCount = 10;
 
         // The channel (an endpoint identifier) to receive messages from
-        final String channel = "udp://localhost:40123";
+        final String channel = "aeron:udp?endpoint=localhost:40123";
 
         // A unique identifier for a stream within a channel. Stream ID 0 is reserved
         // for internal use and should not be used by applications.

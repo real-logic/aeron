@@ -21,7 +21,7 @@
 
 using namespace aeron::test;
 
-static const std::string CHANNEL = "udp://localhost:40123";
+static const std::string CHANNEL = "aeron:udp?endpoint=localhost:40123";
 static const std::int32_t STREAM_ID = 10;
 static const std::int32_t SESSION_ID = 200;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;

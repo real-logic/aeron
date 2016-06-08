@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The application subscribes to a default channel and stream ID.  These defaults can
  * be overwritten by changing their value in {@link SampleConfiguration} or by
  * setting their corresponding Java system properties at the command line, e.g.:
- * -Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20
+ * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20
  * This application only handles non-fragmented data. A DataHandler method is called
  * for every received message or message fragment.
  * For an example that implements reassembly of large, fragmented messages, see

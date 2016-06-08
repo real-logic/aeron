@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
  * The default values for number of messages, channel, and stream ID are
  * defined in {@link SampleConfiguration} and can be overridden by
  * setting their corresponding properties via the command-line; e.g.:
- * -Daeron.sample.channel=udp://localhost:5555 -Daeron.sample.streamId=20
+ * -Daeron.sample.channel=aeron:udp?endpoint=localhost:5555 -Daeron.sample.streamId=20
  */
 public class BasicPublisher
 {

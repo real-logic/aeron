@@ -32,7 +32,7 @@ import static org.agrona.concurrent.ringbuffer.RingBufferDescriptor.TRAILER_LENG
 
 public class DriverProxyTest
 {
-    public static final String CHANNEL = "udp://localhost:40123@localhost:40124";
+    public static final String CHANNEL = "aeron:udp?interface=localhost:40123|endpoint=localhost:40124";
 
     private static final int STREAM_ID = 1;
     private static final long CORRELATION_ID = 3;

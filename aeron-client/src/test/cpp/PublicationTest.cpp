@@ -31,7 +31,7 @@ static_assert(LogBufferDescriptor::PARTITION_COUNT==3, "partition count assumed 
 typedef std::array<std::uint8_t, ((TERM_LENGTH * 3) + (TERM_META_DATA_LENGTH * 3) + LOG_META_DATA_LENGTH)> term_buffer_t;
 typedef std::array<std::uint8_t, SRC_BUFFER_LENGTH> src_buffer_t;
 
-static const std::string CHANNEL = "udp://localhost:40123";
+static const std::string CHANNEL = "aeron:udp?endpoint=localhost:40123";
 static const std::int32_t STREAM_ID = 10;
 static const std::int32_t SESSION_ID = 200;
 static const std::int32_t PUBLICATION_LIMIT_COUNTER_ID = 0;

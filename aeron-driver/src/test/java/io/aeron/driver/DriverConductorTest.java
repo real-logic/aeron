@@ -836,6 +836,149 @@ public class DriverConductorTest
         assertNotNull(directPublication);
     }
 
+    @Test
+    public void shouldBeAbleToAddSingleSpy() throws Exception
+    {
+        final long id = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        verify(receiverProxy, never()).registerReceiveChannelEndpoint(any());
+        verify(receiverProxy, never()).addSubscription(any(), eq(STREAM_ID_1));
+        verify(mockClientProxy).operationSucceeded(id);
+
+        assertNull(driverConductor.receiverChannelEndpoint(UdpChannel.parse(CHANNEL_4000)));
+    }
+
+    @Test
+    public void shouldBeAbleToAddNetworkPublicationThenSingleSpy() throws Exception
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
+        inOrder.verify(mockClientProxy).onAvailableImage(
+            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
+            eq(publication.rawLog().logFileName()), anyObject(), anyString());
+    }
+
+    @Test
+    public void shouldBeAbleToAddSingleSpyThenNetworkPublication() throws Exception
+    {
+        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        final InOrder inOrder = inOrder(mockClientProxy);
+        inOrder.verify(mockClientProxy).operationSucceeded(eq(idSpy));
+        inOrder.verify(mockClientProxy).onAvailableImage(
+            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), eq(publication.sessionId()),
+            eq(publication.rawLog().logFileName()), anyObject(), anyString());
+    }
+
+    @Test
+    public void shouldBeAbleToAddNetworkPublicationThenSingleSpyThenRemoveSpy() throws Exception
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+        driverProxy.removeSubscription(idSpy);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertFalse(publication.hasSpies());
+    }
+
+    @Test
+    public void shouldTimeouSpy() throws Exception
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        assertFalse(publication.hasSpies());
+    }
+
+    @Test
+    public void shouldNotTimeoutSpyWithKeepalive() throws Exception
+    {
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        final long idSpy = driverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        assertTrue(publication.hasSpies());
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+
+        driverProxy.sendClientKeepalive();
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
+
+        assertTrue(publication.hasSpies());
+    }
+
+    @Test
+    public void shouldTimeoutNetworkPublicationWithSpy() throws Exception
+    {
+        final DriverProxy spyDriverProxy = new DriverProxy(fromClientCommands);
+
+        driverProxy.addPublication(CHANNEL_4000, STREAM_ID_1);
+        spyDriverProxy.addSubscription(spyForChannel(CHANNEL_4000), STREAM_ID_1);
+
+        driverConductor.doWork();
+
+        final ArgumentCaptor<NetworkPublication> captor = ArgumentCaptor.forClass(NetworkPublication.class);
+        verify(senderProxy, times(1)).newNetworkPublication(captor.capture());
+        final NetworkPublication publication = captor.getValue();
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS / 2);
+
+        spyDriverProxy.sendClientKeepalive();
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
+
+        spyDriverProxy.sendClientKeepalive();
+
+        doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
+
+        verify(senderProxy).removeNetworkPublication(eq(publication));
+        verify(mockClientProxy).onUnavailableImage(
+            eq(networkPublicationCorrelationId(publication)), eq(STREAM_ID_1), anyString());
+    }
+
     private long doWorkUntil(final BooleanSupplier condition) throws Exception
     {
         final long startTime = currentTime;
@@ -847,5 +990,15 @@ public class DriverConductorTest
         }
 
         return currentTime - startTime;
+    }
+
+    private static String spyForChannel(final String channel)
+    {
+        return "aeron-spy:" + channel;
+    }
+
+    private static long networkPublicationCorrelationId(final NetworkPublication publication)
+    {
+        return LogBufferDescriptor.correlationId(publication.rawLog().logMetaData());
     }
 }

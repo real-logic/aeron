@@ -23,6 +23,8 @@ import org.agrona.concurrent.status.ReadablePosition;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
+import static io.aeron.driver.Configuration.CLIENT_LIVENESS_TIMEOUT_NS;
+
 /**
  * Subscription registration from a client used for liveness tracking
  */
@@ -35,7 +37,6 @@ public class SubscriptionLink implements DriverManagedResource
     private final Map<PublicationImage, ReadablePosition> positionByImageMap = new IdentityHashMap<>();
     private final DirectPublication directPublication;
     private final ReadablePosition directPublicationSubscriberPosition;
-
     private final UdpChannel spiedChannel;
 
     private NetworkPublication spiedPublication = null;
@@ -168,7 +169,7 @@ public class SubscriptionLink implements DriverManagedResource
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        if (time > (aeronClient.timeOfLastKeepalive() + Configuration.CLIENT_LIVENESS_TIMEOUT_NS))
+        if (time > (aeronClient.timeOfLastKeepalive() + CLIENT_LIVENESS_TIMEOUT_NS))
         {
             reachedEndOfLife = true;
             conductor.cleanupSubscriptionLink(SubscriptionLink.this);

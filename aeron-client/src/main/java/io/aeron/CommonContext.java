@@ -58,7 +58,8 @@ public class CommonContext implements AutoCloseable
     public static final String IPC_CHANNEL = "aeron:ipc";
 
     /**
-     * URI used for Spy {@link Subscription}s
+     * URI used for Spy {@link Subscription}s whereby an outgoing unicast or multicast publication can be spied on
+     * by IPC without receiving it again via the network.
      */
     public static final String SPY_PREFIX = "aeron-spy:";
 

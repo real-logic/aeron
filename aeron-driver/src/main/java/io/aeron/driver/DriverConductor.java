@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static io.aeron.CommonContext.SPY_PREFIX;
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.driver.status.SystemCounterDescriptor.CLIENT_KEEP_ALIVES;
 import static io.aeron.driver.status.SystemCounterDescriptor.ERRORS;
@@ -285,8 +286,8 @@ public class DriverConductor implements Agent
 
             subscriptionLinks
                 .stream()
-                .filter(subscriptionLink -> subscriptionLink.matches(channelEndpoint, publication.streamId()))
-                .forEach(subscriptionLink -> subscriptionLink.removeSpiedPublication(publication));
+                .filter((link) -> link.matches(channelEndpoint, publication.streamId()))
+                .forEach((link) -> link.removeSpiedPublication(publication));
         }
 
         if (channelEndpoint.sessionCount() == 0)
@@ -332,7 +333,7 @@ public class DriverConductor implements Agent
         subscriptionLinks
             .stream()
             .filter((link) -> image.matches(link.channelEndpoint(), link.streamId()))
-            .forEach((subscriptionLink) -> subscriptionLink.removeImage(image));
+            .forEach((link) -> link.removeImage(image));
     }
 
     private List<SubscriberPosition> listSubscriberPositions(
@@ -426,7 +427,7 @@ public class DriverConductor implements Agent
                     final long clientId = publicationMessageFlyweight.clientId();
                     final String channel = publicationMessageFlyweight.channel();
 
-                    if (channel.startsWith(CommonContext.IPC_CHANNEL))
+                    if (channel.startsWith(IPC_CHANNEL))
                     {
                         onAddDirectPublication(channel, streamId, correlationId, clientId);
                     }
@@ -456,18 +457,20 @@ public class DriverConductor implements Agent
                     final long clientId = subscriptionMessageFlyweight.clientId();
                     final String channel = subscriptionMessageFlyweight.channel();
 
-                    if (channel.startsWith(CommonContext.IPC_CHANNEL))
+                    if (channel.startsWith(IPC_CHANNEL))
                     {
                         onAddDirectSubscription(channel, streamId, correlationId, clientId);
                     }
-                    else if (channel.startsWith(CommonContext.SPY_PREFIX))
-                    {
-                        onAddSpySubscription(
-                            channel.substring(CommonContext.SPY_PREFIX.length()), streamId, correlationId, clientId);
-                    }
                     else
                     {
-                        onAddNetworkSubscription(channel, streamId, correlationId, clientId);
+                        if (channel.startsWith(SPY_PREFIX))
+                        {
+                            onAddSpySubscription(channel.substring(SPY_PREFIX.length()), streamId, correlationId, clientId);
+                        }
+                        else
+                        {
+                            onAddNetworkSubscription(channel, streamId, correlationId, clientId);
+                        }
                     }
                     break;
                 }
@@ -577,8 +580,8 @@ public class DriverConductor implements Agent
 
             subscriptionLinks
                 .stream()
-                .filter(subscriptionLink -> subscriptionLink.matches(channelEndpoint, streamId))
-                .forEach(subscriptionLink -> linkSpy(networkPublication, subscriptionLink));
+                .filter((link) -> link.matches(channelEndpoint, streamId))
+                .forEach((link) -> linkSpy(networkPublication, link));
         }
 
         linkPublication(registrationId, publication, getOrAddClient(clientId));
@@ -812,15 +815,12 @@ public class DriverConductor implements Agent
             IPC_CHANNEL);
     }
 
-    private void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientid)
+    private void onAddSpySubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
         final UdpChannel udpChannel = UdpChannel.parse(channel);
         final SendChannelEndpoint channelEndpoint = senderChannelEndpoint(udpChannel);
-        final NetworkPublication publication =
-            (null == channelEndpoint) ? null : channelEndpoint.getPublication(streamId);
-
-        final AeronClient client = getOrAddClient(clientid);
-
+        final NetworkPublication publication = null == channelEndpoint ? null : channelEndpoint.getPublication(streamId);
+        final AeronClient client = getOrAddClient(clientId);
         final SubscriptionLink subscriptionLink = new SubscriptionLink(registrationId, udpChannel, streamId, client);
 
         subscriptionLinks.add(subscriptionLink);
@@ -833,8 +833,7 @@ public class DriverConductor implements Agent
         }
     }
 
-    private void linkSpy(
-        final NetworkPublication publication, final SubscriptionLink subscriptionLink)
+    private void linkSpy(final NetworkPublication publication, final SubscriptionLink subscriptionLink)
     {
         final int streamId = publication.streamId();
         final int sessionId = publication.sessionId();

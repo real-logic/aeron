@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static io.aeron.driver.Configuration.PUBLICATION_HEARTBEAT_TIMEOUT_NS;
+import static io.aeron.driver.Configuration.PUBLICATION_LINGER_NS;
 import static io.aeron.driver.Configuration.PUBLICATION_SETUP_TIMEOUT_NS;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -492,7 +493,7 @@ public class NetworkPublication
 
     public void onTimeEvent(final long time, final DriverConductor conductor)
     {
-        if (isUnreferencedAndPotentiallyInactive(time) && time > (timeOfLastActivity + Configuration.PUBLICATION_LINGER_NS))
+        if (isUnreferencedAndPotentiallyInactive(time) && time > (timeOfLastActivity + PUBLICATION_LINGER_NS))
         {
             reachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);

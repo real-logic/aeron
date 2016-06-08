@@ -86,6 +86,11 @@ public final class UdpChannel
                 throw new IllegalArgumentException("Aeron URIs for UDP must specify an endpoint address");
             }
 
+            if (endpointAddress.isUnresolved())
+            {
+                throw new UnknownHostException("could not resolve endpoint address: " + endpointAddress);
+            }
+
             if (endpointAddress.getAddress().isMulticastAddress())
             {
                 final byte[] addressAsBytes = endpointAddress.getAddress().getAddress();

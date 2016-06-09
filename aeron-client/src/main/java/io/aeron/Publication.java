@@ -32,6 +32,7 @@ import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
  * The APIs used to send are all non-blocking.
  * <p>
  * Note: Publication instances are threadsafe and can be shared between publishing threads.
+ *
  * @see Aeron#addPublication(String, int)
  */
 public class Publication implements AutoCloseable
@@ -275,6 +276,22 @@ public class Publication implements AutoCloseable
      */
     public long offer(final DirectBuffer buffer, final int offset, final int length)
     {
+        return offer(buffer, offset, length, null);
+    }
+
+    /**
+     * Non-blocking publish of a partial buffer containing a message.
+     *
+     * @param buffer                containing message.
+     * @param offset                offset in the buffer at which the encoded message begins.
+     * @param length                in bytes of the encoded message.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
+     * @return The new stream position, otherwise a negative error value {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    public long offer(
+        final DirectBuffer buffer, final int offset, final int length, final ReservedValueSupplier reservedValueSupplier)
+    {
         long newPosition = CLOSED;
         if (!isClosed)
         {
@@ -290,12 +307,13 @@ public class Publication implements AutoCloseable
                 final long result;
                 if (length <= maxPayloadLength)
                 {
-                    result = termAppender.appendUnfragmentedMessage(headerWriter, buffer, offset, length);
+                    result = termAppender.appendUnfragmentedMessage(headerWriter, buffer, offset, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    result = termAppender.appendFragmentedMessage(headerWriter, buffer, offset, length, maxPayloadLength);
+                    result = termAppender.appendFragmentedMessage(
+                        headerWriter, buffer, offset, length, maxPayloadLength, reservedValueSupplier);
                 }
 
                 newPosition = newPosition(partitionIndex, (int)termOffset, position, result);

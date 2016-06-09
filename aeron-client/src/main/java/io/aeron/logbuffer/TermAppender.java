@@ -15,8 +15,11 @@
  */
 package io.aeron.logbuffer;
 
+import io.aeron.ReservedValueSupplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+
+import java.nio.ByteOrder;
 
 import static io.aeron.logbuffer.FrameDescriptor.BEGIN_FRAG_FLAG;
 import static io.aeron.logbuffer.FrameDescriptor.END_FRAG_FLAG;
@@ -161,11 +164,16 @@ public class TermAppender
      * @param srcBuffer containing the message.
      * @param srcOffset at which the message begins.
      * @param length    of the message in the source buffer.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
      * packed with the termId if a padding record was inserted at the end.
      */
     public long appendUnfragmentedMessage(
-        final HeaderWriter header, final DirectBuffer srcBuffer, final int srcOffset, final int length)
+        final HeaderWriter header,
+        final DirectBuffer srcBuffer,
+        final int srcOffset,
+        final int length,
+        final ReservedValueSupplier reservedValueSupplier)
     {
         final int frameLength = length + HEADER_LENGTH;
         final int alignedLength = align(frameLength, FRAME_ALIGNMENT);
@@ -185,6 +193,13 @@ public class TermAppender
             final int offset = (int)termOffset;
             header.write(termBuffer, offset, frameLength, termId(rawTail));
             termBuffer.putBytes(offset + HEADER_LENGTH, srcBuffer, srcOffset, length);
+
+            if (null != reservedValueSupplier)
+            {
+                final long reservedValue = reservedValueSupplier.get(termBuffer, offset, frameLength);
+                termBuffer.putLong(offset + RESERVED_VALUE_OFFSET, reservedValue, ByteOrder.LITTLE_ENDIAN);
+            }
+
             frameLengthOrdered(termBuffer, offset, frameLength);
         }
 
@@ -200,6 +215,7 @@ public class TermAppender
      * @param srcOffset        at which the message begins.
      * @param length           of the message in the source buffer.
      * @param maxPayloadLength that the message will be fragmented into.
+     * @param reservedValueSupplier {@link ReservedValueSupplier} for the frame.
      * @return the resulting offset of the term after the append on success otherwise {@link #TRIPPED} or {@link #FAILED}
      * packed with the termId if a padding record was inserted at the end.
      */
@@ -208,7 +224,8 @@ public class TermAppender
         final DirectBuffer srcBuffer,
         final int srcOffset,
         final int length,
-        final int maxPayloadLength)
+        final int maxPayloadLength,
+        final ReservedValueSupplier reservedValueSupplier)
     {
         final int numMaxPayloads = length / maxPayloadLength;
         final int remainingPayload = length % maxPayloadLength;
@@ -250,6 +267,13 @@ public class TermAppender
                 }
 
                 frameFlags(termBuffer, offset, flags);
+
+                if (null != reservedValueSupplier)
+                {
+                    final long reservedValue = reservedValueSupplier.get(termBuffer, offset, frameLength);
+                    termBuffer.putLong(offset + RESERVED_VALUE_OFFSET, reservedValue, ByteOrder.LITTLE_ENDIAN);
+                }
+
                 frameLengthOrdered(termBuffer, offset, frameLength);
 
                 flags = 0;

@@ -428,7 +428,7 @@ public class DriverConductorTest
 
         publication.onStatusMessage(termId, 0, 10, new InetSocketAddress("localhost", 4059));
 
-        appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256);
+        appender.appendUnfragmentedMessage(headerWriter, srcBuffer, 0, 256, null);
 
         doWorkUntil(() -> nanoClock.nanoTime() >= PUBLICATION_LINGER_NS + CLIENT_LIVENESS_TIMEOUT_NS * 2);
 

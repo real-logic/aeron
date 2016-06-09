@@ -15,6 +15,7 @@
  */
 package io.aeron.driver;
 
+import io.aeron.ReservedValueSupplier;
 import io.aeron.driver.status.SystemCounters;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -54,6 +55,7 @@ public class RetransmitHandlerTest
     private static final FeedbackDelayGenerator DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(20);
     private static final FeedbackDelayGenerator ZERO_DELAY_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(0);
     private static final FeedbackDelayGenerator LINGER_GENERATOR = () -> TimeUnit.MILLISECONDS.toNanos(40);
+    private static final ReservedValueSupplier RESERVED_VALUE_SUPPLIER = null;
 
     private final UnsafeBuffer termBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH));
     private final UnsafeBuffer metaDataBuffer = new UnsafeBuffer(ByteBuffer.allocateDirect(META_DATA_BUFFER_LENGTH));
@@ -238,7 +240,7 @@ public class RetransmitHandlerTest
     private void addSentDataFrame()
     {
         rcvBuffer.putBytes(0, DATA);
-        termAppender.appendUnfragmentedMessage(headerWriter, rcvBuffer, 0, DATA.length);
+        termAppender.appendUnfragmentedMessage(headerWriter, rcvBuffer, 0, DATA.length, RESERVED_VALUE_SUPPLIER);
     }
 
     private void addReceivedDataFrame(final int msgNum)

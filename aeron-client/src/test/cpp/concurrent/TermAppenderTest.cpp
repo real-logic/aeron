@@ -34,6 +34,7 @@ using namespace aeron;
 #define MAX_PAYLOAD_LENGTH ((MAX_FRAME_LENGTH - DataFrameHeader::LENGTH))
 #define SRC_BUFFER_CAPACITY (2 * 1024)
 #define TERM_ID (101)
+#define RESERVED_VALUE (777L)
 
 typedef std::array<std::uint8_t, TERM_BUFFER_CAPACITY> term_buffer_t;
 typedef std::array<std::uint8_t, META_DATA_BUFFER_CAPACITY> meta_data_buffer_t;
@@ -43,6 +44,11 @@ typedef std::array<std::uint8_t, SRC_BUFFER_CAPACITY> src_buffer_t;
 static std::int64_t packRawTail(std::int32_t termId, std::int32_t termOffset)
 {
     return static_cast<std::int64_t>(termId) << 32 | termOffset;
+}
+
+static std::int64_t reservedValueSupplier(AtomicBuffer&, util::index_t, util::index_t)
+{
+    return RESERVED_VALUE;
 }
 
 class TermAppenderTest : public testing::Test
@@ -106,11 +112,14 @@ TEST_F(TermAppenderTest, shouldAppendFrameToEmptyLog)
     EXPECT_CALL(m_termBuffer, putBytes(DataFrameHeader::LENGTH, testing::Ref(m_src), 0, msgLength))
         .Times(1)
         .InSequence(sequence);
+    EXPECT_CALL(m_termBuffer, putInt64(tail + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, RESERVED_VALUE))
+        .Times(1)
+        .InSequence(sequence);
     EXPECT_CALL(m_termBuffer, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
         .Times(1)
         .InSequence(sequence);
 
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength);
+    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
     EXPECT_EQ(result.termOffset, alignedFrameLength);
 }
 
@@ -134,12 +143,15 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
     EXPECT_CALL(m_termBuffer, putBytes(tail + DataFrameHeader::LENGTH, testing::Ref(m_src), 0, msgLength))
         .Times(1)
         .InSequence(sequence1);
+    EXPECT_CALL(m_termBuffer, putInt64(tail + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, RESERVED_VALUE))
+        .Times(1)
+        .InSequence(sequence1);
     EXPECT_CALL(m_termBuffer, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
         .Times(1)
         .InSequence(sequence1);
 
     TermAppender::Result result;
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength);
+    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
     EXPECT_EQ(result.termOffset, alignedFrameLength);
 
     tail = alignedFrameLength;
@@ -150,11 +162,14 @@ TEST_F(TermAppenderTest, shouldAppendFrameTwiceToLog)
     EXPECT_CALL(m_termBuffer, putBytes(tail + DataFrameHeader::LENGTH, testing::Ref(m_src), 0, msgLength))
         .Times(1)
         .InSequence(sequence2);
+    EXPECT_CALL(m_termBuffer, putInt64(tail + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, RESERVED_VALUE))
+        .Times(1)
+        .InSequence(sequence2);
     EXPECT_CALL(m_termBuffer, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
         .Times(1)
         .InSequence(sequence2);
 
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength);
+    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
     EXPECT_EQ(result.termOffset, alignedFrameLength * 2);
 }
 
@@ -181,7 +196,7 @@ TEST_F(TermAppenderTest, shouldPadLogAndTripWhenAppendingWithInsufficientRemaini
         .InSequence(sequence);
 
     TermAppender::Result result;
-    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength);
+    m_termAppender.appendUnfragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, reservedValueSupplier);
     EXPECT_EQ(result.termId, TERM_ID);
     EXPECT_EQ(result.termOffset, TERM_APPENDER_TRIPPED);
 }
@@ -208,6 +223,9 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
     EXPECT_CALL(m_termBuffer, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::BEGIN_FRAG))
         .Times(1)
         .InSequence(sequence);
+    EXPECT_CALL(m_termBuffer, putInt64(tail + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, RESERVED_VALUE))
+        .Times(1)
+        .InSequence(sequence);
     EXPECT_CALL(m_termBuffer, putInt32Ordered(FrameDescriptor::lengthOffset(tail), MAX_FRAME_LENGTH))
         .Times(1)
         .InSequence(sequence);
@@ -224,12 +242,15 @@ TEST_F(TermAppenderTest, shouldFragmentMessageOverTwoFrames)
     EXPECT_CALL(m_termBuffer, putUInt8(FrameDescriptor::flagsOffset(tail), FrameDescriptor::END_FRAG))
         .Times(1)
         .InSequence(sequence);
+    EXPECT_CALL(m_termBuffer, putInt64(tail + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, RESERVED_VALUE))
+        .Times(1)
+        .InSequence(sequence);
     EXPECT_CALL(m_termBuffer, putInt32Ordered(FrameDescriptor::lengthOffset(tail), frameLength))
         .Times(1)
         .InSequence(sequence);
 
     TermAppender::Result result;
-    m_termAppender.appendFragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, MAX_PAYLOAD_LENGTH);
+    m_termAppender.appendFragmentedMessage(result, m_headerWriter, m_src, 0, msgLength, MAX_PAYLOAD_LENGTH, reservedValueSupplier);
     EXPECT_EQ(result.termOffset, requiredCapacity);
 }
 

@@ -206,11 +206,15 @@ public:
      * @param buffer containing message.
      * @param offset offset in the buffer at which the encoded message begins.
      * @param length in bytes of the encoded message.
+     * @param reservedValueSupplier for the frame.
      * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
      * {@link #ADMIN_ACTION} or {@link #CLOSED}.
-     * or {@link CLOSED}.
      */
-    inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    inline std::int64_t offer(
+        concurrent::AtomicBuffer& buffer,
+        util::index_t offset,
+        util::index_t length,
+        const on_reserved_value_supplier_t& reservedValueSupplier)
     {
         std::int64_t newPosition = PUBLICATION_CLOSED;
 
@@ -230,12 +234,14 @@ public:
                 TermAppender::Result appendResult;
                 if (length <= m_maxPayloadLength)
                 {
-                    termAppender->appendUnfragmentedMessage(appendResult, m_headerWriter, buffer, offset, length);
+                    termAppender->appendUnfragmentedMessage(
+                        appendResult, m_headerWriter, buffer, offset, length, reservedValueSupplier);
                 }
                 else
                 {
                     checkForMaxMessageLength(length);
-                    termAppender->appendFragmentedMessage(appendResult, m_headerWriter, buffer, offset, length, m_maxPayloadLength);
+                    termAppender->appendFragmentedMessage(
+                        appendResult, m_headerWriter, buffer, offset, length, m_maxPayloadLength, reservedValueSupplier);
                 }
 
                 newPosition = Publication::newPosition(partitionIndex, static_cast<std::int32_t>(termOffset), position, appendResult);
@@ -251,6 +257,20 @@ public:
         }
 
         return newPosition;
+    }
+
+    /**
+     * Non-blocking publish of a buffer containing a message.
+     *
+     * @param buffer containing message.
+     * @param offset offset in the buffer at which the encoded message begins.
+     * @param length in bytes of the encoded message.
+     * @return The new stream position, otherwise {@link #NOT_CONNECTED}, {@link #BACK_PRESSURED},
+     * {@link #ADMIN_ACTION} or {@link #CLOSED}.
+     */
+    inline std::int64_t offer(concurrent::AtomicBuffer& buffer, util::index_t offset, util::index_t length)
+    {
+        return offer(buffer, offset, length, DEFAULT_RESERVED_VALUE_SUPPLIER);
     }
 
     /**

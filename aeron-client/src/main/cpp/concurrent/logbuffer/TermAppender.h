@@ -27,8 +27,27 @@
 
 namespace aeron { namespace concurrent { namespace logbuffer {
 
+/**
+ * Supplies the reserved value field for a data frame header. The returned value will be set in the header as
+ * Little Endian format.
+ *
+ * This will be called as the last action of encoding a data frame right before the length is set. All other fields
+ * in the header plus the body of the frame will have been written at the point of supply.
+ *
+ * @param termBuffer for the message
+ * @param termOffset of the start of the message
+ * @param length of the message in bytes
+ */
+typedef std::function<std::int64_t(
+    AtomicBuffer& termBuffer,
+    util::index_t termOffset,
+    util::index_t length)> on_reserved_value_supplier_t;
+
 #define TERM_APPENDER_TRIPPED ((std::int32_t)-1)
 #define TERM_APPENDER_FAILED ((std::int32_t)-2)
+
+static const on_reserved_value_supplier_t DEFAULT_RESERVED_VALUE_SUPPLIER =
+    [](AtomicBuffer&, util::index_t, util::index_t) -> std::int64_t { return 0; };
 
 class TermAppender
 {
@@ -98,7 +117,8 @@ public:
         const HeaderWriter& header,
         AtomicBuffer& srcBuffer,
         util::index_t srcOffset,
-        util::index_t length)
+        util::index_t length,
+        const on_reserved_value_supplier_t& reservedValueSupplier)
     {
         const util::index_t frameLength = length + DataFrameHeader::LENGTH;
         const util::index_t alignedLength = util::BitUtil::align(frameLength, FrameDescriptor::FRAME_ALIGNMENT);
@@ -118,6 +138,10 @@ public:
             std::int32_t offset = static_cast<std::int32_t>(termOffset);
             header.write(m_termBuffer, offset, frameLength, LogBufferDescriptor::termId(rawTail));
             m_termBuffer.putBytes(offset + DataFrameHeader::LENGTH, srcBuffer, srcOffset, length);
+
+            const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, offset, frameLength);
+            m_termBuffer.putInt64(offset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
             FrameDescriptor::frameLengthOrdered(m_termBuffer, offset, frameLength);
         }
     }
@@ -128,7 +152,8 @@ public:
         AtomicBuffer& srcBuffer,
         util::index_t srcOffset,
         util::index_t length,
-        util::index_t maxPayloadLength)
+        util::index_t maxPayloadLength,
+        const on_reserved_value_supplier_t& reservedValueSupplier)
     {
         const int numMaxPayloads = length / maxPayloadLength;
         const util::index_t remainingPayload = length % maxPayloadLength;
@@ -172,6 +197,10 @@ public:
                 }
 
                 FrameDescriptor::frameFlags(m_termBuffer, offset, flags);
+
+                const std::int64_t reservedValue = reservedValueSupplier(m_termBuffer, offset, frameLength);
+                m_termBuffer.putInt64(offset + DataFrameHeader::RESERVED_VALUE_FIELD_OFFSET, reservedValue);
+
                 FrameDescriptor::frameLengthOrdered(m_termBuffer, offset, frameLength);
 
                 flags = 0;

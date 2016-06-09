@@ -214,6 +214,7 @@ public class Configuration
      * Default max backoff for NAK delay randomization in ms.
      */
     public static final long NAK_MAX_BACKOFF_DEFAULT = TimeUnit.MILLISECONDS.toNanos(60);
+
     /**
      * Multicast NAK delay is immediate initial with delayed subsequent delay.
      */
@@ -224,6 +225,7 @@ public class Configuration
      * Default Unicast NAK delay in nanoseconds.
      */
     public static final long NAK_UNICAST_DELAY_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(60);
+
     /**
      * Unicast NAK delay is immediate initial with delayed subsequent delay.
      */
@@ -234,6 +236,7 @@ public class Configuration
      * Default delay for retransmission of data for unicast.
      */
     public static final long RETRANSMIT_UNICAST_DELAY_DEFAULT_NS = TimeUnit.NANOSECONDS.toNanos(0);
+
     /**
      * Source uses same for unicast and multicast. For ticks.
      */
@@ -357,16 +360,24 @@ public class Configuration
     public static final String SHARED_IDLE_STRATEGY = getProperty(
         SHARED_IDLE_STRATEGY_PROP_NAME, DEFAULT_IDLE_STRATEGY);
 
-    /** Capacity for the command queues used between driver agents. */
+    /**
+     * Capacity for the command queues used between driver agents.
+     */
     public static final int CMD_QUEUE_CAPACITY = 1024;
 
-    /** Timeout on cleaning up pending SETUP state on subscriber. */
+    /**
+     * Timeout on cleaning up pending SETUP state on subscriber.
+     */
     public static final long PENDING_SETUPS_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(1000);
 
-    /** Timeout between SETUP frames for publications during initial setup phase. */
+    /**
+     * Timeout between SETUP frames for publications during initial setup phase.
+     */
     public static final long PUBLICATION_SETUP_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
-    /** Timeout between heartbeats for publications. */
+    /**
+     * Timeout between heartbeats for publications.
+     */
     public static final long PUBLICATION_HEARTBEAT_TIMEOUT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
     /**
@@ -396,12 +407,16 @@ public class Configuration
     public static final String MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER = getProperty(
         MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_PROP_NAME, MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER_DEFAULT);
 
-    /** Length of the maximum transmission unit of the media driver's protocol */
+    /**
+     * Length of the maximum transmission unit of the media driver's protocol
+     */
     public static final String MTU_LENGTH_PROP_NAME = "aeron.mtu.length";
     public static final int MTU_LENGTH_DEFAULT = 4096;
     public static final int MTU_LENGTH = getInteger(MTU_LENGTH_PROP_NAME, MTU_LENGTH_DEFAULT);
 
-    /** {@link ThreadingMode} to be used by the Aeron {@link MediaDriver} */
+    /**
+     * {@link ThreadingMode} to be used by the Aeron {@link MediaDriver}
+     */
     public static final String THREADING_MODE_PROP_NAME = "aeron.threading.mode";
     public static final String THREADING_MODE_DEFAULT = DEDICATED.name();
 
@@ -454,7 +469,7 @@ public class Configuration
      * Validate that the initial window length is suitably greater than MTU.
      *
      * @param initialWindowLength to be validated.
-     * @param mtuLength against which to validate.
+     * @param mtuLength           against which to validate.
      */
     public static void validateInitialWindowLength(final int initialWindowLength, final int mtuLength)
     {
@@ -613,7 +628,7 @@ public class Configuration
         FlowControlSupplier supplier = null;
         try
         {
-            supplier = (FlowControlSupplier) Class.forName(UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER).newInstance();
+            supplier = (FlowControlSupplier)Class.forName(UNICAST_FLOW_CONTROL_STRATEGY_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {
@@ -634,7 +649,7 @@ public class Configuration
         FlowControlSupplier supplier = null;
         try
         {
-            supplier = (FlowControlSupplier) Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER).newInstance();
+            supplier = (FlowControlSupplier)Class.forName(MULTICAST_FLOW_CONTROL_STRATEGY_SUPPLIER).newInstance();
         }
         catch (final Exception ex)
         {

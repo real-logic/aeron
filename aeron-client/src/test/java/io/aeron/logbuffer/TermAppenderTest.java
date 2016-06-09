@@ -44,7 +44,7 @@ public class TermAppenderTest
     private static final int MAX_PAYLOAD_LENGTH = MAX_FRAME_LENGTH - HEADER_LENGTH;
     private static final int TERM_ID = 7;
     private static final long RV = 7777L;
-    private static final ReservedValueSupplier RVS = (termBuffer1, termOffset, frameLength) -> RV;
+    private static final ReservedValueSupplier RVS = (termBuffer, termOffset, frameLength) -> RV;
     private static final UnsafeBuffer DEFAULT_HEADER = new UnsafeBuffer(ByteBuffer.allocateDirect(HEADER_LENGTH));
 
     private final UnsafeBuffer termBuffer = spy(new UnsafeBuffer(ByteBuffer.allocateDirect(TERM_BUFFER_LENGTH)));

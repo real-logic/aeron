@@ -442,6 +442,11 @@ public class Configuration
         RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_PROP_NAME, RECEIVE_CHANNEL_ENDPOINT_SUPPLIER_DEFAULT);
 
     /**
+     * Maximum UDP datagram payload size for IPv4. Jumbo datagrams from IPv6 are not supported.
+     */
+    public static final int MAX_UDP_PAYLOAD_LENGTH = 65507;
+
+    /**
      * How far ahead the publisher can get from the sender position.
      *
      * @param termBufferLength to be used when {@link #PUBLICATION_TERM_WINDOW_LENGTH} is not set.
@@ -667,6 +672,13 @@ public class Configuration
      */
     public static void validateMtuLength(final int mtuLength)
     {
+        if (mtuLength < 0 || mtuLength > MAX_UDP_PAYLOAD_LENGTH)
+        {
+            throw new ConfigurationException(String.format(
+                "mtuLength must be a > 0 and <= " + MAX_UDP_PAYLOAD_LENGTH + ": mtuLength=%d",
+                mtuLength));
+        }
+
         if ((mtuLength % FrameDescriptor.FRAME_ALIGNMENT) != 0)
         {
             throw new ConfigurationException(String.format(

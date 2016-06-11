@@ -532,7 +532,7 @@ public class DriverConductor implements Agent
         NetworkPublication publication = channelEndpoint.getPublication(streamId);
         if (null == publication)
         {
-            final int termLength = getPublicationTermLength(udpChannel.aeronUri());
+            final int termLength = getPublicationTermLength(udpChannel.aeronUri(), context.publicationTermBufferLength());
             final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
 
@@ -587,10 +587,10 @@ public class DriverConductor implements Agent
             publication.publisherLimitId());
     }
 
-    private int getPublicationTermLength(final AeronUri aeronUri)
+    private static int getPublicationTermLength(final AeronUri aeronUri, final int defaultTermLength)
     {
         final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
-        int termLength = context.publicationTermBufferLength();
+        int termLength = defaultTermLength;
         if (null != termLengthParam)
         {
             termLength = Integer.parseInt(termLengthParam);
@@ -949,7 +949,7 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            final int termLength = getPublicationTermLength(AeronUri.parse(channel));
+            final int termLength = getPublicationTermLength(AeronUri.parse(channel), context.ipcTermBufferLength());
             final long registrationId = nextImageCorrelationId();
             final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();

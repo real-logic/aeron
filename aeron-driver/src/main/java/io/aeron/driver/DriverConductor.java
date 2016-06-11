@@ -532,14 +532,7 @@ public class DriverConductor implements Agent
         NetworkPublication publication = channelEndpoint.getPublication(streamId);
         if (null == publication)
         {
-            final String termLengthParam = udpChannel.aeronUri().get(CommonContext.TERM_LENGTH_PARAM_NAME);
-            int termLength = context.publicationTermBufferLength();
-            if (null != termLengthParam)
-            {
-                termLength = Integer.parseInt(termLengthParam);
-                Configuration.validateTermBufferLength(termLength);
-            }
-
+            final int termLength = getPublicationTermLength(udpChannel.aeronUri());
             final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();
 
@@ -592,6 +585,19 @@ public class DriverConductor implements Agent
             publication.sessionId(),
             publication.rawLog().logFileName(),
             publication.publisherLimitId());
+    }
+
+    private int getPublicationTermLength(final AeronUri aeronUri)
+    {
+        final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
+        int termLength = context.publicationTermBufferLength();
+        if (null != termLengthParam)
+        {
+            termLength = Integer.parseInt(termLengthParam);
+            Configuration.validateTermBufferLength(termLength);
+        }
+
+        return termLength;
     }
 
     private void onAddDirectPublication(final String channel, final int streamId, final long registrationId, final long clientId)
@@ -943,15 +949,7 @@ public class DriverConductor implements Agent
 
         if (null == publication)
         {
-            final AeronUri aeronUri = AeronUri.parse(channel);
-            final String termLengthParam = aeronUri.get(CommonContext.TERM_LENGTH_PARAM_NAME);
-            int termLength = context.ipcTermBufferLength();
-            if (null != termLengthParam)
-            {
-                termLength = Integer.parseInt(termLengthParam);
-                Configuration.validateTermBufferLength(termLength);
-            }
-
+            final int termLength = getPublicationTermLength(AeronUri.parse(channel));
             final long registrationId = nextImageCorrelationId();
             final int sessionId = nextSessionId();
             final int initialTermId = BitUtil.generateRandomisedId();

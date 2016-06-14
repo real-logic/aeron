@@ -42,11 +42,6 @@ public class Configuration
     private static final String DEFAULT_IDLE_STRATEGY = "org.agrona.concurrent.BackoffIdleStrategy";
 
     /**
-     * Byte buffer length (in bytes) for reads.
-     */
-    public static final String RECEIVE_BUFFER_LENGTH_PROP_NAME = "aeron.rcv.buffer.length";
-
-    /**
      * Length (in bytes) of the log buffers for publication terms.
      */
     public static final String TERM_BUFFER_LENGTH_PROP_NAME = "aeron.term.buffer.length";
@@ -153,13 +148,6 @@ public class Configuration
     public static final String IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME = "aeron.ipc.publication.term.window.length";
     public static final int IPC_PUBLICATION_TERM_WINDOW_LENGTH = getInteger(
         IPC_PUBLICATION_TERM_WINDOW_LENGTH_PROP_NAME, 0);
-
-    /**
-     * Default byte buffer length for reads from network sockets.
-     */
-    public static final int RECEIVE_BYTE_BUFFER_LENGTH_DEFAULT = 4096;
-    public static final int RECEIVE_BYTE_BUFFER_LENGTH = getInteger(
-        RECEIVE_BUFFER_LENGTH_PROP_NAME, RECEIVE_BYTE_BUFFER_LENGTH_DEFAULT);
 
     /**
      * Default term buffer length.

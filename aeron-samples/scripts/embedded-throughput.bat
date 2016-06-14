@@ -24,6 +24,5 @@
     -Daeron.mtu.length=16384 ^
     -Daeron.socket.so_sndbuf=2097152 ^
     -Daeron.socket.so_rcvbuf=2097152 ^
-    -Daeron.rcv.buffer.length=16384 ^
     -Daeron.rcv.initial.window.length=2097152 ^
     io.aeron.samples.EmbeddedThroughput

@@ -215,15 +215,6 @@ public class ReceiveChannelEndpoint extends UdpChannelTransport
                 senderMtuLength,
                 soRcvbuf));
         }
-
-        if (senderMtuLength > Configuration.RECEIVE_BYTE_BUFFER_LENGTH)
-        {
-            throw new ConfigurationException(String.format(
-                "Sender MTU greater than receive buffer capacity, increase %s to match MTU: senderMtuLength=%d, capacity=%d",
-                Configuration.RECEIVE_BUFFER_LENGTH_PROP_NAME,
-                senderMtuLength,
-                Configuration.RECEIVE_BYTE_BUFFER_LENGTH));
-        }
     }
 
     public void sendStatusMessage(

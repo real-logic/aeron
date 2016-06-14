@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.SetupFlyweight;
+import org.agrona.BufferUtil;
 import org.agrona.LangUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -27,7 +28,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
 
-import static io.aeron.driver.Configuration.RECEIVE_BYTE_BUFFER_LENGTH;
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_DATA;
 import static io.aeron.protocol.HeaderFlyweight.HDR_TYPE_PAD;
@@ -39,6 +39,8 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
  */
 public class DataTransportPoller extends UdpTransportPoller
 {
+    private static final int MAX_UDP_PACKET = 1024 * 64;
+
     private final ByteBuffer byteBuffer;
     private final UnsafeBuffer unsafeBuffer;
     private final DataHeaderFlyweight dataMessage;
@@ -47,7 +49,7 @@ public class DataTransportPoller extends UdpTransportPoller
 
     public DataTransportPoller()
     {
-        byteBuffer = NetworkUtil.allocateDirectAlignedAndPadded(RECEIVE_BYTE_BUFFER_LENGTH, CACHE_LINE_LENGTH * 2);
+        byteBuffer = BufferUtil.allocateDirectAligned(MAX_UDP_PACKET, CACHE_LINE_LENGTH * 2);
         unsafeBuffer = new UnsafeBuffer(byteBuffer);
         dataMessage = new DataHeaderFlyweight(unsafeBuffer);
         setupMessage = new SetupFlyweight(unsafeBuffer);

@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import org.agrona.DirectBuffer;
 import org.junit.After;
 import org.junit.Test;
 import io.aeron.driver.ThreadingMode;
@@ -189,13 +190,13 @@ public class MultiDriverTest
         }
 
         verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));
 
         verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));
@@ -215,7 +216,10 @@ public class MultiDriverTest
         publication = clientA.addPublication(MULTICAST_URI, STREAM_ID);
         subscriptionA = clientA.addSubscription(MULTICAST_URI, STREAM_ID);
 
-        Thread.sleep(200);  // intentioanlyl wait so that Publication and Subscription have time to do SETUP
+        while (!publication.isConnected() && subscriptionA.hasNoImages())
+        {
+            Thread.yield();
+        }
 
         subscriptionB = clientB.addSubscription(MULTICAST_URI, STREAM_ID);
 
@@ -253,13 +257,13 @@ public class MultiDriverTest
         }
 
         verify(fragmentHandlerA, times(numMessagesToSendPreJoin + numMessagesToSendPostJoin)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));
 
         verify(fragmentHandlerB, times(numMessagesToSendPostJoin)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(MESSAGE_LENGTH),
             any(Header.class));

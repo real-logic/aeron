@@ -152,18 +152,21 @@ public class EventConfiguration
                     EventCode code = null;
                     try
                     {
-                        code = EventCode.get(Integer.parseInt(codeId));
+                        code = EventCode.valueOf(codeId);
                     }
                     catch (final IllegalArgumentException ignore)
                     {
                     }
 
-                    try
+                    if (null == code)
                     {
-                        code = EventCode.valueOf(codeId);
-                    }
-                    catch (final IllegalArgumentException ignore)
-                    {
+                        try
+                        {
+                            code = EventCode.get(Integer.parseInt(codeId));
+                        }
+                        catch (final IllegalArgumentException ignore)
+                        {
+                        }
                     }
 
                     if (null != code)

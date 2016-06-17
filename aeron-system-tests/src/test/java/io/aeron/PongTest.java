@@ -139,7 +139,7 @@ public class PongTest
             TimeUnit.MILLISECONDS.toNanos(5900));
 
         verify(pongHandler).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             eq(DataHeaderFlyweight.HEADER_LENGTH),
             eq(BitUtil.SIZE_OF_INT),
             any(Header.class));

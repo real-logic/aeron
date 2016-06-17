@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import org.agrona.DirectBuffer;
 import org.junit.After;
 import org.junit.Assume;
 import org.junit.Test;
@@ -149,7 +150,7 @@ public class PubAndSubTest
             TimeUnit.MILLISECONDS.toNanos(9900));
 
         verify(fragmentHandler).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             eq(HEADER_LENGTH),
             eq(SIZE_OF_INT),
             any(Header.class));
@@ -234,7 +235,7 @@ public class PubAndSubTest
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -309,17 +310,17 @@ public class PubAndSubTest
         final InOrder inOrder = inOrder(fragmentHandler);
 
         inOrder.verify(fragmentHandler, times(num1kMessagesInTermBuffer)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
         inOrder.verify(fragmentHandler, times(1)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(lastMessageLength),
             any(Header.class));
         inOrder.verify(fragmentHandler, times(1)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -373,7 +374,7 @@ public class PubAndSubTest
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -432,7 +433,7 @@ public class PubAndSubTest
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -492,7 +493,7 @@ public class PubAndSubTest
             TimeUnit.MILLISECONDS.toNanos(900));
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -536,7 +537,7 @@ public class PubAndSubTest
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -585,7 +586,7 @@ public class PubAndSubTest
         }
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -643,7 +644,7 @@ public class PubAndSubTest
             TimeUnit.MILLISECONDS.toNanos(500));
 
         verify(fragmentHandler, times(messagesToReceive)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -718,7 +719,7 @@ public class PubAndSubTest
         }
 
         verify(fragmentHandler, times(numMessagesToSendStageOne + numMessagesToSendStageTwo)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(messageLength),
             any(Header.class));
@@ -763,7 +764,7 @@ public class PubAndSubTest
             TimeUnit.MILLISECONDS.toNanos(500));
 
         verify(fragmentHandler, times(numFramesToExpect)).onFragment(
-            any(UnsafeBuffer.class),
+            any(DirectBuffer.class),
             anyInt(),
             eq(frameLength),
             any(Header.class));

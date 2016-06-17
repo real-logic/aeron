@@ -16,6 +16,7 @@
 package io.aeron;
 
 import io.aeron.driver.MediaDriver;
+import org.agrona.DirectBuffer;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import io.aeron.logbuffer.FragmentHandler;
@@ -84,13 +85,13 @@ public class MultiSubscriberTest
 
     private void verifyData(final UnsafeBuffer srcBuffer, final FragmentHandler mockFragmentHandler)
     {
-        final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
+        final ArgumentCaptor<DirectBuffer> bufferArg = ArgumentCaptor.forClass(DirectBuffer.class);
         final ArgumentCaptor<Integer> offsetArg = ArgumentCaptor.forClass(Integer.class);
 
         verify(mockFragmentHandler, times(1)).onFragment(
             bufferArg.capture(), offsetArg.capture(), eq(srcBuffer.capacity()), any(Header.class));
 
-        final UnsafeBuffer capturedBuffer = bufferArg.getValue();
+        final DirectBuffer capturedBuffer = bufferArg.getValue();
         final int offset = offsetArg.getValue();
         for (int i = 0; i < srcBuffer.capacity(); i++)
         {

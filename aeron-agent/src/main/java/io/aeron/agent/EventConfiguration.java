@@ -127,7 +127,7 @@ public class EventConfiguration
      */
     static Set<EventCode> getEnabledEventCodes(final String enabledLoggerEventCodes)
     {
-        if (enabledLoggerEventCodes == null)
+        if (null == enabledLoggerEventCodes || "".equals(enabledLoggerEventCodes))
         {
             return EnumSet.noneOf(EventCode.class);
         }

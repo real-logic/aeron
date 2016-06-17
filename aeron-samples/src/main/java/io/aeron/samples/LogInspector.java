@@ -83,11 +83,12 @@ public class LogInspector
                 final long rawTail = metaDataBuffer.getLongVolatile(TERM_TAIL_COUNTER_OFFSET);
                 final long termOffset = rawTail & 0xFFFF_FFFFL;
                 out.format(
-                    "Index %d Term Meta Data status=%s termOffset=%d termId=%d%n",
+                    "Index %d Term Meta Data status=%s termOffset=%d termId=%d rawTail=%d%n",
                     i,
                     termStatus(metaDataBuffer),
                     termOffset,
-                    termId(rawTail));
+                    termId(rawTail),
+                    rawTail);
             }
 
             for (int i = 0; i < PARTITION_COUNT; i++)

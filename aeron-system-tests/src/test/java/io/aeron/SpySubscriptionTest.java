@@ -18,6 +18,7 @@ package io.aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
@@ -84,9 +85,9 @@ public class SpySubscriptionTest
             while (numSpyFragments < 4 || numFragments < 4);
 
             verify(mockFragmentHandler, times(4)).onFragment(
-                any(UnsafeBuffer.class), anyInt(), eq(PAYLOAD_LENGTH), any(Header.class));
+                any(DirectBuffer.class), anyInt(), eq(PAYLOAD_LENGTH), any(Header.class));
             verify(mockSpyFragmentHandler, times(4)).onFragment(
-                any(UnsafeBuffer.class), anyInt(), eq(PAYLOAD_LENGTH), any(Header.class));
+                any(DirectBuffer.class), anyInt(), eq(PAYLOAD_LENGTH), any(Header.class));
         }
         finally
         {

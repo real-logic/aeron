@@ -15,6 +15,7 @@
  */
 package io.aeron;
 
+import org.agrona.DirectBuffer;
 import org.junit.Test;
 import org.junit.experimental.theories.DataPoint;
 import org.junit.experimental.theories.Theories;
@@ -93,13 +94,13 @@ public class FragmentedMessageTest
             }
             while (numFragments < expectedFragmentsBecauseOfHeader);
 
-            final ArgumentCaptor<UnsafeBuffer> bufferArg = ArgumentCaptor.forClass(UnsafeBuffer.class);
+            final ArgumentCaptor<DirectBuffer> bufferArg = ArgumentCaptor.forClass(DirectBuffer.class);
             final ArgumentCaptor<Header> headerArg = ArgumentCaptor.forClass(Header.class);
 
             verify(mockFragmentHandler, times(1)).onFragment(
                 bufferArg.capture(), eq(offset), eq(srcBuffer.capacity()), headerArg.capture());
 
-            final UnsafeBuffer capturedBuffer = bufferArg.getValue();
+            final DirectBuffer capturedBuffer = bufferArg.getValue();
             for (int i = 0; i < srcBuffer.capacity(); i++)
             {
                 assertThat("same at i=" + i, capturedBuffer.getByte(i), is(srcBuffer.getByte(i)));

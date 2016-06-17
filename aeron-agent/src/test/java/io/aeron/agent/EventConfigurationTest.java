@@ -62,7 +62,7 @@ public class EventConfigurationTest
     }
 
     @Test
-    public void eventCodesPropertyShouldBeParsedAsAListOfEventCodes()
+    public void eventCodesPropertyShouldBeParsedAsListOfEventCodes()
     {
         final Set<EventCode> expectedCodes = EnumSet.of(EventCode.FRAME_OUT, EventCode.FRAME_IN);
         assertThat(getEnabledEventCodes("FRAME_OUT,FRAME_IN"), is(expectedCodes));

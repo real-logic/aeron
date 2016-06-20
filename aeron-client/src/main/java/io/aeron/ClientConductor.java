@@ -234,7 +234,6 @@ class ClientConductor implements Agent, DriverListener
                         );
 
                         subscription.addImage(image);
-
                         availableImageHandler.onAvailableImage(image);
                     }
                 }

@@ -22,6 +22,7 @@ import net.bytebuddy.dynamic.DynamicType;
 import net.bytebuddy.implementation.MethodDelegation;
 import net.bytebuddy.implementation.SuperMethodCall;
 import net.bytebuddy.matcher.BooleanMatcher;
+import net.bytebuddy.utility.JavaModule;
 import org.agrona.concurrent.AgentRunner;
 import org.agrona.concurrent.SleepingIdleStrategy;
 
@@ -43,22 +44,26 @@ public class EventLogAgent
     private static final AgentBuilder.Listener LISTENER = new AgentBuilder.Listener()
     {
         public void onTransformation(
-            final TypeDescription typeDescription, final ClassLoader classLoader, final DynamicType dynamicType)
+            final TypeDescription typeDescription,
+            final ClassLoader classLoader,
+            final JavaModule module,
+            final DynamicType dynamicType)
         {
             System.out.format("TRANSFORM %s%n", typeDescription.getName());
         }
 
-        public void onIgnored(final TypeDescription typeDescription, final ClassLoader classLoader)
+        public void onIgnored(final TypeDescription typeDescription, final ClassLoader classLoader, final JavaModule module)
         {
         }
 
-        public void onError(final String typeName, final ClassLoader classLoader, final Throwable throwable)
+        public void onError(
+            final String typeName, final ClassLoader classLoader, final JavaModule module, final Throwable throwable)
         {
             System.out.format("ERROR %s%n", typeName);
             throwable.printStackTrace(System.out);
         }
 
-        public void onComplete(final String typeName, final ClassLoader classLoader)
+        public void onComplete(final String typeName, final ClassLoader classLoader, final JavaModule module)
         {
         }
     };

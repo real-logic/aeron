@@ -366,7 +366,7 @@ public class NetworkPublication
 
     public void onNak(final int termId, final int termOffset, final int length)
     {
-        retransmitHandler.onNak(termId, termOffset, length, this);
+        retransmitHandler.onNak(termId, termOffset, length, termLengthMask + 1, this);
     }
 
     public void onStatusMessage(

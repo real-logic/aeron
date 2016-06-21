@@ -540,9 +540,7 @@ public class DriverConductor implements Agent
                 nanoClock,
                 context.systemCounters(),
                 RETRANSMIT_UNICAST_DELAY_GENERATOR,
-                RETRANSMIT_UNICAST_LINGER_GENERATOR,
-                initialTermId,
-                termLength);
+                RETRANSMIT_UNICAST_LINGER_GENERATOR);
 
             final FlowControl flowControl =
                 udpChannel.isMulticast() ?

@@ -17,13 +17,12 @@ package io.aeron.driver;
 
 import io.aeron.driver.status.SystemCounters;
 import io.aeron.protocol.DataHeaderFlyweight;
-import org.agrona.collections.Long2ObjectHashMap;
+import org.agrona.collections.BiInt2ObjectMap;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.NanoClock;
 
 import static io.aeron.driver.Configuration.MAX_RETRANSMITS_DEFAULT;
 import static io.aeron.driver.status.SystemCounterDescriptor.INVALID_PACKETS;
-import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
 
 /**
  * Tracking and handling of retransmit request, NAKs, for senders and receivers
@@ -33,15 +32,12 @@ import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
  */
 public class RetransmitHandler
 {
+    private final BiInt2ObjectMap<RetransmitAction> activeRetransmitsMap = new BiInt2ObjectMap<>();
     private final RetransmitAction[] retransmitActionPool = new RetransmitAction[MAX_RETRANSMITS_DEFAULT];
-    private final Long2ObjectHashMap<RetransmitAction> activeRetransmitByPositionMap = new Long2ObjectHashMap<>();
     private final NanoClock nanoClock;
-    private final AtomicCounter invalidPackets;
     private final FeedbackDelayGenerator delayGenerator;
     private final FeedbackDelayGenerator lingerTimeoutGenerator;
-    private final int initialTermId;
-    private final int capacity;
-    private final int positionBitsToShift;
+    private final AtomicCounter invalidPackets;
 
     /**
      * Create a retransmit handler.
@@ -50,24 +46,17 @@ public class RetransmitHandler
      * @param systemCounters         for recording significant events.
      * @param delayGenerator         to use for delay determination
      * @param lingerTimeoutGenerator to use for linger timeout
-     * @param initialTermId          to use for the retransmission
-     * @param capacity               of the term buffer
      */
     public RetransmitHandler(
         final NanoClock nanoClock,
         final SystemCounters systemCounters,
         final FeedbackDelayGenerator delayGenerator,
-        final FeedbackDelayGenerator lingerTimeoutGenerator,
-        final int initialTermId,
-        final int capacity)
+        final FeedbackDelayGenerator lingerTimeoutGenerator)
     {
         this.nanoClock = nanoClock;
         this.invalidPackets = systemCounters.get(INVALID_PACKETS);
         this.delayGenerator = delayGenerator;
         this.lingerTimeoutGenerator = lingerTimeoutGenerator;
-        this.initialTermId = initialTermId;
-        this.capacity = capacity;
-        this.positionBitsToShift = Integer.numberOfTrailingZeros(capacity);
 
         for (int i = 0; i < MAX_RETRANSMITS_DEFAULT; i++)
         {
@@ -81,22 +70,24 @@ public class RetransmitHandler
      * @param termId           from the NAK and the term id of the buffer to retransmit from
      * @param termOffset       from the NAK and the offset of the data to retransmit
      * @param length           of the missing data
+     * @param termLength       of the term buffer.
      * @param retransmitSender to call if an immediate retransmit is required
      */
-    public void onNak(final int termId, final int termOffset, final int length, final RetransmitSender retransmitSender)
+    public void onNak(
+        final int termId,
+        final int termOffset,
+        final int length,
+        final int termLength,
+        final RetransmitSender retransmitSender)
     {
-        if (!isInvalid(termOffset))
+        if (!isInvalid(termOffset, termLength))
         {
-            final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-
-            if (activeRetransmitByPositionMap.size() < MAX_RETRANSMITS_DEFAULT &&
-                null == activeRetransmitByPositionMap.get(position))
+            if (activeRetransmitsMap.size() < MAX_RETRANSMITS_DEFAULT && null == activeRetransmitsMap.get(termId, termOffset))
             {
                 final RetransmitAction action = assignRetransmitAction();
                 action.termId = termId;
                 action.termOffset = termOffset;
-                action.length = Math.min(length, capacity - termOffset);
-                action.position = position;
+                action.length = Math.min(length, termLength - termOffset);
 
                 final long delay = determineRetransmitDelay();
                 if (0 == delay)
@@ -109,7 +100,7 @@ public class RetransmitHandler
                     action.delay(delay);
                 }
 
-                activeRetransmitByPositionMap.put(position, action);
+                activeRetransmitsMap.put(termId, termOffset, action);
             }
         }
     }
@@ -124,8 +115,7 @@ public class RetransmitHandler
      */
     public void onRetransmitReceived(final int termId, final int termOffset)
     {
-        final long position = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-        final RetransmitAction action = activeRetransmitByPositionMap.get(position);
+        final RetransmitAction action = activeRetransmitsMap.get(termId, termOffset);
 
         if (null != action && State.DELAYED == action.state)
         {
@@ -145,7 +135,7 @@ public class RetransmitHandler
     {
         int result = 0;
 
-        if (activeRetransmitByPositionMap.size() > 0)
+        if (activeRetransmitsMap.size() > 0)
         {
             for (final RetransmitAction action : retransmitActionPool)
             {
@@ -173,9 +163,9 @@ public class RetransmitHandler
         return result;
     }
 
-    private boolean isInvalid(final int termOffset)
+    private boolean isInvalid(final int termOffset, final int termLength)
     {
-        final boolean isInvalid = (termOffset > (capacity - DataHeaderFlyweight.HEADER_LENGTH)) || (termOffset < 0);
+        final boolean isInvalid = (termOffset > (termLength - DataHeaderFlyweight.HEADER_LENGTH)) || (termOffset < 0);
 
         if (isInvalid)
         {
@@ -223,7 +213,6 @@ public class RetransmitHandler
     final class RetransmitAction
     {
         long expire;
-        long position;
         int termId;
         int termOffset;
         int length;
@@ -249,13 +238,13 @@ public class RetransmitHandler
 
         public void onLingerTimeout()
         {
-            activeRetransmitByPositionMap.remove(position);
+            activeRetransmitsMap.remove(termId, termOffset);
             state = State.INACTIVE;
         }
 
         public void cancel()
         {
-            activeRetransmitByPositionMap.remove(position);
+            activeRetransmitsMap.remove(termId, termOffset);
             state = State.INACTIVE;
         }
     }

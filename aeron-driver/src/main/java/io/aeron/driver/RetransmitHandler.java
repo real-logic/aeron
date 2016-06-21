@@ -175,7 +175,7 @@ public class RetransmitHandler
 
     private boolean isInvalid(final int termOffset)
     {
-        final boolean isInvalid = termOffset >= (capacity - DataHeaderFlyweight.HEADER_LENGTH);
+        final boolean isInvalid = (termOffset > (capacity - DataHeaderFlyweight.HEADER_LENGTH)) || (termOffset < 0);
 
         if (isInvalid)
         {
@@ -210,7 +210,7 @@ public class RetransmitHandler
             }
         }
 
-        throw new IllegalStateException("no more INACTIVE RetransmitActions");
+        throw new IllegalStateException("Maximum number of INACTIVE RetransmitActions reached");
     }
 
     private enum State

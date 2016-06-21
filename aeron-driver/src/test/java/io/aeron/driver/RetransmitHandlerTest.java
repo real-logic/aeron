@@ -45,7 +45,7 @@ public class RetransmitHandlerTest
     private static final int MTU_LENGTH = 1024;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int META_DATA_BUFFER_LENGTH = LogBufferDescriptor.TERM_META_DATA_LENGTH;
-    private static final byte[] DATA = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    private static final byte[] DATA = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
     private static final int MESSAGE_LENGTH = DataHeaderFlyweight.HEADER_LENGTH + DATA.length;
     private static final int ALIGNED_FRAME_LENGTH = align(MESSAGE_LENGTH, FrameDescriptor.FRAME_ALIGNMENT);
     private static final int SESSION_ID = 0x5E55101D;
@@ -248,13 +248,13 @@ public class RetransmitHandlerTest
         dataHeader.wrap(rcvBuffer);
 
         dataHeader.termId(TERM_ID)
-                  .streamId(STREAM_ID)
-                  .sessionId(SESSION_ID)
-                  .termOffset(offsetOfFrame(msgNum))
-                  .frameLength(MESSAGE_LENGTH)
-                  .headerType(HeaderFlyweight.HDR_TYPE_DATA)
-                  .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
-                  .version(HeaderFlyweight.CURRENT_VERSION);
+            .streamId(STREAM_ID)
+            .sessionId(SESSION_ID)
+            .termOffset(offsetOfFrame(msgNum))
+            .frameLength(MESSAGE_LENGTH)
+            .headerType(HeaderFlyweight.HDR_TYPE_DATA)
+            .flags(DataHeaderFlyweight.BEGIN_AND_END_FLAGS)
+            .version(HeaderFlyweight.CURRENT_VERSION);
 
         rcvBuffer.putBytes(dataHeader.dataOffset(), DATA);
 

@@ -372,11 +372,8 @@ public class NetworkPublication
     public void onStatusMessage(
         final int termId, final int termOffset, final int receiverWindowLength, final InetSocketAddress srcAddress)
     {
-        final long position = flowControl.onStatusMessage(termId, termOffset, receiverWindowLength, srcAddress);
-        senderPositionLimit(position);
-
-        final long now = epochClock.time();
-        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), now);
+        senderPositionLimit(flowControl.onStatusMessage(termId, termOffset, receiverWindowLength, srcAddress));
+        LogBufferDescriptor.timeOfLastStatusMessage(rawLog.logMetaData(), epochClock.time());
     }
 
     private int sendData(final long now, final long senderPosition, final int termOffset)

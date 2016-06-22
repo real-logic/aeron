@@ -91,8 +91,8 @@ public class NetworkPublication
     private final int sessionId;
     private final int streamId;
 
-    private volatile boolean hasStatusMessageBeenReceived = false;
-    private boolean reachedEndOfLife = false;
+    private volatile boolean hasHadFirstStatusMessage = false;
+    private boolean hasReachedEndOfLife = false;
 
     private final LogBufferPartition[] logPartitions;
     private final ByteBuffer[] sendBuffers;
@@ -217,9 +217,9 @@ public class NetworkPublication
     {
         senderPositionLimit = positionLimit;
 
-        if (!hasStatusMessageBeenReceived)
+        if (!hasHadFirstStatusMessage)
         {
-            hasStatusMessageBeenReceived = true;
+            hasHadFirstStatusMessage = true;
         }
     }
 
@@ -309,8 +309,7 @@ public class NetworkPublication
     {
         int workCount = 0;
 
-        long candidatePublisherLimit =
-            hasStatusMessageBeenReceived ? senderPosition.getVolatile() + termWindowLength : 0L;
+        long candidatePublisherLimit = hasHadFirstStatusMessage ? senderPosition.getVolatile() + termWindowLength : 0L;
 
         if (!spyPositions.isEmpty())
         {
@@ -439,7 +438,7 @@ public class NetworkPublication
             timeOfLastSetup = now;
             timeOfLastSendOrHeartbeat = now;
 
-            if (hasStatusMessageBeenReceived)
+            if (hasHadFirstStatusMessage)
             {
                 shouldSendSetupFrame = false;
             }
@@ -492,14 +491,14 @@ public class NetworkPublication
     {
         if (isUnreferencedAndPotentiallyInactive(time) && time > (timeOfLastActivity + PUBLICATION_LINGER_NS))
         {
-            reachedEndOfLife = true;
+            hasReachedEndOfLife = true;
             conductor.cleanupPublication(NetworkPublication.this);
         }
     }
 
     public boolean hasReachedEndOfLife()
     {
-        return reachedEndOfLife;
+        return hasReachedEndOfLife;
     }
 
     public void timeOfLastStateChange(final long time)
